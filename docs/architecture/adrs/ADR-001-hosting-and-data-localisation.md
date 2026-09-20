@@ -115,6 +115,8 @@ Two further consequences are structural rather than per-resource:
 
 R-1 to R-3 are the workbook's own outstanding items. R-4 to R-7 are raised by this record.
 
+All seven are put to their owners as twelve numbered questions in `docs/architecture/adrs/ADR-001-confirmation-request.md`, issued 2026-09-20 and awaiting response.
+
 | # | Item | Owner | Owed by | Consequence if unresolved |
 | --- | --- | --- | --- | --- |
 | R-1 | **Written confirmation of the 19 Sep 2026 gate decision** by AHDA IT/Cybersecurity. The decision is on record in the register; the signature is not. | AHDA IT / Cybersecurity | Before the first `terraform apply` | The TASK-005 validation check ("signed off by AHDA IT/Cybersecurity, not assumed by the delivery team") is not satisfied, and a contractual clause is being satisfied by an unsigned interpretation. |
@@ -206,3 +208,4 @@ On R-1, R-2 and R-3 being signed, the status in the header becomes **APPROVED** 
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-20 | Initial record. Decision restated from the Architecture Decisions register as approved at the AHDA gate of 19 Sep 2026 (Option B — GCP, in-Kingdom). Reconciled requirement stated; clause identifier recorded as unavailable. 11 binding localisation constraints derived (C-1 to C-11); 7 residual items registered (R-1 to R-7), of which 3 gate the first apply; 5 workbook inconsistencies specified. | Architecture (TASK-005) |
+| 2026-09-20 | Confirmation request issued to AHDA IT, AHDA Cybersecurity and the PMO Engagement Lead covering R-1 to R-7 (`ADR-001-confirmation-request.md`). | Architecture (TASK-005) |
