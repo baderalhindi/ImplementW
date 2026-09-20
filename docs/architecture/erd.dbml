@@ -1,0 +1,2541 @@
+// Canonical ERD — TASK-008. Generated column-level source; the record is docs/architecture/erd.md.
+// Conventions D-1 … D-17 are defined in erd.md §4. Delete policy per table is in erd.md §5 registers.
+// Every table carries created_at/created_by/updated_at/updated_by (D-2). Concurrency uses PostgreSQL xmin (D-16).
+
+Project AHDA_RPMO_Platform {
+  database_type: 'PostgreSQL'
+  Note: 'One schema per module (ADR-003 M-13); schema name = module name in snake_case. Money is SAR only (ADR-008). Bilingual labels on controlled data (ADR-012). Language tag on narrative (TASK-109). Five-level multi-dimensional impact (ADR-011). Planned-duration weighting (ADR-009). Financial provenance (TASK-108). Declared Baseline and intake marker (ADR-014).'
+}
+
+// ===== Common (infrastructure, not a module) — schema common
+Table common.outbox_message {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  source_module varchar(50) [not null, note: 'Module that wrote the message']
+  message_type varchar(100) [not null, note: 'AUDIT_EVENT | NOTIFICATION_INTENT | DOMAIN_EVENT']
+  message_key varchar(200) [not null, note: 'Source idempotency key; unique with message_type']
+  payload jsonb [not null, note: 'Serialized envelope; never queried by attribute (the one permitted jsonb, D-17)']
+  occurred_at timestamptz [not null]
+  dispatched_at timestamptz
+  attempt_count integer [not null, default: 0]
+  next_attempt_at timestamptz
+  last_error text
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (message_type, message_key) [unique]
+  }
+  Note: 'Transactional outbox: audit events, notification intents and domain events written inside the source transaction and dispatched after commit (M-5, M-6). Delete policy: RETAIN.'
+}
+
+// ===== IdentityAccess (FG-03) — schema identity_access
+Table identity_access.department {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, unique]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  parent_department_id uuid [ref: > identity_access.department.id, note: 'Hierarchy']
+  directory_reference varchar(200) [note: 'Directory object identifier']
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'AHDA organisation structure node (ADM-011/012). Directory is authoritative for membership (ADR-007). Delete policy: RETAIN.'
+}
+
+Table identity_access.external_entity {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, unique]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  entity_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'GOVERNMENT | PUBLIC_AUTHORITY | PRIVATE_COMPANY — master data']
+  status varchar(50) [not null, note: 'ACTIVE | SUSPENDED | RETIRED']
+  sponsor_user_id uuid [ref: > identity_access.user.id, note: 'Named AHDA sponsor for the entity relationship (TASK-031)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'An organisation delivering a regional project: government entity, public authority or private company (ADR-013, ADM-013). Delete policy: RETAIN.'
+}
+
+Table identity_access.user {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_type varchar(50) [not null, note: 'INTERNAL | EXTERNAL | SERVICE — EXTERNAL covers contributors and entity Project Managers (ADR-013); SERVICE is a non-human principal']
+  directory_subject_id varchar(200) [unique, note: 'Directory/IdP subject; unique when present']
+  username varchar(100) [not null, unique]
+  display_name varchar(200) [not null, note: 'As held by the directory (internal) or as registered (external)']
+  email varchar(200) [not null, unique]
+  mobile_number varchar(20) [note: 'E.164 (ADR-004)']
+  mobile_verified_at timestamptz [note: 'Verification step before SMS delivery (ADR-004)']
+  job_title varchar(200) [note: 'Directory-authoritative (ADR-007)']
+  department_id uuid [ref: > identity_access.department.id, note: 'Directory-authoritative (ADR-007); null for external users']
+  manager_user_id uuid [ref: > identity_access.user.id, note: 'Directory-authoritative (ADR-007)']
+  external_entity_id uuid [ref: > identity_access.external_entity.id, note: 'Required when user_type = EXTERNAL']
+  preferred_language char(2) [not null, default: 'ar', note: 'ar | en']
+  status varchar(50) [not null, note: 'ACTIVE | DISABLED']
+  disabled_at timestamptz
+  mfa_enrolled_at timestamptz [note: 'MFA enrolment recorded; factors held by the MFA provider (TASK-029)']
+  nafath_verification_reference varchar(200) [note: 'Only the verification reference is stored (data minimisation, OQ-007)']
+  nafath_verified_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Platform user. Deactivation never rewrites historical attribution (Appendix A.1, TASK-031). Delete policy: RETAIN.'
+}
+
+Table identity_access.role {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, unique, note: 'R01 … R08']
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  is_system boolean [not null, default: true, note: 'Shipped defaults cannot be deleted (TASK-110)']
+  is_external_eligible boolean [not null, default: false, note: 'R04 and R08 only (ADR-013)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Canonical role R01–R08: shipped, undeletable, referenced by routing, landing dashboards and notification matrices. Delete policy: RETAIN.'
+}
+
+Table identity_access.permission {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(100) [not null, unique, note: 'e.g. PROJECT_CREATE, PERSONALIZE_LAYOUT, COMPOSE_REPORT (ADR-019), AUDIT_VIEW']
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  permission_group varchar(100) [not null, note: 'Catalogue grouping']
+  data_classification_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Highest classification the permission may expose (ADR-010; taxonomy outstanding)']
+  is_privileged boolean [not null, default: false, note: 'Step-up authentication trigger (TASK-029)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Protected permission catalogue (Appendix A). A profile may only select from it (TASK-110). Delete policy: RETAIN.'
+}
+
+Table identity_access.permission_profile {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, unique]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  base_role_id uuid [not null, ref: > identity_access.role.id, note: 'Canonical role the profile descends from']
+  is_shipped_default boolean [not null, default: false, note: 'Undeletable']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'A named composition of catalogue permissions rooted at a canonical role. R01–R08 defaults are profiles with is_shipped_default (ADR-018, TASK-110). Delete policy: RETAIN.'
+}
+
+Table identity_access.permission_profile_version {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  permission_profile_id uuid [not null, ref: > identity_access.permission_profile.id]
+  version_no integer [not null]
+  lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']
+  validated_by_user_id uuid [ref: > identity_access.user.id, note: 'Reviewer; must differ from author (TASK-110)']
+  validated_at timestamptz
+  published_by_user_id uuid [ref: > identity_access.user.id, note: 'Publisher; must differ from author and reviewer']
+  published_at timestamptz [note: 'Set once; a PUBLISHED row is immutable thereafter']
+  retired_at timestamptz
+  change_summary text [note: 'Narrative, stored as entered (ADR-012)']
+  change_summary_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (permission_profile_id, version_no) [unique]
+  }
+  Note: 'Immutable-once-published version of a profile; assignments bind to a version (ADR-018). Delete policy: RETAIN.'
+}
+
+Table identity_access.permission_profile_grant {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  permission_profile_version_id uuid [not null, ref: > identity_access.permission_profile_version.id]
+  permission_id uuid [not null, ref: > identity_access.permission.id]
+  data_scope varchar(50) [not null, note: 'ALL | DEPT | OWN | ASSIGNED | ENTITY | READ_ONLY (Blueprint Section 10.1)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (permission_profile_version_id, permission_id) [unique]
+  }
+  Note: 'One permission with its data scope inside a profile version (Appendix A scopes). Delete policy: CASCADE.'
+}
+
+Table identity_access.access_relationship {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  permission_profile_version_id uuid [not null, ref: > identity_access.permission_profile_version.id, note: 'Continues on this version until explicitly migrated (TASK-110)']
+  department_id uuid [ref: > identity_access.department.id, note: 'DEPT scope anchor']
+  external_entity_id uuid [ref: > identity_access.external_entity.id, note: 'ENTITY scope anchor']
+  project_id uuid [ref: > project.project.id, note: 'Per-project grant anchor (entity Project Manager, ADR-013)']
+  sponsor_user_id uuid [ref: > identity_access.user.id, note: 'Named AHDA sponsor, required for external grants']
+  starts_at timestamptz [not null]
+  ends_at timestamptz
+  end_reason varchar(50) [note: 'PROJECT_CLOSED | ROLE_CHANGE | MIGRATED | MANUAL | EXPIRED']
+  status varchar(50) [not null, note: 'ACTIVE | ENDED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Binds a user to a profile version with its scope anchors; per-project external grants carry a sponsor and end on closure or role change (TASK-025, TASK-031, ADR-013). Delete policy: RETAIN.'
+}
+
+// ===== MasterDataConfig (FG-04) — schema master_data_config
+Table master_data_config.master_data_catalogue {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, unique]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  allows_hierarchy boolean [not null, default: false]
+  is_system boolean [not null, default: false, note: 'Shipped catalogues cannot be retired']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'A controlled list (ADM-020–029): project classification, milestone category, risk category, impact dimension, KPI unit, document type, evidence type, Etimad cost category, data classification, governance profile, region, … Delete policy: RETAIN.'
+}
+
+Table master_data_config.master_data_item {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  catalogue_id uuid [not null, ref: > master_data_config.master_data_catalogue.id]
+  code varchar(50) [not null, note: 'Unique within catalogue']
+  label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  label_en varchar(200) [not null, note: 'English label (ADR-012)']
+  description_ar varchar(200) [note: 'Arabic label (ADR-012)']
+  description_en varchar(200) [note: 'English label (ADR-012)']
+  parent_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Hierarchy when the catalogue allows it']
+  sort_order integer [not null, default: 0]
+  is_system boolean [not null, default: false]
+  lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']
+  validated_by_user_id uuid [ref: > identity_access.user.id, note: 'Reviewer; must differ from author (TASK-110)']
+  validated_at timestamptz
+  published_by_user_id uuid [ref: > identity_access.user.id, note: 'Publisher; must differ from author and reviewer']
+  published_at timestamptz [note: 'Set once; a PUBLISHED row is immutable thereafter']
+  retired_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (catalogue_id, code) [unique]
+  }
+  Note: 'A stable, referenceable controlled value with mandatory bilingual labels (ADR-012). Retired, never deleted. Delete policy: RETAIN.'
+}
+
+Table master_data_config.configuration_family {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, unique]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'A versioned policy configuration family: GOVERNANCE_PROFILE, MATERIALITY_BAND, RISK_MATRIX, APPROVAL_AUTHORITY, NOTIFICATION_ROUTING, KPI_POLICY, PARTICIPATION, EVIDENCE_POLICY, FIELD_CLASSIFICATION, REPORT_RULES, DASHBOARD_RULES, WORKFLOW_POLICY. Delete policy: RETAIN.'
+}
+
+Table master_data_config.configuration_version {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_family_id uuid [not null, ref: > master_data_config.configuration_family.id]
+  version_no integer [not null]
+  effective_from timestamptz [note: 'Set at publish; may be future-dated']
+  effective_to timestamptz [note: 'Set when the next version\'s effective_from passes']
+  lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']
+  validated_by_user_id uuid [ref: > identity_access.user.id, note: 'Reviewer; must differ from author (TASK-110)']
+  validated_at timestamptz
+  published_by_user_id uuid [ref: > identity_access.user.id, note: 'Publisher; must differ from author and reviewer']
+  published_at timestamptz [note: 'Set once; a PUBLISHED row is immutable thereafter']
+  retired_at timestamptz
+  change_summary text [note: 'Narrative, stored as entered (ADR-012)']
+  change_summary_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_family_id, version_no) [unique]
+  }
+  Note: 'The unit of publication. Effectivity (FUTURE_EFFECTIVE/ACTIVE/SUPERSEDED) is derived from the dates and is not stored (D-13). Delete policy: RETAIN.'
+}
+
+Table master_data_config.configuration_value {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  value_key varchar(100) [not null]
+  value_text varchar(500) [not null, note: 'Typed by value_type']
+  value_type varchar(50) [not null, note: 'INTEGER | DECIMAL | BOOLEAN | TEXT | DURATION_DAYS | PERCENT']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, value_key) [unique]
+  }
+  Note: 'Scalar policy value inside a version (update cadence, reminder offsets, freshness thresholds, override tolerance, …). Key catalogue is fixed per family in code. Delete policy: CASCADE.'
+}
+
+Table master_data_config.governance_profile_setting {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  governance_profile_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Catalogue GOVERNANCE_PROFILE']
+  requires_baseline_approval boolean [not null, note: 'Light skips; Full cannot']
+  risk_management_required boolean [not null, note: 'Light carries issues only (ADR-015)']
+  change_band_count smallint [not null]
+  update_cadence_days integer [not null]
+  document_control_level_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  included_in_reporting boolean [not null]
+  assignment_min_budget_sar numeric(18,2) [note: 'Assignment-by-rule threshold; value outstanding (OQ-014)']
+  assignment_min_duration_days integer [note: 'Assignment-by-rule threshold; value outstanding (OQ-014)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, governance_profile_item_id) [unique]
+  }
+  Note: 'Switches for one governance profile (Light/Standard/Full — master data items) inside a version (TASK-105, ADR-015). Delete policy: CASCADE.'
+}
+
+Table master_data_config.governance_profile_mandatory_field {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  governance_profile_setting_id uuid [not null, ref: > master_data_config.governance_profile_setting.id]
+  field_code varchar(100) [not null, note: 'Project registration field code']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (governance_profile_setting_id, field_code) [unique]
+  }
+  Note: 'Registration fields made mandatory by a profile (TASK-105). Delete policy: CASCADE.'
+}
+
+Table master_data_config.materiality_band {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  governance_profile_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  band_no smallint [not null, note: '1 | 2 | 3']
+  cost_threshold_pct numeric(18,4) [note: 'Percent of active baseline budget']
+  cost_threshold_sar numeric(18,2) [note: 'Absolute figure']
+  schedule_threshold_pct numeric(18,4) [note: 'Percent of baseline duration']
+  schedule_threshold_days integer [note: 'Absolute days']
+  scope_rule_code varchar(100) [note: 'Scope escalates by rule']
+  requires_approval boolean [not null, note: 'Band 1 may be recorded without approval']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, governance_profile_item_id, band_no) [unique]
+  }
+  Note: 'Three-band change routing thresholds per governance profile (TASK-106, ADR-016). Values outstanding (OQ-013). Delete policy: CASCADE.'
+}
+
+Table master_data_config.impact_level_definition {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  impact_dimension_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Catalogue IMPACT_DIMENSION: cost, schedule, reputation, operational …']
+  level smallint [not null, note: '1 … 5']
+  label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  label_en varchar(200) [not null, note: 'English label (ADR-012)']
+  description_ar varchar(200) [note: 'Arabic label (ADR-012)']
+  description_en varchar(200) [note: 'English label (ADR-012)']
+  lower_bound numeric(18,4) [note: 'Quantitative boundary, where the dimension has one']
+  upper_bound numeric(18,4)
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, impact_dimension_item_id, level) [unique]
+  }
+  Note: 'One of five levels of one impact dimension (ADR-011). Dimensions are IMPACT_DIMENSION master data items; level descriptions and boundaries outstanding (OQ-006). Delete policy: CASCADE.'
+}
+
+Table master_data_config.probability_level_definition {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  level smallint [not null, note: '1 … 5']
+  label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  label_en varchar(200) [not null, note: 'English label (ADR-012)']
+  lower_pct numeric(18,4)
+  upper_pct numeric(18,4)
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, level) [unique]
+  }
+  Note: 'One of five probability levels (PTBC-017). Delete policy: CASCADE.'
+}
+
+Table master_data_config.risk_rating_definition {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  code varchar(50) [not null]
+  label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  label_en varchar(200) [not null, note: 'English label (ADR-012)']
+  sort_order smallint [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, code) [unique]
+  }
+  Note: 'A rating label (e.g. Low/Medium/High/Critical) inside a matrix version. Delete policy: CASCADE.'
+}
+
+Table master_data_config.risk_matrix_cell {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  probability_level smallint [not null]
+  impact_level smallint [not null]
+  risk_rating_definition_id uuid [not null, ref: > master_data_config.risk_rating_definition.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, probability_level, impact_level) [unique]
+  }
+  Note: '5×5 probability × overall-impact cell → rating (ADR-011; mapping outstanding, OQ-006). Delete policy: CASCADE.'
+}
+
+Table master_data_config.approval_authority_rule {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  subject_type_code varchar(100) [not null, note: 'e.g. PROJECT_REGISTRATION, BASELINE, CHANGE_REQUEST, SUSPENSION, COMPLETION, CLOSURE, ESCALATION, MILESTONE_ACHIEVEMENT, COMMITMENT, KPI_TARGET']
+  governance_profile_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Null = all profiles']
+  band_no smallint [note: 'Materiality band, where applicable']
+  min_amount_sar numeric(18,2) [note: 'Monetary threshold, where applicable']
+  sequence_no smallint [not null, note: 'Stage order']
+  approver_role_id uuid [not null, ref: > identity_access.role.id, note: 'Internal roles only — no external approval authority (ADR-013)']
+  is_mandatory boolean [not null, default: true]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Approval authority matrix row: who approves which subject at which band/value (OQ-005; shape only). Delete policy: CASCADE.'
+}
+
+Table master_data_config.notification_event_family {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  code varchar(100) [not null, note: 'Stable family code referenced by intents, templates and preferences']
+  label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  label_en varchar(200) [not null, note: 'English label (ADR-012)']
+  is_mandatory boolean [not null, note: 'Security and critical escalation families cannot be disabled by the recipient']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, code) [unique]
+  }
+  Note: 'Event family with its Mandatory / User-configurable flag (ADR-004 matrices). Delete policy: CASCADE.'
+}
+
+Table master_data_config.notification_channel_rule {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  notification_event_family_id uuid [not null, ref: > master_data_config.notification_event_family.id]
+  channel varchar(50) [not null, note: 'IN_APP | EMAIL | SMS']
+  enabled_by_default boolean [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (notification_event_family_id, channel) [unique]
+  }
+  Note: 'Event family → channel matrix (ADR-004). Delete policy: CASCADE.'
+}
+
+Table master_data_config.notification_recipient_rule {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  notification_event_family_id uuid [not null, ref: > master_data_config.notification_event_family.id]
+  role_id uuid [not null, ref: > identity_access.role.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (notification_event_family_id, role_id) [unique]
+  }
+  Note: 'Recipient role → event family matrix (ADR-004). Delete policy: CASCADE.'
+}
+
+Table master_data_config.participation_contribution_rule {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  participation_mode varchar(50) [not null, note: 'ENTITY_MANAGED | AHDA_MANAGED']
+  contribution_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Catalogue CONTRIBUTION_TYPE']
+  is_enabled boolean [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, participation_mode, contribution_type_item_id) [unique]
+  }
+  Note: 'Contribution types enabled per participation mode (ADR-013, TASK-034). Delete policy: CASCADE.'
+}
+
+Table master_data_config.evidence_requirement_rule {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  milestone_category_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  evidence_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  is_mandatory boolean [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, milestone_category_item_id, evidence_type_item_id) [unique]
+  }
+  Note: 'Mandatory evidence per milestone category (PTBC-006/PTBC-019; TASK-051). Delete policy: CASCADE.'
+}
+
+Table master_data_config.kpi_definition {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, unique]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  description_ar varchar(200) [note: 'Arabic label (ADR-012)']
+  description_en varchar(200) [note: 'English label (ADR-012)']
+  unit_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Catalogue KPI_UNIT']
+  direction varchar(50) [not null, note: 'HIGHER_IS_BETTER | LOWER_IS_BETTER | TARGET_BAND']
+  lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']
+  validated_by_user_id uuid [ref: > identity_access.user.id, note: 'Reviewer; must differ from author (TASK-110)']
+  validated_at timestamptz
+  published_by_user_id uuid [ref: > identity_access.user.id, note: 'Publisher; must differ from author and reviewer']
+  published_at timestamptz [note: 'Set once; a PUBLISHED row is immutable thereafter']
+  retired_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Stable KPI identity in the catalogue; formulas/targets outstanding (OQ-006). Delete policy: RETAIN.'
+}
+
+Table master_data_config.kpi_policy_rule {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  kpi_definition_id uuid [not null, ref: > master_data_config.kpi_definition.id]
+  calculation_expression text [note: 'Allowlisted expression; outstanding']
+  green_threshold numeric(18,4)
+  amber_threshold numeric(18,4)
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, kpi_definition_id) [unique]
+  }
+  Note: 'Versioned calculation rule and RAG thresholds for a KPI (OQ-006). Delete policy: CASCADE.'
+}
+
+Table master_data_config.field_classification_rule {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  entity_code varchar(100) [not null, note: 'Platform entity code']
+  field_code varchar(100) [not null]
+  data_classification_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Catalogue DATA_CLASSIFICATION']
+  masking_rule varchar(50) [not null, note: 'WITHHOLD | MASK | REVEAL']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, entity_code, field_code) [unique]
+  }
+  Note: 'Field-level sensitivity classification and masking rule (ADR-010; taxonomy and field list outstanding with AHDA Cybersecurity). Delete policy: CASCADE.'
+}
+
+Table master_data_config.report_allowlist_entry {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  source_entity_code varchar(100) [not null]
+  field_code varchar(100) [not null]
+  label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  label_en varchar(200) [not null, note: 'English label (ADR-012)']
+  is_filterable boolean [not null]
+  is_sortable boolean [not null]
+  data_classification_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Masking applies at execution (ADR-010)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, source_entity_code, field_code) [unique]
+  }
+  Note: 'A field the SCR-138 controlled explorer may expose (TASK-071, ADR-019). Delete policy: CASCADE.'
+}
+
+// ===== Project (WF-01) — schema project
+Table project.project {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  formal_project_id varchar(50) [unique, note: 'Authoritative identifier, issued on AHDA approval; unique; null while DRAFT/SUBMITTED (TASK-041, ADR-013)']
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  description text [note: 'Narrative, stored as entered (ADR-012)']
+  description_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  classification_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Catalogue PROJECT_CLASSIFICATION']
+  department_id uuid [not null, ref: > identity_access.department.id, note: 'Owning AHDA department']
+  external_entity_id uuid [ref: > identity_access.external_entity.id, note: 'Delivering entity, when the project is entity-delivered (ADR-013)']
+  project_manager_user_id uuid [ref: > identity_access.user.id, note: 'R04 holder; employer-neutral (ADR-013). Null while DRAFT']
+  lifecycle_state varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | APPROVED_PLANNED | ACTIVE | SUSPENDED | COMPLETED | CLOSED (TASK-041, TASK-062, TASK-063)']
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  governance_profile_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Assigned by rule on budget and duration, AHDA-overridable (TASK-105); changed only by governed change']
+  governance_profile_overridden boolean [not null, default: false, note: 'AHDA override at registration']
+  governance_profile_override_reason text [note: 'Narrative, stored as entered (ADR-012)']
+  governance_profile_override_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  participation_mode varchar(50) [not null, note: 'ENTITY_MANAGED | AHDA_MANAGED (ADR-013)']
+  registration_budget_sar numeric(18,2) [note: 'Budget stated at registration, input to profile assignment; the budget of record is WF-14 FinancialCommitment (D-8 register)']
+  planned_start_date date [note: 'Registration-level dates; the schedule of record is WF-03']
+  planned_end_date date
+  region_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'SCR-035']
+  city_item_id uuid [ref: > master_data_config.master_data_item.id]
+  latitude numeric(18,4)
+  longitude numeric(18,4)
+  legacy_intake_date date [note: 'Permanent intake marker; set once by the intake path and never cleared (ADR-014, TASK-104)']
+  activated_at timestamptz [note: 'Planned→Active command timestamp (business date, D-8 register)']
+  closed_at timestamptz [note: 'Closed is terminal (TASK-063)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Project master aggregate (Blueprint Sections 5, 9; ICD-02). Root of the core-domain graph. Delete policy: HARD_DRAFT.'
+}
+
+Table project.project_intake {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, unique, ref: > project.project.id, note: 'One intake per project']
+  intake_date date [not null]
+  declared_scope text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  declared_scope_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  declared_budget_sar numeric(18,2) [not null, note: 'Written to WF-14 as a DECLARED commitment on the event']
+  declared_end_date date [not null, note: 'Written to WF-03 as the DECLARED baseline end date on the event']
+  opening_percent_complete numeric(18,4) [not null, note: 'Written to WF-02 as the opening ProgressSubmission on the event']
+  opening_spend_to_date_sar numeric(18,2) [not null, note: 'Written to WF-14 as the opening FinancialProgressUpdate on the event']
+  recorded_by_user_id uuid [not null, ref: > identity_access.user.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'The one-time declaration for a project already under way: Declared Baseline inputs and opening position (ADR-014, TASK-104). Source of the ProjectIntakeRecorded event (§11.1 of the solution architecture). Delete policy: APPEND_ONLY.'
+}
+
+Table project.project_intake_milestone {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_intake_id uuid [not null, ref: > project.project_intake.id]
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  achieved_date date [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'A milestone declared as already achieved at intake; WF-05 records the achievement on the event. Delete policy: APPEND_ONLY.'
+}
+
+// ===== Progress (WF-02) — schema progress
+Table progress.reporting_cycle {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  period_start date [not null]
+  period_end date [not null]
+  due_date date [not null]
+  status varchar(50) [not null, note: 'OPEN | CLOSED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_id, period_start) [unique]
+  }
+  Note: 'A reporting period for a project, generated from the governance profile cadence (TASK-044, ADR-015). Delete policy: RETAIN.'
+}
+
+Table progress.progress_submission {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  reporting_cycle_id uuid [not null, ref: > progress.reporting_cycle.id]
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | PUBLISHED']
+  actual_percent_calculated numeric(18,4) [not null, note: 'Duration-weighted roll-up from WF-04 at submission (ADR-009); stored — D-8 register']
+  actual_percent_override numeric(18,4) [note: 'Project-level override; calculated value retained (ADR-009)']
+  override_reason text [note: 'Narrative, stored as entered (ADR-012)']
+  override_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  planned_percent numeric(18,4) [note: 'From the active baseline at submission; never editable (ADR-009); null when the baseline is DECLARED with no plan']
+  baseline_id uuid [ref: > schedule.project_baseline.id, note: 'Baseline the planned figure was computed from']
+  narrative text [note: 'Narrative, stored as entered (ADR-012)']
+  narrative_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  project_intake_id uuid [ref: > project.project_intake.id, note: 'Set on the opening-position submission only (ADR-014)']
+  submitted_by_user_id uuid [ref: > identity_access.user.id]
+  submitted_at timestamptz
+  reviewed_by_user_id uuid [ref: > identity_access.user.id]
+  reviewed_at timestamptz
+  return_reason text [note: 'Narrative, stored as entered (ADR-012)']
+  return_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (reporting_cycle_id, revision_no) [unique]
+  }
+  Note: 'The working progress record for a cycle: derived actual %, planned %, override and narrative (ADR-009, ADR-014). Delete policy: HARD_DRAFT.'
+}
+
+Table progress.published_progress_snapshot {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  reporting_cycle_id uuid [not null, ref: > progress.reporting_cycle.id]
+  progress_submission_id uuid [not null, unique, ref: > progress.progress_submission.id]
+  published_at timestamptz [not null]
+  published_by_user_id uuid [not null, ref: > identity_access.user.id]
+  actual_percent numeric(18,4) [not null, note: 'Effective actual (override if present, else calculated) — snapshot copy, D-8 register']
+  is_overridden boolean [not null]
+  planned_percent numeric(18,4)
+  overall_health varchar(50) [not null, note: 'Computed by WF-02 rules; UNKNOWN when inputs are missing — never coerced']
+  schedule_health varchar(50) [note: 'Copied from WF-03 projection at publish (snapshot copy)']
+  financial_status varchar(50) [note: 'Copied from WF-14 projection at publish (snapshot copy)']
+  health_rule_configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id, note: 'Rule version pinned at publish']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Immutable PUBLISHED/OFFICIAL snapshot of a cycle, including Overall Project Health computed only here (ICD-03, TASK-044). Delete policy: APPEND_ONLY.'
+}
+
+Table progress.project_health_status {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, unique, ref: > project.project.id]
+  overall_health varchar(50) [not null, note: 'GREEN | AMBER | RED | UNKNOWN']
+  actual_percent numeric(18,4)
+  planned_percent numeric(18,4)
+  computed_at timestamptz [not null, note: 'Freshness metadata for FG-01']
+  health_rule_configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'CURRENT/LIVE Overall Project Health projection, rewritten by WF-02 on each recompute; the only writer (ICD-03, M-12). Delete policy: RETAIN.'
+}
+
+Table progress.periodic_update_session {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  reporting_cycle_id uuid [not null, ref: > progress.reporting_cycle.id]
+  started_by_user_id uuid [not null, ref: > identity_access.user.id]
+  started_at timestamptz [not null]
+  completed_at timestamptz [note: 'Completion time = completed_at − started_at, not stored']
+  status varchar(50) [not null, note: 'IN_PROGRESS | COMPLETED | ABANDONED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Consolidated periodic update flow: draft/resume and completion-time instrumentation (TASK-107, ADR-017). Holds references, not copies (solution architecture §11.2). Delete policy: RETAIN.'
+}
+
+Table progress.periodic_update_session_item {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  periodic_update_session_id uuid [not null, ref: > progress.periodic_update_session.id]
+  item_module varchar(50) [not null, note: 'Progress | Milestone | Risk | ManagementConcern | FinancialKpi']
+  item_type varchar(100) [not null]
+  item_id uuid [not null, note: 'Identifier only — no navigation across modules (M-4)']
+  item_status varchar(50) [not null, note: 'PENDING | CONFIRMED | CHANGED | SKIPPED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (periodic_update_session_id, item_module, item_type, item_id) [unique]
+  }
+  Note: 'An item surfaced in a session (progress, milestone, risk, concern, narrative) and whether it was confirmed or changed. Delete policy: CASCADE.'
+}
+
+// ===== Schedule (WF-03) — schema schedule
+Table schedule.project_schedule {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, unique, ref: > project.project.id]
+  calendar_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Working calendar used for duration derivation']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'The project\'s working schedule (Current Forecast) container (TASK-046). Delete policy: RETAIN.'
+}
+
+Table schedule.schedule_activity {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_schedule_id uuid [not null, ref: > schedule.project_schedule.id]
+  parent_activity_id uuid [ref: > schedule.schedule_activity.id, note: 'Hierarchy']
+  wbs_code varchar(50) [not null, note: 'Unique within schedule']
+  name text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  name_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  activity_kind varchar(50) [not null, note: 'SUMMARY | ACTIVITY']
+  planned_start_date date [not null]
+  planned_finish_date date [not null]
+  planned_duration_days integer [not null, note: 'Working days under the schedule calendar; stored — D-8 register (ADR-009 weight)']
+  forecast_start_date date [not null, note: 'Current Forecast']
+  forecast_finish_date date [not null]
+  actual_start_date date
+  actual_finish_date date
+  status varchar(50) [not null, note: 'PLANNED | IN_PROGRESS | COMPLETED | CANCELLED']
+  sort_order integer [not null, default: 0]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_schedule_id, wbs_code) [unique]
+  }
+  Note: 'WBS node of the working schedule with planned and forecast dates; carries planned duration for weighting (ADR-009). Delete policy: RETAIN.'
+}
+
+Table schedule.schedule_dependency {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  predecessor_activity_id uuid [not null, ref: > schedule.schedule_activity.id]
+  successor_activity_id uuid [not null, ref: > schedule.schedule_activity.id]
+  dependency_type varchar(50) [not null, note: 'FS | SS | FF | SF']
+  lag_days integer [not null, default: 0]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (predecessor_activity_id, successor_activity_id) [unique]
+  }
+  Note: 'Directed dependency between activities of the working schedule; cycles rejected at save (TASK-046). Delete policy: HARD_WORKING.'
+}
+
+Table schedule.project_baseline {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  baseline_type varchar(50) [not null, note: 'APPROVED | DECLARED']
+  version_no integer [not null, note: 'Unique per project']
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | ACTIVE | SUPERSEDED | REJECTED | WITHDRAWN']
+  activated_at timestamptz [note: 'Approval outcome applied; atomic supersession of the prior ACTIVE (TASK-046)']
+  superseded_at timestamptz
+  superseded_by_baseline_id uuid [ref: > schedule.project_baseline.id]
+  change_authorization_id uuid [ref: > change_request.change_authorization.id, note: 'Required for every rebaseline after the first APPROVED baseline (TASK-060)']
+  project_intake_id uuid [ref: > project.project_intake.id, note: 'Required when baseline_type = DECLARED']
+  declared_end_date date [note: 'DECLARED only: end date as stated at intake']
+  declared_scope text [note: 'Narrative, stored as entered (ADR-012)']
+  declared_scope_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  baseline_finish_date date [not null, note: 'Project finish per this baseline']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_id, version_no) [unique]
+  }
+  Note: 'A baseline of the schedule. baseline_type APPROVED is the Approved Baseline; DECLARED is the legacy-intake Declared Baseline (ADR-014). At most one ACTIVE per project (partial unique index). Partial unique index: (project_id) WHERE status = \'ACTIVE\' — never two Active baselines (TASK-046). Delete policy: HARD_DRAFT.'
+}
+
+Table schedule.baseline_activity {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_baseline_id uuid [not null, ref: > schedule.project_baseline.id]
+  schedule_activity_id uuid [not null, ref: > schedule.schedule_activity.id]
+  planned_start_date date [not null, note: 'Snapshot copy — D-8 register']
+  planned_finish_date date [not null]
+  planned_duration_days integer [not null, note: 'Weight pinned at approval (ADR-009)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_baseline_id, schedule_activity_id) [unique]
+  }
+  Note: 'Immutable copy of an activity\'s planned dates and duration at baseline approval; the reference for variance and planned % (ADR-009). Delete policy: APPEND_ONLY.'
+}
+
+Table schedule.baseline_dependency {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_baseline_id uuid [not null, ref: > schedule.project_baseline.id]
+  predecessor_activity_id uuid [not null, ref: > schedule.schedule_activity.id]
+  successor_activity_id uuid [not null, ref: > schedule.schedule_activity.id]
+  dependency_type varchar(50) [not null]
+  lag_days integer [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_baseline_id, predecessor_activity_id, successor_activity_id) [unique]
+  }
+  Note: 'Immutable copy of the dependency network at baseline approval, so a baseline is fully reproducible. Delete policy: APPEND_ONLY.'
+}
+
+Table schedule.project_milestone {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  project_schedule_id uuid [not null, ref: > schedule.project_schedule.id]
+  schedule_activity_id uuid [ref: > schedule.schedule_activity.id, note: 'Activity the milestone completes, where one exists']
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  milestone_category_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Drives mandatory evidence (EvidenceRequirementRule)']
+  forecast_date date [not null, note: 'Current Forecast']
+  status varchar(50) [not null, note: 'PLANNED | ACHIEVED | CANCELLED — ACHIEVED is set by WF-03 on the WF-05 acceptance event']
+  sort_order integer [not null, default: 0]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'The single shared milestone identity (ICD-04). WF-03 owns this row: schedule representation and dates. WF-05 owns achievement evidence and the accepted actual date in MilestoneAchievement — one identity, never duplicated (TASK-050). Delete policy: RETAIN.'
+}
+
+Table schedule.baseline_milestone {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_baseline_id uuid [not null, ref: > schedule.project_baseline.id]
+  project_milestone_id uuid [not null, ref: > schedule.project_milestone.id]
+  planned_date date [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_baseline_id, project_milestone_id) [unique]
+  }
+  Note: 'Immutable copy of a milestone\'s planned date at baseline approval. Delete policy: APPEND_ONLY.'
+}
+
+Table schedule.schedule_health_status {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, unique, ref: > project.project.id]
+  project_baseline_id uuid [ref: > schedule.project_baseline.id, note: 'Baseline used']
+  schedule_health varchar(50) [not null, note: 'GREEN | AMBER | RED | UNKNOWN']
+  finish_variance_days integer [note: 'Forecast finish − baseline finish; UNKNOWN when no baseline']
+  computed_at timestamptz [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'CURRENT/LIVE Schedule Health and variance projection computed by WF-03 against the ACTIVE baseline (TASK-046); consumers read, never recompute. Delete policy: RETAIN.'
+}
+
+// ===== ProjectTask (WF-04) — schema project_task
+Table project_task.project_task {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  schedule_activity_id uuid [ref: > schedule.schedule_activity.id, note: 'Identifier only (edge 9); required for leaf tasks that roll up']
+  parent_task_id uuid [ref: > project_task.project_task.id, note: 'Set for a Subtask; one level only (rule)']
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  description text [note: 'Narrative, stored as entered (ADR-012)']
+  description_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  assignee_user_id uuid [ref: > identity_access.user.id, note: 'Task owner; must hold a project relationship (TASK-049)']
+  priority_item_id uuid [ref: > master_data_config.master_data_item.id]
+  status varchar(50) [not null, note: 'NOT_STARTED | IN_PROGRESS | BLOCKED | COMPLETED | CANCELLED (TASK-048)']
+  planned_start_date date [not null]
+  planned_finish_date date [not null]
+  planned_duration_days integer [not null, note: 'Weight for roll-up (ADR-009); stored — D-8 register']
+  actual_start_date date
+  actual_finish_date date
+  actual_percent_complete numeric(18,4) [note: 'Entered for leaf tasks only; parent % is computed on read, not stored']
+  blocked_reason text [note: 'Narrative, stored as entered (ADR-012)']
+  blocked_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  completed_at timestamptz
+  reopened_count integer [not null, default: 0, note: 'Reopen requires the specific permission (TASK-048)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Task or Subtask (parent_task_id set) executing against a schedule activity; owner maintains actual % (ADR-009). Named ProjectTask per solution architecture §4.4b. Delete policy: RETAIN.'
+}
+
+Table project_task.task_dependency {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  predecessor_task_id uuid [not null, ref: > project_task.project_task.id]
+  successor_task_id uuid [not null, ref: > project_task.project_task.id]
+  dependency_type varchar(50) [not null, note: 'FS | SS | FF | SF']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (predecessor_task_id, successor_task_id) [unique]
+  }
+  Note: 'Blocking dependency between tasks (TASK-048). Delete policy: HARD_WORKING.'
+}
+
+Table project_task.activity_execution_progress {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  schedule_activity_id uuid [not null, unique, ref: > schedule.schedule_activity.id]
+  actual_percent_complete numeric(18,4) [not null]
+  computed_at timestamptz [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'WF-04-owned duration-weighted roll-up of task actuals per activity (ADR-009); the fact WF-02 consumes. Stored — D-8 register. Delete policy: RETAIN.'
+}
+
+// ===== Milestone (WF-05) — schema milestone
+Table milestone.milestone_achievement {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_milestone_id uuid [not null, ref: > schedule.project_milestone.id, note: 'Identifier of the shared milestone row']
+  project_id uuid [not null, ref: > project.project.id]
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | RETURNED | ACCEPTED | SUPERSEDED']
+  claimed_achievement_date date [not null]
+  accepted_actual_achievement_date date [note: 'Set on acceptance; the WF-05-owned fact']
+  narrative text [note: 'Narrative, stored as entered (ADR-012)']
+  narrative_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  submitted_by_user_id uuid [ref: > identity_access.user.id, note: 'May be an entity Project Manager (ADR-013)']
+  submitted_at timestamptz
+  reviewed_by_user_id uuid [ref: > identity_access.user.id]
+  reviewed_at timestamptz
+  return_reason text [note: 'Narrative, stored as entered (ADR-012)']
+  return_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  superseded_by_achievement_id uuid [ref: > milestone.milestone_achievement.id]
+  project_intake_id uuid [ref: > project.project_intake.id, note: 'Set when recorded from the intake opening position (ADR-014)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_milestone_id, revision_no) [unique]
+  }
+  Note: 'An achievement claim revision for a shared ProjectMilestone; a correction creates a new revision and marks the old SUPERSEDED (TASK-050). The current ACCEPTED revision holds the accepted Actual Achievement Date (ICD-04). Partial unique index: (project_milestone_id) WHERE status = \'ACCEPTED\' — one current accepted revision. Delete policy: HARD_DRAFT.'
+}
+
+// ===== Risk (WF-06) — schema risk
+Table risk.risk {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  description text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  description_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  risk_category_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  owner_user_id uuid [ref: > identity_access.user.id]
+  status varchar(50) [not null, note: 'IDENTIFIED | ASSESSED | TREATMENT | MONITORING | CLOSED']
+  identified_date date [not null]
+  next_review_date date [note: 'Drives the overdue-review reminder (TASK-039)']
+  materialised_at timestamptz [note: 'Set when a ManagementConcern is created from this risk']
+  closure_rationale text [note: 'Narrative, stored as entered (ADR-012)']
+  closure_rationale_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  closed_at timestamptz
+  closed_by_user_id uuid [ref: > identity_access.user.id]
+  reopened_count integer [not null, default: 0, note: 'Reopen requires the specific permission; captured in Audit']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Risk register entry (TASK-055). Materialisation into an issue is recorded on the ManagementConcern (originating_risk_id). Delete policy: RETAIN.'
+}
+
+Table risk.risk_assessment_version {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  risk_id uuid [not null, ref: > risk.risk.id]
+  version_no integer [not null]
+  assessed_at timestamptz [not null]
+  assessed_by_user_id uuid [not null, ref: > identity_access.user.id]
+  matrix_configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id, note: 'RISK_MATRIX version pinned at assessment']
+  probability_level smallint [not null, note: '1 … 5']
+  overall_impact_level smallint [not null, note: 'Derived from the dimension levels by the pinned rule; stored because pinned — D-8 register']
+  risk_rating_definition_id uuid [not null, ref: > master_data_config.risk_rating_definition.id, note: 'Rating from the pinned matrix cell; stored because pinned — D-8 register']
+  rationale text [note: 'Narrative, stored as entered (ADR-012)']
+  rationale_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (risk_id, version_no) [unique]
+  }
+  Note: 'An immutable assessment pinned to the matrix version in force (TASK-055, TASK-059). Delete policy: APPEND_ONLY.'
+}
+
+Table risk.risk_assessment_impact {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  risk_assessment_version_id uuid [not null, ref: > risk.risk_assessment_version.id]
+  impact_dimension_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  impact_level smallint [not null, note: '1 … 5']
+  rationale text [note: 'Narrative, stored as entered (ADR-012)']
+  rationale_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (risk_assessment_version_id, impact_dimension_item_id) [unique]
+  }
+  Note: 'Impact level per dimension within an assessment (ADR-011): one row per dimension, no repeating groups. Delete policy: APPEND_ONLY.'
+}
+
+Table risk.risk_treatment_action {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  risk_id uuid [not null, ref: > risk.risk.id]
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  description text [note: 'Narrative, stored as entered (ADR-012)']
+  description_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  action_type varchar(50) [not null, note: 'MITIGATE | AVOID | TRANSFER | CONTINGENCY']
+  owner_user_id uuid [ref: > identity_access.user.id]
+  due_date date
+  status varchar(50) [not null, note: 'PLANNED | IN_PROGRESS | COMPLETED | CANCELLED']
+  completed_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Treatment / mitigation action (TASK-055). Delete policy: RETAIN.'
+}
+
+Table risk.risk_acceptance {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  risk_id uuid [not null, ref: > risk.risk.id]
+  accepted_by_user_id uuid [not null, ref: > identity_access.user.id, note: 'Acceptance authority unchanged for entity users (ADR-013)']
+  accepted_at timestamptz [not null]
+  expires_on date [not null]
+  rationale text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  rationale_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  status varchar(50) [not null, note: 'ACTIVE | EXPIRED | REVOKED']
+  revoked_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Time-bound acceptance; expires and returns for review — no permanent acceptance (ADR-011 gate note). Delete policy: RETAIN.'
+}
+
+// ===== ManagementConcern (WF-07) — schema management_concern
+Table management_concern.management_concern {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  concern_type varchar(50) [not null, note: 'ISSUE | CHALLENGE']
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  description text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  description_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  category_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  priority_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'User-set']
+  severity_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Computed from impact levels by the pinned rule; never client input — stored, D-8 register']
+  severity_configuration_version_id uuid [ref: > master_data_config.configuration_version.id, note: 'Rule version pinned at computation']
+  status varchar(50) [not null, note: 'OPEN | ASSIGNED | IN_PROGRESS | PENDING_VALIDATION | RESOLVED | CLOSED']
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  raised_by_user_id uuid [not null, ref: > identity_access.user.id, note: 'May be an entity user (ADR-013: intake and visibility)']
+  raised_at timestamptz [not null]
+  assignee_user_id uuid [ref: > identity_access.user.id]
+  originating_risk_id uuid [ref: > risk.risk.id, note: 'Set when materialised from a risk (edge 15); queryable from both sides via this one FK']
+  target_resolution_date date
+  resolution text [note: 'Narrative, stored as entered (ADR-012)']
+  resolution_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  resolved_at timestamptz
+  closed_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Issue or Challenge (TASK-057). Severity is computed server-side and distinct from user-set Priority. Delete policy: RETAIN.'
+}
+
+Table management_concern.concern_impact {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  management_concern_id uuid [not null, ref: > management_concern.management_concern.id]
+  impact_dimension_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  impact_level smallint [not null, note: '1 … 5']
+  rationale text [note: 'Narrative, stored as entered (ADR-012)']
+  rationale_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (management_concern_id, impact_dimension_item_id) [unique]
+  }
+  Note: 'Impact level per dimension for a concern — the same dimension set as risks (ADR-011). Delete policy: CASCADE.'
+}
+
+Table management_concern.concern_escalation {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  management_concern_id uuid [not null, ref: > management_concern.management_concern.id]
+  escalation_no integer [not null]
+  escalated_by_user_id uuid [not null, ref: > identity_access.user.id, note: 'Internal only — no external escalation (ADR-013)']
+  escalated_at timestamptz [not null]
+  escalated_to_role_id uuid [not null, ref: > identity_access.role.id]
+  reason text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  reason_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  status varchar(50) [not null, note: 'OPEN | RESOLVED | WITHDRAWN']
+  resolved_at timestamptz
+  resolution text [note: 'Narrative, stored as entered (ADR-012)']
+  resolution_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (management_concern_id, escalation_no) [unique]
+  }
+  Note: 'An escalation event; its identity is the idempotency key for the single NotificationIntent it produces (TASK-057). Delete policy: RETAIN.'
+}
+
+// ===== ChangeRequest (WF-08) — schema change_request
+Table change_request.change_request {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  justification text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  justification_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  change_type varchar(50) [not null, note: 'SCOPE | COST | SCHEDULE | CONTRACTUAL_OBLIGATION | GOVERNANCE_PROFILE']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | APPROVED | REJECTED | IMPLEMENTATION | IMPLEMENTED | CLOSED | WITHDRAWN']
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  requested_by_user_id uuid [not null, ref: > identity_access.user.id, note: 'May be an entity Project Manager (ADR-013)']
+  submitted_at timestamptz
+  cost_impact_sar numeric(18,2) [note: 'Requested cost impact']
+  schedule_impact_days integer
+  scope_impact text [note: 'Narrative, stored as entered (ADR-012)']
+  scope_impact_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  is_contractual_obligation boolean [not null, default: false, note: 'Always Band 3 (TASK-106)']
+  requested_governance_profile_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'For GOVERNANCE_PROFILE changes (TASK-105)']
+  implemented_at timestamptz
+  closed_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Formal change request lifecycle (TASK-060) with materiality band routing (TASK-106). Delete policy: HARD_DRAFT.'
+}
+
+Table change_request.materiality_evaluation {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  change_request_id uuid [not null, ref: > change_request.change_request.id]
+  evaluated_at timestamptz [not null]
+  materiality_configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id, note: 'MATERIALITY_BAND version pinned']
+  project_baseline_id uuid [ref: > schedule.project_baseline.id, note: 'Active baseline evaluated against']
+  cumulative_cost_impact_sar numeric(18,2) [not null, note: 'Approved changes since baseline + this request (stored evaluation input — D-8 register)']
+  cumulative_schedule_impact_days integer [not null]
+  cost_band_no smallint
+  schedule_band_no smallint
+  scope_band_no smallint
+  resulting_band_no smallint [not null, note: 'Highest band any dimension triggers']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Provenance of one materiality evaluation: band per dimension, cumulative position against the active baseline, pinned configuration (TASK-106). Delete policy: APPEND_ONLY.'
+}
+
+Table change_request.change_authorization {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  change_request_id uuid [not null, ref: > change_request.change_request.id]
+  approval_instance_id uuid [not null, ref: > approval.approval_instance.id, note: 'Approval that produced it']
+  authorization_scope varchar(50) [not null, note: 'REBASELINE | COMMITMENT_CHANGE | PROFILE_CHANGE | SCOPE_CHANGE']
+  target_module varchar(50) [not null, note: 'Schedule | FinancialKpi | Project']
+  target_type varchar(100) [not null]
+  target_id uuid [not null, note: 'Identifier only (M-4)']
+  target_revision_no integer [not null, note: 'Version pinned; application fails if the target has moved']
+  idempotency_key varchar(200) [not null, unique, note: 'Exactly-once application under retry']
+  status varchar(50) [not null, note: 'ISSUED | APPLIED | EXPIRED | REVOKED']
+  issued_at timestamptz [not null]
+  expires_at timestamptz
+  applied_at timestamptz [note: 'The target module records the authorisation id on the row it creates (e.g. ProjectBaseline.change_authorization_id)']
+  applied_by_user_id uuid [ref: > identity_access.user.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Idempotent, scoped, version-pinned authorisation consumed by a target module through a typed adapter (TASK-060, TASK-065). Delete policy: RETAIN.'
+}
+
+// ===== Suspension (WF-09) — schema suspension
+Table suspension.suspension_request {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  request_type varchar(50) [not null, note: 'SUSPEND | RESUME']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | APPROVED | REJECTED | WITHDRAWN | EFFECTED']
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  reason text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  reason_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  requested_by_user_id uuid [not null, ref: > identity_access.user.id]
+  submitted_at timestamptz
+  requested_effective_date date
+  planned_resumption_date date [note: 'SUSPEND only']
+  effected_at timestamptz [note: 'When the Project command ran — a separate auditable event from approval']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Suspension or resumption request approved via WF-11, distinct from the Project lifecycle transition (TASK-062). Delete policy: HARD_DRAFT.'
+}
+
+Table suspension.active_suspension {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  suspension_request_id uuid [not null, unique, ref: > suspension.suspension_request.id]
+  started_at timestamptz [not null]
+  ended_at timestamptz
+  resumption_request_id uuid [unique, ref: > suspension.suspension_request.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'The suspension in force. At most one open per project (partial unique index). No automatic rebaseline on resumption (TASK-062). Partial unique index: (project_id) WHERE ended_at IS NULL — at most one ActiveSuspension per Project (TASK-065). Delete policy: RETAIN.'
+}
+
+// ===== Closure (WF-10) — schema closure
+Table closure.completion_case {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | APPROVED | REJECTED | WITHDRAWN | EFFECTED']
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  requested_by_user_id uuid [not null, ref: > identity_access.user.id]
+  submitted_at timestamptz
+  actual_project_completion_date date [note: 'The WF-10-owned fact; required before APPROVED']
+  completion_narrative text [note: 'Narrative, stored as entered (ADR-012)']
+  completion_narrative_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  effected_at timestamptz [note: 'Project → COMPLETED command timestamp']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Readiness-gated completion case; captures ActualProjectCompletionDate (TASK-063). Partial unique index: (project_id) WHERE status = \'EFFECTED\' — one effective completion per project. Delete policy: HARD_DRAFT.'
+}
+
+Table closure.closure_case {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  completion_case_id uuid [not null, ref: > closure.completion_case.id]
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | APPROVED | REJECTED | WITHDRAWN | EFFECTED']
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  requested_by_user_id uuid [not null, ref: > identity_access.user.id]
+  submitted_at timestamptz
+  closure_narrative text [note: 'Narrative, stored as entered (ADR-012)']
+  closure_narrative_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  effected_at timestamptz [note: 'Project → CLOSED command timestamp']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Closure case following an effected completion; Closed is terminal and read-only (TASK-063). Delete policy: HARD_DRAFT.'
+}
+
+Table closure.readiness_check {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  completion_case_id uuid [ref: > closure.completion_case.id]
+  closure_case_id uuid [ref: > closure.closure_case.id]
+  check_code varchar(100) [not null, note: 'e.g. SCHEDULE_COMPLETE, TASKS_COMPLETE, FINANCIAL_RECONCILED, OBLIGATIONS_SATISFIED, DOCUMENTS_COMPLETE']
+  result varchar(50) [not null, note: 'PASS | FAIL | WAIVED']
+  evaluated_at timestamptz [not null]
+  detail text [note: 'Narrative, stored as entered (ADR-012)']
+  detail_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  waived_by_user_id uuid [ref: > identity_access.user.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Result of one readiness check run for a completion or closure case (exactly one case FK set). CHECK: exactly one of completion_case_id, closure_case_id is not null. Delete policy: APPEND_ONLY.'
+}
+
+Table closure.post_project_obligation {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  completion_case_id uuid [not null, ref: > closure.completion_case.id]
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  description text [note: 'Narrative, stored as entered (ADR-012)']
+  description_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  owner_user_id uuid [ref: > identity_access.user.id]
+  due_date date
+  status varchar(50) [not null, note: 'OPEN | IN_PROGRESS | SATISFIED | WAIVED | CANCELLED']
+  satisfied_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Obligation that may remain active after Completion until closure policy is satisfied (TASK-063). Delete policy: RETAIN.'
+}
+
+// ===== Approval (WF-11) — schema approval
+Table approval.approval_instance {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  subject_module varchar(50) [not null]
+  subject_type varchar(100) [not null]
+  subject_id uuid [not null, note: 'Identifier only — Approval holds no source-module types']
+  subject_revision_no integer [not null]
+  routing_key varchar(100) [not null, note: 'Maps to ApprovalAuthorityRule.subject_type_code']
+  authority_configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id, note: 'APPROVAL_AUTHORITY version pinned at start']
+  scope_project_id uuid [ref: > project.project.id, note: 'Authorisation scope anchor supplied by the source (M-7); not domain knowledge']
+  scope_department_id uuid [ref: > identity_access.department.id]
+  requested_by_user_id uuid [not null, ref: > identity_access.user.id]
+  requested_at timestamptz [not null]
+  status varchar(50) [not null, note: 'PENDING | APPROVED | REJECTED | RETURNED | WITHDRAWN']
+  completed_at timestamptz
+  outcome_idempotency_key varchar(200) [not null, unique, note: 'Callback delivered exactly once under retry']
+  outcome_delivered_at timestamptz
+  previous_instance_id uuid [ref: > approval.approval_instance.id, note: 'Links the new instance created after a RETURNED revision']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (subject_module, subject_type, subject_id, subject_revision_no) [unique]
+  }
+  Note: 'A subject-agnostic approval run (module, aggregate id, revision) with an idempotent outcome callback (TASK-035, M-8). Delete policy: RETAIN.'
+}
+
+Table approval.approval_task {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  approval_instance_id uuid [not null, ref: > approval.approval_instance.id]
+  sequence_no smallint [not null]
+  assigned_role_id uuid [not null, ref: > identity_access.role.id]
+  assigned_user_id uuid [ref: > identity_access.user.id, note: 'Resolved approver']
+  acting_user_id uuid [ref: > identity_access.user.id, note: 'Who decided; a delegate never exceeds the delegator\'s authority']
+  approval_delegation_id uuid [ref: > approval.approval_delegation.id, note: 'Set when acted under delegation']
+  status varchar(50) [not null, note: 'PENDING | APPROVED | REJECTED | RETURNED | DELEGATED | ESCALATED | CANCELLED | EXPIRED']
+  due_at timestamptz
+  eligibility_revalidated_at timestamptz [note: 'Decision-time eligibility/security revalidation']
+  decided_at timestamptz
+  decision_reason text [note: 'Mandatory on REJECTED and RETURNED (TASK-036)']
+  decision_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  escalated_to_task_id uuid [ref: > approval.approval_task.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (approval_instance_id, sequence_no, assigned_role_id) [unique]
+  }
+  Note: 'A stage assignment and its decision; history is the ordered set of tasks (SCR-115). Delete policy: RETAIN.'
+}
+
+Table approval.approval_delegation {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  delegator_user_id uuid [not null, ref: > identity_access.user.id]
+  delegate_user_id uuid [not null, ref: > identity_access.user.id, note: 'Internal only (ADR-013)']
+  routing_key varchar(100) [note: 'Null = all subjects']
+  valid_from timestamptz [not null]
+  valid_to timestamptz [not null]
+  status varchar(50) [not null, note: 'ACTIVE | REVOKED | EXPIRED']
+  revoked_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Standing delegation from one internal user to another for a period (SCR-114). Delete policy: RETAIN.'
+}
+
+// ===== DocumentManagement (WF-12) — schema document_management
+Table document_management.document {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  title text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  description text [note: 'Narrative, stored as entered (ADR-012)']
+  description_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  document_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  data_classification_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Sensitivity (ADR-010)']
+  project_id uuid [ref: > project.project.id, note: 'Null for the general library (SCR-120)']
+  owner_user_id uuid [not null, ref: > identity_access.user.id]
+  status varchar(50) [not null, note: 'ACTIVE | ARCHIVED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Logical document (Blueprint Section 13). Files are versions; the row is never deleted. Delete policy: RETAIN.'
+}
+
+Table document_management.document_version {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  document_id uuid [not null, ref: > document_management.document.id]
+  version_no integer [not null]
+  storage_object_key varchar(500) [not null, unique, note: 'Private object store key (DOCUMENT_STORAGE_CONNECTION_STRING)']
+  file_name varchar(500) [not null]
+  content_type varchar(200) [not null]
+  size_bytes bigint [not null]
+  checksum_sha256 char(64) [not null]
+  uploaded_by_user_id uuid [not null, ref: > identity_access.user.id]
+  uploaded_at timestamptz [not null]
+  scan_state varchar(50) [not null, note: 'SCAN_PENDING | CLEAN | QUARANTINED | SCAN_FAILED — the only mutable columns']
+  scan_completed_at timestamptz
+  scan_reference varchar(200)
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (document_id, version_no) [unique]
+  }
+  Note: 'Immutable file version with malware-scan state; later versions never alter historical evidence (TASK-037). Delete policy: RETAIN.'
+}
+
+Table document_management.business_link {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  document_id uuid [not null, ref: > document_management.document.id]
+  link_role varchar(50) [not null, note: 'ATTACHMENT | REFERENCE']
+  target_module varchar(50) [not null]
+  target_type varchar(100) [not null]
+  target_id uuid [not null, note: 'Identifier only (M-4)']
+  linked_by_user_id uuid [not null, ref: > identity_access.user.id]
+  linked_at timestamptz [not null]
+  unlinked_at timestamptz [note: 'Unlink is a timestamp, not a delete']
+  unlinked_by_user_id uuid [ref: > identity_access.user.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (document_id, target_module, target_type, target_id, link_role) [unique]
+  }
+  Note: 'Attachment of a document to a business context (link_role ATTACHMENT) or a reference to it; unlink never deletes (TASK-037). Delete policy: RETAIN.'
+}
+
+Table document_management.evidence_reference {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  business_link_id uuid [not null, ref: > document_management.business_link.id]
+  document_version_id uuid [not null, ref: > document_management.document_version.id, note: 'Pinned version']
+  evidence_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  designated_by_user_id uuid [not null, ref: > identity_access.user.id]
+  designated_at timestamptz [not null]
+  status varchar(50) [not null, note: 'VALID | WITHDRAWN']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (business_link_id, document_version_id, evidence_type_item_id) [unique]
+  }
+  Note: 'A link designated as evidence, pinned to a specific version; a QUARANTINED or SCAN_PENDING version cannot be referenced (TASK-037). Delete policy: RETAIN.'
+}
+
+// ===== ExternalParticipation (WF-13) — schema external_participation
+Table external_participation.external_update_request {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  external_entity_id uuid [not null, ref: > identity_access.external_entity.id, note: 'ENTITY scope isolation']
+  origin varchar(50) [not null, note: 'AHDA_ISSUED | ENTITY_INITIATED']
+  request_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  issued_by_user_id uuid [not null, ref: > identity_access.user.id]
+  issued_at timestamptz [not null]
+  due_date date
+  instructions text [note: 'Narrative, stored as entered (ADR-012)']
+  instructions_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  status varchar(50) [not null, note: 'DRAFT | ISSUED | IN_PROGRESS | RESPONDED | CLOSED | CANCELLED | EXPIRED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'AHDA-issued or entity-initiated update request within entity and project scope (TASK-066, ADR-013). Delete policy: HARD_DRAFT.'
+}
+
+Table external_participation.external_contribution {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  external_update_request_id uuid [not null, ref: > external_participation.external_update_request.id]
+  project_id uuid [not null, ref: > project.project.id]
+  external_entity_id uuid [not null, ref: > identity_access.external_entity.id]
+  contributor_user_id uuid [not null, ref: > identity_access.user.id]
+  contribution_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Enabled per participation mode (ParticipationContributionRule)']
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | REJECTED | ACCEPTED_PENDING_APPLICATION | APPLIED | APPLICATION_FAILED']
+  target_module varchar(50) [note: 'Owning core module of the proposed change (target set unconfirmed — S-5)']
+  target_type varchar(100)
+  target_id uuid [note: 'Identifier only']
+  submitted_at timestamptz
+  reviewed_by_user_id uuid [ref: > identity_access.user.id]
+  reviewed_at timestamptz
+  review_reason text [note: 'Narrative, stored as entered (ADR-012)']
+  review_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  previous_revision_id uuid [ref: > external_participation.external_contribution.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (external_update_request_id, contributor_user_id, revision_no) [unique]
+  }
+  Note: 'Path B staged contribution: immutable once submitted; review produces Accept / Return / Reject and a new revision, never an in-place edit (TASK-066). Delete policy: HARD_DRAFT.'
+}
+
+Table external_participation.external_contribution_field {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  external_contribution_id uuid [not null, ref: > external_participation.external_contribution.id]
+  field_code varchar(100) [not null]
+  proposed_value text
+  proposed_value_lang char(2) [note: 'Set only when the field is narrative (D-7)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (external_contribution_id, field_code) [unique]
+  }
+  Note: 'One proposed field value inside a contribution; normalised, immutable after submission. Delete policy: CASCADE.'
+}
+
+Table external_participation.source_application {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  external_contribution_id uuid [not null, ref: > external_participation.external_contribution.id]
+  attempt_no integer [not null]
+  idempotency_key varchar(200) [not null, unique]
+  correlation_id uuid [not null]
+  status varchar(50) [not null, note: 'PENDING | REVALIDATING | APPLIED | CONFLICT | FAILED | RETRY_SCHEDULED']
+  expected_target_revision_no integer
+  actual_target_revision_no integer [note: 'Populated on CONFLICT']
+  attempted_at timestamptz [not null]
+  completed_at timestamptz
+  failure_summary text
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (external_contribution_id, attempt_no) [unique]
+  }
+  Note: 'One attempt to apply an accepted contribution to its source through the typed adapter, with revalidation, idempotency and conflict state (SCR-166). Delete policy: RETAIN.'
+}
+
+// ===== FinancialKpi (WF-14) — schema financial_kpi
+Table financial_kpi.financial_source_mode {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  field_code varchar(50) [not null, note: 'APPROVED_BUDGET | ACTUAL_EXPENDITURE | FORECAST_AT_COMPLETION | OPEN_COMMITMENT']
+  source_mode varchar(50) [not null, note: 'MANUAL | INTEGRATED | HYBRID']
+  configured_at timestamptz [not null, note: 'Once INTEGRATED, manual substitution during an outage is not permitted']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_id, field_code) [unique]
+  }
+  Note: 'Source mode per project and per financial field (ADR-008 gate: manual at launch; integrated/hybrid built, unconnected). Delete policy: RETAIN.'
+}
+
+Table financial_kpi.financial_commitment {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  commitment_type varchar(50) [not null, note: 'APPROVED_BUDGET | DECLARED_BUDGET | OPEN_COMMITMENT (not used at launch)']
+  version_no integer [not null]
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | ACTIVE | SUPERSEDED | REJECTED | WITHDRAWN']
+  amount_sar numeric(18,2) [not null, note: 'Project total (SAR only, D-5); equals the sum of lines when lines exist']
+  effective_from date
+  activated_at timestamptz
+  superseded_by_commitment_id uuid [ref: > financial_kpi.financial_commitment.id]
+  change_authorization_id uuid [ref: > change_request.change_authorization.id, note: 'Required for any change to an Approved Budget, with a referenced document via EvidenceReference (TASK-052)']
+  project_intake_id uuid [ref: > project.project_intake.id, note: 'Set for DECLARED_BUDGET']
+  source_type varchar(50) [not null, note: 'MANUAL | ETIMAD | OTHER (ADR-008)']
+  source_reference varchar(200) [note: 'Reference in the source system or manual document reference']
+  as_of_date date [not null, note: 'Date the figure is true as of (ADR-008)']
+  entered_by_user_id uuid [not null, ref: > identity_access.user.id, note: 'Accountable person for the figure; distinct from created_by on integrated records (D-10)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_id, commitment_type, version_no) [unique]
+  }
+  Note: 'An approved commitment/budget version in SAR (ADR-008). Each row is one version; the ACTIVE row is the budget of record. Partial unique index: (project_id, commitment_type) WHERE status = \'ACTIVE\'. Delete policy: HARD_DRAFT.'
+}
+
+Table financial_kpi.financial_commitment_line {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  financial_commitment_id uuid [not null, ref: > financial_kpi.financial_commitment.id]
+  etimad_category_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Catalogue ETIMAD_COST_CATEGORY']
+  amount_sar numeric(18,2) [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (financial_commitment_id, etimad_category_item_id) [unique]
+  }
+  Note: 'Cost breakdown by Etimad category (ADR-008 extension); optional at launch (project total only). Delete policy: CASCADE.'
+}
+
+Table financial_kpi.financial_progress_update {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  reporting_cycle_id uuid [not null, ref: > progress.reporting_cycle.id, note: 'Period alignment with WF-02 (edge 13)']
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | PUBLISHED']
+  actual_expenditure_to_date_sar numeric(18,2) [note: 'Null = Unknown, never 0']
+  forecast_at_completion_sar numeric(18,2)
+  value_status varchar(50) [not null, note: 'MEASURED | MISSING | STALE | NOT_APPLICABLE']
+  narrative text [note: 'Narrative, stored as entered (ADR-012)']
+  narrative_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  project_intake_id uuid [ref: > project.project_intake.id, note: 'Set on the opening spend-to-date record (ADR-014)']
+  source_type varchar(50) [not null, note: 'MANUAL | ETIMAD | OTHER (ADR-008)']
+  source_reference varchar(200) [note: 'Reference in the source system or manual document reference']
+  as_of_date date [not null, note: 'Date the figure is true as of (ADR-008)']
+  entered_by_user_id uuid [not null, ref: > identity_access.user.id, note: 'Accountable person for the figure; distinct from created_by on integrated records (D-10)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (reporting_cycle_id, revision_no) [unique]
+  }
+  Note: 'Periodic CURRENT/LIVE actuals and forecast for a reporting cycle with provenance (TASK-052, TASK-108). Delete policy: HARD_DRAFT.'
+}
+
+Table financial_kpi.financial_progress_update_line {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  financial_progress_update_id uuid [not null, ref: > financial_kpi.financial_progress_update.id]
+  etimad_category_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  actual_sar numeric(18,2) [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (financial_progress_update_id, etimad_category_item_id) [unique]
+  }
+  Note: 'Actual expenditure by Etimad category within an update. Delete policy: CASCADE.'
+}
+
+Table financial_kpi.published_financial_snapshot {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  reporting_cycle_id uuid [not null, ref: > progress.reporting_cycle.id]
+  financial_progress_update_id uuid [not null, unique, ref: > financial_kpi.financial_progress_update.id]
+  financial_commitment_id uuid [ref: > financial_kpi.financial_commitment.id, note: 'ACTIVE commitment at publish']
+  published_at timestamptz [not null]
+  published_by_user_id uuid [not null, ref: > identity_access.user.id]
+  approved_budget_sar numeric(18,2) [note: 'Snapshot copy — D-8 register']
+  actual_expenditure_to_date_sar numeric(18,2) [note: 'Snapshot copy']
+  forecast_at_completion_sar numeric(18,2) [note: 'Snapshot copy']
+  value_status varchar(50) [not null]
+  financial_status varchar(50) [not null, note: 'GREEN | AMBER | RED | UNKNOWN by pinned thresholds (OQ-006)']
+  threshold_configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  source_type varchar(50) [not null, note: 'MANUAL | ETIMAD | OTHER (ADR-008)']
+  source_reference varchar(200) [note: 'Reference in the source system or manual document reference']
+  as_of_date date [not null, note: 'Date the figure is true as of (ADR-008)']
+  entered_by_user_id uuid [not null, ref: > identity_access.user.id, note: 'Accountable person for the figure; distinct from created_by on integrated records (D-10)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Immutable PUBLISHED/OFFICIAL financial position for a cycle; unchanged by later corrections (TASK-054). Delete policy: APPEND_ONLY.'
+}
+
+Table financial_kpi.kpi_assignment {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  kpi_definition_id uuid [not null, ref: > master_data_config.kpi_definition.id]
+  owner_user_id uuid [ref: > identity_access.user.id]
+  measurement_frequency_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  status varchar(50) [not null, note: 'ACTIVE | SUSPENDED | RETIRED']
+  assigned_at timestamptz [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_id, kpi_definition_id) [unique]
+  }
+  Note: 'A KPI assigned to a project (TASK-052). Delete policy: RETAIN.'
+}
+
+Table financial_kpi.kpi_target_version {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  kpi_assignment_id uuid [not null, ref: > financial_kpi.kpi_assignment.id]
+  version_no integer [not null]
+  revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | ACTIVE | SUPERSEDED | REJECTED | WITHDRAWN']
+  target_value numeric(18,4) [not null, note: 'In the KPI\'s unit']
+  green_threshold numeric(18,4) [note: 'Per-target RAG thresholds (OQ-006)']
+  amber_threshold numeric(18,4)
+  effective_from date
+  activated_at timestamptz
+  superseded_by_target_version_id uuid [ref: > financial_kpi.kpi_target_version.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (kpi_assignment_id, version_no) [unique]
+  }
+  Note: 'Immutable-once-approved target for an assignment; measurements pin to the version in force when recorded (TASK-052). Delete policy: HARD_DRAFT.'
+}
+
+Table financial_kpi.kpi_measurement {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  kpi_assignment_id uuid [not null, ref: > financial_kpi.kpi_assignment.id]
+  kpi_target_version_id uuid [not null, ref: > financial_kpi.kpi_target_version.id, note: 'Pinned at record time; never rewritten']
+  period_start date [not null]
+  period_end date [not null]
+  measured_value numeric(18,4) [note: 'Null when value_status ≠ MEASURED']
+  value_status varchar(50) [not null, note: 'MEASURED | MISSING | STALE | NOT_APPLICABLE']
+  rag_status varchar(50) [not null, note: 'Computed against the pinned target at record time; stored because pinned — D-8 register']
+  as_of_date date [not null]
+  recorded_by_user_id uuid [not null, ref: > identity_access.user.id]
+  narrative text [note: 'Narrative, stored as entered (ADR-012)']
+  narrative_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  status varchar(50) [not null, note: 'DRAFT | SUBMITTED | PUBLISHED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (kpi_assignment_id, period_start) [unique]
+  }
+  Note: 'A periodic measurement pinned to its target version; Missing/Stale/N/A are explicit, never zero (TASK-052, TASK-053). Delete policy: HARD_DRAFT.'
+}
+
+// ===== Notifications (WF-15) — schema notifications
+Table notifications.notification_template {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  event_family_code varchar(100) [not null, note: 'NotificationEventFamily.code']
+  event_type varchar(100) [not null]
+  channel varchar(50) [not null, note: 'IN_APP | EMAIL | SMS']
+  version_no integer [not null]
+  subject_ar varchar(500) [note: 'Email/in-app only']
+  subject_en varchar(500)
+  body_ar text [not null]
+  body_en text [not null]
+  lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']
+  validated_by_user_id uuid [ref: > identity_access.user.id, note: 'Reviewer; must differ from author (TASK-110)']
+  validated_at timestamptz
+  published_by_user_id uuid [ref: > identity_access.user.id, note: 'Publisher; must differ from author and reviewer']
+  published_at timestamptz [note: 'Set once; a PUBLISHED row is immutable thereafter']
+  retired_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (event_type, channel, version_no) [unique]
+  }
+  Note: 'Bilingual, mandatory template per event family and channel (ADR-012, ADR-004); SMS variants carry event + deep link only. Delete policy: RETAIN.'
+}
+
+Table notifications.notification_intent {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  source_module varchar(50) [not null]
+  source_event_type varchar(100) [not null]
+  source_reference varchar(200) [not null, note: 'Source idempotency key, e.g. ConcernEscalation id']
+  event_family_code varchar(100) [not null]
+  subject_type varchar(100)
+  subject_id uuid [note: 'Identifier only']
+  scope_project_id uuid [ref: > project.project.id, note: 'Scope anchor for eligibility recheck']
+  occurred_at timestamptz [not null]
+  received_at timestamptz [not null]
+  scheduled_for timestamptz [note: 'Reminders; the source condition is revalidated before send']
+  condition_revalidated_at timestamptz
+  status varchar(50) [not null, note: 'RECEIVED | SCHEDULED | RESOLVING | ROUTED | SUPPRESSED | COMPLETED | FAILED']
+  suppression_reason varchar(100) [note: 'e.g. CONDITION_RESOLVED, NO_ELIGIBLE_RECIPIENT']
+  deep_link varchar(500)
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (source_event_type, source_reference) [unique]
+  }
+  Note: 'Typed intent received from a source module after commit (commit-before-notify, Blueprint Section 15). Idempotent on (source_event_type, source_reference). Delete policy: RETAIN.'
+}
+
+Table notifications.notification_intent_parameter {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  notification_intent_id uuid [not null, ref: > notifications.notification_intent.id]
+  parameter_key varchar(100) [not null]
+  parameter_value text [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (notification_intent_id, parameter_key) [unique]
+  }
+  Note: 'Template parameter supplied by the source; never a sensitive field value for SMS (TASK-103). Delete policy: CASCADE.'
+}
+
+Table notifications.notification_delivery {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  notification_intent_id uuid [not null, ref: > notifications.notification_intent.id]
+  recipient_user_id uuid [not null, ref: > identity_access.user.id]
+  channel varchar(50) [not null, note: 'IN_APP | EMAIL | SMS']
+  notification_template_id uuid [not null, ref: > notifications.notification_template.id]
+  rendered_language char(2) [not null, note: 'Recipient\'s preferred language']
+  rendered_subject varchar(500)
+  rendered_body text [not null, note: 'The in-app notification content; evidence for history']
+  status varchar(50) [not null, note: 'PENDING | SENT | DELIVERED | FAILED | DEAD_LETTER | SUPPRESSED | READ']
+  suppression_reason varchar(100) [note: 'e.g. RECIPIENT_OPTED_OUT, MOBILE_UNVERIFIED']
+  attempt_count integer [not null, default: 0]
+  last_attempt_at timestamptz
+  next_attempt_at timestamptz
+  sent_at timestamptz
+  delivered_at timestamptz [note: 'From delivery receipt (SMS DLR, TASK-103)']
+  read_at timestamptz [note: 'IN_APP']
+  dead_lettered_at timestamptz
+  provider_message_id varchar(200)
+  segment_count smallint [note: 'SMS segments (UCS-2, 70 chars)']
+  failure_reason text
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (notification_intent_id, recipient_user_id, channel) [unique]
+  }
+  Note: 'One rendered delivery to one recipient on one channel with retry, suppression, dead-letter and read state (SCR-150–154). Delete policy: RETAIN.'
+}
+
+Table notifications.notification_preference {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  event_family_code varchar(100) [not null]
+  channel varchar(50) [not null, note: 'EMAIL | SMS']
+  is_enabled boolean [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (user_id, event_family_code, channel) [unique]
+  }
+  Note: 'Recipient opt-out per non-mandatory family and channel; in-app always on (ADR-004, TASK-040). Delete policy: HARD_OWNER.'
+}
+
+// ===== Dashboards (FG-01) — schema dashboards
+Table dashboards.dashboard_definition {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, note: 'PORTFOLIO | PROJECT | GOVERNANCE']
+  version_no integer [not null]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  description_ar varchar(200) [note: 'Arabic label (ADR-012)']
+  description_en varchar(200) [note: 'English label (ADR-012)']
+  allows_personalization boolean [not null, default: false, note: 'Portfolio only (ADR-019)']
+  lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']
+  validated_by_user_id uuid [ref: > identity_access.user.id, note: 'Reviewer; must differ from author (TASK-110)']
+  validated_at timestamptz
+  published_by_user_id uuid [ref: > identity_access.user.id, note: 'Publisher; must differ from author and reviewer']
+  published_at timestamptz [note: 'Set once; a PUBLISHED row is immutable thereafter']
+  retired_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (code, version_no) [unique]
+  }
+  Note: 'Governed dashboard definition (DRAFT→VALIDATED→PUBLISHED→RETIRED); three at launch per ADR-006 (Portfolio, Project, Governance). Delete policy: RETAIN.'
+}
+
+Table dashboards.dashboard_audience_role {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  dashboard_definition_id uuid [not null, ref: > dashboards.dashboard_definition.id]
+  role_id uuid [not null, ref: > identity_access.role.id]
+  is_default_landing boolean [not null, default: false]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (dashboard_definition_id, role_id) [unique]
+  }
+  Note: 'Roles that may open a definition and whether it is their default landing (Blueprint Section 20.2). Delete policy: CASCADE.'
+}
+
+Table dashboards.dashboard_widget {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  dashboard_definition_id uuid [not null, ref: > dashboards.dashboard_definition.id]
+  code varchar(50) [not null]
+  title_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  title_en varchar(200) [not null, note: 'English label (ADR-012)']
+  widget_type varchar(50) [not null]
+  source_projection_code varchar(100) [not null, note: 'e.g. PROGRESS.PROJECT_HEALTH_STATUS, SCHEDULE.SCHEDULE_HEALTH_STATUS, FINANCIAL_KPI.PUBLISHED_FINANCIAL_SNAPSHOT']
+  data_classification_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Financial widgets are sensitive and masked (ADR-010)']
+  is_optional_visibility boolean [not null, default: false, note: 'May be hidden by personalisation (ADR-019)']
+  layout_row smallint [not null]
+  layout_column smallint [not null]
+  layout_span smallint [not null, default: 1]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (dashboard_definition_id, code) [unique]
+  }
+  Note: 'A widget bound to a controlled source projection; renders semantic state, freshness and coverage, never recomputes (TASK-069). Delete policy: CASCADE.'
+}
+
+Table dashboards.user_dashboard_preference {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  dashboard_definition_id uuid [not null, ref: > dashboards.dashboard_definition.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (user_id, dashboard_definition_id) [unique]
+  }
+  Note: 'Presentation-only personalisation per user and definition (TASK-111); reset deletes it. Delete policy: HARD_OWNER.'
+}
+
+Table dashboards.user_dashboard_widget_preference {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_dashboard_preference_id uuid [not null, ref: > dashboards.user_dashboard_preference.id]
+  dashboard_widget_id uuid [not null, ref: > dashboards.dashboard_widget.id]
+  is_hidden boolean [not null, default: false]
+  sort_order smallint
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (user_dashboard_preference_id, dashboard_widget_id) [unique]
+  }
+  Note: 'Hidden/ordered state of one OptionalVisibility widget. Delete policy: CASCADE.'
+}
+
+// ===== Reports (FG-02) — schema reports
+Table reports.report_definition {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, note: 'RPT-…']
+  version_no integer [not null]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  description_ar varchar(200) [note: 'Arabic label (ADR-012)']
+  description_en varchar(200) [note: 'English label (ADR-012)']
+  audience_family varchar(50) [not null, note: 'EXECUTIVE | PORTFOLIO | DEPARTMENT | PROJECT | FINANCIAL | PROGRESS | RISK_ISSUE']
+  lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']
+  validated_by_user_id uuid [ref: > identity_access.user.id, note: 'Reviewer; must differ from author (TASK-110)']
+  validated_at timestamptz
+  published_by_user_id uuid [ref: > identity_access.user.id, note: 'Publisher; must differ from author and reviewer']
+  published_at timestamptz [note: 'Set once; a PUBLISHED row is immutable thereafter']
+  retired_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (code, version_no) [unique]
+  }
+  Note: 'Governed parameterised report definition; ten at launch (ADR-006), modes and scopes carried as parameters. Delete policy: RETAIN.'
+}
+
+Table reports.report_audience_role {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  report_definition_id uuid [not null, ref: > reports.report_definition.id]
+  role_id uuid [not null, ref: > identity_access.role.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (report_definition_id, role_id) [unique]
+  }
+  Note: 'Roles that may run a definition; R08 limited to the entity report set (ADR-013). Delete policy: CASCADE.'
+}
+
+Table reports.report_parameter {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  report_definition_id uuid [not null, ref: > reports.report_definition.id]
+  code varchar(50) [not null]
+  label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  label_en varchar(200) [not null, note: 'English label (ADR-012)']
+  data_type varchar(50) [not null, note: 'TEXT | DATE | DATE_RANGE | MASTER_DATA_ITEM | PROJECT | DEPARTMENT | ENTITY | OPTION']
+  is_required boolean [not null]
+  option_catalogue_id uuid [ref: > master_data_config.master_data_catalogue.id, note: 'For MASTER_DATA_ITEM parameters']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (report_definition_id, code) [unique]
+  }
+  Note: 'A parameter (including mode and scope) of a definition. Delete policy: CASCADE.'
+}
+
+Table reports.report_parameter_option {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  report_parameter_id uuid [not null, ref: > reports.report_parameter.id]
+  value_code varchar(50) [not null]
+  label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  label_en varchar(200) [not null, note: 'English label (ADR-012)']
+  catalogue_entry_reference varchar(50) [note: 'FG-02 catalogue entry this option absorbs']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (report_parameter_id, value_code) [unique]
+  }
+  Note: 'Fixed option of an OPTION parameter (report mode / scope variants absorbed per ADR-006). Delete policy: CASCADE.'
+}
+
+Table reports.saved_view {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  owner_user_id uuid [not null, ref: > identity_access.user.id]
+  view_type varchar(50) [not null, note: 'REPORT_PARAMETERS | EXPLORER_COMPOSITION']
+  report_definition_id uuid [ref: > reports.report_definition.id, note: 'Required for REPORT_PARAMETERS']
+  name text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  name_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  is_shared boolean [not null, default: false]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Saved parameter set for a definition, or an SCR-138 explorer composition (ADR-019). A shared view carries configuration only; authorisation is per viewer at execution (TASK-112). Delete policy: HARD_OWNER.'
+}
+
+Table reports.saved_view_share {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  saved_view_id uuid [not null, ref: > reports.saved_view.id]
+  shared_with_role_id uuid [ref: > identity_access.role.id]
+  shared_with_department_id uuid [ref: > identity_access.department.id]
+  shared_with_user_id uuid [ref: > identity_access.user.id]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Who a view is shared with. CHECK: exactly one of the three shared_with columns is not null. Delete policy: CASCADE.'
+}
+
+Table reports.saved_view_column {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  saved_view_id uuid [not null, ref: > reports.saved_view.id]
+  report_allowlist_entry_id uuid [not null, ref: > master_data_config.report_allowlist_entry.id, note: 'Only allowlisted entries can be referenced']
+  sort_order smallint [not null]
+  sort_direction varchar(50) [note: 'ASC | DESC | null']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (saved_view_id, report_allowlist_entry_id) [unique]
+  }
+  Note: 'An allowlisted column selected in an explorer composition (MOD-061). Delete policy: CASCADE.'
+}
+
+Table reports.saved_view_filter {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  saved_view_id uuid [not null, ref: > reports.saved_view.id]
+  report_allowlist_entry_id uuid [not null, ref: > master_data_config.report_allowlist_entry.id]
+  operator varchar(50) [not null, note: 'EQ | NEQ | IN | GT | GTE | LT | LTE | BETWEEN | CONTAINS']
+  value_text varchar(500) [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'An allowlisted filter in a composition; operators from a closed set — no free-text SQL, formulas or joins. Delete policy: CASCADE.'
+}
+
+Table reports.report_parameter_value {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  saved_view_id uuid [ref: > reports.saved_view.id]
+  report_job_id uuid [ref: > reports.report_job.id]
+  parameter_code varchar(50) [not null]
+  value_text varchar(500) [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Pinned parameter value of a saved view or a job. CHECK: exactly one of saved_view_id, report_job_id is not null. Delete policy: CASCADE.'
+}
+
+Table reports.report_job {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  report_definition_id uuid [ref: > reports.report_definition.id]
+  saved_view_id uuid [ref: > reports.saved_view.id]
+  requested_by_user_id uuid [not null, ref: > identity_access.user.id]
+  requested_at timestamptz [not null]
+  export_format varchar(50) [not null, note: 'PDF | XLSX | CSV (ADR-005)']
+  report_language char(2) [not null]
+  correlation_id uuid [not null]
+  status varchar(50) [not null, note: 'REQUESTED | VALIDATING | QUEUED | RUNNING | COMPLETED | FAILED | CANCELLED | EXPIRED']
+  started_at timestamptz
+  completed_at timestamptz
+  failure_reason text
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'A generation run (REQUESTED→VALIDATING→QUEUED→RUNNING→COMPLETED/FAILED/CANCELLED/EXPIRED) for a definition or an explorer view (TASK-071). CHECK: at least one of report_definition_id, saved_view_id is not null. Delete policy: RETAIN.'
+}
+
+Table reports.generated_output {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  report_job_id uuid [not null, unique, ref: > reports.report_job.id]
+  storage_object_key varchar(500) [not null, unique]
+  file_name varchar(500) [not null]
+  content_type varchar(200) [not null]
+  size_bytes bigint [not null]
+  checksum_sha256 char(64) [not null]
+  expires_at timestamptz [not null]
+  status varchar(50) [not null, note: 'AVAILABLE | EXPIRED | PURGED']
+  purged_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'The secured output of a completed job; downloads are authorised at download time (TASK-071). The file is purged at expiry; the row is kept. Delete policy: RETAIN.'
+}
+
+// ===== IntegrationMonitoring (FG-05) — schema integration_monitoring
+Table integration_monitoring.integration_definition {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(50) [not null, unique]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  direction varchar(50) [not null, note: 'INBOUND | OUTBOUND | BIDIRECTIONAL']
+  integration_kind varchar(50) [not null, note: 'IDENTITY | MESSAGING | VERIFICATION | FINANCE | SECURITY | DATA']
+  owner_role_id uuid [ref: > identity_access.role.id]
+  max_attempts smallint [not null, default: 3, note: 'Retry policy']
+  retry_backoff_seconds integer [not null, default: 60]
+  status varchar(50) [not null, note: 'ACTIVE | DISABLED | RETIRED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'A named external integration (AD/LDAP, SSO, Exchange, SMS provider, Nafath, SIEM, malware scan, Etimad-future, legacy source) — Blueprint Section 17.1. Delete policy: RETAIN.'
+}
+
+Table integration_monitoring.integration_instance {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  integration_definition_id uuid [not null, ref: > integration_monitoring.integration_definition.id]
+  code varchar(50) [not null]
+  endpoint_configuration_key varchar(200) [not null, note: 'Name of the configuration/secret entry; never the secret value']
+  is_enabled boolean [not null, default: true]
+  availability varchar(50) [not null, note: 'UP | DOWN | UNKNOWN']
+  freshness varchar(50) [not null, note: 'FRESH | STALE | UNKNOWN']
+  last_success_at timestamptz
+  last_failure_at timestamptz
+  health_evaluated_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (integration_definition_id, code) [unique]
+  }
+  Note: 'A configured endpoint of a definition. Availability and Freshness are two separate indicators (ADM-047); stored as an operational projection — D-8 register. Delete policy: RETAIN.'
+}
+
+Table integration_monitoring.sync_run {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  integration_instance_id uuid [not null, ref: > integration_monitoring.integration_instance.id]
+  run_type varchar(50) [not null, note: 'DIRECTORY_SYNC | RECONCILIATION']
+  correlation_id uuid [not null]
+  started_at timestamptz [not null]
+  completed_at timestamptz
+  status varchar(50) [not null, note: 'RUNNING | SUCCEEDED | PARTIAL | FAILED']
+  records_read integer [not null, default: 0]
+  records_applied integer [not null, default: 0]
+  records_rejected integer [not null, default: 0]
+  mismatch_count integer [not null, default: 0]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'A directory sync or reconciliation run; mismatches raise alerts and never auto-repair authoritative data (TASK-075). Delete policy: RETAIN.'
+}
+
+Table integration_monitoring.invocation {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  integration_instance_id uuid [not null, ref: > integration_monitoring.integration_instance.id]
+  sync_run_id uuid [ref: > integration_monitoring.sync_run.id]
+  operation_code varchar(100) [not null]
+  correlation_id uuid [not null]
+  idempotency_key varchar(200)
+  attempt_no smallint [not null, default: 1]
+  source_module varchar(50) [note: 'Module that triggered it, e.g. Notifications']
+  source_reference varchar(200) [note: 'e.g. NotificationDelivery id']
+  started_at timestamptz [not null]
+  completed_at timestamptz
+  status varchar(50) [not null, note: 'IN_PROGRESS | SUCCEEDED | FAILED | RETRY_SCHEDULED | DEAD_LETTER']
+  response_code varchar(50)
+  error_summary text [note: 'Redacted']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'One call to or from an integration with retry, dead-letter and correlation (TASK-075). Never carries a secret or a sensitive payload. Delete policy: RETAIN.'
+}
+
+Table integration_monitoring.operational_alert {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  integration_instance_id uuid [not null, ref: > integration_monitoring.integration_instance.id]
+  sync_run_id uuid [ref: > integration_monitoring.sync_run.id]
+  invocation_id uuid [ref: > integration_monitoring.invocation.id]
+  alert_type varchar(50) [not null, note: 'AVAILABILITY | FRESHNESS | RECONCILIATION_MISMATCH | DEAD_LETTER | DELIVERY_RATE']
+  severity varchar(50) [not null, note: 'INFO | WARNING | CRITICAL']
+  raised_at timestamptz [not null]
+  status varchar(50) [not null, note: 'OPEN | ACKNOWLEDGED | RESOLVED | DISMISSED']
+  acknowledged_by_user_id uuid [ref: > identity_access.user.id]
+  resolved_at timestamptz
+  resolution_note text [note: 'Narrative, stored as entered (ADR-012)']
+  resolution_note_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  detail text [note: 'Redacted']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'An alert for investigation: availability, freshness, reconciliation mismatch, dead-letter, delivery rate (ADR-004). Delete policy: RETAIN.'
+}
+
+// ===== AuditActivity (FG-06) — schema audit_activity
+Table audit_activity.audit_event {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  occurred_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  event_class varchar(50) [not null, note: 'AUTHENTICATION | AUTHORIZATION_DENIAL | PRIVILEGED_ACTION | PERMISSION_CHANGE | LIFECYCLE_TRANSITION | DATA_CHANGE | APPROVAL_DECISION | INTEGRATION | CONFIGURATION_CHANGE']
+  event_type varchar(100) [not null]
+  actor_type varchar(50) [not null, note: 'USER | SERVICE | INTEGRATION']
+  actor_user_id uuid [ref: > identity_access.user.id]
+  subject_module varchar(50)
+  subject_type varchar(100)
+  subject_id uuid [note: 'Identifier only']
+  scope_project_id uuid [ref: > project.project.id, note: 'Scope anchor for audit authorisation']
+  scope_external_entity_id uuid [ref: > identity_access.external_entity.id]
+  correlation_id uuid [not null]
+  outcome varchar(50) [not null, note: 'SUCCESS | DENIED | FAILED']
+  data_classification_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Audit access is authorised by category/scope/sensitivity']
+  previous_event_hash char(64) [note: 'Hash chain']
+  event_hash char(64) [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Append-only, tamper-evident formal audit record (Blueprint Section 18; TASK-033, TASK-073). Hash-chained; no update or delete by any application role. Delete policy: APPEND_ONLY.'
+}
+
+Table audit_activity.audit_event_attribute {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  audit_event_id uuid [not null, ref: > audit_activity.audit_event.id]
+  attribute_name varchar(100) [not null]
+  old_value text [note: 'Redacted per classification']
+  new_value text
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (audit_event_id, attribute_name) [unique]
+  }
+  Note: 'Old/new value pair captured with the event (the diff TASK-110 requires). Delete policy: APPEND_ONLY.'
+}
+
+Table audit_activity.audit_forwarding_record {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  audit_event_id uuid [not null, unique, ref: > audit_activity.audit_event.id]
+  forwarded_at timestamptz
+  invocation_id uuid [ref: > integration_monitoring.invocation.id]
+  status varchar(50) [not null, note: 'PENDING | FORWARDED | FAILED']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'SIEM forwarding state kept apart from the immutable event (PTBC-029). Delete policy: RETAIN.'
+}
+
+Table audit_activity.business_activity_entry {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  audit_event_id uuid [not null, unique, ref: > audit_activity.audit_event.id]
+  project_id uuid [ref: > project.project.id]
+  occurred_at timestamptz [not null]
+  actor_user_id uuid [ref: > identity_access.user.id]
+  activity_kind varchar(50) [not null]
+  summary_ar varchar(500) [not null, note: 'Rendered from a bilingual template']
+  summary_en varchar(500) [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'Derived, rebuildable business-readable projection of audit events (SCR-057); rebuild-and-diff must reproduce it exactly (TASK-073). Stored — D-8 register. Delete policy: RETAIN.'
+}
+
+TableGroup common {
+  common.outbox_message
+}
+
+TableGroup identity_access {
+  identity_access.department
+  identity_access.external_entity
+  identity_access.user
+  identity_access.role
+  identity_access.permission
+  identity_access.permission_profile
+  identity_access.permission_profile_version
+  identity_access.permission_profile_grant
+  identity_access.access_relationship
+}
+
+TableGroup master_data_config {
+  master_data_config.master_data_catalogue
+  master_data_config.master_data_item
+  master_data_config.configuration_family
+  master_data_config.configuration_version
+  master_data_config.configuration_value
+  master_data_config.governance_profile_setting
+  master_data_config.governance_profile_mandatory_field
+  master_data_config.materiality_band
+  master_data_config.impact_level_definition
+  master_data_config.probability_level_definition
+  master_data_config.risk_rating_definition
+  master_data_config.risk_matrix_cell
+  master_data_config.approval_authority_rule
+  master_data_config.notification_event_family
+  master_data_config.notification_channel_rule
+  master_data_config.notification_recipient_rule
+  master_data_config.participation_contribution_rule
+  master_data_config.evidence_requirement_rule
+  master_data_config.kpi_definition
+  master_data_config.kpi_policy_rule
+  master_data_config.field_classification_rule
+  master_data_config.report_allowlist_entry
+}
+
+TableGroup project {
+  project.project
+  project.project_intake
+  project.project_intake_milestone
+}
+
+TableGroup progress {
+  progress.reporting_cycle
+  progress.progress_submission
+  progress.published_progress_snapshot
+  progress.project_health_status
+  progress.periodic_update_session
+  progress.periodic_update_session_item
+}
+
+TableGroup schedule {
+  schedule.project_schedule
+  schedule.schedule_activity
+  schedule.schedule_dependency
+  schedule.project_baseline
+  schedule.baseline_activity
+  schedule.baseline_dependency
+  schedule.project_milestone
+  schedule.baseline_milestone
+  schedule.schedule_health_status
+}
+
+TableGroup project_task {
+  project_task.project_task
+  project_task.task_dependency
+  project_task.activity_execution_progress
+}
+
+TableGroup milestone {
+  milestone.milestone_achievement
+}
+
+TableGroup risk {
+  risk.risk
+  risk.risk_assessment_version
+  risk.risk_assessment_impact
+  risk.risk_treatment_action
+  risk.risk_acceptance
+}
+
+TableGroup management_concern {
+  management_concern.management_concern
+  management_concern.concern_impact
+  management_concern.concern_escalation
+}
+
+TableGroup change_request {
+  change_request.change_request
+  change_request.materiality_evaluation
+  change_request.change_authorization
+}
+
+TableGroup suspension {
+  suspension.suspension_request
+  suspension.active_suspension
+}
+
+TableGroup closure {
+  closure.completion_case
+  closure.closure_case
+  closure.readiness_check
+  closure.post_project_obligation
+}
+
+TableGroup approval {
+  approval.approval_instance
+  approval.approval_task
+  approval.approval_delegation
+}
+
+TableGroup document_management {
+  document_management.document
+  document_management.document_version
+  document_management.business_link
+  document_management.evidence_reference
+}
+
+TableGroup external_participation {
+  external_participation.external_update_request
+  external_participation.external_contribution
+  external_participation.external_contribution_field
+  external_participation.source_application
+}
+
+TableGroup financial_kpi {
+  financial_kpi.financial_source_mode
+  financial_kpi.financial_commitment
+  financial_kpi.financial_commitment_line
+  financial_kpi.financial_progress_update
+  financial_kpi.financial_progress_update_line
+  financial_kpi.published_financial_snapshot
+  financial_kpi.kpi_assignment
+  financial_kpi.kpi_target_version
+  financial_kpi.kpi_measurement
+}
+
+TableGroup notifications {
+  notifications.notification_template
+  notifications.notification_intent
+  notifications.notification_intent_parameter
+  notifications.notification_delivery
+  notifications.notification_preference
+}
+
+TableGroup dashboards {
+  dashboards.dashboard_definition
+  dashboards.dashboard_audience_role
+  dashboards.dashboard_widget
+  dashboards.user_dashboard_preference
+  dashboards.user_dashboard_widget_preference
+}
+
+TableGroup reports {
+  reports.report_definition
+  reports.report_audience_role
+  reports.report_parameter
+  reports.report_parameter_option
+  reports.saved_view
+  reports.saved_view_share
+  reports.saved_view_column
+  reports.saved_view_filter
+  reports.report_parameter_value
+  reports.report_job
+  reports.generated_output
+}
+
+TableGroup integration_monitoring {
+  integration_monitoring.integration_definition
+  integration_monitoring.integration_instance
+  integration_monitoring.sync_run
+  integration_monitoring.invocation
+  integration_monitoring.operational_alert
+}
+
+TableGroup audit_activity {
+  audit_activity.audit_event
+  audit_activity.audit_event_attribute
+  audit_activity.audit_forwarding_record
+  audit_activity.business_activity_entry
+}
