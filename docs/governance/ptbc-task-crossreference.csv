@@ -1,0 +1,53 @@
+Task ID,Task name,Phase,Wave (per TASK-003),PTBC ID,Link status,PTBC-gated value the task touches
+TASK-010,Ratify Cybersecurity Control Overlay Mapping (CS-001-033),P1,W0,PTBC-026,Present in workbook,Cybersecurity control matrix must link each of PTBC-026 to PTBC-030 to a control row
+TASK-010,Ratify Cybersecurity Control Overlay Mapping (CS-001-033),P1,W0,PTBC-027,Present in workbook,Cybersecurity control matrix must link each of PTBC-026 to PTBC-030 to a control row
+TASK-010,Ratify Cybersecurity Control Overlay Mapping (CS-001-033),P1,W0,PTBC-028,Present in workbook,Cybersecurity control matrix must link each of PTBC-026 to PTBC-030 to a control row
+TASK-010,Ratify Cybersecurity Control Overlay Mapping (CS-001-033),P1,W0,PTBC-029,Present in workbook,Cybersecurity control matrix must link each of PTBC-026 to PTBC-030 to a control row
+TASK-010,Ratify Cybersecurity Control Overlay Mapping (CS-001-033),P1,W0,PTBC-030,Present in workbook,Cybersecurity control matrix must link each of PTBC-026 to PTBC-030 to a control row
+TASK-013,Author Environment Variable Templates per Environment,P2,W1,PTBC-031,Required workbook edit,NAFATH_CLIENT_ID and the other Nafath variables exist only for the use case PTBC-031 confirms
+TASK-013,Author Environment Variable Templates per Environment,P2,W1,PTBC-036,Required workbook edit,"AD_LDAP_URL, AD_BIND_DN and AD_BIND_PASSWORD follow the directory model fixed by PTBC-036"
+TASK-020,Provision Managed AlloyDB for PostgreSQL with Backup & Encryption,P3,W1,PTBC-048,Present in workbook,"Backup frequency, point-in-time recovery window and retention period"
+TASK-023,"Define Backup, Restore & Disaster Recovery Runbook",P3,W1,PTBC-048,Present in workbook,RPO/RTO pass-fail criteria for the restore drill; retention period field in the runbook
+TASK-026,"Define Indexing Strategy for Query, Filter, Sort & Pagination Paths",P4,W1,PTBC-043,Required workbook edit,Index sizing and the query-plan review are run at the capacity figures PTBC-043 fixes
+TASK-027,Build Seed Data & Data-Integrity Validation Scripts,P4,W1,PTBC-009,Required workbook edit,Seed data includes materiality band values once they are approved
+TASK-027,Build Seed Data & Data-Integrity Validation Scripts,P4,W1,PTBC-017,Required workbook edit,Risk and issue scales are seeded generically; boundary values outstanding
+TASK-028,Integrate AD/LDAP and SSO Authentication,P5,W1,PTBC-036,Present in workbook,Directory authority and group/claim-to-role mapping
+TASK-029,Implement MFA & Privileged Access Controls,P5,W1,PTBC-027,Present in workbook,MFA/PAM policy and the step-up authentication trigger list
+TASK-033,Implement Authentication & Access Audit Logging,P5,W1,PTBC-011,Present in workbook,Which event classes are captured as formal Audit events
+TASK-033,Implement Authentication & Access Audit Logging,P5,W1,PTBC-029,Present in workbook,Which audit event classes are forwarded to SIEM
+TASK-034,Build Master Data & Configuration Service (FG-04 Backend),P6,W1,PTBC-001,Required workbook edit,FG-04 publishes the approval authority matrix as versioned configuration
+TASK-034,Build Master Data & Configuration Service (FG-04 Backend),P6,W1,PTBC-009,Required workbook edit,FG-04 publishes materiality band values per governance profile
+TASK-034,Build Master Data & Configuration Service (FG-04 Backend),P6,W1,PTBC-017,Required workbook edit,FG-04 publishes the probability/impact matrix that WF-06 and WF-07 pin per assessment
+TASK-034,Build Master Data & Configuration Service (FG-04 Backend),P6,W1,PTBC-024,Required workbook edit,FG-04 publishes KPI rule configuration and approved target versions
+TASK-034,Build Master Data & Configuration Service (FG-04 Backend),P6,W1,PTBC-025,Required workbook edit,FG-04 publishes financial condition and variance threshold configuration
+TASK-035,Build Shared Approval Framework (WF-11 Backend),P6,W2,PTBC-001,Required workbook edit,Approval routing and authority evaluation configuration
+TASK-041,Build Project Creation & Registration (WF-01 Backend),P7,W2,PTBC-002,Present in workbook,Whether an authorized fast-track rule allows Under Review to be skipped
+TASK-050,Build Milestone Management (WF-05 Backend),P8,W4,PTBC-006,Required workbook edit,Backend enforcement of the mandatory-evidence policy on milestone achievement
+TASK-051,Build Milestone Register & Achievement UI (WF-05 Frontend),P8,W4,PTBC-006,Present in workbook,Evidence mandatory per milestone category; until resolved the UI labels evidence optional-pending-policy
+TASK-051,Build Milestone Register & Achievement UI (WF-05 Frontend),P8,W4,PTBC-019,Present in workbook,Cited jointly with PTBC-006 as a single precondition on the same acceptance criterion
+TASK-052,Build Financial Progress & KPI Performance (WF-14 Backend),P8,W3,PTBC-024,Required workbook edit,KPI target versions and formulas; measurements pin the version effective when recorded
+TASK-052,Build Financial Progress & KPI Performance (WF-14 Backend),P8,W3,PTBC-025,Required workbook edit,Financial condition and variance thresholds over stored figures
+TASK-053,Build Financial & KPI UI (WF-14 Frontend),P8,W3,PTBC-024,Required workbook edit,KPI status rendering depends on the approved targets
+TASK-053,Build Financial & KPI UI (WF-14 Frontend),P8,W3,PTBC-025,Required workbook edit,Financial condition indicator depends on the approved thresholds
+TASK-055,Build Risk Management (WF-06 Backend),P9,W3,PTBC-017,Present in workbook,Versioned probability/impact matrix used to compute a risk rating
+TASK-056,Build Risk Register & Detail UI (WF-06 Frontend),P9,W3,PTBC-017,Required workbook edit,"The 5x5 heat-map renders the published matrix, never a hardcoded one"
+TASK-057,Build Issue & Challenge Management (WF-07 Backend),P9,W3,PTBC-017,Required workbook edit,Issues use the same multi-dimensional five-level impact scale as risks (ADR-011)
+TASK-059,Contract & Regression Tests for Risk/Issue Domain (WF-06/07),P9,W3,PTBC-017,Required workbook edit,Regression test that assessment ratings stay pinned to the matrix version at assessment time
+TASK-060,Build Change Request & Authorization (WF-08 Backend),P10,W4,PTBC-009,Required workbook edit,Materiality evaluation and the resulting approval route
+TASK-061,Build Change Request UI (WF-08 Frontend),P10,W4,PTBC-009,Required workbook edit,Materiality classification shown to the requester before submission
+TASK-066,Build External Entity Update & Review (WF-13 Backend),P11,W5,PTBC-003,Required workbook edit,Which external entities are eligible and who authorises their participation
+TASK-067,Build External Participation UI (WF-13 Frontend),P11,W5,PTBC-003,Required workbook edit,External workspace scope follows the eligibility and authority decision
+TASK-068,Integrate Nafath Identity Verification (If Confirmed In Scope),P11,W5,PTBC-003,Present in workbook,External eligibility and onboarding authority
+TASK-068,Integrate Nafath Identity Verification (If Confirmed In Scope),P11,W5,PTBC-031,Present in workbook,Nafath use case and the identity attributes stored
+TASK-073,Build Formal Audit & Activity Service (FG-06 Backend),P13,W1,PTBC-011,Required workbook edit,"The formal audit store captures the mandatory audit classes; append-only, not backfillable"
+TASK-075,Build Integration Monitoring Runtime (FG-05 Backend),P13,W2,PTBC-037,Required workbook edit,"Operational Alert raising depends on the availability, freshness and mismatch thresholds"
+TASK-083,Implement Logging Redaction & Sensitive-Data Handling Policy,P14,W1,PTBC-029,Required workbook edit,Redaction policy is drawn at the Audit/Log/SIEM boundary that PTBC-029 defines
+TASK-084,Author Platform Test Strategy & Coverage Policy,P15,W1,PTBC-040,Required workbook edit,The accessibility test layer is scored against the conformance level
+TASK-084,Author Platform Test Strategy & Coverage Policy,P15,W1,PTBC-043,Required workbook edit,The non-functional test layer is scored against the NFR thresholds
+TASK-086,Execute Performance & Load Testing Against Capacity Targets,P15,W6,PTBC-043,Present in workbook,p95 latency pass-fail thresholds and the concurrency figures
+TASK-087,Execute Platform-Wide Accessibility Audit,P15,W6,PTBC-040,Present in workbook,Conformance level the audit is scored against
+TASK-091,Implement Health Checks & Uptime Monitoring,P16,W6,PTBC-037,Required workbook edit,Uptime alert threshold and window
+TASK-092,Build Operational Dashboards & Alerting Thresholds (FG-05 Alerts),P16,W6,PTBC-037,Present in workbook,"Availability, freshness, queue backlog and reconciliation mismatch thresholds"
+TASK-092,Build Operational Dashboards & Alerting Thresholds (FG-05 Alerts),P16,W6,PTBC-046,Present in workbook,Cited jointly with PTBC-037 as a single precondition
+TASK-093,Document Operational SLAs & On-Call Runbook,P16,W6,PTBC-048,Required workbook edit,RPO 1 hour and RTO 4 to 6 hours are fixed inputs to the runbook; retention still open
+TASK-106,Build Change Materiality Band Routing,P4,not assigned (task added after TASK-003),PTBC-009,Required workbook edit,"Band boundary values for cost, schedule and scope routing"
