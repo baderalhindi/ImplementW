@@ -1,0 +1,23 @@
+{
+  "eventId": "6a7b8c9d-0e1f-4a2b-9c3d-4e5f6a7b8c9d",
+  "eventType": "Approval.ApprovalOutcomeRecorded",
+  "schemaVersion": 1,
+  "kind": "DOMAIN_EVENT",
+  "messageKey": "Approval.ApprovalOutcomeRecorded:apr-2f6b9c1d-8e4a-4c7b-9d2e-5f8a1b4c7d0e-outcome",
+  "idempotencyKey": "apr-2f6b9c1d-8e4a-4c7b-9d2e-5f8a1b4c7d0e-outcome",
+  "occurredAt": "2026-09-21T11:03:18Z",
+  "sourceModule": "Approval",
+  "correlationId": "8b7a6c5d-4e3f-4a2b-9c1d-0e9f8a7b6c5d",
+  "causationId": null,
+  "actor": { "actorType": "USER", "userId": "2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f" },
+  "subject": { "module": "ChangeRequest", "type": "ChangeRequest", "id": "b4c5d6e7-f8a9-4b0c-9d1e-2f3a4b5c6d7e", "revisionNo": 2 },
+  "scope": { "projectId": "7c9e6679-7425-40de-944b-e07fc1f90ae7", "departmentId": "3a0b6f4c-1e2d-4f5a-8b6c-7d8e9f0a1b2c", "externalEntityId": null },
+  "data": {
+    "approvalInstanceId": "2f6b9c1d-8e4a-4c7b-9d2e-5f8a1b4c7d0e",
+    "routingKey": "CHANGE_REQUEST_BAND_2",
+    "decision": "APPROVED",
+    "decidedAt": "2026-09-21T11:03:18Z",
+    "decidedByUserId": "2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
+    "authorityConfigurationVersionId": "e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b"
+  }
+}

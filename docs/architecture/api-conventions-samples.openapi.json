@@ -1,0 +1,1146 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PMPlatform API — TASK-009 sample endpoint definitions",
+    "version": "0.0.0-sample",
+    "description": "Three endpoint definitions written by hand to validate api-conventions.md before adoption (TASK-009 validation check). The real document is generated from code (ADR-002 §4.1, TASK-094); this file exists only to be linted by contract-check.py."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Project",
+      "description": "WF-01 Project Creation & Registration"
+    },
+    {
+      "name": "Risk",
+      "description": "WF-06 Risk Management"
+    },
+    {
+      "name": "ChangeRequest",
+      "description": "WF-08 Change Request & Authorization"
+    }
+  ],
+  "paths": {
+    "/api/v1/projects": {
+      "post": {
+        "operationId": "Project_CreateProject",
+        "tags": [
+          "Project"
+        ],
+        "summary": "Create a project draft",
+        "description": "Creates a Project in DRAFT (TASK-041). An external entity user may create a draft for their own entity (ADR-013); the Formal Project ID is issued on approval, so it is absent from the request and null on the response until then.",
+        "x-module": "Project",
+        "x-write-class": "sensitive",
+        "x-error-codes": [
+          "VALIDATION_FAILED",
+          "BUSINESS_RULE_VIOLATED",
+          "CONFIGURATION_MISSING",
+          "IDEMPOTENCY_KEY_REQUIRED",
+          "IDEMPOTENCY_KEY_REUSED",
+          "IDEMPOTENCY_KEY_IN_FLIGHT"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/CorrelationId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreateRequest"
+              },
+              "example": {
+                "title": {
+                  "text": "تطوير الواجهة البحرية — المرحلة الأولى",
+                  "lang": "ar"
+                },
+                "projectTypeItemId": "0f1c1c3a-9d8e-4b7a-9c9a-6b2e5a0d1f21",
+                "departmentId": "3a0b6f4c-1e2d-4f5a-8b6c-7d8e9f0a1b2c",
+                "externalEntityId": null,
+                "plannedStartDate": "2027-01-10",
+                "plannedEndDate": "2028-06-30",
+                "declaredBudgetSar": "12500000.00"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Draft created",
+            "headers": {
+              "Location": {
+                "$ref": "#/components/headers/Location"
+              },
+              "X-Correlation-Id": {
+                "$ref": "#/components/headers/X-Correlation-Id"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              },
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/Idempotent-Replayed"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                },
+                "example": {
+                  "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                  "formalProjectId": null,
+                  "title": {
+                    "text": "تطوير الواجهة البحرية — المرحلة الأولى",
+                    "lang": "ar"
+                  },
+                  "status": "DRAFT",
+                  "revisionNo": 1,
+                  "projectType": {
+                    "id": "0f1c1c3a-9d8e-4b7a-9c9a-6b2e5a0d1f21",
+                    "code": "INFRA",
+                    "name": {
+                      "ar": "بنية تحتية",
+                      "en": "Infrastructure"
+                    }
+                  },
+                  "departmentId": "3a0b6f4c-1e2d-4f5a-8b6c-7d8e9f0a1b2c",
+                  "externalEntityId": null,
+                  "plannedStartDate": "2027-01-10",
+                  "plannedEndDate": "2028-06-30",
+                  "declaredBudgetSar": "12500000.00",
+                  "legacyIntakeDate": null,
+                  "maskedFields": [],
+                  "createdAt": "2026-09-20T09:12:44Z",
+                  "updatedAt": "2026-09-20T09:12:44Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/risks": {
+      "get": {
+        "operationId": "Risk_ListRisks",
+        "tags": [
+          "Risk"
+        ],
+        "summary": "List risks (Risk Register, SCR-080)",
+        "description": "Paged, filtered, sorted collection. Data-scope authorization is applied server-side (TASK-030); a caller never sees a risk outside their scope and cannot infer its existence.",
+        "x-module": "Risk",
+        "x-sortable": [
+          "title",
+          "status",
+          "nextReviewDate",
+          "updatedAt"
+        ],
+        "x-filterable": [
+          "projectId",
+          "status",
+          "ratingCode",
+          "ownerUserId",
+          "nextReviewDateFrom",
+          "nextReviewDateTo",
+          "q"
+        ],
+        "x-error-codes": [
+          "VALIDATION_FAILED"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CorrelationId"
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Comma-separated set",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/RiskStatus"
+              }
+            }
+          },
+          {
+            "name": "ratingCode",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Comma-separated set of RiskRatingDefinition codes"
+          },
+          {
+            "name": "ownerUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "nextReviewDateFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "nextReviewDateTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Free-text search over title and description",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Default: updatedAt:desc",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][A-Za-z]*:(asc|desc)(,[a-z][A-Za-z]*:(asc|desc))*$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of risk summaries",
+            "headers": {
+              "X-Correlation-Id": {
+                "$ref": "#/components/headers/X-Correlation-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskPage"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "a3f1b2c4-5d6e-4f70-8a9b-0c1d2e3f4a5b",
+                      "projectId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                      "title": {
+                        "text": "Contractor mobilisation delay",
+                        "lang": "en"
+                      },
+                      "status": "OPEN",
+                      "currentRating": {
+                        "id": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+                        "code": "HIGH",
+                        "name": {
+                          "ar": "مرتفع",
+                          "en": "High"
+                        }
+                      },
+                      "ownerUserId": "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b",
+                      "nextReviewDate": "2026-10-15",
+                      "revisionNo": 3,
+                      "updatedAt": "2026-09-18T13:05:10Z"
+                    }
+                  ],
+                  "page": 1,
+                  "pageSize": 25,
+                  "totalCount": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests/{changeRequestId}/submit": {
+      "post": {
+        "operationId": "ChangeRequest_Submit",
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "Submit a change request for review",
+        "description": "Command endpoint: DRAFT or RETURNED → SUBMITTED (TASK-060). Starts the WF-11 approval (solution architecture §8.2 edge 22). The only way into SUBMITTED.",
+        "x-module": "ChangeRequest",
+        "x-write-class": "sensitive",
+        "x-error-codes": [
+          "INVALID_TRANSITION",
+          "TERMINAL_STATE",
+          "PRECONDITION_FAILED",
+          "BUSINESS_RULE_VIOLATED",
+          "CONFIGURATION_MISSING",
+          "IDEMPOTENCY_KEY_REQUIRED",
+          "IDEMPOTENCY_KEY_REUSED",
+          "IDEMPOTENCY_KEY_IN_FLIGHT"
+        ],
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatchOptional"
+          },
+          {
+            "$ref": "#/components/parameters/CorrelationId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestSubmitCommand"
+              },
+              "example": {
+                "submissionNote": {
+                  "text": "Cumulative scope change exceeds band 1; routed per materiality evaluation.",
+                  "lang": "en"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted; the returned representation is the new revision",
+            "headers": {
+              "X-Correlation-Id": {
+                "$ref": "#/components/headers/X-Correlation-Id"
+              },
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              },
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/Idempotent-Replayed"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                },
+                "example": {
+                  "id": "b4c5d6e7-f8a9-4b0c-9d1e-2f3a4b5c6d7e",
+                  "projectId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                  "title": {
+                    "text": "Extend phase 1 scope to include access road",
+                    "lang": "en"
+                  },
+                  "status": "SUBMITTED",
+                  "revisionNo": 2,
+                  "materialityBandNo": 2,
+                  "costImpactSar": "850000.00",
+                  "maskedFields": [],
+                  "submittedAt": "2026-09-20T09:40:02Z",
+                  "updatedAt": "2026-09-20T09:40:02Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "Client-generated UUID v4, one per logical operation, reused on retry (R-34).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "CorrelationId": {
+        "name": "X-Correlation-Id",
+        "in": "header",
+        "required": false,
+        "description": "UUID generated by the SPA per user action; the server generates one if absent or malformed and always echoes it (R-41).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": true,
+        "description": "ETag from the last GET of the resource. Required on PUT; 428 if absent, 412 if stale (R-21).",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "IfMatchOptional": {
+        "name": "If-Match",
+        "in": "header",
+        "required": false,
+        "description": "Optional on commands; honoured when present (R-21).",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "PageSize": {
+        "name": "pageSize",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 25
+        }
+      }
+    },
+    "headers": {
+      "X-Correlation-Id": {
+        "description": "Echo of the request correlation id (R-41)",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "ETag": {
+        "description": "Opaque concurrency token derived from PostgreSQL xmin (ERD D-16; R-21)",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Location": {
+        "description": "URL of the created resource",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Idempotent-Replayed": {
+        "description": "Present and true when the response was served from the idempotency store (R-37)",
+        "schema": {
+          "type": "boolean"
+        }
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "Error — RFC 9457 Problem Details with platform extensions (R-23)",
+        "headers": {
+          "X-Correlation-Id": {
+            "$ref": "#/components/headers/X-Correlation-Id"
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            },
+            "examples": {
+              "validation": {
+                "value": {
+                  "type": "urn:pmplatform:problem:validation-failed",
+                  "title": "Validation failed",
+                  "status": 400,
+                  "detail": "One or more request fields are invalid.",
+                  "instance": "/api/v1/projects",
+                  "code": "VALIDATION_FAILED",
+                  "correlationId": "1f2e3d4c-5b6a-4798-8a9b-0c1d2e3f4a5b",
+                  "idempotencyKey": "6d7c8b9a-0f1e-4d2c-9b3a-4c5d6e7f8a9b",
+                  "timestamp": "2026-09-20T09:12:44Z",
+                  "errors": [
+                    {
+                      "field": "plannedEndDate",
+                      "code": "DATE_BEFORE_START",
+                      "message": "plannedEndDate must be on or after plannedStartDate"
+                    },
+                    {
+                      "field": "title.lang",
+                      "code": "ENUM_VALUE",
+                      "message": "lang must be one of: ar, en"
+                    }
+                  ]
+                }
+              },
+              "conflict": {
+                "value": {
+                  "type": "urn:pmplatform:problem:invalid-transition",
+                  "title": "Invalid lifecycle transition",
+                  "status": 409,
+                  "detail": "ChangeRequest is APPROVED; submit is allowed from DRAFT or RETURNED.",
+                  "instance": "/api/v1/change-requests/b4c5d6e7-f8a9-4b0c-9d1e-2f3a4b5c6d7e/submit",
+                  "code": "INVALID_TRANSITION",
+                  "correlationId": "1f2e3d4c-5b6a-4798-8a9b-0c1d2e3f4a5b",
+                  "idempotencyKey": "6d7c8b9a-0f1e-4d2c-9b3a-4c5d6e7f8a9b",
+                  "timestamp": "2026-09-20T09:40:02Z"
+                }
+              },
+              "internal": {
+                "value": {
+                  "type": "urn:pmplatform:problem:internal-error",
+                  "title": "Internal error",
+                  "status": 500,
+                  "instance": "/api/v1/risks",
+                  "code": "INTERNAL_ERROR",
+                  "correlationId": "1f2e3d4c-5b6a-4798-8a9b-0c1d2e3f4a5b",
+                  "idempotencyKey": null,
+                  "timestamp": "2026-09-20T09:41:30Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ProblemDetails": {
+        "type": "object",
+        "description": "RFC 9457 Problem Details plus platform extensions. One schema for every non-2xx response on every endpoint (R-23).",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "instance",
+          "code",
+          "correlationId",
+          "idempotencyKey",
+          "timestamp"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^urn:pmplatform:problem:[a-z0-9-]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string",
+            "description": "Developer-facing, English, never echoes a user-supplied value (R-25)"
+          },
+          "instance": {
+            "type": "string",
+            "description": "Request path without query string"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$",
+            "description": "Invariant machine code; the SPA's localisation key"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "idempotencyKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Echo of the request Idempotency-Key; null when the request carried none"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "required": [
+          "field",
+          "code"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Dotted path into the request body, or the query/header parameter name"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]+$"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BilingualLabel": {
+        "type": "object",
+        "description": "ERD D-6 pair on the wire (R-17)",
+        "required": [
+          "ar",
+          "en"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "ar": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "en": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      },
+      "Narrative": {
+        "type": "object",
+        "description": "ERD D-7 narrative with its entry language (R-18)",
+        "required": [
+          "text",
+          "lang"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "ar",
+              "en"
+            ]
+          }
+        }
+      },
+      "MoneySar": {
+        "type": "string",
+        "description": "ERD D-5 money on the wire: decimal string, two fraction digits, SAR by type (R-16)",
+        "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+        "examples": [
+          "12500000.00"
+        ]
+      },
+      "MasterDataItemRef": {
+        "type": "object",
+        "description": "Embedded summary of a referenced master data item (R-14)",
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          }
+        }
+      },
+      "ProjectStatus": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "APPROVED_PLANNED",
+          "ACTIVE",
+          "SUSPENDED",
+          "COMPLETED",
+          "CLOSED"
+        ]
+      },
+      "RiskStatus": {
+        "type": "string",
+        "enum": [
+          "IDENTIFIED",
+          "ASSESSED",
+          "TREATMENT",
+          "MONITORING",
+          "CLOSED"
+        ]
+      },
+      "ChangeRequestStatus": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "APPROVED",
+          "REJECTED",
+          "IMPLEMENTATION",
+          "IMPLEMENTED",
+          "CLOSED",
+          "WITHDRAWN"
+        ]
+      },
+      "ProjectCreateRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "projectTypeItemId",
+          "departmentId",
+          "plannedStartDate",
+          "plannedEndDate"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "$ref": "#/components/schemas/Narrative"
+          },
+          "projectTypeItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalEntityId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "plannedStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plannedEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "declaredBudgetSar": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MoneySar"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ProjectDetail": {
+        "type": "object",
+        "required": [
+          "id",
+          "formalProjectId",
+          "title",
+          "status",
+          "revisionNo",
+          "projectType",
+          "departmentId",
+          "externalEntityId",
+          "plannedStartDate",
+          "plannedEndDate",
+          "declaredBudgetSar",
+          "legacyIntakeDate",
+          "maskedFields",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formalProjectId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Issued on approval (ADR-013); null while DRAFT"
+          },
+          "title": {
+            "$ref": "#/components/schemas/Narrative"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          },
+          "revisionNo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "projectType": {
+            "$ref": "#/components/schemas/MasterDataItemRef"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalEntityId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "plannedStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plannedEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "declaredBudgetSar": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MoneySar"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "legacyIntakeDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "ADR-014 intake marker; null for a normally registered project"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Property names withheld from this caller by ADR-010 classification (R-20)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RiskSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "title",
+          "status",
+          "currentRating",
+          "ownerUserId",
+          "nextReviewDate",
+          "revisionNo",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/Narrative"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RiskStatus"
+          },
+          "currentRating": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RiskRatingRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Rating of the current assessment version; null until assessed, never coerced (R-20)"
+          },
+          "ownerUserId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "nextReviewDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "revisionNo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RiskPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskSummary"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "totalCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ChangeRequestSubmitCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "submissionNote": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Narrative"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ChangeRequestDetail": {
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "title",
+          "status",
+          "revisionNo",
+          "materialityBandNo",
+          "costImpactSar",
+          "maskedFields",
+          "submittedAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/Narrative"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChangeRequestStatus"
+          },
+          "revisionNo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "materialityBandNo": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Resulting band of the latest materiality evaluation (TASK-106); server-computed, never client-supplied"
+          },
+          "costImpactSar": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MoneySar"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sensitive under ADR-010; omitted and listed in maskedFields for audiences without the classification"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "submittedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RiskRatingRef": {
+        "type": "object",
+        "description": "Embedded summary of the pinned risk rating definition (ERD RiskAssessmentVersion.risk_rating_definition_id; R-14)",
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          }
+        }
+      }
+    }
+  }
+}
