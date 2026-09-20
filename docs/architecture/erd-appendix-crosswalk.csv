@@ -1,0 +1,110 @@
+Ref,Appendix D row,Appendix D entity/business fact (to transcribe),Business fact (workbook restatement),Owning module,ERD table / column,Workbook basis,Coverage status
+F-001,,,Project master aggregate,Project,Project,TASK-008; TASK-041; §9,COVERED
+F-002,,,"Formal Project ID — one authoritative identifier, unique, issued on AHDA approval",Project,Project.formal_project_id,TASK-041; TASK-025; ADR-013,COVERED
+F-003,,,Project lifecycle state (Draft … Closed),Project,Project.lifecycle_state,TASK-041; TASK-062; TASK-063,COVERED
+F-004,,,Permanent intake marker with its date,Project,Project.legacy_intake_date,TASK-104; ADR-014,COVERED
+F-005,,,"Legacy intake declaration and opening position, entered once",Project,ProjectIntake; ProjectIntakeMilestone,TASK-104; §11.1,COVERED
+F-006,,,Governance profile assignment by rule with AHDA override; change is a governed change,Project,Project.governance_profile_item_id; Project.governance_profile_overridden; ChangeRequest.requested_governance_profile_item_id,TASK-105; TASK-042,COVERED
+F-007,,,Participation mode per project,Project,Project.participation_mode,TASK-034 amendment; ADR-013,COVERED
+F-008,,,Reporting cycle,Progress,ReportingCycle,TASK-044; S-2,COVERED — states/shape inferred
+F-009,,,"Progress submission — derived actual %, planned %, override with reason and retained calculated value",Progress,ProgressSubmission,TASK-044; ADR-009,COVERED
+F-010,,,"Published progress snapshot, immutable and distinct from current/live",Progress,PublishedProgressSnapshot,TASK-044,COVERED
+F-011,,,Overall Project Health — calculated and published by WF-02 only,Progress,ProjectHealthStatus.overall_health; PublishedProgressSnapshot.overall_health,ICD-03; TASK-044; TASK-069,COVERED
+F-012,,,Consolidated periodic update session with draft/resume and completion-time instrumentation,Progress,PeriodicUpdateSession; PeriodicUpdateSessionItem,TASK-107; §11.2,COVERED
+F-013,,,ProjectSchedule (Current Forecast container),Schedule,ProjectSchedule,TASK-008; TASK-046,COVERED
+F-014,,,ScheduleActivity hierarchy with validated dependencies,Schedule,ScheduleActivity; ScheduleDependency,TASK-046; TASK-047,COVERED
+F-015,,,"Approved Baseline — single Active at a time, approved via WF-11",Schedule,ProjectBaseline; BaselineActivity; BaselineDependency; BaselineMilestone,TASK-046; TASK-054,COVERED
+F-016,,,Declared Baseline — first-class type distinguishable from Approved,Schedule,ProjectBaseline.baseline_type; ProjectBaseline.project_intake_id,TASK-104; ADR-014,COVERED
+F-017,,,Schedule variance and Schedule Health against the Approved Baseline,Schedule,ScheduleHealthStatus,TASK-046; TASK-054,COVERED
+F-018,,,ProjectMilestone — one shared identity; WF-03 owns schedule representation and dates,Schedule,ProjectMilestone; BaselineMilestone,ICD-04; TASK-050,COVERED
+F-019,,,Planned-duration weighting on activities,Schedule,ScheduleActivity.planned_duration_days; BaselineActivity.planned_duration_days,ADR-009; TASK-025,COVERED
+F-020,,,Task,ProjectTask,ProjectTask,TASK-008; TASK-048,COVERED
+F-021,,,Subtask,ProjectTask,ProjectTask.parent_task_id,TASK-008; TASK-048,COVERED
+F-022,,,Task dependency and blocking rules; controlled reopen/cancel,ProjectTask,TaskDependency; ProjectTask.blocked_reason; ProjectTask.reopened_count,TASK-048,COVERED
+F-023,,,Activity Execution Progress aggregate,ProjectTask,ActivityExecutionProgress,TASK-048; §9,COVERED
+F-024,,,Task actual % maintained by owner; planned duration for weighting,ProjectTask,ProjectTask.actual_percent_complete; ProjectTask.planned_duration_days,ADR-009; TASK-048,COVERED
+F-025,,,MilestoneAchievement with revisions; correction never edits history,Milestone,MilestoneAchievement,TASK-050,COVERED
+F-026,,,Accepted Actual Achievement Date — WF-05-owned,Milestone,MilestoneAchievement.accepted_actual_achievement_date,ICD-04; TASK-050,COVERED
+F-027,,,Risk register entry,Risk,Risk,TASK-055,COVERED
+F-028,,,RiskAssessmentVersion pinned to the matrix version at assessment,Risk,RiskAssessmentVersion,TASK-055; TASK-059,COVERED
+F-029,,,Multi-dimensional five-level impact on a risk,Risk,RiskAssessmentImpact,ADR-011,COVERED
+F-030,,,Treatment / mitigation actions,Risk,RiskTreatmentAction,TASK-055,COVERED
+F-031,,,Risk acceptance with expiry — no permanent acceptance,Risk,RiskAcceptance,TASK-055 gate note,COVERED — states/shape inferred
+F-032,,,"Risk materialisation into an issue, queryable from both sides",Risk,ManagementConcern.originating_risk_id; Risk.materialised_at,TASK-055; edge 15,COVERED
+F-033,,,ManagementConcern — Issue and Challenge types,ManagementConcern,ManagementConcern,TASK-057,COVERED
+F-034,,,Calculated Severity distinct from user-set Priority,ManagementConcern,ManagementConcern.severity_item_id; ManagementConcern.priority_item_id,TASK-057; TASK-058,COVERED
+F-035,,,Multi-dimensional five-level impact on an issue — same dimension set as risks,ManagementConcern,ConcernImpact,ADR-011; TASK-057,COVERED
+F-036,,,Escalation producing exactly one NotificationIntent,ManagementConcern,ConcernEscalation,TASK-057,COVERED — states/shape inferred
+F-037,,,ChangeRequest lifecycle,ChangeRequest,ChangeRequest,TASK-060,COVERED
+F-038,,,Materiality band evaluation — highest band any dimension triggers; cumulative against active baseline,ChangeRequest,MaterialityEvaluation; MaterialityBand,TASK-106; ADR-016,COVERED
+F-039,,,"ChangeAuthorization — idempotent, scoped, version-pinned",ChangeRequest,ChangeAuthorization,TASK-060; TASK-065,COVERED
+F-040,,,"Suspension and resumption requests, approved separately from the lifecycle transition",Suspension,SuspensionRequest,TASK-062,COVERED
+F-041,,,ActiveSuspension — at most one per project,Suspension,ActiveSuspension,TASK-062; TASK-065,COVERED
+F-042,,,CompletionCase with readiness checks,Closure,CompletionCase; ReadinessCheck,TASK-063,COVERED
+F-043,,,ClosureCase — Closed is terminal,Closure,ClosureCase,TASK-063,COVERED
+F-044,,,ActualProjectCompletionDate,Closure,CompletionCase.actual_project_completion_date,TASK-063; §9,COVERED
+F-045,,,PostProjectObligation active after Completion until closure policy is satisfied,Closure,PostProjectObligation,TASK-063,COVERED
+F-046,,,"ApprovalInstance — subject reference, routing, idempotent outcome callback",Approval,ApprovalInstance,TASK-035; M-8,COVERED
+F-047,,,"ApprovalTask — decisions, reasons, escalation, decision-time revalidation",Approval,ApprovalTask,TASK-035; TASK-036,COVERED
+F-048,,,Delegation without expansion of authority,Approval,ApprovalDelegation; ApprovalTask.approval_delegation_id,TASK-035,COVERED
+F-049,,,Approval history,Approval,ApprovalTask,TASK-036 (SCR-115) — the ordered task set; no separate table,COVERED
+F-050,,,Document,DocumentManagement,Document,TASK-037,COVERED
+F-051,,,Immutable DocumentVersion,DocumentManagement,DocumentVersion,TASK-037,COVERED
+F-052,,,Malware scan state,DocumentManagement,DocumentVersion.scan_state,TASK-037,COVERED
+F-053,,,Attachment / BusinessLink — unlink never deletes,DocumentManagement,BusinessLink,TASK-037; Blueprint Section 13,COVERED
+F-054,,,EvidenceReference pinned to a version,DocumentManagement,EvidenceReference,TASK-037,COVERED
+F-055,,,ExternalUpdateRequest — AHDA-issued or entity-initiated,ExternalParticipation,ExternalUpdateRequest,TASK-066; ADR-013,COVERED — states/shape inferred
+F-056,,,"ExternalContribution — immutable submission, Accept/Return/Reject producing a new revision",ExternalParticipation,ExternalContribution; ExternalContributionField,TASK-066,COVERED
+F-057,,,"Source application with revalidation, idempotency and conflict state",ExternalParticipation,SourceApplication,TASK-066; TASK-067,COVERED
+F-058,,,Mandatory ENTITY-scope isolation,ExternalParticipation,ExternalUpdateRequest.external_entity_id; ExternalContribution.external_entity_id; AccessRelationship.external_entity_id,TASK-066; TASK-030,COVERED
+F-059,,,FinancialCommitment — approved commitment/budget versions,FinancialKpi,FinancialCommitment,TASK-052,COVERED
+F-060,,,Cost breakdown aligned to Etimad categories,FinancialKpi,FinancialCommitmentLine; FinancialProgressUpdateLine,TASK-108; ADR-008 extension,COVERED
+F-061,,,Financial progress — periodic current/live actuals and forecast,FinancialKpi,FinancialProgressUpdate,TASK-052,COVERED — states/shape inferred
+F-062,,,"Published Financial Snapshot, immutable",FinancialKpi,PublishedFinancialSnapshot,TASK-052; TASK-054,COVERED
+F-063,,,Financial source mode per project and per field,FinancialKpi,FinancialSourceMode,TASK-052 gate note; ADR-008,COVERED
+F-064,,,"Financial provenance — source, source reference, as-of date, entered-by on every financial record",FinancialKpi,FinancialCommitment.source_type; FinancialProgressUpdate.source_type; PublishedFinancialSnapshot.source_type,TASK-108; ADR-008 extension,COVERED
+F-065,,,"SAR-only money — no conversion, no rate source, no currency selector",FinancialKpi,FinancialCommitment.amount_sar; FinancialProgressUpdate.actual_expenditure_to_date_sar,ADR-008; D-5,COVERED
+F-066,,,KpiAssignment,FinancialKpi,KpiAssignment,TASK-052,COVERED
+F-067,,,Immutable approved KPI Target Version,FinancialKpi,KpiTargetVersion,TASK-052,COVERED
+F-068,,,KpiMeasurement pinned to its target version; Missing/Stale/N/A explicit,FinancialKpi,KpiMeasurement,TASK-052; TASK-053,COVERED
+F-069,,,"NotificationIntent — typed, received after commit",Notifications,NotificationIntent; NotificationIntentParameter,TASK-039; M-5,COVERED
+F-070,,,"NotificationDelivery — channel routing, retry, delivery receipt, history, read state",Notifications,NotificationDelivery,TASK-039; TASK-040; TASK-103,COVERED
+F-071,,,"Suppression, dead-letter and recipient preferences",Notifications,NotificationDelivery.suppression_reason; NotificationDelivery.dead_lettered_at; NotificationPreference,TASK-039; TASK-040; ADR-004,COVERED
+F-072,,,"Bilingual, mandatory notification templates",Notifications,NotificationTemplate,TASK-039; ADR-012,COVERED
+F-073,,,"DashboardDefinition — governed, bound to controlled projections",Dashboards,DashboardDefinition; DashboardWidget; DashboardAudienceRole,TASK-069; ADR-006,COVERED
+F-074,,,UserDashboardPreference — presentation-only personalisation,Dashboards,UserDashboardPreference; UserDashboardWidgetPreference,TASK-111; ADR-019,COVERED
+F-075,,,"ReportDefinition — parameterised, ten at launch",Reports,ReportDefinition; ReportParameter; ReportParameterOption; ReportAudienceRole,TASK-071; ADR-006,COVERED
+F-076,,,SavedView including shared controlled-explorer compositions,Reports,SavedView; SavedViewShare; SavedViewColumn; SavedViewFilter,TASK-071; TASK-112; ADR-019,COVERED
+F-077,,,ReportJob lifecycle with pinned parameters,Reports,ReportJob; ReportParameterValue,TASK-071,COVERED
+F-078,,,"Secure generated output, authorised at download time",Reports,GeneratedOutput,TASK-071,COVERED
+F-079,,,"User — internal, external and service principals; deactivation preserves attribution",IdentityAccess,User,TASK-031; ADR-013; Appendix A.1,COVERED
+F-080,,,Role R01–R08 — undeletable shipped defaults,IdentityAccess,Role,TASK-028; TASK-110,COVERED
+F-081,,,Protected permission catalogue,IdentityAccess,Permission,TASK-110; ADR-019,COVERED
+F-082,,,"AccessRelationship — scopes, per-project external grant with named sponsor, ends on closure or role change",IdentityAccess,AccessRelationship,TASK-025; TASK-031; ADR-013,COVERED
+F-083,,,PermissionProfile and its versions; assignments bound to a version,IdentityAccess,PermissionProfile; PermissionProfileVersion; PermissionProfileGrant,TASK-110; ADR-018; §11.3,COVERED
+F-084,,,Organization / Department / Entity structures,IdentityAccess,Department; ExternalEntity,TASK-025; TASK-031,COVERED
+F-085,,,Mobile number with E.164 validation and verification,IdentityAccess,User.mobile_number; User.mobile_verified_at,TASK-031 amendment; ADR-004,COVERED
+F-086,,,Nafath verification — minimum attributes only,IdentityAccess,User.nafath_verification_reference; User.nafath_verified_at,TASK-068; OQ-007,COVERED
+F-087,,,MasterDataItem with mandatory bilingual labels,MasterDataConfig,MasterDataCatalogue; MasterDataItem,TASK-034; ADR-012,COVERED
+F-088,,,"ConfigurationVersion — immutable published history, as-of resolution, fail closed",MasterDataConfig,ConfigurationFamily; ConfigurationVersion; ConfigurationValue,TASK-034; Blueprint Section 12,COVERED
+F-089,,,Governance profile definitions,MasterDataConfig,GovernanceProfileSetting; GovernanceProfileMandatoryField,TASK-105; ADR-015,COVERED
+F-090,,,Materiality band values per governance profile,MasterDataConfig,MaterialityBand,TASK-106; ADR-016,COVERED
+F-091,,,"Probability/impact matrix, level definitions and rating labels",MasterDataConfig,ImpactLevelDefinition; ProbabilityLevelDefinition; RiskRatingDefinition; RiskMatrixCell,ADR-011; PTBC-017; OQ-006,COVERED
+F-092,,,Approval authority matrix,MasterDataConfig,ApprovalAuthorityRule,TASK-034 amendment; OQ-005,COVERED
+F-093,,,"Notification matrices — family→channel, role→family, mandatory flag",MasterDataConfig,NotificationEventFamily; NotificationChannelRule; NotificationRecipientRule,TASK-034 amendment; ADR-004,COVERED
+F-094,,,Contribution types enabled per participation mode,MasterDataConfig,ParticipationContributionRule,TASK-034 amendment; ADR-013,COVERED
+F-095,,,Mandatory evidence per milestone category,MasterDataConfig,EvidenceRequirementRule,TASK-051; PTBC-006/019,COVERED
+F-096,,,KPI catalogue and versioned policy,MasterDataConfig,KpiDefinition; KpiPolicyRule,TASK-034; OQ-006,COVERED
+F-097,,,Field-level sensitivity classification and masking,MasterDataConfig,FieldClassificationRule,ADR-010,COVERED
+F-098,,,Controlled explorer allowlist,MasterDataConfig,ReportAllowlistEntry,TASK-071; TASK-112,COVERED
+F-099,,,IntegrationDefinition,IntegrationMonitoring,IntegrationDefinition,TASK-075,COVERED
+F-100,,,IntegrationInstance with Availability and Freshness as separate indicators,IntegrationMonitoring,IntegrationInstance,TASK-075; TASK-076,COVERED
+F-101,,,"Invocation with retry, dead-letter and correlation",IntegrationMonitoring,Invocation,TASK-075,COVERED
+F-102,,,SyncRun and reconciliation,IntegrationMonitoring,SyncRun,TASK-075,COVERED
+F-103,,,OperationalAlert — never auto-repair,IntegrationMonitoring,OperationalAlert,TASK-075; ADR-004,COVERED
+F-104,,,"AuditEvent — append-only, tamper-evident, with diff",AuditActivity,AuditEvent; AuditEventAttribute,TASK-033; TASK-073; Blueprint Section 18,COVERED
+F-105,,,SIEM forwarding of a defined subset,AuditActivity,AuditForwardingRecord,TASK-033; PTBC-029,COVERED
+F-106,,,"Business Activity projection — derived, rebuildable",AuditActivity,BusinessActivityEntry,TASK-073; TASK-074,COVERED
+F-107,,,"Transactional outbox for audit, notification and domain events",Common,OutboxMessage,M-5; M-6; TASK-073,COVERED
+F-108,,,Entry-language attribute on every narrative field,Common,Project.title_lang; Risk.description_lang; ProgressSubmission.narrative_lang,TASK-109; ADR-012 extension — 51 columns platform-wide,COVERED
+F-109,,,Audit columns on every table,Common,Project.id,"TASK-008; TASK-025 — created_at/by, updated_at/by on all 121 tables",COVERED
