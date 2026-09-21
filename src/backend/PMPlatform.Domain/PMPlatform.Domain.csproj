@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- L-1: references no other project. Entities, value objects and domain rules only. -->
+</Project>

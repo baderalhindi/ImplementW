@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- L-4: references Application; Infrastructure only from the composition root (Program.cs). -->
+  <ItemGroup>
+    <ProjectReference Include="../PMPlatform.Application/PMPlatform.Application.csproj" />
+    <ProjectReference Include="../PMPlatform.Infrastructure/PMPlatform.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+</Project>

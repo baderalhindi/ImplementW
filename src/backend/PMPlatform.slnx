@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="PMPlatform.Api/PMPlatform.Api.csproj" />
+    <Project Path="PMPlatform.Application/PMPlatform.Application.csproj" />
+    <Project Path="PMPlatform.Domain/PMPlatform.Domain.csproj" />
+    <Project Path="PMPlatform.Infrastructure/PMPlatform.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="PMPlatform.Tests.Unit/PMPlatform.Tests.Unit.csproj" />
+    <Project Path="PMPlatform.Tests.Integration/PMPlatform.Tests.Integration.csproj" />
+  </Folder>
+</Solution>
