@@ -1,0 +1,55 @@
+# CODEOWNERS — TASK-012. Every top-level directory of the monorepo maps to a reviewer group.
+# Order matters: the last matching pattern wins, so specific paths come after the tier they refine.
+#
+# Reviewer groups (GitHub teams; each must exist in the organisation that hosts this repository and
+# have write access, otherwise its lines do not resolve — docs/architecture/branching-strategy.md §4):
+#   @baderalhindi/architecture   Engagement Architect — ADRs, records, boundary tests, this file
+#   @baderalhindi/backend        Backend lead — src/backend
+#   @baderalhindi/frontend       Frontend lead — src/frontend
+#   @baderalhindi/database       Database lead — migrations, seed, database infrastructure
+#   @baderalhindi/devops         DevOps/Platform lead — CI, infra, toolchain pins
+#   @baderalhindi/security       Security Lead — identity adapters, secrets, workflows, protection rules
+#   @baderalhindi/qa             QA Lead — integration and e2e suites
+
+# Default: anything not matched below is reviewed by the Engagement Architect.
+*                                                   @baderalhindi/architecture
+
+# Repository root: toolchain pins and shared configuration
+/global.json                                        @baderalhindi/devops @baderalhindi/backend
+/.nvmrc                                             @baderalhindi/devops @baderalhindi/frontend
+/.editorconfig                                      @baderalhindi/backend @baderalhindi/frontend
+/.gitignore                                         @baderalhindi/devops
+/.gitattributes                                     @baderalhindi/devops
+/.vscode/                                           @baderalhindi/devops
+/CONTRIBUTING.md                                    @baderalhindi/architecture
+/README.md                                          @baderalhindi/architecture
+
+# .github: CI and repository governance
+/.github/                                           @baderalhindi/devops
+/.github/workflows/                                 @baderalhindi/devops @baderalhindi/security
+/.github/branch-protection/                         @baderalhindi/devops @baderalhindi/security
+/.github/CODEOWNERS                                 @baderalhindi/architecture @baderalhindi/security
+/.github/PULL_REQUEST_TEMPLATE.md                   @baderalhindi/architecture @baderalhindi/security
+
+# db: SQL seed and data-integrity scripts (TASK-027)
+/db/                                                @baderalhindi/database
+
+# docs: architecture records, ADRs, governance, planning
+/docs/                                              @baderalhindi/architecture
+/docs/architecture/cybersecurity-control-matrix.md  @baderalhindi/architecture @baderalhindi/security
+
+# infra: docker (TASK-014), environments (TASK-016), secrets templates (TASK-019), terraform (TASK-020/021)
+/infra/                                             @baderalhindi/devops
+/infra/secrets/                                     @baderalhindi/devops @baderalhindi/security
+/infra/terraform/database/                          @baderalhindi/devops @baderalhindi/database
+
+# src/backend: .NET modular monolith (ADR-002, ADR-003)
+/src/backend/                                       @baderalhindi/backend
+/src/backend/PMPlatform.Infrastructure/Identity/    @baderalhindi/backend @baderalhindi/security
+/src/backend/PMPlatform.Infrastructure/Persistence/Migrations/  @baderalhindi/backend @baderalhindi/database
+/src/backend/PMPlatform.Tests.Unit/Architecture/    @baderalhindi/architecture
+/src/backend/PMPlatform.Tests.Integration/          @baderalhindi/backend @baderalhindi/qa
+
+# src/frontend: React SPA
+/src/frontend/                                      @baderalhindi/frontend
+/src/frontend/e2e/                                  @baderalhindi/frontend @baderalhindi/qa
