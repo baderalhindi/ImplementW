@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- L-3: references Application and Domain; implements their interfaces. EF Core, migrations and outbound adapters live here only. -->
+  <ItemGroup>
+    <ProjectReference Include="../PMPlatform.Application/PMPlatform.Application.csproj" />
+    <ProjectReference Include="../PMPlatform.Domain/PMPlatform.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>

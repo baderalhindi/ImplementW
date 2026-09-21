@@ -1,0 +1,37 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+artifacts/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+npm-debug.log*
+
+# Playwright (TASK-085)
+src/frontend/test-results/
+src/frontend/playwright-report/
+
+# Secrets and environment files are never committed (TASK-013, TASK-019)
+.env
+.env.*
+!.env.example
+infra/secrets/*
+!infra/secrets/.gitkeep
+!infra/secrets/README.md
+appsettings.*.Local.json

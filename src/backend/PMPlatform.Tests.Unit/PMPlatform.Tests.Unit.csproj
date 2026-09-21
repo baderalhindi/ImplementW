@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../PMPlatform.Api/PMPlatform.Api.csproj" />
+    <ProjectReference Include="../PMPlatform.Application/PMPlatform.Application.csproj" />
+    <ProjectReference Include="../PMPlatform.Domain/PMPlatform.Domain.csproj" />
+    <ProjectReference Include="../PMPlatform.Infrastructure/PMPlatform.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Mono.Cecil" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>
