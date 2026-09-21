@@ -3,6 +3,7 @@
 Project-management platform for AHDA: a React SPA over an ASP.NET Core modular monolith on PostgreSQL (ADR-002), organised as 21 bounded modules (ADR-003).
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) — repository layout, toolchain, build and quality gates
+- [docs/architecture/branching-strategy.md](docs/architecture/branching-strategy.md) — branches, pull requests, code owners, branch protection
 - [docs/architecture/adrs/ADR-002-technology-stack.md](docs/architecture/adrs/ADR-002-technology-stack.md) — stack and directory scheme
 - [docs/architecture/solution-architecture.md](docs/architecture/solution-architecture.md) — ADR-003: tiers, modules, call rules, enforcement
 

@@ -1,12 +1,12 @@
-# Baseline CI (TASK-011). Both jobs are the required status checks on main.
+# Baseline CI (TASK-011). Both jobs are required status checks on the protected branches (TASK-012, .github/branch-protection/).
 # TASK-015 extends this with coverage, the OpenAPI contract check and the frontend unit tests.
 name: ci
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev, stage]
   push:
-    branches: [main]
+    branches: [main, dev, stage]
 
 permissions:
   contents: read

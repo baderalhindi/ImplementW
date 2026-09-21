@@ -7,7 +7,7 @@ This is the PMPlatform monorepo. Its layout is fixed by ADR-002 §6 (stack and d
 ```
 /
 ├── .editorconfig                  solution-wide editor and C# analyzer baseline
-├── .github/workflows/ci.yml       required status checks on main (backend, frontend)
+├── .github/                       CODEOWNERS, PR template, branch-protection ruleset, workflows (ci, pr-policy)
 ├── global.json                    .NET SDK pin
 ├── .nvmrc                         Node.js line for the frontend toolchain
 ├── db/seed/                       SQL seed and data-integrity scripts (TASK-027)
@@ -130,9 +130,21 @@ podman run --rm -v "$PWD/src/frontend:/w" -w /w node:24-alpine sh -c 'npm ci && 
 
 ## Branches, pull requests, and main
 
-- Branch names are `type/task-id-short-description`, e.g. `chore/task-011-repo-bootstrap` (ADR-002 §6.4; TASK-012 owns the full strategy, CODEOWNERS and the PR template).
-- `main` is protected: a pull request is required, and the `backend` and `frontend` jobs of `.github/workflows/ci.yml`
-  are **required status checks** that must pass before merge. Direct pushes and force-pushes to `main` are disabled.
+Full policy: `docs/architecture/branching-strategy.md` (TASK-012).
+
+- Trunk-based development: `main` is the trunk; every change is a short-lived branch off `main`, merged by pull
+  request and deleted on merge. Squash merge by default. `dev` and `stage` are pre-existing environment branches,
+  protected identically until TASK-018 retires them.
+- Branch names are `type/task-id-short-description`, e.g. `chore/task-011-repo-bootstrap`; `type` is one of
+  `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `build`, `perf`, `revert`, `hotfix`. The workbook's
+  Branch column is authoritative. One Task ID per branch.
+- Every PR is opened from `.github/PULL_REQUEST_TEMPLATE.md`: Task ID, description, test evidence and a security
+  checklist. The `pr-policy` check fails the PR until the Task ID is present, the evidence is filled in and every
+  checklist box is ticked.
+- `main` (and `dev`, `stage`) are protected by `.github/branch-protection/protected-branches.ruleset.json`:
+  a pull request with **one approving review** and a review from the directory's code owners
+  (`.github/CODEOWNERS`); the `backend`, `frontend` and `pr-policy` checks **must pass** on a branch that is current
+  with the target; no direct push, no force-push, no bypass.
 - Commit messages: imperative subject line, task id in the body or the PR title.
 
 ## Where things do not go
