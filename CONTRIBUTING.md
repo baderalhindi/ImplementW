@@ -32,9 +32,11 @@ This is the PMPlatform monorepo. Its layout is fixed by ADR-002 §6 (stack and d
     │   │   ├── Notifications/             email and SMS channel adapters
     │   │   └── Persistence/Migrations/    EF Core migrations
     │   ├── PMPlatform.Api/                controllers, middleware, health checks; Program.cs is the composition root
+    │   │   └── appsettings.Template.json  every environment variable by name, no values (TASK-013)
     │   ├── PMPlatform.Tests.Unit/         xUnit; Architecture/ holds the boundary tests (A-1 to A-6)
     │   └── PMPlatform.Tests.Integration/  xUnit against the containerised stack
     └── frontend/
+        ├── .env.example                   public, VITE_-prefixed variables by name, no values (TASK-013)
         ├── e2e/                           Playwright suite (TASK-085)
         └── src/
             ├── content/help/              in-app help content
@@ -114,6 +116,23 @@ podman run --rm -v "$PWD:/repo" -w /repo/src/backend mcr.microsoft.com/dotnet/sd
 podman run --rm -v "$PWD/src/frontend:/w" -w /w node:24-alpine sh -c 'npm ci && npm run lint && npm run build'
 ```
 
+## Local configuration
+
+Every environment variable the platform reads is named, with no value, in two templates that mirror the workbook's
+Environment and Secrets sheet (`docs/architecture/environment-and-secrets.csv`; record:
+`docs/architecture/environment-templates.md`). Copy, then fill only the values whose scope includes DEV:
+
+```sh
+cp src/backend/PMPlatform.Api/appsettings.Template.json src/backend/PMPlatform.Api/appsettings.Development.Local.json
+cp src/frontend/.env.example src/frontend/.env.local
+```
+
+Both copies are git-ignored and excluded from `dotnet publish`. `Program.cs` reads
+`appsettings.{Environment}.Local.json` after `appsettings.{Environment}.json`; an environment variable still
+overrides both, exactly as in SIT, UAT and PROD, where no value ever comes from a file. Keep the templates in
+step with the sheet — `python3 docs/architecture/env-template-check.py` fails on a missing or extra variable, a
+Secret-classified variable in the frontend template, or any value in either template.
+
 ## Quality baselines
 
 - **`.editorconfig`** is the single formatting and naming source for both tiers. C# rules are enforced at build
@@ -151,5 +170,6 @@ Full policy: `docs/architecture/branching-strategy.md` (TASK-012).
 
 - Business rules do not go in `PMPlatform.Api` (T-3) or in the SPA (T-6).
 - Nothing that means something to one domain goes in `Domain/Common` or `Application/Common` (M-10).
-- No secret, connection string or `.env` file is committed; `infra/secrets/` holds templates only.
+- No secret, connection string or `.env` file is committed; `infra/secrets/` holds templates only. A value
+  never goes into `appsettings.Template.json` or `.env.example` — not even a local one.
 - No `deleted_at`, `currency_code` or `row_version` column, anywhere (ERD D-3, D-5, D-16).
