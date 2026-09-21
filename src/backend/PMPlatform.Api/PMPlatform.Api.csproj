@@ -7,4 +7,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- TASK-013: the template is documentation and a developer's Local.json is a secret; neither ships. -->
+    <Content Update="appsettings.Template.json" CopyToPublishDirectory="Never" />
+    <Content Update="appsettings.*.Local.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
 </Project>
