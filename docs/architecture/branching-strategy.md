@@ -52,7 +52,9 @@ A template cannot enforce anything on its own, so `.github/workflows/pr-policy.y
 | 3 | `## Test evidence` has at least one line that is not blank, not a code fence and not an unfilled `… ->` template line | Test evidence (acceptance criterion) |
 | 4 | `## Security checklist` exists and has no unticked box | Security checklist (acceptance criterion) |
 
-HTML comments are stripped before the checks run, so the template's own guidance never satisfies them. PR text reaches the script only through environment variables, never interpolated into shell.
+HTML comments are stripped before the checks run, so the template's own guidance never satisfies them. PR text reaches the script only through environment variables, never interpolated into shell. The Task ID match is case-insensitive (`task-012` in a title passes); GitHub's auto-generated title from a branch name (`Chore/task 012 …`) does not, and is not meant to.
+
+**Bootstrap.** GitHub pre-fills a PR from `PULL_REQUEST_TEMPLATE.md` only once the file exists on the repository's default branch, while `pr-policy` runs from the PR's own head. A PR opened before the template has merged — including the PR that introduces it — therefore arrives with an empty description and fails with one error telling the author to paste the template in by hand. After the first merge the template is pre-filled.
 
 **The security checklist.** Seven items, each derived from a control the matrix already assigns and each worded so that it is either satisfied or does not apply to the change, which is why every box must be ticked rather than "ticked where relevant":
 
@@ -68,7 +70,7 @@ HTML comments are stripped before the checks run, so the template's own guidance
 
 ### 3.1 Verification of the check
 
-`pr-policy.sh` was run locally against nine bodies built from the template itself:
+`pr-policy.sh` was run locally against eleven cases built from the template itself:
 
 | Case | Result |
 | --- | --- |
@@ -80,7 +82,9 @@ HTML comments are stripped before the checks run, so the template's own guidance
 | Branch `chore/task-005-task-005-hosting-adr` (existing style, doubled task id in the description) | ok — conforms, if untidy |
 | Task ID absent from title and body | 1 failure |
 | Branch `dependabot/npm_and_yarn/…` | ok (naming exempt) |
-| Empty body; body with the checklist section deleted | 2 failures; 1 failure |
+| Empty or whitespace-only body | 1 failure ("description is empty — paste the template"), plus the Task ID failure if the title lacks one; the section checks are skipped as redundant |
+| Body with the checklist section deleted | 1 failure |
+| Task ID only in the title, lowercase (`task-012`) | ok |
 
 ## 4. Code ownership
 
@@ -152,4 +156,4 @@ The script creates the ruleset or updates the one with the same name, then print
 
 | Date | Change | By |
 | --- | --- | --- |
-| 2026-09-21 | Initial record. Trunk-based model on `main` with `type/task-nnn-description` branches (§2); `dev`/`stage` kept, protected identically, and scheduled for retirement at TASK-018 (§2.1). PR template with Task, Description, Test evidence and a seven-item Security checklist derived from CTL-08/11/18/27/41/42/43 and A-1/A-5/A-6; `pr-policy` required check enforcing it, verified against nine cases (§3). CODEOWNERS with seven reviewer groups covering every top-level directory (§4). Repository ruleset requiring 1 approval, code-owner review, thread resolution, `backend`/`frontend`/`pr-policy` checks, no force-push, no bypass, with `apply.sh` (§5). `ci.yml` triggers extended to `dev` and `stage`. Six residual items (§7). | Architecture (TASK-012) |
+| 2026-09-21 | Initial record. Trunk-based model on `main` with `type/task-nnn-description` branches (§2); `dev`/`stage` kept, protected identically, and scheduled for retirement at TASK-018 (§2.1). PR template with Task, Description, Test evidence and a seven-item Security checklist derived from CTL-08/11/18/27/41/42/43 and A-1/A-5/A-6; `pr-policy` required check enforcing it, verified against eleven cases (§3). CODEOWNERS with seven reviewer groups covering every top-level directory (§4). Repository ruleset requiring 1 approval, code-owner review, thread resolution, `backend`/`frontend`/`pr-policy` checks, no force-push, no bypass, with `apply.sh` (§5). `ci.yml` triggers extended to `dev` and `stage`. Six residual items (§7). | Architecture (TASK-012) |

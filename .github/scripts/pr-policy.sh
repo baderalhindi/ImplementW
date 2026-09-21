@@ -34,8 +34,16 @@ case "${PR_HEAD_REF:-}" in
 esac
 
 # 2. Task ID
-if ! printf '%s\n%s' "${PR_TITLE:-}" "$body" | grep -Eq 'TASK-[0-9]{3}'; then
+if ! printf '%s\n%s' "${PR_TITLE:-}" "$body" | grep -Eiq 'TASK-[0-9]{3}'; then
   fail "The PR title or body must name a Task ID (TASK-nnn)."
+fi
+
+# 3-4 need a description. GitHub pre-fills the template only once it exists on the default branch,
+# so a PR opened before then (including the one that introduces it) must paste it in by hand.
+if ! printf '%s\n' "$body" | grep -q '[^[:space:]]'; then
+  fail "The PR description is empty. Paste .github/PULL_REQUEST_TEMPLATE.md into the description and fill it in."
+  echo "pr-policy: $failures failure(s). See .github/PULL_REQUEST_TEMPLATE.md and docs/architecture/branching-strategy.md."
+  exit 1
 fi
 
 # 3. Test evidence: at least one non-blank line that is not a code fence and not an unfilled template line ("... ->").
