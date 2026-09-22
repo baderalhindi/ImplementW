@@ -191,7 +191,7 @@ Full policy: `docs/architecture/branching-strategy.md` (TASK-012).
   request and deleted on merge. Squash merge by default. `dev` and `stage` are pre-existing environment branches,
   protected identically until TASK-018 retires them.
 - Branch names are `type/task-id-short-description`, e.g. `chore/task-011-repo-bootstrap`; `type` is one of
-  `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `build`, `perf`, `revert`, `hotfix`. The workbook's
+  `feat`, `fix`, `chore`, `infra`, `sec`, `docs`, `test`, `release`, `refactor`, `ci`, `build`, `perf`, `revert`, `hotfix`. The workbook's
   Branch column is authoritative. One Task ID per branch.
 - Every PR is opened from `.github/PULL_REQUEST_TEMPLATE.md`: Task ID, description, test evidence and a security
   checklist. The `pr-policy` check fails the PR until the Task ID is present, the evidence is filled in and every

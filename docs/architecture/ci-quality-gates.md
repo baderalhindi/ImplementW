@@ -7,7 +7,7 @@
 | Record date | 2026-09-22 |
 | Status | **BUILT — PROVISIONAL ON APPLYING THE RULESET.** The three jobs are green on a clean checkout and red on each violation class (§4); making them required checks needs one authenticated `apply.sh` run that this environment cannot make (§6 F-1) |
 | Branch | `infra/task-015-ci-quality-gates` |
-| Deliverables | `.github/workflows/ci-quality-gates.yml` (renamed from `ci.yml`); `repo-checks` appended to `.github/branch-protection/protected-branches.ruleset.json`; Vitest in `src/frontend` (`package.json`, `vite.config.ts`, `src/App.test.tsx`); `CONTRIBUTING.md` "Quality baselines"; `branching-strategy.md` §5/§7/§8; this record |
+| Deliverables | `.github/workflows/ci-quality-gates.yml` (renamed from `ci.yml`); `repo-checks` appended to `.github/branch-protection/protected-branches.ruleset.json`; `branch_types` corrected in `.github/scripts/pr-policy.sh` (§3.5); Vitest in `src/frontend` (`package.json`, `vite.config.ts`, `src/App.test.tsx`); `CONTRIBUTING.md` "Quality baselines"; `branching-strategy.md` §5/§7/§8; this record |
 | Environment variables / secrets | None (workbook column) |
 | Workbook read | Google Sheet "Implementation work" (ID `1JQdbw-S9wAS247cP3PpSCme_D2NAPVnWzhXhvvxrtl0`), Implementation Plan sheet, TASK-015 row, as read 2026-09-22 |
 | Controlled sources and authority order | per TASK-001 |
@@ -97,6 +97,29 @@ tiers" cannot be a gate on one tier, so Vitest is added here:
 - `src/App.test.tsx` is one real test against the one component that exists. It is there so the runner is proven
   wired, not for coverage.
 
+### 3.5 `pr-policy.sh` rejected this task's own branch
+
+The first PR from this branch failed `pr-policy` on its name. The workbook's Branch column — which
+`CONTRIBUTING.md` calls authoritative — gives TASK-015 `infra/task-015-ci-quality-gates`, and `branch_types` in
+`.github/scripts/pr-policy.sh` (TASK-012) did not list `infra`. Nor `sec`, nor `release`. Across the 112 workbook
+rows the column uses seven prefixes:
+
+| Prefix | Rows | Was accepted |
+| --- | --- | --- |
+| `feat` | 57 | yes |
+| `chore` | 14 | yes |
+| `infra` | 11 | **no** — TASK-015 to TASK-018, 020 to 023, 090 to 092 |
+| `sec` | 10 | **no** |
+| `test` | 10 | yes |
+| `docs` | 5 | yes |
+| `release` | 5 | **no** |
+
+26 of 112 tasks could not open a compliant PR. The check was wrong, not the branch, so the three prefixes were
+added rather than the branch renamed — renaming would have put the repository at odds with the authoritative
+column for every one of those tasks. The seven unused prefixes TASK-012 chose (`fix`, `refactor`, `ci`, `build`,
+`perf`, `revert`, `hotfix`) are kept: they cover work that has no workbook row, which is exactly when a hotfix
+branch is needed. `branching-strategy.md` §2 and `CONTRIBUTING.md` now carry the same list.
+
 ## 4. Verification
 
 Run on the branch head, 2026-09-22. The backend ran on the local SDK (10.0.401, matching `global.json`); the
@@ -115,6 +138,9 @@ files.
 | 8 | **Analyzer violation** — an unnecessary `using` in `PMPlatform.Domain` | build **exit 1**, `IDE0005` reported as an error |
 | 9 | **Failing backend test** — `Assert.Equal(1, 2)` | `dotnet test` **exit 1** |
 | 10 | Working tree after 5–9 | clean; every violation file removed |
+| 11 | `pr-policy.sh` on this branch with a filled PR body (§3.5) | **exit 0** |
+| 12 | `pr-policy.sh` still rejects `infrastructure/task-015-x`, and an unticked checklist box | **exit 1** each |
+| 13 | `pr-policy.sh` accepts `sec/task-080-...` and `release/task-100-...` | exit 0 each |
 
 Rows 5 to 9 are the workbook's validation note ("open a deliberately broken PR and confirm the pipeline fails red")
 executed against the commands the workflow runs, one violation class at a time, which is stricter than one broken
@@ -151,4 +177,4 @@ from the built API — F-5.
 
 | Date | Change | By |
 | --- | --- | --- |
-| 2026-09-22 | Initial record. `ci.yml` renamed to `ci-quality-gates.yml` with `backend` and `frontend` extended and `repo-checks` added (§3.1, §3.2); `repo-checks` appended to the ruleset (§3.3); Vitest added to the frontend (§3.4); ten verification rows including five deliberate violations (§4); six findings (§6). | DevOps (TASK-015) |
+| 2026-09-22 | Initial record. `ci.yml` renamed to `ci-quality-gates.yml` with `backend` and `frontend` extended and `repo-checks` added (§3.1, §3.2); `repo-checks` appended to the ruleset (§3.3); Vitest added to the frontend (§3.4); thirteen verification rows including five deliberate violations (§4); `branch_types` corrected in `pr-policy.sh` (§3.5); six findings (§6). | DevOps (TASK-015) |

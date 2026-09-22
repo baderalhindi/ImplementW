@@ -21,7 +21,7 @@ TASK-012 fixes how change reaches `main`: the branch model, what a pull request 
 
 | Rule | Value |
 | --- | --- |
-| Branch name | `type/task-id-short-description` — `type` ∈ {`feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `build`, `perf`, `revert`, `hotfix`}; `task-id` is `task-nnn`; the description is lowercase kebab-case. Examples: `chore/task-011-repo-bootstrap`, `feat/task-046-schedule-baseline` |
+| Branch name | `type/task-id-short-description` — `type` ∈ {`feat`, `fix`, `chore`, `infra`, `sec`, `docs`, `test`, `release`, `refactor`, `ci`, `build`, `perf`, `revert`, `hotfix`} — the first seven are the ones the workbook's Branch column uses; the rest cover work that has no workbook row; `task-id` is `task-nnn`; the description is lowercase kebab-case. Examples: `chore/task-011-repo-bootstrap`, `feat/task-046-schedule-baseline` |
 | One task per branch | A branch carries one Task ID. A task that needs several PRs uses several branches with the same `task-nnn` and different descriptions |
 | Lifetime | Days, not weeks. A branch that falls behind `main` is rebased or merged forward by its author; the ruleset's `strict_required_status_checks_policy` refuses to merge a branch whose checks ran against an older `main` |
 | Merge | Squash by default, so that `main` carries one commit per PR with the Task ID in its subject. A merge commit is acceptable when the branch's individual commits are meaningful on their own |
@@ -156,5 +156,5 @@ The script creates the ruleset or updates the one with the same name, then print
 
 | Date | Change | By |
 | --- | --- | --- |
-| 2026-09-22 | TASK-015: `ci.yml` renamed to `ci-quality-gates.yml`; `repo-checks` appended to `required_status_checks` (§5); S-5 closed for the contract check and the frontend unit tests (§7). | DevOps (TASK-015) |
+| 2026-09-22 | TASK-015: `branch_types` in `pr-policy.sh` corrected to accept `infra`, `sec` and `release` (§2) — the workbook's authoritative Branch column uses all three, so 26 of 112 tasks could not open a compliant PR. `ci.yml` renamed to `ci-quality-gates.yml`; `repo-checks` appended to `required_status_checks` (§5); S-5 closed for the contract check and the frontend unit tests (§7). | DevOps (TASK-015) |
 | 2026-09-21 | Initial record. Trunk-based model on `main` with `type/task-nnn-description` branches (§2); `dev`/`stage` kept, protected identically, and scheduled for retirement at TASK-018 (§2.1). PR template with Task, Description, Test evidence and a seven-item Security checklist derived from CTL-08/11/18/27/41/42/43 and A-1/A-5/A-6; `pr-policy` required check enforcing it, verified against eleven cases (§3). CODEOWNERS with seven reviewer groups covering every top-level directory (§4). Repository ruleset requiring 1 approval, code-owner review, thread resolution, `backend`/`frontend`/`pr-policy` checks, no force-push, no bypass, with `apply.sh` (§5). `ci.yml` triggers extended to `dev` and `stage`. Six residual items (§7). | Architecture (TASK-012) |
