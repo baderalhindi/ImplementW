@@ -1,6 +1,6 @@
 <!--
 Branch: type/task-id-short-description (e.g. feat/task-046-schedule-baseline). The workbook's Branch column is authoritative.
-The `pr-policy` check fails this PR until: the title or body names a TASK-nnn, "Test evidence" has content,
+The `pr-policy` check (advisory — it reports, it does not block) goes red until: the title or body names a TASK-nnn, "Test evidence" has content,
 and every box under "Security checklist" is ticked. See docs/architecture/branching-strategy.md.
 -->
 

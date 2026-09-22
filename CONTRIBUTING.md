@@ -14,7 +14,7 @@ This is the PMPlatform monorepo. Its layout is fixed by ADR-002 §6 (stack and d
 ├── docs/                          architecture records, ADRs, governance, planning
 ├── infra/
 │   ├── docker/                    local stack — docker-compose (TASK-014)
-│   ├── environments/              per-environment configuration (TASK-016)
+│   ├── environments/              the four environments, their boundaries and provisioning scripts (TASK-016)
 │   ├── secrets/                   secret *templates* only; real values are never committed (TASK-019)
 │   └── terraform/                 network (TASK-021), database (TASK-020)
 └── src/
@@ -164,6 +164,19 @@ docker compose -f infra/docker/docker-compose.yml down -v              # reset: 
   before TASK-023/TASK-024 create the schema through EF Core migrations. It is deleted when they land.
   `python3 docs/architecture/local-stack-check.py` fails if any column drifts from `erd.dbml`.
 
+## Environments and promotion
+
+Full record, topology diagram and promotion path: `docs/architecture/environment-separation.md` (TASK-016).
+
+- Four environments — **DEV, SIT, UAT, PROD** — one GCP project each, in AHDA's own GCP organisation, all in the
+  named in-Kingdom region. Nothing is shared between them: not a project, network, database instance, secret-store
+  namespace, state bucket or service account. `infra/environments/environments.json` is the source of truth and
+  `docs/architecture/environment-separation-check.py` fails the PR if an edit shares one of them.
+- Promotion is **build → DEV → SIT → UAT → PROD**, one artifact promoted unchanged. G-1 is automatic; SIT needs the
+  DevOps Lead, UAT the QA and Security Leads, PROD the Delivery Lead and AHDA Sponsor with the approval recorded.
+- **Nothing is provisioned yet.** The region name and the tenancy owner are outstanding with AHDA IT (UGV-07), and
+  every provisioning script refuses to run until they and the written ADR-001 confirmation arrive.
+
 ## Quality baselines
 
 - **`.editorconfig`** is the single formatting and naming source for both tiers. C# rules are enforced at build
@@ -180,7 +193,7 @@ docker compose -f infra/docker/docker-compose.yml down -v              # reset: 
 - **CI gate** (`.github/workflows/ci-quality-gates.yml`; TASK-015, record: `docs/architecture/ci-quality-gates.md`) runs the commands above on every pull request
   and fails it on any violation, so nothing merges unchecked. Three jobs, each capped at ten minutes:
   `backend` (restore, `-warnaserror` build with the analyzers, unit tests), `frontend` (`npm ci`, lint,
-  format, `tsc -b --noEmit`, Vitest, build) and `repo-checks` (the four `python3 docs/architecture/*-check.py`
+  format, `tsc -b --noEmit`, Vitest, build) and `repo-checks` (the five `python3 docs/architecture/*-check.py`
   scripts, standard library only). Integration tests need the containerised stack and are not in this gate.
 
 ## Branches, pull requests, and main
@@ -194,11 +207,11 @@ Full policy: `docs/architecture/branching-strategy.md` (TASK-012).
   `feat`, `fix`, `chore`, `infra`, `sec`, `docs`, `test`, `release`, `refactor`, `ci`, `build`, `perf`, `revert`, `hotfix`. The workbook's
   Branch column is authoritative. One Task ID per branch.
 - Every PR is opened from `.github/PULL_REQUEST_TEMPLATE.md`: Task ID, description, test evidence and a security
-  checklist. The `pr-policy` check fails the PR until the Task ID is present, the evidence is filled in and every
-  checklist box is ticked.
+  checklist. The `pr-policy` check goes red until the Task ID is present, the evidence is filled in and every
+  checklist box is ticked. It is **advisory** — red is a review finding, not a merge block (branching-strategy §5.1).
 - `main` (and `dev`, `stage`) are protected by `.github/branch-protection/protected-branches.ruleset.json`:
   a pull request with **one approving review** and a review from the directory's code owners
-  (`.github/CODEOWNERS`); the `backend`, `frontend`, `repo-checks` and `pr-policy` checks **must pass** on a branch that is current
+  (`.github/CODEOWNERS`); the `backend`, `frontend` and `repo-checks` checks **must pass** on a branch that is current
   with the target; no direct push, no force-push, no bypass.
 - Commit messages: imperative subject line, task id in the body or the PR title.
 
