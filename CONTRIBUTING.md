@@ -133,6 +133,30 @@ overrides both, exactly as in SIT, UAT and PROD, where no value ever comes from 
 step with the sheet — `python3 docs/architecture/env-template-check.py` fails on a missing or extra variable, a
 Secret-classified variable in the frontend template, or any value in either template.
 
+## Local development stack
+
+`docker compose up` gives you PostgreSQL, the API and the frontend dev server with seeded test data — no cloud
+access needed (TASK-014; record: `docs/architecture/local-development-environment.md`).
+
+```sh
+docker compose -f infra/docker/docker-compose.yml up --build --wait   # from the repository root
+curl http://localhost:5080/health                                      # Healthy once the API has reached the database
+open http://localhost:5173                                             # frontend, hot-reloading from src/frontend
+docker compose -f infra/docker/docker-compose.yml down -v              # reset: drops the volume, re-seeds on next up
+```
+
+- `infra/docker/smoke-test.sh` is the acceptance check: clean state, build, up, `/health` 200, frontend 200, and
+  one active local user per role R01–R08.
+- Every value in `docker-compose.yml` is a local default and non-secret; the database password and
+  `JWT_SIGNING_KEY` are labelled as such. **No SIT/UAT/PROD value ever goes in that file** — those are injected
+  from the secret store (TASK-016, TASK-019), and the templates above still hold names only.
+- The seed creates `local.r01` … `local.r08`, one per canonical role, each bound to that role's shipped-default
+  permission profile version. They are data, not accounts: there is no credential and no local sign-in path until
+  TASK-028.
+- `infra/docker/postgres/init/01-schema.sql` is a **bridge** — nine ERD tables so the seed has somewhere to go
+  before TASK-023/TASK-024 create the schema through EF Core migrations. It is deleted when they land.
+  `python3 docs/architecture/local-stack-check.py` fails if any column drifts from `erd.dbml`.
+
 ## Quality baselines
 
 - **`.editorconfig`** is the single formatting and naming source for both tiers. C# rules are enforced at build
