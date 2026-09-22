@@ -135,8 +135,10 @@ Secret-classified variable in the frontend template, or any value in either temp
 
 ## Local development stack
 
-`docker compose up` gives you PostgreSQL, the API and the frontend dev server with seeded test data — no cloud
-access needed (TASK-014; record: `docs/architecture/local-development-environment.md`).
+The stack gives you PostgreSQL, the API and the frontend dev server with seeded test data — no cloud
+access needed (TASK-014; record: `docs/architecture/local-development-environment.md`). The compose file lives
+under `infra/docker/`, so every command names it with `-f`; a bare `docker compose up` from the repository root
+reports `no configuration file provided: not found`.
 
 ```sh
 docker compose -f infra/docker/docker-compose.yml up --build --wait   # from the repository root
@@ -145,6 +147,10 @@ open http://localhost:5173                                             # fronten
 docker compose -f infra/docker/docker-compose.yml down -v              # reset: drops the volume, re-seeds on next up
 ```
 
+- To drop the `-f`, point Compose at the file once per shell with `export
+  COMPOSE_FILE=infra/docker/docker-compose.yml`, or put that line in a root `.env` — Compose reads `.env` from
+  the working directory for its own settings. That file is git-ignored, so the setting stays yours; the commands
+  above are the ones that work on any checkout.
 - `infra/docker/smoke-test.sh` is the acceptance check: clean state, build, up, `/health` 200, frontend 200, and
   one active local user per role R01–R08.
 - Every value in `docker-compose.yml` is a local default and non-secret; the database password and
