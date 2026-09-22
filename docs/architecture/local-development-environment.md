@@ -49,6 +49,12 @@ takes ten minutes to rewrite does not do that.
 | `api` | built from `infra/docker/api.Dockerfile` — SDK 10.0 publish stage, `aspnet:10.0` runtime stage, non-root `app` user | `5080` → 8080 (5080 matches `launchSettings.json`) | `curl --fail /health` |
 | `frontend` | built from `infra/docker/frontend.Dockerfile` — `node:24-slim`, Vite dev server with `src/frontend` bind-mounted | `5173` | `fetch('/')` |
 
+The compose project is **`ahda`**, and the three containers are `AHDA-postgres`, `AHDA-api` and `AHDA-frontend`,
+so the stack is identifiable as AHDA in `docker ps` and in any Docker UI. Compose rejects an uppercase project
+name (`must consist only of lowercase alphanumeric characters...`), which is why the project itself is lowercase
+while the container names — which carry no such restriction — are not. The project name also prefixes the
+volumes (`ahda_postgres-data`, `ahda_frontend-node-modules`) and the network (`ahda_default`).
+
 Each published port is overridable (`PMPLATFORM_API_PORT`, `PMPLATFORM_FRONTEND_PORT`, `PMPLATFORM_POSTGRES_PORT`)
 for a developer who already has something on 5432. `api` starts only once `postgres` is healthy
 (`depends_on: condition: service_healthy`), so `--wait` returns when the whole stack is actually usable, not when

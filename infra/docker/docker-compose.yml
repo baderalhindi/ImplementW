@@ -13,10 +13,12 @@
 #
 # Record: docs/architecture/local-development-environment.md
 
-name: pmplatform
+# Project name must be lowercase (Compose rejects "AHDA"); the containers carry the uppercase AHDA- names.
+name: ahda
 
 services:
   postgres:
+    container_name: AHDA-postgres
     # Same major as every environment (ADR-002 §4.1: PostgreSQL 17, fallback 16 fixed at TASK-020).
     image: postgres:17
     environment:
@@ -37,6 +39,7 @@ services:
       start_period: 10s
 
   api:
+    container_name: AHDA-api
     build:
       context: ../..
       dockerfile: infra/docker/api.Dockerfile
@@ -64,6 +67,7 @@ services:
       start_period: 10s
 
   frontend:
+    container_name: AHDA-frontend
     build:
       context: ../..
       dockerfile: infra/docker/frontend.Dockerfile
