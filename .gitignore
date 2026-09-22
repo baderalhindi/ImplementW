@@ -35,3 +35,6 @@ infra/secrets/*
 !infra/secrets/.gitkeep
 !infra/secrets/README.md
 appsettings.*.Local.json
+
+# Docker Desktop tutorial clone, not part of this repository
+/welcome-to-docker/

@@ -1,0 +1,12 @@
+# Build context for infra/docker/*.Dockerfile is the repository root (TASK-014). Send only what the images need.
+*
+!global.json
+!src/backend/
+!src/frontend/
+src/backend/**/bin/
+src/backend/**/obj/
+src/backend/**/appsettings.*.Local.json
+src/frontend/node_modules/
+src/frontend/dist/
+src/frontend/.env
+src/frontend/.env.*

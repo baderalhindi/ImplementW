@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PMPlatform.Infrastructure.Persistence;
 
 namespace PMPlatform.Infrastructure;
 
@@ -13,6 +14,9 @@ public static class DependencyInjection
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+
+        services.AddHealthChecks().AddCheck<PostgreSqlHealthCheck>("postgresql");
+
         return services;
     }
 }

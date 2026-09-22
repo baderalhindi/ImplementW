@@ -1,0 +1,92 @@
+# Local development stack (TASK-014): PostgreSQL 17 + PMPlatform.Api + Vite dev server, with seeded test data.
+#
+#   docker compose -f infra/docker/docker-compose.yml up --build --wait     # from the repository root
+#   curl -i http://localhost:5080/health                                     # 200 "Healthy" once the API has reached the database
+#   open  http://localhost:5173                                              # frontend
+#   docker compose -f infra/docker/docker-compose.yml down -v               # reset: drops the database volume, re-seeds on next up
+#
+# Every value below is a LOCAL DEFAULT and non-secret. Nothing here is valid outside this compose network: the
+# database is reachable only through the published port, the JWT key is a labelled placeholder, and no SIT/UAT/PROD
+# value is ever written here (those are injected from the secret store — TASK-016, TASK-019). The variables are the
+# DEV-scoped rows of the Environment and Secrets sheet (docs/architecture/environment-templates.md §3.2) that this
+# stack can satisfy; the rest stay unset and the API starts without them.
+#
+# Record: docs/architecture/local-development-environment.md
+
+# Project name must be lowercase (Compose rejects "AHDA"); the containers carry the uppercase AHDA- names.
+name: ahda
+
+services:
+  postgres:
+    container_name: AHDA-postgres
+    # Same major as every environment (ADR-002 §4.1: PostgreSQL 17, fallback 16 fixed at TASK-020).
+    image: postgres:17
+    environment:
+      POSTGRES_DB: pmplatform
+      POSTGRES_USER: pmplatform
+      POSTGRES_PASSWORD: pmplatform # local default; never a real credential
+    ports:
+      - "${PMPLATFORM_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Runs once, in name order, when the data volume is empty: 01 bridge schema, 02 roles R01–R08, 03 local users.
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=pmplatform --dbname=pmplatform"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  api:
+    container_name: AHDA-api
+    build:
+      context: ../..
+      dockerfile: infra/docker/api.Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # Sheet names, verbatim (TASK-013 R-1): the API reads configuration["DB_CONNECTION_STRING"], and so on.
+      DB_CONNECTION_STRING: Host=postgres;Port=5432;Database=pmplatform;Username=pmplatform;Password=pmplatform
+      JWT_SIGNING_KEY: local-development-only-signing-key-not-valid-outside-docker-compose
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      APP_BASE_URL: http://localhost:5173
+      LOG_LEVEL: Information
+      APM_ENVIRONMENT_TAG: dev
+    ports:
+      - "${PMPLATFORM_API_PORT:-5080}:8080" # 5080 matches Properties/launchSettings.json
+    healthcheck:
+      # /health is Healthy only when the API has opened a connection to postgres and run a query
+      # (PMPlatform.Infrastructure/Persistence/PostgreSqlHealthCheck.cs).
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  frontend:
+    container_name: AHDA-frontend
+    build:
+      context: ../..
+      dockerfile: infra/docker/frontend.Dockerfile
+    environment:
+      # The two .env.example rows a local stack can fill (TASK-013 R-4); SSO rows wait for TASK-028.
+      VITE_APP_BASE_URL: http://localhost:5173
+      VITE_APM_ENVIRONMENT_TAG: dev
+    ports:
+      - "${PMPLATFORM_FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ../../src/frontend:/repo/src/frontend
+      - frontend-node-modules:/repo/src/frontend/node_modules
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5173/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  postgres-data:
+  frontend-node-modules:
