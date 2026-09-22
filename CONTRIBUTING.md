@@ -7,7 +7,7 @@ This is the PMPlatform monorepo. Its layout is fixed by ADR-002 §6 (stack and d
 ```
 /
 ├── .editorconfig                  solution-wide editor and C# analyzer baseline
-├── .github/                       CODEOWNERS, PR template, branch-protection ruleset, workflows (ci, pr-policy)
+├── .github/                       CODEOWNERS, PR template, branch-protection ruleset, workflows (ci-quality-gates, pr-policy)
 ├── global.json                    .NET SDK pin
 ├── .nvmrc                         Node.js line for the frontend toolchain
 ├── db/seed/                       SQL seed and data-integrity scripts (TASK-027)
@@ -95,7 +95,7 @@ Backend — the acceptance bar is zero warnings; `Directory.Build.props` makes e
 
 ```sh
 dotnet build src/backend -warnaserror
-dotnet test src/backend
+dotnet test src/backend/PMPlatform.Tests.Unit
 ```
 
 Frontend:
@@ -106,6 +106,7 @@ npm ci
 npm run lint          # ESLint: typescript-eslint strict + stylistic (type-checked), react-hooks, react-refresh
 npm run format:check  # Prettier (npm run format to fix)
 npm run typecheck     # tsc -b --noEmit, strict
+npm test              # Vitest, jsdom; src/**/*.test.{ts,tsx} (npm run test:watch while developing)
 npm run build         # tsc -b && vite build
 ```
 
@@ -113,7 +114,7 @@ Without a local SDK, both run unchanged inside the official images:
 
 ```sh
 podman run --rm -v "$PWD:/repo" -w /repo/src/backend mcr.microsoft.com/dotnet/sdk:10.0 sh -c 'dotnet build -warnaserror && dotnet test --no-build'
-podman run --rm -v "$PWD/src/frontend:/w" -w /w node:24-alpine sh -c 'npm ci && npm run lint && npm run build'
+podman run --rm -v "$PWD/src/frontend:/w" -w /w node:24-alpine sh -c 'npm ci && npm run lint && npm test && npm run build'
 ```
 
 ## Local configuration
@@ -176,6 +177,11 @@ docker compose -f infra/docker/docker-compose.yml down -v              # reset: 
   does not list (A-6). **To add an edge, revise ADR-003 §8.2 first, then `ModuleRegistry.cs`.**
 - **Frontend**: TypeScript `strict` plus `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`; only
   `VITE_`-prefixed variables reach the bundle (T-1); no database driver may be added to `package.json`.
+- **CI gate** (`.github/workflows/ci-quality-gates.yml`; TASK-015, record: `docs/architecture/ci-quality-gates.md`) runs the commands above on every pull request
+  and fails it on any violation, so nothing merges unchecked. Three jobs, each capped at ten minutes:
+  `backend` (restore, `-warnaserror` build with the analyzers, unit tests), `frontend` (`npm ci`, lint,
+  format, `tsc -b --noEmit`, Vitest, build) and `repo-checks` (the four `python3 docs/architecture/*-check.py`
+  scripts, standard library only). Integration tests need the containerised stack and are not in this gate.
 
 ## Branches, pull requests, and main
 
@@ -192,7 +198,7 @@ Full policy: `docs/architecture/branching-strategy.md` (TASK-012).
   checklist box is ticked.
 - `main` (and `dev`, `stage`) are protected by `.github/branch-protection/protected-branches.ruleset.json`:
   a pull request with **one approving review** and a review from the directory's code owners
-  (`.github/CODEOWNERS`); the `backend`, `frontend` and `pr-policy` checks **must pass** on a branch that is current
+  (`.github/CODEOWNERS`); the `backend`, `frontend`, `repo-checks` and `pr-policy` checks **must pass** on a branch that is current
   with the target; no direct push, no force-push, no bypass.
 - Commit messages: imperative subject line, task id in the body or the PR title.
 
