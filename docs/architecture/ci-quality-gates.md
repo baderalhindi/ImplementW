@@ -177,4 +177,5 @@ from the built API — F-5.
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-22 | A fourth job, `terraform`, added by TASK-017 (`fmt -check`, `validate` on the four environment roots with the committed lock files read-only, Trivy config scan at HIGH/CRITICAL) and appended to the ruleset's required checks alongside `backend`, `frontend` and `repo-checks`; `repo-checks` now runs six scripts, not four — TASK-016 added the fifth and TASK-017 the sixth. §3.1, §3.3 and §4 of this record describe the three-job shape and are superseded on that point by `docs/architecture/infrastructure-as-code.md` §3.6. | Infrastructure (TASK-017) |
 | 2026-09-22 | Initial record. `ci.yml` renamed to `ci-quality-gates.yml` with `backend` and `frontend` extended and `repo-checks` added (§3.1, §3.2); `repo-checks` appended to the ruleset (§3.3); Vitest added to the frontend (§3.4); thirteen verification rows including five deliberate violations (§4); `branch_types` corrected in `pr-policy.sh` (§3.5); six findings (§6). | DevOps (TASK-015) |

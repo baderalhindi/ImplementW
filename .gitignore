@@ -36,5 +36,20 @@ infra/secrets/*
 !infra/secrets/README.md
 appsettings.*.Local.json
 
+# Terraform working files (TASK-017). .terraform.lock.hcl is committed on purpose: it is what
+# makes a plan reproducible between a reviewer's machine and CI.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
 # Docker Desktop tutorial clone, not part of this repository
 /welcome-to-docker/

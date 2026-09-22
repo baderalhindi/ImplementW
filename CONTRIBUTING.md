@@ -16,7 +16,7 @@ This is the PMPlatform monorepo. Its layout is fixed by ADR-002 §6 (stack and d
 │   ├── docker/                    local stack — docker-compose (TASK-014)
 │   ├── environments/              the four environments, their boundaries and provisioning scripts (TASK-016)
 │   ├── secrets/                   secret *templates* only; real values are never committed (TASK-019)
-│   └── terraform/                 network (TASK-021), database (TASK-020)
+│   └── terraform/                 the IaC: five modules, a composition, four environment roots (TASK-017)
 └── src/
     ├── backend/
     │   ├── PMPlatform.slnx
@@ -176,6 +176,10 @@ Full record, topology diagram and promotion path: `docs/architecture/environment
   DevOps Lead, UAT the QA and Security Leads, PROD the Delivery Lead and AHDA Sponsor with the approval recorded.
 - **Nothing is provisioned yet.** The region name and the tenancy owner are outstanding with AHDA IT (UGV-07), and
   every provisioning script refuses to run until they and the written ADR-001 confirmation arrive.
+- **Everything inside an environment is Terraform** — network, compute, managed database, object storage, WAF and
+  load balancer (`infra/terraform/`, TASK-017; record: `docs/architecture/infrastructure-as-code.md`). Nothing is
+  created by hand, no hosting value is written into the Terraform that `infra/environments/environments.json`
+  already holds, and `terraform plan` refuses while the region, the tenancy or the DNS zone are unnamed.
 
 ## Quality baselines
 
@@ -191,10 +195,12 @@ Full record, topology diagram and promotion path: `docs/architecture/environment
 - **Frontend**: TypeScript `strict` plus `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`; only
   `VITE_`-prefixed variables reach the bundle (T-1); no database driver may be added to `package.json`.
 - **CI gate** (`.github/workflows/ci-quality-gates.yml`; TASK-015, record: `docs/architecture/ci-quality-gates.md`) runs the commands above on every pull request
-  and fails it on any violation, so nothing merges unchecked. Three jobs, each capped at ten minutes:
+  and fails it on any violation, so nothing merges unchecked. Four jobs, each capped at ten minutes:
   `backend` (restore, `-warnaserror` build with the analyzers, unit tests), `frontend` (`npm ci`, lint,
-  format, `tsc -b --noEmit`, Vitest, build) and `repo-checks` (the five `python3 docs/architecture/*-check.py`
-  scripts, standard library only). Integration tests need the containerised stack and are not in this gate.
+  format, `tsc -b --noEmit`, Vitest, build), `repo-checks` (the six `python3 docs/architecture/*-check.py`
+  scripts, standard library only) and `terraform` (`fmt -check`, `validate` on all four environment roots with
+  the committed lock files read-only, and a Trivy config scan gated at HIGH/CRITICAL). Integration tests need
+  the containerised stack and are not in this gate.
 
 ## Branches, pull requests, and main
 
