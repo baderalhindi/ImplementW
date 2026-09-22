@@ -30,6 +30,7 @@
         "required_status_checks": [
           { "context": "backend" },
           { "context": "frontend" },
+          { "context": "repo-checks" },
           { "context": "pr-policy" }
         ]
       }

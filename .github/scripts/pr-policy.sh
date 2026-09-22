@@ -8,7 +8,7 @@
 #   PR_HEAD_REF, PR_TITLE, PR_BODY
 set -euo pipefail
 
-branch_types='feat|fix|chore|docs|refactor|test|ci|build|perf|revert|hotfix'
+branch_types='feat|fix|chore|infra|sec|docs|test|release|refactor|ci|build|perf|revert|hotfix'
 failures=0
 
 fail() { echo "::error::$1"; failures=$((failures + 1)); }

@@ -21,7 +21,7 @@ TASK-012 fixes how change reaches `main`: the branch model, what a pull request 
 
 | Rule | Value |
 | --- | --- |
-| Branch name | `type/task-id-short-description` — `type` ∈ {`feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `build`, `perf`, `revert`, `hotfix`}; `task-id` is `task-nnn`; the description is lowercase kebab-case. Examples: `chore/task-011-repo-bootstrap`, `feat/task-046-schedule-baseline` |
+| Branch name | `type/task-id-short-description` — `type` ∈ {`feat`, `fix`, `chore`, `infra`, `sec`, `docs`, `test`, `release`, `refactor`, `ci`, `build`, `perf`, `revert`, `hotfix`} — the first seven are the ones the workbook's Branch column uses; the rest cover work that has no workbook row; `task-id` is `task-nnn`; the description is lowercase kebab-case. Examples: `chore/task-011-repo-bootstrap`, `feat/task-046-schedule-baseline` |
 | One task per branch | A branch carries one Task ID. A task that needs several PRs uses several branches with the same `task-nnn` and different descriptions |
 | Lifetime | Days, not weeks. A branch that falls behind `main` is rebased or merged forward by its author; the ruleset's `strict_required_status_checks_policy` refuses to merge a branch whose checks ran against an older `main` |
 | Merge | Squash by default, so that `main` carries one commit per PR with the Task ID in its subject. A merge commit is acceptable when the branch's individual commits are meaningful on their own |
@@ -114,11 +114,11 @@ The 21 module folders under `Application/Features/`, `Domain/`, `Infrastructure/
 | `deletion` | branch cannot be deleted | — |
 | `non_fast_forward` | no force-push | `monorepo-bootstrap.md` S-3 |
 | `pull_request` | required; **1 approving review**; stale reviews dismissed on push; code-owner review required; every review thread resolved | "at least 1 approving review" |
-| `required_status_checks` | **`backend`, `frontend`, `pr-policy`**; strict (branch must be current with the target) | "passing CI"; CTL-38, CTL-39 |
+| `required_status_checks` | **`backend`, `frontend`, `repo-checks`, `pr-policy`**; strict (branch must be current with the target) | "passing CI"; CTL-38, CTL-39 |
 | `bypass_actors` | none — administrators included | CTL-38 verification: direct push rejected |
 | `enforcement` | `active` | — |
 
-The three check names are the `jobs.<id>.name` values in `ci.yml` and `pr-policy.yml`. Renaming a job breaks the rule silently (the check is simply never reported), so the names are load-bearing; TASK-015 adds its checks by appending to the `required_status_checks` array and re-applying.
+The four check names are the `jobs.<id>.name` values in `ci-quality-gates.yml` and `pr-policy.yml`. Renaming a job breaks the rule silently (the check is simply never reported), so the names are load-bearing. TASK-015 renamed `ci.yml` to `ci-quality-gates.yml`, kept `backend` and `frontend` so this rule did not move under it, and appended `repo-checks` (`docs/architecture/ci-quality-gates.md` §3.3).
 
 **No bypass actors** means an emergency merge requires editing the ruleset, which is itself an audited repository event. That is the intended cost.
 
@@ -149,11 +149,12 @@ The script creates the ruleset or updates the one with the same name, then print
 | S-2 | **Create the seven teams** of §4 in the organisation that hosts the repository, each with write access, and move the repository into that organisation if it stays under a personal account. Then replace the `baderalhindi/` namespace in `CODEOWNERS` if the organisation name differs | Repository administrator + Engagement Lead | With S-1 | No owner resolves; `require_code_owner_review` requests nobody, so the only reviewer requirement in force is "one approval from anyone with write access" |
 | S-3 | **Bring `main` up to `dev`** (`main` is a strict ancestor; a fast-forward suffices) so that task branches can be cut from the trunk as §2 requires, and **retire `dev` and `stage`** once TASK-018's artifact promotion exists (§2.1) | Repository administrator (fast-forward); TASK-018 owner (retirement) | Fast-forward with S-1; retirement at TASK-018 | Until the fast-forward, a branch cut from `main` lacks the entire skeleton; until retirement, three protected branches carry three copies of the same rules |
 | S-4 | **Single maintainer**: with one account holding write access, "1 approving review" cannot be satisfied — GitHub does not count the author's own approval. A second reviewer with write access is needed before S-1 is applied, or every PR blocks | Engagement Lead | With S-1 | Either the rule is applied and nothing merges, or it is not applied and criterion 2 stays PARTIAL |
-| S-5 | **TASK-015** appends its checks (coverage, contract check, frontend unit tests) to `required_status_checks` and re-applies; **TASK-080** appends the secret-scanning and dependency checks (CTL-42) and, once they are required, the dependency item of the security checklist changes from self-attestation to a pointer at the check | TASK-015, TASK-080 owners | Per task | The ruleset requires only the three baseline checks; a later gate is advisory until listed |
+| S-5 | **TASK-015 — DONE for the contract check and the frontend unit tests** (appended `repo-checks`; Vitest runs inside `frontend`). Coverage was **not** appended: no coverage policy exists to gate against until TASK-084 (`ci-quality-gates.md` §6 F-3). **TASK-080** appends the secret-scanning and dependency checks (CTL-42) and, once they are required, the dependency item of the security checklist changes from self-attestation to a pointer at the check | TASK-084, TASK-080 owners | Per task | The ruleset requires only the four listed checks; a later gate is advisory until listed |
 | S-6 | **Per-module CODEOWNERS lines** once modules have named owners (§4) | Backend and Frontend leads | First module with an owner other than the tier lead | Tier lead reviews everything in the tier |
 
 ## 8. Change log
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-22 | TASK-015: `branch_types` in `pr-policy.sh` corrected to accept `infra`, `sec` and `release` (§2) — the workbook's authoritative Branch column uses all three, so 26 of 112 tasks could not open a compliant PR. `ci.yml` renamed to `ci-quality-gates.yml`; `repo-checks` appended to `required_status_checks` (§5); S-5 closed for the contract check and the frontend unit tests (§7). | DevOps (TASK-015) |
 | 2026-09-21 | Initial record. Trunk-based model on `main` with `type/task-nnn-description` branches (§2); `dev`/`stage` kept, protected identically, and scheduled for retirement at TASK-018 (§2.1). PR template with Task, Description, Test evidence and a seven-item Security checklist derived from CTL-08/11/18/27/41/42/43 and A-1/A-5/A-6; `pr-policy` required check enforcing it, verified against eleven cases (§3). CODEOWNERS with seven reviewer groups covering every top-level directory (§4). Repository ruleset requiring 1 approval, code-owner review, thread resolution, `backend`/`frontend`/`pr-policy` checks, no force-push, no bypass, with `apply.sh` (§5). `ci.yml` triggers extended to `dev` and `stage`. Six residual items (§7). | Architecture (TASK-012) |
