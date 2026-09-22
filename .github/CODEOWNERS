@@ -38,10 +38,13 @@
 /docs/                                              @baderalhindi/architecture
 /docs/architecture/cybersecurity-control-matrix.md  @baderalhindi/architecture @baderalhindi/security
 
-# infra: docker (TASK-014), environments (TASK-016), secrets templates (TASK-019), terraform (TASK-020/021)
+# infra: docker (TASK-014), environments (TASK-016), terraform (TASK-017/020/021), secrets templates (TASK-019)
 /infra/                                             @baderalhindi/devops
 /infra/secrets/                                     @baderalhindi/devops @baderalhindi/security
-/infra/terraform/database/                          @baderalhindi/devops @baderalhindi/database
+# The IaC is reviewed like application code (TASK-017 acceptance criterion), and a network, WAF or
+# database change is a security change: the Security Lead reviews the whole tree.
+/infra/terraform/                                   @baderalhindi/devops @baderalhindi/security
+/infra/terraform/database/                          @baderalhindi/devops @baderalhindi/database @baderalhindi/security
 
 # src/backend: .NET modular monolith (ADR-002, ADR-003)
 /src/backend/                                       @baderalhindi/backend
