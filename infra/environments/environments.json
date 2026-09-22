@@ -1,0 +1,104 @@
+{
+  "task": "TASK-016",
+  "record": "docs/architecture/environment-separation.md",
+  "platform": {
+    "resource_prefix": "ahda-pmplatform",
+    "organization_id": "",
+    "billing_account_id": "",
+    "region": "",
+    "region_allowlist": ["me-central2"],
+    "base_domain": "",
+    "unresolved": {
+      "organization_id": "UGV-07 — tenancy ownership (ADR-001 R-3); AHDA IT",
+      "billing_account_id": "UGV-07 — follows the tenancy answer; AHDA IT",
+      "region": "UGV-07 — in-Kingdom region name (ADR-001 R-2); AHDA IT. me-central2 (Dammam) is the only candidate on the allowlist and is not confirmed",
+      "base_domain": "environment-separation.md F-1 — AHDA-owned DNS zone the four APP_BASE_URL values are built from"
+    },
+    "folders": [
+      { "name": "ahda-pmplatform-nonprod", "tier": "nonprod", "holds": ["dev", "sit", "uat"] },
+      { "name": "ahda-pmplatform-prod", "tier": "prod", "holds": ["prod"] }
+    ]
+  },
+  "environments": [
+    {
+      "name": "dev",
+      "tier": "nonprod",
+      "folder": "ahda-pmplatform-nonprod",
+      "promotes_to": "sit",
+      "project_id": "ahda-pmplatform-dev",
+      "network": "vpc-pmplatform-dev",
+      "state_bucket": "ahda-pmplatform-dev-tfstate",
+      "database": { "instance": "pmplatform-dev-db", "database": "pmplatform", "user": "pmplatform-dev-app" },
+      "secret_store": { "namespace": "ahda-pmplatform-dev", "prefix": "pmplatform-dev-" },
+      "service_accounts": {
+        "deploy": "deploy-dev@ahda-pmplatform-dev.iam.gserviceaccount.com",
+        "runtime": "app-dev@ahda-pmplatform-dev.iam.gserviceaccount.com"
+      },
+      "variables": {
+        "DB_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-dev-db-connection-string" },
+        "JWT_SIGNING_KEY": { "kind": "secret", "secret_id": "pmplatform-dev-jwt-signing-key" },
+        "APP_BASE_URL": { "kind": "config", "value": "" }
+      }
+    },
+    {
+      "name": "sit",
+      "tier": "nonprod",
+      "folder": "ahda-pmplatform-nonprod",
+      "promotes_to": "uat",
+      "project_id": "ahda-pmplatform-sit",
+      "network": "vpc-pmplatform-sit",
+      "state_bucket": "ahda-pmplatform-sit-tfstate",
+      "database": { "instance": "pmplatform-sit-db", "database": "pmplatform", "user": "pmplatform-sit-app" },
+      "secret_store": { "namespace": "ahda-pmplatform-sit", "prefix": "pmplatform-sit-" },
+      "service_accounts": {
+        "deploy": "deploy-sit@ahda-pmplatform-sit.iam.gserviceaccount.com",
+        "runtime": "app-sit@ahda-pmplatform-sit.iam.gserviceaccount.com"
+      },
+      "variables": {
+        "DB_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-sit-db-connection-string" },
+        "JWT_SIGNING_KEY": { "kind": "secret", "secret_id": "pmplatform-sit-jwt-signing-key" },
+        "APP_BASE_URL": { "kind": "config", "value": "" }
+      }
+    },
+    {
+      "name": "uat",
+      "tier": "nonprod",
+      "folder": "ahda-pmplatform-nonprod",
+      "promotes_to": "prod",
+      "project_id": "ahda-pmplatform-uat",
+      "network": "vpc-pmplatform-uat",
+      "state_bucket": "ahda-pmplatform-uat-tfstate",
+      "database": { "instance": "pmplatform-uat-db", "database": "pmplatform", "user": "pmplatform-uat-app" },
+      "secret_store": { "namespace": "ahda-pmplatform-uat", "prefix": "pmplatform-uat-" },
+      "service_accounts": {
+        "deploy": "deploy-uat@ahda-pmplatform-uat.iam.gserviceaccount.com",
+        "runtime": "app-uat@ahda-pmplatform-uat.iam.gserviceaccount.com"
+      },
+      "variables": {
+        "DB_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-uat-db-connection-string" },
+        "JWT_SIGNING_KEY": { "kind": "secret", "secret_id": "pmplatform-uat-jwt-signing-key" },
+        "APP_BASE_URL": { "kind": "config", "value": "" }
+      }
+    },
+    {
+      "name": "prod",
+      "tier": "prod",
+      "folder": "ahda-pmplatform-prod",
+      "promotes_to": null,
+      "project_id": "ahda-pmplatform-prod",
+      "network": "vpc-pmplatform-prod",
+      "state_bucket": "ahda-pmplatform-prod-tfstate",
+      "database": { "instance": "pmplatform-prod-db", "database": "pmplatform", "user": "pmplatform-prod-app" },
+      "secret_store": { "namespace": "ahda-pmplatform-prod", "prefix": "pmplatform-prod-" },
+      "service_accounts": {
+        "deploy": "deploy-prod@ahda-pmplatform-prod.iam.gserviceaccount.com",
+        "runtime": "app-prod@ahda-pmplatform-prod.iam.gserviceaccount.com"
+      },
+      "variables": {
+        "DB_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-prod-db-connection-string" },
+        "JWT_SIGNING_KEY": { "kind": "secret", "secret_id": "pmplatform-prod-jwt-signing-key" },
+        "APP_BASE_URL": { "kind": "config", "value": "" }
+      }
+    }
+  ]
+}

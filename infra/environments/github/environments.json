@@ -1,0 +1,43 @@
+{
+  "task": "TASK-016",
+  "record": "docs/architecture/environment-separation.md",
+  "note": "Deployment environments and their approval gates. TASK-016 declares them; TASK-018's pipeline deploys through them and is what makes the gate unskippable. Reviewer teams are GitHub team slugs in the repository's organisation (.github/CODEOWNERS names the same set); 'delivery' does not exist yet.",
+  "environments": [
+    {
+      "name": "dev",
+      "gate": "build -> DEV",
+      "reviewer_teams": [],
+      "wait_timer": 0,
+      "prevent_self_review": false,
+      "protected_branches_only": true,
+      "approval": "Automatic on a green main build. No human gate: DEV exists to be deployed to."
+    },
+    {
+      "name": "sit",
+      "gate": "DEV -> SIT",
+      "reviewer_teams": ["devops"],
+      "wait_timer": 0,
+      "prevent_self_review": false,
+      "protected_branches_only": true,
+      "approval": "DevOps Lead. Preconditions: quality gates green (TASK-015), artifact scan clean (TASK-022), migration dry-run succeeds."
+    },
+    {
+      "name": "uat",
+      "gate": "SIT -> UAT",
+      "reviewer_teams": ["qa", "security"],
+      "wait_timer": 0,
+      "prevent_self_review": true,
+      "protected_branches_only": true,
+      "approval": "QA Lead and Security Lead. Preconditions: the 15 cross-domain e2e journeys pass against SIT (TASK-085); no open High/Critical threat-model finding without a signed AHDA risk acceptance (TASK-081)."
+    },
+    {
+      "name": "prod",
+      "gate": "UAT -> PROD",
+      "reviewer_teams": ["delivery", "devops"],
+      "wait_timer": 0,
+      "prevent_self_review": true,
+      "protected_branches_only": true,
+      "approval": "Delivery Lead and AHDA Sponsor, recorded with approver identity and timestamp (Release Checklist 'Production Deployment Approval Recorded'). Preconditions: UAT acceptance signed, penetration test clean (TASK-082), restore drill passed (TASK-023), rollback rehearsed within 30 days (TASK-037/CTL-37)."
+    }
+  ]
+}
