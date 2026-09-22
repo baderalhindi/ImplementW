@@ -43,7 +43,7 @@ That is a two-branch environment ladder (`dev` → `stage` → `main`), which is
 
 `.github/PULL_REQUEST_TEMPLATE.md` pre-fills every PR with four mandatory sections — **Task**, **Description**, **Test evidence**, **Security checklist** — and one optional (**Notes for reviewers**).
 
-A template cannot enforce anything on its own, so `.github/workflows/pr-policy.yml` runs `.github/scripts/pr-policy.sh` on every PR open, edit, push, reopen and ready-for-review, and `pr-policy` is a required status check (§5). It fails the PR unless:
+A template cannot enforce anything on its own, so `.github/workflows/pr-policy.yml` runs `.github/scripts/pr-policy.sh` on every PR open, edit, push, reopen and ready-for-review. It reports red, and **as of 2026-09-22 it does not block the merge** — `pr-policy` was removed from the required status checks (§5). The check reports a failure unless:
 
 | # | Check | Why |
 | --- | --- | --- |
@@ -114,13 +114,25 @@ The 21 module folders under `Application/Features/`, `Domain/`, `Infrastructure/
 | `deletion` | branch cannot be deleted | — |
 | `non_fast_forward` | no force-push | `monorepo-bootstrap.md` S-3 |
 | `pull_request` | required; **1 approving review**; stale reviews dismissed on push; code-owner review required; every review thread resolved | "at least 1 approving review" |
-| `required_status_checks` | **`backend`, `frontend`, `repo-checks`, `pr-policy`**; strict (branch must be current with the target) | "passing CI"; CTL-38, CTL-39 |
+| `required_status_checks` | **`backend`, `frontend`, `repo-checks`**; strict (branch must be current with the target). `pr-policy` was removed on 2026-09-22 — it still runs and still reports, it no longer blocks (§5.1) | "passing CI"; CTL-39 |
 | `bypass_actors` | none — administrators included | CTL-38 verification: direct push rejected |
 | `enforcement` | `active` | — |
 
-The four check names are the `jobs.<id>.name` values in `ci-quality-gates.yml` and `pr-policy.yml`. Renaming a job breaks the rule silently (the check is simply never reported), so the names are load-bearing. TASK-015 renamed `ci.yml` to `ci-quality-gates.yml`, kept `backend` and `frontend` so this rule did not move under it, and appended `repo-checks` (`docs/architecture/ci-quality-gates.md` §3.3).
+The check names are the `jobs.<id>.name` values in `ci-quality-gates.yml`. Renaming a job breaks the rule silently (the check is simply never reported), so the names are load-bearing. TASK-015 renamed `ci.yml` to `ci-quality-gates.yml`, kept `backend` and `frontend` so this rule did not move under it, and appended `repo-checks` (`docs/architecture/ci-quality-gates.md` §3.3).
 
 **No bypass actors** means an emergency merge requires editing the ruleset, which is itself an audited repository event. That is the intended cost.
+
+### 5.1 `pr-policy` is advisory
+
+`pr-policy` was removed from `required_status_checks` on 2026-09-22 at the repository owner's instruction. The
+workflow, the script and the PR template are unchanged: a PR missing its Task ID, its test evidence or a ticked
+security-checklist box still goes red, and the failure is still visible on the PR — it just no longer prevents the
+merge.
+
+What that costs is precise. **CTL-38's "PR template enforcing linked Task ID, test evidence and a security
+checklist" is now enforced by review rather than by the gate**, as is TASK-012 acceptance criterion 1. The
+code-owner review requirement and the three CI checks are untouched, so an unreviewed or failing-CI change still
+cannot merge. Restoring the gate is one line in this ruleset and one `apply.sh` run.
 
 **Not set, deliberately:** `required_linear_history` (a merge commit remains acceptable, §2), `required_signatures` (no key-management decision exists; a candidate for TASK-022 with artifact signing, CTL-41), `required_deployments` (TASK-018).
 
@@ -156,5 +168,6 @@ The script creates the ruleset or updates the one with the same name, then print
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-22 | `pr-policy` removed from `required_status_checks` at the repository owner's instruction (§5.1). The workflow and script are unchanged and still report; the check is advisory. CTL-38's PR-content enforcement falls back to code-owner review. | Repository owner |
 | 2026-09-22 | TASK-015: `branch_types` in `pr-policy.sh` corrected to accept `infra`, `sec` and `release` (§2) — the workbook's authoritative Branch column uses all three, so 26 of 112 tasks could not open a compliant PR. `ci.yml` renamed to `ci-quality-gates.yml`; `repo-checks` appended to `required_status_checks` (§5); S-5 closed for the contract check and the frontend unit tests (§7). | DevOps (TASK-015) |
 | 2026-09-21 | Initial record. Trunk-based model on `main` with `type/task-nnn-description` branches (§2); `dev`/`stage` kept, protected identically, and scheduled for retirement at TASK-018 (§2.1). PR template with Task, Description, Test evidence and a seven-item Security checklist derived from CTL-08/11/18/27/41/42/43 and A-1/A-5/A-6; `pr-policy` required check enforcing it, verified against eleven cases (§3). CODEOWNERS with seven reviewer groups covering every top-level directory (§4). Repository ruleset requiring 1 approval, code-owner review, thread resolution, `backend`/`frontend`/`pr-policy` checks, no force-push, no bypass, with `apply.sh` (§5). `ci.yml` triggers extended to `dev` and `stage`. Six residual items (§7). | Architecture (TASK-012) |

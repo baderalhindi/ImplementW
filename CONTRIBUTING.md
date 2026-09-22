@@ -207,11 +207,11 @@ Full policy: `docs/architecture/branching-strategy.md` (TASK-012).
   `feat`, `fix`, `chore`, `infra`, `sec`, `docs`, `test`, `release`, `refactor`, `ci`, `build`, `perf`, `revert`, `hotfix`. The workbook's
   Branch column is authoritative. One Task ID per branch.
 - Every PR is opened from `.github/PULL_REQUEST_TEMPLATE.md`: Task ID, description, test evidence and a security
-  checklist. The `pr-policy` check fails the PR until the Task ID is present, the evidence is filled in and every
-  checklist box is ticked.
+  checklist. The `pr-policy` check goes red until the Task ID is present, the evidence is filled in and every
+  checklist box is ticked. It is **advisory** — red is a review finding, not a merge block (branching-strategy §5.1).
 - `main` (and `dev`, `stage`) are protected by `.github/branch-protection/protected-branches.ruleset.json`:
   a pull request with **one approving review** and a review from the directory's code owners
-  (`.github/CODEOWNERS`); the `backend`, `frontend`, `repo-checks` and `pr-policy` checks **must pass** on a branch that is current
+  (`.github/CODEOWNERS`); the `backend`, `frontend` and `repo-checks` checks **must pass** on a branch that is current
   with the target; no direct push, no force-push, no bypass.
 - Commit messages: imperative subject line, task id in the body or the PR title.
 

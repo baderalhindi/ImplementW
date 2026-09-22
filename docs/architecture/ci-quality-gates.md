@@ -155,7 +155,7 @@ cold runner the dominant costs are SDK setup, `npm ci` and the first restore, al
 | # | Criterion | Status |
 | --- | --- | --- |
 | 1 | CI fails a PR that introduces a lint error, a type error, or a failing unit test | **MET** — §4 rows 5–9, each violation class proven red against the workflow's own commands, both tiers |
-| 2 | Passing the gate is a required branch-protection check on `main` | **MET ON FILE, PENDING APPLICATION** — the ruleset lists `backend`, `frontend`, `repo-checks`, `pr-policy` on `main`, `dev` and `stage`; it takes effect when an administrator runs `apply.sh` (F-1). Same shape as `monorepo-bootstrap.md` S-3 |
+| 2 | Passing the gate is a required branch-protection check on `main` | **MET ON FILE, PENDING APPLICATION** — the ruleset lists `backend`, `frontend` and `repo-checks` on `main`, `dev` and `stage` — `pr-policy` was removed from the required checks on 2026-09-22 (`branching-strategy.md` §5.1), which does not affect this task's three; it takes effect when an administrator runs `apply.sh` (F-1). Same shape as `monorepo-bootstrap.md` S-3 |
 | 3 | Gate stage run time under 10 minutes on a representative PR | **MET, AND ENFORCED** — `timeout-minutes: 10` per job; measured times in §4 |
 
 CTL-39 (cybersecurity control matrix) additionally names the contract check: `contract-check.py` runs in
