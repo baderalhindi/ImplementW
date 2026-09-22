@@ -129,12 +129,15 @@ the document store and SMTP, and the response contract belong to TASK-090/TASK-0
 
 ## 4. Verification
 
-Run on macOS 15.6 (Darwin 24.6.0, arm64) against podman 6.1.2 (`applehv` VM) through `DOCKER_HOST`, with Docker
-CLI 29.8.1 and Docker Compose 5.5.1. Not run on Docker Desktop or on Linux Docker Engine (F-6).
+Run on macOS 15.6 (Darwin 24.6.0, arm64) with Docker CLI 29.8.1 and Docker Compose 5.5.1, against two engines:
+**Docker Desktop 4.92 (server 29.8.0)** and **podman 6.1.2** (`applehv` VM, reached through `DOCKER_HOST`). Not run
+on Linux Docker Engine (F-6). Timings differ by engine and are given per engine; everything else behaved
+identically on both.
 
 | # | Check | Result |
 | --- | --- | --- |
-| 1 | **Cold machine.** Every image removed, build cache and volumes pruned, then `infra/docker/smoke-test.sh` | `built in 70s` (base images pulled, `dotnet restore` and `npm ci` from empty caches), `all services healthy after 26s`, `GET /health -> 200 Healthy`, `GET / -> 200`, eight roles with an active local user. **96s total, inside the 2-minute criterion even counting the build** |
+| 1 | **Cold machine, podman.** Every image removed, build cache and volumes pruned, then `infra/docker/smoke-test.sh` | `built in 70s` (base images pulled, `dotnet restore` and `npm ci` from empty caches), `all services healthy after 26s`, `GET /health -> 200 Healthy`, `GET / -> 200`, eight roles with an active local user. 96s total |
+| 1b | **Cold machine, Docker Desktop.** Same script on a fresh Docker Desktop install with its own empty image store | `built in 108s`, `all services healthy after 52s`, `/health -> 200 Healthy`, `/ -> 200`, eight roles. **52s to healthy — the criterion is met**, but 160s in total, so a first-ever build on Docker Desktop exceeds two minutes if the criterion is read as including it (§5) |
 | 2 | Warm repeat: `smoke-test.sh` with images and caches present | `built in 3s`, healthy in 12s — what a developer waits for on a normal start |
 | 3 | `python3 docs/architecture/local-stack-check.py` — every column of the bridge schema against `erd.dbml`: same tables, columns, order, types, nullability, defaults | `OK: 9 bridged tables, 124 columns match erd.dbml.` Mutation-tested: a widened `varchar` and a deleted column were each reported individually, exit code 1; restored, check green |
 | 4 | Negative: `docker compose stop postgres`, then `GET /health` | `503 Unhealthy`; after `start postgres`, `200 Healthy` again — the endpoint tracks the database, not the process |
@@ -149,7 +152,7 @@ CLI 29.8.1 and Docker Compose 5.5.1. Not run on Docker Desktop or on Linux Docke
 
 | # | Criterion | Status |
 | --- | --- | --- |
-| 1 | `docker compose up` on a clean machine brings up DB + API + frontend and a health-check endpoint returns 200 within 2 minutes | **MET** — check 1: 26s to all-healthy after a 70s cold build; `/health` 200 and it means the database is reachable (§3.4) |
+| 1 | `docker compose up` on a clean machine brings up DB + API + frontend and a health-check endpoint returns 200 within 2 minutes | **MET** — 26s (podman) and 52s (Docker Desktop) to all-healthy, on both engines from an empty image store; `/health` 200 and it means the database is reachable (§3.4). **One reading is not met:** if the two minutes is taken to include the first-ever image build, a cold Docker Desktop run is 160s (108s build + 52s). Every subsequent start — which is what a developer actually repeats — is 12s |
 | 2 | Seeded data includes at least one user per role R01–R08 for local testing | **MET** — checks 5, 6: eight users, one per canonical role, each bound to that role's shipped-default profile version |
 | — | Validation cell: run from a clean clone on a machine with no prior state; verify API health endpoint and frontend both respond; confirm no production secret is baked into the compose file | **MET** — check 1 (no images, no volumes, no caches), checks 1 and 10; §3.3 states what the four local values are and why they are not secrets |
 
@@ -162,7 +165,7 @@ CLI 29.8.1 and Docker Compose 5.5.1. Not run on Docker Desktop or on Linux Docke
 | **F-3** | `JWT_SIGNING_KEY` is supplied to the API and read by nothing: no code issues a token yet. It is set now because the workbook's TASK-014 row names it and because the variable must be present the day TASK-028 starts. | TASK-028 |
 | **F-4** | **The seeded users cannot sign in**, by design (§3.2). A developer testing an authenticated path before TASK-028 needs a local token-issuing stub; that stub is TASK-028/TASK-029 scope and must never ship outside `Development`. | TASK-028 |
 | **F-5** | The shipped-default profile versions carry **no permission grants** — the catalogue is TASK-030/TASK-110's. An authorization test written against this seed today asserts on role identity only. | TASK-030, TASK-110 |
-| **F-6** | **Verified on podman, not Docker Desktop.** No Docker Engine was available on the build machine; the stack was run through `DOCKER_HOST` against a podman machine, where `docker compose` behaves identically for everything used here. Someone should run `infra/docker/smoke-test.sh` once on Docker Desktop (macOS/Windows) and once on Linux Docker Engine before the developer onboarding claim is made unconditionally. | DevOps/Platform Lead, before TASK-015 |
+| **F-6** | **Docker Desktop verified; Linux Docker Engine not.** The stack was first built against podman, then re-run unchanged on Docker Desktop 4.92 for macOS (check 1b) — same result, no file changed. Windows (WSL2) and Linux Docker Engine are still unverified; the `src/frontend` bind mount and the `postgres` init-script mount are where a platform difference would show. Run `infra/docker/smoke-test.sh` once on each before the onboarding claim is made unconditionally. | DevOps/Platform Lead, before TASK-015 |
 | **F-7** | `local-stack-check.py` is run by hand, like `erd-check.py`, `contract-check.py` and `env-template-check.py`. Wiring the four into CI is TASK-015's gate scope. | TASK-015 (see TASK-013 F-7) |
 | **F-8** | The stack serves **plain HTTP**; the API logs `Failed to determine the https port for redirect` because `UseHttpsRedirection` has no HTTPS port in the container. Harmless locally and correct — TLS terminates at the environment's ingress (TASK-016) — but the middleware's behaviour in a container is worth settling when the deployment shape is. | TASK-016, TASK-078 |
 | **F-9** | **The SPA does not call the API in this stack.** It cannot: no variable names the API origin for the frontend (TASK-013 F-2, still open). `CORS_ALLOWED_ORIGINS` is set to `http://localhost:5173` in anticipation and is consumed by nothing until TASK-078. When F-2 is decided, add the variable to the sheet, then to `.env.example`, then here. | TASK-016 (decision), TASK-078 |
@@ -171,4 +174,5 @@ CLI 29.8.1 and Docker Compose 5.5.1. Not run on Docker Desktop or on Linux Docke
 
 | Date | Change | Author |
 | --- | --- | --- |
+| 2026-09-22 | Re-run unchanged on Docker Desktop 4.92 (check 1b): healthy in 52s, all checks green. F-6 narrowed to Windows and Linux Docker Engine. Cold-build reading of criterion 1 stated explicitly (§5). | Architecture (TASK-014) |
 | 2026-09-22 | Initial record. Three-service compose stack (PostgreSQL 17, API on .NET 10, Vite dev server) with health-gated start-up; bridge schema transcribing nine ERD tables, canonical roles R01–R08 with shipped-default profile versions, and one local user per role (§3.2); `/health` backed by a real PostgreSQL probe (§3.4); `smoke-test.sh` and `local-stack-check.py` with mutation check. Verified from a cold machine at 70s build + 26s to healthy (§4). Built under the ADR-002 gate on the assumption the stack is confirmed as proposed (§2). Nine findings (F-1…F-9). | Architecture (TASK-014) |
