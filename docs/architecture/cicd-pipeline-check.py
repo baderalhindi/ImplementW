@@ -295,12 +295,35 @@ def check_approval(jobs, order, gates):
                     "promotion path would not wait for an approval (CTL-40)".format(terminal))
 
 
+def check_approval_precedes_apply(action):
+    """P-11 — the approval is read back before anything is applied, not after.
+
+    GitHub's own halt is the first lock, but it is the only one that runs before the job. If the
+    approval is only read back at the end, a gated deployment whose approval cannot be evidenced has
+    already applied by the time it is stopped, which makes the control detective rather than
+    preventive."""
+    steps = as_list(action.get("runs", {}).get("steps"))
+    verify = next((i for i, step in enumerate(steps)
+                   if "deployment-record.sh" in str(step.get("run", ""))
+                   and str((step.get("env") or {}).get("VERIFY_ONLY", "")) == "1"), None)
+    if verify is None:
+        fail("P-11", "the deploy action never verifies the approval before applying; a gated "
+                     "environment would be deployed to and only then found to have no evidence")
+        return
+    for name, marker in (("apply", "terraform apply"), ("migrate", "migrate-environment.sh")):
+        index = next((i for i, step in enumerate(steps) if marker in str(step.get("run", ""))), None)
+        if index is not None and index < verify:
+            fail("P-11", "the deploy action runs '{}' before it verifies the approval".format(name))
+
+
 def check_traceability(jobs, order, action):
     """P-5 — one artifact, by digest, and a Task ID on every deployment."""
     steps = as_list(action.get("runs", {}).get("steps"))
-    if not any("deployment-record.sh" in str(step.get("run", "")) for step in steps):
-        fail("P-5", "the deploy action does not run deployment-record.sh, so a deployment would leave "
-                    "no record of its commit, task or approver")
+    records = [step for step in steps if "deployment-record.sh" in str(step.get("run", ""))
+               and str((step.get("env") or {}).get("VERIFY_ONLY", "")) != "1"]
+    if not records:
+        fail("P-5", "the deploy action does not write a deployment record, so a deployment would "
+                    "leave no record of its commit, task or approver")
 
     for environment in order:
         job = jobs.get("deploy-{}".format(environment))
@@ -317,6 +340,13 @@ def check_traceability(jobs, order, action):
                         "built once and promoted unchanged".format(environment, digest))
         if "release-metadata.outputs.task_id" not in str(inputs.get("task-id", "")):
             fail("P-5", "deploy-{} does not carry the release's Task ID (CTL-40)".format(environment))
+        # Not github.sha: a rollback is a workflow_dispatch naming an earlier commit, and github.sha
+        # is still the head of main, so the record would name a commit that was never deployed.
+        commit = str(inputs.get("commit-sha", ""))
+        if "release-metadata.outputs.commit_sha" not in commit:
+            fail("P-5", "deploy-{} takes its commit from {!r} rather than from release-metadata; on a "
+                        "re-promotion that is the head of main, not the commit being deployed"
+                        .format(environment, commit))
         if str(inputs.get("environment", "")) != environment:
             fail("P-5", "deploy-{} passes environment={!r} to the deploy action".format(
                 environment, inputs.get("environment")))
@@ -430,6 +460,7 @@ def main():
     check_gates(jobs, order)
     check_approval(jobs, order, gates)
     check_traceability(jobs, order, action)
+    check_approval_precedes_apply(action)
     check_no_hosting_values(manifest)
     check_no_credentials()
     check_permissions(pipeline)

@@ -7,7 +7,7 @@
 | Record date | 2026-09-23 |
 | Status | **BUILT — NOT APPLIED.** The pipeline is written, lint-clean, and every part that does not need a cloud is executed and tested against its failure cases (§5). No environment is deployed to: five hosting values are outstanding, so `preflight` reports not-ready and the four deploy stages skip. The build, the image scan, the quality gates and the migration dry-run all run in full |
 | Branch | `infra/task-018-cicd-promotion-pipeline` |
-| Deliverables | `.github/workflows/ci-cd-pipeline.yml` — the four stages and the manual PROD gate; `.github/actions/deploy-environment/action.yml` — one environment's deployment; `.github/scripts/{release-metadata,deploy-preflight,migration-dry-run,migrate-environment,deployment-record}.sh`; `docs/architecture/cicd-pipeline-check.py` wired into `repo-checks`; `workflow_call` on `ci-quality-gates.yml`; `platform.artifact_registry` in `infra/environments/environments.json`; this record |
+| Deliverables | `.github/workflows/ci-cd-pipeline.yml` — the four stages and the manual PROD gate; `.github/actions/deploy-environment/action.yml` — one environment's deployment; `.github/scripts/{release-metadata,deploy-preflight,migration-dry-run,migrate-environment,deployment-record}.sh`; `.github/scripts/verify-promotion.py` — the validation cell, executed; `docs/architecture/cicd-pipeline-check.py` wired into `repo-checks`; `workflow_call` on `ci-quality-gates.yml`; `platform.artifact_registry` in `infra/environments/environments.json`; this record |
 | Environment variables / secrets | `DEPLOY_SERVICE_ACCOUNT_KEY` (per environment, from each GitHub environment's own secret scope), `CONTAINER_REGISTRY_TOKEN` (repository scope); repository variables `ADR001_CONFIRMATION_REF` and `MIGRATION_JOB` |
 | Implements | CTL-40; CTL-48 and CTL-49 in part; the codified form of CTL-37 (expand-then-contract) and CTL-39; Release Checklist "Production Deployment Approval Recorded"; Blueprint Section 22.1 F-2 |
 | Workbook read | Google Sheet "Implementation work" (ID `1JQdbw-S9wAS247cP3PpSCme_D2NAPVnWzhXhvvxrtl0`), sheets Implementation Plan (TASK-018 and the P3/P4/P14/P15 rows it touches), Environment and Secrets, Release Checklist, as read 2026-09-23 |
@@ -267,18 +267,16 @@ What was run in this environment, against the committed files.
 | 9 | `deploy-preflight.sh`: the repository manifest; a scratch manifest with placeholder values; `me-central1`; an unknown environment | Not-ready with 7 named items; ready with every output resolved; refused as outside the Kingdom; refused as undeclared |
 | 10 | The other six `repo-checks` scripts, after this task's manifest change | All green |
 | 11 | `gitleaks detect --no-git` over this task's files | `no leaks found`. The repository-wide scan reports the same five pre-existing false positives TASK-013 and TASK-016 recorded |
+| 12 | The workbook's own validation checks, run through `verify-promotion.py` — the pipeline executed stage by stage with the cloud stubbed | §5.3. Two defects found and fixed |
+| 13 | `preflight` executed in a real GitHub Actions runtime, under `act` | Reported not-ready with all six outstanding items, set `ready=false` and wrote the step summary. On the repository as committed, `act`'s whole-graph plan skips all four deploy stages, which is the documented behaviour today |
 
 What is **owed**, and cannot be run until the five values arrive:
 
 | Drill | From | Blocked by |
 | --- | --- | --- |
-| V-1 — a run end to end against a non-PROD environment, all stages in order | TASK-018 Validation Checks | The region, the tenancy, the DNS zone, the registry project |
-| V-2 — a PROD deploy attempt halts and waits for approval | TASK-018 Validation Checks | The same, plus the `delivery` GitHub team (TASK-016 F-5) |
-| V-3 — a failed security scan blocks promotion, observed rather than reasoned | CTL-40 | V-1 |
-
-V-2's *mechanism* is verified today — the check proves the stage names the `prod` environment and
-that the environment names reviewers, and the record script refuses an unevidenced approval — but the
-halt itself is GitHub's behaviour against a real environment and has not been observed.
+| V-1 — a run end to end against a **real** non-PROD environment | TASK-018 Validation Checks | The region, the tenancy, the DNS zone, the registry project. The pipeline half is executed (§5.3); what is untested is the cloud |
+| V-2 — GitHub's own halt on the `prod` environment, observed | TASK-018 Validation Checks | The four GitHub environments, which need the `delivery` team (TASK-016 F-5). The pipeline's own refusal is executed (§5.3) |
+| V-3 — a failed security scan blocks promotion, observed rather than reasoned | CTL-40 | The image build and scan are third-party actions and are not run by the drill |
 
 ### 5.1 Mutation test
 
@@ -315,14 +313,52 @@ the script under test was real:
 | The same drop, marked `EXPAND-THEN-CONTRACT-REVIEWED` | Passed — the marked contraction is allowed and visible in review |
 | `CREATE TABLE` without a history guard | Passed the first application, failed the second: "the script is not idempotent … a re-run after a partial failure would not be safe" |
 
+### 5.3 The validation checks, executed as far as they go
+
+The workbook asks for a run end to end against a non-PROD environment with all stages in order, and
+for a PROD deploy attempt that halts and waits. Neither can be done against a real environment, and
+both are mostly questions about the *pipeline* rather than the cloud. `verify-promotion.py` answers
+that part by running the pipeline: it reads `ci-cd-pipeline.yml` and the deploy action with the same
+YAML reader the CI check uses, orders the jobs by their own `needs`, evaluates their own `if`, and
+runs their own `run:` steps, with the manifest carrying placeholder hosting values and everything
+outside the repository — gcloud, terraform, the registry, the approvals API, the health endpoint —
+stubbed. It writes nothing into the repository.
+
+| Run | Result |
+| --- | --- |
+| `verify-promotion.py --approve sit,uat` | All nine stages in the declared order through UAT: `release-metadata → preflight → quality-gates → package → migration-dry-run → deploy-dev → deploy-sit → deploy-uat`. Each deploy stage ran its seven steps in order, each against its own environment's manifest entry. At `deploy-prod` the run **halted on its first step**, unapproved, with nothing applied |
+| `verify-promotion.py --approve sit,uat,prod` | The full promotion completes. Four deployment records, all naming commit `3caccd9d4a1b` and `TASK-018`; SIT, UAT and PROD each carry an approver and a timestamp, DEV records that no approval is required; and **one digest reached all four environments unchanged** |
+
+What this does not prove, and the record does not claim: GitHub halting a job on a protected
+environment is GitHub's behaviour and needs the four environments to exist (V-2); the image build and
+vulnerability scan are third-party actions the drill does not run (V-3); and no cloud call was made.
+
+#### Two defects the drill found
+
+Neither is visible by reading the file, which is the argument for running it.
+
+**The deployment record named the wrong commit on a rollback.** The record took `GITHUB_SHA`, which
+is the commit that *triggered* the run. A rollback is a `workflow_dispatch` naming an earlier commit
+(§4.4), where `GITHUB_SHA` is still the head of `main` — so precisely the deployment where
+traceability matters most would have recorded a commit that was never deployed. The record now takes
+the released commit from `release-metadata`, and check P-5 fails a stage that takes it from anywhere
+else.
+
+**The approval was a detective control, not a preventive one.** The approval was read back only when
+the record was written, at the end of the stage — after the migration and after `terraform apply`. In
+a real run GitHub's halt comes first, so this matters only when the first lock is bypassed or
+misconfigured, which is exactly the case the second lock exists for. It now runs as a step of its own
+before the credential is used and before anything is applied, and check P-11 fails the pull request
+if a migration or an apply is ever ordered before it.
+
 ## 6. Acceptance criteria
 
 | # | Criterion | Status |
 | --- | --- | --- |
-| 1 | Pipeline cannot deploy to PROD without an explicit approval step recorded with approver identity and timestamp | **BUILT, unobserved.** Three mechanisms (§3.2): GitHub halts the job; the record script refuses a deployment whose approval cannot be read back with an identity and a timestamp; the CI check refuses a pull request that removes either. The halt itself is owed as V-2, and needs the `prod` environment to exist with its reviewers (TASK-016 F-5) |
+| 1 | Pipeline cannot deploy to PROD without an explicit approval step recorded with approver identity and timestamp | **MET for the pipeline's own half; GitHub's halt unobserved.** Three mechanisms (§3.2), and the drill exercised the second: with the approval bypassed, `deploy-prod` stops on its first step with nothing applied, and with it recorded, PROD deploys and the record carries the approver and the timestamp (§5.3). What is unobserved is GitHub refusing to start the job, which needs the four environments to exist (V-2) |
 | 2 | A failed quality gate, security scan, or migration dry-run blocks promotion automatically | **MET for the migration dry-run and the quality gate, BUILT for the image scan.** All three are `needs` of the first stage, so one red gate skips all four environments (§3.3). The migration gate was executed against its failure cases (§5.2) and the quality gate is TASK-015's own, called rather than copied; the image scan runs today but has not yet been observed blocking a promotion, because no promotion can complete (V-3) |
 | 3 | Every deployment is traceable to a Git commit SHA and Task ID | **MET.** The run fails if the released commit names no Task ID; both travel into every deployment record with the image digest; the CI check refuses a stage that stops carrying either (§3.4) |
-| — | Validation cell: a run end to end against a non-PROD environment, all stages in order; a PROD deploy attempt halts and waits | **NOT EXECUTED** — V-1 and V-2 (§5) |
+| — | Validation cell: a run end to end against a non-PROD environment, all stages in order; a PROD deploy attempt halts and waits | **EXECUTED AGAINST THE PIPELINE, NOT AGAINST A CLOUD.** All nine stages ran in the declared order through UAT, each deploy stage ran its seven steps in order, PROD halted unapproved with nothing applied, and one digest reached all four environments unchanged (§5.3). The run used placeholder hosting values and stubbed cloud calls, so what is still owed is the cloud half — V-1 and V-2 |
 | — | Deliverable: `ci-cd-pipeline.yml` with DEV/SIT/UAT/PROD stages and a manual PROD gate | **MET.** Four stages named for the manifest's environments, chained in the manifest's own promotion order, with the manual gate on the last |
 
 ## 7. Findings and open items
@@ -337,10 +373,12 @@ the script under test was real:
 | **F-6** | **`dev` and `stage` are still not retired.** `branching-strategy.md` §2.1 assigns their retirement to this task, on the grounds that artifact promotion replaces the branch ladder — which now exists. The retirement is a repository operation this environment cannot perform: fast-forward `main` to `dev` (a superset, 25 commits ahead), delete both branches, then drop them from the ruleset's `ref_name.include` and from `ci-quality-gates.yml`'s `push` trigger. Until then both keep their protection and their CI | Repository owner; TASK-012's ruleset |
 | **F-7** | **The image scan is the whole of the security gate today.** TASK-022 owns the SBOM, the base-image scan and the SCA scan of both manifests, and its acceptance criterion is a promotion blocked by a CRITICAL CVE with an available fix — the threshold this job already uses. It extends the `package` job rather than adding a stage. TASK-080 covers source-level secrets on the pull request | TASK-022, TASK-080 |
 | **F-8** | **A run waiting at an approval gate expires after 30 days** and the promotion is lost, with no notification to the approvers beyond GitHub's own. For G-4, whose preconditions include a signed UAT acceptance and a penetration test, a month is not implausible. No mitigation is built: a reminder mechanism is an operations concern and belongs with the on-call runbook | TASK-023 / TASK-097 (runbooks); flagged to the Delivery Lead |
+| **F-10** | **The drill stubs everything outside the repository**, so a cloud-side defect — an IAM role too narrow for `terraform apply`, a registry the deploy account cannot pull from, a Cloud Run revision that never becomes healthy — would not be caught by it and is not caught by anything else today. The first DEV deployment is the real test, and it should be treated as one: run it deliberately, with someone watching, rather than as a side effect of the first merge after the values arrive | DevOps Lead, at the first apply |
 | **F-9** | **`repo-checks` now runs seven check scripts** and has grown into the job that guards every document against drift. It is still inside the 10-minute budget, but the pattern of appending one script per task will not hold indefinitely. No action now; noted so the eventual split is a decision rather than a discovery | TASK-084 (test strategy) or the next task to add one |
 
 ## 8. Change log
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-23 | Validation checks executed as far as a cloudless environment allows (§5.3), through `verify-promotion.py`, which runs the committed pipeline stage by stage. Both checks pass on the pipeline's own half; the cloud half stays owed. The drill found two defects, both fixed and both now locked by a check: the deployment record named the triggering commit rather than the released one, which would have mis-recorded every rollback; and the approval was read back only after the migration and the apply, making it detective rather than preventive. `verify-promotion.py` joins the deliverables; P-11 joins the CI check. | DevOps (TASK-018) |
 | 2026-09-23 | Initial record. Nine-job pipeline promoting one digest through DEV, SIT, UAT and PROD, with the manual PROD gate and the approval read back into a deployment record; quality gates called rather than copied; migration dry-run with an expand-then-contract refusal, executed against PostgreSQL 17; fifteen structural invariants wired into `repo-checks` and mutation-tested. Four decisions recorded, nine findings raised, two of them defects that block the first real deployment (F-3, F-4). | DevOps (TASK-018) |

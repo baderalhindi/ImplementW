@@ -223,6 +223,7 @@ jobs:
         with:
           environment: dev
           task-id: ${{ needs.release-metadata.outputs.task_id }}
+          commit-sha: ${{ needs.release-metadata.outputs.commit_sha }}
           image-digest: ${{ needs.package.outputs.image_digest }}
           deploy-service-account-key: ${{ secrets.DEPLOY_SERVICE_ACCOUNT_KEY }}
           github-token: ${{ github.token }}
@@ -246,6 +247,7 @@ jobs:
         with:
           environment: sit
           task-id: ${{ needs.release-metadata.outputs.task_id }}
+          commit-sha: ${{ needs.release-metadata.outputs.commit_sha }}
           image-digest: ${{ needs.package.outputs.image_digest }}
           deploy-service-account-key: ${{ secrets.DEPLOY_SERVICE_ACCOUNT_KEY }}
           github-token: ${{ github.token }}
@@ -269,6 +271,7 @@ jobs:
         with:
           environment: uat
           task-id: ${{ needs.release-metadata.outputs.task_id }}
+          commit-sha: ${{ needs.release-metadata.outputs.commit_sha }}
           image-digest: ${{ needs.package.outputs.image_digest }}
           deploy-service-account-key: ${{ secrets.DEPLOY_SERVICE_ACCOUNT_KEY }}
           github-token: ${{ github.token }}
@@ -294,6 +297,7 @@ jobs:
         with:
           environment: prod
           task-id: ${{ needs.release-metadata.outputs.task_id }}
+          commit-sha: ${{ needs.release-metadata.outputs.commit_sha }}
           image-digest: ${{ needs.package.outputs.image_digest }}
           deploy-service-account-key: ${{ secrets.DEPLOY_SERVICE_ACCOUNT_KEY }}
           github-token: ${{ github.token }}

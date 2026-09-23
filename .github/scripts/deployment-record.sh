@@ -8,13 +8,30 @@
 # that recorded it and written into the deployment record, and a gated environment whose approval
 # cannot be read back does not get deployed to: an unevidenced approval is not an approval.
 #
+# It runs twice in a deployment. VERIFY_ONLY=1 first, before anything is applied, so a gated
+# environment whose approval cannot be read back is stopped rather than rolled back; then again at
+# the end, to write the record against what was actually deployed.
+#
+#   VERIFY_ONLY=1 ENVIRONMENT=prod .github/scripts/deployment-record.sh
 #   ENVIRONMENT=prod IMAGE_DIGEST=sha256:… TASK_ID=TASK-018 .github/scripts/deployment-record.sh
 set -euo pipefail
 
+VERIFY_ONLY=${VERIFY_ONLY:-0}
+
 : "${ENVIRONMENT:?ENVIRONMENT is unset}"
-: "${TASK_ID:?TASK_ID is unset}"
-: "${IMAGE_DIGEST:?IMAGE_DIGEST is unset}"
-: "${GITHUB_SHA:?GITHUB_SHA is unset}"
+if [ "$VERIFY_ONLY" != "1" ]; then
+  : "${TASK_ID:?TASK_ID is unset}"
+  : "${IMAGE_DIGEST:?IMAGE_DIGEST is unset}"
+fi
+
+# The commit being *released*, which is not always the commit that triggered the run: a rollback is
+# a workflow_dispatch naming an earlier SHA, and GITHUB_SHA would still be the head of main. Falling
+# back to it keeps the script usable by hand.
+COMMIT_SHA=${COMMIT_SHA:-${GITHUB_SHA:-}}
+if [ "$VERIFY_ONLY" != "1" ] && [ -z "$COMMIT_SHA" ]; then
+  echo "error: COMMIT_SHA is unset — the deployment could not name the commit it deploys" >&2
+  exit 1
+fi
 
 GATES=${GATES:-infra/environments/github/environments.json}
 OUTPUT=${OUTPUT:-artifacts/deployment-record-$ENVIRONMENT.json}
@@ -64,13 +81,22 @@ MSG
   [ -n "$approved_at" ] || { echo "error: the approval for '$ENVIRONMENT' carries no timestamp" >&2; exit 1; }
 fi
 
+if [ "$VERIFY_ONLY" = "1" ]; then
+  if [ -n "$reviewers" ]; then
+    echo "approval verified for '$ENVIRONMENT': $approver at $approved_at"
+  else
+    echo "'$ENVIRONMENT' requires no approval — $gate is automatic"
+  fi
+  exit 0
+fi
+
 mkdir -p "$(dirname "$OUTPUT")"
 
 jq -n \
   --arg environment "$ENVIRONMENT" \
   --arg gate "$gate" \
   --arg task_id "$TASK_ID" \
-  --arg commit_sha "$GITHUB_SHA" \
+  --arg commit_sha "$COMMIT_SHA" \
   --arg image_digest "$IMAGE_DIGEST" \
   --arg reviewers "$reviewers" \
   --arg approver "$approver" \
@@ -112,7 +138,7 @@ if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
     echo "| --- | --- |"
     echo "| Gate | $gate |"
     echo "| Task | $TASK_ID |"
-    echo "| Commit | \`$GITHUB_SHA\` |"
+    echo "| Commit | \`$COMMIT_SHA\` |"
     echo "| Image | \`$IMAGE_DIGEST\` |"
     if [ -n "$reviewers" ]; then
       echo "| Approved by | **$approver** at $approved_at |"

@@ -17,6 +17,11 @@ inputs:
   task-id:
     description: The Task ID the release is traceable to
     required: true
+  commit-sha:
+    description: >-
+      The commit being released. Not github.sha: a rollback is a workflow_dispatch naming an earlier
+      commit, and the deployment record must name what was deployed rather than what triggered it.
+    required: true
   image-digest:
     description: The image to deploy, by digest — the same artifact in all four environments
     required: true
@@ -48,6 +53,18 @@ runs:
       env:
         ADR001_CONFIRMATION_REF: ${{ inputs.authorisation-ref }}
       run: .github/scripts/deploy-preflight.sh --require '${{ inputs.environment }}'
+
+    # Before a credential is used and before anything is applied. GitHub has already halted this job
+    # until a reviewer released the environment; this reads that approval back, so a gated deployment
+    # whose approval cannot be evidenced stops here rather than after the apply. The same script
+    # writes the record at the end, against what was actually deployed.
+    - name: Verify the approval
+      shell: bash
+      env:
+        ENVIRONMENT: ${{ inputs.environment }}
+        VERIFY_ONLY: '1'
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: .github/scripts/deployment-record.sh
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v3
@@ -116,6 +133,7 @@ runs:
       env:
         ENVIRONMENT: ${{ inputs.environment }}
         TASK_ID: ${{ inputs.task-id }}
+        COMMIT_SHA: ${{ inputs.commit-sha }}
         IMAGE_DIGEST: ${{ inputs.image-digest }}
         GH_TOKEN: ${{ inputs.github-token }}
         ADR001_CONFIRMATION_REF: ${{ inputs.authorisation-ref }}
