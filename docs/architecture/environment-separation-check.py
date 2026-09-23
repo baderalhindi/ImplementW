@@ -12,26 +12,29 @@ It checks the manifest against itself, against the Environment and Secrets sheet
 the GitHub deployment environments, and against the promotion table in the record. It cannot check
 what only a provisioned environment can answer — that is infra/environments/verify-separation.sh.
 
+The set of variables each environment declares is derived from the sheet by infra/secrets/inventory.py
+(TASK-019), so this script asserts that the manifest holds exactly the sheet's secrets for each
+environment rather than the three TASK-016 seeded it with.
+
     python3 docs/architecture/environment-separation-check.py
 """
-import csv
 import json
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "infra/secrets"))
+import inventory  # noqa: E402  — TASK-019, the single derivation of the secret inventory
+
 MANIFEST = ROOT / "infra/environments/environments.json"
 GITHUB = ROOT / "infra/environments/github/environments.json"
-SHEET = ROOT / "docs/architecture/environment-and-secrets.csv"
 RECORD = ROOT / "docs/architecture/environment-separation.md"
 
 ORDER = ["dev", "sit", "uat", "prod"]
-VARIABLES = {
-    "DB_CONNECTION_STRING": ("secret", "Secret"),
-    "JWT_SIGNING_KEY": ("secret", "Secret"),
-    "APP_BASE_URL": ("config", "Public"),
-}
+# The one configuration variable the manifest carries a value for. Every other Public row lives in
+# the environment's configuration store, and every Secret row is inventory.py's business.
+CONFIG_VARIABLES = {"APP_BASE_URL"}
 # Google's region in Saudi Arabia is me-central2 (Dammam). me-central1 is Doha, Qatar: out of
 # Kingdom, and the one neighbouring identifier a typo produces (ADR-001 §7 C-1).
 IN_KINGDOM = {"me-central2"}
@@ -147,24 +150,42 @@ def check_region(manifest):
 
 
 def check_variables(manifest):
+    """S-6 — each environment declares exactly the sheet's secrets for it, by the namespace rule."""
+    try:
+        expected = inventory.inventory(manifest)
+    except inventory.InventoryError as exc:
+        fail("S-6", str(exc))
+        return
+
     urls = {}
     for env in manifest["environments"]:
-        declared = set(env["variables"])
-        if declared != set(VARIABLES):
-            fail("S-6", f"{env['name']} declares {sorted(declared)}, expected {sorted(VARIABLES)}")
-        for name, spec in env["variables"].items():
-            expected_kind = VARIABLES.get(name, (None, None))[0]
-            if spec.get("kind") != expected_kind:
-                fail("S-6", f"{env['name']}.{name}.kind is {spec.get('kind')!r}, expected {expected_kind!r}")
-            elif expected_kind == "secret":
+        name = env["name"]
+        declared = {n for n, spec in env["variables"].items() if spec.get("kind") == "secret"}
+        for missing in sorted(set(expected[name]) - declared):
+            fail("S-6", f"{name} does not declare {missing}, which the sheet scopes to {name.upper()}")
+        for extra in sorted(declared - set(expected[name])):
+            fail("S-6", f"{name} declares {extra}, which the sheet does not scope to {name.upper()}")
+
+        config = {n for n, spec in env["variables"].items() if spec.get("kind") == "config"}
+        if config != CONFIG_VARIABLES:
+            fail("S-6", f"{name} config variables are {sorted(config)}, expected {sorted(CONFIG_VARIABLES)}")
+
+        for variable, spec in env["variables"].items():
+            kind = spec.get("kind")
+            if kind == "secret":
                 if set(spec) != {"kind", "secret_id"}:
-                    fail("S-6", f"{env['name']}.{name} carries {sorted(set(spec) - {'kind', 'secret_id'})}; "
+                    fail("S-6", f"{name}.{variable} carries {sorted(set(spec) - {'kind', 'secret_id'})}; "
                                 "a secret entry names its secret-store entry and nothing else — never a value")
-            elif expected_kind == "config":
+                elif variable in expected[name] and spec["secret_id"] != expected[name][variable]:
+                    fail("S-6", f"{name}.{variable}.secret_id is {spec['secret_id']!r}, "
+                                f"the namespace rule gives {expected[name][variable]!r}")
+            elif kind == "config":
                 if set(spec) != {"kind", "value"}:
-                    fail("S-6", f"{env['name']}.{name} carries {sorted(set(spec) - {'kind', 'value'})}, expected kind and value")
+                    fail("S-6", f"{name}.{variable} carries {sorted(set(spec) - {'kind', 'value'})}, expected kind and value")
                 else:
-                    urls[env["name"]] = spec["value"]
+                    urls[name] = spec["value"]
+            else:
+                fail("S-6", f"{name}.{variable}.kind is {kind!r}, expected 'secret' or 'config'")
 
     populated = {e: u for e, u in urls.items() if u}
     if populated and len(populated) != len(urls):
@@ -178,21 +199,26 @@ def check_variables(manifest):
 
 
 def check_sheet(manifest):
-    rows = {}
-    with SHEET.open(newline="") as handle:
-        for fields in list(csv.reader(handle))[1:]:
-            if len(fields) >= 4:
-                rows[fields[0]] = (fields[2], fields[3])
-    for name, (_, classification) in VARIABLES.items():
-        if name not in rows:
-            fail("S-7", f"{name} is not a row of the Environment and Secrets sheet snapshot")
-            continue
-        scope, sheet_class = rows[name]
-        if not sheet_class.startswith(classification):
-            fail("S-7", f"{name} is {sheet_class!r} in the sheet, this manifest treats it as {classification}")
-        for env in ORDER:
-            if env.upper() not in scope.upper():
-                fail("S-7", f"{name} sheet scope {scope!r} does not cover {env.upper()}")
+    """S-7 — every declared variable is a sheet row, stored where the manifest assumes it is."""
+    try:
+        classified = inventory.classify()
+    except inventory.InventoryError as exc:
+        fail("S-7", str(exc))
+        return
+
+    routes = {"secret": "secret-store", "config": "config"}
+    for env in manifest["environments"]:
+        for variable, spec in env["variables"].items():
+            if variable not in classified:
+                fail("S-7", f"{variable} is not a row of the Environment and Secrets sheet snapshot")
+                continue
+            route, scope, classification = classified[variable]
+            if route != routes.get(spec.get("kind")):
+                fail("S-7", f"{env['name']}.{variable} is a {spec.get('kind')} entry, but the sheet stores it "
+                            f"in the {route} ({classification})")
+            elif env["name"] not in scope:
+                fail("S-7", f"{env['name']}.{variable} is declared, but the sheet scopes it to "
+                            f"{[e.upper() for e in scope] or 'no standing environment'}")
 
 
 def check_github(manifest, github):

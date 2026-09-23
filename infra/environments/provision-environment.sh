@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 # Provisions one environment's isolation boundary (TASK-016): its own GCP project, its own
-# Terraform state bucket, its own secret-store namespace with the three environment-scoped
-# variables, and its own deploy and runtime service accounts. Nothing it creates is shared with
-# any other environment, and it grants no principal outside the project it is creating.
+# Terraform state bucket, its own secret-store namespace holding every secret the Environment and
+# Secrets sheet scopes to it, and its own deploy and runtime service accounts. Nothing it creates
+# is shared with any other environment, and it grants no principal outside the project it creates.
 #
 #   infra/environments/apply-org-policy.sh --dry-run            # run this FIRST, once, per folder
 #   infra/environments/provision-environment.sh dev --dry-run   # then once per environment

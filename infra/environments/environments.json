@@ -41,7 +41,10 @@
       },
       "variables": {
         "DB_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-dev-db-connection-string" },
+        "DOCUMENT_STORAGE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-dev-document-storage-connection-string" },
+        "E2E_TEST_USER_CREDENTIALS_SECRET_REF": { "kind": "secret", "secret_id": "pmplatform-dev-e2e-test-user-credentials-secret-ref" },
         "JWT_SIGNING_KEY": { "kind": "secret", "secret_id": "pmplatform-dev-jwt-signing-key" },
+        "SSO_OIDC_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-dev-sso-oidc-client-secret" },
         "APP_BASE_URL": { "kind": "config", "value": "" }
       }
     },
@@ -60,8 +63,28 @@
         "runtime": "app-sit@ahda-pmplatform-sit.iam.gserviceaccount.com"
       },
       "variables": {
+        "AD_BIND_DN": { "kind": "secret", "secret_id": "pmplatform-sit-ad-bind-dn" },
+        "AD_BIND_PASSWORD": { "kind": "secret", "secret_id": "pmplatform-sit-ad-bind-password" },
+        "AD_LDAP_URL": { "kind": "secret", "secret_id": "pmplatform-sit-ad-ldap-url" },
+        "ALERT_CHANNEL_WEBHOOK_URL": { "kind": "secret", "secret_id": "pmplatform-sit-alert-channel-webhook-url" },
+        "APM_DSN": { "kind": "secret", "secret_id": "pmplatform-sit-apm-dsn" },
+        "DB_BACKUP_STORAGE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-sit-db-backup-storage-connection-string" },
         "DB_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-sit-db-connection-string" },
+        "DOCUMENT_STORAGE_BACKUP_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-sit-document-storage-backup-connection-string" },
+        "DOCUMENT_STORAGE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-sit-document-storage-connection-string" },
+        "E2E_TEST_USER_CREDENTIALS_SECRET_REF": { "kind": "secret", "secret_id": "pmplatform-sit-e2e-test-user-credentials-secret-ref" },
+        "EXCHANGE_SMTP_PASSWORD": { "kind": "secret", "secret_id": "pmplatform-sit-exchange-smtp-password" },
+        "EXCHANGE_SMTP_USER": { "kind": "secret", "secret_id": "pmplatform-sit-exchange-smtp-user" },
         "JWT_SIGNING_KEY": { "kind": "secret", "secret_id": "pmplatform-sit-jwt-signing-key" },
+        "MALWARE_SCAN_API_KEY": { "kind": "secret", "secret_id": "pmplatform-sit-malware-scan-api-key" },
+        "MFA_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-sit-mfa-provider-api-key" },
+        "NAFATH_CLIENT_ID": { "kind": "secret", "secret_id": "pmplatform-sit-nafath-client-id" },
+        "NAFATH_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-sit-nafath-client-secret" },
+        "RATE_LIMIT_STORE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-sit-rate-limit-store-connection-string" },
+        "SIEM_API_TOKEN": { "kind": "secret", "secret_id": "pmplatform-sit-siem-api-token" },
+        "SMS_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-sit-sms-provider-api-key" },
+        "SSO_OIDC_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-sit-sso-oidc-client-secret" },
+        "UPTIME_MONITOR_API_KEY": { "kind": "secret", "secret_id": "pmplatform-sit-uptime-monitor-api-key" },
         "APP_BASE_URL": { "kind": "config", "value": "" }
       }
     },
@@ -80,8 +103,27 @@
         "runtime": "app-uat@ahda-pmplatform-uat.iam.gserviceaccount.com"
       },
       "variables": {
+        "AD_BIND_DN": { "kind": "secret", "secret_id": "pmplatform-uat-ad-bind-dn" },
+        "AD_BIND_PASSWORD": { "kind": "secret", "secret_id": "pmplatform-uat-ad-bind-password" },
+        "AD_LDAP_URL": { "kind": "secret", "secret_id": "pmplatform-uat-ad-ldap-url" },
+        "ALERT_CHANNEL_WEBHOOK_URL": { "kind": "secret", "secret_id": "pmplatform-uat-alert-channel-webhook-url" },
+        "APM_DSN": { "kind": "secret", "secret_id": "pmplatform-uat-apm-dsn" },
+        "DB_BACKUP_STORAGE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-uat-db-backup-storage-connection-string" },
         "DB_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-uat-db-connection-string" },
+        "DOCUMENT_STORAGE_BACKUP_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-uat-document-storage-backup-connection-string" },
+        "DOCUMENT_STORAGE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-uat-document-storage-connection-string" },
+        "EXCHANGE_SMTP_PASSWORD": { "kind": "secret", "secret_id": "pmplatform-uat-exchange-smtp-password" },
+        "EXCHANGE_SMTP_USER": { "kind": "secret", "secret_id": "pmplatform-uat-exchange-smtp-user" },
         "JWT_SIGNING_KEY": { "kind": "secret", "secret_id": "pmplatform-uat-jwt-signing-key" },
+        "MALWARE_SCAN_API_KEY": { "kind": "secret", "secret_id": "pmplatform-uat-malware-scan-api-key" },
+        "MFA_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-uat-mfa-provider-api-key" },
+        "NAFATH_CLIENT_ID": { "kind": "secret", "secret_id": "pmplatform-uat-nafath-client-id" },
+        "NAFATH_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-uat-nafath-client-secret" },
+        "RATE_LIMIT_STORE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-uat-rate-limit-store-connection-string" },
+        "SIEM_API_TOKEN": { "kind": "secret", "secret_id": "pmplatform-uat-siem-api-token" },
+        "SMS_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-uat-sms-provider-api-key" },
+        "SSO_OIDC_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-uat-sso-oidc-client-secret" },
+        "UPTIME_MONITOR_API_KEY": { "kind": "secret", "secret_id": "pmplatform-uat-uptime-monitor-api-key" },
         "APP_BASE_URL": { "kind": "config", "value": "" }
       }
     },
@@ -100,8 +142,27 @@
         "runtime": "app-prod@ahda-pmplatform-prod.iam.gserviceaccount.com"
       },
       "variables": {
+        "AD_BIND_DN": { "kind": "secret", "secret_id": "pmplatform-prod-ad-bind-dn" },
+        "AD_BIND_PASSWORD": { "kind": "secret", "secret_id": "pmplatform-prod-ad-bind-password" },
+        "AD_LDAP_URL": { "kind": "secret", "secret_id": "pmplatform-prod-ad-ldap-url" },
+        "ALERT_CHANNEL_WEBHOOK_URL": { "kind": "secret", "secret_id": "pmplatform-prod-alert-channel-webhook-url" },
+        "APM_DSN": { "kind": "secret", "secret_id": "pmplatform-prod-apm-dsn" },
+        "DB_BACKUP_STORAGE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-prod-db-backup-storage-connection-string" },
         "DB_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-prod-db-connection-string" },
+        "DOCUMENT_STORAGE_BACKUP_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-prod-document-storage-backup-connection-string" },
+        "DOCUMENT_STORAGE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-prod-document-storage-connection-string" },
+        "EXCHANGE_SMTP_PASSWORD": { "kind": "secret", "secret_id": "pmplatform-prod-exchange-smtp-password" },
+        "EXCHANGE_SMTP_USER": { "kind": "secret", "secret_id": "pmplatform-prod-exchange-smtp-user" },
         "JWT_SIGNING_KEY": { "kind": "secret", "secret_id": "pmplatform-prod-jwt-signing-key" },
+        "MALWARE_SCAN_API_KEY": { "kind": "secret", "secret_id": "pmplatform-prod-malware-scan-api-key" },
+        "MFA_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-prod-mfa-provider-api-key" },
+        "NAFATH_CLIENT_ID": { "kind": "secret", "secret_id": "pmplatform-prod-nafath-client-id" },
+        "NAFATH_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-prod-nafath-client-secret" },
+        "RATE_LIMIT_STORE_CONNECTION_STRING": { "kind": "secret", "secret_id": "pmplatform-prod-rate-limit-store-connection-string" },
+        "SIEM_API_TOKEN": { "kind": "secret", "secret_id": "pmplatform-prod-siem-api-token" },
+        "SMS_PROVIDER_API_KEY": { "kind": "secret", "secret_id": "pmplatform-prod-sms-provider-api-key" },
+        "SSO_OIDC_CLIENT_SECRET": { "kind": "secret", "secret_id": "pmplatform-prod-sso-oidc-client-secret" },
+        "UPTIME_MONITOR_API_KEY": { "kind": "secret", "secret_id": "pmplatform-prod-uptime-monitor-api-key" },
         "APP_BASE_URL": { "kind": "config", "value": "" }
       }
     }

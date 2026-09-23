@@ -11,7 +11,7 @@ Full record, topology diagram and promotion path: [`docs/architecture/environmen
 
 | File | What it is |
 | --- | --- |
-| `environments.json` | The source of truth. Four environments, their projects, networks, database instances, secret-store namespaces, state buckets, service accounts and the three environment-scoped variables. Holds **no value of any kind** for a secret. |
+| `environments.json` | The source of truth. Four environments, their projects, networks, database instances, secret-store namespaces, state buckets, service accounts and the variables each environment holds. The secret entries are derived from the Environment and Secrets sheet by `infra/secrets/inventory.py` (TASK-019). Holds **no value of any kind** for a secret. |
 | `apply-org-policy.sh` | Creates the two folders and binds `constraints/gcp.resourceLocations` and the default log-bucket location to them. Run **first**: both are fixed for every project created afterwards. |
 | `provision-environment.sh` | Creates one environment: project, state bucket, secret containers, service accounts, per-project IAM. |
 | `verify-separation.sh` | The separation drills: a DEV credential against the SIT database, PROD secrets from non-PROD principals, cross-environment IAM, and resource locality. |
