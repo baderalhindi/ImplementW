@@ -5,6 +5,11 @@
     <ProjectReference Include="../PMPlatform.Domain/PMPlatform.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The secret-store adapter is internal: it is composed through AddSecretStore, not referenced. -->
+    <InternalsVisibleTo Include="PMPlatform.Tests.Unit" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />

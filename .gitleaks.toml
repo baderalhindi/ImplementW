@@ -1,0 +1,28 @@
+# Secret-scanner configuration (TASK-019).
+#
+# The default rule set, plus one allowlist. TASK-080 (CTL-42) owns the scanning *gate* — per pull
+# request, on a schedule, as a required status check — and owns this file from the point it lands;
+# it is here now because TASK-019's acceptance criterion is a clean repository-wide scan, and a
+# finding that is not a secret has to be answered somewhere a reviewer can read.
+#
+# Nothing here suppresses a rule globally. Each allowlist names the rule, the paths and the shape of
+# the value, so a real credential in the same file is still found.
+title = "PMPlatform"
+
+[extend]
+useDefault = true
+
+# `generic-api-key` matches on a field name containing "key". `idempotencyKey` is the producer's
+# natural key for an occurrence — a row id (event-conventions.md EV-4: "never a fresh uuid, never
+# the HTTP Idempotency-Key, never the correlationId"). These five values are documentation samples
+# of that field, validated against event-envelope.schema.json by docs/architecture/contract-check.py.
+[[allowlists]]
+description = "idempotencyKey values in the API and event documentation samples are row ids, not credentials (EV-4)"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''docs/architecture/api-conventions-samples\.openapi\.json''',
+  '''docs/architecture/event-samples/[^/]+\.json''',
+]
+regexes = ['''"idempotencyKey"\s*:\s*"[A-Za-z0-9-]+"''']

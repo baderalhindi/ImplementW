@@ -31,10 +31,15 @@ src/frontend/playwright-report/
 .env
 .env.*
 !.env.example
-infra/secrets/*
-!infra/secrets/.gitkeep
-!infra/secrets/README.md
 appsettings.*.Local.json
+
+# infra/secrets holds the integration module and nothing else: everything under it is ignored
+# unless it is named here, so a value left in the directory by hand is never committed (TASK-019).
+infra/secrets/*
+!infra/secrets/README.md
+!infra/secrets/secret-rotation-runbook.md
+!infra/secrets/*.py
+!infra/secrets/*.sh
 
 # Terraform working files (TASK-017). .terraform.lock.hcl is committed on purpose: it is what
 # makes a plan reproducible between a reviewer's machine and CI.

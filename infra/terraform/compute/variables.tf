@@ -75,13 +75,8 @@ variable "container_port" {
   default     = 8080
 }
 
-variable "secret_environment" {
-  description = "Environment variables read from Secret Manager at start-up, as variable name to secret id. The containers are created empty by TASK-016 and the values are written under TASK-019; an empty secret fails the container at boot, which is the stated behaviour."
-  type        = map(string)
-}
-
 variable "plain_environment" {
-  description = "Environment variables that are configuration, not secrets."
+  description = "Environment variables that are configuration, not secrets. SECRET_STORE_ENDPOINT is among them: the application reads every secret from the store itself with the runtime service account's identity (TASK-019), so no secret value is injected here, held in Terraform state, or bound to a revision."
   type        = map(string)
 }
 
