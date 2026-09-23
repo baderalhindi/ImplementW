@@ -6,7 +6,7 @@
 | Applies to | The 23 variables the Environment and Secrets sheet stores in the approved secret-management platform, across DEV, SIT, UAT and PROD (69 secret containers) |
 | Store | Google Secret Manager, per ADR-001 and the TASK-019 gate cell. Replication is user-managed and pinned to the in-Kingdom region (ADR-001 C-5) |
 | Implements | CTL-18 ("rotation procedure documented and rehearsed"), CTL-51 |
-| Status | **WRITTEN — REHEARSED IN CODE ONLY.** No environment exists yet (ADR-001 R-1 to R-3, UGV-07), so §4 has been rehearsed against the application, not against a provisioned store. See §9 |
+| Status | **WRITTEN — REHEARSED AGAINST THE APPLICATION.** §4 has been rehearsed end to end against the running API with a stand-in store (`infra/secrets/rehearse-rotation.sh`). It has not been rehearsed against Secret Manager: no environment exists (ADR-001 R-1 to R-3, UGV-07). See §9 |
 | Record | [`docs/architecture/secret-management.md`](../../docs/architecture/secret-management.md) |
 
 ## 1. What this runbook is for
@@ -193,13 +193,26 @@ variable, the environment, who ran it, when, which version number superseded whi
 that was performed, and — for PROD — the change reference. The secret store keeps the version
 numbers and their timestamps; the rest belongs in AHDA's change record.
 
-**What has and has not been rehearsed.** The procedure in §4 has been rehearsed against the
-application: `SecretStoreTests.ARotatedSecretReachesARunningApplication` changes a value in the store
-and asserts the running configuration follows it, with no restart and no code change, and the test
-fails when the refresh is disabled. It has **not** been rehearsed against a provisioned Secret
-Manager namespace, because no environment exists (ADR-001 R-1 to R-3, UGV-07). The first rehearsal
-against DEV is a release-checklist item, and `infra/secrets/verify-secret-integration.sh dev` is the
-check to run before it.
+**What has and has not been rehearsed.**
+
+Rehearsed, end to end, against the running application:
+
+```sh
+infra/secrets/rehearse-rotation.sh     # about six minutes; it waits out a real refresh interval
+```
+
+It starts PostgreSQL, starts a stand-in store holding `DB_CONNECTION_STRING` with the wrong password,
+and starts the API with `ASPNETCORE_ENVIRONMENT=Staging` so the store is required. `/health` reports
+Unhealthy on `28P01: password authentication failed`. The secret is then rotated in the store and
+nothing else is touched: `/health` reaches Healthy 300 seconds later — one refresh interval — in the
+**same process**, checked from the listening socket. `SecretStoreTests` asserts the same property at
+unit level and fails when the refresh timer is disabled.
+
+**Not** rehearsed: the half of §4 that `rotate-secret.sh` performs against Secret Manager —
+`gcloud secrets versions add`, disabling and re-enabling versions, and the IAM that decides who may
+do either. The stand-in store has no versions and no IAM. That rehearsal needs a provisioned
+namespace, is blocked by UGV-07, and is a release-checklist item;
+`infra/secrets/verify-secret-integration.sh dev` is the check to run before it.
 
 ## 10. Findings
 
