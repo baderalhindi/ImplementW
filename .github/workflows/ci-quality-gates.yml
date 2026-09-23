@@ -7,14 +7,23 @@ name: ci-quality-gates
 on:
   pull_request:
     branches: [main, dev, stage]
+  # `main` is not here: a push to main starts ci-cd-pipeline.yml, which calls this workflow as its
+  # first gate (TASK-018). Running it twice on the same commit would be the same checks reported in
+  # two places, and only one of them gating the deployment. `dev` and `stage` keep their push trigger
+  # until they are retired (branching-strategy.md §2.1).
   push:
-    branches: [main, dev, stage]
+    branches: [dev, stage]
+  # Called by ci-cd-pipeline.yml so the pipeline gates on the same checks that guard the pull
+  # request, rather than on a copy of them that can drift.
+  workflow_call:
 
 permissions:
   contents: read
 
+# Keyed on the workflow too: a called run and a pull-request run on the same ref are different gates
+# and must not cancel one another.
 concurrency:
-  group: ci-quality-gates-${{ github.ref }}
+  group: ci-quality-gates-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -107,6 +116,9 @@ jobs:
 
       - name: Infrastructure as code (TASK-017)
         run: python3 docs/architecture/terraform-check.py
+
+      - name: Promotion pipeline (TASK-018)
+        run: python3 docs/architecture/cicd-pipeline-check.py
 
   # The IaC is reviewed like application code and gated like it (TASK-017, CTL-05). Format,
   # schema and a static security scan run on every pull request; `terraform plan` needs the

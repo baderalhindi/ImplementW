@@ -1,0 +1,301 @@
+# Controlled promotion pipeline (TASK-018, CTL-40). Record: docs/architecture/cicd-pipeline.md
+#
+# Build once on main, then promote that one artifact through DEV, SIT, UAT and PROD. Each stage is a
+# job that needs the one before it and names a GitHub deployment environment; the environment's
+# required reviewers are what halt the job, and GitHub records who released it and when
+# (infra/environments/github/environments.json, TASK-016 §4).
+#
+# Three properties are what this file exists for, and each is mechanical rather than asserted:
+#
+#   PROD cannot be deployed to without a recorded approval. `environment: prod` halts the job until a
+#   reviewer approves, and .github/scripts/deployment-record.sh then reads that approval back and
+#   fails the deployment if it carries no identity or no timestamp.
+#
+#   A failed gate blocks promotion. quality-gates, image-scan and migration-dry-run are needs of
+#   deploy-dev, and every later stage needs the stage before it, so a red gate skips all four.
+#
+#   Every deployment names a commit SHA and a Task ID. release-metadata fails the run if the commit
+#   being released names no task, and both travel with the image into every deployment record.
+#
+# Nothing is deployed today: the region, the tenancy, the DNS zone and the artifact registry project
+# are outstanding, so `preflight` reports not-ready and the four deploy stages are skipped. The build,
+# the scan and the gates all run in full.
+name: ci-cd-pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Commit to promote. Defaults to the head of main — set it to re-promote an earlier release, which is how a rollback is issued.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+# Not keyed on the ref: main is the only ref that promotes, and two promotions at once would race
+# for the same environments. A run waiting at an approval gate holds the queue, which is the
+# intended behaviour — the queued run is the release that would follow this one.
+concurrency:
+  group: ci-cd-pipeline
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # ── Stage 1: what is being released ───────────────────────────────────────────────────────────
+  release-metadata:
+    name: release-metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      commit_sha: ${{ steps.metadata.outputs.commit_sha }}
+      task_id: ${{ steps.metadata.outputs.task_id }}
+      image_tag: ${{ steps.metadata.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha || github.sha }}
+
+      - id: metadata
+        run: .github/scripts/release-metadata.sh
+        env:
+          COMMIT_SHA: ${{ inputs.commit_sha || github.sha }}
+
+  # Readiness is evaluated once, early, so a run that cannot deploy says so at the top rather than
+  # after twenty minutes of building. It is evaluated again inside each deploy stage, with --require,
+  # because a value can be emptied between the two.
+  preflight:
+    name: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ready: ${{ steps.preflight.outputs.ready }}
+      image_repository: ${{ steps.preflight.outputs.image_repository }}
+      region: ${{ steps.preflight.outputs.region }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: preflight
+        run: .github/scripts/deploy-preflight.sh
+        env:
+          ADR001_CONFIRMATION_REF: ${{ vars.ADR001_CONFIRMATION_REF }}
+
+  # ── Stage 2: the gates ────────────────────────────────────────────────────────────────────────
+  # TASK-015's gate, called rather than restated, so the pipeline cannot drift from the checks that
+  # guard the pull request. Its jobs report here as `quality-gates / backend`, `… / frontend`,
+  # `… / repo-checks` and `… / terraform`.
+  quality-gates:
+    name: quality-gates
+    uses: ./.github/workflows/ci-quality-gates.yml
+    permissions:
+      contents: read
+
+  # CTL-40's "failed security scan blocks promotion", at the artifact. The image is built here once
+  # and scanned before it can be pushed; TASK-022 adds the SBOM and the dependency (SCA) scan to this
+  # job, and TASK-080 covers source-level secrets on the pull request.
+  package:
+    name: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [release-metadata, preflight, quality-gates]
+    outputs:
+      image_digest: ${{ steps.push.outputs.image_digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-metadata.outputs.commit_sha }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Built to the local daemon first: an image is scanned before it is pushed, so a CRITICAL
+      # finding never reaches a registry any environment can pull from.
+      - name: Build the release image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/api.Dockerfile
+          load: true
+          tags: pmplatform-api:${{ needs.release-metadata.outputs.image_tag }}
+          labels: |
+            org.opencontainers.image.revision=${{ needs.release-metadata.outputs.commit_sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            ahda.task-id=${{ needs.release-metadata.outputs.task_id }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Same tool and same threshold as the Terraform scan in ci-quality-gates.yml: zero HIGH or
+      # CRITICAL. `ignore-unfixed` keeps the gate on findings that can actually be acted on, which is
+      # the line TASK-022's acceptance criterion draws ("a known CRITICAL CVE with an available fix").
+      - name: Scan the release image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: pmplatform-api:${{ needs.release-metadata.outputs.image_tag }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+
+      - name: Authenticate to the container registry
+        if: ${{ needs.preflight.outputs.ready == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ needs.preflight.outputs.region }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ secrets.CONTAINER_REGISTRY_TOKEN }}
+
+      # The digest, not the tag, is what every environment is deployed from. One artifact built once
+      # and promoted unchanged (environment-separation.md §4) is a claim a digest can carry and a tag
+      # cannot: a tag can be moved, a digest is the image.
+      - name: Push and capture the digest
+        id: push
+        if: ${{ needs.preflight.outputs.ready == 'true' }}
+        env:
+          REPOSITORY: ${{ needs.preflight.outputs.image_repository }}
+          TAG: ${{ needs.release-metadata.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          docker tag "pmplatform-api:$TAG" "$REPOSITORY:$TAG"
+          docker push "$REPOSITORY:$TAG"
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$REPOSITORY:$TAG")
+          echo "image_digest=$digest" >>"$GITHUB_OUTPUT"
+          echo "pushed $digest" >>"$GITHUB_STEP_SUMMARY"
+
+  # CTL-40's "failed migration dry-run blocks promotion". Runs against a scratch database, so it is
+  # independent of every environment and of whether any environment exists.
+  migration-dry-run:
+    name: migration-dry-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [release-metadata, quality-gates]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: scratch
+          POSTGRES_DB: scratch
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-metadata.outputs.commit_sha }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Build
+        run: dotnet build src/backend/PMPlatform.Api --configuration Release
+
+      - name: Dry-run the release's migrations
+        env:
+          DATABASE_URL: postgres://postgres:scratch@localhost:5432/scratch
+        run: .github/scripts/migration-dry-run.sh
+
+  # ── Stage 3 to 6: the promotion path ──────────────────────────────────────────────────────────
+  # G-1, automatic. Every gate the workbook names is a `needs` of this job, so a red gate skips DEV
+  # and, through the chain below it, SIT, UAT and PROD.
+  deploy-dev:
+    name: deploy-dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [release-metadata, preflight, quality-gates, package, migration-dry-run]
+    if: ${{ success() && needs.preflight.outputs.ready == 'true' }}
+    environment:
+      name: dev
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-metadata.outputs.commit_sha }}
+      - uses: ./.github/actions/deploy-environment
+        with:
+          environment: dev
+          task-id: ${{ needs.release-metadata.outputs.task_id }}
+          image-digest: ${{ needs.package.outputs.image_digest }}
+          deploy-service-account-key: ${{ secrets.DEPLOY_SERVICE_ACCOUNT_KEY }}
+          github-token: ${{ github.token }}
+          authorisation-ref: ${{ vars.ADR001_CONFIRMATION_REF }}
+          migration-job: ${{ vars.MIGRATION_JOB }}
+
+  # G-2, DevOps Lead.
+  deploy-sit:
+    name: deploy-sit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [release-metadata, preflight, package, deploy-dev]
+    if: ${{ success() && needs.preflight.outputs.ready == 'true' }}
+    environment:
+      name: sit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-metadata.outputs.commit_sha }}
+      - uses: ./.github/actions/deploy-environment
+        with:
+          environment: sit
+          task-id: ${{ needs.release-metadata.outputs.task_id }}
+          image-digest: ${{ needs.package.outputs.image_digest }}
+          deploy-service-account-key: ${{ secrets.DEPLOY_SERVICE_ACCOUNT_KEY }}
+          github-token: ${{ github.token }}
+          authorisation-ref: ${{ vars.ADR001_CONFIRMATION_REF }}
+          migration-job: ${{ vars.MIGRATION_JOB }}
+
+  # G-3, QA Lead and Security Lead.
+  deploy-uat:
+    name: deploy-uat
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [release-metadata, preflight, package, deploy-sit]
+    if: ${{ success() && needs.preflight.outputs.ready == 'true' }}
+    environment:
+      name: uat
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-metadata.outputs.commit_sha }}
+      - uses: ./.github/actions/deploy-environment
+        with:
+          environment: uat
+          task-id: ${{ needs.release-metadata.outputs.task_id }}
+          image-digest: ${{ needs.package.outputs.image_digest }}
+          deploy-service-account-key: ${{ secrets.DEPLOY_SERVICE_ACCOUNT_KEY }}
+          github-token: ${{ github.token }}
+          authorisation-ref: ${{ vars.ADR001_CONFIRMATION_REF }}
+          migration-job: ${{ vars.MIGRATION_JOB }}
+
+  # G-4, Delivery Lead and AHDA Sponsor. The manual gate the workbook asks for: this job does not
+  # start until a reviewer on the `prod` environment approves it, and the approval is written into
+  # the deployment record with the approver's identity and the timestamp GitHub recorded.
+  deploy-prod:
+    name: deploy-prod
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [release-metadata, preflight, package, deploy-uat]
+    if: ${{ success() && needs.preflight.outputs.ready == 'true' }}
+    environment:
+      name: prod
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-metadata.outputs.commit_sha }}
+      - uses: ./.github/actions/deploy-environment
+        with:
+          environment: prod
+          task-id: ${{ needs.release-metadata.outputs.task_id }}
+          image-digest: ${{ needs.package.outputs.image_digest }}
+          deploy-service-account-key: ${{ secrets.DEPLOY_SERVICE_ACCOUNT_KEY }}
+          github-token: ${{ github.token }}
+          authorisation-ref: ${{ vars.ADR001_CONFIRMATION_REF }}
+          migration-job: ${{ vars.MIGRATION_JOB }}

@@ -12,7 +12,13 @@
       "organization_id": "UGV-07 — tenancy ownership (ADR-001 R-3); AHDA IT",
       "billing_account_id": "UGV-07 — follows the tenancy answer; AHDA IT",
       "region": "UGV-07 — in-Kingdom region name (ADR-001 R-2); AHDA IT. me-central2 (Dammam) is the only candidate on the allowlist and is not confirmed",
-      "base_domain": "environment-separation.md F-1 — AHDA-owned DNS zone the four APP_BASE_URL values are built from"
+      "base_domain": "environment-separation.md F-1 — AHDA-owned DNS zone the four APP_BASE_URL values are built from",
+      "artifact_registry.project_id": "cicd-pipeline.md F-1 — the project holding the one Artifact Registry all four environments pull the promoted image from. No task has declared it; TASK-016 declares no shared project and a per-environment registry would mean the artifact is copied rather than promoted unchanged"
+    },
+    "artifact_registry": {
+      "project_id": "",
+      "repository": "pmplatform",
+      "image": "api"
     },
     "folders": [
       { "name": "ahda-pmplatform-nonprod", "tier": "nonprod", "holds": ["dev", "sit", "uat"] },
