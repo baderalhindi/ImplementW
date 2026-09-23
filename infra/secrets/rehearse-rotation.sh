@@ -96,19 +96,30 @@ printf '{"pmplatform-dev-db-connection-string": "%s"}\n' "$right" > "$state"
 rotated_at=$(date +%s)
 
 echo "== 5. wait for the running application to pick it up (refresh interval: 5 minutes) =="
+# Two clocks. `waiting` counts the seconds this script actually spent asleep; `elapsed` is wall
+# clock. They differ when the machine suspends, which stops the application's refresh timer as well
+# as this loop — so a run where they diverge measures how long the laptop was shut, not how long the
+# rotation took to land, and says so rather than reporting the larger number.
+waiting=0
 while [ "$(health)" != "Healthy" ]; do
-  elapsed=$(( $(date +%s) - rotated_at ))
-  [ "$elapsed" -lt 400 ] || { echo "still $(health) after ${elapsed}s; see $log"; exit 1; }
-  [ $((elapsed % 30)) -lt 5 ] && echo "   ${elapsed}s: $(health)"
+  [ "$waiting" -lt 400 ] || { echo "still $(health) after ${waiting}s of waiting; see $log"; exit 1; }
+  [ $((waiting % 30)) -eq 0 ] && echo "   ${waiting}s: $(health)"
   sleep 5
+  waiting=$((waiting + 5))
 done
 elapsed=$(( $(date +%s) - rotated_at ))
 ended_pid=$(serving)
 
+reads=$(grep -c 'stub-store: read' "$store_log" 2>/dev/null || echo 0)
+
 echo
 echo "== result =="
-echo "   /health: Unhealthy -> Healthy, ${elapsed}s after the rotation"
+echo "   /health: Unhealthy -> Healthy, after ${waiting}s of waiting (${elapsed}s wall clock)"
+if [ $((elapsed - waiting)) -gt 60 ]; then
+  echo "   NOTE: the machine was suspended for about $((elapsed - waiting))s during the wait. The"
+  echo "         application's refresh timer was suspended with it, so ${elapsed}s is not a latency."
+fi
+echo "   store reads: $reads (one at start-up, $((reads - 1)) refresh) — the value was re-read, not cached"
 echo "   process: $started_pid -> $ended_pid $([ "$started_pid" = "$ended_pid" ] && echo '(the same process — no restart)' || echo '(RESTARTED — the rehearsal proves nothing)')"
-echo "   reads from the store: $(grep -c 'stub-store: read' "$store_log" 2>/dev/null || echo 0)"
 [ "$started_pid" = "$ended_pid" ] || exit 1
 echo "   no file the application reads was edited, and no code changed."
