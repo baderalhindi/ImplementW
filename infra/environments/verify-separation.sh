@@ -10,6 +10,8 @@
 #   D-2  PROD secrets are unreadable from each non-PROD environment's principals (workbook)
 #   D-3  no environment's service account holds a role in another environment's project, and
 #        no service account holds a role at either folder, where it would be inherited
+#   D-3c the one permitted exception, bounded: the eight deploy and runtime accounts read the
+#        shared Artifact Registry repository and hold nothing else there    (cicd-pipeline.md F-1)
 #   D-4  every secret and state bucket sits in the named in-Kingdom region       (ADR-001 C-1, C-4, C-5)
 #
 # A check that cannot be executed is reported SKIP and the run exits non-zero: an unexecuted drill
@@ -105,6 +107,87 @@ for folder in $(manifest_get '.platform.folders[].name'); do
     report PASS D-3b "folder $folder grants no role to any service account"
   fi
 done
+
+# D-3c — the one permitted cross-project binding. One artifact is built once and promoted unchanged
+#         through the four environments (TASK-018), so all eight deploy and runtime accounts must be
+#         able to pull from one registry. D-3 cannot see that binding: the artifacts project is not
+#         an environment and is not in its loop. The exception is bounded in two directions here.
+#         The grant belongs on the repository, so no environment principal may appear in the
+#         project's own policy, where it would reach everything else in the project; and on the
+#         repository itself the only environment principals are those eight, holding only
+#         roles/artifactregistry.reader. Principals outside the four environment projects are out of
+#         scope, as they are for D-3: Google's own service agents live in the project by design.
+artifacts=$(manifest_get '.platform.artifact_registry.project_id')
+artifacts_repository=$(manifest_get '.platform.artifact_registry.repository')
+if [ -z "$artifacts" ]; then
+  report SKIP D-3c "the manifest names no platform.artifact_registry.project_id"
+else
+  promotion_principals=$(for environment in $(environment_names); do
+    env_get "$environment" '.service_accounts | to_entries[] | .value'
+  done | sort -u)
+  environment_domains=$(for environment in $(environment_names); do
+    echo "@$(env_get "$environment" '.project_id').iam.gserviceaccount.com"
+  done)
+
+  # Is this principal one of the four environment projects' own service accounts?
+  belongs_to_an_environment() {
+    for domain in $environment_domains; do
+      case "$1" in *"$domain") return 0;; esac
+    done
+    return 1
+  }
+
+  project_policy=$(gcloud projects get-iam-policy "$artifacts" --flatten='bindings[].members' \
+    --format='csv[no-heading](bindings.role,bindings.members)' 2>/dev/null || true)
+  if [ -z "$project_policy" ]; then
+    report SKIP D-3c "$artifacts is not readable; the registry project is created with the platform"
+  else
+    at_project=""
+    for entry in $project_policy; do
+      role=${entry%%,*}; member=${entry#*,}
+      case "$member" in serviceAccount:*) account=${member#serviceAccount:};; *) continue;; esac
+      belongs_to_an_environment "$account" && at_project="$at_project $account($role)"
+    done
+    if [ -n "$at_project" ]; then
+      report FAIL D-3c "$artifacts grants environment principals a role on the whole project, not on the repository:$at_project"
+    else
+      report PASS D-3c "$artifacts grants no environment principal a project-wide role"
+    fi
+
+    repository_policy=$(gcloud artifacts repositories get-iam-policy "$artifacts_repository" \
+      --project="$artifacts" --location="$region" --flatten='bindings[].members' \
+      --format='csv[no-heading](bindings.role,bindings.members)' 2>/dev/null || true)
+    if [ -z "$repository_policy" ]; then
+      report SKIP D-3c "repository $artifacts_repository is not readable in $artifacts"
+    else
+      wrong=""
+      seen=""
+      for entry in $repository_policy; do
+        role=${entry%%,*}; member=${entry#*,}
+        case "$member" in serviceAccount:*) account=${member#serviceAccount:};; *) continue;; esac
+        belongs_to_an_environment "$account" || continue
+        if ! echo "$promotion_principals" | grep -qx "$account"; then
+          wrong="$wrong $account(not a promotion principal)"
+        elif [ "$role" != "roles/artifactregistry.reader" ]; then
+          wrong="$wrong $account($role)"
+        else
+          seen="$seen $account"
+        fi
+      done
+      missing=""
+      for account in $promotion_principals; do
+        case " $seen " in *" $account "*) ;; *) missing="$missing $account";; esac
+      done
+      if [ -n "$wrong" ]; then
+        report FAIL D-3c "$artifacts_repository holds a binding outside the exception:$wrong"
+      elif [ -n "$missing" ]; then
+        report FAIL D-3c "$artifacts_repository does not grant reader to:$missing — those environments cannot pull the promoted image"
+      else
+        report PASS D-3c "$artifacts_repository grants roles/artifactregistry.reader to the eight promotion principals and nothing else"
+      fi
+    fi
+  fi
+fi
 
 # D-4 — locality. Secret replication and state-bucket location, read back from the provider.
 for environment in $(environment_names); do
