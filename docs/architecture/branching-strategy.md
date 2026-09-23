@@ -39,6 +39,8 @@ That is a two-branch environment ladder (`dev` → `stage` → `main`), which is
 2. `dev` and `stage` are **not deleted by this task** — they carry the merged TASK-001 to TASK-011 work that `main` does not yet have (§7 S-3). Until they are retired they receive the **same protection as `main`** (the ruleset targets all three) and CI runs on PRs to them, so that nothing else lands unprotected.
 3. TASK-018 retires them: once artifact promotion exists, `dev` and `stage` are fast-forwarded into `main` (or `main` reset to `dev`, which is a superset) and deleted. Their protection rule is then a no-op on absent refs.
 
+**Status at 2026-09-23.** Artifact promotion now exists (`docs/architecture/cicd-pipeline.md`, TASK-018): a push to `main` builds one image and promotes it through DEV, SIT, UAT and PROD. The branches are **not yet retired** — deleting a protected branch is a repository operation the build environment cannot perform. What is owed, in order: fast-forward `main` to `dev`; delete `dev` and `stage`; remove both from `ref_name.include` in `.github/branch-protection/protected-branches.ruleset.json`; remove them from the `push` trigger in `.github/workflows/ci-quality-gates.yml`. Until then both keep their protection and their CI (`cicd-pipeline.md` F-6).
+
 ## 3. Pull request policy
 
 `.github/PULL_REQUEST_TEMPLATE.md` pre-fills every PR with four mandatory sections — **Task**, **Description**, **Test evidence**, **Security checklist** — and one optional (**Notes for reviewers**).
