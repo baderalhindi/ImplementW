@@ -160,7 +160,7 @@ the alternative namespaces secrets differently, and the four scripts, which are 
 
 | What | How | Result |
 | --- | --- | --- |
-| Full-history secret scan | `infra/secrets/scan-history.sh` — gitleaks 8.30.1 over `--all --full-history` (34 commits, 1.37 MB) and over the working tree (4.34 MB) | **Zero.** Five findings on first run were `idempotencyKey` values in the API and event documentation samples — row identifiers by `event-conventions.md` EV-4, not credentials — and are allowlisted by rule, path and line shape in `.gitleaks.toml` |
+| Full-history secret scan | `infra/secrets/scan-history.sh` — gitleaks 8.30.1 over `--all --full-history` (38 commits, 1.50 MB) and over the working tree (4.39 MB), re-run on the committed branch | **Zero.** Five findings on first run were `idempotencyKey` values in the API and event documentation samples — row identifiers by `event-conventions.md` EV-4, not credentials — and are allowlisted by rule, path and line shape in `.gitleaks.toml` |
 | The allowlist is not a blanket | A genuine AWS access key and a GitHub token planted in one of the allowlisted files | Both found; only the `idempotencyKey` finding suppressed |
 | A rotated secret reaches a running application | `SecretStoreTests.ARotatedSecretReachesARunningApplication` | Passes. Mutation-tested: disabling the refresh timer fails it and `AFailedRefreshKeepsTheValueAlreadyInUse` |
 | The id the application asks for is the id the manifest holds | `SecretStoreTests.EverySecretIdInTheManifestIsTheOneTheApplicationAsksFor`, over all 69 entries | Passes |
