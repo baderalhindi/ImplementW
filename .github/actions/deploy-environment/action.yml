@@ -1,0 +1,148 @@
+# One environment's deployment (TASK-018). Record: docs/architecture/cicd-pipeline.md
+#
+# DEV, SIT, UAT and PROD are deployed by the same steps in the same order; what differs between them
+# is the environment name, and through it the credential, the project and the approval GitHub
+# requires before the job may start. Writing the sequence once means SIT cannot quietly diverge from
+# PROD — the difference between two environments is their manifest entry, not their pipeline.
+#
+# The approval gate is not here. It is the `environment:` key on the calling job, which is what
+# GitHub itself halts on; a composite action cannot declare one, and it should not be able to.
+name: Deploy environment
+description: Preflight, migrate, apply and record one environment's deployment
+
+inputs:
+  environment:
+    description: dev, sit, uat or prod — an environment declared in infra/environments/environments.json
+    required: true
+  task-id:
+    description: The Task ID the release is traceable to
+    required: true
+  commit-sha:
+    description: >-
+      The commit being released. Not github.sha: a rollback is a workflow_dispatch naming an earlier
+      commit, and the deployment record must name what was deployed rather than what triggered it.
+    required: true
+  image-digest:
+    description: The image to deploy, by digest — the same artifact in all four environments
+    required: true
+  deploy-service-account-key:
+    description: DEPLOY_SERVICE_ACCOUNT_KEY for this environment, from the environment's own secret scope
+    required: true
+  github-token:
+    description: Token used to read back the approval that released this environment
+    required: true
+  authorisation-ref:
+    description: >-
+      The written confirmation that authorises an apply (ADR-001 §9, R-1). Passed from the
+      ADR001_CONFIRMATION_REF repository variable and recorded on every deployment, so the evidence
+      log says what authorised it — the same reference infra/environments/lib/common.sh requires.
+    required: true
+  migration-job:
+    description: Cloud Run job that applies the release's migrations inside the environment (TASK-024)
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    # The same hold points that stop provision-environment.sh and `terraform plan`, checked before a
+    # credential is used rather than discovered as a failure part-way through an apply.
+    - name: Preflight
+      id: preflight
+      shell: bash
+      env:
+        ADR001_CONFIRMATION_REF: ${{ inputs.authorisation-ref }}
+      run: .github/scripts/deploy-preflight.sh --require '${{ inputs.environment }}'
+
+    # Before a credential is used and before anything is applied. GitHub has already halted this job
+    # until a reviewer released the environment; this reads that approval back, so a gated deployment
+    # whose approval cannot be evidenced stops here rather than after the apply. The same script
+    # writes the record at the end, against what was actually deployed.
+    - name: Verify the approval
+      shell: bash
+      env:
+        ENVIRONMENT: ${{ inputs.environment }}
+        VERIFY_ONLY: '1'
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: .github/scripts/deployment-record.sh
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ inputs.deploy-service-account-key }}
+
+    - uses: google-github-actions/setup-gcloud@v3
+
+    - uses: hashicorp/setup-terraform@v4
+      with:
+        # Must equal infra/terraform/.terraform-version; the committed lock files were produced with
+        # it, and terraform-check.py T-6 fails the pull request if the two stop matching.
+        terraform_version: 1.16.3
+        terraform_wrapper: false
+
+    # Schema first: the image that depends on the new schema is deployed only after the schema is
+    # there. A failed migration fails this step and nothing is deployed.
+    - name: Run database migrations
+      shell: bash
+      env:
+        ENVIRONMENT: ${{ inputs.environment }}
+        PROJECT_ID: ${{ steps.preflight.outputs.project_id }}
+        REGION: ${{ steps.preflight.outputs.region }}
+        IMAGE: ${{ inputs.image-digest }}
+        MIGRATION_JOB: ${{ inputs.migration-job }}
+      run: .github/scripts/migrate-environment.sh
+
+    # Terraform is the deploy mechanism, so a deployment leaves no drift for the next plan to find
+    # (infrastructure-as-code.md §3.2). The image arrives by digest and nothing else changes.
+    - name: Terraform apply
+      shell: bash
+      working-directory: infra/terraform/environments/${{ inputs.environment }}
+      env:
+        TF_IN_AUTOMATION: 'true'
+        TF_INPUT: '0'
+        TF_VAR_container_image: ${{ inputs.image-digest }}
+      run: |
+        terraform init -input=false -lockfile=readonly
+        terraform apply -auto-approve
+
+    # A deployment nobody checked is a deployment that may have failed silently. One origin per
+    # environment (environment-separation.md D-1), so the environment's own address answers /health.
+    - name: Smoke test
+      shell: bash
+      env:
+        APP_BASE_URL: ${{ steps.preflight.outputs.app_base_url }}
+      run: |
+        set -euo pipefail
+        for attempt in $(seq 1 30); do
+          status=$(curl --silent --show-error --location --max-time 10 \
+            --output /dev/null --write-out '%{http_code}' "$APP_BASE_URL/health" || echo 000)
+          if [ "$status" = "200" ]; then
+            echo "smoke test: $APP_BASE_URL/health returned 200 after ${attempt} attempt(s)"
+            exit 0
+          fi
+          echo "smoke test: $APP_BASE_URL/health returned $status (attempt $attempt)"
+          sleep 10
+        done
+        echo "smoke test: $APP_BASE_URL/health never returned 200; the deployment is not healthy" >&2
+        exit 1
+
+    # CTL-40's evidence. For a gated environment this fails unless the approval can be read back with
+    # an identity and a timestamp, so an approval that left no record is not treated as one.
+    - name: Record the deployment
+      shell: bash
+      env:
+        ENVIRONMENT: ${{ inputs.environment }}
+        TASK_ID: ${{ inputs.task-id }}
+        COMMIT_SHA: ${{ inputs.commit-sha }}
+        IMAGE_DIGEST: ${{ inputs.image-digest }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        ADR001_CONFIRMATION_REF: ${{ inputs.authorisation-ref }}
+      run: .github/scripts/deployment-record.sh
+
+    - name: Upload the deployment record
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-record-${{ inputs.environment }}
+        path: artifacts/deployment-record-${{ inputs.environment }}.json
+        retention-days: 90
+        if-no-files-found: error

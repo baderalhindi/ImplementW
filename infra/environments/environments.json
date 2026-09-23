@@ -5,14 +5,19 @@
     "resource_prefix": "ahda-pmplatform",
     "organization_id": "",
     "billing_account_id": "",
-    "region": "",
+    "region": "me-central2",
     "region_allowlist": ["me-central2"],
     "base_domain": "",
     "unresolved": {
       "organization_id": "UGV-07 — tenancy ownership (ADR-001 R-3); AHDA IT",
       "billing_account_id": "UGV-07 — follows the tenancy answer; AHDA IT",
-      "region": "UGV-07 — in-Kingdom region name (ADR-001 R-2); AHDA IT. me-central2 (Dammam) is the only candidate on the allowlist and is not confirmed",
+      "region": "UGV-07 — in-Kingdom region name (ADR-001 R-2); AHDA IT. Set to me-central2 (Dammam), the only region in Saudi Arabia and the only candidate on the allowlist, pending the written answer to confirmation request Q2. It cannot be changed after the first apply without rebuilding every environment",
       "base_domain": "environment-separation.md F-1 — AHDA-owned DNS zone the four APP_BASE_URL values are built from"
+    },
+    "artifact_registry": {
+      "project_id": "ahda-pmplatform-artifacts",
+      "repository": "pmplatform",
+      "image": "api"
     },
     "folders": [
       { "name": "ahda-pmplatform-nonprod", "tier": "nonprod", "holds": ["dev", "sit", "uat"] },

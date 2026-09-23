@@ -7,7 +7,8 @@ This is the PMPlatform monorepo. Its layout is fixed by ADR-002 §6 (stack and d
 ```
 /
 ├── .editorconfig                  solution-wide editor and C# analyzer baseline
-├── .github/                       CODEOWNERS, PR template, branch-protection ruleset, workflows (ci-quality-gates, pr-policy)
+├── .github/                       CODEOWNERS, PR template, branch-protection ruleset, promotion scripts,
+│                                  workflows (ci-cd-pipeline, ci-quality-gates, pr-policy)
 ├── global.json                    .NET SDK pin
 ├── .nvmrc                         Node.js line for the frontend toolchain
 ├── db/seed/                       SQL seed and data-integrity scripts (TASK-027)
@@ -180,6 +181,17 @@ Full record, topology diagram and promotion path: `docs/architecture/environment
   load balancer (`infra/terraform/`, TASK-017; record: `docs/architecture/infrastructure-as-code.md`). Nothing is
   created by hand, no hosting value is written into the Terraform that `infra/environments/environments.json`
   already holds, and `terraform plan` refuses while the region, the tenancy or the DNS zone are unnamed.
+- **The promotion is a pipeline** (`.github/workflows/ci-cd-pipeline.yml`, TASK-018; record:
+  `docs/architecture/cicd-pipeline.md`). A push to `main` runs the quality gates, builds and scans one image,
+  dry-runs the release's migrations, and then promotes that one digest through the four environments. PROD does not
+  start until a reviewer approves it, and the approval is read back and written into the deployment record with the
+  approver's identity and timestamp — an approval that leaves no record fails the deployment.
+- **A release commit must name its Task ID.** The pipeline reads it from the commit and refuses to deploy a commit
+  that names none, so squash-merge subjects matter: they are what makes a deployment traceable (CTL-40).
+- **A migration may not drop a table, column or constraint** in the same release that stops using it — the dry-run
+  refuses it. Split it across two releases, or mark a completed contraction `EXPAND-THEN-CONTRACT-REVIEWED`.
+- **Rollback is a re-promotion**: run the pipeline from the Actions tab with the earlier commit's SHA. It passes the
+  same gates and the same PROD approval as any other release.
 
 ## Quality baselines
 
@@ -197,10 +209,11 @@ Full record, topology diagram and promotion path: `docs/architecture/environment
 - **CI gate** (`.github/workflows/ci-quality-gates.yml`; TASK-015, record: `docs/architecture/ci-quality-gates.md`) runs the commands above on every pull request
   and fails it on any violation, so nothing merges unchecked. Four jobs, each capped at ten minutes:
   `backend` (restore, `-warnaserror` build with the analyzers, unit tests), `frontend` (`npm ci`, lint,
-  format, `tsc -b --noEmit`, Vitest, build), `repo-checks` (the six `python3 docs/architecture/*-check.py`
+  format, `tsc -b --noEmit`, Vitest, build), `repo-checks` (the seven `python3 docs/architecture/*-check.py`
   scripts, standard library only) and `terraform` (`fmt -check`, `validate` on all four environment roots with
   the committed lock files read-only, and a Trivy config scan gated at HIGH/CRITICAL). Integration tests need
-  the containerised stack and are not in this gate.
+  the containerised stack and are not in this gate. The same four jobs are called by the promotion pipeline on a
+  push to `main`, so a deployment gates on the checks that guarded the pull request rather than on a copy of them.
 
 ## Branches, pull requests, and main
 

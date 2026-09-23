@@ -141,7 +141,7 @@ than asserted once:
 | --- | --- | --- |
 | 1 | Every service account is hosted by the environment's own project (`deploy-dev@ahda-pmplatform-dev…`), so a credential names the environment it belongs to | S-3 (static); `provision-environment.sh` creates accounts only in the project it is creating |
 | 2 | No identifier of any kind is shared between two environments — project, network, instance, database user, bucket, prefix, service account, secret | S-2, S-4 (static) |
-| 3 | No cross-project IAM binding, and no service-account binding at either folder, where it would be inherited by three environments at once | D-3, D-3b (against the live projects) |
+| 3 | No cross-project IAM binding, with exactly one exception: the eight deploy and runtime accounts hold `roles/artifactregistry.reader` on the one Artifact Registry repository in `ahda-pmplatform-artifacts`, and no other role in any project but their own. One artifact promoted unchanged through four environments (TASK-018) needs one registry all four can read; a registry per environment would copy the artifact rather than promote it. No service-account binding at either folder, where it would be inherited by three environments at once | D-3, D-3b, D-3c (against the live projects) |
 | 4 | PROD secrets are unreadable by every non-PROD principal, tested by impersonation rather than by reading the policy | D-2 |
 | 5 | No apply happens at all until the ADR-001 confirmation is named in `ADR001_CONFIRMATION_REF`, which is echoed into the run log as the record of what authorised it | `require_authorisation`, every script |
 
@@ -215,7 +215,7 @@ What is **owed**, and cannot be run until the environments exist:
 | --- | --- | --- |
 | D-1 — a DEV credential rejected by the SIT database | TASK-016 Validation Checks | The instances (TASK-020) |
 | D-2 — PROD secrets unreadable from DEV/SIT/UAT | TASK-016 Validation Checks | The projects (R-1, R-2, R-3) |
-| D-3, D-3b — no cross-environment or folder-level IAM | ADR-001 C-1 intent | The projects |
+| D-3, D-3b, D-3c — no cross-environment or folder-level IAM, and the registry exception bounded to `roles/artifactregistry.reader` on the one repository | ADR-001 C-1 intent; cicd-pipeline.md F-1 | The projects |
 | D-4 — every secret and bucket in the named region | ADR-001 C-1, C-4, C-5 | The projects |
 
 `verify-separation.sh` implements all four and **exits non-zero on a SKIP**: an unexecuted drill is
@@ -254,7 +254,7 @@ repository-wide scan reports the same five pre-existing false positives TASK-013
 | 1 | Four environments exist | **NOT MET — and cannot be, today.** Four are fully declared and the provisioning is scripted and dry-run verified; nothing is created, because R-1, R-2 and R-3 are outstanding and ADR-001 §9 holds the first apply (§2). One `apply-org-policy.sh` run and four `provision-environment.sh` runs stand between this record and the criterion, once three values arrive. |
 | 2 | Each with its own database instance | **DECLARED.** Distinct instance, database and user per environment, checked unique (S-2); the instances are TASK-020's to create from these names. |
 | 3 | Each with its own secret store namespace | **BUILT, unapplied.** The project is the namespace; the two secret containers per environment are created by `provision-environment.sh` with replication pinned to the region and access granted only to that environment's runtime account. |
-| 4 | No shared credentials between PROD and any non-PROD environment | **BUILT, unapplied.** Five mechanisms (§3.4); statically checked now (S-2, S-3, S-4), drilled against the live environments by D-2, D-3, D-3b. |
+| 4 | No shared credentials between PROD and any non-PROD environment | **BUILT, unapplied.** Five mechanisms (§3.4); statically checked now (S-2, S-3, S-4), drilled against the live environments by D-2, D-3, D-3b, D-3c. |
 | 5 | A documented promotion path (DEV → SIT → UAT → PROD) with named approval gates | **MET.** §4, with the approver of each gate, its preconditions and the evidence it records; the gates are declared as GitHub deployment environments for TASK-018 to deploy through, and the check fails if a gate loses its approver. |
 | — | Validation cell: a DEV credential rejected by the SIT database; PROD secrets unreadable from DEV/SIT/UAT | **SCRIPTED, NOT EXECUTED** — `verify-separation.sh` D-1 and D-2 (§5). |
 | — | Gate cell: all four in an in-Kingdom GCP region; no resource in any region outside Saudi Arabia | **ENFORCED.** Folder-level `gcp.resourceLocations` before any project exists (§3.3), an allowlist of one region, a guard in every script, a CI check that rejects any other region in the manifest, and a post-provisioning drill that reads locations back from the provider (D-4). |
@@ -277,4 +277,5 @@ repository-wide scan reports the same five pre-existing false positives TASK-013
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-23 | `platform.artifact_registry.project_id` resolved to `ahda-pmplatform-artifacts` (cicd-pipeline.md F-1, the delivery team's own decision) and dropped from `platform.unresolved`. §3.4 rule 3 no longer claims that no cross-project IAM binding exists: the eight deploy and runtime accounts must read one registry, so the claim is narrowed to that binding and D-3c is added to `verify-separation.sh` to hold the narrowed line. `platform.region` set provisionally to `me-central2`; its `unresolved` entry stays, because the value is owed in writing by AHDA IT (Q2) and only the placeholder has gone. | Infrastructure (TASK-018 F-1) |
 | 2026-09-22 | Initial record. Four environments declared as one GCP project each in two folders; provisioning, locality and verification scripted; promotion path fixed with four gates and named approvers; static invariants wired into the `repo-checks` CI job. Decision D-1 (one origin per environment) closes TASK-013 F-2 and dissolves F-5. Nine findings raised, one of them a proposed new gated value (F-1). | Infrastructure (TASK-016) |
