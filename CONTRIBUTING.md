@@ -16,7 +16,7 @@ This is the PMPlatform monorepo. Its layout is fixed by ADR-002 §6 (stack and d
 ├── infra/
 │   ├── docker/                    local stack — docker-compose (TASK-014)
 │   ├── environments/              the four environments, their boundaries and provisioning scripts (TASK-016)
-│   ├── secrets/                   secret *templates* only; real values are never committed (TASK-019)
+│   ├── secrets/                   secret-store integration and the rotation runbook; never a value (TASK-019)
 │   └── terraform/                 the IaC: five modules, a composition, four environment roots (TASK-017)
 └── src/
     ├── backend/
@@ -131,7 +131,10 @@ cp src/frontend/.env.example src/frontend/.env.local
 
 Both copies are git-ignored and excluded from `dotnet publish`. `Program.cs` reads
 `appsettings.{Environment}.Local.json` after `appsettings.{Environment}.json`; an environment variable still
-overrides both, exactly as in SIT, UAT and PROD, where no value ever comes from a file. Keep the templates in
+overrides both. Local development is the only case that reads a secret from a file: in DEV, SIT, UAT and PROD
+the application reads every secret from the approved secret store at runtime, through a configuration provider
+registered after all of them (`infra/secrets/README.md`, `docs/architecture/secret-management.md`). That is why
+`SECRET_STORE_ENDPOINT` is required outside Development and the application refuses to start without it. Keep the templates in
 step with the sheet — `python3 docs/architecture/env-template-check.py` fails on a missing or extra variable, a
 Secret-classified variable in the frontend template, or any value in either template.
 
@@ -238,6 +241,7 @@ Full policy: `docs/architecture/branching-strategy.md` (TASK-012).
 
 - Business rules do not go in `PMPlatform.Api` (T-3) or in the SPA (T-6).
 - Nothing that means something to one domain goes in `Domain/Common` or `Application/Common` (M-10).
-- No secret, connection string or `.env` file is committed; `infra/secrets/` holds templates only. A value
-  never goes into `appsettings.Template.json` or `.env.example` — not even a local one.
+- No secret, connection string or `.env` file is committed; `infra/secrets/` holds the integration module and
+  the runbook, never a value. A value never goes into `appsettings.Template.json` or `.env.example` — not even
+  a local one, and never into a log, a screenshot or a test fixture (Section 22.1, CTL-18).
 - No `deleted_at`, `currency_code` or `row_version` column, anywhere (ERD D-3, D-5, D-16).
