@@ -9,8 +9,8 @@
 #
 # What that decision touches is deliberately small. The interface this module presents — a named
 # service in the project's own region, reachable only through the regional load balancer, running
-# as the environment's runtime service account, with its secrets read from Secret Manager — is what
-# ../load-balancer consumes. A GKE answer replaces this module's body and the backend group in
+# as the environment's runtime service account, which is also the identity it reads its secrets
+# with (TASK-019) — is what ../load-balancer consumes. A GKE answer replaces this module's body and the backend group in
 # ../load-balancer, and leaves network, database, storage and the application unchanged.
 
 resource "google_cloud_run_v2_service" "api" {
@@ -69,21 +69,6 @@ resource "google_cloud_run_v2_service" "api" {
         content {
           name  = env.key
           value = env.value
-        }
-      }
-
-      # Read at start-up from the environment's own secret containers. No value passes through
-      # this repository, this module or Terraform state (CTL-18).
-      dynamic "env" {
-        for_each = var.secret_environment
-        content {
-          name = env.key
-          value_source {
-            secret_key_ref {
-              secret  = env.value
-              version = "latest"
-            }
-          }
         }
       }
 

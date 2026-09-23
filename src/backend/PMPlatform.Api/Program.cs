@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Configuration.Json;
 using PMPlatform.Application;
 using PMPlatform.Infrastructure;
+using PMPlatform.Infrastructure.Secrets;
 
 // Composition root (L-4): the only place in PMPlatform.Api that references PMPlatform.Infrastructure.
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,10 @@ configurationSources.Insert(environmentVariablesIndex, new JsonConfigurationSour
     Optional = true,
     ReloadOnChange = true,
 });
+
+// TASK-019: the approved secret store, added last so a secret resolves to the store's value wherever else
+// it is configured. Only local development may run without it, on the git-ignored Local.json above (CTL-18).
+builder.Configuration.AddSecretStore(required: !builder.Environment.IsDevelopment());
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

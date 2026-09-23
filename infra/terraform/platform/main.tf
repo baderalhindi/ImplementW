@@ -34,11 +34,12 @@ locals {
     managed_by  = "terraform"
   }
 
-  # The two secret containers TASK-016 created empty, by the ids it recorded. Values are written
-  # under TASK-019 by the owners the Environment and Secrets sheet names; nothing here reads one.
-  secret_environment = {
-    for name, spec in local.environment.variables : name => spec.secret_id if spec.kind == "secret"
-  }
+  # The address of this environment's secret namespace (TASK-019). It ends in the id prefix, and the
+  # application appends a variable's lower-kebab name to it, so this one value carries the store, the
+  # project and the namespace without naming a variable the Environment and Secrets sheet does not.
+  # Nothing here reads a secret: the values are written by the owners the sheet names, and the
+  # application reads them at runtime with its own identity (docs/architecture/secret-management.md §3).
+  secret_store_endpoint = "https://secretmanager.googleapis.com/v1/projects/${local.environment.project_id}/secrets/${local.environment.secret_store.prefix}"
 }
 
 module "network" {
@@ -113,7 +114,6 @@ module "compute" {
   memory                  = var.compute_memory
   min_instances           = var.compute_min_instances
   max_instances           = var.compute_max_instances
-  secret_environment      = local.secret_environment
   deletion_protection     = var.deletion_protection
   labels                  = local.labels
 
@@ -121,7 +121,8 @@ module "compute" {
   # bucket or the Cloud SQL connection name; both are carried inside the connection strings
   # TASK-019 writes, so nothing is invented here (infrastructure-as-code.md F-5).
   plain_environment = {
-    APP_BASE_URL = local.app_base_url
+    APP_BASE_URL          = local.app_base_url
+    SECRET_STORE_ENDPOINT = local.secret_store_endpoint
   }
 }
 
