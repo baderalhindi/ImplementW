@@ -17,6 +17,15 @@ database_disk_size_gb             = 20
 # gate cell says to build the mechanism and leave the period configurable. PROD cannot be applied
 # until the approved value is set (platform/guards.tf).
 
+# database_encryption_key_name is unset, so the disk, the automated backups and the exports are
+# encrypted with Google-managed keys. Whether the key has to be AHDA's own follows the data
+# classification in ADR-001 R-4, which is unanswered; nothing here invents a key ring or a rotation
+# period (infrastructure-as-code.md F-6).
+
+# No backup_export_schedule. The Environment and Secrets sheet scopes
+# DB_BACKUP_STORAGE_CONNECTION_STRING to SIT, UAT and PROD, so DEV has no backup bucket to export
+# to and the module refuses a schedule without one.
+
 compute_cpu           = "1"
 compute_memory        = "1Gi"
 compute_min_instances = 0

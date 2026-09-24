@@ -44,5 +44,13 @@ resource "terraform_data" "preflight" {
       condition     = var.environment != "prod" || var.retained_backups != null
       error_message = "retained_backups is null for PROD. The backup retention period is OQ-003 / PTBC-048, owed by AHDA Cybersecurity and Records before production. Set it from the approved value; do not invent one."
     }
+
+    # Cloud SQL's automated backups are deleted with the instance they belong to, so an environment
+    # whose only copy is on the instance has no answer to the instance being deleted. This is not an
+    # AHDA value to be supplied — it is the difference between a backup and a snapshot (TASK-020).
+    precondition {
+      condition     = var.environment != "prod" || var.backup_export_schedule != null
+      error_message = "backup_export_schedule is null for PROD. Automated backups live with the instance and are deleted with it; the export to the db-backups bucket is the copy that outlives it, and TASK-023's restore drill reads it. Set a schedule in environments/prod/terraform.tfvars."
+    }
   }
 }

@@ -76,6 +76,13 @@ module "database" {
   deletion_protection      = var.deletion_protection
   labels                   = local.labels
 
+  # TASK-020. The key is null until AHDA's data classification calls for one (ADR-001 R-4); the
+  # export writes to the bucket ../storage already creates for this environment, and DEV has none,
+  # so the lookup returns null there rather than a name this file would have had to invent.
+  encryption_key_name    = var.database_encryption_key_name
+  backup_bucket_name     = lookup(module.storage.bucket_names, "db-backups", null)
+  backup_export_schedule = var.backup_export_schedule
+
   maintenance_window = {
     day  = 6 # Saturday
     hour = 1
