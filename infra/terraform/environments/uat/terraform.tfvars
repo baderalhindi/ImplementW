@@ -17,6 +17,18 @@ database_disk_size_gb             = 50
 # gate cell says to build the mechanism and leave the period configurable. PROD cannot be applied
 # until the approved value is set (platform/guards.tf).
 
+# database_encryption_key_name is unset, so the disk, the automated backups and the exports are
+# encrypted with Google-managed keys. Whether the key has to be AHDA's own follows the data
+# classification in ADR-001 R-4, which is unanswered; nothing here invents a key ring or a rotation
+# period (infrastructure-as-code.md F-6).
+
+# The off-instance copy (TASK-020). Automated backups and the point-in-time recovery log live with
+# the instance and are deleted with it; this export is what outlives it, and TASK-023's drill
+# restores from it. 03:00 UTC clears both the 22:00 backup window and the Saturday 01:00
+# maintenance window. Each run lands as a new version of one object, so how many copies are kept
+# is noncurrent_version_retention_days above — the same OQ-003 period, configured in one place.
+backup_export_schedule = "0 3 * * *"
+
 compute_cpu           = "2"
 compute_memory        = "2Gi"
 compute_min_instances = 1

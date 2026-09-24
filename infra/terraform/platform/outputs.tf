@@ -27,3 +27,13 @@ output "bucket_names" {
   description = "Object storage created for this environment, by role."
   value       = module.storage.bucket_names
 }
+
+output "database_backup_configuration" {
+  description = "The documented backup schedule as applied — window, PITR, retention, export and encryption mode. CTL-35's evidence and TASK-023's drill are read against this rather than against a document that can drift from it."
+  value       = module.database.backup_configuration
+}
+
+output "database_backup_export_uri" {
+  description = "The object scheduled exports are written to. Null in DEV, which has no backup bucket. This is the target DB_BACKUP_STORAGE_CONNECTION_STRING addresses (TASK-019 writes the value)."
+  value       = module.database.backup_export_uri
+}

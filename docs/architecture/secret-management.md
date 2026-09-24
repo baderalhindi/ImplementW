@@ -160,14 +160,43 @@ the alternative namespaces secrets differently, and the four scripts, which are 
 
 | What | How | Result |
 | --- | --- | --- |
-| Full-history secret scan | `infra/secrets/scan-history.sh` — gitleaks 8.30.1 over `--all --full-history` (38 commits, 1.50 MB) and over the working tree (4.39 MB), re-run on the committed branch | **Zero.** Five findings on first run were `idempotencyKey` values in the API and event documentation samples — row identifiers by `event-conventions.md` EV-4, not credentials — and are allowlisted by rule, path and line shape in `.gitleaks.toml` |
+| Full-history secret scan | `infra/secrets/scan-history.sh` — gitleaks 8.30.1 over `--all --full-history` and over the working tree (39 commits, 1.50 MB and 4.40 MB at the time of the run), with JSON reports | **Zero**, both reports empty. Five findings on first run were `idempotencyKey` values in the API and event documentation samples — row identifiers by `event-conventions.md` EV-4, not credentials — and are allowlisted by rule, path and line shape in `.gitleaks.toml` |
 | The allowlist is not a blanket | A genuine AWS access key and a GitHub token planted in one of the allowlisted files | Both found; only the `idempotencyKey` finding suppressed |
-| A rotated secret reaches a running application | `SecretStoreTests.ARotatedSecretReachesARunningApplication` | Passes. Mutation-tested: disabling the refresh timer fails it and `AFailedRefreshKeepsTheValueAlreadyInUse` |
+| A rotated secret reaches a running application — in test | `SecretStoreTests.ARotatedSecretReachesARunningApplication` | Passes. Mutation-tested: disabling the refresh timer fails it and `AFailedRefreshKeepsTheValueAlreadyInUse` |
+| A rotated secret reaches a running application — end to end | `infra/secrets/rehearse-rotation.sh` (§7.1) | Passes. `/health` Unhealthy → Healthy 300s after the rotation, in the same process |
 | The id the application asks for is the id the manifest holds | `SecretStoreTests.EverySecretIdInTheManifestIsTheOneTheApplicationAsksFor`, over all 69 entries | Passes |
 | An application whose secret is unset does not start | `SecretStoreTests.AnApplicationWhoseSecretIsUnsetDoesNotStart` | Passes |
 | A failed read does not carry the value | `SecretStoreTests.AFailedReadNamesTheVariableAndNotItsValue` | Passes |
 | The repository's own invariants | `python3 docs/architecture/secret-management-check.py`, plus the five existing `repo-checks` | All pass |
 | Build and unit tests | `dotnet build -warnaserror`, `dotnet test` | 33 tests, 0 failures |
+
+### 7.1 The rotation, rehearsed end to end
+
+`infra/secrets/rehearse-rotation.sh` executes the TASK-019 validation check against the real
+application on one machine. It starts PostgreSQL from the TASK-014 stack, starts `stub-store.py` —
+a stand-in that speaks Secret Manager's `versions/latest:access` over loopback — holding
+`DB_CONNECTION_STRING` with the wrong password, and starts the API with
+`ASPNETCORE_ENVIRONMENT=Staging`, so `Program.cs` requires the store exactly as a deployed
+environment does. The secret is then rotated in the store and nothing else is touched.
+
+| Observation | Value |
+| --- | --- |
+| Hosting environment | `Staging` — the store was required, not optional |
+| Before the rotation | `/health` **Unhealthy**, `Npgsql.PostgresException 28P01: password authentication failed for user "pmplatform"` — the application started, read its secret from the store over HTTP, and the value did not work |
+| After the rotation | `/health` **Healthy**, after 300s of waiting (303s wall clock) |
+| Reads from the store | 2 — one at start-up, one refresh. The value was re-read, not cached, and the refresh timer fired once |
+| Process serving `/health` | pid 16492 before, pid 16492 after — observed from the listening socket, not assumed. No restart, no new revision, no code change |
+
+300s is the worst case rather than a typical one: the rotation landed at the start of a refresh
+cycle, so the full five-minute interval elapsed before the tick that picked it up. A rotation landing
+later in a cycle is picked up sooner, which is why `rotate-secret.sh` soaks for a full interval
+before retiring the old version.
+
+The first run of this rehearsal reported 1253s. That figure was discarded: only two store reads had
+occurred where 1253 active seconds against a 300s timer would give five, and the progress log stopped
+emitting after 273s — the machine had suspended mid-wait, freezing the script and the refresh timer
+together. The script now counts the time it actually spends waiting separately from wall clock and
+reports the divergence rather than the larger number.
 
 What could not be verified, and why: everything that needs a provisioned environment — that a
 container exists, that its replication names only `me-central2`, that only the runtime service
@@ -182,7 +211,7 @@ exactly those checks and is the first thing to run against DEV.
 | A repository-wide secret scan finds zero committed secrets | **Met.** §7, row 1. TASK-080 owns the standing gate (CTL-42); this is the scan, run |
 | Application configuration reads every secret at runtime from the secret store, never from a checked-in file | **Met for every secret the application reads** — one today, `DB_CONNECTION_STRING`, and the mechanism is the same for the other 22 as their features land (§3). The deployment injects no value; no checked-in file holds one; local development is the only case that may run without the store, on a git-ignored file that holds no AHDA secret |
 | Secret rotation procedure is documented | **Met.** `infra/secrets/secret-rotation-runbook.md`, rehearsed in test (§7) and not yet against a provisioned store (§9 F-2) |
-| Validation: rotate one test secret end to end and confirm the running application picks up the new value without a code change | **Met in test, not in an environment.** §7, row 3 |
+| Validation: rotate one test secret end to end and confirm the running application picks up the new value without a code change | **Met, against the running application.** §7.1: `/health` Unhealthy → Healthy in the same process, with no restart and nothing edited but the store. The store is a stand-in, not Secret Manager, so the application's half of the procedure is rehearsed and Secret Manager's is not (F-2) |
 | Validation: run a secret scanner against the full git history | **Met.** §7, row 1 |
 
 ## 9. Findings and open items
@@ -190,7 +219,7 @@ exactly those checks and is the first thing to run against DEV.
 | # | Finding | Owner |
 | --- | --- | --- |
 | **F-1** | **The control plane is a global API; only the payload is pinned in Kingdom.** Secrets are created with user-managed replication to `me-central2`, so the secret material is stored only in Saudi Arabia (ADR-001 C-5). The Secret Manager *API* that serves a read is Google's global endpoint. If AHDA Cybersecurity requires the control plane to be in-Kingdom too, the containers become regional secrets — a change to `provision-environment.sh`, to `SECRET_STORE_ENDPOINT`'s host, and a re-check of whether every consumer supports them | AHDA Cybersecurity (requirement); DevOps/Platform Lead (change) |
-| **F-2** | **The rotation has not been rehearsed against a provisioned store.** CTL-18 asks for "documented and rehearsed". The procedure is documented and rehearsed against the application; the rehearsal against DEV is blocked by UGV-07 and is a release-checklist item | DevOps/Platform Lead, once DEV exists |
+| **F-2** | **The rotation has not been rehearsed against Secret Manager.** CTL-18 asks for "documented and rehearsed". The application's half is rehearsed end to end (§7.1) against a stand-in store; what is untested is `gcloud secrets versions add`, the disable and re-enable of versions, and IAM — the half `rotate-secret.sh` performs. Blocked by UGV-07; a release-checklist item | DevOps/Platform Lead, once DEV exists |
 | **F-3** | **No rotation cadence exists.** Control matrix G-3; proposed as **UGV-13**, owner AHDA Cybersecurity, gate Before Production. Rotation is trigger-driven until it is registered (runbook §8) | PMO (register); AHDA Cybersecurity (value) |
 | **F-4** | **Who may read and write PROD secrets is not accepted in writing.** CTL-51, including delivery-vendor access from outside the Kingdom (ADR-001 C-9). The scripts and the IAM model enforce per-environment scope; who holds that scope is AHDA's decision | AHDA Cybersecurity |
 | **F-5** | **Four secrets have no confirmed rotation pattern**, because their provider is not selected or its capability is unknown: `MFA_PROVIDER_API_KEY` (ADR-010), `MALWARE_SCAN_API_KEY`, `SMS_PROVIDER_API_KEY` (UGV-10), `NAFATH_CLIENT_SECRET`. Runbook §7, F-2 | DevOps/Platform Lead; Security Lead |
@@ -199,6 +228,7 @@ exactly those checks and is the first thing to run against DEV.
 
 ## 10. Change log
 
-| Date | Change |
-| --- | --- |
-| 2026-09-23 | Record created with the module, the runbook, the check and the scan (TASK-019) |
+| Date | Change | By |
+| --- | --- | --- |
+| 2026-09-24 | Validation cell executed. The rotation rehearsed end to end against the running application with `rehearse-rotation.sh` and `stub-store.py` (§7.1); the scanner run over the full history with JSON reports retained. F-2 narrowed to what only Secret Manager can answer | Security (TASK-019) |
+| 2026-09-23 | Record created with the module, the runbook, the check and the scan | Security (TASK-019) |

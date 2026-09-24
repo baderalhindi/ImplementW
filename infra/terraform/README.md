@@ -15,7 +15,8 @@ containers and service accounts — is TASK-016's:
 infra/terraform/
 ├── network/         VPC, subnets, private services access, firewall   (TASK-021 owns the rules)
 ├── compute/         Cloud Run service, Direct VPC egress               (ADR-001 R-6, provisional)
-├── database/        Cloud SQL for PostgreSQL 17, backups, PITR        (TASK-020 owns the drills)
+├── database/        Cloud SQL for PostgreSQL 17, encryption, backups, PITR, off-instance export
+│                    and verify-database-controls.sh                  (TASK-020)
 ├── storage/         document and backup buckets                        (TASK-037, TASK-023)
 ├── load-balancer/   regional external ALB, Cloud Armor, TLS 1.2+      (TASK-021 owns the WAF baseline)
 ├── platform/        the composition: guards, and the five wired together
@@ -66,6 +67,7 @@ its state bucket exist.
 | `platform.organization_id` is empty | AHDA IT — UGV-07, ADR-001 R-3, CTL-47 |
 | `APP_BASE_URL` is empty | AHDA IT — environment-separation.md F-1, proposed UGV-12 |
 | PROD has no `retained_backups` | AHDA Cybersecurity and Records — OQ-003 / PTBC-048 |
+| PROD has no `backup_export_schedule` | — automated backups are deleted with the instance; the export is the copy that is not |
 
 ## Checks
 
@@ -74,7 +76,9 @@ its state bucket exist.
 | `terraform fmt -check -recursive`, `init -lockfile=readonly`, `validate` on all four roots | `terraform` job, `.github/workflows/ci-quality-gates.yml` |
 | Trivy config scan, zero HIGH/CRITICAL | same job |
 | Manifest agreement, no duplicated hosting value, no committed credential, pinned toolchain, multi-platform lock files, no shared address range, nothing that would make a plan non-deterministic | `docs/architecture/terraform-check.py`, `repo-checks` job |
+| Database controls: TLS-only, backups and PITR in the named region, no invented retention period, export scoped as the sheet scopes it | `docs/architecture/database-check.py`, `repo-checks` job |
 | The workbook's validation cell, end to end | `./verify-idempotency.sh <env>` — below |
+| Those same database controls against a **running** instance | `database/verify-database-controls.sh <env>` — read-only, needs a provisioned environment |
 
 ### The validation cell
 

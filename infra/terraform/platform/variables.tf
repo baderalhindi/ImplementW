@@ -69,6 +69,18 @@ variable "retained_backups" {
   default     = null
 }
 
+variable "database_encryption_key_name" {
+  description = "Customer-managed encryption key for the database, as a full KMS resource name in the named region. Null everywhere: encryption at rest is on regardless, and whether the key must be AHDA's follows the data classification in ADR-001 R-4 (TASK-020)."
+  type        = string
+  default     = null
+}
+
+variable "backup_export_schedule" {
+  description = "Cron schedule, UTC, for the export of the database to the environment's backup bucket — the copy that survives the instance being deleted. Null in DEV, which has no backup bucket (TASK-020)."
+  type        = string
+  default     = null
+}
+
 variable "noncurrent_version_retention_days" {
   description = "Days a superseded object version is kept. Null while OQ-003 is open."
   type        = number

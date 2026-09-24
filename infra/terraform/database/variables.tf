@@ -76,9 +76,14 @@ variable "backup_start_time" {
 }
 
 variable "transaction_log_retention_days" {
-  description = "Length of the point-in-time recovery window. RPO 1 hour (PTBC-048) requires PITR to be on; the window length is an operational choice TASK-023's drill exercises."
+  description = "Length of the point-in-time recovery window, in days. This is the window RPO 1 hour (PTBC-048) is met inside: a restore can name any second in it, so within the window the RPO is seconds, and outside it the RPO is the age of the newest automated backup. Seven days is the provider maximum for this edition, not an AHDA value; retention of the backups themselves is OQ-003 and is retained_backups below."
   type        = number
   default     = 7
+
+  validation {
+    condition     = var.transaction_log_retention_days >= 1 && var.transaction_log_retention_days <= 7
+    error_message = "transaction_log_retention_days is 1 to 7 on the Cloud SQL Enterprise edition. A longer window needs Enterprise Plus, which is a cost decision nobody has taken."
+  }
 }
 
 variable "retained_backups" {
@@ -103,4 +108,22 @@ variable "maintenance_window" {
 variable "labels" {
   description = "Labels applied to the instance."
   type        = map(string)
+}
+
+variable "encryption_key_name" {
+  description = "Customer-managed encryption key for the instance's disk and its backups, as the full resource name projects/<p>/locations/<region>/keyRings/<ring>/cryptoKeys/<key>. Null leaves Google-managed encryption, which is always on and cannot be turned off. Whether AHDA requires its own key follows the data classification in ADR-001 R-4; no key, key ring or rotation period is created here, because each of those needs an owner and none has one (infrastructure-as-code.md F-6)."
+  type        = string
+  default     = null
+}
+
+variable "backup_bucket_name" {
+  description = "The environment's db-backups bucket (../storage), which scheduled exports are written to and DB_BACKUP_STORAGE_CONNECTION_STRING addresses. Null where the Environment and Secrets sheet scopes no such row, which is DEV."
+  type        = string
+  default     = null
+}
+
+variable "backup_export_schedule" {
+  description = "Cron schedule, UTC, for the export of the application database to the backup bucket. Null creates no export job. This is the copy that survives the instance being deleted; the automated backups in main.tf are the copy that meets the RPO."
+  type        = string
+  default     = null
 }

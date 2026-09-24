@@ -44,6 +44,16 @@ variable "retained_backups" {
   default = null
 }
 
+variable "database_encryption_key_name" {
+  type    = string
+  default = null
+}
+
+variable "backup_export_schedule" {
+  type    = string
+  default = null
+}
+
 variable "noncurrent_version_retention_days" {
   type    = number
   default = null

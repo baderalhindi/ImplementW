@@ -42,6 +42,8 @@ module "platform" {
   database_disk_size_gb             = var.database_disk_size_gb
   database_disk_autoresize_limit_gb = var.database_disk_autoresize_limit_gb
   retained_backups                  = var.retained_backups
+  database_encryption_key_name      = var.database_encryption_key_name
+  backup_export_schedule            = var.backup_export_schedule
 
   noncurrent_version_retention_days = var.noncurrent_version_retention_days
 

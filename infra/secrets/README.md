@@ -11,6 +11,8 @@ in this repository, in a configuration file, in a container image, in Terraform 
 | `set-secret-version.sh` | Writes one value into the store, from stdin. The owner named in the sheet runs it. |
 | `rotate-secret.sh` | Rotation and rollback, end to end: new version, soak, verify, retire the old one. |
 | `verify-secret-integration.sh` | Read-only check of a provisioned environment: containers, replication, versions, IAM, and what the deployed service was given. |
+| `rehearse-rotation.sh` | Rehearses the rotation end to end against the running API, with `stub-store.py` standing in for the store. Takes about six minutes: it waits out a real refresh interval. |
+| `stub-store.py` | The stand-in, for that rehearsal only. Loopback, plain file, no versions, no IAM — not a secret store. |
 | `scan-history.sh` | Scans the full git history and the working tree for committed secrets. Evidence, not a gate — the gate is TASK-080. |
 | `secret-rotation-runbook.md` | The rotation runbook: patterns, procedure, rollback, emergency rotation, per-secret owners. |
 
