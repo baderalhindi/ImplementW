@@ -34,8 +34,9 @@ compute_memory        = "4Gi"
 compute_min_instances = 2
 compute_max_instances = 10
 
-# The WAF logs rather than blocks until TASK-021 has tuned the rule sets against real traffic
-# (control matrix G-7).
-waf_preview = true
+# The WAF enforces here as in every environment: the sensitivity-1 OWASP baseline blocks from DEV
+# onward, so a false positive is found in testing and not on PROD's first day (control matrix G-7,
+# docs/architecture/network-security.md §3.4).
+waf_preview = false
 
 deletion_protection = true

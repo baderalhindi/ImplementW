@@ -6,7 +6,11 @@
 # which is not necessarily inside the Kingdom, and ADR-001 C-2 forbids that. The proxies run in the
 # proxy-only subnet of the environment's own VPC, in the named region (CTL-04).
 #
-# Port 80 exists only to redirect to 443. There is no plaintext path to the application.
+# 443 is the only port the address listens on. TASK-017 also opened 80 to redirect to 443; TASK-021
+# closed it, because its validation cell asks for an external scan on which only 443 is reachable
+# and a listener that answers in plaintext is an open port however little it says. A browser that
+# types http:// is covered by HSTS, which the application sends (CTL-12, TASK-078), and by AHDA
+# publishing the https:// address. docs/architecture/network-security.md §3.3.
 
 resource "google_compute_address" "lb" {
   project      = var.project_id
@@ -17,6 +21,11 @@ resource "google_compute_address" "lb" {
 }
 
 # --- WAF -------------------------------------------------------------------------------------
+#
+# The rule baseline is control matrix G-7 and TASK-021's to record: the OWASP CRS 3.3 rule sets in
+# var.waf_rule_sets, at sensitivity 1, enforcing in all four environments. Why those sets, why that
+# sensitivity, why enforcing from DEV onward, and how a false positive is handled:
+# docs/architecture/network-security.md §3.4.
 
 resource "google_compute_region_security_policy" "waf" {
   project     = var.project_id
@@ -99,11 +108,14 @@ resource "google_compute_region_backend_service" "api" {
 
 # --- TLS -------------------------------------------------------------------------------------
 
+# RESTRICTED, not MODERN. At TLS 1.2 the MODERN profile still offers the AES-CBC suites with SHA-1
+# MACs, which every TLS scanner reports as weak; RESTRICTED leaves only the AEAD suites (AES-GCM,
+# ChaCha20-Poly1305) with forward secrecy, which every browser from the last several years offers.
 resource "google_compute_region_ssl_policy" "tls" {
   project         = var.project_id
   name            = "${var.name_prefix}-tls"
   region          = var.region
-  profile         = "MODERN"
+  profile         = "RESTRICTED"
   min_tls_version = var.min_tls_version
 }
 
@@ -158,35 +170,4 @@ resource "google_compute_forwarding_rule" "https" {
   ip_address            = google_compute_address.lb.id
   port_range            = "443"
   target                = google_compute_region_target_https_proxy.app.id
-}
-
-resource "google_compute_region_url_map" "http_redirect" {
-  project = var.project_id
-  name    = "${var.name_prefix}-http-redirect"
-  region  = var.region
-
-  default_url_redirect {
-    https_redirect         = true
-    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
-    strip_query            = false
-  }
-}
-
-resource "google_compute_region_target_http_proxy" "redirect" {
-  project = var.project_id
-  name    = "${var.name_prefix}-http-proxy"
-  region  = var.region
-  url_map = google_compute_region_url_map.http_redirect.id
-}
-
-resource "google_compute_forwarding_rule" "http" {
-  project               = var.project_id
-  name                  = "${var.name_prefix}-http"
-  region                = var.region
-  load_balancing_scheme = "EXTERNAL_MANAGED"
-  network_tier          = "PREMIUM"
-  network               = var.network_id
-  ip_address            = google_compute_address.lb.id
-  port_range            = "80"
-  target                = google_compute_region_target_http_proxy.redirect.id
 }

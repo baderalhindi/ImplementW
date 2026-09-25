@@ -71,6 +71,11 @@ resource "google_sql_database_instance" "main" {
       ipv4_enabled    = false
       private_network = var.network_id
       ssl_mode        = "ENCRYPTED_ONLY"
+
+      # Pinned to the network module's private services range rather than left to whichever range
+      # the peering offers, so the firewall rules written against that range address this
+      # instance and nothing else (TASK-021, CTL-03).
+      allocated_ip_range = var.allocated_ip_range
     }
 
     backup_configuration {

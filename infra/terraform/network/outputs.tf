@@ -13,6 +13,11 @@ output "app_subnet_id" {
   value       = google_compute_subnetwork.app.id
 }
 
+output "private_services_range_name" {
+  description = "Name of the private services access range. The database instance is pinned to it, so the firewall rules that name this range name exactly the database tier (TASK-021)."
+  value       = google_compute_global_address.private_services.name
+}
+
 output "private_services_connection_id" {
   description = "Service networking connection. The database instance depends on it: a private-IP instance cannot be created before the peering exists."
   value       = google_service_networking_connection.private_services.id

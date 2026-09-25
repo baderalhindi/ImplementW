@@ -1,4 +1,5 @@
-# Network (TASK-017 authors the module; TASK-021 owns the security configuration inside it).
+# Network (TASK-017 authored the module; TASK-021 owns the security configuration inside it —
+# record and diagram: docs/architecture/network-security.md).
 #
 # One VPC per environment, in the environment's own project, with no route to any other
 # environment: separation is structural, not a rule (TASK-016 §3.1, CTL-02). Three ranges:
@@ -87,6 +88,31 @@ resource "google_compute_firewall" "allow_app_egress_to_database" {
   allow {
     protocol = "tcp"
     ports    = [tostring(var.database_port)]
+  }
+}
+
+# The rule above opens the database port to the application tag; this one closes it to everything
+# else in the VPC (TASK-021). Cloud SQL lives in Google's service producer network, where no
+# consumer firewall rule can be written, so "only the API tier can reach the database tier" has to
+# be enforced at the source. Without this rule any workload added to the VPC later — a VM, a
+# second Cloud Run service, a GKE node — inherits GCP's implied allow-egress and reaches 5432.
+# Priority 1100 sits below the allow at 1000, so the application tag is matched first.
+resource "google_compute_firewall" "deny_egress_to_database" {
+  project     = var.project_id
+  name        = "${var.network_name}-deny-egress-to-database"
+  network     = google_compute_network.vpc.id
+  description = "Every source but the application tier, to the database tier, all ports (CTL-03)."
+  direction   = "EGRESS"
+  priority    = 1100
+
+  destination_ranges = [var.private_services_cidr]
+
+  deny {
+    protocol = "all"
+  }
+
+  log_config {
+    metadata = "INCLUDE_ALL_METADATA"
   }
 }
 

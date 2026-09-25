@@ -5,7 +5,9 @@ The workbook asks for two consecutive plans with no manual change between them a
 things in Terraform's own JSON differ between any two runs and describe no change at all:
 
   - `timestamp`, the wall-clock moment the plan was produced;
-  - the order of `relevant_attributes`, which Terraform emits in map-iteration order.
+  - the order of `relevant_attributes`, and of every `child_modules` list in `planned_values` and
+    `prior_state`, both of which Terraform emits in map-iteration order. The second was found by
+    TASK-021: two SIT plans identical in content listed the five modules in different orders.
 
 Comparing the raw files reports a difference every time and so proves nothing. This compares what a
 plan actually asserts — the resource changes, the planned values, the resolved configuration, the
@@ -45,11 +47,24 @@ def relevant_attributes_key(entry):
     return (entry.get("resource", ""), tuple(str(part) for part in entry.get("attribute", [])))
 
 
+def order_modules(node):
+    """Sort every `child_modules` list by address, at any depth. A module's address is unique within
+    its parent, so this orders the list without merging or dropping anything."""
+    if isinstance(node, dict):
+        ordered = {key: order_modules(value) for key, value in node.items()}
+        if isinstance(ordered.get("child_modules"), list):
+            ordered["child_modules"] = sorted(ordered["child_modules"], key=lambda m: m.get("address", ""))
+        return ordered
+    if isinstance(node, list):
+        return [order_modules(item) for item in node]
+    return node
+
+
 def main(argv):
     if len(argv) != 3:
         sys.exit("usage: compare-plans.py <plan1.json> <plan2.json>")
 
-    first, second = load(argv[1]), load(argv[2])
+    first, second = order_modules(load(argv[1])), order_modules(load(argv[2]))
     differences = []
 
     for section in SECTIONS:

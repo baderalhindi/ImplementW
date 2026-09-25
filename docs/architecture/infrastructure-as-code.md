@@ -109,7 +109,7 @@ Two values cannot be read from the manifest, and both are structural rather than
 | **database** | Cloud SQL for PostgreSQL 17; the application database; an IAM service-account user; two project IAM grants | No public IP exists to be firewalled (CTL-03). `ssl_mode = ENCRYPTED_ONLY` is the rejection TASK-020's validation check attempts (CTL-17). Backups and PITR are on, located in the named region, with the retention period left null (§3.5). Six database flags, five of them CIS benchmark items, put connection-level audit logging where CTL-26 can forward it. |
 | **storage** | `<project>-documents`, and `-db-backups` / `-document-backups` outside DEV | Single-region in the named region — not multi-region, not dual-region (ADR-001 C-4). Uniform access, public access prevention enforced, versioned, soft delete on. DEV has no backup buckets because the Environment and Secrets sheet scopes both backup rows to SIT, UAT and PROD. The runtime service account can write documents and has no grant on either backup bucket: a backup the application can overwrite is not a backup. |
 | **compute** | Cloud Run service with Direct VPC egress; an invoker binding | `INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER`, so the only path in is the one where TLS, the WAF and the in-Kingdom termination are enforced. The service is given the address of the environment's secret namespace and reads the values itself with its own service-account identity (TASK-019), so no secret value passes through this repository, this module or Terraform state. §4 for the runtime itself. |
-| **load-balancer** | Regional external ALB, regional Cloud Armor policy, Certificate Manager DNS authorisation and managed certificate, TLS policy, two forwarding rules | Every resource is **regional**, which is the whole module: a global load balancer terminates TLS at the Google edge nearest the client, which is not necessarily inside the Kingdom, and ADR-001 C-2 forbids that. Port 80 exists only to redirect to 443 (CTL-04). The certificate is Google-managed against a DNS authorisation, so no private key is held by anyone. |
+| **load-balancer** | Regional external ALB, regional Cloud Armor policy, Certificate Manager DNS authorisation and managed certificate, TLS policy, one forwarding rule (TASK-017 created two; TASK-021 closed port 80) | Every resource is **regional**, which is the whole module: a global load balancer terminates TLS at the Google edge nearest the client, which is not necessarily inside the Kingdom, and ADR-001 C-2 forbids that. Port 80 existed only to redirect to 443; TASK-021 removed it, so 443 is the only listener (`network-security.md` §3.3). The certificate is Google-managed against a DNS authorisation, so no private key is held by anyone. |
 
 ### 3.4 Guards: the plan refuses before it reaches the provider
 
@@ -149,7 +149,7 @@ Everything structural is identical in all four. What a root's `terraform.tfvars`
 | Instances, min–max | 0–2 | 1–4 | 1–4 | 2–10 |
 | Backup buckets | none | yes | yes | yes |
 | Deletion protection | off | off | **on** | **on** |
-| WAF | preview | preview | preview | preview |
+| WAF | enforcing | enforcing | enforcing | enforcing |
 
 The four VPCs are not peered and carry no route to one another, so the address ranges need not
 differ. They do, so that connecting one of them to an AHDA network later is a route, not a
@@ -161,7 +161,9 @@ standby and that any regional high-availability cost must be re-tested against t
 is committed. It is set here because a production database losing a zone is a different event from a
 production database losing a region, and it is one line to reverse if AHDA declines the cost.
 
-The WAF is in **preview** in all four environments: the rules log rather than block. Cloud Armor's
+*Superseded by TASK-021, which recorded the G-7 baseline and switched the WAF to enforcing in all four
+environments — `network-security.md` §3.4. As first written:* the WAF is in **preview** in all four
+environments: the rules log rather than block. Cloud Armor's
 preconfigured OWASP rule sets turned straight to enforcing are how a WAF takes a working application
 off the air on its first day, and the control matrix's G-7 records that no rule baseline is stated
 and that TASK-021 records it. What this task owns is that the policy exists, is regional, is
@@ -386,6 +388,7 @@ check under its current name, and `verify-idempotency.sh` V-2 does the same. Thi
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-25 | Load balancer and network changed by TASK-021 (`docs/architecture/network-security.md`): port 80 and its redirect removed, so 443 is the only listener; SSL policy profile `MODERN` → `RESTRICTED`; the WAF switched from preview to enforcing in all four environments, with the G-7 baseline recorded; a p1100 egress deny on the database range for every source in the VPC; the database pinned to the private services range. `compare-plans.py` now orders `child_modules` before comparing — Terraform emits them in map-iteration order, so V-4 could report non-idempotency at random (`network-security.md` §4.1). | Infrastructure (TASK-021) |
 | 2026-09-23 | The compute module no longer injects secret values into Cloud Run: `secret_environment` and its `value_source` block are removed, and the service is given `SECRET_STORE_ENDPOINT` — the address of the environment's secret namespace, derived from the manifest — in `plain_environment` instead. The application reads its secrets from the store with the runtime service account's own identity, which is what lets a rotated value reach a running instance without a new revision. Reasoning in `docs/architecture/secret-management.md` §3.1; `secret-management-check.py` K-2 fails the build if injection reappears. F-5 closed. | Security (TASK-019) |
 | 2026-09-22 | Validation cell executed, and the part that needs a live environment scripted: `verify-idempotency.sh` (V-1 validate, V-2 scan, V-3 plan against the current state, V-4 plan twice) with `compare-plans.py`, both exiting non-zero rather than skipping. Two consecutive plans shown to assert identical changes on the machine-readable plan, not merely identical text (§5.3). tfsec run alongside Trivy; its one HIGH finding shown to be unsatisfiable against the current provider (§5.4, F-11). T-9 added to the check — non-deterministic functions and `ignore_changes` — with three more mutations (M16–M18). | Infrastructure (TASK-017) |
 | 2026-09-22 | Initial record. Five Terraform modules, a shared composition and four environment roots authored against the TASK-016 manifest as the single source of truth; five preflight preconditions that refuse the plan while the region, tenancy, DNS zone or PROD retention period are unset; peer review made enforceable through CODEOWNERS, a required `terraform` status check, a CI job (fmt, validate with read-only locks, Trivy) and `terraform-check.py` in `repo-checks`. Verified: fmt clean, validate green on four roots, full plans of 40–42 resources per environment against a placeholder manifest, two consecutive plans byte-identical, zero HIGH/CRITICAL, fifteen mutations caught, gitleaks clean. The compute runtime is codified on Cloud Run provisionally, with the GKE substitution cost priced (§4, F-1). Ten findings raised. | Infrastructure (TASK-017) |

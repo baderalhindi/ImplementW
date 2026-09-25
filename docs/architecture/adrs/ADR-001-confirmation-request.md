@@ -90,4 +90,5 @@ On Q1, Q2 and Q5 being answered, ADR-001's header status becomes **APPROVED** wi
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-25 | Addendum 1 drafted — Q13–Q22, the identifiers, DNS, access and product availability needed before the first apply: `ADR-001-confirmation-request-addendum-1.md`. This document is unchanged. | Infrastructure (TASK-021) |
 | 2026-09-20 | Issued. Twelve questions raised against ADR-001 residual items R-1 to R-7, grouped by owning role, with unblocking consequence per question. | Architecture (TASK-005) |
