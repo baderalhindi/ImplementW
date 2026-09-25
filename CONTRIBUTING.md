@@ -164,10 +164,9 @@ docker compose -f infra/docker/docker-compose.yml down -v              # reset: 
 - The seed creates `local.r01` … `local.r08`, one per canonical role, each bound to that role's shipped-default
   permission profile version. They are data, not accounts: there is no credential and no local sign-in path until
   TASK-028.
-- `infra/docker/postgres/init/01-schema.sql` is a **bridge** — nine ERD tables so the seed has somewhere to go
-  before TASK-025 migrates those tables (TASK-024 built the migration framework and the module schemas). It is
-  deleted when TASK-025 lands.
-  `python3 docs/architecture/local-stack-check.py` fails if any column drifts from `erd.dbml`.
+- The tables come from the EF Core migrations: on every `up`, the one-shot `migrate` service applies them and the
+  one-shot `seed` service then runs `infra/docker/postgres/seed/*.sql` (idempotent). Both exit 0; `api` starts after
+  them. The migrated schema is checked against `erd.dbml` by `CoreSchemaTests` in the backend integration tests.
 
 ## Environments and promotion
 

@@ -66,8 +66,12 @@ bind mount cannot drag a host `node_modules` — built on a different platform �
 
 ### 3.2 The seed, and the schema it needs
 
-TASK-014's criterion is "seeded data includes at least one user per role R01-R08", and TASK-023/TASK-024 — which
-create the schema — have not run. Three init scripts run once, in name order, on an empty data volume:
+TASK-014's criterion is "seeded data includes at least one user per role R01-R08". Since TASK-025 the schema comes
+from the EF Core migrations: compose's one-shot `migrate` service runs the API image's `migrate` command once
+`postgres` is healthy, then the one-shot `seed` service runs the two scripts in `infra/docker/postgres/seed` with
+`psql`, and only then does `api` start. Both one-shots exit 0 on every `up` (the migrations are already applied; the
+seed is idempotent). The table below is the original TASK-014 layout; `01-schema.sql` is deleted and the two seed
+scripts are now `seed/01-seed-roles.sql` and `seed/02-seed-local-users.sql`, unchanged apart from their headers.
 
 | Script | What it does | Whose job it really is |
 | --- | --- | --- |
@@ -161,7 +165,7 @@ identically on both.
 | ID | Finding | Owner / where it goes |
 | --- | --- | --- |
 | **F-1** | **Role labels are provisional.** The Blueprint's Appendix A role list is not in the repository, so `name_ar`/`name_en` for R01–R08 follow the dashboard inventory DSH-001–008 and the two roles the workbook names outright (R01 System Administrator, R04 Project Manager). The codes R01–R08 are canonical and nothing keys on a label, so the correction is a label update. | TASK-027, from the controlled source |
-| **F-2** | **The bridge schema must be deleted, not migrated.** `01-schema.sql` exists only because no migration creates its nine tables yet. TASK-024 built the migration framework and the module schemas; the tables are TASK-025's. When TASK-025 lands, delete the file, run the API image's `migrate` command in compose (`database-migrations.md` §3), and keep `02-`/`03-` as DML. Leaving it would give the local stack a second schema definition — exactly the drift `local-stack-check.py` exists to detect in the meantime. | TASK-025 (handed over by TASK-024, 2026-09-25) |
+| **F-2** | **CLOSED by TASK-025 (2026-09-25):** `01-schema.sql` and `local-stack-check.py` deleted; compose migrates, then seeds (§3.2); see `core-platform-schema.md` §7. Original finding: **The bridge schema must be deleted, not migrated.** `01-schema.sql` exists only because no migration creates its nine tables yet. TASK-024 built the migration framework and the module schemas; the tables are TASK-025's. When TASK-025 lands, delete the file, run the API image's `migrate` command in compose (`database-migrations.md` §3), and keep `02-`/`03-` as DML. Leaving it would give the local stack a second schema definition — exactly the drift `local-stack-check.py` exists to detect in the meantime. | TASK-025 (handed over by TASK-024, 2026-09-25) |
 | **F-3** | `JWT_SIGNING_KEY` is supplied to the API and read by nothing: no code issues a token yet. It is set now because the workbook's TASK-014 row names it and because the variable must be present the day TASK-028 starts. | TASK-028 |
 | **F-4** | **The seeded users cannot sign in**, by design (§3.2). A developer testing an authenticated path before TASK-028 needs a local token-issuing stub; that stub is TASK-028/TASK-029 scope and must never ship outside `Development`. | TASK-028 |
 | **F-5** | The shipped-default profile versions carry **no permission grants** — the catalogue is TASK-030/TASK-110's. An authorization test written against this seed today asserts on role identity only. | TASK-030, TASK-110 |
@@ -174,6 +178,7 @@ identically on both.
 
 | Date | Change | Author |
 | --- | --- | --- |
+| 2026-09-25 | TASK-025 closes F-2. Bridge schema and `local-stack-check.py` (check 3, and its CI step) deleted; the migrated schema is compared with `erd.dbml` by `CoreSchemaTests` instead. Compose gains the one-shot `migrate` and `seed` services; the seed scripts move to `postgres/seed`. The API's `DB_CONNECTION_STRING` host goes back to `postgres`, the service name. `smoke-test.sh` from a reset volume: healthy in 14s, `/health` 200, one user per R01–R08. | Database (TASK-025) |
 | 2026-09-25 | F-2 and the `01-schema.sql` row handed from TASK-023/TASK-024 to TASK-025. TASK-024 created the module schemas but none of the nine bridged tables, so the bridge stays until TASK-025 migrates them. | Database (TASK-024) |
 | 2026-09-22 | Re-run unchanged on Docker Desktop 4.92 (check 1b): healthy in 52s, all checks green. F-6 narrowed to Windows and Linux Docker Engine. Cold-build reading of criterion 1 stated explicitly (§5). | Architecture (TASK-014) |
 | 2026-09-22 | Initial record. Three-service compose stack (PostgreSQL 17, API on .NET 10, Vite dev server) with health-gated start-up; bridge schema transcribing nine ERD tables, canonical roles R01–R08 with shipped-default profile versions, and one local user per role (§3.2); `/health` backed by a real PostgreSQL probe (§3.4); `smoke-test.sh` and `local-stack-check.py` with mutation check. Verified from a cold machine at 70s build + 26s to healthy (§4). Built under the ADR-002 gate on the assumption the stack is confirmed as proposed (§2). Nine findings (F-1…F-9). | Architecture (TASK-014) |
