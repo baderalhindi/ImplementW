@@ -34,6 +34,20 @@ jobs:
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
+    # TASK-024: the migration rollback tests need a PostgreSQL server of the environments' major version. Each
+    # test creates and drops its own database on it; nothing else uses it.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: scratch
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
 
@@ -57,6 +71,15 @@ jobs:
       # Unit tests only. PMPlatform.Tests.Integration needs the containerised stack and gets its own stage.
       - name: Unit tests
         run: dotnet test src/backend/PMPlatform.Tests.Unit --no-build --configuration Release
+
+      # TASK-024: every migration applies from empty, rolls back to the schema before it, and re-applies.
+      # Only the Persistence tests: the rest of PMPlatform.Tests.Integration needs the containerised stack.
+      - name: Migration rollback tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Persistence
 
   frontend:
     name: frontend
@@ -97,6 +120,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The forward-only check below diffs the pull request against its base branch.
+          fetch-depth: 0
 
       # Standard library only; the runner's python3 is enough (no setup-python step).
       - name: API and event contracts (TASK-009)
@@ -128,6 +154,12 @@ jobs:
 
       - name: Network security (TASK-021)
         run: python3 docs/architecture/network-security-check.py
+
+      - name: Migrations are forward-only (TASK-024)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: .github/scripts/migration-forward-only.sh
 
   # The IaC is reviewed like application code and gated like it (TASK-017, CTL-05). Format,
   # schema and a static security scan run on every pull request; `terraform plan` needs the

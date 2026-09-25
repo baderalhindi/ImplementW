@@ -27,3 +27,8 @@ output "database_backup_export_uri" {
   description = "The object scheduled exports are written to; the target DB_BACKUP_STORAGE_CONNECTION_STRING addresses."
   value       = module.platform.database_backup_export_uri
 }
+
+output "migration_job_name" {
+  description = "Cloud Run job that applies the release's migrations; the value of the MIGRATION_JOB repository variable (TASK-024)."
+  value       = module.platform.migration_job_name
+}

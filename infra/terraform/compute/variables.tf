@@ -13,6 +13,11 @@ variable "service_name" {
   type        = string
 }
 
+variable "migration_job_name" {
+  description = "Cloud Run job that applies the release's migrations (TASK-024). The same name in every environment, because each is its own project and the pipeline names the job once, in the MIGRATION_JOB repository variable."
+  type        = string
+}
+
 variable "container_image" {
   description = "The image to run, by digest. Supplied at apply time by the promotion pipeline (TASK-018) as TF_VAR_container_image, because one artifact is built once and promoted unchanged through all four environments."
   type        = string

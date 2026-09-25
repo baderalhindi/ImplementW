@@ -1,6 +1,8 @@
 # Build context for infra/docker/*.Dockerfile is the repository root (TASK-014). Send only what the images need.
 *
 !global.json
+# The analyzer and code-style configuration, so the image compiles under the same rules as CI (TASK-024).
+!.editorconfig
 !src/backend/
 !src/frontend/
 src/backend/**/bin/
