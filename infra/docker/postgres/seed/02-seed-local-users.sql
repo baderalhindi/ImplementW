@@ -1,4 +1,4 @@
--- 03-seed-local-users.sql — local test users, one per role R01–R08 (TASK-014 acceptance criterion).
+-- 02-seed-local-users.sql — local test users, one per role R01–R08 (TASK-014 acceptance criterion).
 --
 -- LOCAL STACK ONLY. These are synthetic accounts for a developer's docker-compose database. They are never
 -- promoted to DEV, SIT, UAT or PROD (TASK-027's db/seed holds roles and master data, not people), have no

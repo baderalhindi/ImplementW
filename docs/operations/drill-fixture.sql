@@ -1,10 +1,11 @@
 -- drill-fixture.sql — data added to a local source database before a restore rehearsal or drill (TASK-023).
 --
--- Used by rehearse-restore.sh and run-restore-drill.sh, on top of the TASK-014 schema and seed. Never
--- run against a real environment: it creates a stand-in audit_activity schema that TASK-073 owns.
+-- Used by rehearse-restore.sh and run-restore-drill.sh, on top of the migrated schema and the local seed. Never
+-- run against a real environment: it creates a stand-in for a table in the audit_activity schema, which TASK-073 owns.
 
 -- A stand-in for TASK-073's table, reduced to the columns the chain check reads.
-CREATE SCHEMA audit_activity;
+-- The schema itself exists once the TASK-024 baseline migration has run.
+CREATE SCHEMA IF NOT EXISTS audit_activity;
 CREATE TABLE audit_activity.audit_event (
     id                  uuid PRIMARY KEY,
     recorded_at         timestamptz NOT NULL,

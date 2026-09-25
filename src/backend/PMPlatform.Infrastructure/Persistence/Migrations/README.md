@@ -50,10 +50,15 @@ DB_CONNECTION_STRING='Host=localhost;Port=55432;Database=postgres;Username=postg
   dotnet test src/backend/PMPlatform.Tests.Integration --filter FullyQualifiedName~PMPlatform.Tests.Integration.Persistence
 ```
 
-Do not test a rollback on the Compose database. Its bridge schema (`infra/docker/postgres/init/01-schema.sql`)
-puts tables in `identity_access` and `master_data_config` that no migration created, so reverting
-`TASK-024_CreateModuleSchemas` there fails. That is correct behaviour: `DROP SCHEMA` without `CASCADE`
-refuses to remove a schema that still holds tables.
+A migration may touch only its module's schema (R-7), even when two modules reference each other. Create the
+tables first and add the foreign key that leaves the schema in a later migration of the same task, once its target
+exists: TASK-025 does this for `identity_access` ↔ `master_data_config` (`docs/architecture/core-platform-schema.md` §2).
+`dotnet ef migrations add` also emits `EnsureSchema` for a module schema the model has not used before; delete that
+call, because the schema is TASK-024's baseline and `MigrationsCreateExactlyTheModuleSchemas` counts it.
+
+The Compose stack applies the migrations itself: its one-shot `migrate` service runs before `seed` and `api`
+(`infra/docker/docker-compose.yml`). To test a rollback, use a scratch database, not the Compose one, whose seed rows
+a Down would delete.
 
 ## In an environment
 

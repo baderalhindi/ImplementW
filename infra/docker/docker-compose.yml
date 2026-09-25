@@ -11,10 +11,20 @@
 # DEV-scoped rows of the Environment and Secrets sheet (docs/architecture/environment-templates.md §3.2) that this
 # stack can satisfy; the rest stay unset and the API starts without them.
 #
+# Start-up order: postgres healthy → migrate (the API image's `migrate` command applies every EF Core migration and
+# exits) → seed (idempotent SQL in ./postgres/seed) → api. migrate and seed are one-shot containers that exit 0.
+#
 # Record: docs/architecture/local-development-environment.md
 
 # Project name must be lowercase (Compose rejects "AHDA"); the containers carry the uppercase AHDA- names.
 name: ahda
+
+# The API image serves the API and, given `migrate`, applies the migrations (TASK-024), as the Cloud Run job does in
+# each environment. Containers reach PostgreSQL by its service name; from the host it is localhost:5432.
+x-api-build: &api-build
+  context: ../..
+  dockerfile: infra/docker/api.Dockerfile
+x-database-connection: &database-connection Host=postgres;Port=5432;Database=pmplatform;Username=pmplatform;Password=pmplatform
 
 services:
   postgres:
@@ -29,8 +39,6 @@ services:
       - "${PMPLATFORM_POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      # Runs once, in name order, when the data volume is empty: 01 bridge schema, 02 roles R01–R08, 03 local users.
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready --username=pmplatform --dbname=pmplatform"]
       interval: 5s
@@ -38,18 +46,43 @@ services:
       retries: 12
       start_period: 10s
 
-  api:
-    container_name: AHDA-api
-    build:
-      context: ../..
-      dockerfile: infra/docker/api.Dockerfile
+  migrate:
+    container_name: AHDA-migrate
+    build: *api-build
+    command: ["migrate"]
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      DB_CONNECTION_STRING: *database-connection
+
+  # Roles R01–R08 and one local user per role (TASK-014), after the tables exist. Idempotent, so it runs on every up.
+  seed:
+    container_name: AHDA-seed
+    image: postgres:17
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: postgres
+      PGUSER: pmplatform
+      PGPASSWORD: pmplatform # local default; never a real credential
+      PGDATABASE: pmplatform
+    volumes:
+      - ./postgres/seed:/seed:ro
+    entrypoint: ["psql", "--no-psqlrc", "--quiet", "--set=ON_ERROR_STOP=1", "--file=/seed/01-seed-roles.sql", "--file=/seed/02-seed-local-users.sql"]
+
+  api:
+    container_name: AHDA-api
+    build: *api-build
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
       # Sheet names, verbatim (TASK-013 R-1): the API reads configuration["DB_CONNECTION_STRING"], and so on.
-      DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=pmplatform;Username=pmplatform;Password=pmplatform
+      DB_CONNECTION_STRING: *database-connection
       JWT_SIGNING_KEY: local-development-only-signing-key-not-valid-outside-docker-compose
       CORS_ALLOWED_ORIGINS: http://localhost:5173
       APP_BASE_URL: http://localhost:5173
