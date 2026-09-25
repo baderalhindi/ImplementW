@@ -117,7 +117,7 @@ jobs:
       - name: Infrastructure as code (TASK-017)
         run: python3 docs/architecture/terraform-check.py
 
-      - name: Promotion pipeline (TASK-018)
+      - name: Promotion pipeline and release security gate (TASK-018, TASK-022)
         run: python3 docs/architecture/cicd-pipeline-check.py
 
       - name: Secret management (TASK-019)

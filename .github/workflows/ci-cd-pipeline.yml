@@ -11,8 +11,10 @@
 #   reviewer approves, and .github/scripts/deployment-record.sh then reads that approval back and
 #   fails the deployment if it carries no identity or no timestamp.
 #
-#   A failed gate blocks promotion. quality-gates, image-scan and migration-dry-run are needs of
-#   deploy-dev, and every later stage needs the stage before it, so a red gate skips all four.
+#   A failed gate blocks promotion. quality-gates, dependency-scan, package (the image scan) and
+#   migration-dry-run are needs of deploy-dev, and every later stage needs the stage before it, so a
+#   red gate skips all four. Each stage also re-scans the release's SBOM before it deploys, so a CVE
+#   published after the build still stops the promotion (TASK-022).
 #
 #   Every deployment names a commit SHA and a Task ID. release-metadata fails the run if the commit
 #   being released names no task, and both travel with the image into every deployment record.
@@ -94,14 +96,74 @@ jobs:
     permissions:
       contents: read
 
-  # CTL-40's "failed security scan blocks promotion", at the artifact. The image is built here once
-  # and scanned before it can be pushed; TASK-022 adds the SBOM and the dependency (SCA) scan to this
-  # job, and TASK-080 covers source-level secrets on the pull request.
+  # CTL-41 at the source: an SBOM of the backend and frontend package manifests, a report of every
+  # finding in it, and the gate (TASK-022). A job of its own rather than a step of `package`, and
+  # needing nothing but the release metadata, so the report is attached to every build — including
+  # one the quality gate fails. NuGet's own audit makes `dotnet restore` fail on a vulnerable package
+  # under warnings-as-errors, so a release carrying one never reaches `package`.
+  dependency-scan:
+    name: dependency-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [release-metadata]
+    env:
+      EVIDENCE_DIR: artifacts/security
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-metadata.outputs.commit_sha }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # The lock files this restore writes are the transitive graph the SBOM is read from; they are
+      # not committed. NuGetAudit is off for this restore only: its verdict is the quality gate's,
+      # and here it would stop the restore before the vulnerable package could be recorded,
+      # reported and gated.
+      - name: Resolve the backend dependency graph
+        run: dotnet restore src/backend -p:RestorePackagesWithLockFile=true -p:NuGetAudit=false
+
+      - uses: aquasecurity/setup-trivy@v0.3.1
+        with:
+          version: v0.74.0
+
+      - name: SBOM of the package manifests
+        run: .github/scripts/release-security-scan.sh sbom-manifests
+
+      - name: Dependency scan report
+        run: .github/scripts/release-security-scan.sh scan
+
+      # Before the gate, so a blocked build still carries the report that says why.
+      - name: Attach the SBOM and the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence-dependencies
+          path: artifacts/security/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Gate
+        run: .github/scripts/release-security-scan.sh gate
+
+  # CTL-40's "failed security scan blocks promotion", and CTL-41 at the artifact. The image is built
+  # here once, from a source tree the dependency scan has passed; its SBOM covers the base image's OS
+  # packages and the published .NET closure, and is scanned and gated before the image is pushed.
+  # The pushed digest is signed and carries the SBOM as an attestation (TASK-022). TASK-080 covers
+  # source-level secrets and the same scan on the pull request.
   package:
     name: package
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [release-metadata, preflight, quality-gates]
+    needs: [release-metadata, preflight, quality-gates, dependency-scan]
+    # id-token is for keyless signing only: the workflow's OIDC identity is what the signature
+    # certifies, so no signing key exists to be stored, rotated or leaked.
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      EVIDENCE_DIR: artifacts/security
     outputs:
       image_digest: ${{ steps.push.outputs.image_digest }}
     steps:
@@ -127,17 +189,29 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Same tool and same threshold as the Terraform scan in ci-quality-gates.yml: zero HIGH or
-      # CRITICAL. `ignore-unfixed` keeps the gate on findings that can actually be acted on, which is
-      # the line TASK-022's acceptance criterion draws ("a known CRITICAL CVE with an available fix").
-      - name: Scan the release image
-        uses: aquasecurity/trivy-action@v0.36.0
+      - uses: aquasecurity/setup-trivy@v0.3.1
         with:
-          scan-type: image
-          image-ref: pmplatform-api:${{ needs.release-metadata.outputs.image_tag }}
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: 1
+          version: v0.74.0
+
+      - name: SBOM of the release image
+        run: .github/scripts/release-security-scan.sh sbom-image "pmplatform-api:${{ needs.release-metadata.outputs.image_tag }}"
+
+      - name: Image scan report
+        run: .github/scripts/release-security-scan.sh scan
+
+      - name: Attach the SBOM and the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence-image
+          path: artifacts/security/
+          retention-days: 90
+          if-no-files-found: error
+
+      # Zero fixable HIGH or CRITICAL, the threshold TASK-018 set for this image. Before the push, so a
+      # blocked image never reaches a registry any environment can pull from.
+      - name: Gate
+        run: .github/scripts/release-security-scan.sh gate
 
       - name: Authenticate to the container registry
         if: ${{ needs.preflight.outputs.ready == 'true' }}
@@ -163,6 +237,25 @@ jobs:
           digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$REPOSITORY:$TAG")
           echo "image_digest=$digest" >>"$GITHUB_OUTPUT"
           echo "pushed $digest" >>"$GITHUB_STEP_SUMMARY"
+
+      - uses: sigstore/cosign-installer@v4.1.2
+        if: ${{ needs.preflight.outputs.ready == 'true' }}
+        with:
+          cosign-release: v3.1.3
+
+      # Keyless: the certificate names this workflow, on this ref, at this commit, and the signature is
+      # recorded in the public Sigstore transparency log. Every deploy stage verifies it before the
+      # image is used (.github/actions/deploy-environment), so an image this workflow did not build
+      # on main cannot be deployed. The SBOM travels with the digest as a signed attestation.
+      - name: Sign the image and attest its SBOM
+        if: ${{ needs.preflight.outputs.ready == 'true' }}
+        env:
+          IMAGE_DIGEST: ${{ steps.push.outputs.image_digest }}
+        run: |
+          set -euo pipefail
+          cosign sign --yes "$IMAGE_DIGEST"
+          cosign attest --yes --type cyclonedx --predicate "$EVIDENCE_DIR/sbom-api-image.cdx.json" "$IMAGE_DIGEST"
+          echo "signed $IMAGE_DIGEST and attested its SBOM" >>"$GITHUB_STEP_SUMMARY"
 
   # CTL-40's "failed migration dry-run blocks promotion". Runs against a scratch database, so it is
   # independent of every environment and of whether any environment exists.
@@ -211,7 +304,7 @@ jobs:
     name: deploy-dev
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [release-metadata, preflight, quality-gates, package, migration-dry-run]
+    needs: [release-metadata, preflight, quality-gates, dependency-scan, package, migration-dry-run]
     if: ${{ success() && needs.preflight.outputs.ready == 'true' }}
     environment:
       name: dev

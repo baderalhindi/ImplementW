@@ -8,7 +8,7 @@
 # The approval gate is not here. It is the `environment:` key on the calling job, which is what
 # GitHub itself halts on; a composite action cannot declare one, and it should not be able to.
 name: Deploy environment
-description: Preflight, migrate, apply and record one environment's deployment
+description: Preflight, re-scan, verify, migrate, apply and record one environment's deployment
 
 inputs:
   environment:
@@ -66,12 +66,68 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
       run: .github/scripts/deployment-record.sh
 
+    # CTL-41 at every promotion, not only at the build (TASK-022). The SBOMs built with the release
+    # are re-scanned against the vulnerability database as it stands today, so a CRITICAL CVE
+    # published after the build — or during the days a release waits at an approval gate — stops the
+    # promotion without rebuilding anything. Before a credential is used and before anything changes.
+    - name: Fetch the release SBOMs
+      uses: actions/download-artifact@v4
+      with:
+        pattern: release-evidence-*
+        path: artifacts/security
+        merge-multiple: true
+
+    - uses: aquasecurity/setup-trivy@v0.3.1
+      with:
+        version: v0.74.0
+
+    - name: Re-scan the release SBOMs
+      shell: bash
+      env:
+        EVIDENCE_DIR: artifacts/security
+      run: |
+        .github/scripts/release-security-scan.sh scan
+        .github/scripts/release-security-scan.sh gate
+
+    - name: Attach the re-scan report
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: promotion-scan-${{ inputs.environment }}
+        path: |
+          artifacts/security/vulnerabilities-*
+          artifacts/security/gate-*.json
+        retention-days: 90
+        if-no-files-found: error
+
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ inputs.deploy-service-account-key }}
 
     - uses: google-github-actions/setup-gcloud@v3
+
+    - uses: sigstore/cosign-installer@v4.1.2
+      with:
+        cosign-release: v3.1.3
+
+    # Only an image this repository's pipeline built and signed on main is deployed. The identity is
+    # the workflow file at refs/heads/main: an image built from any other branch, by any other
+    # workflow, or pushed by hand under the right digest fails here, before the migration and the
+    # apply. Reads the registry with this environment's deploy account.
+    - name: Verify the image signature
+      shell: bash
+      env:
+        REGION: ${{ steps.preflight.outputs.region }}
+        IMAGE_DIGEST: ${{ inputs.image-digest }}
+      run: |
+        set -euo pipefail
+        gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+        cosign verify \
+          --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+          --certificate-identity "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/.github/workflows/ci-cd-pipeline.yml@refs/heads/main" \
+          "$IMAGE_DIGEST" >/dev/null
+        echo "signature verified: $IMAGE_DIGEST"
 
     - uses: hashicorp/setup-terraform@v4
       with:

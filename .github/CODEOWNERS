@@ -28,6 +28,7 @@
 /.github/                                           @baderalhindi/devops
 /.github/workflows/                                 @baderalhindi/devops @baderalhindi/security
 /.github/branch-protection/                         @baderalhindi/devops @baderalhindi/security
+/.github/security/                                  @baderalhindi/devops @baderalhindi/security
 /.github/CODEOWNERS                                 @baderalhindi/architecture @baderalhindi/security
 /.github/PULL_REQUEST_TEMPLATE.md                   @baderalhindi/architecture @baderalhindi/security
 
