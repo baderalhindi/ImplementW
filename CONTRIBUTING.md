@@ -114,7 +114,7 @@ npm run build         # tsc -b && vite build
 Without a local SDK, both run unchanged inside the official images:
 
 ```sh
-podman run --rm -v "$PWD:/repo" -w /repo/src/backend mcr.microsoft.com/dotnet/sdk:10.0 sh -c 'dotnet build -warnaserror && dotnet test --no-build'
+podman run --rm -v "$PWD:/repo" -w /repo/src/backend mcr.microsoft.com/dotnet/sdk:10.0 sh -c 'dotnet build -warnaserror && dotnet test PMPlatform.Tests.Unit --no-build'
 podman run --rm -v "$PWD/src/frontend:/w" -w /w node:24-alpine sh -c 'npm ci && npm run lint && npm test && npm run build'
 ```
 
@@ -165,7 +165,8 @@ docker compose -f infra/docker/docker-compose.yml down -v              # reset: 
   permission profile version. They are data, not accounts: there is no credential and no local sign-in path until
   TASK-028.
 - `infra/docker/postgres/init/01-schema.sql` is a **bridge** — nine ERD tables so the seed has somewhere to go
-  before TASK-023/TASK-024 create the schema through EF Core migrations. It is deleted when they land.
+  before TASK-025 migrates those tables (TASK-024 built the migration framework and the module schemas). It is
+  deleted when TASK-025 lands.
   `python3 docs/architecture/local-stack-check.py` fails if any column drifts from `erd.dbml`.
 
 ## Environments and promotion
@@ -193,6 +194,11 @@ Full record, topology diagram and promotion path: `docs/architecture/environment
   that names none, so squash-merge subjects matter: they are what makes a deployment traceable (CTL-40).
 - **A migration may not drop a table, column or constraint** in the same release that stops using it — the dry-run
   refuses it. Split it across two releases, or mark a completed contraction `EXPAND-THEN-CONTRACT-REVIEWED`.
+- **Migrations** (TASK-024): read the authoring guide, `src/backend/PMPlatform.Infrastructure/Persistence/Migrations/README.md`,
+  before writing one. Name it `TASK-nnn_<Description>` (EF Core adds the timestamp), give it a Down that restores
+  the previous schema exactly, and never edit one that has reached `dev`. The `backend` gate applies every migration
+  to PostgreSQL 17 from empty, rolls each one back and re-applies it. `repo-checks` fails a pull request that
+  changes a merged migration.
 - **Rollback is a re-promotion**: run the pipeline from the Actions tab with the earlier commit's SHA. It passes the
   same gates and the same PROD approval as any other release.
 

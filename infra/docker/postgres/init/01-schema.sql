@@ -3,8 +3,9 @@
 -- Nine tables of the canonical ERD (docs/architecture/erd.dbml, TASK-008), column for column, so the local
 -- PostgreSQL can hold one user per role R01–R08 before the application schema exists. This file is a bridge,
 -- not the schema of record:
---   * TASK-023/TASK-024 create the schema through EF Core migrations. When they land, this file is deleted and
---     docker-compose.yml runs `dotnet ef database update` instead; 02-/03- become DML against the migrated schema.
+--   * TASK-024 built the EF Core migration framework and created the module schemas; TASK-025 migrates these tables.
+--     When it lands, this file is deleted and docker-compose.yml runs the API image's `migrate` command instead;
+--     02-/03- become DML against the migrated schema.
 --   * Until then, docs/architecture/local-stack-check.py fails if a column here differs from erd.dbml.
 --
 -- Deliberately not bridged: identity_access.permission and permission_profile_grant (the catalogue is TASK-030/
