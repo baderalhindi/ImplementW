@@ -1,0 +1,36 @@
+2026-09-25T12:38:11Z == release artifact: building pmplatform-api:task-023-drill from this tree (before the incident, as a deployed digest would be)
+2026-09-25T12:38:11Z    sha256:1546475b290c8db0b97c7c56ac9c86722dae110c521d3222079724d149adc4cf
+2026-09-25T12:38:11Z == source environment
+2026-09-25T12:38:14Z    source database and API up; /health 200
+2026-09-25T12:38:14Z == DS-2 fingerprint the source, then back it up
+2026-09-25T12:38:16Z    backups taken at 2026-09-25T12:38:16Z: physical  12M, export 5.1M
+2026-09-25T12:38:16Z == DS-3 fingerprint again; the source must not have changed across the backup
+2026-09-25T12:38:16Z    identical: source.fingerprint is the source as backed up
+2026-09-25T12:38:16Z    one row written to the source after the backup
+2026-09-25T12:38:16Z == DS-4 incident declared: CLOCK STARTED
+2026-09-25T12:38:17Z    backup restored onto a new server in the isolated environment
+2026-09-25T12:38:17Z == isolation: the operations host in the isolated environment must reach nothing outside it
+2026-09-25T12:38:18Z    source database at 172.20.0.2: reachable from the source network (control), unreachable from the isolated one. Internet: unreachable
+2026-09-25T12:38:18Z == DS-5 compare with the source as backed up
+MATCH: 11 tables, 201045 rows, 1 sequences, identical counts and checksums
+AUDIT CHAIN: events=1000|genesis=1|broken=0|forks=0
+2026-09-25T12:38:19Z == DS-8 the service, on the restored database
+2026-09-25T12:38:20Z    /health 200 from the restored API; one active local user for each of R01-R08
+2026-09-25T12:38:20Z == CLOCK STOPPED: time-to-restore 4s
+2026-09-25T12:38:20Z == DS-6 the export, into a second database on the restored server
+MATCH: 11 tables, 201045 rows, 1 sequences, identical counts and checksums
+AUDIT CHAIN: events=1000|genesis=1|broken=0|forks=0
+2026-09-25T12:38:21Z == summary
+| Field | Value |
+| --- | --- |
+| Release artifact | `pmplatform-api:task-023-drill` `sha256:1546475b290c8db0b97c7c56ac9c86722dae110c521d3222079724d149adc4cf` |
+| Backup taken | 2026-09-25T12:38:16Z |
+| DS-4 clock start | 2026-09-25T12:38:16Z |
+| Backup restored, server accepting connections | 2026-09-25T12:38:17Z |
+| DS-5 comparison finished | 2026-09-25T12:38:19Z |
+| DS-8 service verified, clock stop | 2026-09-25T12:38:20Z |
+| **Time-to-restore** | **4 s** |
+| P-5 against RTO 4–6 h | PASS (<= 4 h) |
+| P-1 database, from the backup | MATCH |
+| P-2 database, from the export | MATCH |
+| P-3 audit chain | events=1000, genesis=1, broken=0, forks=0 |
