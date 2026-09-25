@@ -286,8 +286,9 @@ jobs:
         with:
           global-json-file: global.json
 
+      # The version pinned in .config/dotnet-tools.json (TASK-024), the one migrations are authored with.
       - name: Install dotnet-ef
-        run: dotnet tool install --global dotnet-ef
+        run: dotnet tool restore
 
       - name: Build
         run: dotnet build src/backend/PMPlatform.Api --configuration Release

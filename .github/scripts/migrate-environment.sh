@@ -9,8 +9,11 @@
 # database), so the only path to it is from inside that environment's VPC, and ADR-001 C-8 has not
 # settled whether a GitHub-hosted runner outside the Kingdom may hold a path to platform data at all
 # (CTL-49). So the migration runs *in* the environment, as a Cloud Run job on the release image, and
-# this script starts it and waits. The job itself is TASK-024's to define, along with everything
-# else about how a migration is packaged.
+# this script starts it and waits. The job is defined by TASK-024 in infra/terraform/compute
+# (`<resource_prefix>-migrate`): the release image run as `dotnet PMPlatform.Api.dll migrate`, with the
+# service's identity, network path and secret store. Terraform creates it on the environment's first
+# apply; this script only points it at the release image and runs it, so it cannot create a job that
+# lacks that identity or network path.
 #
 #   ENVIRONMENT=dev PROJECT_ID=… REGION=… IMAGE=…@sha256:… .github/scripts/migrate-environment.sh
 set -euo pipefail
@@ -32,9 +35,9 @@ error: this release carries $migration_count migration(s) and MIGRATION_JOB is u
 be applied to '$ENVIRONMENT'.
 
 The database has no public IP, so a migration runs inside the environment's VPC rather than from the
-runner (ADR-001 C-8 / CTL-49). MIGRATION_JOB names the Cloud Run job that applies them — a job on the
-release image whose entrypoint runs the migrations. Defining it belongs to TASK-024, which owns the
-migration framework and decides how a migration is packaged; see docs/architecture/cicd-pipeline.md F-2.
+runner (ADR-001 C-8 / CTL-49). MIGRATION_JOB names the Cloud Run job that applies them. Terraform
+creates it in every environment as <resource_prefix>-migrate (infra/terraform/compute, TASK-024); set
+the repository variable MIGRATION_JOB to that name. See docs/architecture/database-migrations.md.
 
 The deployment stops here rather than shipping an image against a schema that was never migrated.
 MSG
@@ -49,7 +52,8 @@ echo "migrate ($ENVIRONMENT): running $MIGRATION_JOB on $IMAGE"
 
 # --wait makes the deployment wait on the migration's exit status; a failed migration fails this
 # step, and the deploy step that follows never runs.
-gcloud run jobs deploy "$MIGRATION_JOB" \
+# `update`, not `deploy`: deploy would create a missing job with default identity and no VPC path.
+gcloud run jobs update "$MIGRATION_JOB" \
   --project "$PROJECT_ID" \
   --region "$REGION" \
   --image "$IMAGE" \

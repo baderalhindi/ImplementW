@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Configuration.Json;
 using PMPlatform.Application;
 using PMPlatform.Infrastructure;
+using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Secrets;
 
 // Composition root (L-4): the only place in PMPlatform.Api that references PMPlatform.Infrastructure.
@@ -32,6 +33,14 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 WebApplication app = builder.Build();
+
+// TASK-024: `dotnet PMPlatform.Api.dll migrate [<target migration>]` applies the release's migrations and exits
+// without serving. Each environment runs it as its migration job before the service is deployed.
+if (args is [DatabaseMigration.Command, ..])
+{
+    await app.Services.MigrateDatabaseAsync(args.ElementAtOrDefault(1)).ConfigureAwait(false);
+    return;
+}
 
 if (app.Environment.IsDevelopment())
 {

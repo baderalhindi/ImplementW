@@ -13,14 +13,17 @@
 #      change to be backward-compatible with the running release (expand-then-contract) — a deploy
 #      that drops a column the previous release still reads cannot be rolled back.
 #
-# TASK-024 owns the migration framework and has not been built. Until Persistence/Migrations exists
-# there is nothing in the release to apply, and this reports that rather than inventing a pass.
+# The migration framework is TASK-024 (docs/architecture/database-migrations.md). A release with no
+# migration reports that rather than inventing a pass. Rollback is not tested here: every migration's
+# Down is executed against PostgreSQL by the backend quality gate before it can merge.
 #
 #   DATABASE_URL=postgres://user:pass@localhost:5432/scratch .github/scripts/migration-dry-run.sh
 set -euo pipefail
 
 PROJECT=${PROJECT:-src/backend/PMPlatform.Infrastructure}
-STARTUP_PROJECT=${STARTUP_PROJECT:-src/backend/PMPlatform.Api}
+# Infrastructure is its own startup project: its design-time factory builds the context without the
+# API host or the secret store, and EF Core's design package never enters the API image (TASK-024).
+STARTUP_PROJECT=${STARTUP_PROJECT:-$PROJECT}
 MIGRATIONS_DIR=${MIGRATIONS_DIR:-$PROJECT/Persistence/Migrations}
 OUTPUT=${OUTPUT:-artifacts/migrations.sql}
 
@@ -53,8 +56,8 @@ command -v psql >/dev/null 2>&1 || die "psql is required and is not on PATH"
 mkdir -p "$(dirname "$OUTPUT")"
 
 # --idempotent guards every migration with a check against the history table, which is what makes a
-# re-run after a partial failure safe. dotnet-ef is installed by the caller (the workflow) so that
-# this script is runnable on a developer's machine with the tool already present.
+# re-run after a partial failure safe. dotnet-ef is the version pinned in .config/dotnet-tools.json,
+# restored by the caller (`dotnet tool restore`).
 note "generating $OUTPUT from $MIGRATIONS_DIR"
 dotnet ef migrations script \
   --idempotent \

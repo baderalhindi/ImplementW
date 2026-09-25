@@ -49,7 +49,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       # Sheet names, verbatim (TASK-013 R-1): the API reads configuration["DB_CONNECTION_STRING"], and so on.
-      DB_CONNECTION_STRING: Host=postgres;Port=5432;Database=pmplatform;Username=pmplatform;Password=pmplatform
+      DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=pmplatform;Username=pmplatform;Password=pmplatform
       JWT_SIGNING_KEY: local-development-only-signing-key-not-valid-outside-docker-compose
       CORS_ALLOWED_ORIGINS: http://localhost:5173
       APP_BASE_URL: http://localhost:5173

@@ -2,8 +2,8 @@
 """Drift check for the local-stack bridge schema (TASK-014).
 
 infra/docker/postgres/init/01-schema.sql transcribes nine tables of docs/architecture/erd.dbml so the local
-PostgreSQL can hold seeded users before TASK-023/TASK-024 create the schema through EF Core migrations. Until
-that file is deleted, every column it declares must match the ERD: same tables, same columns in the same
+PostgreSQL can hold seeded users before TASK-025 creates those tables through EF Core migrations (TASK-024's
+framework). Until that file is deleted, every column it declares must match the ERD: same tables, same columns in the same
 order, same type, same nullability, same default. Exit code 1 on any finding.
 
     python3 docs/architecture/local-stack-check.py

@@ -113,6 +113,7 @@ module "compute" {
   project_id              = local.environment.project_id
   region                  = local.platform.region
   service_name            = "${local.name_prefix}-api"
+  migration_job_name      = "${local.platform.resource_prefix}-migrate"
   container_image         = var.container_image
   runtime_service_account = local.environment.service_accounts.runtime
   network_id              = module.network.network_id

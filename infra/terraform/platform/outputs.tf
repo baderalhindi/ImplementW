@@ -37,3 +37,8 @@ output "database_backup_export_uri" {
   description = "The object scheduled exports are written to. Null in DEV, which has no backup bucket. This is the target DB_BACKUP_STORAGE_CONNECTION_STRING addresses (TASK-019 writes the value)."
   value       = module.database.backup_export_uri
 }
+
+output "migration_job_name" {
+  description = "Cloud Run job that applies the release's migrations; the value of the MIGRATION_JOB repository variable (TASK-024)."
+  value       = module.compute.migration_job_name
+}

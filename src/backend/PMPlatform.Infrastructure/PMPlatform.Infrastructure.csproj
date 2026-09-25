@@ -5,8 +5,9 @@
     <ProjectReference Include="../PMPlatform.Domain/PMPlatform.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <!-- The secret-store adapter is internal: it is composed through AddSecretStore, not referenced. -->
+    <!-- The secret-store adapter and the EF Core options are internal: composed through AddSecretStore and AddInfrastructure, not referenced. -->
     <InternalsVisibleTo Include="PMPlatform.Tests.Unit" />
+    <InternalsVisibleTo Include="PMPlatform.Tests.Integration" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" />
@@ -14,5 +15,12 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="EFCore.NamingConventions" />
+    <!-- TASK-024: `dotnet ef` runs with this project as its startup project, so the design-time package stays
+         here and never flows into PMPlatform.Api's published image (PrivateAssets). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
   </ItemGroup>
 </Project>

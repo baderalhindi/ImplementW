@@ -99,6 +99,68 @@ resource "google_cloud_run_v2_service" "api" {
   }
 }
 
+# The release's schema migrations (TASK-024; docs/architecture/database-migrations.md). The database
+# has no public IP, so migrations cannot run from the pipeline's runner; they run here, inside the
+# environment, before the service is moved to the image that needs them
+# (.github/scripts/migrate-environment.sh). Same image, identity, network path and configuration as
+# the service, so the job reads DB_CONNECTION_STRING from the secret store exactly as the service
+# does; `migrate` makes the image apply its migrations and exit instead of serving.
+resource "google_cloud_run_v2_job" "migrate" {
+  project             = var.project_id
+  name                = var.migration_job_name
+  location            = var.region
+  deletion_protection = var.deletion_protection
+  labels              = var.labels
+
+  template {
+    task_count  = 1
+    parallelism = 1
+
+    template {
+      service_account = var.runtime_service_account
+
+      # A failed migration fails the deployment step and is investigated; it is not retried out of
+      # sight. Each migration runs in its own transaction, so a failure leaves the last good one applied.
+      max_retries = 0
+      timeout     = "1800s"
+
+      vpc_access {
+        egress = "PRIVATE_RANGES_ONLY"
+
+        network_interfaces {
+          network    = var.network_id
+          subnetwork = var.subnet_id
+          tags       = [var.network_tag]
+        }
+      }
+
+      containers {
+        image = var.container_image
+        args  = ["migrate"]
+
+        resources {
+          limits = {
+            cpu    = var.cpu
+            memory = var.memory
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.plain_environment
+          content {
+            name  = env.key
+            value = env.value
+          }
+        }
+      }
+    }
+  }
+
+  # migrate-environment.sh points this job at the release image with `gcloud run jobs update` just
+  # before the deployment's `terraform apply`, which sets the same digest here — so the apply that
+  # follows every migration leaves no drift (T-9).
+}
+
 # The load balancer calls the service unauthenticated; the ingress restriction above is what keeps
 # anyone else from doing the same, because traffic that did not arrive through the load balancer is
 # rejected before this binding is consulted.

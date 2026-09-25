@@ -5,7 +5,9 @@
 # tracks .NET 10 LTS (ADR-002 §4.2.1); global.json's rollForward: latestPatch accepts its patch level.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
-COPY global.json ./
+# .editorconfig: the image compiles under the same analyzer rules as CI, including the generated-code exemption
+# for Persistence/Migrations (TASK-024).
+COPY global.json .editorconfig ./
 COPY src/backend/Directory.Build.props src/backend/Directory.Packages.props src/backend/PMPlatform.slnx src/backend/
 COPY src/backend/PMPlatform.Domain/PMPlatform.Domain.csproj src/backend/PMPlatform.Domain/
 COPY src/backend/PMPlatform.Application/PMPlatform.Application.csproj src/backend/PMPlatform.Application/
