@@ -15,7 +15,4 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <PackageReference Include="Npgsql" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="log4net" />
-  </ItemGroup>
 </Project>
