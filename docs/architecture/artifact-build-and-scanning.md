@@ -5,7 +5,7 @@
 | Task | TASK-022 — Establish Container/Artifact Build & Dependency Scanning (P3 - Infrastructure & DevOps) |
 | Depends on | TASK-018 — CI/CD pipeline with controlled promotion gates (`docs/architecture/cicd-pipeline.md`, BUILT — NOT APPLIED) |
 | Record date | 2026-09-25 |
-| Status | **BUILT — NOT APPLIED.** Every part that does not need a registry has been run, and the validation cell has been executed against the pipeline's own commands (§5). The SBOMs, the dependency scan, the image scan and the gate run on every push to `main` today. Signing the pushed image and verifying that signature at each stage wait for the registry, just as the push does |
+| Status | **BUILT — NOT APPLIED.** Every part that does not need a registry has been run, and the validation cell has been executed twice: locally against the pipeline's own commands, and as real GitHub Actions runs on a test branch (§5.1). The SBOMs, the dependency scan, the image scan and the gate run on every push to `main` today. Signing the pushed image and verifying that signature at each stage wait for the registry, just as the push does |
 | Branch | `infra/task-022-artifact-build-dependency-scan` |
 | Deliverables | Container build pipeline stage: the `dependency-scan` job and the extended `package` job in `.github/workflows/ci-cd-pipeline.yml`, plus the re-scan and signature check in `.github/actions/deploy-environment/action.yml`. SBOM output: `release-evidence-dependencies` and `release-evidence-image` artifacts (CycloneDX). Dependency-scan report: the `vulnerabilities-*.json` and `.txt` files in those artifacts, and the job summary. Supporting files: `.github/scripts/release-security-scan.sh`, `.github/scripts/verify-dependency-gate.sh` (the validation cell, executed), `.github/security/vulnerability-exceptions.yaml`, checks P-12 to P-15 in `docs/architecture/cicd-pipeline-check.py`, and this record |
 | Environment variables / secrets | `CONTAINER_REGISTRY_TOKEN` (the workbook's cell for this task; already consumed by `package` since TASK-018). No new secret. Signing is keyless: `package` gains `id-token: write`, and no signing key exists to store. The brief this task was issued with said "None (network topology, not application secrets)"; that text is TASK-021's, and the sheet row governs |
@@ -164,7 +164,8 @@ Every check below was run on 2026-09-25 against the committed files.
 | 8 | Signing, against a throwaway local registry and a real pushed digest, with cosign v3.1.3 and a generated key pair (keyless needs a GitHub OIDC token) | `sign` OK; `attest` of the 257 KB, 125-component SBOM OK; `verify` OK; `verify-attestation` returns the CycloneDX predicate bound to the digest; an unsigned digest in the same repository is refused; a different key is refused |
 | 9 | **The validation cell**, `verify-dependency-gate.sh --with-image` | 18 of 18 assertions (§5.1) |
 | 10 | `gitleaks detect --no-git` over `.github/` | `no leaks found` |
-| 11 | `dependency-scan` under `act` | **Not executed.** `act` needs a real GitHub token to clone `setup-trivy`'s install script, and none is available here. The job's `run:` steps are the ones the drill executes, in the same order |
+| 11 | `dependency-scan` under `act` | **Not executed.** `act` needs a real GitHub token to clone `setup-trivy`'s install script, and none was available at the time. Superseded by row 12 |
+| 12 | **The validation cell on GitHub Actions**: the committed pipeline, dispatched on `test/task-022-cve-drill` | Red with the CVEs planted, green once they were removed (§5.1) |
 
 ### 5.1 The validation cell, executed
 
@@ -190,17 +191,17 @@ with `NuGetAudit=false`. Without it the image containing `log4net 2.0.9` cannot 
 NuGet's audit fails the build (D-2). The drill turns that audit off so the image gate can be seen
 blocking on its own. In the pipeline that image is never built.
 
-**What this does not prove.** A GitHub Actions run on a test branch is still owed (V-1). The
-pipeline starts only on `main` or on `workflow_dispatch`, and the dispatch is how the drill runs
-once this branch is merged:
+**On GitHub Actions.** The pipeline starts on a push to `main` or on `workflow_dispatch`, and a
+dispatch runs the workflow file from the ref it names. So the cell was run on a test branch cut from
+this branch, with nothing merged into `main`:
 
-```bash
-git switch -c test/task-022-cve-drill main
-# plant the two packages as verify-dependency-gate.sh does, commit with TASK-022 in the message, push
-gh workflow run ci-cd-pipeline.yml --ref test/task-022-cve-drill
-# expect: dependency-scan red with both CVEs in its summary; package and every deploy stage skipped;
-#         release-evidence-dependencies attached. Revert, re-dispatch, expect green.
-```
+| Run | Commit on `test/task-022-cve-drill` | Result |
+| --- | --- | --- |
+| [36131485384](https://github.com/baderalhindi/ImplementW/actions/runs/36131485384) | `4f14a9a`: `log4net 2.0.9` and `lodash 4.17.11` planted | **failure.** `dependency-scan` ran every step through the report upload and failed at **Gate**. Its log named CVE-2018-1285 in `Directory.Packages.props` and four lock files, and CVE-2019-10744 in `package-lock.json`. `release-evidence-dependencies` (23.8 KB) is attached to the blocked run. `quality-gates / backend` also failed on NuGet's `NU1904`, the independent second block D-2 describes. `package`, `migration-dry-run` and all four deploy stages were **skipped** |
+| [36131638235](https://github.com/baderalhindi/ImplementW/actions/runs/36131638235) | `b9d010c`: the plant reverted, tree identical to this branch | **success.** All four quality gates, `dependency-scan` (backend 87 components, frontend 4, gate passed), `migration-dry-run`, and `package`: image built, SBOM of 125 components (17 MEDIUM, 5 LOW, none fixable), gate passed. Both evidence artifacts attached. Push and signing skipped, and the four deploy stages skipped, because preflight is not ready (V-2) |
+
+A third run, 36131595307, was dispatched on the planted commit by mistake and cancelled before it
+ran. It is not evidence either way.
 
 ### 5.2 Mutation test
 
@@ -227,7 +228,6 @@ gh workflow run ci-cd-pipeline.yml --ref test/task-022-cve-drill
 
 | Drill | Blocked by |
 | --- | --- |
-| V-1: the validation cell as a GitHub Actions run (§5.1) | Merge to `main`, which is the repository owner's step |
 | V-2: a keyless signature on a pushed digest, verified by a deploy stage | The registry, which needs the region and tenancy (TASK-018 §2). Until then `package` builds, scans and gates, but does not push or sign |
 
 ## 6. Acceptance criteria
@@ -235,9 +235,9 @@ gh workflow run ci-cd-pipeline.yml --ref test/task-022-cve-drill
 | # | Criterion | Status |
 | --- | --- | --- |
 | 1 | CI produces a signed/tagged artifact per commit on main | **Tagged: MET** (`sha-<commit>`, since TASK-018). **Signed: BUILT, not observed.** Signing runs after the push, and the push waits on the registry (V-2). The sign, attest and verify commands were executed against a real digest (§5, row 8), and every stage refuses an image this workflow did not sign on `main` (D-5) |
-| 2 | A dependency scan report is attached to every build | **MET for the pipeline's own half.** `dependency-scan` needs nothing that can fail on a vulnerable dependency, and uploads its report before gating. The drill confirmed the report is written when the gate fails. P-12 enforces both. Not yet observed in a GitHub run (V-1) |
-| 3 | A build containing a known CRITICAL CVE with an available fix is blocked from promotion past DEV | **MET, executed.** It is blocked before DEV, and each stage re-scans before it deploys (D-4). Both CRITICAL CVEs blocked all three legs, and removing them turned all three green (§5.1) |
-| — | Validation cell | **EXECUTED AGAINST THE PIPELINE'S COMMANDS**; the GitHub run is owed (V-1) |
+| 2 | A dependency scan report is attached to every build | **MET for the pipeline's own half.** `dependency-scan` needs nothing that can fail on a vulnerable dependency, and uploads its report before gating. The drill confirmed the report is written when the gate fails. P-12 enforces both. **Observed on GitHub:** the blocked run carries `release-evidence-dependencies`, and so does the green one (§5.1) |
+| 3 | A build containing a known CRITICAL CVE with an available fix is blocked from promotion past DEV | **MET, executed.** It is blocked before DEV, and each stage re-scans before it deploys (D-4). Both CRITICAL CVEs blocked all three legs locally, and on GitHub the planted run stopped before `package` with every deploy stage skipped. Removing them turned both green (§5.1) |
+| — | Validation cell | **EXECUTED ON GITHUB ACTIONS.** Run 36131485384 blocked the test branch with both CVEs named; run 36131638235 went green after they were removed (§5.1) |
 | — | Deliverables: container build stage, SBOM output, dependency-scan report | **MET.** §2, and the Deliverables row above |
 
 ## 7. Findings and open items
@@ -256,4 +256,5 @@ gh workflow run ci-cd-pipeline.yml --ref test/task-022-cve-drill
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-25 | Validation cell executed on GitHub Actions by dispatching the pipeline on `test/task-022-cve-drill`: blocked with log4net 2.0.9 and lodash 4.17.11 planted (run 36131485384), green once they were reverted (run 36131638235). V-1 closed; V-2 (the keyless signature) is still owed. The four GitHub deployment environments were created by the repository owner, which clears the extension's `Value 'dev' is not valid` errors; they have no protection rules yet. | DevOps (TASK-022) |
 | 2026-09-25 | Initial record. `dependency-scan` job added; `package` extended with the image SBOM, report, gate, signature and SBOM attestation; every deploy stage re-scans the release SBOMs and verifies the signer before changing anything. One gate script and one threshold, with a dated exceptions file. P-12 to P-15 added to `cicd-pipeline-check.py` and mutation-tested (16 of 16). Validation cell executed with `verify-dependency-gate.sh` (18 of 18); the GitHub run and the keyless signature are owed. Seven findings raised. | DevOps (TASK-022) |
