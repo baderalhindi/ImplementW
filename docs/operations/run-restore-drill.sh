@@ -9,7 +9,8 @@
 # Two environments, each a Docker network with its own PostgreSQL 17 and its own PMPlatform.Api built
 # from this tree:
 #
-#   source    the TASK-014 schema and seed plus drill-fixture.sql, with the API serving from it
+#   source    the migrated schema (the image's `migrate` command) and the local seed plus drill-fixture.sql,
+#             with the API serving from it
 #   isolated  an --internal network: no route to the source, no route out. Nothing on the host can
 #             reach it either; every check runs from an operations host inside it, as the runbook's
 #             drill host runs inside the VPC (BR-1)
@@ -111,9 +112,14 @@ log "   $(cat "$work/image-id")"
 log "== source environment"
 docker network create "$source_network" >/dev/null
 docker run -d --name "$source_db" --network "$source_network" \
-  -e POSTGRES_DB=pmplatform -e POSTGRES_USER=pmplatform -e POSTGRES_PASSWORD="$password" \
-  -v "$repository/infra/docker/postgres/init:/docker-entrypoint-initdb.d:ro" postgres:17 >/dev/null
+  -e POSTGRES_DB=pmplatform -e POSTGRES_USER=pmplatform -e POSTGRES_PASSWORD="$password" postgres:17 >/dev/null
 wait_ready "$source_db"
+docker run --rm --network "$source_network" -e ASPNETCORE_ENVIRONMENT=Development \
+  -e DB_CONNECTION_STRING="Host=$source_db;Port=5432;Database=pmplatform;Username=pmplatform;Password=$password" \
+  "$image" migrate >/dev/null
+for seed in "$repository"/infra/docker/postgres/seed/*.sql; do
+  docker exec -i "$source_db" psql -h 127.0.0.1 -U pmplatform -d pmplatform -X -q -v ON_ERROR_STOP=1 <"$seed" >/dev/null
+done
 docker exec -i "$source_db" psql -h 127.0.0.1 -U pmplatform -d pmplatform -X -q -v ON_ERROR_STOP=1 \
   <"$here/drill-fixture.sql" >/dev/null
 start_api "$source_api" "$source_network" "$source_db"

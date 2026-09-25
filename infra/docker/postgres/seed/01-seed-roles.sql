@@ -1,4 +1,4 @@
--- 02-seed-roles.sql — the eight canonical roles R01–R08 and their shipped-default permission profiles (TASK-014).
+-- 01-seed-roles.sql — the eight canonical roles R01–R08 and their shipped-default permission profiles (TASK-014).
 --
 -- Interim copy of what TASK-027 will own in db/seed (its deliverable: "the 8 canonical roles (R01-R08)"). Codes
 -- R01–R08 are canonical (ERD F-080: shipped, undeletable, referenced by routing, landing dashboards and
@@ -9,12 +9,13 @@
 -- controlled source; nothing here keys on a label.
 --
 -- Each role gets its shipped-default profile (ADR-018, TASK-110: "R01 to R08 as undeletable shipped defaults")
--- with one PUBLISHED version. Assignments in 03-seed-local-users.sql bind to that version. Grants are absent
+-- with one PUBLISHED version. Assignments in 02-seed-local-users.sql bind to that version. Grants are absent
 -- until the permission catalogue exists (TASK-030/TASK-110).
 --
--- Idempotent: safe to re-run (`docker compose exec postgres psql -U pmplatform -f /docker-entrypoint-initdb.d/02-seed-roles.sql`).
+-- The tables are created by the EF Core migrations (TASK-025); compose's `seed` service runs this file after its
+-- `migrate` service, on every `up`. Idempotent: safe to re-run (`docker compose run --rm seed`).
 -- All rows are attributed (D-2) to the SERVICE principal 00000000-0000-4000-8000-0000000000ff, created in
--- 03-seed-local-users.sql; created_by/updated_by carry no FK constraint (D-2), so the order does not matter.
+-- 02-seed-local-users.sql; created_by/updated_by carry no FK constraint (D-2), so the order does not matter.
 
 INSERT INTO identity_access.role (id, code, name_ar, name_en, is_system, is_external_eligible, created_at, created_by, updated_at, updated_by)
 VALUES

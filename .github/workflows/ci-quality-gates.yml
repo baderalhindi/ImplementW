@@ -134,9 +134,6 @@ jobs:
       - name: Environment templates (TASK-013)
         run: python3 docs/architecture/env-template-check.py
 
-      - name: Local-stack bridge schema (TASK-014)
-        run: python3 docs/architecture/local-stack-check.py
-
       - name: Environment separation (TASK-016)
         run: python3 docs/architecture/environment-separation-check.py
 
