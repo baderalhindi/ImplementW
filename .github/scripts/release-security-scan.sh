@@ -132,13 +132,13 @@ gate() {
     echo
     echo "**Gate: blocked.** Each finding below has a fixed version; upgrade to it, or record a reviewed, dated exception in \`$EXCEPTIONS\`."
     echo
-    echo "| SBOM | Severity | Vulnerability | Package | Installed | Fixed in |"
-    echo "| --- | --- | --- | --- | --- | --- |"
+    echo "| SBOM | Found in | Severity | Vulnerability | Package | Installed | Fixed in |"
+    echo "| --- | --- | --- | --- | --- | --- | --- |"
   } | summary
   for component in "${blocked[@]}"; do
     jq -r --arg component "$component" '
-      .Results[]?.Vulnerabilities[]?
-      | "| \($component) | \(.Severity) | \(.VulnerabilityID) | \(.PkgName) | \(.InstalledVersion) | \(.FixedVersion) |"' \
+      .Results[]? | .Target as $target | .Vulnerabilities[]?
+      | "| \($component) | \($target) | \(.Severity) | \(.VulnerabilityID) | \(.PkgName) | \(.InstalledVersion) | \(.FixedVersion) |"' \
       "$EVIDENCE_DIR/gate-$component.json" | tee /dev/stderr | summary
   done
   echo "gate: blocked — fixable $BLOCKING_SEVERITIES finding(s) in: ${blocked[*]}" >&2

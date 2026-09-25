@@ -64,7 +64,7 @@ check() {
 
 reports_name() {
   local cve=$1 dir=$2
-  if jq -e --arg cve "$cve" '[.Results[]?.Vulnerabilities[]?.VulnerabilityID] | index($cve)' \
+  if jq -e -s --arg cve "$cve" '[.[].Results[]?.Vulnerabilities[]?.VulnerabilityID] | index($cve) != null' \
       "$dir"/gate-*.json >/dev/null 2>&1; then
     echo "  ok    the gate report names $cve"
   else
