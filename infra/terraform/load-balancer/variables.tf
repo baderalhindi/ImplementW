@@ -40,7 +40,7 @@ variable "min_tls_version" {
 }
 
 variable "waf_rule_sets" {
-  description = "Cloud Armor preconfigured WAF rule sets, as rule set name to sensitivity (1-4). The baseline and its tuning are G-7 in the control matrix and belong to TASK-021; what this module owns is that the policy exists and is attached."
+  description = "Cloud Armor preconfigured WAF rule sets, as rule set name to sensitivity (1-4). This is the G-7 baseline TASK-021 records (network-security.md §3.4). methodenforcement is deliberately absent: at sensitivity 1 it admits only GET, HEAD, POST and OPTIONS, and the API uses PUT, PATCH and DELETE (api-conventions.md). php, java, nodejs and cve-canary target runtimes the platform does not run."
   type        = map(number)
   default = {
     sqli-v33-stable             = 1
@@ -55,9 +55,9 @@ variable "waf_rule_sets" {
 }
 
 variable "waf_preview" {
-  description = "Whether the WAF rules log rather than block. True until TASK-021 has tuned them against real traffic: a rule set turned straight to enforcing is how a WAF takes a working application off the air on its first day."
+  description = "Whether the WAF rules log rather than block. False — enforcing — in every environment (TASK-021, network-security.md §3.4): sensitivity-1 rules are the low-false-positive tier, and enforcing them from DEV onward is what makes a false positive surface in testing rather than on PROD's first day. Setting it true turns the WAF off in all but name; network-security-check.py fails the pull request if a root does."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "labels" {

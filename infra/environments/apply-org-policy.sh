@@ -9,6 +9,14 @@
 #      apply naming any other region FAILS rather than relying on a reviewer (ADR-001 C-1, CTL-01).
 #   2. the default log-bucket storage location, which is fixed when a project is created and cannot
 #      be changed later (ADR-001 C-6, CTL-28).
+#   3. three network constraints (TASK-021, CTL-03), each of which removes a way for a project to
+#      acquire a public path nobody wrote in Terraform:
+#        compute.skipDefaultNetworkCreation — no "default" VPC, which GCP otherwise creates with
+#          SSH and RDP open to 0.0.0.0/0 the moment the Compute API is enabled
+#        compute.vmExternalIpAccess (deny all) — no VM can hold a public address
+#        sql.restrictPublicIp — no Cloud SQL instance can be given one, whatever the Terraform says
+#      The first is also fixed at project creation: a default network created before it is bound
+#      has to be deleted by hand.
 #
 # Requires: gcloud (authenticated with organisation-policy and folder-creation rights), jq.
 # Record: docs/architecture/environment-separation.md
@@ -26,6 +34,21 @@ require_authorisation
 
 org=$(manifest_get '.platform.organization_id')
 
+# set_folder_policy <folder-id> <constraint> <rules> — binds one organisation-policy constraint to a
+# folder. <rules> is the YAML list under spec.rules, indented four spaces.
+set_folder_policy() {
+  policy=$(mktemp)
+  printf 'name: folders/%s/policies/%s\nspec:\n  rules:\n%s\n' "$1" "$2" "$3" > "$policy"
+  if [ "$DRY_RUN" = "1" ]; then
+    echo "+ cat > $2.yaml <<EOF"
+    sed 's/^/    /' "$policy"
+    echo "+ gcloud org-policies set-policy $2.yaml"
+  else
+    gcloud org-policies set-policy "$policy"
+  fi
+  rm -f "$policy"
+}
+
 for folder in $(manifest_get '.platform.folders[].name'); do
   echo "== $folder =="
 
@@ -42,25 +65,16 @@ for folder in $(manifest_get '.platform.folders[].name'); do
     fi
   fi
 
-  # The policy is written per folder rather than once at the organisation, because the
+  # Policies are written per folder rather than once at the organisation, because the
   # organisation may hold AHDA systems this engagement does not govern.
-  policy=$(mktemp)
-  cat > "$policy" <<POLICY
-name: folders/$folder_id/policies/gcp.resourceLocations
-spec:
-  rules:
-    - values:
+  set_folder_policy "$folder_id" gcp.resourceLocations "    - values:
         allowedValues:
-          - in:$region-locations
-POLICY
-  if [ "$DRY_RUN" = "1" ]; then
-    echo "+ cat > gcp.resourceLocations.yaml <<EOF"
-    sed 's/^/    /' "$policy"
-    echo "+ gcloud org-policies set-policy gcp.resourceLocations.yaml"
-  else
-    gcloud org-policies set-policy "$policy"
-  fi
-  rm -f "$policy"
+          - in:$region-locations"
+
+  # TASK-021. Each of these makes a public path impossible to create rather than merely absent.
+  set_folder_policy "$folder_id" compute.skipDefaultNetworkCreation "    - enforce: true"
+  set_folder_policy "$folder_id" compute.vmExternalIpAccess "    - denyAll: true"
+  set_folder_policy "$folder_id" sql.restrictPublicIp "    - enforce: true"
 
   run gcloud logging settings update --folder="$folder_id" --storage-location="$region"
 done
@@ -69,6 +83,7 @@ cat <<NOTE
 
 Both folders are bound to $region. Verify before creating any project:
   gcloud org-policies describe gcp.resourceLocations --folder=<folder-id> --effective
+  gcloud org-policies describe compute.skipDefaultNetworkCreation --folder=<folder-id> --effective
   gcloud logging settings describe --folder=<folder-id>
 Then: infra/environments/provision-environment.sh <dev|sit|uat|prod>
 NOTE

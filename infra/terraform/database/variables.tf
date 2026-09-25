@@ -39,6 +39,11 @@ variable "network_id" {
   type        = string
 }
 
+variable "allocated_ip_range" {
+  description = "Name of the private services access range the instance takes its private IP from. The network module's firewall rules are written against that range, so the database tier is exactly what they address (TASK-021)."
+  type        = string
+}
+
 variable "runtime_service_account" {
   description = "The environment's runtime service account (TASK-016). It is the database user: IAM authentication, so there is no password for this module to generate, hold in state or hand to anyone."
   type        = string

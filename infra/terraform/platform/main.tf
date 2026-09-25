@@ -67,6 +67,7 @@ module "database" {
   database_name            = local.environment.database.database
   database_user            = local.environment.database.user
   network_id               = module.network.network_id
+  allocated_ip_range       = module.network.private_services_range_name
   runtime_service_account  = local.environment.service_accounts.runtime
   tier                     = var.database_tier
   availability_type        = var.database_availability_type

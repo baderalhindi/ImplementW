@@ -77,7 +77,7 @@ variable "compute_max_instances" {
 
 variable "waf_preview" {
   type    = bool
-  default = true
+  default = false
 }
 
 variable "deletion_protection" {

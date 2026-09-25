@@ -126,6 +126,9 @@ jobs:
       - name: Database provisioning (TASK-020)
         run: python3 docs/architecture/database-check.py
 
+      - name: Network security (TASK-021)
+        run: python3 docs/architecture/network-security-check.py
+
   # The IaC is reviewed like application code and gated like it (TASK-017, CTL-05). Format,
   # schema and a static security scan run on every pull request; `terraform plan` needs the
   # region, the tenancy and a credential and so belongs to the deploy pipeline (TASK-018),

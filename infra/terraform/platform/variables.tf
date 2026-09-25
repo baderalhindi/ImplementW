@@ -108,9 +108,9 @@ variable "compute_max_instances" {
 }
 
 variable "waf_preview" {
-  description = "Whether the WAF logs rather than blocks. TASK-021 turns it off per environment as it tunes."
+  description = "Whether the WAF logs rather than blocks. False in every environment: the G-7 baseline enforces from DEV onward (TASK-021)."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "deletion_protection" {
