@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PMPlatform.Infrastructure.Persistence;
@@ -12,9 +13,11 @@ using PMPlatform.Infrastructure.Persistence;
 namespace PMPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PMPlatformDbContext))]
-    partial class PMPlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260925164822_TASK-025_CreateMasterDataConfigTables")]
+    partial class TASK025_CreateMasterDataConfigTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -100,9 +103,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PermissionProfileVersionId")
                         .HasDatabaseName("ix_access_relationship_permission_profile_version_id");
-
-                    b.HasIndex("ProjectId")
-                        .HasDatabaseName("ix_access_relationship_project_id");
 
                     b.HasIndex("SponsorUserId")
                         .HasDatabaseName("ix_access_relationship_sponsor_user_id");
@@ -259,9 +259,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_external_entity_code");
 
-                    b.HasIndex("EntityTypeItemId")
-                        .HasDatabaseName("ix_external_entity_entity_type_item_id");
-
                     b.HasIndex("SponsorUserId")
                         .HasDatabaseName("ix_external_entity_sponsor_user_id");
 
@@ -339,9 +336,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_permission_code");
-
-                    b.HasIndex("DataClassificationItemId")
-                        .HasDatabaseName("ix_permission_data_classification_item_id");
 
                     b.ToTable("permission", "identity_access");
                 });
@@ -2353,357 +2347,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("risk_rating_definition", "master_data_config");
                 });
 
-            modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset?>("ActivatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("activated_at");
-
-                    b.Property<Guid?>("CityItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("city_item_id");
-
-                    b.Property<Guid>("ClassificationItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("classification_item_id");
-
-                    b.Property<DateTimeOffset?>("ClosedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("closed_at");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("department_id");
-
-                    b.Property<Guid?>("ExternalEntityId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("external_entity_id");
-
-                    b.Property<string>("FormalProjectId")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("formal_project_id");
-
-                    b.Property<Guid>("GovernanceProfileItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("governance_profile_item_id");
-
-                    b.Property<bool>("GovernanceProfileOverridden")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("governance_profile_overridden");
-
-                    b.Property<decimal?>("Latitude")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("latitude");
-
-                    b.Property<DateOnly?>("LegacyIntakeDate")
-                        .HasColumnType("date")
-                        .HasColumnName("legacy_intake_date");
-
-                    b.Property<string>("LifecycleState")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("lifecycle_state");
-
-                    b.Property<decimal?>("Longitude")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("longitude");
-
-                    b.Property<string>("ParticipationMode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("participation_mode");
-
-                    b.Property<DateOnly?>("PlannedEndDate")
-                        .HasColumnType("date")
-                        .HasColumnName("planned_end_date");
-
-                    b.Property<DateOnly?>("PlannedStartDate")
-                        .HasColumnType("date")
-                        .HasColumnName("planned_start_date");
-
-                    b.Property<Guid?>("ProjectManagerUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("project_manager_user_id");
-
-                    b.Property<Guid?>("RegionItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("region_item_id");
-
-                    b.Property<decimal?>("RegistrationBudgetSar")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("registration_budget_sar");
-
-                    b.Property<int>("RevisionNo")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1)
-                        .HasColumnName("revision_no");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.Project.Project.Description#NarrativeText", b1 =>
-                        {
-                            b1.Property<string>("Language")
-                                .IsRequired()
-                                .HasColumnType("char(2)")
-                                .HasColumnName("description_lang");
-
-                            b1.Property<string>("Text")
-                                .IsRequired()
-                                .HasColumnType("text")
-                                .HasColumnName("description");
-                        });
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "GovernanceProfileOverrideReason", "PMPlatform.Domain.Project.Project.GovernanceProfileOverrideReason#NarrativeText", b1 =>
-                        {
-                            b1.Property<string>("Language")
-                                .IsRequired()
-                                .HasColumnType("char(2)")
-                                .HasColumnName("governance_profile_override_reason_lang");
-
-                            b1.Property<string>("Text")
-                                .IsRequired()
-                                .HasColumnType("text")
-                                .HasColumnName("governance_profile_override_reason");
-                        });
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.Project.Project.Title#NarrativeText", b1 =>
-                        {
-                            b1.IsRequired();
-
-                            b1.Property<string>("Language")
-                                .IsRequired()
-                                .HasColumnType("char(2)")
-                                .HasColumnName("title_lang");
-
-                            b1.Property<string>("Text")
-                                .IsRequired()
-                                .HasColumnType("text")
-                                .HasColumnName("title");
-                        });
-
-                    b.HasKey("Id")
-                        .HasName("pk_project");
-
-                    b.HasIndex("CityItemId")
-                        .HasDatabaseName("ix_project_city_item_id");
-
-                    b.HasIndex("ClassificationItemId")
-                        .HasDatabaseName("ix_project_classification_item_id");
-
-                    b.HasIndex("DepartmentId")
-                        .HasDatabaseName("ix_project_department_id");
-
-                    b.HasIndex("ExternalEntityId")
-                        .HasDatabaseName("ix_project_external_entity_id");
-
-                    b.HasIndex("FormalProjectId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_project_formal_project_id");
-
-                    b.HasIndex("GovernanceProfileItemId")
-                        .HasDatabaseName("ix_project_governance_profile_item_id");
-
-                    b.HasIndex("ProjectManagerUserId")
-                        .HasDatabaseName("ix_project_project_manager_user_id");
-
-                    b.HasIndex("RegionItemId")
-                        .HasDatabaseName("ix_project_region_item_id");
-
-                    b.ToTable("project", "project", t =>
-                        {
-                            t.HasCheckConstraint("ck_project_description_lang", "\"description_lang\" IN ('ar', 'en')");
-
-                            t.HasCheckConstraint("ck_project_description_pair", "(\"description\" IS NULL) = (\"description_lang\" IS NULL)");
-
-                            t.HasCheckConstraint("ck_project_formal_project_id", "lifecycle_state IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED') OR formal_project_id IS NOT NULL");
-
-                            t.HasCheckConstraint("ck_project_governance_profile_override_reason_lang", "\"governance_profile_override_reason_lang\" IN ('ar', 'en')");
-
-                            t.HasCheckConstraint("ck_project_governance_profile_override_reason_pair", "(\"governance_profile_override_reason\" IS NULL) = (\"governance_profile_override_reason_lang\" IS NULL)");
-
-                            t.HasCheckConstraint("ck_project_lifecycle_state", "\"lifecycle_state\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'APPROVED_PLANNED', 'ACTIVE', 'SUSPENDED', 'COMPLETED', 'CLOSED')");
-
-                            t.HasCheckConstraint("ck_project_participation_mode", "\"participation_mode\" IN ('ENTITY_MANAGED', 'AHDA_MANAGED')");
-
-                            t.HasCheckConstraint("ck_project_title_lang", "\"title_lang\" IN ('ar', 'en')");
-                        });
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectIntake", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<decimal>("DeclaredBudgetSar")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("declared_budget_sar");
-
-                    b.Property<DateOnly>("DeclaredEndDate")
-                        .HasColumnType("date")
-                        .HasColumnName("declared_end_date");
-
-                    b.Property<DateOnly>("IntakeDate")
-                        .HasColumnType("date")
-                        .HasColumnName("intake_date");
-
-                    b.Property<decimal>("OpeningPercentComplete")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("opening_percent_complete");
-
-                    b.Property<decimal>("OpeningSpendToDateSar")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("opening_spend_to_date_sar");
-
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("project_id");
-
-                    b.Property<Guid>("RecordedByUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("recorded_by_user_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "DeclaredScope", "PMPlatform.Domain.Project.ProjectIntake.DeclaredScope#NarrativeText", b1 =>
-                        {
-                            b1.IsRequired();
-
-                            b1.Property<string>("Language")
-                                .IsRequired()
-                                .HasColumnType("char(2)")
-                                .HasColumnName("declared_scope_lang");
-
-                            b1.Property<string>("Text")
-                                .IsRequired()
-                                .HasColumnType("text")
-                                .HasColumnName("declared_scope");
-                        });
-
-                    b.HasKey("Id")
-                        .HasName("pk_project_intake");
-
-                    b.HasIndex("ProjectId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_project_intake_project_id");
-
-                    b.HasIndex("RecordedByUserId")
-                        .HasDatabaseName("ix_project_intake_recorded_by_user_id");
-
-                    b.ToTable("project_intake", "project", t =>
-                        {
-                            t.HasCheckConstraint("ck_project_intake_append_only", "updated_at = created_at AND updated_by = created_by");
-
-                            t.HasCheckConstraint("ck_project_intake_declared_scope_lang", "\"declared_scope_lang\" IN ('ar', 'en')");
-                        });
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectIntakeMilestone", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateOnly>("AchievedDate")
-                        .HasColumnType("date")
-                        .HasColumnName("achieved_date");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<Guid>("ProjectIntakeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("project_intake_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.Project.ProjectIntakeMilestone.Title#NarrativeText", b1 =>
-                        {
-                            b1.IsRequired();
-
-                            b1.Property<string>("Language")
-                                .IsRequired()
-                                .HasColumnType("char(2)")
-                                .HasColumnName("title_lang");
-
-                            b1.Property<string>("Text")
-                                .IsRequired()
-                                .HasColumnType("text")
-                                .HasColumnName("title");
-                        });
-
-                    b.HasKey("Id")
-                        .HasName("pk_project_intake_milestone");
-
-                    b.HasIndex("ProjectIntakeId")
-                        .HasDatabaseName("ix_project_intake_milestone_project_intake_id");
-
-                    b.ToTable("project_intake_milestone", "project", t =>
-                        {
-                            t.HasCheckConstraint("ck_project_intake_milestone_append_only", "updated_at = created_at AND updated_by = created_by");
-
-                            t.HasCheckConstraint("ck_project_intake_milestone_title_lang", "\"title_lang\" IN ('ar', 'en')");
-                        });
-                });
-
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.AccessRelationship", b =>
                 {
                     b.HasOne("PMPlatform.Domain.IdentityAccess.Department", null)
@@ -2724,12 +2367,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_access_relationship_permission_profile_version_permission_p");
-
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_access_relationship_project_project_id");
 
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
                         .WithMany()
@@ -2756,27 +2393,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.ExternalEntity", b =>
                 {
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("EntityTypeItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_external_entity_master_data_item_entity_type_item_id");
-
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
                         .WithMany()
                         .HasForeignKey("SponsorUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_external_entity_user_sponsor_user_id");
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.Permission", b =>
-                {
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("DataClassificationItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_permission_master_data_item_data_classification_item_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.PermissionProfile", b =>
@@ -3185,81 +2806,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_risk_rating_definition_configuration_version_configuration_");
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>
-                {
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("CityItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_project_master_data_item_city_item_id");
-
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("ClassificationItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_project_master_data_item_classification_item_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.Department", null)
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_project_department_department_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.ExternalEntity", null)
-                        .WithMany()
-                        .HasForeignKey("ExternalEntityId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_project_external_entity_external_entity_id");
-
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("GovernanceProfileItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_project_master_data_item_governance_profile_item_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectManagerUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_project_user_project_manager_user_id");
-
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("RegionItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_project_master_data_item_region_item_id");
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectIntake", b =>
-                {
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_project_intake_project_project_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
-                        .WithMany()
-                        .HasForeignKey("RecordedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_project_intake_user_recorded_by_user_id");
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectIntakeMilestone", b =>
-                {
-                    b.HasOne("PMPlatform.Domain.Project.ProjectIntake", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectIntakeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_project_intake_milestone_project_intake_project_intake_id");
                 });
 #pragma warning restore 612, 618
         }

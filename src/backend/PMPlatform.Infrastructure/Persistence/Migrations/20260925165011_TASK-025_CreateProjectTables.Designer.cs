@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PMPlatform.Infrastructure.Persistence;
@@ -12,9 +13,11 @@ using PMPlatform.Infrastructure.Persistence;
 namespace PMPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PMPlatformDbContext))]
-    partial class PMPlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260925165011_TASK-025_CreateProjectTables")]
+    partial class TASK025_CreateProjectTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -100,9 +103,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PermissionProfileVersionId")
                         .HasDatabaseName("ix_access_relationship_permission_profile_version_id");
-
-                    b.HasIndex("ProjectId")
-                        .HasDatabaseName("ix_access_relationship_project_id");
 
                     b.HasIndex("SponsorUserId")
                         .HasDatabaseName("ix_access_relationship_sponsor_user_id");
@@ -259,9 +259,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_external_entity_code");
 
-                    b.HasIndex("EntityTypeItemId")
-                        .HasDatabaseName("ix_external_entity_entity_type_item_id");
-
                     b.HasIndex("SponsorUserId")
                         .HasDatabaseName("ix_external_entity_sponsor_user_id");
 
@@ -339,9 +336,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_permission_code");
-
-                    b.HasIndex("DataClassificationItemId")
-                        .HasDatabaseName("ix_permission_data_classification_item_id");
 
                     b.ToTable("permission", "identity_access");
                 });
@@ -2725,12 +2719,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_access_relationship_permission_profile_version_permission_p");
 
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_access_relationship_project_project_id");
-
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
                         .WithMany()
                         .HasForeignKey("SponsorUserId")
@@ -2756,27 +2744,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.ExternalEntity", b =>
                 {
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("EntityTypeItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_external_entity_master_data_item_entity_type_item_id");
-
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
                         .WithMany()
                         .HasForeignKey("SponsorUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_external_entity_user_sponsor_user_id");
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.Permission", b =>
-                {
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("DataClassificationItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_permission_master_data_item_data_classification_item_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.PermissionProfile", b =>
