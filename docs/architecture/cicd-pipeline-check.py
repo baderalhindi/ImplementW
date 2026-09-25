@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static checks on the promotion pipeline (TASK-018).
+"""Static checks on the promotion pipeline (TASK-018) and its release security gate (TASK-022).
 
 A workflow file is only correct in the way that matters if its *shape* is correct: which job needs
 which, which job names which deployment environment, and which values travel from the build into
@@ -14,6 +14,7 @@ and no third-party module.
 
     python3 docs/architecture/cicd-pipeline-check.py
 """
+import datetime
 import json
 import re
 import sys
@@ -25,6 +26,7 @@ QUALITY_GATES = ROOT / ".github/workflows/ci-quality-gates.yml"
 DEPLOY_ACTION = ROOT / ".github/actions/deploy-environment/action.yml"
 MANIFEST = ROOT / "infra/environments/environments.json"
 GATES = ROOT / "infra/environments/github/environments.json"
+EXCEPTIONS = ROOT / ".github/security/vulnerability-exceptions.yaml"
 
 SCRIPTS = [
     ROOT / ".github/scripts/release-metadata.sh",
@@ -32,10 +34,15 @@ SCRIPTS = [
     ROOT / ".github/scripts/migration-dry-run.sh",
     ROOT / ".github/scripts/migrate-environment.sh",
     ROOT / ".github/scripts/deployment-record.sh",
+    ROOT / ".github/scripts/release-security-scan.sh",
 ]
+SECURITY_SCAN = SCRIPTS[-1]
 
 # The gates CTL-40 names. Each must be a need of the first deploy stage, so a red one skips all four.
-REQUIRED_GATES = ["quality-gates", "package", "migration-dry-run"]
+REQUIRED_GATES = ["quality-gates", "dependency-scan", "package", "migration-dry-run"]
+
+# An exception to the release gate is a dated decision; past this horizon it is a mute button.
+EXCEPTION_HORIZON_DAYS = 90
 
 # Same rule as terraform-check.py T-3: a hosting value written anywhere but the manifest is a second
 # truth, and it drifts. me-central1 is Doha, Qatar.
@@ -211,7 +218,7 @@ def as_list(value):
 
 def check_deliverables():
     """P-1 — the files the pipeline is made of exist, and the scripts are executable."""
-    for path in [PIPELINE, QUALITY_GATES, DEPLOY_ACTION, MANIFEST, GATES] + SCRIPTS:
+    for path in [PIPELINE, QUALITY_GATES, DEPLOY_ACTION, MANIFEST, GATES, EXCEPTIONS] + SCRIPTS:
         if not path.exists():
             fail("P-1", "{} does not exist".format(path.relative_to(ROOT)))
     for script in SCRIPTS:
@@ -439,6 +446,157 @@ def check_manifest_registry(manifest):
                      "platform.unresolved, so nothing records who owes it")
 
 
+# --- TASK-022: the release security gate (CTL-41) -------------------------------------------------
+
+def _step_index(steps, predicate):
+    return next((i for i, step in enumerate(steps) if predicate(step)), None)
+
+
+def _runs(marker):
+    return lambda step: marker in str(step.get("run", ""))
+
+
+def _uploads(prefix):
+    return lambda step: ("upload-artifact" in str(step.get("uses", ""))
+                         and str((step.get("with") or {}).get("name", "")).startswith(prefix))
+
+
+def _check_order(check, where, steps, sequence):
+    """Each (label, predicate) must be present, and each must come after the one before it."""
+    previous_label, previous_index = None, -1
+    for label, predicate in sequence:
+        index = _step_index(steps, predicate)
+        if index is None:
+            fail(check, "{} has no '{}' step".format(where, label))
+            return
+        if index < previous_index:
+            fail(check, "{} runs '{}' before '{}'".format(where, label, previous_label))
+        previous_label, previous_index = label, index
+
+
+def _check_report_survives_gate(check, where, steps):
+    """The report is uploaded before the gate and even when an earlier step failed, so a blocked
+    build still carries the report that says why."""
+    upload = _step_index(steps, _uploads("release-evidence-"))
+    if upload is not None and "!cancelled()" not in str(steps[upload].get("if", "")):
+        fail(check, "{} uploads its report only on success, so a blocked build carries no report"
+                    .format(where))
+
+
+def check_dependency_scan(jobs):
+    """P-12 — the manifests are scanned on every build, and the report outlives a failed gate.
+
+    The job needs nothing that can fail on a vulnerable dependency. If it needed `quality-gates`,
+    NuGet's audit would fail the restore there first and this job would be skipped, leaving exactly
+    the build that most needs a report without one."""
+    job = jobs.get("dependency-scan")
+    if job is None:
+        fail("P-12", "the pipeline declares no dependency-scan job (CTL-41)")
+        return
+    needs = as_list(job.get("needs"))
+    if needs != ["release-metadata"]:
+        fail("P-12", "dependency-scan needs {}; it must need release-metadata alone, so the report is "
+                     "attached to every build, including one another gate fails".format(needs))
+    steps = as_list(job.get("steps"))
+    _check_order("P-12", "dependency-scan", steps, [
+        ("dotnet restore with lock files", _runs("RestorePackagesWithLockFile=true")),
+        ("sbom-manifests", _runs("release-security-scan.sh sbom-manifests")),
+        ("scan", _runs("release-security-scan.sh scan")),
+        ("upload the report", _uploads("release-evidence-")),
+        ("gate", _runs("release-security-scan.sh gate")),
+    ])
+    _check_report_survives_gate("P-12", "dependency-scan", steps)
+
+
+def check_package(jobs):
+    """P-13 — the image is gated before it is pushed, and signed once it is.
+
+    The order is the control: a gate after the push leaves a blocked image in a registry every
+    environment can pull from, and a push without a signature is an image no stage can verify."""
+    job = jobs.get("package")
+    if job is None:
+        return
+    if "dependency-scan" not in as_list(job.get("needs")):
+        fail("P-13", "package does not need dependency-scan, so an image built from a source tree "
+                     "with a blocked dependency could be pushed")
+    steps = as_list(job.get("steps"))
+    _check_order("P-13", "package", steps, [
+        ("build", lambda step: "build-push-action" in str(step.get("uses", ""))),
+        ("sbom-image", _runs("release-security-scan.sh sbom-image")),
+        ("scan", _runs("release-security-scan.sh scan")),
+        ("upload the report", _uploads("release-evidence-")),
+        ("gate", _runs("release-security-scan.sh gate")),
+        ("push", _runs("docker push")),
+        ("sign", _runs("cosign sign")),
+        ("attest the SBOM", _runs("cosign attest")),
+    ])
+    _check_report_survives_gate("P-13", "package", steps)
+
+    permissions = job.get("permissions")
+    if not isinstance(permissions, dict) or permissions.get("id-token") != "write":
+        fail("P-13", "package does not grant `id-token: write`, so the image cannot be signed keylessly")
+    elif permissions.get("contents") != "read":
+        fail("P-13", "package's permissions replace the workflow's and omit `contents: read`")
+    for key, value in (permissions or {}).items():
+        if key != "id-token" and value == "write":
+            fail("P-13", "package grants write on '{}'".format(key))
+
+
+def check_promotion_rescan(action):
+    """P-14 — every stage re-scans the release and verifies its signature before it changes anything."""
+    steps = as_list(action.get("runs", {}).get("steps"))
+    guards = [
+        ("re-scan", _runs("release-security-scan.sh gate")),
+        ("verify the signature", _runs("cosign verify")),
+    ]
+    changes = [("migrate", _runs("migrate-environment.sh")), ("apply", _runs("terraform apply"))]
+    for guard, predicate in guards:
+        index = _step_index(steps, predicate)
+        if index is None:
+            fail("P-14", "the deploy action never runs '{}', so a stage would deploy without it".format(guard))
+            continue
+        for change, change_predicate in changes:
+            change_index = _step_index(steps, change_predicate)
+            if change_index is not None and change_index < index:
+                fail("P-14", "the deploy action runs '{}' before '{}'".format(change, guard))
+
+    verify = _step_index(steps, _runs("cosign verify"))
+    if verify is not None:
+        body = str(steps[verify].get("run", ""))
+        if "ci-cd-pipeline.yml@refs/heads/main" not in body or "certificate-identity-regexp" in body:
+            fail("P-14", "the signature check does not pin the signer to ci-cd-pipeline.yml on main, so "
+                         "an image signed by any workflow or branch would pass")
+
+
+def check_gate_policy(exceptions, today=None):
+    """P-15 — the gate's line stays where TASK-022 drew it, and every exception is dated and reasoned."""
+    text = SECURITY_SCAN.read_text() if SECURITY_SCAN.exists() else ""
+    match = re.search(r"^BLOCKING_SEVERITIES=(\S+)", text, re.M)
+    if not match or "CRITICAL" not in match.group(1).split(","):
+        fail("P-15", "release-security-scan.sh does not block on CRITICAL (TASK-022 acceptance criterion)")
+
+    today = today or datetime.date.today()
+    entries = exceptions.get("vulnerabilities")
+    if not isinstance(entries, list):
+        fail("P-15", "{} has no `vulnerabilities:` list".format(EXCEPTIONS.relative_to(ROOT)))
+        return
+    for entry in entries:
+        if not isinstance(entry, dict):
+            fail("P-15", "exception {!r} is not a mapping".format(entry))
+            continue
+        label = entry.get("id") or "(no id)"
+        for field in ("id", "purls", "expired_at", "statement"):
+            if not entry.get(field):
+                fail("P-15", "exception {} has no '{}'".format(label, field))
+        try:
+            expires = datetime.date.fromisoformat(str(entry.get("expired_at", "")))
+        except ValueError:
+            continue
+        if (expires - today).days > EXCEPTION_HORIZON_DAYS:
+            fail("P-15", "exception {} expires {}, more than {} days away".format(
+                label, expires, EXCEPTION_HORIZON_DAYS))
+
+
 def main():
     check_deliverables()
     if findings:
@@ -448,6 +606,7 @@ def main():
         pipeline = load_yaml(PIPELINE)
         quality_gates = load_yaml(QUALITY_GATES)
         action = load_yaml(DEPLOY_ACTION)
+        exceptions = load_yaml(EXCEPTIONS)
     except YamlError as exc:
         print("cannot read the workflow files: {}".format(exc), file=sys.stderr)
         return 1
@@ -466,6 +625,10 @@ def main():
     check_permissions(pipeline)
     check_quality_gate_wiring(pipeline, quality_gates)
     check_manifest_registry(manifest)
+    check_dependency_scan(jobs)
+    check_package(jobs)
+    check_promotion_rescan(action)
+    check_gate_policy(exceptions)
 
     return report(order)
 
@@ -477,7 +640,8 @@ def report(order=None):
             print("  " + finding, file=sys.stderr)
         sys.exit(1)
     print("OK: promotion path {}; every gate blocks the first stage and every stage blocks the next; "
-          "one artifact by digest, traceable to a commit and a Task ID.".format(
+          "one artifact by digest, traceable to a commit and a Task ID, scanned against its SBOM and "
+          "signed before any stage deploys it.".format(
               " -> ".join(order or [])))
     sys.exit(0)
 
