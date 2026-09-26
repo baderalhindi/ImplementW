@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PMPlatform.Infrastructure.Persistence;
@@ -12,9 +13,11 @@ using PMPlatform.Infrastructure.Persistence;
 namespace PMPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PMPlatformDbContext))]
-    partial class PMPlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926073238_TASK-026_AddProjectRegisterIndexes")]
+    partial class TASK026_AddProjectRegisterIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -33,5 +33,14 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.GovernanceProfileItemId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.RegionItemId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.CityItemId).OnDelete(DeleteBehavior.Restrict);
+
+        // TASK-026 (indexing-strategy.md I-01 to I-05): SCR-025/SCR-026 sort by updated_at desc, id desc under each
+        // data scope, read by a backward index scan. The scope composites lead with their foreign key, so they replace
+        // its single-column index.
+        builder.HasIndex(e => new { e.UpdatedAt, e.Id });
+        builder.HasIndex(e => new { e.LifecycleState, e.UpdatedAt, e.Id });
+        builder.HasIndex(e => new { e.DepartmentId, e.UpdatedAt, e.Id });
+        builder.HasIndex(e => new { e.ProjectManagerUserId, e.UpdatedAt, e.Id });
+        builder.HasIndex(e => new { e.ExternalEntityId, e.UpdatedAt, e.Id });
     }
 }

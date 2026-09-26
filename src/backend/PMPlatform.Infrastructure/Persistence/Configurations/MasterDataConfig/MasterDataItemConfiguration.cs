@@ -19,5 +19,9 @@ internal sealed class MasterDataItemConfiguration : IEntityTypeConfiguration<Mas
 
         builder.HasOne<MasterDataCatalogue>().WithMany().HasForeignKey(e => e.CatalogueId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.ParentItemId).OnDelete(DeleteBehavior.Restrict);
+
+        // TASK-026 (indexing-strategy.md I-09): a catalogue's items in one state, in display order (ADM-020 to ADM-029
+        // and every form's controlled-value list).
+        builder.HasIndex(e => new { e.CatalogueId, e.LifecycleState, e.SortOrder, e.Id });
     }
 }

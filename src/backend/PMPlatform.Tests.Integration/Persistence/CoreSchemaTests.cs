@@ -213,26 +213,10 @@ public sealed class CoreSchemaTests(MigratedDatabase database, ITestOutputHelper
             """))[0];
         output.WriteLine(plan);
 
-        List<(string NodeType, string? RelationName, string? IndexName)> nodes = [];
-        CollectNodes(JsonDocument.Parse(plan).RootElement[0].GetProperty("Plan"), nodes);
+        List<PlanNode> nodes = QueryPlan.Nodes(JsonDocument.Parse(plan).RootElement[0].GetProperty("Plan"));
 
         Assert.DoesNotContain(nodes, n => n.NodeType == "Seq Scan" && n.RelationName == "project");
-        Assert.Contains(nodes, n => n.IndexName == "ix_project_project_manager_user_id");
-    }
-
-    private static void CollectNodes(JsonElement node, List<(string NodeType, string? RelationName, string? IndexName)> nodes)
-    {
-        nodes.Add((
-            node.GetProperty("Node Type").GetString()!,
-            node.TryGetProperty("Relation Name", out JsonElement relation) ? relation.GetString() : null,
-            node.TryGetProperty("Index Name", out JsonElement index) ? index.GetString() : null));
-        if (node.TryGetProperty("Plans", out JsonElement children))
-        {
-            foreach (JsonElement child in children.EnumerateArray())
-            {
-                CollectNodes(child, nodes);
-            }
-        }
+        Assert.Contains(nodes, n => n.IndexName == "ix_project_project_manager_user_id_updated_at_id");
     }
 
     private static string ProjectRow(

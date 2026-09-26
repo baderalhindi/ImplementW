@@ -29,5 +29,8 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasOne<Department>().WithMany().HasForeignKey(e => e.DepartmentId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.ManagerUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<ExternalEntity>().WithMany().HasForeignKey(e => e.ExternalEntityId).OnDelete(DeleteBehavior.Restrict);
+
+        // TASK-026 (indexing-strategy.md I-08): the ADM-002 user list, filtered by status and sorted by name.
+        builder.HasIndex(e => new { e.Status, e.DisplayName, e.Id });
     }
 }
