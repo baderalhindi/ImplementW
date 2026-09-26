@@ -1,38 +1,24 @@
--- 02-seed-local-users.sql — local test users, one per role R01–R08 (TASK-014 acceptance criterion).
+-- seed-local-users.sql — local test users, one per role R01–R08 (TASK-014 acceptance criterion).
 --
 -- LOCAL STACK ONLY. These are synthetic accounts for a developer's docker-compose database. They are never
--- promoted to DEV, SIT, UAT or PROD (TASK-027's db/seed holds roles and master data, not people), have no
--- credential (sign-in is SSO, ADR-007; a local sign-in path is TASK-028's test directory), and use the reserved
--- pmplatform.local domain.
+-- promoted to DEV, SIT, UAT or PROD (db/seed holds roles and master data, not people), have no credential (sign-in
+-- is SSO, ADR-007; a local sign-in path is TASK-028's test directory), and use the reserved pmplatform.local domain.
 --
--- Synthetic identifiers: 00000000-<kind>-4000-8000-<n>, kind 0000 role, 0001 profile, 0002 profile version,
--- 0010 user, 0011 access relationship, 0020 department, 0021 external entity, 0030/0031 master data.
--- The SERVICE principal 00000000-0000-4000-8000-0000000000ff is the D-2 actor for every seeded row.
+-- Runs after db/seed/seed-master-data.sql (TASK-027), which creates what these rows point at: the roles and their
+-- shipped-default profile versions, the EXTERNAL_ENTITY_TYPE items, and the SERVICE principal
+-- 00000000-0000-4000-8000-0000000000ff that is the D-2 actor for every seeded row. Compose's `seed` service runs
+-- both, then db/seed/validate-data-integrity.sql.
+--
+-- Synthetic identifiers: 00000000-<kind>-4000-8000-<n>, kind 0010 user, 0011 access relationship, 0020 department,
+-- 0021 external entity.
 --
 -- Idempotent: safe to re-run.
-
--- The seed actor (ERD: SERVICE is the non-human principal that lets created_by be not null on seeded rows).
-INSERT INTO identity_access."user" (id, user_type, username, display_name, email, preferred_language, status, created_at, created_by, updated_at, updated_by)
-VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.local-seed', 'Local seed (service principal)', 'svc.local-seed@pmplatform.local', 'en', 'ACTIVE',
-        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
-ON CONFLICT (id) DO NOTHING;
 
 -- One department: the DEPT scope anchor for R03 and the home of every internal user.
 INSERT INTO identity_access.department (id, code, name_ar, name_en, is_active, created_at, created_by, updated_at, updated_by)
 VALUES ('00000000-0020-4000-8000-000000000001', 'DEPT-LOCAL', 'إدارة الاختبار المحلية', 'Local Test Department', true,
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, name_ar = EXCLUDED.name_ar, name_en = EXCLUDED.name_en, updated_at = now(), updated_by = EXCLUDED.updated_by;
-
--- External-entity type is master data (external_entity.entity_type_item_id is not null): one catalogue, one item.
-INSERT INTO master_data_config.master_data_catalogue (id, code, name_ar, name_en, allows_hierarchy, is_system, created_at, created_by, updated_at, updated_by)
-VALUES ('00000000-0030-4000-8000-000000000001', 'EXTERNAL_ENTITY_TYPE', 'نوع الجهة الخارجية', 'External entity type', false, true,
-        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
-ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, name_ar = EXCLUDED.name_ar, name_en = EXCLUDED.name_en, updated_at = now(), updated_by = EXCLUDED.updated_by;
-
-INSERT INTO master_data_config.master_data_item (id, catalogue_id, code, label_ar, label_en, sort_order, is_system, lifecycle_state, published_at, created_at, created_by, updated_at, updated_by)
-VALUES ('00000000-0031-4000-8000-000000000001', '00000000-0030-4000-8000-000000000001', 'PRIVATE_COMPANY', 'شركة خاصة', 'Private company', 1, true, 'PUBLISHED', now(),
-        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
-ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, label_ar = EXCLUDED.label_ar, label_en = EXCLUDED.label_en, updated_at = now(), updated_by = EXCLUDED.updated_by;
 
 -- Internal users R01–R07. R02 is the AHDA sponsor of the external entity below (ADR-013: named sponsor).
 INSERT INTO identity_access."user" (id, user_type, directory_subject_id, username, display_name, email, job_title, department_id, preferred_language, status, created_at, created_by, updated_at, updated_by)
@@ -52,7 +38,10 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- One external entity, sponsored by R02, then its R08 user (user_type EXTERNAL requires external_entity_id).
 INSERT INTO identity_access.external_entity (id, code, name_ar, name_en, entity_type_item_id, status, sponsor_user_id, created_at, created_by, updated_at, updated_by)
-VALUES ('00000000-0021-4000-8000-000000000001', 'ENT-LOCAL', 'الجهة الخارجية المحلية', 'Local External Entity', '00000000-0031-4000-8000-000000000001', 'ACTIVE', '00000000-0010-4000-8000-000000000002',
+VALUES ('00000000-0021-4000-8000-000000000001', 'ENT-LOCAL', 'الجهة الخارجية المحلية', 'Local External Entity',
+        (SELECT i.id FROM master_data_config.master_data_item i JOIN master_data_config.master_data_catalogue c ON c.id = i.catalogue_id
+         WHERE c.code = 'EXTERNAL_ENTITY_TYPE' AND i.code = 'PRIVATE_COMPANY'),
+        'ACTIVE', '00000000-0010-4000-8000-000000000002',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO UPDATE SET code = EXCLUDED.code, name_ar = EXCLUDED.name_ar, name_en = EXCLUDED.name_en, entity_type_item_id = EXCLUDED.entity_type_item_id,
     status = EXCLUDED.status, sponsor_user_id = EXCLUDED.sponsor_user_id, updated_at = now(), updated_by = EXCLUDED.updated_by;
