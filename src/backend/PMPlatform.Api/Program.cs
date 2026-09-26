@@ -1,7 +1,15 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Configuration.Json;
+using PMPlatform.Api.Authorization;
+using PMPlatform.Api.Correlation;
+using PMPlatform.Api.Errors;
 using PMPlatform.Application;
 using PMPlatform.Infrastructure;
+using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Secrets;
 
@@ -26,11 +34,32 @@ configurationSources.Insert(environmentVariablesIndex, new JsonConfigurationSour
 // it is configured. Only local development may run without it, on the git-ignored Local.json above (CTL-18).
 builder.Configuration.AddSecretStore(required: !builder.Environment.IsDevelopment());
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    // api-conventions R-19: enumerations are UPPER_SNAKE_CASE strings.
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseUpper)))
+    // R-23: a body that does not bind (malformed JSON, no body) is a 400 in the platform envelope, and says only where.
+    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = context =>
+        ApiProblem.Result(context.HttpContext, StatusCodes.Status400BadRequest, ErrorCodes.ValidationFailed, "Validation failed.",
+            [new FieldError("body", FieldError.Malformed)]));
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// TASK-028: every request is authenticated by the platform's own access token (R-46), validated against the current
+// JWT_SIGNING_KEY. Authorization is deny-by-default: an endpoint without [AllowAnonymous] requires a valid token.
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IConfiguration, TimeProvider>((options, configuration, timeProvider) =>
+    {
+        options.MapInboundClaims = false;
+        options.IncludeErrorDetails = false;
+        options.TokenValidationParameters = SessionTokenValidation.AccessToken(configuration, timeProvider);
+        options.Events = BearerChallenge.Events();
+    });
+builder.Services.AddAuthorizationBuilder()
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
+    .AddPolicy(AuthorizationPolicies.SystemAdministrator, policy => policy.RequireRole(AuthorizationPolicies.SystemAdministratorRole));
 
 WebApplication app = builder.Build();
 
@@ -50,15 +79,25 @@ if (args is [string scriptCommand] && DatabaseScripts.IsCommand(scriptCommand))
     return;
 }
 
+app.UseMiddleware<CorrelationId>();
+
+// R-26: an unhandled exception is a 500 carrying code, correlation id and timestamp, and nothing about the exception.
+app.UseExceptionHandler(handler => handler.Run(context =>
+    ApiProblem.WriteAsync(context, StatusCodes.Status500InternalServerError, ErrorCodes.InternalError, "Internal error.")));
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
 
 await app.RunAsync().ConfigureAwait(false);
+
+/// <summary>The API's entry point; public so the integration tests can host it (WebApplicationFactory).</summary>
+public partial class Program;

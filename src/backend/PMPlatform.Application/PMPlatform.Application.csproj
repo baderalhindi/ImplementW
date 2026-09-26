@@ -1,9 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- L-2: references Domain only. Defines the interfaces Infrastructure implements. -->
   <ItemGroup>
+    <InternalsVisibleTo Include="PMPlatform.Tests.Unit" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../PMPlatform.Domain/PMPlatform.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 </Project>

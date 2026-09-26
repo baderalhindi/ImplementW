@@ -6,6 +6,11 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <!-- TASK-028: validates the platform's own session tokens on every request (api-conventions R-46). -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="PMPlatform.Tests.Integration" />
   </ItemGroup>
   <ItemGroup>
     <!-- TASK-013: the template is documentation and a developer's Local.json is a secret; neither ships. -->

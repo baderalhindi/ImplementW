@@ -38,12 +38,13 @@ def fail(check, message):
     findings.append(f"{check}: {message}")
 
 
-def application_keys():
-    """The configuration keys ApplicationSecrets declares, as string literals."""
+def application_keys(list_name="Keys"):
+    """The configuration keys an ApplicationSecrets list declares, as string literals."""
     text = APPLICATION_SECRETS.read_text(encoding="utf-8")
-    listed = re.search(r"Keys\s*=\s*\[([^\]]*)\]", text)
+    listed = re.search(rf"\b{list_name}\s*=\s*\[([^\]]*)\]", text)
     if not listed:
-        fail("K-1", f"{APPLICATION_SECRETS.relative_to(ROOT)} declares no Keys list")
+        if list_name == "Keys":
+            fail("K-1", f"{APPLICATION_SECRETS.relative_to(ROOT)} declares no Keys list")
         return []
     constants = dict(re.findall(r'const string (\w+)\s*=\s*"([^"]+)"', text))
     entries = [entry.strip() for entry in listed.group(1).split(",") if entry.strip()]
@@ -65,6 +66,22 @@ def check_application_keys(manifest, classified):
             fail("K-1", f"ApplicationSecrets reads {key}, which no container exists for in {missing}. "
                         f"The sheet scopes it to {[e.upper() for e in scope]}; a key the application requires "
                         "at start-up must exist in every environment it runs in")
+
+
+def check_optional_application_keys(manifest, classified):
+    """K-1 (TASK-028) — a key the application reads when present is a secret of every environment the sheet scopes it to."""
+    secrets = inventory.inventory(manifest)
+    for key in application_keys("OptionalKeys"):
+        if key not in classified:
+            fail("K-1", f"ApplicationSecrets.OptionalKeys declares {key}, which is not a row of the Environment and Secrets sheet")
+            continue
+        route, scope, classification = classified[key]
+        if route != "secret-store":
+            fail("K-1", f"ApplicationSecrets.OptionalKeys reads {key}, which the sheet stores in the {route} ({classification})")
+        missing = [env for env in scope if key not in secrets[env]]
+        if missing:
+            fail("K-1", f"ApplicationSecrets.OptionalKeys reads {key}, which no container exists for in {missing}, "
+                        f"although the sheet scopes it there")
 
 
 def check_no_injected_secret():
@@ -141,6 +158,7 @@ def main():
         return 1
 
     check_application_keys(manifest, classified)
+    check_optional_application_keys(manifest, classified)
     check_no_injected_secret()
     check_scripts_never_pass_a_value()
     check_runbook_and_record(classified)

@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
+using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using PMPlatform.Infrastructure.Secrets;
 
 namespace PMPlatform.Infrastructure;
@@ -21,6 +24,10 @@ public static class DependencyInjection
         // Resolved when a context is created, not at start-up, so the API still starts and reports Unhealthy
         // without a database, as it did before TASK-024.
         services.AddDbContext<PMPlatformDbContext>(options => options.UsePlatformDatabase(RequiredConnectionString(configuration)));
+
+        // TASK-028: the directory, SSO and session-token adapters, and the IdentityAccess repository sign-in reads.
+        services.AddIdentityIntegration(configuration);
+        services.AddScoped<IUserAccessRepository, UserAccessRepository>();
 
         return services;
     }

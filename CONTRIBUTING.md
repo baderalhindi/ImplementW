@@ -99,6 +99,15 @@ dotnet build src/backend -warnaserror
 dotnet test src/backend/PMPlatform.Tests.Unit
 ```
 
+Integration tests run against real servers from the AHDA Compose stack: PostgreSQL for the `Persistence` tests (each
+creates and drops its own database) and, for the `Identity` tests, the test directory `AHDA-ldap` (TASK-028):
+
+```sh
+docker compose -f infra/docker/docker-compose.yml up -d --wait postgres ldap
+DB_CONNECTION_STRING="Host=localhost;Port=5432;Database=postgres;Username=pmplatform;Password=pmplatform" \
+  dotnet test src/backend/PMPlatform.Tests.Integration
+```
+
 Frontend:
 
 ```sh
@@ -226,8 +235,9 @@ Full record, topology diagram and promotion path: `docs/architecture/environment
   `backend` (restore, `-warnaserror` build with the analyzers, unit tests), `frontend` (`npm ci`, lint,
   format, `tsc -b --noEmit`, Vitest, build), `repo-checks` (the seven `python3 docs/architecture/*-check.py`
   scripts, standard library only) and `terraform` (`fmt -check`, `validate` on all four environment roots with
-  the committed lock files read-only, and a Trivy config scan gated at HIGH/CRITICAL). Integration tests need
-  the containerised stack and are not in this gate. The same four jobs are called by the promotion pipeline on a
+  the committed lock files read-only, and a Trivy config scan gated at HIGH/CRITICAL). The `backend` job also
+  runs the `Persistence` integration tests against a PostgreSQL service and the `Identity` integration tests against
+  `AHDA-ldap`, started from the Compose file (TASK-024, TASK-028). The same four jobs are called by the promotion pipeline on a
   push to `main`, so a deployment gates on the checks that guarded the pull request rather than on a copy of them.
 
 ## Branches, pull requests, and main

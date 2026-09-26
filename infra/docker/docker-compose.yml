@@ -1,4 +1,5 @@
-# Local development stack (TASK-014): PostgreSQL 17 + PMPlatform.Api + Vite dev server, with seeded test data.
+# Local development stack (TASK-014): PostgreSQL 17 + PMPlatform.Api + Vite dev server, with seeded test data, and the
+# test directory the API signs people in against (TASK-028).
 #
 #   docker compose -f infra/docker/docker-compose.yml up --build --wait     # from the repository root
 #   curl -i http://localhost:5080/health                                     # 200 "Healthy" once the API has reached the database
@@ -11,7 +12,7 @@
 # DEV-scoped rows of the Environment and Secrets sheet (docs/architecture/environment-templates.md §3.2) that this
 # stack can satisfy; the rest stay unset and the API starts without them.
 #
-# Start-up order: postgres healthy → migrate (the API image's `migrate` command applies every EF Core migration and
+# Start-up order: ldap and postgres healthy → migrate (the API image's `migrate` command applies every EF Core migration and
 # exits) → seed (db/seed's platform seed, the local users in ./postgres/seed, then db/seed's data-integrity check;
 # all idempotent) → api. migrate and seed are one-shot containers that exit 0.
 #
@@ -46,6 +47,22 @@ services:
       timeout: 5s
       retries: 12
       start_period: 10s
+
+  # TASK-028: the test directory (infra/docker/ldap), standing in for AHDA's Active Directory. One synthetic person per
+  # role, each linked to the local user of that role by entryUUID. Sign in as local.r01 … local.r08 with the local
+  # default password in ldap/directory.ldif. From the host it is ldap://localhost:3389; the integration tests use it.
+  ldap:
+    container_name: AHDA-ldap
+    build:
+      context: ./ldap
+    ports:
+      - "${PMPLATFORM_LDAP_PORT:-3389}:389"
+    healthcheck:
+      test: ["CMD", "ldapwhoami", "-x", "-H", "ldap://localhost", "-D", "cn=svc-pmplatform,ou=Services,dc=pmplatform,dc=local", "-w", "local-service-password"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
 
   migrate:
     container_name: AHDA-migrate
@@ -84,11 +101,22 @@ services:
     depends_on:
       seed:
         condition: service_completed_successfully
+      ldap:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       # Sheet names, verbatim (TASK-013 R-1): the API reads configuration["DB_CONNECTION_STRING"], and so on.
       DB_CONNECTION_STRING: *database-connection
       JWT_SIGNING_KEY: local-development-only-signing-key-not-valid-outside-docker-compose
+      # TASK-028: the test directory above. The URL's path is the search base. The attribute names are OpenLDAP's
+      # (AD's are the defaults), and plain LDAP is allowed only because this directory never leaves the compose network.
+      AD_LDAP_URL: ldap://ldap:389/dc=pmplatform,dc=local
+      AD_BIND_DN: cn=svc-pmplatform,ou=Services,dc=pmplatform,dc=local
+      AD_BIND_PASSWORD: local-service-password # local default; never a real credential
+      Identity__Directory__UsernameAttribute: uid
+      Identity__Directory__SubjectAttribute: entryUUID
+      Identity__Directory__DepartmentAttribute: departmentNumber
+      Identity__Directory__AllowUnencryptedConnection: "true"
       CORS_ALLOWED_ORIGINS: http://localhost:5173
       APP_BASE_URL: http://localhost:5173
       LOG_LEVEL: Information

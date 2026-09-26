@@ -81,6 +81,18 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Persistence
 
+      # TASK-028: sign-in, session expiry and refresh against a real directory. The test directory is the compose
+      # stack's AHDA-ldap service (infra/docker/ldap), started alone; the OIDC identity provider runs in the test process.
+      - name: Start the test directory
+        run: docker compose -f infra/docker/docker-compose.yml up --detach --wait ldap
+
+      - name: Identity integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Identity
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest

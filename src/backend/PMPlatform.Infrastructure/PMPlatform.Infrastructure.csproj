@@ -19,6 +19,12 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="EFCore.NamingConventions" />
+    <!-- TASK-028: the directory, single sign-on and session-token adapters (Identity/). -->
+    <PackageReference Include="Novell.Directory.Ldap.NETStandard" />
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <!-- TASK-024: `dotnet ef` runs with this project as its startup project, so the design-time package stays
          here and never flows into PMPlatform.Api's published image (PrivateAssets). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />

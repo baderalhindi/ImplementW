@@ -1,7 +1,8 @@
 -- seed-master-data.sql — the platform's shipped reference data (TASK-027). Record: docs/architecture/seed-data-and-integrity.md
 --
 -- What it holds:
---   1. the seed principal, the SERVICE user every seeded row is attributed to (ERD D-2);
+--   1. the SERVICE principals (ERD D-2): the seed principal every seeded row is attributed to, and the directory-sync
+--      principal a directory-sourced change to a user is attributed to (TASK-028, ADR-007);
 --   2. the eight canonical roles R01–R08, each with its shipped-default permission profile and that profile's
 --      PUBLISHED version 1 (ADR-018, TASK-110);
 --   3. one master data catalogue for every master data reference in the ERD (ADM-020–029), with the items a
@@ -34,9 +35,12 @@
 --   dotnet PMPlatform.Api.dll seed                                              (each environment, after `migrate`)
 --   psql "<connection>" -X -q -v ON_ERROR_STOP=1 --single-transaction -f db/seed/seed-master-data.sql     (locally)
 
--- 1. The seed principal. A SERVICE user is a non-human principal; it holds no role and cannot sign in.
+-- 1. The SERVICE principals. A SERVICE user is a non-human principal; it holds no role and cannot sign in. The
+-- directory-sync principal's id is PMPlatform.Infrastructure's UserAccessRepository.DirectorySyncPrincipalId.
 INSERT INTO identity_access."user" (id, user_type, username, display_name, email, preferred_language, status, created_at, created_by, updated_at, updated_by)
 VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 'Platform seed (service principal)', 'svc.platform-seed@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000fe', 'SERVICE', 'svc.directory-sync', 'Directory synchronisation (service principal)', 'svc.directory-sync@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO NOTHING;
 
