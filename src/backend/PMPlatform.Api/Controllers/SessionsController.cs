@@ -102,6 +102,7 @@ public sealed class SessionsController(IAuthenticationService authentication) : 
 
     /// <summary>What the presented access token asserts. Requires a valid, unexpired access token.</summary>
     [HttpGet("current")]
+    [AllowAnyAuthenticatedUser]
     [EndpointName("IdentityAccess_GetCurrentSession")]
     public IActionResult GetCurrent()
     {
