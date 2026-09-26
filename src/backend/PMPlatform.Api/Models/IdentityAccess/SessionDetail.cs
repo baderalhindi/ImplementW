@@ -27,5 +27,7 @@ public sealed record SessionDetail(
             session.User.DisplayName,
             LanguageCode.Of(session.User.PreferredLanguage),
             session.User.AuthenticationMethod,
+            session.User.MultiFactorAuthenticated,
+            session.User.AuthenticatedAt,
             [.. session.User.RoleAssignments.Select(a => new RoleAssignmentSummary(a.RoleCode, a.PermissionProfileVersionId, a.DepartmentId, a.ExternalEntityId, a.ProjectId))]));
 }

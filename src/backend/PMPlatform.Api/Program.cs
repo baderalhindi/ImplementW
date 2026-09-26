@@ -61,6 +61,12 @@ builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
     .AddPolicy(AuthorizationPolicies.SystemAdministrator, policy => policy.RequireRole(AuthorizationPolicies.SystemAdministratorRole));
 
+// TASK-029: which operations need a fresh second factor, and how fresh (ADR-010; the list is configuration).
+builder.Services.AddOptions<StepUpOptions>()
+    .Bind(builder.Configuration.GetSection(StepUpOptions.Section))
+    .Validate(options => options.MaxAge > TimeSpan.Zero, $"{StepUpOptions.Section}:MaxAge must be positive.")
+    .ValidateOnStart();
+
 WebApplication app = builder.Build();
 
 // TASK-024: `dotnet PMPlatform.Api.dll migrate [<target migration>]` applies the release's migrations and exits
@@ -93,9 +99,11 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<StepUpAuthentication>();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
+app.RequireKnownStepUpOperations();
 
 await app.RunAsync().ConfigureAwait(false);
 

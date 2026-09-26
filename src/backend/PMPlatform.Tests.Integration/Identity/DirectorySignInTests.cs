@@ -18,7 +18,10 @@ public sealed class DirectorySignInTests(IdentityTestHost host)
     {
         using HttpClient client = host.Api.CreateClient();
 
-        using HttpResponseMessage response = await client.SignInAsync("local.r01", TestDirectory.PersonPassword);
+        // R01 requires MFA (TASK-029): the password answers with an MFA token, the second factor with the session.
+        using HttpResponseMessage signIn = await client.SignInAsync("local.r01", TestDirectory.PersonPassword);
+        Assert.Equal(HttpStatusCode.OK, signIn.StatusCode);
+        using HttpResponseMessage response = await client.CompleteSecondFactorAsync((await signIn.ReadAsync<MfaPending>()).MfaToken);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.Equal(SessionApi.Current, response.Headers.Location?.OriginalString);

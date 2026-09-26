@@ -22,7 +22,7 @@
 | **In** | Copying the three directory-authoritative attributes at sign-in (ADR-007) | This task |
 | **In** | ADM-041 backend: the integration's configuration status and a connection test | This task |
 | **In** | Generic failure responses (no user enumeration); no credential in logs | This task |
-| **Out** | MFA and step-up (the session carries `amr` for it) | TASK-029 |
+| **Out** | MFA and step-up (the session carries `amr` for it) | TASK-029, built: `mfa-privileged-access.md` |
 | **Out** | Permission checks per endpoint and data scope; ADM-041's R01 policy is a stop-gap (D-11) | TASK-030 |
 | **Out** | User, role and assignment administration (ADM-002–013) | TASK-031, TASK-032 |
 | **Out** | Directory sync of users who do not sign in, sync runs and mismatch alerts | TASK-075 (FG-05 `sync_run`) |
@@ -61,7 +61,7 @@
 
 `SessionDetail` is `{ tokenType: "Bearer", accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt, sessionExpiresAt, user: { id, userType, username, displayName, preferredLanguage, authenticationMethod, roleAssignments: [{ roleCode, permissionProfileVersionId, departmentId, externalEntityId, projectId }] } }`. Every response carrying a token is `Cache-Control: no-store` (RFC 6749 §5.1). Every error is the R-23 envelope with `code`, `correlationId`, `idempotencyKey`, `timestamp`; `X-Correlation-Id` is echoed on every response (R-41). Sign-in and the connection test take no `Idempotency-Key`: they change no business state (R-35).
 
-Access token claims: `iss=pmplatform`, `aud=pmplatform-api`, `sub` (user id), `sid`, `user_type`, `role` (codes), `amr` (`pwd` or `sso`), `iat`, `nbf`, `exp`. The refresh token has `aud=pmplatform-session-refresh`, `sub`, `sid`, `amr`, `session_exp`: the API rejects it as an access token and the refresh path rejects an access token. The claim names are the module's contract, `Features/IdentityAccess/Contracts/SessionTokenClaims.cs`.
+Access token claims: `iss=pmplatform`, `aud=pmplatform-api`, `sub` (user id), `sid`, `user_type`, `role` (codes), `amr` (`pwd` or `sso`; since TASK-029 an array that adds `mfa`), `auth_time` (TASK-029), `iat`, `nbf`, `exp`. The refresh token has `aud=pmplatform-session-refresh`, `sub`, `sid`, `amr`, `auth_time`, `session_exp`: the API rejects it as an access token and the refresh path rejects an access token. The claim names are the module's contract, `Features/IdentityAccess/Contracts/SessionTokenClaims.cs`.
 
 ## 4. Configuration
 
@@ -170,3 +170,4 @@ Every mutation was reverted and the suite re-run green.
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-26 | Initial record. Directory (LDAP bind) and SSO (OIDC code + PKCE) sign-in to one stateless session model, with roles from active profile-version assignments; directory-authoritative attributes copied at sign-in; ADM-041 status and connection test; deny-by-default bearer authentication; optional secret keys; test directory `AHDA-ldap` in Compose and CI; 35 integration tests, six mutations. TASK-013 F-3 and TASK-014 F-3/F-4 closed. Twelve findings | Identity (TASK-028) |
+| 2026-09-26 | TASK-029: `amr` is an RFC 8176 array and both tokens carry `auth_time`; a person who requires MFA gets an MFA token before the session (`mfa-privileged-access.md` D-1, D-3). The 35 tests here now pass the second factor where R01 signs in. The 1 s rejection floor (D-5) re-checks after each wait: a timer could end it up to a millisecond early (`mfa-privileged-access.md` §6.2) | Security (TASK-029) |

@@ -32,6 +32,9 @@ public static class ApplicationSecrets
     /// <summary>TASK-028: the platform's client secret at AHDA's identity provider.</summary>
     public const string SsoClientSecret = "SSO_OIDC_CLIENT_SECRET";
 
+    /// <summary>TASK-029: the platform's API key at the MFA verification provider.</summary>
+    public const string MultiFactorProviderApiKey = "MFA_PROVIDER_API_KEY";
+
     /// <summary>The configuration keys loaded from the secret store and required at start-up, in the order they are read.</summary>
     public static readonly IReadOnlyList<string> Keys = [DatabaseConnectionString, JwtSigningKey];
 
@@ -39,6 +42,8 @@ public static class ApplicationSecrets
     /// Keys loaded from the secret store when they hold a value. Each belongs to a sign-in method that an environment
     /// may not offer yet: the sheet scopes the directory to SIT/UAT/PROD, and the SSO client exists only once AHDA IT
     /// registers it (ADR-007). Without them the method reports "not configured" on ADM-041 and the API still starts.
+    /// The MFA provider key is scoped to SIT/UAT/PROD and may not be needed at all if AHDA's identity provider applies
+    /// the second factor (ADR-010 gate note); without it, a sign-in that requires MFA is refused, never let through.
     /// </summary>
-    public static readonly IReadOnlyList<string> OptionalKeys = [DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret];
+    public static readonly IReadOnlyList<string> OptionalKeys = [DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey];
 }

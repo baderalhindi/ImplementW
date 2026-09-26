@@ -12,4 +12,7 @@ public interface IUserAccessRepository
     /// cannot resolve is left as it is and reported, never guessed.
     /// </summary>
     public Task ApplyDirectoryAttributesAsync(Guid userId, DirectoryEntry entry, CancellationToken cancellationToken);
+
+    /// <summary>Records that the user has enrolled a second factor (TASK-029). The change is the user's own.</summary>
+    public Task RecordMultiFactorEnrolmentAsync(Guid userId, CancellationToken cancellationToken);
 }

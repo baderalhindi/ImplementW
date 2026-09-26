@@ -1,7 +1,7 @@
 namespace PMPlatform.Tests.Integration.Identity;
 
 /// <summary>
-/// One database, one identity provider and one API for the whole identity suite. Tests that move the clock or change a
+/// One database, one identity provider, one MFA provider and one API for the whole identity suite. Tests that move the clock or change a
 /// row put it back, so the order they run in does not matter.
 /// </summary>
 public sealed class IdentityTestHost : IAsyncLifetime
@@ -14,12 +14,15 @@ public sealed class IdentityTestHost : IAsyncLifetime
 
     public TestIdentityProvider IdentityProvider { get; private set; } = null!;
 
+    public TestMultiFactorProvider MultiFactorProvider { get; private set; } = null!;
+
     public IdentityApiFactory Api { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {
         await Database.InitializeAsync();
         IdentityProvider = await TestIdentityProvider.StartAsync();
+        MultiFactorProvider = await TestMultiFactorProvider.StartAsync();
         Api = CreateApi();
     }
 
@@ -27,7 +30,7 @@ public sealed class IdentityTestHost : IAsyncLifetime
     public IdentityApiFactory CreateApi(IReadOnlyDictionary<string, string?>? overrides = null)
     {
         Dictionary<string, string?> settings = new(TestDirectory.Settings);
-        foreach ((string key, string? value) in IdentityProvider.Settings.Concat(overrides ?? new Dictionary<string, string?>()))
+        foreach ((string key, string? value) in IdentityProvider.Settings.Concat(MultiFactorProvider.Settings).Concat(overrides ?? new Dictionary<string, string?>()))
         {
             settings[key] = value;
         }
@@ -41,6 +44,7 @@ public sealed class IdentityTestHost : IAsyncLifetime
     {
         await Api.DisposeAsync();
         await IdentityProvider.DisposeAsync();
+        await MultiFactorProvider.DisposeAsync();
         await Database.DisposeAsync();
     }
 }

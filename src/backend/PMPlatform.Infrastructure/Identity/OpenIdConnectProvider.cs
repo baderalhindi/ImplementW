@@ -1,5 +1,6 @@
 using System.Buffers.Text;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -20,8 +21,9 @@ namespace PMPlatform.Infrastructure.Identity;
 
 /// <summary>
 /// Single sign-on against AHDA's identity provider (TASK-028, ADR-007): the OpenID Connect authorization code flow
-/// with PKCE, the platform as a confidential client. Only the ID token's subject is used. No access token is kept, and
-/// no group or role claim is read: platform roles are assigned in the platform.
+/// with PKCE, the platform as a confidential client. Only the ID token's subject, and its <c>amr</c> and <c>auth_time</c>
+/// for TASK-029, are used. No access token is kept, and no group or role claim is read: platform roles are assigned in
+/// the platform.
 /// </summary>
 internal sealed partial class OpenIdConnectProvider(
     IConfiguration configuration,
@@ -126,9 +128,18 @@ internal sealed partial class OpenIdConnectProvider(
             return SingleSignOnResult.Failed(AuthenticationFailure.Rejected);
         }
 
-        return validated.Claims.TryGetValue(Options.SubjectClaim, out object? subject) && subject is string { Length: > 0 } subjectId
-            ? SingleSignOnResult.Authenticated(subjectId)
-            : SingleSignOnResult.Failed(AuthenticationFailure.Rejected);
+        if (!validated.Claims.TryGetValue(Options.SubjectClaim, out object? subject) || subject is not string { Length: > 0 } subjectId)
+        {
+            return SingleSignOnResult.Failed(AuthenticationFailure.Rejected);
+        }
+
+        // TASK-029: how and when the provider authenticated the person. Whether its amr counts as a second factor is the
+        // platform's policy (Identity:Mfa:IdentityProviderMethods), not the provider's say.
+        IReadOnlyList<string> methods = [.. validated.ClaimsIdentity.FindAll("amr").Select(c => c.Value)];
+        DateTimeOffset? authenticatedAt = long.TryParse(validated.ClaimsIdentity.FindFirst("auth_time")?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out long seconds)
+            ? DateTimeOffset.FromUnixTimeSeconds(seconds)
+            : null;
+        return SingleSignOnResult.Authenticated(subjectId, methods, authenticatedAt);
     }
 
     public SingleSignOnIntegrationStatus Describe() => new(

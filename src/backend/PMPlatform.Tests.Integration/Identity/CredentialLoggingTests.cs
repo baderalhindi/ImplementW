@@ -4,8 +4,8 @@ namespace PMPlatform.Tests.Integration.Identity;
 
 /// <summary>
 /// The workbook's validation cell: "confirm no credential appears in application logs" (CTL-06, CTL-27). Every log line
-/// the API wrote while signing people in, rejecting them, refreshing and failing over is searched for every credential
-/// that passed through it.
+/// the API wrote while signing people in, rejecting them, passing and failing a second factor, stepping up, refreshing
+/// and failing over is searched for every credential that passed through it.
 /// </summary>
 [Collection(IdentitySuite.Name)]
 public sealed class CredentialLoggingTests(IdentityTestHost host)
@@ -14,11 +14,27 @@ public sealed class CredentialLoggingTests(IdentityTestHost host)
     public async Task NoCredentialOrTokenAppearsInTheLogs()
     {
         using HttpClient client = host.Api.CreateClient();
-        List<string> credentials = [TestDirectory.PersonPassword, TestDirectory.BindPassword, TestIdentityProvider.ClientSecret, IdentityApiFactory.SigningKey];
+        List<string> credentials =
+        [
+            TestDirectory.PersonPassword, TestDirectory.BindPassword, TestIdentityProvider.ClientSecret, IdentityApiFactory.SigningKey, TestMultiFactorProvider.ApiKey,
+        ];
 
-        Session session = await client.SignInOrFailAsync(1);
+        // TASK-029: the MFA token, the codes entered (right and wrong) and the step-up's tokens are credentials too.
+        string mfaToken = await client.MfaTokenOrFailAsync("local.r01");
+        credentials.Add(mfaToken);
+        MfaChallenge wrong = await client.StartChallengeOrFailAsync(SessionApi.MfaChallenge, new { mfaToken });
+        credentials.Add(TestMultiFactorProvider.WrongCodeFor(wrong.ChallengeId));
+        (await client.PostAsJsonAsync(SessionApi.MfaSessions, new { mfaToken, challengeId = wrong.ChallengeId, code = TestMultiFactorProvider.WrongCodeFor(wrong.ChallengeId) })).Dispose();
+        MfaChallenge right = await client.StartChallengeOrFailAsync(SessionApi.MfaChallenge, new { mfaToken });
+        credentials.Add(TestMultiFactorProvider.CodeFor(right.ChallengeId));
+        using HttpResponseMessage secondFactor = await client.PostAsJsonAsync(
+            SessionApi.MfaSessions, new { mfaToken, challengeId = right.ChallengeId, code = TestMultiFactorProvider.CodeFor(right.ChallengeId) });
+        Session session = await secondFactor.ReadAsync<Session>();
         credentials.Add(session.AccessToken);
         credentials.Add(session.RefreshToken);
+        Session steppedUp = await client.StepUpOrFailAsync(session.RefreshToken);
+        credentials.Add(steppedUp.AccessToken);
+        credentials.Add(steppedUp.RefreshToken);
         using (HttpResponseMessage refreshed = await client.RefreshAsync(session.RefreshToken))
         {
             Session next = await refreshed.ReadAsync<Session>();

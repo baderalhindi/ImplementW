@@ -26,8 +26,9 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
 
         using HttpResponseMessage response = await client.PostAsJsonAsync(SessionApi.SsoSessions, callback);
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Session session = await response.ReadAsync<Session>();
+        // R01 requires MFA (TASK-029) on the SSO path as on the directory path.
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Session session = await client.SessionOrSecondFactorAsync(response);
         Assert.Equal(Guid.Parse(IdentityDatabase.UserId(1)), session.User.Id);
         Assert.Equal("SINGLE_SIGN_ON", session.User.AuthenticationMethod);
         Assert.Equal(["R01"], session.User.RoleAssignments.Select(a => a.RoleCode));
@@ -93,7 +94,7 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
     public async Task ACodeCanBeRedeemedOnlyOnce()
     {
         using HttpClient client = host.Api.CreateClient();
-        Callback callback = await AuthorizeAsync(client, TestDirectory.Subject(1));
+        Callback callback = await AuthorizeAsync(client, TestDirectory.Subject(2));
         using HttpResponseMessage first = await client.PostAsJsonAsync(SessionApi.SsoSessions, callback);
         Assert.Equal(HttpStatusCode.Created, first.StatusCode);
 
@@ -141,26 +142,5 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
         Assert.Equal("AUTHENTICATION_REQUIRED", (await response.ReadAsync<Problem>()).Code);
     }
 
-    /// <summary>What a browser does: asks the API where to go, follows the identity provider's redirect back to the callback URL.</summary>
-    private async Task<Callback> AuthorizeAsync(HttpClient client, string subject)
-    {
-        host.IdentityProvider.NextSubject = subject;
-        using HttpResponseMessage response = await client.GetAsync(SessionApi.SsoAuthorization);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        SsoAuthorization authorization = await response.ReadAsync<SsoAuthorization>();
-
-        using HttpClientHandler handler = new() { AllowAutoRedirect = false };
-        using HttpClient browser = new(handler);
-        using HttpResponseMessage redirect = await browser.GetAsync(authorization.AuthorizationUrl);
-        Assert.Equal(HttpStatusCode.Redirect, redirect.StatusCode);
-        Uri location = redirect.Headers.Location!;
-        Assert.StartsWith(TestIdentityProvider.CallbackUrl, location.AbsoluteUri, StringComparison.Ordinal);
-
-        Dictionary<string, Microsoft.Extensions.Primitives.StringValues> query = QueryHelpers.ParseQuery(location.Query);
-        return new Callback(query["code"]!, query["state"]!, authorization.Transaction);
-    }
-
-    private sealed record SsoAuthorization(Uri AuthorizationUrl, string Transaction);
-
-    private sealed record Callback(string Code, string State, string Transaction);
+    private Task<Callback> AuthorizeAsync(HttpClient client, string subject) => SsoBrowser.AuthorizeAsync(client, host.IdentityProvider, subject);
 }
