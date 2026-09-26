@@ -43,7 +43,7 @@
 
 | Table | Rows | Content | Source |
 | --- | --- | --- | --- |
-| `identity_access.user` | 1 | `svc.platform-seed`, the SERVICE principal every seeded row is attributed to (ERD D-2). No role, no directory subject, address in `.invalid` | ERD `user.user_type` |
+| `identity_access.user` | 2 | `svc.platform-seed`, the SERVICE principal every seeded row is attributed to (ERD D-2); `svc.directory-sync`, the SERVICE principal a directory-sourced change to a user's department, manager or job title is attributed to (TASK-028, ADR-007). No role, no directory subject, address in `.invalid` | ERD `user.user_type` |
 | `identity_access.role` | 8 | R01–R08, `is_system`; R04 and R08 `is_external_eligible` | ERD F-080; ADR-013. Labels provisional (F-1) |
 | `identity_access.permission_profile` | 8 | `R0n-DEFAULT`, `is_shipped_default` | ADR-018, TASK-110 |
 | `identity_access.permission_profile_version` | 8 | Version 1 of each, PUBLISHED, no grants | ADR-018 |

@@ -48,8 +48,9 @@ takes ten minutes to rewrite does not do that.
 | `postgres` | `postgres:17` — the major version of every environment (ADR-002 §4.1; fallback 16 fixed at TASK-020) | `5432` | `pg_isready` |
 | `api` | built from `infra/docker/api.Dockerfile` — SDK 10.0 publish stage, `aspnet:10.0` runtime stage, non-root `app` user | `5080` → 8080 (5080 matches `launchSettings.json`) | `curl --fail /health` |
 | `frontend` | built from `infra/docker/frontend.Dockerfile` — `node:24-slim`, Vite dev server with `src/frontend` bind-mounted | `5173` | `fetch('/')` |
+| `ldap` (TASK-028) | built from `infra/docker/ldap/Dockerfile` — `alpine:3.22` OpenLDAP, the test directory the API signs people in against (`sso-directory-integration.md` §6) | `3389` → 389 | `ldapwhoami` as the service account |
 
-The compose project is **`ahda`**, and the three containers are `AHDA-postgres`, `AHDA-api` and `AHDA-frontend`,
+The compose project is **`ahda`**, and the containers are `AHDA-postgres`, `AHDA-api`, `AHDA-frontend` and, since TASK-028, `AHDA-ldap`,
 so the stack is identifiable as AHDA in `docker ps` and in any Docker UI. Compose rejects an uppercase project
 name (`must consist only of lowercase alphanumeric characters...`), which is why the project itself is lowercase
 while the container names — which carry no such restriction — are not. The project name also prefixes the
@@ -84,9 +85,10 @@ external-entity type — the platform seed does.
 
 Three decisions inside that:
 
-- **The users are data, not accounts.** They carry no credential of any kind. Sign-in is SSO (ADR-007) and a local
-  sign-in path is TASK-028's test directory; until then these rows are what a developer's queries, fixtures and
-  authorization tests point at. `pmplatform.local` addresses are unroutable by construction.
+- **The users are data, not accounts.** They carry no credential of any kind. Since TASK-028 each signs in against the
+  test directory `AHDA-ldap`, which holds the (local default) password and links the person to the row by
+  `directory_subject_id` = entryUUID: `POST /api/v1/sessions` with `local.r01` … `local.r08`. `pmplatform.local`
+  addresses are unroutable by construction.
 - **Assignments bind to a profile version, not to a role** (ADR-018). Binding the seed directly to `role.id` would
   have been shorter and would have modelled the thing ADR-018 replaced.
 - **No permission grants.** `permission_profile_grant` needs the protected permission catalogue, which is
@@ -169,8 +171,8 @@ identically on both.
 | --- | --- | --- |
 | **F-1** | **Role labels are provisional.** The Blueprint's Appendix A role list is not in the repository, so `name_ar`/`name_en` for R01–R08 follow the dashboard inventory DSH-001–008 and the two roles the workbook names outright (R01 System Administrator, R04 Project Manager). The codes R01–R08 are canonical and nothing keys on a label, so the correction is a label update. | TASK-027, from the controlled source |
 | **F-2** | **CLOSED by TASK-025 (2026-09-25):** `01-schema.sql` and `local-stack-check.py` deleted; compose migrates, then seeds (§3.2); see `core-platform-schema.md` §7. Original finding: **The bridge schema must be deleted, not migrated.** `01-schema.sql` exists only because no migration creates its nine tables yet. TASK-024 built the migration framework and the module schemas; the tables are TASK-025's. When TASK-025 lands, delete the file, run the API image's `migrate` command in compose (`database-migrations.md` §3), and keep `02-`/`03-` as DML. Leaving it would give the local stack a second schema definition — exactly the drift `local-stack-check.py` exists to detect in the meantime. | TASK-025 (handed over by TASK-024, 2026-09-25) |
-| **F-3** | `JWT_SIGNING_KEY` is supplied to the API and read by nothing: no code issues a token yet. It is set now because the workbook's TASK-014 row names it and because the variable must be present the day TASK-028 starts. | TASK-028 |
-| **F-4** | **The seeded users cannot sign in**, by design (§3.2). A developer testing an authenticated path before TASK-028 needs a local token-issuing stub; that stub is TASK-028/TASK-029 scope and must never ship outside `Development`. | TASK-028 |
+| **F-3** | **CLOSED by TASK-028 (2026-09-26):** the API signs and validates its session tokens with it. Original finding: `JWT_SIGNING_KEY` is supplied to the API and read by nothing: no code issues a token yet. It is set now because the workbook's TASK-014 row names it and because the variable must be present the day TASK-028 starts. | TASK-028 |
+| **F-4** | **CLOSED by TASK-028 (2026-09-26):** the seeded users sign in against `AHDA-ldap` through the same directory path as every environment; no token-issuing stub was needed. Original finding: **The seeded users cannot sign in**, by design (§3.2). A developer testing an authenticated path before TASK-028 needs a local token-issuing stub; that stub is TASK-028/TASK-029 scope and must never ship outside `Development`. | TASK-028 |
 | **F-5** | The shipped-default profile versions carry **no permission grants** — the catalogue is TASK-030/TASK-110's. An authorization test written against this seed today asserts on role identity only. | TASK-030, TASK-110 |
 | **F-6** | **Docker Desktop verified; Linux Docker Engine not.** The stack was first built against podman, then re-run unchanged on Docker Desktop 4.92 for macOS (check 1b) — same result, no file changed. Windows (WSL2) and Linux Docker Engine are still unverified; the `src/frontend` bind mount and the `postgres` init-script mount are where a platform difference would show. Run `infra/docker/smoke-test.sh` once on each before the onboarding claim is made unconditionally. | DevOps/Platform Lead, before TASK-015 |
 | **F-7** | `local-stack-check.py` is run by hand, like `erd-check.py`, `contract-check.py` and `env-template-check.py`. Wiring the four into CI is TASK-015's gate scope. | TASK-015 (see TASK-013 F-7) |
@@ -181,6 +183,7 @@ identically on both.
 
 | Date | Change | Author |
 | --- | --- | --- |
+| 2026-09-26 | TASK-028 adds the `ldap` service (`AHDA-ldap`), the test directory; the API waits for it and is configured for it (`AD_*`, `Identity__Directory__*`). The local users gain `directory_subject_id` = their entryUUID there, and `DEPT-LOCAL` its `directory_reference`. Closes F-3 and F-4. `smoke-test.sh` after `up --build`: healthy in 14s, one active user per R01–R08; `local.r01` signs in over HTTP with R01 (`sso-directory-integration.md` §7). | Identity (TASK-028) |
 | 2026-09-26 | TASK-027 replaces the interim roles script with the platform seed `db/seed/seed-master-data.sql`, renames the local-users script to `seed/seed-local-users.sql` (it now relies on the platform seed for the SERVICE principal and the external-entity type), and ends the `seed` service with `db/seed/validate-data-integrity.sql`, all in one transaction. Run twice on the existing local volume: exit 0 both times, no violation; `verify-seed.sql` still finds one active user per R01–R08 (`seed-data-and-integrity.md` §5). | Database (TASK-027) |
 | 2026-09-25 | TASK-025 closes F-2. Bridge schema and `local-stack-check.py` (check 3, and its CI step) deleted; the migrated schema is compared with `erd.dbml` by `CoreSchemaTests` instead. Compose gains the one-shot `migrate` and `seed` services; the seed scripts move to `postgres/seed`. The API's `DB_CONNECTION_STRING` host goes back to `postgres`, the service name. `smoke-test.sh` from a reset volume: healthy in 14s, `/health` 200, one user per R01–R08. | Database (TASK-025) |
 | 2026-09-25 | F-2 and the `01-schema.sql` row handed from TASK-023/TASK-024 to TASK-025. TASK-024 created the module schemas but none of the nine bridged tables, so the bridge stays until TASK-025 migrates them. | Database (TASK-024) |

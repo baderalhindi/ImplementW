@@ -1,9 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Integration tests against the containerised stack (TASK-014, TASK-015). No tests yet. -->
+  <!-- Integration tests against real servers: PostgreSQL (TASK-024 onward) and the test directory AHDA-ldap (TASK-028). -->
   <ItemGroup>
     <ProjectReference Include="../PMPlatform.Api/PMPlatform.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- TASK-028: the API is hosted in-process (WebApplicationFactory) and so is the test OIDC identity provider. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />

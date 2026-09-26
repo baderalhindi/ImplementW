@@ -38,6 +38,9 @@ public sealed class SecretStoreOptions
     /// <summary>Per-request timeout against the store.</summary>
     public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(10);
 
-    /// <summary>The variables to load. Defaults to what the application reads today.</summary>
+    /// <summary>The variables to load; each must hold a value at start-up. Defaults to what the application reads today.</summary>
     public IReadOnlyList<string> Keys { get; init; } = ApplicationSecrets.Keys;
+
+    /// <summary>The variables to load when they hold a value; an absent one is left unset.</summary>
+    public IReadOnlyList<string> OptionalKeys { get; init; } = ApplicationSecrets.OptionalKeys;
 }
