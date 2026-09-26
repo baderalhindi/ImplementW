@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PMPlatform.Infrastructure.Persistence;
@@ -12,9 +13,11 @@ using PMPlatform.Infrastructure.Persistence;
 namespace PMPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PMPlatformDbContext))]
-    partial class PMPlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926073236_TASK-026_AddMasterDataConfigListIndexes")]
+    partial class TASK026_AddMasterDataConfigListIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2527,6 +2530,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("ClassificationItemId")
                         .HasDatabaseName("ix_project_classification_item_id");
 
+                    b.HasIndex("DepartmentId")
+                        .HasDatabaseName("ix_project_department_id");
+
+                    b.HasIndex("ExternalEntityId")
+                        .HasDatabaseName("ix_project_external_entity_id");
+
                     b.HasIndex("FormalProjectId")
                         .IsUnique()
                         .HasDatabaseName("ix_project_formal_project_id");
@@ -2534,23 +2543,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("GovernanceProfileItemId")
                         .HasDatabaseName("ix_project_governance_profile_item_id");
 
+                    b.HasIndex("ProjectManagerUserId")
+                        .HasDatabaseName("ix_project_project_manager_user_id");
+
                     b.HasIndex("RegionItemId")
                         .HasDatabaseName("ix_project_region_item_id");
-
-                    b.HasIndex("UpdatedAt", "Id")
-                        .HasDatabaseName("ix_project_updated_at_id");
-
-                    b.HasIndex("DepartmentId", "UpdatedAt", "Id")
-                        .HasDatabaseName("ix_project_department_id_updated_at_id");
-
-                    b.HasIndex("ExternalEntityId", "UpdatedAt", "Id")
-                        .HasDatabaseName("ix_project_external_entity_id_updated_at_id");
-
-                    b.HasIndex("LifecycleState", "UpdatedAt", "Id")
-                        .HasDatabaseName("ix_project_lifecycle_state_updated_at_id");
-
-                    b.HasIndex("ProjectManagerUserId", "UpdatedAt", "Id")
-                        .HasDatabaseName("ix_project_project_manager_user_id_updated_at_id");
 
                     b.ToTable("project", "project", t =>
                         {

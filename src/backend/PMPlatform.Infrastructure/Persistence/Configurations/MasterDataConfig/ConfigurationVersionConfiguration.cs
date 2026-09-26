@@ -14,5 +14,10 @@ internal sealed class ConfigurationVersionConfiguration : IEntityTypeConfigurati
         builder.HasGovernedLifecycle();
 
         builder.HasOne<ConfigurationFamily>().WithMany().HasForeignKey(e => e.ConfigurationFamilyId).OnDelete(DeleteBehavior.Restrict);
+
+        // TASK-026 (indexing-strategy.md I-10): TASK-034's as-of resolution, the latest PUBLISHED version of a family
+        // effective at a date. The default name is longer than PostgreSQL's 63 characters.
+        builder.HasIndex(e => new { e.ConfigurationFamilyId, e.LifecycleState, e.EffectiveFrom })
+            .HasDatabaseName("ix_configuration_version_family_state_effective_from");
     }
 }

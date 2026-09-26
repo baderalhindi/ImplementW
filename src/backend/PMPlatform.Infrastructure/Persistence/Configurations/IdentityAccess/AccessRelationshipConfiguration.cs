@@ -17,5 +17,10 @@ internal sealed class AccessRelationshipConfiguration : IEntityTypeConfiguration
         builder.HasOne<ExternalEntity>().WithMany().HasForeignKey(e => e.ExternalEntityId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.SponsorUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<ProjectEntity>().WithMany().HasForeignKey(e => e.ProjectId).OnDelete(DeleteBehavior.Restrict);
+
+        // TASK-026 (indexing-strategy.md I-06, I-07): a user's active grants, read on every authorised request, and a
+        // project's active grants, ended on closure. Each leads with its foreign key and replaces its single-column index.
+        builder.HasIndex(e => new { e.UserId, e.Status });
+        builder.HasIndex(e => new { e.ProjectId, e.Status });
     }
 }
