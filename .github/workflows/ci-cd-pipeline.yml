@@ -258,7 +258,8 @@ jobs:
           echo "signed $IMAGE_DIGEST and attested its SBOM" >>"$GITHUB_STEP_SUMMARY"
 
   # CTL-40's "failed migration dry-run blocks promotion". Runs against a scratch database, so it is
-  # independent of every environment and of whether any environment exists.
+  # independent of every environment and of whether any environment exists. The seed and the data-integrity
+  # check run on the result (TASK-027), so a seed that fails or a violation also blocks promotion.
   migration-dry-run:
     name: migration-dry-run
     runs-on: ubuntu-latest
@@ -297,6 +298,14 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:scratch@localhost:5432/scratch
         run: .github/scripts/migration-dry-run.sh
+
+      # TASK-027: the post-migration step every deployment runs (seed, then validate-data-integrity), on the database
+      # just migrated, with a second seed run in between that must change nothing.
+      - name: Seed and validate data integrity
+        env:
+          DATABASE_URL: postgres://postgres:scratch@localhost:5432/scratch
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=scratch;Username=postgres;Password=scratch
+        run: .github/scripts/seed-dry-run.sh
 
   # ── Stage 3 to 6: the promotion path ──────────────────────────────────────────────────────────
   # G-1, automatic. Every gate the workbook names is a `needs` of this job, so a red gate skips DEV

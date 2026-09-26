@@ -68,10 +68,13 @@ bind mount cannot drag a host `node_modules` — built on a different platform �
 
 TASK-014's criterion is "seeded data includes at least one user per role R01-R08". Since TASK-025 the schema comes
 from the EF Core migrations: compose's one-shot `migrate` service runs the API image's `migrate` command once
-`postgres` is healthy, then the one-shot `seed` service runs the two scripts in `infra/docker/postgres/seed` with
-`psql`, and only then does `api` start. Both one-shots exit 0 on every `up` (the migrations are already applied; the
-seed is idempotent). The table below is the original TASK-014 layout; `01-schema.sql` is deleted and the two seed
-scripts are now `seed/01-seed-roles.sql` and `seed/02-seed-local-users.sql`, unchanged apart from their headers.
+`postgres` is healthy, then the one-shot `seed` service runs, with `psql` in one transaction, TASK-027's platform
+seed `db/seed/seed-master-data.sql`, the local users `infra/docker/postgres/seed/seed-local-users.sql` and TASK-027's
+`db/seed/validate-data-integrity.sql`; only then does `api` start. Both one-shots exit 0 on every `up` (the migrations
+are already applied; the seeds are idempotent). The table below is the original TASK-014 layout: `01-schema.sql` is
+deleted (TASK-025), `02-seed-roles.sql` is replaced by `db/seed/seed-master-data.sql` (TASK-027), and
+`03-seed-local-users.sql` is now `seed/seed-local-users.sql`, which no longer creates the SERVICE principal or the
+external-entity type — the platform seed does.
 
 | Script | What it does | Whose job it really is |
 | --- | --- | --- |
@@ -178,6 +181,7 @@ identically on both.
 
 | Date | Change | Author |
 | --- | --- | --- |
+| 2026-09-26 | TASK-027 replaces the interim roles script with the platform seed `db/seed/seed-master-data.sql`, renames the local-users script to `seed/seed-local-users.sql` (it now relies on the platform seed for the SERVICE principal and the external-entity type), and ends the `seed` service with `db/seed/validate-data-integrity.sql`, all in one transaction. Run twice on the existing local volume: exit 0 both times, no violation; `verify-seed.sql` still finds one active user per R01–R08 (`seed-data-and-integrity.md` §5). | Database (TASK-027) |
 | 2026-09-25 | TASK-025 closes F-2. Bridge schema and `local-stack-check.py` (check 3, and its CI step) deleted; the migrated schema is compared with `erd.dbml` by `CoreSchemaTests` instead. Compose gains the one-shot `migrate` and `seed` services; the seed scripts move to `postgres/seed`. The API's `DB_CONNECTION_STRING` host goes back to `postgres`, the service name. `smoke-test.sh` from a reset volume: healthy in 14s, `/health` 200, one user per R01–R08. | Database (TASK-025) |
 | 2026-09-25 | F-2 and the `01-schema.sql` row handed from TASK-023/TASK-024 to TASK-025. TASK-024 created the module schemas but none of the nine bridged tables, so the bridge stays until TASK-025 migrates them. | Database (TASK-024) |
 | 2026-09-22 | Re-run unchanged on Docker Desktop 4.92 (check 1b): healthy in 52s, all checks green. F-6 narrowed to Windows and Linux Docker Engine. Cold-build reading of criterion 1 stated explicitly (§5). | Architecture (TASK-014) |

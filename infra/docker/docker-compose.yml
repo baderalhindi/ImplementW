@@ -12,7 +12,8 @@
 # stack can satisfy; the rest stay unset and the API starts without them.
 #
 # Start-up order: postgres healthy → migrate (the API image's `migrate` command applies every EF Core migration and
-# exits) → seed (idempotent SQL in ./postgres/seed) → api. migrate and seed are one-shot containers that exit 0.
+# exits) → seed (db/seed's platform seed, the local users in ./postgres/seed, then db/seed's data-integrity check;
+# all idempotent) → api. migrate and seed are one-shot containers that exit 0.
 #
 # Record: docs/architecture/local-development-environment.md
 
@@ -57,7 +58,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       DB_CONNECTION_STRING: *database-connection
 
-  # Roles R01–R08 and one local user per role (TASK-014), after the tables exist. Idempotent, so it runs on every up.
+  # The platform seed (roles R01–R08 and master data, TASK-027), one local user per role (TASK-014), then the
+  # data-integrity check, in one transaction after the tables exist: a violation fails `up` and leaves nothing written.
+  # Idempotent, so it runs on every up.
   seed:
     container_name: AHDA-seed
     image: postgres:17
@@ -70,8 +73,10 @@ services:
       PGPASSWORD: pmplatform # local default; never a real credential
       PGDATABASE: pmplatform
     volumes:
+      - ../../db/seed:/db-seed:ro
       - ./postgres/seed:/seed:ro
-    entrypoint: ["psql", "--no-psqlrc", "--quiet", "--set=ON_ERROR_STOP=1", "--file=/seed/01-seed-roles.sql", "--file=/seed/02-seed-local-users.sql"]
+    entrypoint: ["psql", "--no-psqlrc", "--quiet", "--set=ON_ERROR_STOP=1", "--single-transaction",
+                 "--file=/db-seed/seed-master-data.sql", "--file=/seed/seed-local-users.sql", "--file=/db-seed/validate-data-integrity.sql"]
 
   api:
     container_name: AHDA-api

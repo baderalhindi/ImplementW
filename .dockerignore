@@ -4,6 +4,8 @@
 # The analyzer and code-style configuration, so the image compiles under the same rules as CI (TASK-024).
 !.editorconfig
 !src/backend/
+# The seed and data-integrity scripts, embedded in the API image (TASK-027).
+!db/seed/
 !src/frontend/
 src/backend/**/bin/
 src/backend/**/obj/

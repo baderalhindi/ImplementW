@@ -114,9 +114,12 @@ docker network create "$source_network" >/dev/null
 docker run -d --name "$source_db" --network "$source_network" \
   -e POSTGRES_DB=pmplatform -e POSTGRES_USER=pmplatform -e POSTGRES_PASSWORD="$password" postgres:17 >/dev/null
 wait_ready "$source_db"
-docker run --rm --network "$source_network" -e ASPNETCORE_ENVIRONMENT=Development \
-  -e DB_CONNECTION_STRING="Host=$source_db;Port=5432;Database=pmplatform;Username=pmplatform;Password=$password" \
-  "$image" migrate >/dev/null
+# The schema and the platform seed (db/seed, TASK-027), as each environment gets them.
+for command in migrate seed; do
+  docker run --rm --network "$source_network" -e ASPNETCORE_ENVIRONMENT=Development \
+    -e DB_CONNECTION_STRING="Host=$source_db;Port=5432;Database=pmplatform;Username=pmplatform;Password=$password" \
+    "$image" "$command" >/dev/null
+done
 for seed in "$repository"/infra/docker/postgres/seed/*.sql; do
   docker exec -i "$source_db" psql -h 127.0.0.1 -U pmplatform -d pmplatform -X -q -v ON_ERROR_STOP=1 <"$seed" >/dev/null
 done

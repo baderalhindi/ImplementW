@@ -145,5 +145,6 @@ The probe migrations were deleted after the run. None is committed.
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-26 | TASK-027 gives the release image two more commands beside `migrate`: `seed` and `validate-data-integrity`, which run `db/seed/*.sql` embedded in Infrastructure (`Persistence/DatabaseScripts.cs`). Each environment runs them as executions of the same migration job after `migrate` (`seed-data-and-integrity.md` §2). | Database (TASK-027) |
 | 2026-09-25 | TASK-025 adds the first tables through this framework: four single-schema migrations (`core-platform-schema.md` §2). F-3 closed: the bridge schema is deleted and compose migrates. `TheLastThreeMigrationsRollBackAndReapplyInOneStepEach` now exercises three real migrations. | Database (TASK-025) |
 | 2026-09-25 | Initial record. EF Core 10 migrations with one context and one history in `common` (D-1 to D-4); `migrate` command and Cloud Run job (D-5); baseline `TASK-024_CreateModuleSchemas` (D-6); rollback tests in `backend` (D-7); forward-only check in `repo-checks` (D-8); authoring guide. Verified locally (§4), five mutation groups (§4.1). Bridge-schema deletion handed to TASK-025. `api.Dockerfile` and `.dockerignore` now include `.editorconfig` (F-6). | Database (TASK-024) |

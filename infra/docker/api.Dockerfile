@@ -15,6 +15,8 @@ COPY src/backend/PMPlatform.Infrastructure/PMPlatform.Infrastructure.csproj src/
 COPY src/backend/PMPlatform.Api/PMPlatform.Api.csproj src/backend/PMPlatform.Api/
 RUN dotnet restore src/backend/PMPlatform.Api/PMPlatform.Api.csproj
 COPY src/backend/ src/backend/
+# TASK-027: the seed and data-integrity scripts are embedded in PMPlatform.Infrastructure (`seed`, `validate-data-integrity`).
+COPY db/seed/ db/seed/
 RUN dotnet publish src/backend/PMPlatform.Api/PMPlatform.Api.csproj --configuration Release --no-restore --output /app
 
 # Stage 2: runtime only. curl is installed for the compose health check; the image otherwise ships nothing but the

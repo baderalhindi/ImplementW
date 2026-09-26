@@ -4,7 +4,7 @@
 #   docs/operations/rehearse-restore.sh
 #
 # What it does. It starts a SOURCE PostgreSQL 17, applies the EF Core migrations with the API image's
-# `migrate` command and loads the local seed (infra/docker/postgres/seed), adds a fixture
+# `migrate` and `seed` commands, loads the local users (infra/docker/postgres/seed), adds a fixture
 # (a hash-chained audit_activity.audit_event, a 200,000-row table with a sequence and an index), and
 # fingerprints it. It then takes the two kinds of backup the runbook restores from and restores each
 # into its own isolated server, timing both:
@@ -75,9 +75,12 @@ docker run -d --name "$source_container" --network "$network" -p 127.0.0.1::5432
   -e POSTGRES_DB=pmplatform -e POSTGRES_USER=pmplatform -e POSTGRES_PASSWORD=pmplatform \
   postgres:17 >/dev/null
 wait_ready "$source_container"
-docker run --rm --network "$network" -e ASPNETCORE_ENVIRONMENT=Development \
-  -e DB_CONNECTION_STRING="Host=$source_container;Port=5432;Database=pmplatform;Username=pmplatform;Password=pmplatform" \
-  "$image" migrate >/dev/null
+# The schema and the platform seed (db/seed, TASK-027), as each environment gets them.
+for command in migrate seed; do
+  docker run --rm --network "$network" -e ASPNETCORE_ENVIRONMENT=Development \
+    -e DB_CONNECTION_STRING="Host=$source_container;Port=5432;Database=pmplatform;Username=pmplatform;Password=pmplatform" \
+    "$image" "$command" >/dev/null
+done
 for seed in "$repository"/infra/docker/postgres/seed/*.sql; do
   docker exec -i "$source_container" psql -h 127.0.0.1 -U pmplatform -d pmplatform -X -q -v ON_ERROR_STOP=1 <"$seed" >/dev/null
 done
