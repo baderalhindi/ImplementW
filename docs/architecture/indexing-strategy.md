@@ -5,9 +5,9 @@
 | Task | TASK-026 — Define Indexing Strategy for Query, Filter, Sort & Pagination Paths (P4 - Database Foundation) |
 | Depends on | TASK-025 — Implement Core Platform Schema (`core-platform-schema.md`) |
 | Record date | 2026-09-26 |
-| Status | **BUILT AND VERIFIED LOCALLY** on PostgreSQL 17 for the 34 core tables. The 43 index rows for tables of later modules are **SPECIFIED**: each module's migration builds them, and a test fails until it does (§6) |
+| Status | **BUILT AND VERIFIED LOCALLY** on PostgreSQL 17 for the 34 core tables. The 44 index rows for tables of later modules are **SPECIFIED**: each module's migration builds them, and a test fails until it does (§6) |
 | Branch | `feat/task-026-indexing-strategy` |
-| Deliverables | Three migrations in `src/backend/PMPlatform.Infrastructure/Persistence/Migrations`; the index declarations in `Persistence/Configurations`; `IndexingStrategyTests` and `RegisterQueryPlanTests` in `PMPlatform.Tests.Integration/Persistence`; this record |
+| Deliverables | Three migrations in `src/backend/PMPlatform.Infrastructure/Persistence/Migrations`; the index declarations in `Persistence/Configurations`; `IndexingStrategyTests` and `RegisterQueryPlanTests` in `PMPlatform.Tests.Integration/Persistence`; the latency baseline `register-query-baseline.csv`; this record |
 | Workbook read | Google Sheet "Implementation work" (ID `1JQdbw-S9wAS247cP3PpSCme_D2NAPVnWzhXhvvxrtl0`), Implementation Plan rows TASK-026 and every row that names an SCR- screen, as read 2026-09-26 |
 
 ## 1. Scope and sources
@@ -25,7 +25,7 @@ The workbook row asks for indexes designed from the Blueprint screen inventory (
 | --- | --- | --- |
 | **In** | Indexes on the 34 tables that exist (`identity_access`, `master_data_config`, `project`), built by the migrations of §2 | This task |
 | **In** | The index register for the tables of later modules (§4), which their migrations must build | This task specifies; §4 names each table's task |
-| **In** | Query-plan review of the five busiest register screens at representative volume (§5) | This task |
+| **In** | Query-plan review at representative volume: every register screen's default query, with the five busiest as the acceptance criterion, and a latency baseline (§5) | This task |
 | **Out** | Creating tables of other modules. A migration touches only its own module's schema (`Migrations/README.md` R-7) | Module tasks |
 | **Out** | Worker and job queries (notification retry, outbox dispatch, projection rebuild). They are not screens; their owners index them | TASK-039, TASK-069, TASK-075 |
 | **Out** | Free-text search indexes (trigram, full-text) | Not needed at this volume (P-7) |
@@ -57,7 +57,7 @@ The indexes are created in the migration's transaction, not `CONCURRENTLY`. The 
 | **P-5** | **Equality columns first, then the range or sort columns** (`status` before `due_at`; `recipient_user_id, channel` before `created_at`) | A B-tree range is only contiguous after its equality prefix |
 | **P-6** | **`totalCount` (R-29) is an index-only scan**: of the page's own index when the query filters, of the smallest index covering every row when it does not. That needs a current visibility map, which autovacuum maintains at these write rates | The count never reads the table heap |
 | **P-7** | **Not used: partial, expression, trigram or full-text indexes.** Free-text `q` (R-31) is applied as a filter within the index-narrowed scope. At 3,000 projects and 45,000 risks that is expected to take a few milliseconds (not measured; F-4). Revisit when a `q` query on a register exceeds 100 ms at production volume (F-4) | Each index type added is a maintenance and migration-review cost; none is needed at this scale |
-| **P-8** | **Small reference sets get no list index.** Departments (tens), external entities (tens), roles (8), permissions, permission profiles and versions, catalogues, configuration families, and the per-version rule tables (reached through their `configuration_version_id` unique key). Each is a closed set of a few pages, unpaged under R-28, and a sequential scan of a few pages is the correct plan | An index on a two-page table is never used; it only costs writes |
+| **P-8** | **Small reference sets get no list index.** Departments (tens), external entities (tens), roles (8), permissions, permission profiles and versions, catalogues, configuration families, and the per-version rule tables (reached through their `configuration_version_id` unique key). Each is a closed set of a few pages, unpaged under R-28, and a sequential scan of a few pages is the correct plan. The plan review draws the line at 16 pages (128 KB) | An index on a two-page table is never used; it only costs writes |
 
 ## 4. The index register
 
@@ -104,6 +104,7 @@ Each row is one index, by its key columns. **`IndexingStrategyTests` reads this 
 | I-28 | `change_request.change_request` | `status, updated_at, id` | SCR-105 `status` filter | TASK-060 |
 | I-29 | `suspension.suspension_request` | `project_id, updated_at, id` | SCR-108 Suspension Requests, project-scoped | TASK-062 |
 | I-30 | `suspension.suspension_request` | `status, updated_at, id` | SCR-108 under ALL scope with a `status` filter | TASK-062 |
+| I-54 | `suspension.suspension_request` | `updated_at, id` | SCR-108 under ALL scope: default page. Added after the validation run found SCR-108 sorted in memory without it (§5.4) | TASK-062 |
 | I-31 | `document_management.document` | `project_id, updated_at, id` | SCR-121 Project Documents; SCR-120 Library under project scope | TASK-037 |
 | I-32 | `document_management.document` | `updated_at, id` | SCR-120 Library under ALL scope; SCR-122 Recent Documents | TASK-037 |
 | I-33 | `project_task.project_task` | `assignee_user_id, status, planned_finish_date` | SCR-063 My Tasks; SCR-065 Overdue and SCR-066 Updates Required for the caller | TASK-048 |
@@ -151,6 +152,8 @@ Every other SCR- screen named in the workbook is either not a list or is served 
 
 ## 5. Query-plan review
 
+The workbook's validation cell asks for representative seed volume, then `EXPLAIN ANALYZE` of each register screen's default query, confirmation that an index is used, and a recorded baseline latency for regression tracking. The acceptance criterion asks, more narrowly, for no full table scan on the five busiest register screens. `RegisterQueryPlanTests` does both in one run: **74 default queries across every register screen of §4**, of which 26 belong to the five busiest.
+
 ### 5.1 The five busiest register screens
 
 | # | Screen | Why it is among the busiest | Table |
@@ -165,63 +168,107 @@ Traffic is ranked by who opens a screen and how often, not by measurement: no en
 
 ### 5.2 Method and volume
 
-`RegisterQueryPlanTests` runs the review on a throwaway database with every migration applied. Only the volume below differs from a fresh migration. SCR-025 runs on the real `project` table. The other four tables belong to modules not yet built, so each runs on an **ERD-shaped stand-in** in schema `plan_review`. A stand-in has:
+The review runs on a throwaway database with every migration applied; only the volume below is added. The core tables are real. The registers of later modules run on **ERD-shaped stand-ins** in schema `plan_review`, one per table. A stand-in has:
 - the table's columns, types, nullability, primary key and unique keys, generated from `erd.dbml`;
 - its rows from §4.2;
 - an index on every foreign-key column that no other index leads with (P-1).
 
-That is what the module's migration must produce, so the plan is the one the real table will have. Once the module is built, `EverySpecifiedIndexIsBuiltWithItsTable` holds its real table to the same rows.
+That is what the module's migration must produce, so the plan is the one the real table will have. Once the module is built, `EverySpecifiedIndexIsBuiltWithItsTable` holds its real table to the same rows. Each stand-in column gets a value of its ERD type. The columns a register filters or sorts on get the distributions below, placed by a stable hash of the row number, so every run loads the same rows and chooses the same plans. Three runs gave identical plans for all 74 queries. `VACUUM ANALYZE` runs before the review, as autovacuum would in service.
 
 | Table | Rows | Basis (A-2) |
 | --- | --- | --- |
-| `identity_access.user` | 151 | 150 named users (brief; PTBC-043, working baseline) and the service principal |
+| `identity_access.user` | 151 | 150 named users (brief; PTBC-043, working baseline) and the service principal; one in fifteen DISABLED |
 | `identity_access.department` / `external_entity` | 13 / 40 | Assumed |
+| `identity_access.access_relationship` | 600 | Four grants per user over time, two ACTIVE |
+| `master_data_config.master_data_item` / `configuration_version` | 601 / 91 | 30 catalogues of 20 items; 15 families of 6 versions |
 | `project.project` | 3,000 | 20 per named user, as in TASK-025's EXPLAIN validation; 250 per department, 20 per manager, every second one entity-delivered, nine lifecycle states |
-| `risk.risk` | 45,000 | 15 per project; a third CLOSED |
-| `management_concern.management_concern` | 24,000 | 6 issues and 2 challenges per project |
-| `approval.approval_task` | 60,000 | 10 approvals per project over its life, 2 stages each; 300 personal and 300 role-queue tasks PENDING |
-| `notifications.notification_delivery` | 400,000 | 2,000 in-app notifications per user over two years (about 3 a working day), 10 unread; an e-mail copy of every third |
+| `risk.risk` / `risk_assessment_version` | 45,000 / 90,000 | 15 risks per project, a third CLOSED; two assessments each, one in twenty rated critical |
+| `management_concern.management_concern` / `concern_escalation` | 24,000 / 2,400 | 8 per project, a quarter challenges; one escalation per ten, a fifth OPEN |
+| `approval.approval_task` / `approval_instance` / `approval_delegation` | 60,000 / 30,000 / 300 | 10 approvals per project, 2 stages each; one task in a hundred PENDING, half of those in a role queue |
+| `change_request.change_request` / `suspension.suspension_request` | 9,000 / 600 | 3 change requests per project; one suspension or resumption per five projects |
+| `document_management.document` | 60,000 | 20 per project |
+| `project_task.project_task` / `schedule.project_milestone` | 150,000 / 24,000 | 50 tasks and 8 milestones per project |
+| `progress.progress_submission`, `published_progress_snapshot`, `financial_kpi.financial_progress_update`, `published_financial_snapshot` | 72,000 each | Monthly for two years per project |
+| `financial_kpi.kpi_assignment` / `kpi_measurement` | 15,000 / 180,000 | 5 KPIs per project, 12 monthly measurements each |
+| `external_participation.external_update_request` / `external_contribution` / `source_application` | 12,000 / 24,000 / 12,000 | 4 requests per project, 2 contributions per request |
+| `notifications.notification_delivery` | 400,000 | 2,667 per user over two years, two in three in-app; the newest 1,000 in-app unread |
+| `audit_activity.business_activity_entry` / `audit_event` | 300,000 each | 100 per project |
+| `reports.report_job` / `saved_view` | 15,000 / 1,500 | 100 exports and 10 saved views per user |
 
-The volumes are deliberately generous. A table that is too small makes the planner choose a sequential scan, which would be correct for that size and would test nothing. Timestamps are spread over two years by a fixed permutation, so every run loads the same rows and chooses the same plans. `VACUUM ANALYZE` runs before the review, as autovacuum would in service.
+The volumes are deliberately generous. A table that is too small makes the planner choose a sequential scan, which would be correct for that size and would test nothing.
 
-The scopes tested are those that reach each screen: ALL (a portfolio user), DEPT (a department manager with 250 projects), OWN (a project manager with 20). DEPT reaches a child register through its project (P-4).
+The scopes tested are those that reach each screen: ALL (a portfolio user), DEPT (a department manager with 250 projects), ENTITY (an entity with 75 projects), OWN (a project manager with 20), and the caller's own queue for personal registers. DEPT reaches a child register through its project (P-4).
 
-### 5.3 Result
+**What each query must show.** No sequential scan of a table larger than 16 pages (128 KB). A table that small is read whole faster than through any index, which is P-8, so reading it whole is the right plan. The plan must use an index unless it reads only such a small table. Execution must take under 50 ms, a ceiling that only a lost index path breaks. Exactly one query is exempt from the scan rule, SCR-081's count (§5.4, F-3), and the test fails if that exemption stops being needed.
 
-**22 of 22 default queries contain no sequential scan.** Execution times are from one local run on PostgreSQL 17.11 (`AHDA-postgres`, Apple Silicon, warm cache). They are the regression baseline, not a service-level figure: CI hardware and Cloud SQL differ.
+### 5.3 The five busiest: result
 
-| Screen | Query | Plan (index used) | Time (ms) |
+**26 of 26 queries contain no sequential scan.** Times are the median of three local runs on PostgreSQL 17.11 (`AHDA-postgres`, Apple Silicon, warm cache). They are the regression baseline, not a service-level figure, because CI hardware and Cloud SQL differ.
+
+| Screen | Query | Plan (index used) | Median (ms) |
 | --- | --- | --- | --- |
-| SCR-025 | ALL, page 1 | Index Scan Backward on I-01 | 0.047 |
-| SCR-025 | ALL, page 11 (`OFFSET 250`) | Index Scan Backward on I-01, 275 entries read | 0.195 |
-| SCR-025 | ALL, `totalCount` | Index Only Scan on `ix_project_region_item_id`, the smallest index covering every row | 0.204 |
-| SCR-025 | DEPT, page 1 | Index Scan Backward on I-03 | 0.044 |
-| SCR-025 | DEPT, `totalCount` | Index Only Scan on I-03 | 0.029 |
-| SCR-025 | `status=ACTIVE`, page 1 | Index Scan Backward on I-02 | 0.113 |
-| SCR-025 | `status=ACTIVE`, `totalCount` | Index Only Scan on I-02 | 0.113 |
-| SCR-026 | OWN, page 1 | Bitmap Index Scan on I-04, 20 rows, then an in-memory sort of those 20 | 0.044 |
-| SCR-080 | ALL, page 1 | Index Scan Backward on I-12 | 0.128 |
-| SCR-080 | ALL, `totalCount` | Index Only Scan on the `closed_by_user_id` foreign-key index, the smallest covering every row | 2.753 |
-| SCR-080 | DEPT, page 1 | Index Scan Backward on I-12, each row's project probed by primary key (Memoize) until 25 match | 0.892 |
-| SCR-080 | DEPT, `totalCount` | Index Only Scan on I-03, nested loop into Index Only Scan on I-11 | 1.446 |
-| SCR-083 | ALL (`concern_type=ISSUE`), page 1 | Index Scan Backward on I-17 | 0.128 |
-| SCR-083 | ALL, `totalCount` | Index Only Scan on I-17 | 1.606 |
-| SCR-083 | DEPT, page 1 | Index Scan Backward on I-17, project probed by primary key (Memoize) | 1.550 |
-| SCR-083 | DEPT, `totalCount` | Index Only Scan on I-03, nested loop into Index Only Scan on I-16 | 0.882 |
-| SCR-100 | Personal PENDING, page 1 | Bitmap Index Scan on I-22, 20 rows, sorted in memory | 0.102 |
-| SCR-100 | Personal PENDING, count | Index Only Scan on I-22 | 0.012 |
-| SCR-100 | Role queue, page 1 | Bitmap Index Scan on I-22 (`assigned_user_id IS NULL AND status = 'PENDING'`, 300 rows), role filtered, sorted | 1.004 |
-| SCR-150 | First page | Index Scan Backward on I-46 | 0.030 |
-| SCR-150 | Next page (cursor) | Index Scan Backward on I-46 from the cursor position | 0.042 |
+| SCR-025 | ALL, page 1 | Index Scan Backward on I-01 | 0.032 |
+| SCR-025 | ALL, page 11 (`OFFSET 250`) | Index Scan Backward on I-01, 275 entries read | 0.289 |
+| SCR-025 | ALL, `totalCount` | Index Only Scan on `ix_project_region_item_id`, the smallest index covering every row | 0.213 |
+| SCR-025 | DEPT, page 1 | Index Scan Backward on I-03 | 0.033 |
+| SCR-025 | DEPT, `totalCount` | Index Only Scan on I-03 | 0.038 |
+| SCR-025 | ENTITY, page 1 | Index Scan Backward on I-05 | 0.036 |
+| SCR-025 | ENTITY, `totalCount` | Index Only Scan on I-05 | 0.034 |
+| SCR-025 | `status=ACTIVE`, page 1 | Index Scan Backward on I-02 | 0.027 |
+| SCR-025 | `status=ACTIVE`, `totalCount` | Index Only Scan on I-02 | 0.151 |
+| SCR-026 | OWN, page 1 | Bitmap Index Scan on I-04, 20 rows, sorted in memory | 0.046 |
+| SCR-026 | OWN, `totalCount` | Index Only Scan on I-04 | 0.036 |
+| SCR-080 | ALL, page 1 | Index Scan Backward on I-12 | 0.042 |
+| SCR-080 | ALL, `totalCount` | Index Only Scan on the `closed_by_user_id` foreign-key index, the smallest covering every row | 2.755 |
+| SCR-080 | DEPT, page 1 | Index Scan Backward on I-12, each row's project probed by primary key (Memoize) until 25 match | 2.243 |
+| SCR-080 | DEPT, `totalCount` | Index Only Scan on I-03, nested loop into Index Only Scan on I-11 | 2.337 |
+| SCR-080 | Project workspace tab | Bitmap Index Scan on I-11, 15 rows, sorted in memory | 0.106 |
+| SCR-083 | ALL (`concern_type=ISSUE`), page 1 | Index Scan Backward on I-17 | 0.032 |
+| SCR-083 | ALL, `totalCount` | Index Only Scan on I-17 | 2.065 |
+| SCR-083 | DEPT, page 1 | Index Scan Backward on I-17, project probed by primary key (Memoize) | 0.939 |
+| SCR-083 | DEPT, `totalCount` | Index Only Scan on I-03, nested loop into Index Only Scan on I-16 | 1.687 |
+| SCR-100 | Personal PENDING, page 1 | Index Scan on I-22, in `due_at` order | 0.057 |
+| SCR-100 | Personal PENDING, count | Index Only Scan on I-22 | 0.022 |
+| SCR-100 | Role queue, page 1 | Index Scan on I-22 (`assigned_user_id IS NULL AND status = 'PENDING'`), role filtered, sorted | 1.174 |
+| SCR-150 | First page | Index Scan Backward on I-46 | 0.105 |
+| SCR-150 | Next page (cursor) | Index Scan Backward on I-46 from the cursor position | 0.102 |
 | SCR-150 | Unread badge | Index Only Scan on I-47 | 0.037 |
 
 What the plans show beyond "no sequential scan":
-- **A small matching set is fetched and sorted, not walked in order.** SCR-026 and SCR-100 match about 20 rows. The planner fetches them through the index and sorts them in memory, which is cheaper than an ordered walk at that size. It walks the index in order once the set grows.
-- **The role queue is served by I-22, not I-23.** In this data every role-queue task has no user, and `assigned_user_id IS NULL AND status = 'PENDING'` is the narrower range. I-23 is kept because the `assigned_role_id` foreign key needs a leading index anyway (P-1), and it serves the queue once assigned and unassigned PENDING tasks share a role.
-- **A DEPT page on a child register walks the ALL-scope index and probes each row's project.** One risk in twelve is in the department, so 25 matches take about 300 probes. The DEPT count goes the other way: from the department's 250 projects into I-11 or I-16. Both plans need I-11/I-16 and I-12/I-17 to exist, and mutation 3 in §6 shows what happens without I-12.
+- **A small matching set is fetched and sorted, not walked in order.** SCR-026 matches 20 rows and the project tab 15. The planner fetches them through the index and sorts them in memory, which is cheaper than an ordered walk at that size. It walks the index in order once the set grows.
+- **The role queue is served by I-22, not I-23.** In this data every role-queue task has no user, so `assigned_user_id IS NULL AND status = 'PENDING'` is the narrower range. I-23 is kept because the `assigned_role_id` foreign key needs a leading index anyway (P-1), and it serves the queue once assigned and unassigned PENDING tasks share a role.
+- **A DEPT page on a child register walks the ALL-scope index and probes each row's project.** One risk in twelve is in the department, so 25 matches take about 300 probes. The DEPT count goes the other way: from the department's 250 projects into I-11 or I-16. Both plans need I-11/I-16 and I-12/I-17, and mutation 3 in §6 shows what happens without I-12.
 
-Two scans beyond the register queries are correct and are left as they are:
-- **The FG-01 portfolio aggregate** (`SELECT lifecycle_state, count(*) FROM project GROUP BY lifecycle_state`) reads every project, because every project is in the answer. In a scratch database at the same 3,000 rows, the planner read the heap sequentially, which is cheaper than walking I-02. This query is not in `RegisterQueryPlanTests`, because it is not a register query. TASK-069 reads projections for dashboards, so it does not recur per request.
+### 5.4 Every register screen: result
+
+The 74 queries, their indexes and median times are recorded in **[`register-query-baseline.csv`](register-query-baseline.csv)**, one row per query. Across all of them:
+
+| Outcome | Queries |
+| --- | --- |
+| Served by an index, no sequential scan | 72 |
+| Sequential scan of a small table (P-8) | 1: SCR-108 `totalCount`, `suspension_request` at 600 rows is 13 pages |
+| Full scan no index can remove | 1: SCR-081 Critical Risks `totalCount`, 16.1 ms (F-3) |
+
+Apart from SCR-081's count, the slowest query is SCR-120's `totalCount` over 60,000 documents, at 4.3 ms as an index-only scan.
+
+**The first validation run found two defects, and neither is hidden:**
+- **SCR-108 had no index for its default sort.** §4.2 gave `suspension_request` only `(status, updated_at, id)`, so the unfiltered page read the whole table and sorted it. **I-54 `(updated_at, id)` was added**; the page now walks it in 0.049 ms. The count stays a 13-page scan, which is correct at this size.
+- **SCR-081's `totalCount` scans `risk`** (1,120 pages): a hash join of all risks against the 4,500 critical assessments. `risk` does not store its current rating, so counting critical, non-closed risks must visit every candidate risk. The planner's choice of a hash over 4,500 key probes is the cheaper one. The page query is not affected: it walks I-12 in 2.3 ms. The count is the one exemption in §5.2. It is removed by F-3's option of storing the current rating on `risk`, which is an ERD change.
+
+### 5.5 Regression tracking
+
+`register-query-baseline.csv` is the baseline. On every run, `RegisterQueryPlanTests` writes each query's line in the file's format, followed by the baseline and this run's ratio to it, e.g. `baseline 0.041 ms; this run 1.1x`. `EveryQueryHasABaseline` fails when a query has no baseline row or a row has no query, so the file cannot drift from the tests. The 50 ms ceiling fails a query that has lost its index path, whatever the runner.
+
+To refresh the baseline after a deliberate change, run the tests three times with detailed output and take each query's median:
+
+```sh
+DB_CONNECTION_STRING='Host=localhost;Port=5432;Database=postgres;Username=…;Password=…' \
+  dotnet test src/backend/PMPlatform.Tests.Integration --filter FullyQualifiedName~RegisterQueryPlanTests \
+  --logger "console;verbosity=detailed" | grep -E '^ +[^ ].*,[0-9]+\.[0-9]{3}$'
+```
+
+Two scans outside the register queries are correct and are left as they are:
+- **The FG-01 portfolio aggregate** (`SELECT lifecycle_state, count(*) FROM project GROUP BY lifecycle_state`) reads every project, because every project is in the answer. In a scratch database at the same 3,000 rows, the planner read the heap sequentially, which is cheaper than walking I-02. TASK-069 reads projections for dashboards, so this query does not recur per request.
 - **The 151-row `user` table** is read sequentially in TASK-025's Project-to-owner join. It is two pages (P-8).
 
 ## 6. Acceptance criteria and validation
@@ -229,14 +276,14 @@ Two scans beyond the register queries are correct and are left as they are:
 | # | Criterion | Result | Evidence |
 | --- | --- | --- | --- |
 | 1 | Every foreign key column has a supporting index | **MET** for every foreign key in the database. The five foreign keys whose single-column index this task drops are led by the replacing composite. Later modules are held to it by the same test (P-1) | `EveryForeignKeyHasAnIndex` |
-| 2 | Every register/list screen's default filter and sort columns are covered by a composite index | **MET for the screens whose tables exist** (SCR-025, SCR-026, ADM-002, ADM-020 to 029; I-01 to I-10). **SPECIFIED for the rest** (I-11 to I-53, §4.3), enforced on each module's migration. Default filters and sorts are assumed pending Appendix B and each module's OpenAPI declaration (A-1) | §4; `EverySpecifiedIndexIsBuiltWithItsTable`, `EverySpecifiedIndexNamesErdColumns` |
-| 3 | Documented query-plan review of the 5 highest-traffic register screens: no full table scan at representative volume (150 named users) | **MET.** 22 default page and count queries across the five screens; none contains a sequential scan. Four of the five screens run on ERD-shaped stand-ins (§5.2) | §5.3; `TheBusiestRegistersReadNoTableInFull` |
-| — | Validation: load representative seed volume; `EXPLAIN ANALYZE` each register screen's default query; confirm index usage; record baseline latency | **MET.** Volume §5.2; plans and times §5.3, also written to the test output on every run | `RegisterQueryPlanTests` |
+| 2 | Every register/list screen's default filter and sort columns are covered by a composite index | **MET for the screens whose tables exist** (SCR-025, SCR-026, ADM-002, ADM-020 to 029; I-01 to I-10). **SPECIFIED for the rest** (I-11 to I-54, §4.3), enforced on each module's migration. Default filters and sorts are assumed pending Appendix B and each module's OpenAPI declaration (A-1) | §4; `EverySpecifiedIndexIsBuiltWithItsTable`, `EverySpecifiedIndexNamesErdColumns` |
+| 3 | Documented query-plan review of the 5 highest-traffic register screens: no full table scan at representative volume (150 named users) | **MET.** 26 default page and count queries across the five screens; none contains a sequential scan. Four of the five screens run on ERD-shaped stand-ins (§5.2) | §5.3; `EveryRegisterQueryIsServedByAnIndex` |
+| — | Validation: load representative seed volume; `EXPLAIN ANALYZE` each register screen's default query; confirm index usage; record baseline latency | **MET, with one recorded exception.** 74 default queries across every register screen of §4 (§5.2). 72 use an index with no sequential scan; SCR-108's count reads a 13-page table whole (P-8); SCR-081's count scans `risk`, which no index can prevent while `risk` has no current rating (F-3). The run found and closed one gap, I-54. Median latencies are in `register-query-baseline.csv`, and each run reports its ratio to them (§5.5) | `RegisterQueryPlanTests`: `EveryRegisterQueryIsServedByAnIndex`, `EveryQueryHasABaseline` |
 
-**The tests were checked to fail.** Three defects were injected, one at a time, and each file was restored byte for byte afterwards:
+**The tests were checked to fail.** Three defects were injected, one at a time, against the full suite of 94 persistence tests. Each file was restored byte for byte afterwards:
 - **I-03 left out of its migration**, as a module might forget an index; the single-column foreign-key index stays. `EverySpecifiedIndexIsBuiltWithItsTable` turned red, and so did both `MigrationRollbackTests`, because the Down now dropped an index the Up never built. The SCR-025 DEPT queries stayed green, because the single-column foreign-key index still keeps them off a sequential scan. The register check, not the plan check, is what catches a missing composite.
-- **A column in the I-15 row renamed to one the ERD lacks.** `EverySpecifiedIndexNamesErdColumns` turned red ("I-15: risk.risk has no column next_review_on"). All 22 plan queries turned red too, because the stand-in could not be built.
-- **The I-12 row deleted from the register.** The SCR-080 ALL page and DEPT page turned red. Each plan became `Seq Scan on risk` followed by a sort, at 12.6 ms and 7.6 ms against 0.13 ms and 0.89 ms with I-12.
+- **A column in the I-15 row renamed to one the ERD lacks.** `EverySpecifiedIndexNamesErdColumns` turned red ("I-15: risk.risk has no column next_review_on"). So did every test of `RegisterQueryPlanTests`, 76 in all, because the stand-in could not be built.
+- **The I-12 row deleted from the register.** Three queries turned red, each now reading all 1,120 pages of `risk` sequentially: the SCR-080 ALL page, the SCR-080 DEPT page and the SCR-081 critical page.
 
 ## 7. Findings
 
@@ -246,7 +293,7 @@ Two scans beyond the register queries are correct and are left as they are:
 | **A-2** | **Volumes other than users are assumed.** The brief fixes 150 named users (PTBC-043, working baseline, awaiting AHDA confirmation) and nothing else. Project count and the per-project ratios in §5.2 are estimates | PMO Engagement Lead (OQ-010) | If AHDA's portfolio is much larger, re-run §5 at that volume; the design (P-1 to P-6) scales, the timings do not transfer |
 | F-1 | `CoreSchemaTests.TheProjectToOwnerJoinUsesAnIndex` asserted the name `ix_project_project_manager_user_id`, which I-04 replaces. The assertion now names `ix_project_project_manager_user_id_updated_at_id`. `core-platform-schema.md` §6 keeps the plan as recorded on 2026-09-25, with a change-log note | — | None |
 | F-2 | SCR-138's allowlist can offer a filter or sort on any allowlisted field (TASK-071). Each such field is an index obligation (R-33) that this register cannot list until the allowlist exists | TASK-071 / TASK-112 | An explorer query on an unindexed field scans its table; bounded by the allowlist, not by the user |
-| F-3 | SCR-081 Critical Risks filters on a rating that `risk` does not store: the current rating is the latest `risk_assessment_version`. The query joins through the ERD unique key, which is adequate at 45,000 risks. If TASK-055 finds it slow, the ERD options are a stored `current_risk_rating_definition_id` on `risk` (a D-8 register entry) or a projection | TASK-055 | None at the assumed volume |
+| **F-3** | **SCR-081 Critical Risks filters on a rating that `risk` does not store**: the current rating is the latest `risk_assessment_version`. The page walks I-12 and probes the latest assessment (2.3 ms). The `totalCount` must visit every candidate risk and scans all 1,120 pages of `risk` (16.1 ms, §5.4), the one full scan among the 74 register queries. Options for the ERD: (a) store `current_risk_rating_definition_id` on `risk`, written with each assessment (a D-8 register entry), with an index `(current_risk_rating_definition_id, status, updated_at, id)`; (b) a Critical Risks projection. Recommended: (a). Not changed here, because the ERD is TASK-008's and the table is TASK-055's | Engagement Architect (ERD re-issue); TASK-055 | The count grows linearly with all risks, about 16 ms per 45,000; `RegisterQueryPlanTests` lists it as a known full scan and fails once it no longer is, so the exemption is removed when (a) lands |
 | F-4 | Free-text `q` has no index (P-7). It filters within the scoped index range; at 3,000 projects that is expected to take milliseconds, but no `q` query was measured here | TASK-041 onwards | Slow `q` only at a volume the brief does not forecast |
 | F-5 | Indexes are built inside the migration transaction, not `CONCURRENTLY`. That holds a write lock on the table while the index builds, which is instant on today's seed-only tables. An index added later to a table with production volume should use a non-transactional migration with `CREATE INDEX CONCURRENTLY` | Author of that migration | A write pause during deployment proportional to table size |
 | F-6 | Nothing is measured in an environment yet (none exists; ADR-001 Q1 to Q22). §5 is a local baseline | DevOps, after first provisioning | The first environment run is the first real traffic figure; enable `pg_stat_statements` there to confirm the ranking in §5.1 |
@@ -256,3 +303,4 @@ Two scans beyond the register queries are correct and are left as they are:
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-26 | Initial record. Ten indexes on the core schemas in three single-schema migrations, five of them replacing single-column foreign-key indexes; 43 indexes specified for the tables of later modules and enforced by test; query-plan review of the five busiest registers at representative volume, 22 of 22 queries index-served. | Database (TASK-026) |
+| 2026-09-26 | Validation run over every register screen: 74 default queries on stand-ins of all §4.2 tables, with a median latency baseline (`register-query-baseline.csv`) and a 50 ms ceiling. It found SCR-108 without a default-sort index (I-54 added) and SCR-081's count scanning `risk` (F-3 raised with evidence). The five-busiest review grew to 26 queries (ENTITY scope, OWN count, project tab). | Database (TASK-026) |
