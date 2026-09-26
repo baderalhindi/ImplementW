@@ -15,6 +15,13 @@
 # apply; this script only points it at the release image and runs it, so it cannot create a job that
 # lacks that identity or network path.
 #
+# The post-migration data step (TASK-027) runs as two more executions of the same job, with the
+# container's arguments overridden: `seed` loads db/seed/seed-master-data.sql (idempotent; it adds only
+# what is missing and never rewrites AHDA's wording), then `validate-data-integrity` runs
+# db/seed/validate-data-integrity.sql, which exits non-zero on any orphaned foreign key or constraint
+# violation. Either failure fails this step, so the image is never deployed. Overriding arguments needs
+# run.jobs.runWithOverrides on the deploy account (docs/architecture/seed-data-and-integrity.md F-4).
+#
 #   ENVIRONMENT=dev PROJECT_ID=… REGION=… IMAGE=…@sha256:… .github/scripts/migrate-environment.sh
 set -euo pipefail
 
@@ -65,3 +72,15 @@ gcloud run jobs execute "$MIGRATION_JOB" \
   --quiet
 
 echo "migrate ($ENVIRONMENT): applied"
+
+for command in seed validate-data-integrity; do
+  echo "migrate ($ENVIRONMENT): running $command on $MIGRATION_JOB"
+  gcloud run jobs execute "$MIGRATION_JOB" \
+    --project "$PROJECT_ID" \
+    --region "$REGION" \
+    --args "$command" \
+    --wait \
+    --quiet
+done
+
+echo "migrate ($ENVIRONMENT): seeded; data integrity validated"
