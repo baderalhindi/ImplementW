@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
+using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using PMPlatform.Infrastructure.Secrets;
 
@@ -28,6 +30,9 @@ public static class DependencyInjection
         // TASK-028: the directory, SSO and session-token adapters, and the IdentityAccess repository sign-in reads.
         services.AddIdentityIntegration(configuration);
         services.AddScoped<IUserAccessRepository, UserAccessRepository>();
+
+        // TASK-030: the grants and classifications the authorization engine evaluates.
+        services.AddScoped<IAuthorizationRepository, AuthorizationRepository>();
 
         return services;
     }

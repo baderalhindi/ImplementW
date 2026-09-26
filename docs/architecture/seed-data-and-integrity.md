@@ -46,7 +46,9 @@
 | `identity_access.user` | 2 | `svc.platform-seed`, the SERVICE principal every seeded row is attributed to (ERD D-2); `svc.directory-sync`, the SERVICE principal a directory-sourced change to a user's department, manager or job title is attributed to (TASK-028, ADR-007). No role, no directory subject, address in `.invalid` | ERD `user.user_type` |
 | `identity_access.role` | 8 | R01–R08, `is_system`; R04 and R08 `is_external_eligible` | ERD F-080; ADR-013. Labels provisional (F-1) |
 | `identity_access.permission_profile` | 8 | `R0n-DEFAULT`, `is_shipped_default` | ADR-018, TASK-110 |
-| `identity_access.permission_profile_version` | 8 | Version 1 of each, PUBLISHED, no grants | ADR-018 |
+| `identity_access.permission_profile_version` | 8 | Version 1 of each, PUBLISHED | ADR-018 |
+| `identity_access.permission` | 3 | The permission catalogue, as far as a controlled source fixes it (TASK-030): `IDENTITY_INTEGRATION_MANAGE` (ADM-041, `is_privileged`), `LAYOUT_PERSONALIZE`, `REPORT_COMPOSE` (ADR-019). No clearance: the classification taxonomy is outstanding | `authorization-engine.md` D-9; ERD F-081 |
+| `identity_access.permission_profile_grant` | 7 | On the shipped-default versions 1: R01 `IDENTITY_INTEGRATION_MANAGE` ALL; R02, R03, R07 `LAYOUT_PERSONALIZE` and `REPORT_COMPOSE` OWN. Every other cell waits for Blueprint Appendix A (F-1) | TASK-028; ADR-019 |
 | `master_data_config.master_data_catalogue` | 21 | One per master data reference in the ERD (list below) | ERD; ADM-020–029 |
 | `master_data_config.master_data_item` | 10 | `EXTERNAL_ENTITY_TYPE`: GOVERNMENT, PUBLIC_AUTHORITY, PRIVATE_COMPANY. `GOVERNANCE_PROFILE`: LIGHT, STANDARD, FULL. `IMPACT_DIMENSION`: COST, SCHEDULE, REPUTATION, OPERATIONAL. All PUBLISHED, `is_system` | ERD `external_entity`; ADR-015; ADR-011 |
 | `master_data_config.configuration_family` | 12 | The twelve families of the ERD | ERD `configuration_family` |
@@ -56,7 +58,7 @@
 
 The 21 catalogues: `EXTERNAL_ENTITY_TYPE`, `GOVERNANCE_PROFILE`, `IMPACT_DIMENSION`, `DATA_CLASSIFICATION`, `DOCUMENT_CONTROL_LEVEL`, `PROJECT_CLASSIFICATION`, `REGION`, `CITY`, `WORKING_CALENDAR`, `MILESTONE_CATEGORY`, `EVIDENCE_TYPE`, `DOCUMENT_TYPE`, `PRIORITY`, `RISK_CATEGORY`, `CONCERN_CATEGORY`, `CONCERN_SEVERITY`, `CONTRIBUTION_TYPE`, `UPDATE_REQUEST_TYPE`, `ETIMAD_COST_CATEGORY`, `KPI_UNIT`, `MEASUREMENT_FREQUENCY`. Seven are named by the ERD. The others are derived from the reference columns' names (F-7).
 
-Every one of the 84 labels is bilingual: the Arabic label contains Arabic script, the English label contains none (`EverySeededLabelIsBilingual`). The Arabic wording is the delivery team's (F-8).
+Every one of the 87 labels is bilingual: the Arabic label contains Arabic script, the English label contains none (`EverySeededLabelIsBilingual`). The Arabic wording is the delivery team's (F-8).
 
 ### 3.2 Not seeded, and why
 
@@ -142,6 +144,7 @@ Each mutation was reverted; the committed files are byte-identical to the unmuta
 | F-9 | **The validator scans every table once per constraint.** On the seeded databases above that is instant; it was not timed at the TASK-026 target volume (3,000 projects). `audit_activity.audit_event` at years of volume will not be small | TASK-073 (audit), when it lands | Deployment time grows with the audit table; exclude it or check it incrementally then |
 | F-10 | **An intermittent failure in TASK-026's `RegisterQueryPlanTests`** (`SCR-081 critical count`): 1 failure in 11 full runs of the Persistence suite, not reproduced in 5 runs of that class alone or 9 further full runs. The failure message was not captured. The test holds a known full scan to a 50 ms ceiling against a 16 ms baseline, so the extra parallel load from this task's two test classes is a plausible cause, not a confirmed one | Database (TASK-026 owner) | An occasional red `backend` check on an unrelated pull request |
 | F-11 | The TASK-023 drill scripts (`rehearse-restore.sh`, `run-restore-drill.sh`) now run the image's `seed` after `migrate`. They were syntax-checked, **not re-run**, to avoid creating containers outside the AHDA stack | DevOps (TASK-023) | The next drill is the first on this seed |
+| F-12 | **Shipped grants went into the PUBLISHED versions 1** (TASK-030). A PUBLISHED version is immutable (ERD D-12), but no environment has run the seed, so version 1 has never been in use anywhere. Once an environment has run it, a change to the shipped grants — Appendix A's rows included — is a new version and a migration of the assignments bound to version 1 (TASK-110), not an edit of this file | TASK-110; whoever adds Appendix A | Editing the grants of a version in use would change live users' permissions with no reviewed version (ADR-018) |
 
 ## 8. Change log
 

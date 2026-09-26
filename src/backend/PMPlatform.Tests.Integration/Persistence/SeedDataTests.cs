@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Domain.IdentityAccess;
 using PMPlatform.Infrastructure.Persistence;
 
 namespace PMPlatform.Tests.Integration.Persistence;
@@ -7,7 +9,8 @@ namespace PMPlatform.Tests.Integration.Persistence;
 /// TASK-027 acceptance for <c>db/seed/seed-master-data.sql</c>, loaded through the release image's <c>seed</c> command:
 /// a repeated run adds and changes nothing, the eight canonical roles are there, every label is bilingual (ADR-012),
 /// the three governance profiles are seeded (ADR-015), the risk and issue scale is generic and unpublished (OQ-006),
-/// no materiality band is invented (OQ-013), and AHDA's wording survives a re-seed.
+/// no materiality band is invented (OQ-013), and AHDA's wording survives a re-seed. TASK-030: the permission catalogue
+/// and the shipped-default grants are PermissionCatalogue's.
 /// </summary>
 public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixture<SeededDatabase>
 {
@@ -41,6 +44,30 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
         Assert.Equal(CanonicalRoles, roles);
     }
 
+    /// <summary>TASK-030: the seed writes PermissionCatalogue, row for row, to the catalogue and the shipped-default versions 1.</summary>
+    [Fact]
+    public async Task ThePermissionCatalogueAndShippedGrantsAreTheCodes()
+    {
+        IReadOnlyList<string> permissions = await database.QueryAsync(
+            "SELECT code || ' ' || permission_group FROM identity_access.permission ORDER BY code");
+        IReadOnlyList<string> grants = await database.QueryAsync("""
+            SELECT r.code || ' ' || p.code || ' ' || g.data_scope
+            FROM identity_access.permission_profile_grant g
+            JOIN identity_access.permission p ON p.id = g.permission_id
+            JOIN identity_access.permission_profile_version v ON v.id = g.permission_profile_version_id AND v.version_no = 1
+            JOIN identity_access.permission_profile pp ON pp.id = v.permission_profile_id AND pp.is_shipped_default
+            JOIN identity_access.role r ON r.id = pp.base_role_id
+            ORDER BY 1
+            """);
+
+        Assert.Equal(
+            PermissionCatalogue.Platform.Definitions.Select(d => $"{d.Code} {d.Group}").Order(StringComparer.Ordinal),
+            permissions);
+        Assert.Equal(
+            PermissionCatalogue.ShippedDefaultGrants.Select(g => $"{g.RoleCode} {g.PermissionCode} {ScopeValue(g.Scope)}").Order(StringComparer.Ordinal),
+            grants);
+    }
+
     /// <summary>ADR-012: controlled master data is bilingual. Each Arabic label holds Arabic script and each English label none.</summary>
     [Fact]
     public async Task EverySeededLabelIsBilingual()
@@ -48,6 +75,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
         const string labels = """
             SELECT 'role ' || code AS row_name, name_ar AS ar, name_en AS en FROM identity_access.role
             UNION ALL SELECT 'permission_profile ' || code, name_ar, name_en FROM identity_access.permission_profile
+            UNION ALL SELECT 'permission ' || code, name_ar, name_en FROM identity_access.permission
             UNION ALL SELECT 'master_data_catalogue ' || code, name_ar, name_en FROM master_data_config.master_data_catalogue
             UNION ALL SELECT 'master_data_item ' || code, label_ar, label_en FROM master_data_config.master_data_item
             UNION ALL SELECT 'configuration_family ' || code, name_ar, name_en FROM master_data_config.configuration_family
@@ -61,7 +89,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             WHERE ar !~ '[؀-ۿ]' OR en ~ '[؀-ۿ]' OR btrim(en) = ''
             """);
 
-        Assert.Equal("84", count[0]);
+        Assert.Equal("87", count[0]);
         Assert.Empty(notBilingual);
     }
 
@@ -184,4 +212,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
 
     [GeneratedRegex(@"^\s+\('(?<schema>\w+)',\s+'(?<table>\w+)',\s+'(?<column>\w+)',\s+'(?<catalogue>[A-Z_]+)'\)", RegexOptions.Multiline)]
     private static partial Regex ValidatorMapLine();
+
+    /// <summary>A data scope as <c>ck_permission_profile_grant_data_scope</c> stores it.</summary>
+    private static string ScopeValue(DataScope scope) => scope == DataScope.ReadOnly ? "READ_ONLY" : scope.ToString().ToUpperInvariant();
 }

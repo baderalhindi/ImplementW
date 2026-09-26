@@ -4,7 +4,8 @@
 --   1. the SERVICE principals (ERD D-2): the seed principal every seeded row is attributed to, and the directory-sync
 --      principal a directory-sourced change to a user is attributed to (TASK-028, ADR-007);
 --   2. the eight canonical roles R01–R08, each with its shipped-default permission profile and that profile's
---      PUBLISHED version 1 (ADR-018, TASK-110);
+--      PUBLISHED version 1 (ADR-018, TASK-110), and the permission catalogue with the grants of those versions
+--      (TASK-030) — only the rows a controlled source fixes, since Blueprint Appendix A is not in the repository;
 --   3. one master data catalogue for every master data reference in the ERD (ADM-020–029), with the items a
 --      controlled source fixes: the external entity types (ERD), the three governance profiles (ADR-015) and the
 --      four impact dimensions (ADR-011);
@@ -81,8 +82,8 @@ ON CONFLICT (code) DO UPDATE SET
     updated_by = EXCLUDED.updated_by
 WHERE (p.base_role_id, p.is_shipped_default) IS DISTINCT FROM (EXCLUDED.base_role_id, EXCLUDED.is_shipped_default);
 
--- Version 1 of each shipped-default profile, PUBLISHED, so an assignment has a version to bind to (ADR-018). No
--- grants until the permission catalogue exists (TASK-030, TASK-110). Never updated: a PUBLISHED version is immutable.
+-- Version 1 of each shipped-default profile, PUBLISHED, so an assignment has a version to bind to (ADR-018). Never
+-- updated: a PUBLISHED version is immutable.
 INSERT INTO identity_access.permission_profile_version (id, permission_profile_id, version_no, lifecycle_state, published_at, change_summary, change_summary_lang, created_at, created_by, updated_at, updated_by)
 SELECT overlay(p.id::text placing '0002' from 10 for 4)::uuid, p.id, 1, 'PUBLISHED', now(), 'Shipped default (seed).', 'en',
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
@@ -91,6 +92,48 @@ JOIN identity_access.role r ON r.id = p.base_role_id
 WHERE p.code = r.code || '-DEFAULT'
   AND r.code IN ('R01', 'R02', 'R03', 'R04', 'R05', 'R06', 'R07', 'R08')
 ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
+
+-- The permission catalogue (ERD F-081) and the grants of the shipped-default versions: PMPlatform.Application's
+-- PermissionCatalogue, row for row (SeedDataTests checks it). Only rows a controlled source fixes for all eight roles:
+-- ADM-041 is R01's (TASK-028); ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07, OWN because
+-- each acts on the holder's own layout or report definition. Blueprint Appendix A, the rest of the matrix, is not in
+-- the repository (record F-1).
+--
+-- The grants go into version 1 because no environment has run this seed with version 1 in use (none is provisioned).
+-- Once one has, a change to the shipped grants is a new version and a migration of the assignments (TASK-110), not
+-- an edit here: a PUBLISHED version is immutable (seed record F-12).
+INSERT INTO identity_access.permission AS p (id, code, name_ar, name_en, permission_group, is_privileged, created_at, created_by, updated_at, updated_by)
+SELECT md5('permission:' || v.code)::uuid, v.code, v.name_ar, v.name_en, v.permission_group, v.is_privileged,
+       now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('IDENTITY_INTEGRATION_MANAGE', 'إدارة تكامل الهوية', 'Manage identity integration', 'IDENTITY_ACCESS', true),
+    ('LAYOUT_PERSONALIZE',          'تخصيص التخطيط',      'Personalize layout',          'DASHBOARDS',      false),
+    ('REPORT_COMPOSE',              'إعداد التقارير',      'Compose report',              'REPORTS',         false)
+) AS v (code, name_ar, name_en, permission_group, is_privileged)
+ON CONFLICT (code) DO UPDATE SET
+    permission_group = EXCLUDED.permission_group,
+    is_privileged = EXCLUDED.is_privileged,
+    updated_at = EXCLUDED.updated_at,
+    updated_by = EXCLUDED.updated_by
+WHERE (p.permission_group, p.is_privileged) IS DISTINCT FROM (EXCLUDED.permission_group, EXCLUDED.is_privileged);
+
+INSERT INTO identity_access.permission_profile_grant (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
+SELECT md5('permission_profile_grant:' || g.role_code || ':' || g.permission_code)::uuid, v.id, p.id, g.data_scope,
+       now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('R01', 'IDENTITY_INTEGRATION_MANAGE', 'ALL'),
+    ('R02', 'LAYOUT_PERSONALIZE',          'OWN'),
+    ('R02', 'REPORT_COMPOSE',              'OWN'),
+    ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
+    ('R03', 'REPORT_COMPOSE',              'OWN'),
+    ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),
+    ('R07', 'REPORT_COMPOSE',              'OWN')
+) AS g (role_code, permission_code, data_scope)
+JOIN identity_access.role r ON r.code = g.role_code
+JOIN identity_access.permission_profile pp ON pp.base_role_id = r.id AND pp.code = r.code || '-DEFAULT'
+JOIN identity_access.permission_profile_version v ON v.permission_profile_id = pp.id AND v.version_no = 1
+JOIN identity_access.permission p ON p.code = g.permission_code
+ON CONFLICT (permission_profile_version_id, permission_id) DO NOTHING;
 
 -- 3. Master data catalogues: one per master data reference in the ERD. validate-data-integrity.sql checks that each
 -- reference column points at an item of its catalogue; the two files name the same codes.

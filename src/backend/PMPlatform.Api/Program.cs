@@ -58,8 +58,11 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
         options.Events = BearerChallenge.Events();
     });
 builder.Services.AddAuthorizationBuilder()
-    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
-    .AddPolicy(AuthorizationPolicies.SystemAdministrator, policy => policy.RequireRole(AuthorizationPolicies.SystemAdministratorRole));
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+
+// TASK-030: [RequirePermission] is decided by the authorization engine on grants read from the database, never by the
+// token's role claims. Scoped, like the engine it asks.
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
 // TASK-029: which operations need a fresh second factor, and how fresh (ADR-010; the list is configuration).
 builder.Services.AddOptions<StepUpOptions>()
@@ -104,6 +107,7 @@ app.UseMiddleware<StepUpAuthentication>();
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
 app.RequireKnownStepUpOperations();
+app.RequireEndpointAuthorization();
 
 await app.RunAsync().ConfigureAwait(false);
 
