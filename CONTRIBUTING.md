@@ -165,8 +165,15 @@ docker compose -f infra/docker/docker-compose.yml down -v              # reset: 
   permission profile version. They are data, not accounts: there is no credential and no local sign-in path until
   TASK-028.
 - The tables come from the EF Core migrations: on every `up`, the one-shot `migrate` service applies them and the
-  one-shot `seed` service then runs `infra/docker/postgres/seed/*.sql` (idempotent). Both exit 0; `api` starts after
-  them. The migrated schema is checked against `erd.dbml` by `CoreSchemaTests` in the backend integration tests.
+  one-shot `seed` service then runs, in one transaction, the platform seed `db/seed/seed-master-data.sql` (roles
+  R01–R08 and master data — the same file every environment loads), the local users
+  `infra/docker/postgres/seed/seed-local-users.sql`, and `db/seed/validate-data-integrity.sql`, which fails `up` on
+  any orphan or constraint violation. Both exit 0; `api` starts after them. The migrated schema is checked against
+  `erd.dbml` by `CoreSchemaTests` in the backend integration tests.
+- Seed data and the integrity check (TASK-027; record: `docs/architecture/seed-data-and-integrity.md`): the release
+  image runs them as `dotnet PMPlatform.Api.dll seed` and `… validate-data-integrity` after `migrate` in every
+  environment. A migration that adds a `*_item_id` column must add it to the catalogue map in
+  `validate-data-integrity.sql` and its catalogue to `seed-master-data.sql`, or the check fails.
 
 ## Environments and promotion
 
