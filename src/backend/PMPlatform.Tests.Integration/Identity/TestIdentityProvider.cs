@@ -51,6 +51,12 @@ public sealed class TestIdentityProvider : IAsyncDisposable
     /// <summary>When set, the next ID token carries this nonce instead of the one it was asked for.</summary>
     public string? NonceOverride { get; set; }
 
+    /// <summary>When set, ID tokens carry these <c>amr</c> values: how the provider says it authenticated the person (TASK-029).</summary>
+    public string[]? AuthenticationMethods { get; set; }
+
+    /// <summary>When set, ID tokens carry this <c>auth_time</c>.</summary>
+    public DateTimeOffset? AuthenticatedAt { get; set; }
+
     public static async Task<TestIdentityProvider> StartAsync()
     {
         WebApplicationBuilder builder = WebApplication.CreateSlimBuilder();
@@ -150,9 +156,25 @@ public sealed class TestIdentityProvider : IAsyncDisposable
             IssuedAt = now,
             NotBefore = now,
             Expires = now.AddMinutes(5),
-            Claims = new Dictionary<string, object> { ["sub"] = pending.Subject, ["nonce"] = NonceOverride ?? pending.Nonce },
+            Claims = IdTokenClaims(pending),
             SigningCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.RsaSha256),
         });
+    }
+
+    private Dictionary<string, object> IdTokenClaims(PendingCode pending)
+    {
+        Dictionary<string, object> claims = new() { ["sub"] = pending.Subject, ["nonce"] = NonceOverride ?? pending.Nonce };
+        if (AuthenticationMethods is { } methods)
+        {
+            claims["amr"] = methods;
+        }
+
+        if (AuthenticatedAt is { } authenticatedAt)
+        {
+            claims["auth_time"] = authenticatedAt.ToUnixTimeSeconds();
+        }
+
+        return claims;
     }
 
     private sealed record PendingCode(string Subject, string Nonce, string CodeChallenge, string RedirectUri);

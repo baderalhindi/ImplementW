@@ -20,5 +20,6 @@ internal static class BearerChallenge
         },
         OnForbidden = context =>
             ApiProblem.WriteAsync(context.HttpContext, StatusCodes.Status403Forbidden, ErrorCodes.PermissionDenied, "Permission denied."),
+        OnTokenValidated = MultiFactorTokenValidation.OnTokenValidated,
     };
 }

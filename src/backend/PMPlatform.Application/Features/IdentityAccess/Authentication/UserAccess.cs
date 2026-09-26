@@ -6,7 +6,8 @@ namespace PMPlatform.Application.Features.IdentityAccess.Authentication;
 
 /// <summary>
 /// A platform user as sign-in needs them, with the assignments active now. <see cref="ExternalEntityStatus"/> is the
-/// status of the user's external entity, null for internal users.
+/// status of the user's external entity, null for internal users. <see cref="MultiFactorEnrolled"/> is whether
+/// <c>User.MfaEnrolledAt</c> is set (TASK-029).
 /// </summary>
 public sealed record UserAccess(
     Guid UserId,
@@ -16,6 +17,7 @@ public sealed record UserAccess(
     string Username,
     string DisplayName,
     Language PreferredLanguage,
+    bool MultiFactorEnrolled,
     IReadOnlyList<SessionRoleAssignment> RoleAssignments)
 {
     /// <summary>

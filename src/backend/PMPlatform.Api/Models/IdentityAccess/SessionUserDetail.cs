@@ -10,4 +10,6 @@ public sealed record SessionUserDetail(
     string DisplayName,
     string PreferredLanguage,
     AuthenticationMethod AuthenticationMethod,
+    bool MultiFactorAuthenticated,
+    DateTimeOffset AuthenticatedAt,
     IReadOnlyList<RoleAssignmentSummary> RoleAssignments);

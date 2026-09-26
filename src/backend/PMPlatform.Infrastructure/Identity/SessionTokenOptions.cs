@@ -16,4 +16,7 @@ internal sealed class SessionTokenOptions
 
     /// <summary>Absolute lifetime from sign-in; no refresh extends it.</summary>
     public TimeSpan SessionLifetime { get; set; } = TimeSpan.FromHours(8);
+
+    /// <summary>How long a person has, after the first factor, to pass the second (TASK-029). Provisional, like the others.</summary>
+    public TimeSpan MultiFactorTokenLifetime { get; set; } = TimeSpan.FromMinutes(5);
 }

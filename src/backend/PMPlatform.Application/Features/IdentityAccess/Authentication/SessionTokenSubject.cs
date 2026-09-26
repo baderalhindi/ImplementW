@@ -3,5 +3,5 @@ using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Application.Features.IdentityAccess.Authentication;
 
-/// <summary>What the access token asserts: who, which kind of user, how they signed in, and the role codes they hold.</summary>
-public sealed record SessionTokenSubject(Guid UserId, UserType UserType, AuthenticationMethod Method, IReadOnlyList<string> RoleCodes);
+/// <summary>What the access token asserts: who, which kind of user, how and when they authenticated, and the role codes they hold.</summary>
+public sealed record SessionTokenSubject(Guid UserId, UserType UserType, SessionAuthentication Authentication, IReadOnlyList<string> RoleCodes);

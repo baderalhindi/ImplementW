@@ -16,4 +16,11 @@ internal static class RequestValidation
             errors.Add(new FieldError(field, FieldError.MaxLength));
         }
     }
+
+    /// <summary>A second-factor challenge id and the code entered for it (TASK-029).</summary>
+    public static void RequireChallenge(string? challengeId, string? code, List<FieldError> errors)
+    {
+        Require(challengeId, "challengeId", 256, errors);
+        Require(code, "code", 64, errors);
+    }
 }
