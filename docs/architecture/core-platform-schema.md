@@ -199,3 +199,4 @@ The TASK-023 drill scripts (`rehearse-restore.sh`, `run-restore-drill.sh`) built
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-25 | Initial record. 34 tables in `identity_access`, `master_data_config` and `project` in four single-schema migrations; value types and state enums mapped per ERD D-1 to D-12 with 43 CHECK constraints; integration tests for the ERD match, FK indexes, audit columns, Formal Project ID uniqueness, nine rule rejections and the EXPLAIN validation, mutation-checked; bridge schema retired and Compose migrates then seeds; one normalisation exception (N-1) and four observations raised. | Database (TASK-025) |
+| 2026-09-26 | TASK-026 replaced `ix_project_project_manager_user_id` with `ix_project_project_manager_user_id_updated_at_id` (`indexing-strategy.md` I-04), which leads with the same column. `TheProjectToOwnerJoinUsesAnIndex` now asserts the new name; the plan in §6 is kept as recorded on 2026-09-25. | Database (TASK-026) |
