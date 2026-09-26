@@ -23,4 +23,9 @@
          here and never flows into PMPlatform.Api's published image (PrivateAssets). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- TASK-027: the seed and data-integrity scripts ship inside the release image and run as its `seed` and
+         `validate-data-integrity` commands (Persistence/DatabaseScripts.cs). db/seed stays their only source. -->
+    <EmbeddedResource Include="../../../db/seed/*.sql" LogicalName="PMPlatform.Seed.%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

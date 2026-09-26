@@ -42,6 +42,14 @@ if (args is [DatabaseMigration.Command, ..])
     return;
 }
 
+// TASK-027: `seed` loads db/seed/seed-master-data.sql; `validate-data-integrity` runs db/seed/validate-data-integrity.sql
+// and exits non-zero on any violation. Each environment runs both after `migrate`, as executions of the same job.
+if (args is [string scriptCommand] && DatabaseScripts.IsCommand(scriptCommand))
+{
+    await app.Services.RunScriptCommandAsync(scriptCommand).ConfigureAwait(false);
+    return;
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
