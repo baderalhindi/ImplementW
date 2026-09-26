@@ -70,6 +70,8 @@ Run 2026-09-26 on macOS, Docker Desktop, PostgreSQL 17 (`AHDA-postgres`) and `AH
 | 3 | `DB_CONNECTION_STRING=… dotnet test src/backend/PMPlatform.Tests.Integration` | 188 passed, twice in a row: 17 new (9 in `AuthorizationEndpointTests` as 15 cases, 1 in `FieldClassificationTests`, 1 in `SeedDataTests`), 171 existing (`EverySeededLabelIsBilingual` now counts 87 labels, including permissions) |
 | 4 | `docker compose -f infra/docker/docker-compose.yml up -d --build --wait api` | The stack migrates, seeds (7 grants, as in §2 D-9), validates data integrity with no violation, and starts, passing `RequireEndpointAuthorization` |
 | 5 | Sign in as `local.r02`, then `GET /api/v1/identity-integration` and `GET /api/v1/sessions/current` with the token, called directly with curl, bypassing the SPA | 403 and 200 |
+| 6 | Workbook validation check on the local stack: `local.r01` to `local.r08` (one active user per role) each sign in, then `GET /api/v1/identity-integration` and `POST /api/v1/identity-integration/test` directly with curl | R02–R08, all marked "—" for ADM-041: sign-in 201, both calls **403 `PERMISSION_DENIED`**. R01: sign-in 503 `UNAVAILABLE`, because R01 requires MFA and the compose stack has no MFA provider (TASK-029 D-8), so the allowed case is shown by row 7 |
+| 7 | `dotnet test … --filter AuthorizationEndpointTests\|IdentityIntegrationEndpointTests`: the real API pipeline over `AHDA-postgres` and `AHDA-ldap`, with the test MFA provider | 19 passed. The allowed case: `R01IsAllowedIdentityIntegration`, `TheStatusShowsWhatIsConfigured…` and `TheConnectionTestReaches…` all 200 for R01 after MFA. The denied cases: `EveryRoleButR01IsRefusedIdentityIntegration` gives 403 for R02–R08 on both calls |
 
 The tests, by acceptance criterion and validation check:
 
@@ -106,7 +108,7 @@ The tests, by acceptance criterion and validation check:
 | Every protected endpoint calls the engine server-side | **MET** for the endpoints that exist (the 2 on ADM-041; the rest anonymous or session-only), and enforced at start-up for every endpoint added later (D-10) |
 | Hiding a UI control is never the only protection, shown by direct API calls | **MET**: §5 rows 3 and 5 |
 | One allow and one deny per role/scope combination in Appendix A | **MET FOR THE ENGINE, PARTIAL FOR THE MATRIX.** Every role × scope combination the engine can hold is tested both ways, and so is every cell of the shipped rows. The Appendix A cells beyond them cannot be tested because Appendix A is absent (F-1) |
-| Validation check: 403 for a "—" role, success for an allowed role | **MET** for ADM-041 |
+| Validation check: 403 for a "—" role, success for an allowed role | **MET** for ADM-041, the one protected endpoint: 403 for all seven "—" roles live (§5 row 6), 200 for R01 (§5 row 7). Other Appendix A cells wait for F-1 |
 | ADR-010: field-level masking by audience, consistent across projections | **MET** as a mechanism (D-8). No field is classified until UGV-01 (F-2) |
 | ADR-013, ADR-018, ADR-019 | **MET** (D-2, D-3, D-9) |
 
