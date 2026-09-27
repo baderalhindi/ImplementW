@@ -10,6 +10,7 @@ internal sealed class ExternalEntityConfiguration : IEntityTypeConfiguration<Ext
     public void Configure(EntityTypeBuilder<ExternalEntity> builder)
     {
         builder.ToTable("external_entity", "identity_access");
+        builder.HasRowVersion();
         builder.Property(e => e.Code).HasMaxLength(50);
         builder.HasIndex(e => e.Code).IsUnique();
         builder.HasBilingualLabel(e => e.Name, "name");
