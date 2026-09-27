@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
@@ -33,6 +35,14 @@ public static class DependencyInjection
 
         // TASK-030: the grants and classifications the authorization engine evaluates.
         services.AddScoped<IAuthorizationRepository, AuthorizationRepository>();
+
+        // TASK-031: FG-03 administration. The mobile verifier is a placeholder until the SMS provider (TASK-103) replaces it.
+        services.AddScoped<IUserAdministrationRepository, UserAdministrationRepository>();
+        services.AddScoped<IAccessRelationshipRepository, AccessRelationshipRepository>();
+        services.AddScoped<IRoleAdministrationRepository, RoleAdministrationRepository>();
+        services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+        services.AddScoped<IExternalEntityRepository, ExternalEntityRepository>();
+        services.TryAddSingleton<IMobileNumberVerifier, UnconfiguredMobileNumberVerifier>();
 
         return services;
     }

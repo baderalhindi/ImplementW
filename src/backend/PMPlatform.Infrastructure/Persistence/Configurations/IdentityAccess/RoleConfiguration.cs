@@ -9,6 +9,7 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
     public void Configure(EntityTypeBuilder<Role> builder)
     {
         builder.ToTable("role", "identity_access");
+        builder.HasRowVersion();
         builder.Property(e => e.Code).HasMaxLength(50);
         builder.HasIndex(e => e.Code).IsUnique();
         builder.HasBilingualLabel(e => e.Name, "name");

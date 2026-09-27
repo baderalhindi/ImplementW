@@ -6,4 +6,7 @@ internal sealed record FieldError(string Field, string Code)
     public const string Required = "REQUIRED";
     public const string MaxLength = "MAX_LENGTH";
     public const string Malformed = "MALFORMED";
+    public const string EnumValue = "ENUM_VALUE";
+    public const string OutOfRange = "OUT_OF_RANGE";
+    public const string NotAllowed = "NOT_ALLOWED";
 }

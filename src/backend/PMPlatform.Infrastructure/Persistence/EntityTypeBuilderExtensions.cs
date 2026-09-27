@@ -9,6 +9,9 @@ namespace PMPlatform.Infrastructure.Persistence;
 /// <summary>The ERD conventions (D-2, D-6, D-7, D-12) as mapping steps, so each entity configuration states them once.</summary>
 internal static class EntityTypeBuilderExtensions
 {
+    /// <summary>The shadow property <see cref="HasRowVersion{TEntity}"/> maps; PostgreSQL's name for the column.</summary>
+    public const string RowVersion = "xmin";
+
     private const int LabelLength = 200;
 
     /// <summary>D-6: a <see cref="BilingualLabel"/> as the pair <c>&lt;column&gt;_ar</c>, <c>&lt;column&gt;_en</c>, both present or both absent.</summary>
@@ -51,6 +54,20 @@ internal static class EntityTypeBuilderExtensions
 
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.ValidatedByUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.PublishedByUserId).OnDelete(DeleteBehavior.Restrict);
+        return builder;
+    }
+
+    /// <summary>
+    /// D-16: optimistic concurrency on PostgreSQL's <c>xmin</c> system column, as the shadow property
+    /// <see cref="RowVersion"/>. No column is created: the migration SQL generator skips <c>xmin</c>. Its value is the
+    /// ETag of api-conventions R-21.
+    /// </summary>
+    public static EntityTypeBuilder<TEntity> HasRowVersion<TEntity>(this EntityTypeBuilder<TEntity> builder)
+        where TEntity : AuditedEntity
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.Property<uint>(RowVersion).IsRowVersion();
         return builder;
     }
 

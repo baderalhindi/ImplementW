@@ -10,6 +10,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.ToTable("user", "identity_access");
+        builder.HasRowVersion();
         builder.Property(e => e.DirectorySubjectId).HasMaxLength(200);
         builder.HasIndex(e => e.DirectorySubjectId).IsUnique();
         builder.Property(e => e.Username).HasMaxLength(100);

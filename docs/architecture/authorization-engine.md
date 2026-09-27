@@ -132,3 +132,4 @@ The tests, by acceptance criterion and validation check:
 | Date | Change |
 | --- | --- |
 | 2026-09-26 | Created (TASK-030) |
+| 2026-09-27 | TASK-031 (`identity-access-administration.md`): seven FG-03 permissions shipped to R01 at ALL (D-9's bar: TASK-032 fixes ADM-002–013 to R01). The administration services are the first callers of record-level checks (§3 step 2); collections still have no scope filter (F-8), so they are served only to ALL and READ-ONLY grants. |
