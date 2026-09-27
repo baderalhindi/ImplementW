@@ -20,9 +20,8 @@ git cat-file -e "${COMMIT_SHA}^{commit}" 2>/dev/null ||
 subject=$(git log -1 --format=%s "$COMMIT_SHA")
 message=$(git log -1 --format=%B "$COMMIT_SHA")
 
-# The same pattern pr-policy.sh accepts, so a branch that passed the PR gate produces a releasable
-# commit: TASK-nnn in any case, anywhere in the subject or body. Squash merges carry the PR title,
-# which pr-policy.sh has already required to name a task.
+# TASK-nnn in any case, anywhere in the subject or body. Squash merges carry the PR title, which the
+# PR template requires to name a task.
 task_id=$(printf '%s' "$message" | grep -oiE 'TASK-[0-9]{3}' | head -n 1 | tr '[:lower:]' '[:upper:]' || true)
 
 if [ -z "$task_id" ]; then
@@ -32,8 +31,8 @@ error: commit $COMMIT_SHA names no Task ID, so a deployment from it could not be
   subject: $subject
 
 CTL-40 requires every deployment to be traceable to a commit SHA and a Task ID. Squash-merge
-subjects carry the pull request title, and .github/scripts/pr-policy.sh already requires that title
-or body to name a TASK-nnn. A commit that reaches main without one was merged outside that gate.
+subjects carry the pull request title, which .github/PULL_REQUEST_TEMPLATE.md requires to name a
+TASK-nnn. A commit that reaches main without one was merged without it.
 
 To release this commit, revert it and re-merge through a pull request that names its task.
 MSG

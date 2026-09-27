@@ -7,7 +7,7 @@
 | Record date | 2026-09-21 |
 | Status | **FILES BUILT — PROTECTION NOT APPLIED.** The template, CODEOWNERS, policy check and ruleset are on the task branch and verified locally; the ruleset is a repository setting that this environment cannot apply (§7 S-1), and the CODEOWNERS teams do not exist yet (§7 S-2) |
 | Branch | `chore/task-012-branching-strategy` |
-| Deliverables | `.github/PULL_REQUEST_TEMPLATE.md`; `.github/CODEOWNERS`; `.github/branch-protection/protected-branches.ruleset.json` and `apply.sh`; `.github/workflows/pr-policy.yml` with `.github/scripts/pr-policy.sh`; this record |
+| Deliverables | `.github/PULL_REQUEST_TEMPLATE.md`; `.github/CODEOWNERS`; `.github/branch-protection/protected-branches.ruleset.json` and `apply.sh`; `.github/workflows/pr-policy.yml` with `.github/scripts/pr-policy.sh` (removed 2026-09-27, §5.1); this record |
 | Implements | CTL-38 (`cybersecurity-control-matrix.md` §4 CF-7); the branch-naming row of ADR-002 §6.4 |
 | Controlled sources and authority order | per TASK-001 |
 
@@ -45,7 +45,7 @@ That is a two-branch environment ladder (`dev` → `stage` → `main`), which is
 
 `.github/PULL_REQUEST_TEMPLATE.md` pre-fills every PR with four mandatory sections — **Task**, **Description**, **Test evidence**, **Security checklist** — and one optional (**Notes for reviewers**).
 
-A template cannot enforce anything on its own, so `.github/workflows/pr-policy.yml` runs `.github/scripts/pr-policy.sh` on every PR open, edit, push, reopen and ready-for-review. It reports red, and **as of 2026-09-22 it does not block the merge** — `pr-policy` was removed from the required status checks (§5). The check reports a failure unless:
+A template cannot enforce anything on its own. Until 2026-09-27 `.github/workflows/pr-policy.yml` ran `.github/scripts/pr-policy.sh` on every PR; both were removed at the repository owner's instruction (§5.1), and the template is now enforced by code-owner review alone. The four conditions the check applied remain the reviewer's checklist:
 
 | # | Check | Why |
 | --- | --- | --- |
@@ -54,9 +54,9 @@ A template cannot enforce anything on its own, so `.github/workflows/pr-policy.y
 | 3 | `## Test evidence` has at least one line that is not blank, not a code fence and not an unfilled `… ->` template line | Test evidence (acceptance criterion) |
 | 4 | `## Security checklist` exists and has no unticked box | Security checklist (acceptance criterion) |
 
-HTML comments are stripped before the checks run, so the template's own guidance never satisfies them. PR text reaches the script only through environment variables, never interpolated into shell. The Task ID match is case-insensitive (`task-012` in a title passes); GitHub's auto-generated title from a branch name (`Chore/task 012 …`) does not, and is not meant to.
+The template's HTML comments are guidance and do not satisfy any condition. A Task ID in GitHub's auto-generated title from a branch name (`Chore/task 012 …`) does not count.
 
-**Bootstrap.** GitHub pre-fills a PR from `PULL_REQUEST_TEMPLATE.md` only once the file exists on the repository's default branch, while `pr-policy` runs from the PR's own head. A PR opened before the template has merged — including the PR that introduces it — therefore arrives with an empty description and fails with one error telling the author to paste the template in by hand. After the first merge the template is pre-filled.
+**Bootstrap.** GitHub pre-fills a PR from `PULL_REQUEST_TEMPLATE.md` only once the file exists on the repository's default branch.
 
 **The security checklist.** Seven items, each derived from a control the matrix already assigns and each worded so that it is either satisfied or does not apply to the change, which is why every box must be ticked rather than "ticked where relevant":
 
@@ -70,9 +70,9 @@ HTML comments are stripped before the checks run, so the template's own guidance
 | No cross-module reference outside `Contracts/`; ADR-003 §8.2 revised before a new edge | A-1, A-6 |
 | Security Lead review requested on authentication, SSO, RBAC, data scope, upload, WF-13, Nafath | CTL-43 |
 
-### 3.1 Verification of the check
+### 3.1 Verification of the check (historical)
 
-`pr-policy.sh` was run locally against eleven cases built from the template itself:
+Recorded at TASK-012; the script was removed on 2026-09-27 (§5.1). `pr-policy.sh` was run locally against eleven cases built from the template itself:
 
 | Case | Result |
 | --- | --- |
@@ -116,7 +116,7 @@ The 21 module folders under `Application/Features/`, `Domain/`, `Infrastructure/
 | `deletion` | branch cannot be deleted | — |
 | `non_fast_forward` | no force-push | `monorepo-bootstrap.md` S-3 |
 | `pull_request` | required; **1 approving review**; stale reviews dismissed on push; code-owner review required; every review thread resolved | "at least 1 approving review" |
-| `required_status_checks` | **`backend`, `frontend`, `repo-checks`**; strict (branch must be current with the target). `pr-policy` was removed on 2026-09-22 — it still runs and still reports, it no longer blocks (§5.1) | "passing CI"; CTL-39 |
+| `required_status_checks` | **`backend`, `frontend`, `repo-checks`**; strict (branch must be current with the target). `pr-policy` was removed on 2026-09-22 and the workflow itself on 2026-09-27 (§5.1) | "passing CI"; CTL-39 |
 | `bypass_actors` | none — administrators included | CTL-38 verification: direct push rejected |
 | `enforcement` | `active` | — |
 
@@ -124,17 +124,18 @@ The check names are the `jobs.<id>.name` values in `ci-quality-gates.yml`. Renam
 
 **No bypass actors** means an emergency merge requires editing the ruleset, which is itself an audited repository event. That is the intended cost.
 
-### 5.1 `pr-policy` is advisory
+### 5.1 `pr-policy` is removed
 
-`pr-policy` was removed from `required_status_checks` on 2026-09-22 at the repository owner's instruction. The
-workflow, the script and the PR template are unchanged: a PR missing its Task ID, its test evidence or a ticked
-security-checklist box still goes red, and the failure is still visible on the PR — it just no longer prevents the
-merge.
+`pr-policy` was removed from `required_status_checks` on 2026-09-22, and on 2026-09-27 the workflow
+(`.github/workflows/pr-policy.yml`) and its script (`.github/scripts/pr-policy.sh`) were deleted, both at the
+repository owner's instruction. No check reads the PR description any more. The PR template is unchanged.
 
 What that costs is precise. **CTL-38's "PR template enforcing linked Task ID, test evidence and a security
-checklist" is now enforced by review rather than by the gate**, as is TASK-012 acceptance criterion 1. The
-code-owner review requirement and the three CI checks are untouched, so an unreviewed or failing-CI change still
-cannot merge. Restoring the gate is one line in this ruleset and one `apply.sh` run.
+checklist" is enforced by review, not by a check**, as is TASK-012 acceptance criterion 1. The code-owner review
+requirement and the three CI checks are untouched, so an unreviewed or failing-CI change still cannot merge.
+`release-metadata.sh` still refuses to release a commit on `main` that names no Task ID (`cicd-pipeline.md` §3.4).
+Restoring the gate means restoring both files from git history and, to make it blocking, one line in this ruleset
+and one `apply.sh` run.
 
 **Not set, deliberately:** `required_linear_history` (a merge commit remains acceptable, §2), `required_signatures` (no key-management decision exists; a candidate for TASK-022 with artifact signing, CTL-41), `required_deployments` (TASK-018).
 
@@ -151,7 +152,7 @@ The script creates the ruleset or updates the one with the same name, then print
 
 | # | Criterion | Result |
 | --- | --- | --- |
-| 1 | PR template enforces linked Task ID, description, test evidence and security checklist | **MET** — the template carries all four sections; `pr-policy` fails a PR missing the Task ID, the evidence or a ticked checklist (§3, verified §3.1). "Description" is present in the template but not machine-checked: a check for prose that says something is not a check worth having |
+| 1 | PR template enforces linked Task ID, description, test evidence and security checklist | **PARTIAL** — the template carries all four sections; since 2026-09-27 no check enforces them and review is the only enforcement (§3, §5.1). "Description" is present in the template but not machine-checked: a check for prose that says something is not a check worth having |
 | 2 | ≥1 approving review and passing CI are required branch-protection rules on `main` | **PARTIAL** — the rules are fully specified in the ruleset (§5) and the checks they require exist and run; the ruleset is a repository setting this environment cannot apply (no GitHub credential). Reads MET when S-1 is done |
 | 3 | A CODEOWNERS file exists covering every top-level module directory | **MET on file, PARTIAL in effect** — every top-level directory (`.github`, `.vscode`, `db`, `docs`, `infra`, `src/backend`, `src/frontend`) and every root file has an owner, with a `*` default for anything added later; the teams do not yet exist (S-2), so GitHub cannot request them |
 
@@ -170,6 +171,7 @@ The script creates the ruleset or updates the one with the same name, then print
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-09-27 | `pr-policy.yml` and `pr-policy.sh` deleted at the repository owner's instruction (§3, §5.1). The template is enforced by code-owner review; acceptance criterion 1 moves from MET to PARTIAL (§6). | Repository owner |
 | 2026-09-22 | `pr-policy` removed from `required_status_checks` at the repository owner's instruction (§5.1). The workflow and script are unchanged and still report; the check is advisory. CTL-38's PR-content enforcement falls back to code-owner review. | Repository owner |
 | 2026-09-22 | TASK-015: `branch_types` in `pr-policy.sh` corrected to accept `infra`, `sec` and `release` (§2) — the workbook's authoritative Branch column uses all three, so 26 of 112 tasks could not open a compliant PR. `ci.yml` renamed to `ci-quality-gates.yml`; `repo-checks` appended to `required_status_checks` (§5); S-5 closed for the contract check and the frontend unit tests (§7). | DevOps (TASK-015) |
 | 2026-09-21 | Initial record. Trunk-based model on `main` with `type/task-nnn-description` branches (§2); `dev`/`stage` kept, protected identically, and scheduled for retirement at TASK-018 (§2.1). PR template with Task, Description, Test evidence and a seven-item Security checklist derived from CTL-08/11/18/27/41/42/43 and A-1/A-5/A-6; `pr-policy` required check enforcing it, verified against eleven cases (§3). CODEOWNERS with seven reviewer groups covering every top-level directory (§4). Repository ruleset requiring 1 approval, code-owner review, thread resolution, `backend`/`frontend`/`pr-policy` checks, no force-push, no bypass, with `apply.sh` (§5). `ci.yml` triggers extended to `dev` and `stage`. Six residual items (§7). | Architecture (TASK-012) |
