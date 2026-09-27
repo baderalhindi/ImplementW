@@ -95,7 +95,7 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 
 -- The permission catalogue (ERD F-081) and the grants of the shipped-default versions: PMPlatform.Application's
 -- PermissionCatalogue, row for row (SeedDataTests checks it). Only rows a controlled source fixes for all eight roles:
--- ADM-041 is R01's (TASK-028); ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07, OWN because
+-- ADM-041 is R01's (TASK-028); ADM-002–013 are R01's (TASK-032: "reachable only for R01 per RBAC", TASK-031); ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07, OWN because
 -- each acts on the holder's own layout or report definition. Blueprint Appendix A, the rest of the matrix, is not in
 -- the repository (record F-1).
 --
@@ -107,6 +107,13 @@ SELECT md5('permission:' || v.code)::uuid, v.code, v.name_ar, v.name_en, v.permi
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
 FROM (VALUES
     ('IDENTITY_INTEGRATION_MANAGE', 'إدارة تكامل الهوية', 'Manage identity integration', 'IDENTITY_ACCESS', true),
+    ('USER_VIEW',                   'عرض المستخدمين',     'View users',                  'IDENTITY_ACCESS', false),
+    ('USER_MANAGE',                 'إدارة المستخدمين',    'Manage users',                'IDENTITY_ACCESS', true),
+    ('ROLE_VIEW',                   'عرض الأدوار والصلاحيات', 'View roles and permissions', 'IDENTITY_ACCESS', false),
+    ('ROLE_MANAGE',                 'إدارة الأدوار',       'Manage roles',                'IDENTITY_ACCESS', true),
+    ('ROLE_ASSIGN',                 'إسناد الأدوار',       'Assign roles',                'IDENTITY_ACCESS', true),
+    ('ORGANIZATION_VIEW',           'عرض الهيكل التنظيمي', 'View organization structure', 'IDENTITY_ACCESS', false),
+    ('ORGANIZATION_MANAGE',         'إدارة الهيكل التنظيمي', 'Manage organization structure', 'IDENTITY_ACCESS', true),
     ('LAYOUT_PERSONALIZE',          'تخصيص التخطيط',      'Personalize layout',          'DASHBOARDS',      false),
     ('REPORT_COMPOSE',              'إعداد التقارير',      'Compose report',              'REPORTS',         false)
 ) AS v (code, name_ar, name_en, permission_group, is_privileged)
@@ -122,6 +129,13 @@ SELECT md5('permission_profile_grant:' || g.role_code || ':' || g.permission_cod
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
 FROM (VALUES
     ('R01', 'IDENTITY_INTEGRATION_MANAGE', 'ALL'),
+    ('R01', 'USER_VIEW',                   'ALL'),
+    ('R01', 'USER_MANAGE',                 'ALL'),
+    ('R01', 'ROLE_VIEW',                   'ALL'),
+    ('R01', 'ROLE_MANAGE',                 'ALL'),
+    ('R01', 'ROLE_ASSIGN',                 'ALL'),
+    ('R01', 'ORGANIZATION_VIEW',           'ALL'),
+    ('R01', 'ORGANIZATION_MANAGE',         'ALL'),
     ('R02', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R02', 'REPORT_COMPOSE',              'OWN'),
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
