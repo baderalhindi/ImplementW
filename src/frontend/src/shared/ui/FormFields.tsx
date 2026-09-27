@@ -1,0 +1,225 @@
+import { type ReactElement, useId } from 'react';
+
+import { useI18n } from '@/shared/i18n/i18n.ts';
+
+interface FieldBaseProps {
+  label: string;
+  name: string;
+  error?: string | undefined;
+  hint?: string | undefined;
+  required?: boolean;
+  disabled?: boolean;
+}
+
+function describedBy(hintId: string, errorId: string, hint?: string, error?: string) {
+  const ids = [hint === undefined ? null : hintId, error === undefined ? null : errorId].filter(
+    (id): id is string => id !== null,
+  );
+  return ids.length === 0 ? undefined : ids.join(' ');
+}
+
+function FieldLabel({
+  htmlFor,
+  label,
+  required,
+}: {
+  htmlFor: string;
+  label: string;
+  required: boolean;
+}) {
+  const { t } = useI18n();
+  return (
+    <label className="field__label" htmlFor={htmlFor}>
+      {label}
+      {required && <span className="field__required">{` (${t('common.form.required')})`}</span>}
+    </label>
+  );
+}
+
+function FieldMessages({
+  hintId,
+  errorId,
+  hint,
+  error,
+}: {
+  hintId: string;
+  errorId: string;
+  hint?: string | undefined;
+  error?: string | undefined;
+}) {
+  return (
+    <>
+      {hint !== undefined && (
+        <p id={hintId} className="field__hint">
+          {hint}
+        </p>
+      )}
+      {error !== undefined && (
+        <p id={errorId} className="field__error">
+          {error}
+        </p>
+      )}
+    </>
+  );
+}
+
+interface TextFieldProps extends FieldBaseProps {
+  value: string;
+  onChange: (value: string) => void;
+  type?: 'text' | 'email' | 'tel' | 'password' | 'search' | 'datetime-local';
+  autoComplete?: string | undefined;
+  /** Latin-script values (usernames, emails, codes, numbers) stay left-to-right inside an Arabic form. */
+  dir?: 'ltr' | 'rtl' | 'auto';
+  inputMode?: 'text' | 'numeric' | 'tel' | 'email';
+}
+
+export function TextField({
+  label,
+  name,
+  value,
+  onChange,
+  error,
+  hint,
+  required = false,
+  disabled = false,
+  type = 'text',
+  autoComplete,
+  dir,
+  inputMode,
+}: TextFieldProps): ReactElement {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  return (
+    <div className="field">
+      <FieldLabel htmlFor={id} label={label} required={required} />
+      <input
+        id={id}
+        name={name}
+        className="field__input"
+        type={type}
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+        required={required}
+        disabled={disabled}
+        autoComplete={autoComplete}
+        dir={dir}
+        inputMode={inputMode}
+        aria-invalid={error === undefined ? undefined : true}
+        aria-describedby={describedBy(hintId, errorId, hint, error)}
+      />
+      <FieldMessages hintId={hintId} errorId={errorId} hint={hint} error={error} />
+    </div>
+  );
+}
+
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectFieldProps extends FieldBaseProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  /** Label of the empty first option; omit when a value is always chosen. */
+  placeholder?: string | undefined;
+}
+
+export function SelectField({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  placeholder,
+  error,
+  hint,
+  required = false,
+  disabled = false,
+}: SelectFieldProps): ReactElement {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  return (
+    <div className="field">
+      <FieldLabel htmlFor={id} label={label} required={required} />
+      <select
+        id={id}
+        name={name}
+        className="field__input"
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+        required={required}
+        disabled={disabled}
+        aria-invalid={error === undefined ? undefined : true}
+        aria-describedby={describedBy(hintId, errorId, hint, error)}
+      >
+        {placeholder !== undefined && <option value="">{placeholder}</option>}
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <FieldMessages hintId={hintId} errorId={errorId} hint={hint} error={error} />
+    </div>
+  );
+}
+
+interface RadioGroupFieldProps extends FieldBaseProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+}
+
+export function RadioGroupField({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  error,
+  hint,
+  required = false,
+  disabled = false,
+}: RadioGroupFieldProps): ReactElement {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  const { t } = useI18n();
+  return (
+    <fieldset
+      className="field field--group"
+      aria-invalid={error === undefined ? undefined : true}
+      aria-describedby={describedBy(hintId, errorId, hint, error)}
+      disabled={disabled}
+    >
+      <legend className="field__label">
+        {label}
+        {required && <span className="field__required">{` (${t('common.form.required')})`}</span>}
+      </legend>
+      <div className="field__options">
+        {options.map((option) => (
+          <label key={option.value} className="field__option">
+            <input
+              type="radio"
+              name={name}
+              value={option.value}
+              checked={value === option.value}
+              onChange={() => {
+                onChange(option.value);
+              }}
+            />
+            {option.label}
+          </label>
+        ))}
+      </div>
+      <FieldMessages hintId={hintId} errorId={errorId} hint={hint} error={error} />
+    </fieldset>
+  );
+}

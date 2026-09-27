@@ -13,6 +13,11 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    // The SPA calls the API same-origin at /api/v1 (TASK-032 D-2). In development Vite forwards it to the API:
+    // localhost:5080 from the host, http://api:8080 inside the compose network (PMPLATFORM_API_ORIGIN).
+    proxy: {
+      '/api': process.env.PMPLATFORM_API_ORIGIN ?? 'http://localhost:5080',
+    },
   },
   build: {
     sourcemap: true,
@@ -21,6 +26,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
+    setupFiles: ['src/test/setup.ts'],
     restoreMocks: true,
   },
 });

@@ -1,12 +1,13 @@
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, expect, test } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { expect, test } from 'vitest';
 
 import { App } from './App.tsx';
 
-afterEach(cleanup);
-
-test('renders the platform name inside the main landmark', () => {
+test('without a session the application opens on sign-in, inside the main landmark, in Arabic by default', async () => {
   render(<App />);
 
-  expect(screen.getByRole('main').textContent).toBe('PMPlatform');
+  const main = screen.getByRole('main');
+  expect(await screen.findByRole('heading', { level: 1, name: 'تسجيل الدخول' })).toBeTruthy();
+  expect(main.contains(screen.getByRole('heading', { level: 1 }))).toBe(true);
+  expect(document.documentElement.dir).toBe('rtl');
 });

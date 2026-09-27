@@ -185,3 +185,4 @@ A `[Produces("application/json")]` tried on the controllers turned every problem
 | Date | Change |
 | --- | --- |
 | 2026-09-27 | Created (TASK-031) |
+| 2026-09-27 | TASK-032 builds the administration UI on this API (`identity-access-administration-ui.md`). F-14 applied: MOD-082 is the scope step of the assignment dialog, and an external user's entity is set at creation (UI D-6) |
