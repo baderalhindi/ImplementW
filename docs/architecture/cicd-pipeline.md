@@ -148,9 +148,10 @@ branches (TASK-012) are unaffected; branch protection binds to job names, and no
 `release-metadata.sh` runs first, reads the commit being released, and **fails the run** if its
 message names no `TASK-nnn`. The Task ID then travels with the image into every deployment record.
 
-This can fail, and that is the point. `pr-policy.sh` (TASK-012) already requires a pull request to
-name a task, and squash merges carry the PR title onto `main`, so a commit without a Task ID is a
-commit that reached the trunk outside that gate. Making the pipeline fail there rather than deploy an
+This can fail, and that is the point. The PR template (TASK-012) requires a pull request to name a
+task, and squash merges carry the PR title onto `main`, so a commit without a Task ID is a commit that
+reached the trunk without one. Since the `pr-policy` check was removed (`branching-strategy.md` §5.1),
+this is the only automated Task ID check. Making the pipeline fail there rather than deploy an
 untraceable release is the whole of CTL-40's third clause.
 
 The image is deployed **by digest**, never by tag. "One artifact built once and promoted unchanged"
