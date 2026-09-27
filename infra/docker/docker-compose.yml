@@ -141,6 +141,8 @@ services:
       # The two .env.example rows a local stack can fill (TASK-013 R-4); SSO rows wait for TASK-028.
       VITE_APP_BASE_URL: http://localhost:5173
       VITE_APM_ENVIRONMENT_TAG: dev
+      # TASK-032: where the Vite dev server forwards /api (vite.config.ts). Read by Vite's Node process, never bundled.
+      PMPLATFORM_API_ORIGIN: http://api:8080
     ports:
       - "${PMPLATFORM_FRONTEND_PORT:-5173}:5173"
     volumes:

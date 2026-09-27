@@ -1,0 +1,321 @@
+{
+  "nav": {
+    "label": "Administration",
+    "users": "Users",
+    "roles": "Roles",
+    "permissionMatrix": "Permission matrix",
+    "roleAssignments": "Role assignments",
+    "organization": "Organization structure",
+    "departments": "Departments",
+    "entities": "External entities"
+  },
+  "codeHint": "Capital letters, digits, hyphens and underscores, for example FIN-OPS. The code cannot be changed later.",
+  "stepUpNote": "You may be asked for a verification code from your authenticator app before this is applied.",
+  "userType": {
+    "INTERNAL": "Internal (AHDA staff)",
+    "EXTERNAL": "External entity user",
+    "SERVICE": "Service account"
+  },
+  "userStatus": {
+    "ACTIVE": "Active",
+    "DISABLED": "Disabled"
+  },
+  "assignmentStatus": {
+    "ACTIVE": "Active",
+    "ENDED": "Ended"
+  },
+  "endReason": {
+    "PROJECT_CLOSED": "project closed",
+    "ROLE_CHANGE": "role changed",
+    "MIGRATED": "migrated",
+    "MANUAL": "ended by an administrator",
+    "EXPIRED": "expired"
+  },
+  "entityStatus": {
+    "ACTIVE": "Active",
+    "SUSPENDED": "Suspended",
+    "RETIRED": "Retired"
+  },
+  "lifecycleState": {
+    "DRAFT": "draft",
+    "VALIDATED": "validated",
+    "PUBLISHED": "published",
+    "RETIRED": "retired"
+  },
+  "dataScope": {
+    "ALL": "All",
+    "DEPT": "Department",
+    "OWN": "Own",
+    "ASSIGNED": "Assigned",
+    "ENTITY": "Entity",
+    "READ_ONLY": "Read only"
+  },
+  "fieldErrors": {
+    "notFound": "The selected record does not exist.",
+    "inactive": "The selected record is not active.",
+    "duplicate": "This value is already used by another record.",
+    "outsideEntity": "An external user can only be assigned within their own entity.",
+    "notExternalEligible": "This role cannot be assigned to an external user.",
+    "dateBeforeStart": "The end must be after the start."
+  },
+  "problems": {
+    "duplicateKey": "A value you entered is already used by another record. See the highlighted field.",
+    "alreadyAssigned": "The user already holds this assignment.",
+    "referenceInvalid": "A selected user, sponsor, department, entity, project or profile version does not exist or cannot be used. See the highlighted field.",
+    "externalGrantInvalid": "This assignment does not meet the rules for external users. See the highlighted fields.",
+    "profileVersionNotPublished": "Only a published profile version can be assigned.",
+    "projectClosed": "The project is closed and cannot take new assignments.",
+    "selfAdministration": "You cannot change your own status or assignments. Ask another system administrator.",
+    "servicePrincipal": "Service accounts are not managed here.",
+    "directoryAuthoritative": "An internal user's department, manager and job title come from the directory and cannot be changed here.",
+    "invalidPeriod": "An assignment cannot start in the past, and must end after it starts.",
+    "departmentCycle": "A department cannot be placed under itself or one of its sub-departments."
+  },
+  "userPicker": {
+    "searchLabel": "Search by name, username or email",
+    "results": "Matching users",
+    "noResults": "No active user matches this search.",
+    "change": "Change"
+  },
+  "users": {
+    "fields": {
+      "displayName": "Full name",
+      "username": "Username",
+      "email": "Email",
+      "mobileNumber": "Mobile number",
+      "userType": "User type",
+      "status": "Status",
+      "department": "Department",
+      "externalEntity": "External entity",
+      "organization": "Department or entity",
+      "jobTitle": "Job title",
+      "directorySubjectId": "Directory identifier",
+      "preferredLanguage": "Preferred language",
+      "multiFactor": "Authenticator app enrolled",
+      "updatedAt": "Last updated"
+    },
+    "list": {
+      "title": "Users",
+      "description": "Internal staff and external entity users who can sign in to the platform.",
+      "caption": "Users",
+      "create": "Create user",
+      "search": "Search by name, username or email",
+      "empty": "No users have been created yet.",
+      "emptyFiltered": "No users match these filters.",
+      "sort": {
+        "displayNameAsc": "Name (A to Z)",
+        "displayNameDesc": "Name (Z to A)",
+        "usernameAsc": "Username (A to Z)",
+        "usernameDesc": "Username (Z to A)"
+      }
+    },
+    "create": {
+      "title": "Create user"
+    },
+    "edit": {
+      "title": "Edit user"
+    },
+    "form": {
+      "userTypeHint": "The user type cannot be changed after the user is created.",
+      "externalEntityHint": "The entity the person works for. It cannot be changed after the user is created.",
+      "mobileNumberHint": "International format, for example +966501234567. The user confirms the number themselves with a code.",
+      "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognise them.",
+      "directoryAttributesNote": "The department, manager and job title of an internal user are read from the AHDA directory each time they sign in."
+    },
+    "detail": {
+      "description": "Profile, status and role assignments.",
+      "assignments": "Role assignments",
+      "assignmentsCaption": "Role assignments of {name}",
+      "noAssignments": "This user has no role assignments.",
+      "disabledAt": "since {date}",
+      "mobileVerified": "Verified",
+      "mobileUnverified": "Not verified",
+      "notice": {
+        "created": "The user was created.",
+        "updated": "The changes were saved.",
+        "statusChanged": "The user's status was changed.",
+        "assigned": "The role was assigned.",
+        "ended": "The assignment was ended."
+      }
+    }
+  },
+  "userStatusDialog": {
+    "disableTitle": "Disable user",
+    "activateTitle": "Activate user",
+    "disable": "Disable user",
+    "activate": "Activate user",
+    "disableBody": "{name} will no longer be able to sign in. Their records, decisions and role assignments are kept unchanged and still show their name.",
+    "activateBody": "{name} will be able to sign in again with the role assignments they held before."
+  },
+  "assignRole": {
+    "open": "Assign role",
+    "title": "Assign role",
+    "roleStep": "Role and period",
+    "stepOf": "Step {step} of {count}",
+    "user": "User",
+    "profile": "Role and permission profile",
+    "profileHint": "A role's permissions come from its permission profile.",
+    "externalProfileHint": "Only roles that can be held by external users are listed.",
+    "version": "Profile version",
+    "versionLabel": "Version {version}",
+    "noPublishedVersion": "No published version is available",
+    "startsAt": "Starts",
+    "startsAtHint": "Leave empty to start now. A start in the past is not accepted.",
+    "endsAt": "Ends",
+    "endsAtHint": "Leave empty for no end date."
+  },
+  "assignScope": {
+    "title": "Assign department/entity",
+    "internalNote": "Optionally limit the assignment to a department, an external entity or a project.",
+    "externalNote": "An external user is assigned within their own entity, normally for one project, with a named AHDA sponsor.",
+    "noAnchor": "Not limited",
+    "projectId": "Project ID",
+    "projectIdHint": "The project's identifier, for example 3f2b8c1e-0000-4000-8000-000000000000. Required for a project manager from an external entity.",
+    "sponsor": "AHDA sponsor",
+    "sponsorHint": "An active AHDA staff member who is accountable for this external user's access.",
+    "submit": "Assign role"
+  },
+  "assignments": {
+    "title": "Role assignments",
+    "description": "Who holds which role, where, and for how long. An assignment is never edited; end it and assign again.",
+    "empty": "No role assignments have been made yet.",
+    "emptyFiltered": "No role assignments match these filters.",
+    "user": "User",
+    "role": "Role",
+    "scope": "Limited to",
+    "sponsor": "Sponsor",
+    "period": "Period",
+    "status": "Status",
+    "periodValue": "{start} to {end}",
+    "openEnded": "no end date",
+    "noAnchor": "Not limited",
+    "projectScope": "Project {project}",
+    "unknownUser": "Unknown user",
+    "end": "End assignment",
+    "endTitle": "End assignment",
+    "endBody": "The user will lose the {role} role from their next action. The assignment stays on record as ended."
+  },
+  "roles": {
+    "fields": {
+      "code": "Code",
+      "name": "Name",
+      "nameAr": "Name in Arabic",
+      "nameEn": "Name in English",
+      "externalEligible": "Can be held by external users"
+    },
+    "list": {
+      "title": "Roles",
+      "description": "The platform's eight roles. What each role may do is set by its permission profiles.",
+      "empty": "No roles are available."
+    },
+    "detail": {
+      "profiles": "Permission profiles",
+      "profilesNote": "Open a profile to see the permissions each of its versions grants.",
+      "noProfiles": "This role has no permission profiles."
+    },
+    "edit": {
+      "title": "Edit role",
+      "description": "Roles are fixed; only their names can be changed here. New access levels are created as permission profiles."
+    }
+  },
+  "permissionMatrix": {
+    "title": "Permission matrix",
+    "description": "Which permissions each permission profile grants, and at what scope. Read only.",
+    "caption": "Permissions granted by each permission profile",
+    "profile": "Permission profile",
+    "allProfiles": "All profiles",
+    "version": "Version",
+    "versionLabel": "Version {version} ({state})",
+    "noVersion": "No version",
+    "permission": "Permission",
+    "privileged": "Privileged",
+    "notGranted": "Not granted",
+    "empty": "No permissions or profiles are available."
+  },
+  "organization": {
+    "title": "Organization structure",
+    "description": "AHDA's departments and the external entities that take part in projects.",
+    "manage": "Manage"
+  },
+  "departments": {
+    "title": "Departments",
+    "description": "AHDA's departments. A department linked to a directory reference is assigned to staff automatically at sign-in.",
+    "create": "Create department",
+    "createTitle": "Create department",
+    "editTitle": "Edit department",
+    "search": "Search by code or name",
+    "code": "Code",
+    "name": "Name",
+    "nameAr": "Name in Arabic",
+    "nameEn": "Name in English",
+    "parent": "Parent department",
+    "noParent": "None (top level)",
+    "directoryReference": "Directory reference",
+    "directoryReferenceHint": "The department's value in the AHDA directory, if staff should be placed in it automatically.",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "empty": "No departments have been created yet.",
+    "emptyFiltered": "No departments match these filters.",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "activateTitle": "Activate department",
+    "deactivateTitle": "Deactivate department",
+    "activateBody": "{name} will be available again for new assignments.",
+    "deactivateBody": "{name} will no longer be offered for new assignments. Existing records keep it."
+  },
+  "entities": {
+    "title": "External entities",
+    "description": "Organisations outside AHDA whose staff may be given access to specific projects.",
+    "create": "Create entity",
+    "createTitle": "Create external entity",
+    "editTitle": "Edit external entity",
+    "search": "Search by code or name",
+    "code": "Code",
+    "name": "Name",
+    "nameAr": "Name in Arabic",
+    "nameEn": "Name in English",
+    "entityType": "Entity type identifier",
+    "entityTypeHint": "The master-data identifier of the entity type, for example 3f2b8c1e-0000-4000-8000-000000000000.",
+    "sponsor": "AHDA sponsor",
+    "sponsorHint": "Optional. The AHDA staff member responsible for the relationship with this entity.",
+    "status": "Status",
+    "empty": "No external entities have been created yet.",
+    "emptyFiltered": "No external entities match these filters.",
+    "transitions": {
+      "suspend": {
+        "title": "Suspend entity",
+        "body": "Users of {name} will not be able to sign in or act until the entity is activated again.",
+        "action": "Suspend"
+      },
+      "activate": {
+        "title": "Activate entity",
+        "body": "Users of {name} will be able to sign in and act again.",
+        "action": "Activate"
+      },
+      "retire": {
+        "title": "Retire entity",
+        "body": "{name} will be retired permanently. Its users will not be able to sign in, and it cannot be activated again.",
+        "action": "Retire"
+      }
+    }
+  },
+  "signIn": {
+    "title": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "signingIn": "Signing in…",
+    "codeInstructions": "Enter the verification code from your authenticator app.",
+    "enrolInstructions": "Add PMPlatform to your authenticator app using the key below, then enter the code it shows.",
+    "provisioningUri": "Authenticator key",
+    "code": "Verification code",
+    "verify": "Verify",
+    "verifying": "Verifying…"
+  },
+  "stepUp": {
+    "title": "Confirm it is you",
+    "instructions": "This action needs a fresh verification code. Enter the code from your authenticator app.",
+    "confirm": "Confirm"
+  }
+}

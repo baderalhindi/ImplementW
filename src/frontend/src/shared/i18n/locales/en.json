@@ -1,0 +1,84 @@
+{
+  "appName": "PMPlatform",
+  "skipToContent": "Skip to main content",
+  "signOut": "Sign out",
+  "languages": {
+    "ar": "Arabic",
+    "en": "English"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "next": "Next",
+    "back": "Back",
+    "retry": "Try again",
+    "search": "Search"
+  },
+  "states": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "searching": "Searching…"
+  },
+  "values": {
+    "yes": "Yes",
+    "no": "No",
+    "none": "None"
+  },
+  "table": {
+    "actions": "Actions"
+  },
+  "filters": {
+    "label": "Filters",
+    "any": "Any",
+    "sort": "Sort by",
+    "apply": "Apply filters",
+    "clear": "Clear filters"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Previous page",
+    "next": "Next page",
+    "status": "Page {page} of {pageCount} ({totalCount} results)"
+  },
+  "form": {
+    "required": "required",
+    "choose": "Choose…",
+    "fixErrors": "Correct the highlighted fields ({count}) and try again."
+  },
+  "fieldErrors": {
+    "required": "Enter a value.",
+    "maxLength": "This value is too long.",
+    "malformed": "This value is not in the expected format.",
+    "invalidChoice": "Choose one of the listed values.",
+    "notAllowed": "This field does not apply here; leave it empty.",
+    "invalid": "This value is not accepted."
+  },
+  "problems": {
+    "network": "The server could not be reached. Check your connection and try again.",
+    "authenticationRequired": "Your session has ended. Sign in again.",
+    "permissionDenied": "You do not have permission to do this.",
+    "stepUpRequired": "This action needs a fresh verification code. Try again and enter the code when asked.",
+    "notFound": "The record was not found, or you do not have access to it.",
+    "validationFailed": "Some values were not accepted. Correct the highlighted fields.",
+    "preconditionFailed": "Someone else changed this record after you opened it. Reload the page to see the latest version, then make your change again.",
+    "invalidTransition": "The record is already in that state.",
+    "terminalState": "The record is retired or ended and cannot be changed.",
+    "unavailable": "The service is unavailable at the moment. Try again later.",
+    "unexpected": "Something went wrong. Try again.",
+    "unexpectedWithReference": "Something went wrong. Try again. If it happens again, quote reference {reference}."
+  },
+  "home": {
+    "title": "Welcome, {name}",
+    "administration": "Go to users, roles and permissions administration",
+    "nothingYet": "No screens are available for your role yet."
+  },
+  "forbidden": {
+    "title": "Access denied",
+    "description": "This page is available to system administrators only."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "home": "Go to the home page"
+  }
+}
