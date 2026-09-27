@@ -169,3 +169,4 @@ Every mutation was reverted and the suite re-run green.
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-26 | Initial record. MFA gate before every session for R01 and configured roles, enrolment and verification through an MFA provider adapter, identity-provider MFA when configured; `amr` array and `auth_time` in the session tokens; step-up middleware with configurable operations and threshold; bearer validation that refuses tokens that skipped MFA; four endpoints; test MFA provider; 26 integration tests, thirteen mutations. The rejection floor re-checks after each wait, so it never answers early (§6.2). Eleven findings | Security (TASK-029) |
+| 2026-09-27 | `Identity:StepUp:Operations` gains the four FG-03 operations that change who may do what: `IdentityAccess_ActivateUser`, `IdentityAccess_DisableUser`, `IdentityAccess_CreateAccessRelationship`, `IdentityAccess_EndAccessRelationship` (`identity-access-administration.md` D-11). | Identity (TASK-031) |
