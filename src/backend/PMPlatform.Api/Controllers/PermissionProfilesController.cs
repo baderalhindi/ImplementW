@@ -13,7 +13,7 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route("api/v1/permission-profiles")]
 [Tags("IdentityAccess")]
-public sealed class PermissionProfilesController(IRoleAdministrationService roles) : IdentityAccessControllerBase
+public sealed class PermissionProfilesController(IRoleAdministrationService roles) : AdministrationControllerBase
 {
     /// <summary>Filter: <c>baseRoleId</c>. By code.</summary>
     [HttpGet]

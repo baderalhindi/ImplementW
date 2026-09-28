@@ -15,7 +15,7 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route(Collection)]
 [Tags("IdentityAccess")]
-public sealed class UsersController(IUserAdministrationService users, IMobileNumberVerificationService mobileVerification) : IdentityAccessControllerBase
+public sealed class UsersController(IUserAdministrationService users, IMobileNumberVerificationService mobileVerification) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/users";
 

@@ -73,18 +73,21 @@ internal sealed class AuthorizationRepository(PMPlatformDbContext context, TimeP
 
     public async Task<IReadOnlyList<FieldClassification>> GetFieldClassificationsAsync(string entityCode, CancellationToken cancellationToken)
     {
-        // The FIELD_CLASSIFICATION version in force: the latest PUBLISHED one effective now (ERD D-13).
+        // The FIELD_CLASSIFICATION version in force, by FG-04's resolution rule (TASK-034, ERD D-13): of the versions
+        // ever published and not withdrawn before taking effect, the one with the latest effective-from at or before now,
+        // unless it has been withdrawn since. An earlier version is never brought back.
         DateTimeOffset now = timeProvider.GetUtcNow();
-        Guid? versionId = await (
+        var latest = await (
                 from version in context.Set<ConfigurationVersion>().AsNoTracking()
                 join family in context.Set<ConfigurationFamily>() on version.ConfigurationFamilyId equals family.Id
                 where family.Code == FieldClassificationFamily
-                      && version.LifecycleState == GovernedLifecycleState.Published
+                      && version.PublishedAt != null
                       && version.EffectiveFrom <= now
-                      && (version.EffectiveTo == null || version.EffectiveTo > now)
-                orderby version.EffectiveFrom descending, version.VersionNo descending
-                select (Guid?)version.Id)
+                      && (version.EffectiveTo == null || version.EffectiveTo > version.EffectiveFrom)
+                orderby version.EffectiveFrom descending
+                select new { version.Id, version.EffectiveTo })
             .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        Guid? versionId = latest is not null && (latest.EffectiveTo is null || latest.EffectiveTo > now) ? latest.Id : null;
         return versionId is null
             ? []
             : await context.Set<FieldClassificationRule>().AsNoTracking()

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Configuration.Json;
 using PMPlatform.Api.Auditing;
@@ -10,6 +11,7 @@ using PMPlatform.Api.Correlation;
 using PMPlatform.Api.Errors;
 using PMPlatform.Application;
 using PMPlatform.Application.Common.Auditing;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Infrastructure;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
@@ -97,8 +99,12 @@ if (args is [string scriptCommand] && DatabaseScripts.IsCommand(scriptCommand))
 app.UseMiddleware<CorrelationId>();
 
 // R-26: an unhandled exception is a 500 carrying code, correlation id and timestamp, and nothing about the exception.
+// TASK-034: configuration an operation requires and cannot resolve is 422 CONFIGURATION_MISSING — the operation stops
+// explicitly instead of defaulting (Blueprint Section 12).
 app.UseExceptionHandler(handler => handler.Run(context =>
-    ApiProblem.WriteAsync(context, StatusCodes.Status500InternalServerError, ErrorCodes.InternalError, "Internal error.")));
+    context.Features.Get<IExceptionHandlerFeature>()?.Error is ConfigurationMissingException
+        ? ApiProblem.WriteAsync(context, StatusCodes.Status422UnprocessableEntity, ErrorCodes.ConfigurationMissing, "Configuration missing.")
+        : ApiProblem.WriteAsync(context, StatusCodes.Status500InternalServerError, ErrorCodes.InternalError, "Internal error.")));
 
 if (app.Environment.IsDevelopment())
 {

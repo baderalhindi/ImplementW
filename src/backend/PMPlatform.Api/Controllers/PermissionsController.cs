@@ -8,7 +8,7 @@ namespace PMPlatform.Api.Controllers;
 /// <summary>ADM-009 (TASK-031): the protected permission catalogue (ERD F-081). Defined in code and seeded, so read-only here.</summary>
 [Route("api/v1/permissions")]
 [Tags("IdentityAccess")]
-public sealed class PermissionsController(IRoleAdministrationService roles) : IdentityAccessControllerBase
+public sealed class PermissionsController(IRoleAdministrationService roles) : AdministrationControllerBase
 {
     /// <summary>Unpaged (R-28): the catalogue is a small closed set, by group and code.</summary>
     [HttpGet]

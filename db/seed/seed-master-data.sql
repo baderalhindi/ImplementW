@@ -99,7 +99,8 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 
 -- The permission catalogue (ERD F-081) and the grants of the shipped-default versions: PMPlatform.Application's
 -- PermissionCatalogue, row for row (SeedDataTests checks it). Only rows a controlled source fixes for all eight roles:
--- ADM-041 is R01's (TASK-028); ADM-002–013 are R01's (TASK-032: "reachable only for R01 per RBAC", TASK-031); ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07, OWN because
+-- ADM-041 is R01's (TASK-028); ADM-002–013 are R01's (TASK-032: "reachable only for R01 per RBAC", TASK-031); FG-04
+-- master data and configuration are R01's by delivery-team decision, pending Appendix A (TASK-034 record F-1); ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07, OWN because
 -- each acts on the holder's own layout or report definition. Blueprint Appendix A, the rest of the matrix, is not in
 -- the repository (record F-1).
 --
@@ -118,6 +119,10 @@ FROM (VALUES
     ('ROLE_ASSIGN',                 'إسناد الأدوار',       'Assign roles',                'IDENTITY_ACCESS', true),
     ('ORGANIZATION_VIEW',           'عرض الهيكل التنظيمي', 'View organization structure', 'IDENTITY_ACCESS', false),
     ('ORGANIZATION_MANAGE',         'إدارة الهيكل التنظيمي', 'Manage organization structure', 'IDENTITY_ACCESS', true),
+    ('MASTER_DATA_VIEW',            'عرض البيانات المرجعية', 'View master data',           'MASTER_DATA_CONFIG', false),
+    ('MASTER_DATA_MANAGE',          'إدارة البيانات المرجعية', 'Manage master data',       'MASTER_DATA_CONFIG', true),
+    ('CONFIGURATION_VIEW',          'عرض الإعدادات',       'View configuration',          'MASTER_DATA_CONFIG', false),
+    ('CONFIGURATION_MANAGE',        'إدارة الإعدادات',      'Manage configuration',        'MASTER_DATA_CONFIG', true),
     ('LAYOUT_PERSONALIZE',          'تخصيص التخطيط',      'Personalize layout',          'DASHBOARDS',      false),
     ('REPORT_COMPOSE',              'إعداد التقارير',      'Compose report',              'REPORTS',         false)
 ) AS v (code, name_ar, name_en, permission_group, is_privileged)
@@ -140,6 +145,10 @@ FROM (VALUES
     ('R01', 'ROLE_ASSIGN',                 'ALL'),
     ('R01', 'ORGANIZATION_VIEW',           'ALL'),
     ('R01', 'ORGANIZATION_MANAGE',         'ALL'),
+    ('R01', 'MASTER_DATA_VIEW',            'ALL'),
+    ('R01', 'MASTER_DATA_MANAGE',          'ALL'),
+    ('R01', 'CONFIGURATION_VIEW',          'ALL'),
+    ('R01', 'CONFIGURATION_MANAGE',        'ALL'),
     ('R02', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R02', 'REPORT_COMPOSE',              'OWN'),
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),

@@ -133,3 +133,4 @@ The tests, by acceptance criterion and validation check:
 | --- | --- |
 | 2026-09-26 | Created (TASK-030) |
 | 2026-09-27 | TASK-031 (`identity-access-administration.md`): seven FG-03 permissions shipped to R01 at ALL (D-9's bar: TASK-032 fixes ADM-002–013 to R01). The administration services are the first callers of record-level checks (§3 step 2); collections still have no scope filter (F-8), so they are served only to ALL and READ-ONLY grants. |
+| 2026-09-28 | TASK-034 (`master-data-configuration.md`): four FG-04 permissions shipped to R01 at ALL, by delivery-team decision (that record's F-1), not by a controlled source. `AuthorizationRepository` now picks the FIELD_CLASSIFICATION version in force by FG-04's resolution rule (D-5 there): a withdrawn current version no longer brings back the version before it. With no version in force, no field is masked, as before (that record's F-6). |

@@ -10,7 +10,7 @@ namespace PMPlatform.Api.Controllers;
 /// <summary>ADM-011 Organization Structure and ADM-012 Departments (TASK-031). Never deleted (RETAIN): deactivated.</summary>
 [Route(Collection)]
 [Tags("IdentityAccess")]
-public sealed class DepartmentsController(IDepartmentAdministrationService departments) : IdentityAccessControllerBase
+public sealed class DepartmentsController(IDepartmentAdministrationService departments) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/departments";
 

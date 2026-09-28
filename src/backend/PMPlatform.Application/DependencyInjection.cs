@@ -7,6 +7,9 @@ using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.MasterDataConfig;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 
 namespace PMPlatform.Application;
 
@@ -44,6 +47,16 @@ public static class DependencyInjection
         services.AddScoped<IRoleAdministrationService, RoleAdministrationService>();
         services.AddScoped<IDepartmentAdministrationService, DepartmentAdministrationService>();
         services.AddScoped<IExternalEntityAdministrationService, ExternalEntityAdministrationService>();
+        services.AddScoped<IRoleDirectory, RoleDirectory>();
+
+        // TASK-034: FG-04 master data and the versioned configuration engine, and the resolution every module uses
+        // (E-U2). The repositories are Infrastructure's.
+        services.AddScoped<IMasterDataAdministrationService, MasterDataAdministrationService>();
+        services.AddScoped<IKpiDefinitionAdministrationService, KpiDefinitionAdministrationService>();
+        services.AddScoped<ConfigurationReferenceReader>();
+        services.AddScoped<IConfigurationAdministrationService, ConfigurationAdministrationService>();
+        services.AddScoped<IConfigurationResolver, ConfigurationResolver>();
+        services.AddScoped<IMasterDataResolver, MasterDataResolver>();
 
         return services;
     }

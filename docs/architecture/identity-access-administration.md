@@ -186,3 +186,4 @@ A `[Produces("application/json")]` tried on the controllers turned every problem
 | --- | --- |
 | 2026-09-27 | Created (TASK-031) |
 | 2026-09-27 | TASK-032 builds the administration UI on this API (`identity-access-administration-ui.md`). F-14 applied: MOD-082 is the scope step of the assignment dialog, and an external user's entity is set at creation (UI D-6) |
+| 2026-09-28 | TASK-034 (`master-data-configuration.md`): `IdentityAccessControllerBase` renamed `AdministrationControllerBase`, since the FG-04 controllers share it unchanged; `IRoleDirectory` added to the contracts so FG-04 can check the roles its matrices name (E-U1). |

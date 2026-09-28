@@ -13,7 +13,7 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route("api/v1/roles")]
 [Tags("IdentityAccess")]
-public sealed class RolesController(IRoleAdministrationService roles) : IdentityAccessControllerBase
+public sealed class RolesController(IRoleAdministrationService roles) : AdministrationControllerBase
 {
     /// <summary>Unpaged (R-28): the closed set of eight canonical roles.</summary>
     [HttpGet]

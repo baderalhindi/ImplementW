@@ -1304,6 +1304,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("version_no");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "ChangeSummary", "PMPlatform.Domain.MasterDataConfig.ConfigurationVersion.ChangeSummary#NarrativeText", b1 =>
                         {
                             b1.Property<string>("Language")
@@ -1338,6 +1344,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_configuration_version_change_summary_lang", "\"change_summary_lang\" IN ('ar', 'en')");
 
                             t.HasCheckConstraint("ck_configuration_version_change_summary_pair", "(\"change_summary\" IS NULL) = (\"change_summary_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_configuration_version_effective_from", "(published_at IS NULL) = (effective_from IS NULL)");
+
+                            t.HasCheckConstraint("ck_configuration_version_effective_to", "effective_to IS NULL OR effective_to >= effective_from");
 
                             t.HasCheckConstraint("ck_configuration_version_lifecycle_state", "\"lifecycle_state\" IN ('DRAFT', 'VALIDATED', 'PUBLISHED', 'RETIRED')");
                         });
@@ -1746,6 +1756,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("validated_by_user_id");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.MasterDataConfig.KpiDefinition.Description#BilingualLabel", b1 =>
                         {
                             b1.Property<string>("Ar")
@@ -1903,6 +1919,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Name", "PMPlatform.Domain.MasterDataConfig.MasterDataCatalogue.Name#BilingualLabel", b1 =>
                         {
                             b1.IsRequired();
@@ -2004,6 +2026,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ValidatedByUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("validated_by_user_id");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.MasterDataConfig.MasterDataItem.Description#BilingualLabel", b1 =>
                         {

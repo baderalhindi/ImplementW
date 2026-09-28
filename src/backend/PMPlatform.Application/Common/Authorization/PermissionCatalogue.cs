@@ -36,6 +36,18 @@ public sealed class PermissionCatalogue
     /// <summary>ADM-011–013: create, edit, activate and deactivate departments and entities (TASK-031).</summary>
     public const string OrganizationManage = "ORGANIZATION_MANAGE";
 
+    /// <summary>ADM-020–029 master data catalogues and items, and the KPI catalogue (TASK-034).</summary>
+    public const string MasterDataView = "MASTER_DATA_VIEW";
+
+    /// <summary>ADM-020–029: author, validate, publish and retire master data items and KPI definitions; rename a catalogue (TASK-034).</summary>
+    public const string MasterDataManage = "MASTER_DATA_MANAGE";
+
+    /// <summary>FG-04 configuration families, versions, their content, and resolution as of a date (TASK-034).</summary>
+    public const string ConfigurationView = "CONFIGURATION_VIEW";
+
+    /// <summary>FG-04: author, validate, publish and retire configuration versions (TASK-034).</summary>
+    public const string ConfigurationManage = "CONFIGURATION_MANAGE";
+
     /// <summary>ADR-019: personalise one's own dashboard layout (TASK-111).</summary>
     public const string LayoutPersonalize = "LAYOUT_PERSONALIZE";
 
@@ -52,13 +64,19 @@ public sealed class PermissionCatalogue
             new(RoleAssign, "IDENTITY_ACCESS", AccessMode.Write),
             new(OrganizationView, "IDENTITY_ACCESS", AccessMode.Read),
             new(OrganizationManage, "IDENTITY_ACCESS", AccessMode.Write),
+            new(MasterDataView, "MASTER_DATA_CONFIG", AccessMode.Read),
+            new(MasterDataManage, "MASTER_DATA_CONFIG", AccessMode.Write),
+            new(ConfigurationView, "MASTER_DATA_CONFIG", AccessMode.Read),
+            new(ConfigurationManage, "MASTER_DATA_CONFIG", AccessMode.Write),
             new(LayoutPersonalize, "DASHBOARDS", AccessMode.Write),
             new(ReportCompose, "REPORTS", AccessMode.Write),
         ]);
 
     /// <summary>
     /// ADM-002–013 are R01's alone: TASK-032's acceptance criterion has every FG-03 administration screen "reachable only
-    /// for R01 per RBAC". ALL, because an administrator administers every user and structure. ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07 and withholds them from R04, R05, R06 and
+    /// for R01 per RBAC". ALL, because an administrator administers every user and structure. FG-04 (ADM-020–029 and
+    /// configuration) goes to R01 at ALL too, as a delivery-team decision no controlled source states yet (TASK-034 F-1).
+    /// Master data and configuration are platform-wide, with no record to scope. ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07 and withholds them from R04, R05, R06 and
     /// R08; each acts on the holder's own layout or report definition, hence OWN (the ADR names no scope). The report's
     /// data is authorised independently for every viewer (CTL-15).
     /// </summary>
@@ -72,6 +90,10 @@ public sealed class PermissionCatalogue
         new("R01", RoleAssign, DataScope.All),
         new("R01", OrganizationView, DataScope.All),
         new("R01", OrganizationManage, DataScope.All),
+        new("R01", MasterDataView, DataScope.All),
+        new("R01", MasterDataManage, DataScope.All),
+        new("R01", ConfigurationView, DataScope.All),
+        new("R01", ConfigurationManage, DataScope.All),
         new("R02", LayoutPersonalize, DataScope.Own),
         new("R02", ReportCompose, DataScope.Own),
         new("R03", LayoutPersonalize, DataScope.Own),

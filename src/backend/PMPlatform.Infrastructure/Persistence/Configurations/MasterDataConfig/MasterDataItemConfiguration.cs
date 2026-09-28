@@ -9,6 +9,7 @@ internal sealed class MasterDataItemConfiguration : IEntityTypeConfiguration<Mas
     public void Configure(EntityTypeBuilder<MasterDataItem> builder)
     {
         builder.ToTable("master_data_item", "master_data_config");
+        builder.HasRowVersion();
         builder.Property(e => e.Code).HasMaxLength(50);
         builder.HasIndex(e => new { e.CatalogueId, e.Code }).IsUnique();
         builder.HasBilingualLabel(e => e.Label, "label");

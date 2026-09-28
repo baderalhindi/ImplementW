@@ -8,12 +8,12 @@ using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 namespace PMPlatform.Api.Controllers;
 
 /// <summary>
-/// What the FG-03 administration controllers share (TASK-031): the caller's id, the api-conventions §4.4 answer to each
-/// refusal, and R-21 concurrency — an <c>ETag</c> on every single mutable resource, <c>If-Match</c> required on
+/// What the FG-03 (TASK-031) and FG-04 (TASK-034) administration controllers share: the caller's id, the api-conventions
+/// §4.4 answer to each refusal, and R-21 concurrency — an <c>ETag</c> on every single mutable resource, <c>If-Match</c> required on
 /// <c>PUT</c> and honoured on a command when sent.
 /// </summary>
 [ApiController]
-public abstract class IdentityAccessControllerBase : ControllerBase
+public abstract class AdministrationControllerBase : ControllerBase
 {
     /// <summary>The <c>sub</c> of the validated access token; every administration endpoint requires one.</summary>
     protected Guid CallerId => Guid.Parse(User.FindFirstValue(SessionTokenClaims.Subject)!);

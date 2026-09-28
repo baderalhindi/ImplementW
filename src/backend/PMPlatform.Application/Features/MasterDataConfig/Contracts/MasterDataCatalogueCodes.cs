@@ -1,0 +1,14 @@
+namespace PMPlatform.Application.Features.MasterDataConfig.Contracts;
+
+/// <summary>The catalogues configuration content references by rule (db/seed; seed-data-and-integrity.md §3.1).</summary>
+public static class MasterDataCatalogueCodes
+{
+    public const string GovernanceProfile = "GOVERNANCE_PROFILE";
+    public const string ImpactDimension = "IMPACT_DIMENSION";
+    public const string DataClassification = "DATA_CLASSIFICATION";
+    public const string DocumentControlLevel = "DOCUMENT_CONTROL_LEVEL";
+    public const string MilestoneCategory = "MILESTONE_CATEGORY";
+    public const string EvidenceType = "EVIDENCE_TYPE";
+    public const string ContributionType = "CONTRIBUTION_TYPE";
+    public const string KpiUnit = "KPI_UNIT";
+}
