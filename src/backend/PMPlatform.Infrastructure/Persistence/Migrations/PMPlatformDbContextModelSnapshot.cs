@@ -23,6 +23,251 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActorType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("actor_type");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid?>("DataClassificationItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("data_classification_item_id");
+
+                    b.Property<string>("EventClass")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("event_class");
+
+                    b.Property<string>("EventHash")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(64)")
+                        .HasColumnName("event_hash");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("event_type");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("outcome");
+
+                    b.Property<string>("PreviousEventHash")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(64)")
+                        .HasColumnName("previous_event_hash");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<Guid?>("ScopeExternalEntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("scope_external_entity_id");
+
+                    b.Property<Guid?>("ScopeProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("scope_project_id");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectModule")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("subject_module");
+
+                    b.Property<string>("SubjectType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("subject_type");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_event");
+
+                    b.HasIndex("DataClassificationItemId")
+                        .HasDatabaseName("ix_audit_event_data_classification_item_id");
+
+                    b.HasIndex("ScopeExternalEntityId")
+                        .HasDatabaseName("ix_audit_event_scope_external_entity_id");
+
+                    b.HasIndex("ActorUserId", "OccurredAt")
+                        .HasDatabaseName("ix_audit_event_actor_user_id_occurred_at");
+
+                    b.HasIndex("OccurredAt", "Id")
+                        .HasDatabaseName("ix_audit_event_occurred_at_id");
+
+                    b.HasIndex("RecordedAt", "Id")
+                        .HasDatabaseName("ix_audit_event_recorded_at_id");
+
+                    b.HasIndex("ScopeProjectId", "OccurredAt", "Id")
+                        .HasDatabaseName("ix_audit_event_scope_project_id_occurred_at_id");
+
+                    b.ToTable("audit_event", "audit_activity", t =>
+                        {
+                            t.HasCheckConstraint("ck_audit_event_actor_type", "\"actor_type\" IN ('USER', 'SERVICE', 'INTEGRATION')");
+
+                            t.HasCheckConstraint("ck_audit_event_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_audit_event_event_class", "\"event_class\" IN ('AUTHENTICATION', 'AUTHORIZATION_DENIAL', 'PRIVILEGED_ACTION', 'PERMISSION_CHANGE', 'LIFECYCLE_TRANSITION', 'DATA_CHANGE', 'APPROVAL_DECISION', 'INTEGRATION', 'CONFIGURATION_CHANGE')");
+
+                            t.HasCheckConstraint("ck_audit_event_outcome", "\"outcome\" IN ('SUCCESS', 'DENIED', 'FAILED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEventAttribute", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AttributeName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("attribute_name");
+
+                    b.Property<Guid>("AuditEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("audit_event_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("NewValue")
+                        .HasColumnType("text")
+                        .HasColumnName("new_value");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("text")
+                        .HasColumnName("old_value");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_event_attribute");
+
+                    b.HasIndex("AuditEventId", "AttributeName")
+                        .IsUnique()
+                        .HasDatabaseName("ix_audit_event_attribute_audit_event_id_attribute_name");
+
+                    b.ToTable("audit_event_attribute", "audit_activity", t =>
+                        {
+                            t.HasCheckConstraint("ck_audit_event_attribute_append_only", "updated_at = created_at AND updated_by = created_by");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditForwardingRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuditEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("audit_event_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("ForwardedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("forwarded_at");
+
+                    b.Property<Guid?>("InvocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invocation_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_forwarding_record");
+
+                    b.HasIndex("AuditEventId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_audit_forwarding_record_audit_event_id");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_audit_forwarding_record_status_created_at");
+
+                    b.ToTable("audit_forwarding_record", "audit_activity", t =>
+                        {
+                            t.HasCheckConstraint("ck_audit_forwarding_record_status", "\"status\" IN ('PENDING', 'FORWARDED', 'FAILED')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.AccessRelationship", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2741,6 +2986,53 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_project_intake_milestone_title_lang", "\"title_lang\" IN ('ar', 'en')");
                         });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEvent", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_audit_event_user_actor_user_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("DataClassificationItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_audit_event_master_data_item_data_classification_item_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.ExternalEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ScopeExternalEntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_audit_event_external_entity_scope_external_entity_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ScopeProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_audit_event_project_scope_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEventAttribute", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.AuditActivity.AuditEvent", null)
+                        .WithMany()
+                        .HasForeignKey("AuditEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_audit_event_attribute_audit_event_audit_event_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditForwardingRecord", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.AuditActivity.AuditEvent", null)
+                        .WithMany()
+                        .HasForeignKey("AuditEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_audit_forwarding_record_audit_event_audit_event_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.AccessRelationship", b =>

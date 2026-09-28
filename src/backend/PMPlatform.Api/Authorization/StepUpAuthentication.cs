@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using PMPlatform.Api.Errors;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
@@ -10,7 +11,8 @@ namespace PMPlatform.Api.Authorization;
 /// authorization, so it sees only requests the caller is otherwise allowed to make; the token itself has already been
 /// checked for MFA by <see cref="MultiFactorTokenValidation"/>. An operation on <see cref="StepUpOptions.Operations"/>
 /// needs a session that passed a second factor no longer than <see cref="StepUpOptions.MaxAge"/> ago; otherwise it
-/// answers 403 <c>STEP_UP_REQUIRED</c> and the client steps up with <c>POST /api/v1/sessions/current/step-up</c>.
+/// answers 403 <c>STEP_UP_REQUIRED</c> and the client steps up with <c>POST /api/v1/sessions/current/step-up</c>. That
+/// refusal is audited as an authorization denial (TASK-033).
 /// </summary>
 internal sealed class StepUpAuthentication(RequestDelegate next, IOptionsMonitor<StepUpOptions> options, TimeProvider timeProvider)
 {
@@ -33,6 +35,10 @@ internal sealed class StepUpAuthentication(RequestDelegate next, IOptionsMonitor
 
             if (!authentication.MultiFactor || timeProvider.GetUtcNow() - authentication.AuthenticatedAt > stepUp.MaxAge)
             {
+                await context.RequestServices.GetRequiredService<IAccessAudit>()
+                    .StepUpRequiredAsync(Guid.Parse(context.User.FindFirstValue(SessionTokenClaims.Subject)!), operation)
+                    .ConfigureAwait(false);
+
                 // RFC 9470's challenge parameters, on the status the platform's error catalogue fixes (api-conventions §4.4).
                 context.Response.Headers.WWWAuthenticate = string.Create(
                     CultureInfo.InvariantCulture,

@@ -1,8 +1,9 @@
 -- seed-master-data.sql — the platform's shipped reference data (TASK-027). Record: docs/architecture/seed-data-and-integrity.md
 --
 -- What it holds:
---   1. the SERVICE principals (ERD D-2): the seed principal every seeded row is attributed to, and the directory-sync
---      principal a directory-sourced change to a user is attributed to (TASK-028, ADR-007);
+--   1. the SERVICE principals (ERD D-2): the seed principal every seeded row is attributed to, the directory-sync
+--      principal a directory-sourced change to a user is attributed to (TASK-028, ADR-007), and the audit-capture
+--      principal an audit event with no known user is attributed to (TASK-033);
 --   2. the eight canonical roles R01–R08, each with its shipped-default permission profile and that profile's
 --      PUBLISHED version 1 (ADR-018, TASK-110), and the permission catalogue with the grants of those versions
 --      (TASK-030) — only the rows a controlled source fixes, since Blueprint Appendix A is not in the repository;
@@ -37,11 +38,14 @@
 --   psql "<connection>" -X -q -v ON_ERROR_STOP=1 --single-transaction -f db/seed/seed-master-data.sql     (locally)
 
 -- 1. The SERVICE principals. A SERVICE user is a non-human principal; it holds no role and cannot sign in. The
--- directory-sync principal's id is PMPlatform.Infrastructure's UserAccessRepository.DirectorySyncPrincipalId.
+-- directory-sync principal's id is PMPlatform.Infrastructure's UserAccessRepository.DirectorySyncPrincipalId; the
+-- audit-capture principal's is PMPlatform.Application's AuditTrail.AuditCapturePrincipalId.
 INSERT INTO identity_access."user" (id, user_type, username, display_name, email, preferred_language, status, created_at, created_by, updated_at, updated_by)
 VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 'Platform seed (service principal)', 'svc.platform-seed@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
        ('00000000-0000-4000-8000-0000000000fe', 'SERVICE', 'svc.directory-sync', 'Directory synchronisation (service principal)', 'svc.directory-sync@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000fd', 'SERVICE', 'svc.audit-capture', 'Audit capture (service principal)', 'svc.audit-capture@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO NOTHING;
 

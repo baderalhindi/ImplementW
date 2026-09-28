@@ -128,6 +128,8 @@ Each row is one index, by its key columns. **`IndexingStrategyTests` reads this 
 | I-51 | `audit_activity.audit_event` | `actor_user_id, occurred_at` | ADM-050 filtered by actor | TASK-073 |
 | I-52 | `reports.report_job` | `requested_by_user_id, requested_at, id` | SCR-140 Export History | TASK-071 |
 | I-53 | `reports.saved_view` | `owner_user_id, view_type` | SCR-139 Saved Views: the caller's own. Views shared with the caller are found through `saved_view_share`'s foreign-key indexes (P-1) | TASK-071 |
+| I-55 | `audit_activity.audit_event` | `recorded_at, id` | The head of the hash chain, read under the chain lock by every insert (TASK-033). Without it each insert scans the table | TASK-033 |
+| I-56 | `audit_activity.audit_forwarding_record` | `status, created_at` | The SIEM forwarder's queue: PENDING and FAILED records, oldest first | TASK-033 |
 
 ### 4.3 Screens covered without a register row
 
@@ -304,3 +306,4 @@ Two scans outside the register queries are correct and are left as they are:
 | --- | --- | --- |
 | 2026-09-26 | Initial record. Ten indexes on the core schemas in three single-schema migrations, five of them replacing single-column foreign-key indexes; 43 indexes specified for the tables of later modules and enforced by test; query-plan review of the five busiest registers at representative volume, 22 of 22 queries index-served. | Database (TASK-026) |
 | 2026-09-26 | Validation run over every register screen: 74 default queries on stand-ins of all §4.2 tables, with a median latency baseline (`register-query-baseline.csv`) and a 50 ms ceiling. It found SCR-108 without a default-sort index (I-54 added) and SCR-081's count scanning `risk` (F-3 raised with evidence). The five-busiest review grew to 26 queries (ENTITY scope, OWN count, project tab). | Database (TASK-026) |
+| 2026-09-28 | I-55 and I-56 added with the `audit_activity` tables (TASK-033). I-49 to I-51 are built with them, as §4 requires of a table's register rows the day its migration lands. | Security (TASK-033) |

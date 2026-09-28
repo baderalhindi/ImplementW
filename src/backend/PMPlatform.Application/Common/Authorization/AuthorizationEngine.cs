@@ -1,4 +1,7 @@
 using Microsoft.Extensions.Logging;
+using PMPlatform.Application.Common.Auditing;
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Events;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 using PMPlatform.Domain.MasterDataConfig;
 
@@ -8,9 +11,11 @@ namespace PMPlatform.Application.Common.Authorization;
 /// Evaluates the Section 10.1 formula over the grants of the profile versions the user's active assignments are bound
 /// to (ADR-018). Grants combine by union: a request is allowed if any one grant allows it. Two rules bound every grant,
 /// whatever its scope (ADR-013): a per-project assignment covers only its project, and an external user never reaches a
-/// record of another entity or of no entity. Scoped: what it reads is read once per request.
+/// record of another entity or of no entity. Scoped: what it reads is read once per request. Every refusal is recorded as
+/// an AUTHORIZATION_DENIAL audit event before it is returned (TASK-033, CTL-25), whichever caller enforces it.
 /// </summary>
-internal sealed partial class AuthorizationEngine(IAuthorizationRepository repository, PermissionCatalogue catalogue, ILogger<AuthorizationEngine> logger)
+internal sealed partial class AuthorizationEngine(
+    IAuthorizationRepository repository, PermissionCatalogue catalogue, IAuditTrail audit, ILogger<AuthorizationEngine> logger)
     : IAuthorizationEngine
 {
     private readonly Dictionary<Guid, AuthorizationPrincipal?> _principals = [];
@@ -47,10 +52,33 @@ internal sealed partial class AuthorizationEngine(IAuthorizationRepository repos
         if (!decision.IsAllowed)
         {
             LogDenied(logger, userId, permission.Code, decision.Outcome, decision.Denial);
+            await audit.RecordAsync(DeniedEntry(userId, principal is not null, permission.Code, decision, request.Subject)).ConfigureAwait(false);
         }
 
         return decision;
     }
+
+    /// <summary>
+    /// The refusal, with the anchors of the record it was decided on. The caller's answer (403 or 404) is not changed by
+    /// it. A token whose user does not exist names that id as the subject: it cannot be the actor of a stored event.
+    /// </summary>
+    private static AuditEntry DeniedEntry(Guid userId, bool userExists, string permissionCode, AuthorizationDecision decision, AuthorizationSubject? subject) =>
+        new(AuditEventClass.AuthorizationDenial, IdentityAccessAuditEvents.AccessDenied, AuditOutcome.Denied)
+        {
+            ActorUserId = userExists ? userId : null,
+            Subject = userExists ? null : new AuditSubject("IdentityAccess", nameof(User), userId),
+            ScopeProjectId = subject?.ProjectId,
+            ScopeExternalEntityId = subject?.ExternalEntityId,
+            DataClassificationItemId = subject?.DataClassificationItemId,
+            Attributes =
+            [
+                AuditAttribute.Of(IdentityAccessAuditAttributes.PermissionCode, permissionCode),
+                AuditAttribute.Of(IdentityAccessAuditAttributes.DenialReason, decision.Denial),
+                AuditAttribute.Of(IdentityAccessAuditAttributes.DecisionOutcome, decision.Outcome),
+                .. subject?.DepartmentId is { } departmentId ? [AuditAttribute.Of(IdentityAccessAuditAttributes.DepartmentId, departmentId)] : Array.Empty<AuditAttribute>(),
+                .. subject?.OwnerUserId is { } ownerUserId ? [AuditAttribute.Of(IdentityAccessAuditAttributes.OwnerUserId, ownerUserId)] : Array.Empty<AuditAttribute>(),
+            ],
+        };
 
     public async Task<FieldMask> GetFieldMaskAsync(Guid userId, string permissionCode, string entityCode, CancellationToken cancellationToken)
     {

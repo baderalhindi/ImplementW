@@ -245,10 +245,9 @@ public sealed class AdministrationEndpointTests(IdentityTestHost host)
         }
         finally
         {
-            await host.Database.ExecuteAsync($"""
-                DELETE FROM identity_access.access_relationship WHERE id IN ('{onProject}', '{elsewhere}');
-                DELETE FROM project.project WHERE id = '{projectId}';
-                """);
+            // The closed project stays: its assignment's audit event names it as scope, and audit rows are never deleted
+            // (TASK-033). No other test reads it.
+            await host.Database.ExecuteAsync($"DELETE FROM identity_access.access_relationship WHERE id IN ('{onProject}', '{elsewhere}');");
         }
     }
 

@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Configuration.Json;
+using PMPlatform.Api.Auditing;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Correlation;
 using PMPlatform.Api.Errors;
 using PMPlatform.Application;
+using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Infrastructure;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
@@ -45,6 +47,10 @@ builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// TASK-033: audit events carry the request's correlation id, client address and caller.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditRequestContext, HttpAuditRequestContext>();
 
 // TASK-028: every request is authenticated by the platform's own access token (R-46), validated against the current
 // JWT_SIGNING_KEY. Authorization is deny-by-default: an endpoint without [AllowAnonymous] requires a valid token.

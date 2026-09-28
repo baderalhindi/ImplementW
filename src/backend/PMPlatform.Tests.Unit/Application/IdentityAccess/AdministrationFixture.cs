@@ -3,6 +3,7 @@ using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
+using PMPlatform.Tests.Unit.Application.Auditing;
 using PMPlatform.Tests.Unit.Application.Authorization;
 
 namespace PMPlatform.Tests.Unit.Application.IdentityAccess;
@@ -70,6 +71,8 @@ internal sealed class AdministrationFixture
 
     public FixedTimeProvider Clock { get; } = new(Now);
 
+    public RecordingAuditTrail Audit { get; } = new();
+
     public static BilingualLabel Label(string name) => new($"اسم {name}", name);
 
     public static User Internal(Guid id, Guid? departmentId = null) => new()
@@ -100,23 +103,23 @@ internal sealed class AdministrationFixture
         new(id, userType, IsActive: true, departmentId, entityId, grants);
 
     public UserAdministrationService UserService() =>
-        new(Users, Entities, Access(), Clock, NullLogger<UserAdministrationService>.Instance);
+        new(Users, Entities, Access(), Audit, Clock, NullLogger<UserAdministrationService>.Instance);
 
     public AccessRelationshipService AssignmentService() =>
-        new(Assignments, Users, Departments, Entities, Access(), Clock, NullLogger<AccessRelationshipService>.Instance);
+        new(Assignments, Users, Departments, Entities, Access(), Audit, Clock, NullLogger<AccessRelationshipService>.Instance);
 
     public DepartmentAdministrationService DepartmentService() =>
-        new(Departments, Access(), Clock, NullLogger<DepartmentAdministrationService>.Instance);
+        new(Departments, Access(), Audit, Clock, NullLogger<DepartmentAdministrationService>.Instance);
 
     public ExternalEntityAdministrationService EntityService() =>
-        new(Entities, Users, Access(), Clock, NullLogger<ExternalEntityAdministrationService>.Instance);
+        new(Entities, Users, Access(), Audit, Clock, NullLogger<ExternalEntityAdministrationService>.Instance);
 
     public MobileNumberVerificationService MobileService() =>
         new(Users, Verifier, Clock, NullLogger<MobileNumberVerificationService>.Instance);
 
     /// <summary>A fresh engine per service, as one request would have.</summary>
     private AdministrationAccess Access() =>
-        new(new AuthorizationEngine(Authorization, PermissionCatalogue.Platform, NullLogger<AuthorizationEngine>.Instance));
+        new(new AuthorizationEngine(Authorization, PermissionCatalogue.Platform, Audit, NullLogger<AuthorizationEngine>.Instance));
 }
 
 internal sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider

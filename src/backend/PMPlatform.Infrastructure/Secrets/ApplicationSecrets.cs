@@ -35,6 +35,9 @@ public static class ApplicationSecrets
     /// <summary>TASK-029: the platform's API key at the MFA verification provider.</summary>
     public const string MultiFactorProviderApiKey = "MFA_PROVIDER_API_KEY";
 
+    /// <summary>TASK-033: the platform's token at AHDA's SIEM ingestion endpoint.</summary>
+    public const string SiemApiToken = "SIEM_API_TOKEN";
+
     /// <summary>The configuration keys loaded from the secret store and required at start-up, in the order they are read.</summary>
     public static readonly IReadOnlyList<string> Keys = [DatabaseConnectionString, JwtSigningKey];
 
@@ -44,6 +47,8 @@ public static class ApplicationSecrets
     /// registers it (ADR-007). Without them the method reports "not configured" on ADM-041 and the API still starts.
     /// The MFA provider key is scoped to SIT/UAT/PROD and may not be needed at all if AHDA's identity provider applies
     /// the second factor (ADR-010 gate note); without it, a sign-in that requires MFA is refused, never let through.
+    /// The SIEM token is scoped to SIT/UAT/PROD; without it, audit events are stored and wait to be forwarded.
     /// </summary>
-    public static readonly IReadOnlyList<string> OptionalKeys = [DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey];
+    public static readonly IReadOnlyList<string> OptionalKeys =
+        [DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey, SiemApiToken];
 }

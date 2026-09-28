@@ -1,17 +1,22 @@
 using Microsoft.Extensions.Logging;
+using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Events;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 
 /// <summary>
 /// ADM-011/012 (TASK-031). The tree has no cycle. Sign-in resolves an internal user's department by its directory
-/// reference (ADR-007), so no two active departments share one.
+/// reference (ADR-007), so no two active departments share one. Every change is saved with its PRIVILEGED_ACTION audit
+/// event (TASK-033).
 /// </summary>
 internal sealed partial class DepartmentAdministrationService(
     IDepartmentRepository departments,
     AdministrationAccess access,
+    IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<DepartmentAdministrationService> logger) : IDepartmentAdministrationService
 {
@@ -66,7 +71,16 @@ internal sealed partial class DepartmentAdministrationService(
             UpdatedBy = actorId,
         };
         departments.Add(department);
-        return await SaveAsync(actorId, department, "created", cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(actorId, department, "created", IdentityAccessAuditEvents.DepartmentCreated,
+            [
+                AuditAttribute.Change("code", null, department.Code),
+                AuditAttribute.Change("name_ar", null, department.Name.Ar),
+                AuditAttribute.Change("name_en", null, department.Name.En),
+                AuditAttribute.Change("parent_department_id", null, department.ParentDepartmentId),
+                AuditAttribute.Change("directory_reference", null, department.DirectoryReference),
+                AuditAttribute.Change("is_active", null, department.IsActive),
+            ],
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<DepartmentDetail>>> UpdateAsync(
@@ -98,10 +112,17 @@ internal sealed partial class DepartmentAdministrationService(
             return AdministrationError.Duplicate("directoryReference");
         }
 
+        AuditAttribute?[] changed =
+        [
+            AuditAttribute.Change("name_ar", department.Name.Ar, changes.Name.Ar),
+            AuditAttribute.Change("name_en", department.Name.En, changes.Name.En),
+            AuditAttribute.Change("parent_department_id", department.ParentDepartmentId, changes.ParentDepartmentId),
+            AuditAttribute.Change("directory_reference", department.DirectoryReference, changes.DirectoryReference),
+        ];
         department.Name = changes.Name;
         department.ParentDepartmentId = changes.ParentDepartmentId;
         department.DirectoryReference = changes.DirectoryReference;
-        return await SaveAsync(actorId, department, "updated", cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(actorId, department, "updated", IdentityAccessAuditEvents.DepartmentUpdated, changed, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<DepartmentDetail>>> ActivateAsync(Guid actorId, Guid departmentId, uint? expectedVersion, CancellationToken cancellationToken)
@@ -123,7 +144,8 @@ internal sealed partial class DepartmentAdministrationService(
         }
 
         department.IsActive = true;
-        return await SaveAsync(actorId, department, "activated", cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(actorId, department, "activated", IdentityAccessAuditEvents.DepartmentActivated,
+            [AuditAttribute.Change("is_active", false, true)], cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Users, projects and assignments that name the department keep naming it; sign-in no longer resolves to it.</summary>
@@ -141,7 +163,8 @@ internal sealed partial class DepartmentAdministrationService(
         }
 
         department.IsActive = false;
-        return await SaveAsync(actorId, department, "deactivated", cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(actorId, department, "deactivated", IdentityAccessAuditEvents.DepartmentDeactivated,
+            [AuditAttribute.Change("is_active", true, false)], cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Whether <paramref name="parentId"/> is <paramref name="departmentId"/> or one of its descendants, or its ancestry already loops.</summary>
@@ -169,10 +192,17 @@ internal sealed partial class DepartmentAdministrationService(
         directoryReference is not null
         && await departments.IsDirectoryReferenceInUseAsync(directoryReference, exceptDepartmentId, cancellationToken).ConfigureAwait(false);
 
-    private async Task<AdministrationResult<Versioned<DepartmentDetail>>> SaveAsync(Guid actorId, Department department, string change, CancellationToken cancellationToken)
+    private async Task<AdministrationResult<Versioned<DepartmentDetail>>> SaveAsync(
+        Guid actorId, Department department, string change, string eventType, AuditAttribute?[] attributes, CancellationToken cancellationToken)
     {
         department.UpdatedAt = timeProvider.GetUtcNow();
         department.UpdatedBy = actorId;
+        audit.Stage(new AuditEntry(AuditEventClass.PrivilegedAction, eventType, AuditOutcome.Success)
+        {
+            ActorUserId = actorId,
+            Subject = new AuditSubject("IdentityAccess", nameof(Department), department.Id),
+            Attributes = [.. attributes.OfType<AuditAttribute>()],
+        });
         if ((await departments.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
         {
             return saveError;
