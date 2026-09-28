@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
+using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Events;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Application.Features.IdentityAccess.Administration;
@@ -8,12 +11,13 @@ namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 /// <summary>
 /// ADM-013 (TASK-031, ADR-013). ACTIVE ↔ SUSPENDED, either → RETIRED, and RETIRED takes no further write. The status alone
 /// decides whether the entity's people may sign in and act (sign-in and the engine both read it); their assignments and
-/// the records they touched are not rewritten.
+/// the records they touched are not rewritten. Every change is saved with its PRIVILEGED_ACTION audit event (TASK-033).
 /// </summary>
 internal sealed partial class ExternalEntityAdministrationService(
     IExternalEntityRepository entities,
     IUserAdministrationRepository users,
     AdministrationAccess access,
+    IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<ExternalEntityAdministrationService> logger) : IExternalEntityAdministrationService
 {
@@ -62,7 +66,16 @@ internal sealed partial class ExternalEntityAdministrationService(
             UpdatedBy = actorId,
         };
         entities.Add(entity);
-        return await SaveAsync(actorId, entity, "created", cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(actorId, entity, "created", IdentityAccessAuditEvents.ExternalEntityCreated,
+            [
+                AuditAttribute.Change("code", null, entity.Code),
+                AuditAttribute.Change("name_ar", null, entity.Name.Ar),
+                AuditAttribute.Change("name_en", null, entity.Name.En),
+                AuditAttribute.Change("entity_type_item_id", null, entity.EntityTypeItemId),
+                AuditAttribute.Change(IdentityAccessAuditAttributes.SponsorUserId, null, entity.SponsorUserId),
+                AuditAttribute.Change(IdentityAccessAuditAttributes.Status, null, entity.Status),
+            ],
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ExternalEntityDetail>>> UpdateAsync(
@@ -81,24 +94,35 @@ internal sealed partial class ExternalEntityAdministrationService(
             return AdministrationError.Rule(IdentityAccessErrorCodes.ReferenceInvalid, issues);
         }
 
-        entity!.Name = changes.Name;
+        AuditAttribute?[] changed =
+        [
+            AuditAttribute.Change("name_ar", entity!.Name.Ar, changes.Name.Ar),
+            AuditAttribute.Change("name_en", entity.Name.En, changes.Name.En),
+            AuditAttribute.Change("entity_type_item_id", entity.EntityTypeItemId, changes.EntityTypeItemId),
+            AuditAttribute.Change(IdentityAccessAuditAttributes.SponsorUserId, entity.SponsorUserId, changes.SponsorUserId),
+        ];
+        entity.Name = changes.Name;
         entity.EntityTypeItemId = changes.EntityTypeItemId;
         entity.SponsorUserId = changes.SponsorUserId;
-        return await SaveAsync(actorId, entity, "updated", cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(actorId, entity, "updated", IdentityAccessAuditEvents.ExternalEntityUpdated, changed, cancellationToken).ConfigureAwait(false);
     }
 
     public Task<AdministrationResult<Versioned<ExternalEntityDetail>>> SuspendAsync(Guid actorId, Guid entityId, uint? expectedVersion, CancellationToken cancellationToken) =>
-        TransitionAsync(actorId, entityId, expectedVersion, ExternalEntityStatus.Active, ExternalEntityStatus.Suspended, "suspended", cancellationToken);
+        TransitionAsync(actorId, entityId, expectedVersion, ExternalEntityStatus.Active, ExternalEntityStatus.Suspended, "suspended",
+            IdentityAccessAuditEvents.ExternalEntitySuspended, cancellationToken);
 
     public Task<AdministrationResult<Versioned<ExternalEntityDetail>>> ActivateAsync(Guid actorId, Guid entityId, uint? expectedVersion, CancellationToken cancellationToken) =>
-        TransitionAsync(actorId, entityId, expectedVersion, ExternalEntityStatus.Suspended, ExternalEntityStatus.Active, "activated", cancellationToken);
+        TransitionAsync(actorId, entityId, expectedVersion, ExternalEntityStatus.Suspended, ExternalEntityStatus.Active, "activated",
+            IdentityAccessAuditEvents.ExternalEntityActivated, cancellationToken);
 
     public Task<AdministrationResult<Versioned<ExternalEntityDetail>>> RetireAsync(Guid actorId, Guid entityId, uint? expectedVersion, CancellationToken cancellationToken) =>
-        TransitionAsync(actorId, entityId, expectedVersion, from: null, ExternalEntityStatus.Retired, "retired", cancellationToken);
+        TransitionAsync(actorId, entityId, expectedVersion, from: null, ExternalEntityStatus.Retired, "retired",
+            IdentityAccessAuditEvents.ExternalEntityRetired, cancellationToken);
 
     /// <summary><paramref name="from"/> null: from any status but RETIRED.</summary>
     private async Task<AdministrationResult<Versioned<ExternalEntityDetail>>> TransitionAsync(
-        Guid actorId, Guid entityId, uint? expectedVersion, ExternalEntityStatus? from, ExternalEntityStatus to, string change, CancellationToken cancellationToken)
+        Guid actorId, Guid entityId, uint? expectedVersion, ExternalEntityStatus? from, ExternalEntityStatus to, string change, string eventType,
+        CancellationToken cancellationToken)
     {
         ExternalEntity? entity = await entities.FindForUpdateAsync(entityId, expectedVersion, cancellationToken).ConfigureAwait(false);
         if (await CheckWritableAsync(actorId, entity, cancellationToken).ConfigureAwait(false) is { } refused)
@@ -111,8 +135,9 @@ internal sealed partial class ExternalEntityAdministrationService(
             return AdministrationError.InvalidTransition;
         }
 
-        entity!.Status = to;
-        return await SaveAsync(actorId, entity, change, cancellationToken).ConfigureAwait(false);
+        AuditAttribute?[] changed = [AuditAttribute.Change(IdentityAccessAuditAttributes.Status, entity!.Status, to)];
+        entity.Status = to;
+        return await SaveAsync(actorId, entity, change, eventType, changed, cancellationToken).ConfigureAwait(false);
     }
 
     private static AuthorizationSubject SubjectOf(Guid entityId) => new() { ExternalEntityId = entityId };
@@ -134,10 +159,18 @@ internal sealed partial class ExternalEntityAdministrationService(
         return [.. issues.OfType<FieldIssue>()];
     }
 
-    private async Task<AdministrationResult<Versioned<ExternalEntityDetail>>> SaveAsync(Guid actorId, ExternalEntity entity, string change, CancellationToken cancellationToken)
+    private async Task<AdministrationResult<Versioned<ExternalEntityDetail>>> SaveAsync(
+        Guid actorId, ExternalEntity entity, string change, string eventType, AuditAttribute?[] attributes, CancellationToken cancellationToken)
     {
         entity.UpdatedAt = timeProvider.GetUtcNow();
         entity.UpdatedBy = actorId;
+        audit.Stage(new AuditEntry(AuditEventClass.PrivilegedAction, eventType, AuditOutcome.Success)
+        {
+            ActorUserId = actorId,
+            Subject = new AuditSubject("IdentityAccess", nameof(ExternalEntity), entity.Id),
+            ScopeExternalEntityId = entity.Id,
+            Attributes = [.. attributes.OfType<AuditAttribute>()],
+        });
         if ((await entities.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
         {
             return saveError;

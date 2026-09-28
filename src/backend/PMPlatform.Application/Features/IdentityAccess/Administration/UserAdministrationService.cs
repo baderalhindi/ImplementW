@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
+using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Events;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Application.Features.IdentityAccess.Administration;
@@ -8,12 +11,15 @@ namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 /// <summary>
 /// ADM-002–005 and MOD-080 (TASK-031). Disabling writes the user's status and time and nothing else: no assignment is
 /// ended and no record that names the user is touched, so ownership, assignments and decisions keep their author
-/// (Appendix A.1, CTL-09). Access stops anyway, because sign-in and the engine both refuse a disabled user.
+/// (Appendix A.1, CTL-09). Access stops anyway, because sign-in and the engine both refuse a disabled user. Every change
+/// is saved with its PRIVILEGED_ACTION audit event (TASK-033); email and mobile number are recorded as changed, never
+/// copied.
 /// </summary>
 internal sealed partial class UserAdministrationService(
     IUserAdministrationRepository users,
     IExternalEntityRepository entities,
     AdministrationAccess access,
+    IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<UserAdministrationService> logger) : IUserAdministrationService
 {
@@ -78,6 +84,17 @@ internal sealed partial class UserAdministrationService(
             UpdatedBy = actorId,
         };
         users.Add(user);
+        audit.Stage(Entry(actorId, user, IdentityAccessAuditEvents.UserCreated,
+        [
+            AuditAttribute.Change("user_type", null, user.UserType),
+            AuditAttribute.Change("username", null, user.Username),
+            AuditAttribute.Change("display_name", null, user.DisplayName),
+            AuditAttribute.Change("directory_subject_id", null, user.DirectorySubjectId),
+            AuditAttribute.Change(IdentityAccessAuditAttributes.ExternalEntityId, null, user.ExternalEntityId),
+            AuditAttribute.WithheldChange("email", null, user.Email),
+            AuditAttribute.WithheldChange("mobile_number", null, user.MobileNumber),
+            AuditAttribute.Change(IdentityAccessAuditAttributes.Status, null, user.Status),
+        ]));
 
         if ((await users.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
         {
@@ -111,6 +128,17 @@ internal sealed partial class UserAdministrationService(
             user.MobileVerifiedAt = null;
         }
 
+        AuditAttribute?[] changed =
+        [
+            AuditAttribute.Change("username", user.Username, changes.Username),
+            AuditAttribute.Change("display_name", user.DisplayName, changes.DisplayName),
+            AuditAttribute.WithheldChange("email", user.Email, changes.Email),
+            AuditAttribute.WithheldChange("mobile_number", user.MobileNumber, changes.MobileNumber),
+            AuditAttribute.Change("preferred_language", user.PreferredLanguage, changes.PreferredLanguage),
+            AuditAttribute.Change("directory_subject_id", user.DirectorySubjectId, changes.DirectorySubjectId),
+            AuditAttribute.Change("job_title", user.JobTitle, changes.JobTitle),
+        ];
+
         user.Username = changes.Username;
         user.DisplayName = changes.DisplayName;
         user.Email = changes.Email;
@@ -118,7 +146,7 @@ internal sealed partial class UserAdministrationService(
         user.PreferredLanguage = changes.PreferredLanguage;
         user.DirectorySubjectId = changes.DirectorySubjectId;
         user.JobTitle = changes.JobTitle;
-        return await SaveAsync(actorId, user, "updated", cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(actorId, user, "updated", IdentityAccessAuditEvents.UserUpdated, changed, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<UserDetail>>> ActivateAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken)
@@ -136,7 +164,9 @@ internal sealed partial class UserAdministrationService(
 
         user.Status = UserStatus.Active;
         user.DisabledAt = null;
-        return await SaveAsync(actorId, user, "activated", cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(actorId, user, "activated", IdentityAccessAuditEvents.UserActivated,
+                [AuditAttribute.Change(IdentityAccessAuditAttributes.Status, UserStatus.Disabled, UserStatus.Active)], cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<UserDetail>>> DisableAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken)
@@ -160,7 +190,9 @@ internal sealed partial class UserAdministrationService(
 
         user.Status = UserStatus.Disabled;
         user.DisabledAt = timeProvider.GetUtcNow();
-        return await SaveAsync(actorId, user, "disabled", cancellationToken).ConfigureAwait(false);
+        return await SaveAsync(actorId, user, "disabled", IdentityAccessAuditEvents.UserDisabled,
+                [AuditAttribute.Change(IdentityAccessAuditAttributes.Status, UserStatus.Active, UserStatus.Disabled)], cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>Found, within the caller's USER_MANAGE scope, and a person: a SERVICE principal is not administered here.</summary>
@@ -170,10 +202,12 @@ internal sealed partial class UserAdministrationService(
         : user.UserType == UserType.Service ? AdministrationError.Rule(IdentityAccessErrorCodes.ServicePrincipal)
         : null;
 
-    private async Task<AdministrationResult<Versioned<UserDetail>>> SaveAsync(Guid actorId, User user, string change, CancellationToken cancellationToken)
+    private async Task<AdministrationResult<Versioned<UserDetail>>> SaveAsync(
+        Guid actorId, User user, string change, string eventType, AuditAttribute?[] attributes, CancellationToken cancellationToken)
     {
         user.UpdatedAt = timeProvider.GetUtcNow();
         user.UpdatedBy = actorId;
+        audit.Stage(Entry(actorId, user, eventType, attributes));
         if ((await users.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
         {
             return saveError;
@@ -183,10 +217,19 @@ internal sealed partial class UserAdministrationService(
         return await DetailAsync(user.Id, cancellationToken).ConfigureAwait(false);
     }
 
+    private static AuditEntry Entry(Guid actorId, User user, string eventType, AuditAttribute?[] attributes) =>
+        new(AuditEventClass.PrivilegedAction, eventType, AuditOutcome.Success)
+        {
+            ActorUserId = actorId,
+            Subject = new AuditSubject("IdentityAccess", nameof(User), user.Id),
+            ScopeExternalEntityId = user.ExternalEntityId,
+            Attributes = [.. attributes.OfType<AuditAttribute>()],
+        };
+
     private async Task<AdministrationResult<Versioned<UserDetail>>> DetailAsync(Guid userId, CancellationToken cancellationToken) =>
         await users.FindDetailAsync(userId, cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException($"User {userId} was saved and cannot be read back.");
 
-    // Ids only (CTL-27). The audit event of the change is TASK-033's (CTL-25).
+    // Ids only (CTL-27). The audit event of the change is staged with it (CTL-25).
     [LoggerMessage(Level = LogLevel.Information, Message = "User administration: {ActorId} {Change} user {UserId}.")]
     private static partial void LogUserChanged(ILogger logger, Guid actorId, string change, Guid userId);
 }

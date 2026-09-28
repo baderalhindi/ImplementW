@@ -1,11 +1,15 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Features.AuditActivity;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Infrastructure.Audit;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
+using PMPlatform.Infrastructure.Persistence.AuditActivity;
 using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using PMPlatform.Infrastructure.Secrets;
@@ -44,7 +48,37 @@ public static class DependencyInjection
         services.AddScoped<IExternalEntityRepository, ExternalEntityRepository>();
         services.TryAddSingleton<IMobileNumberVerifier, UnconfiguredMobileNumberVerifier>();
 
+        services.AddAuditForwarding(configuration);
+
         return services;
+    }
+
+    /// <summary>
+    /// TASK-033: the audit store and SIEM forwarding. The forwarded subset (PTBC-029) is configuration; an environment whose
+    /// subset leaves out authentication, or names a class that does not exist, does not start (CTL-26).
+    /// </summary>
+    private static void AddAuditForwarding(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IAuditEventRepository, AuditEventRepository>();
+        services.AddScoped<IAuditForwardingRepository, AuditForwardingRepository>();
+
+        services.AddOptions<SiemForwardingPolicy>()
+            .Bind(configuration.GetSection(SiemForwardingPolicy.Section))
+            .Validate(
+                policy => policy.ForwardedClasses.Contains(SiemForwardingPolicy.MinimumForwardedClass, StringComparer.Ordinal),
+                $"{SiemForwardingPolicy.Section}:ForwardedClasses must include {SiemForwardingPolicy.MinimumForwardedClass} (CTL-26).")
+            .Validate(policy => !policy.UnknownClasses().Any(), $"{SiemForwardingPolicy.Section}:ForwardedClasses names a class that is not an audit class.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<SiemForwardingPolicy>>().Value);
+
+        services.AddOptions<SiemOptions>()
+            .Bind(configuration.GetSection(SiemOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{SiemOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHttpClient(HttpSiemClient.HttpClientName, (provider, client) =>
+            client.Timeout = provider.GetRequiredService<IOptions<SiemOptions>>().Value.Timeout);
+        services.AddSingleton<ISiemClient, HttpSiemClient>();
+        services.AddHostedService<SiemForwardingWorker>();
     }
 
     private static string RequiredConnectionString(IConfiguration configuration)

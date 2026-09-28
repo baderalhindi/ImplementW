@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Domain.IdentityAccess;
+using PMPlatform.Tests.Unit.Application.Auditing;
 
 namespace PMPlatform.Tests.Unit.Application.Authorization;
 
@@ -42,8 +43,10 @@ internal sealed class AuthorizationScenario
 
     public AuthorizationScenario(PermissionCatalogue? catalogue = null)
     {
-        Engine = new AuthorizationEngine(Repository, catalogue ?? Catalogue, NullLogger<AuthorizationEngine>.Instance);
+        Engine = new AuthorizationEngine(Repository, catalogue ?? Catalogue, Audit, NullLogger<AuthorizationEngine>.Instance);
     }
+
+    public RecordingAuditTrail Audit { get; } = new();
 
     public IAuthorizationEngine Engine { get; }
 

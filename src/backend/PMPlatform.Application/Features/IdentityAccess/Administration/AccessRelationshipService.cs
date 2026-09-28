@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
+using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Events;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 
@@ -10,7 +12,8 @@ namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 /// ADM-010 Role Assignment (TASK-031). Assigns a PUBLISHED profile version, never a permission (ADR-018, BR-IAM-023), and
 /// applies ADR-013 to external users: an external-eligible role, their own entity, a named AHDA sponsor, and R04 only per
 /// project on a project their entity delivers. A user holds at most one active assignment per project: a new one ends the
-/// old as ROLE_CHANGE. Assignments end; they are never deleted or rewritten.
+/// old as ROLE_CHANGE. Assignments end; they are never deleted or rewritten. Each assignment made or ended is saved with
+/// its PERMISSION_CHANGE audit event (TASK-033, CTL-25).
 /// </summary>
 internal sealed partial class AccessRelationshipService(
     IAccessRelationshipRepository assignments,
@@ -18,6 +21,7 @@ internal sealed partial class AccessRelationshipService(
     IDepartmentRepository departments,
     IExternalEntityRepository entities,
     AdministrationAccess access,
+    IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<AccessRelationshipService> logger) : IAccessRelationshipService, IProjectAccessLifecycle
 {
@@ -150,6 +154,18 @@ internal sealed partial class AccessRelationshipService(
             UpdatedBy = actorId,
         };
         assignments.Add(assignment);
+        audit.Stage(Entry(actorId, assignment, IdentityAccessAuditEvents.RoleAssigned,
+        [
+            AuditAttribute.Of(IdentityAccessAuditAttributes.UserId, assignment.UserId),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.RoleCode, version.RoleCode),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.PermissionProfileVersionId, assignment.PermissionProfileVersionId),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.DepartmentId, assignment.DepartmentId),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.ExternalEntityId, assignment.ExternalEntityId),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.ProjectId, assignment.ProjectId),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.SponsorUserId, assignment.SponsorUserId),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.StartsAt, assignment.StartsAt),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.EndsAt, assignment.EndsAt),
+        ]));
 
         if ((await assignments.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
         {
@@ -222,9 +238,19 @@ internal sealed partial class AccessRelationshipService(
         return active.Count;
     }
 
-    /// <summary>ENDED now, or at its start if it has not started, or at its own end if that has already passed.</summary>
-    private static void End(AccessRelationship assignment, AccessEndReason reason, DateTimeOffset now, Guid actorId)
+    /// <summary>
+    /// ENDED now, or at its start if it has not started, or at its own end if that has already passed. The audit event is
+    /// staged here, so no path can end an assignment without one.
+    /// </summary>
+    private void End(AccessRelationship assignment, AccessEndReason reason, DateTimeOffset now, Guid actorId)
     {
+        audit.Stage(Entry(actorId, assignment, IdentityAccessAuditEvents.RoleAssignmentEnded,
+        [
+            AuditAttribute.Of(IdentityAccessAuditAttributes.UserId, assignment.UserId),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.PermissionProfileVersionId, assignment.PermissionProfileVersionId),
+            AuditAttribute.Change(IdentityAccessAuditAttributes.Status, assignment.Status, AccessRelationshipStatus.Ended),
+            AuditAttribute.Of(IdentityAccessAuditAttributes.EndReason, reason),
+        ]));
         assignment.EndsAt = assignment.EndsAt is { } endsAt && endsAt < now ? endsAt
             : assignment.StartsAt > now ? assignment.StartsAt
             : now;
@@ -233,6 +259,16 @@ internal sealed partial class AccessRelationshipService(
         assignment.UpdatedAt = now;
         assignment.UpdatedBy = actorId;
     }
+
+    private static AuditEntry Entry(Guid actorId, AccessRelationship assignment, string eventType, AuditAttribute?[] attributes) =>
+        new(AuditEventClass.PermissionChange, eventType, AuditOutcome.Success)
+        {
+            ActorUserId = actorId,
+            Subject = new AuditSubject("IdentityAccess", nameof(AccessRelationship), assignment.Id),
+            ScopeProjectId = assignment.ProjectId,
+            ScopeExternalEntityId = assignment.ExternalEntityId,
+            Attributes = [.. attributes.OfType<AuditAttribute>()],
+        };
 
     private async Task<FieldIssue[]> ReferenceIssuesAsync(AccessRelationshipDraft draft, ProjectFacts? project, CancellationToken cancellationToken)
     {

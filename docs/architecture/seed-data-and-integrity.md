@@ -43,7 +43,7 @@
 
 | Table | Rows | Content | Source |
 | --- | --- | --- | --- |
-| `identity_access.user` | 2 | `svc.platform-seed`, the SERVICE principal every seeded row is attributed to (ERD D-2); `svc.directory-sync`, the SERVICE principal a directory-sourced change to a user's department, manager or job title is attributed to (TASK-028, ADR-007). No role, no directory subject, address in `.invalid` | ERD `user.user_type` |
+| `identity_access.user` | 3 | `svc.platform-seed`, the SERVICE principal every seeded row is attributed to (ERD D-2); `svc.directory-sync`, the SERVICE principal a directory-sourced change to a user's department, manager or job title is attributed to (TASK-028, ADR-007); `svc.audit-capture`, the SERVICE principal an audit event with no known user is attributed to (TASK-033). No role, no directory subject, address in `.invalid` | ERD `user.user_type` |
 | `identity_access.role` | 8 | R01–R08, `is_system`; R04 and R08 `is_external_eligible` | ERD F-080; ADR-013. Labels provisional (F-1) |
 | `identity_access.permission_profile` | 8 | `R0n-DEFAULT`, `is_shipped_default` | ADR-018, TASK-110 |
 | `identity_access.permission_profile_version` | 8 | Version 1 of each, PUBLISHED | ADR-018 |
@@ -152,3 +152,4 @@ Each mutation was reverted; the committed files are byte-identical to the unmuta
 | --- | --- | --- |
 | 2026-09-26 | Initial record. Platform seed (8 roles with shipped-default profile versions, 21 catalogues, 10 items, 12 configuration families, a generic DRAFT risk scale) and a six-check integrity validator in `db/seed`; `seed` and `validate-data-integrity` commands in the release image; scratch-database step in `migration-dry-run` and post-migration executions in every deploy stage; Compose seeds and validates in one transaction; interim roles script retired. 16 tests, five mutation groups. Eleven findings. | Database (TASK-027) |
 | 2026-09-27 | Seven FG-03 administration permissions and their R01 grants added (`identity-access-administration.md` D-1): 10 permissions, 14 grants, 94 bilingual labels. | Identity (TASK-031) |
+| 2026-09-28 | Third SERVICE principal `svc.audit-capture` (`00000000-0000-4000-8000-0000000000fd`): the `created_by` of an audit event whose user is not known, so the ORPHANED_AUDIT_ACTOR check holds for `audit_activity` (`auth-access-audit-logging.md` D-6). | Security (TASK-033) |

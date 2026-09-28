@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Features.AuditActivity;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
@@ -17,9 +19,15 @@ public static class DependencyInjection
 
         services.TryAddSingleton(TimeProvider.System);
 
+        // TASK-033: the formal audit trail every module records into, and the SIEM forwarder. The store and the SIEM
+        // client are Infrastructure's; the request context is the API's.
+        services.AddScoped<IAuditTrail, AuditTrail>();
+        services.AddScoped<ISiemForwarder, SiemForwarder>();
+
         // IdentityAccess (TASK-028): sign-in and ADM-041. The ports they use are implemented in Infrastructure.
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IIdentityIntegrationService, IdentityIntegrationService>();
+        services.AddScoped<IAccessAudit, AccessAudit>();
 
         // TASK-030: the authorization engine, scoped so it reads the caller's grants once per request.
         services.TryAddSingleton(PermissionCatalogue.Platform);
