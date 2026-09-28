@@ -1,59 +1,27 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PMPlatform.Application.Features.AuditActivity;
+using PMPlatform.Infrastructure.Hosting;
 
 namespace PMPlatform.Infrastructure.Audit;
 
 /// <summary>
-/// Runs the SIEM forwarder in the API process (TASK-033): a full batch is followed at once by the next, otherwise the
-/// worker waits <see cref="SiemOptions.PollInterval"/>. A failed pass is logged and retried; it never stops the API.
+/// Runs the SIEM forwarder in the API process (TASK-033), every <see cref="SiemOptions.PollInterval"/> while idle.
 /// Every API instance runs one, so an event may reach the SIEM twice; it carries its id for the SIEM to recognise that.
 /// </summary>
-internal sealed partial class SiemForwardingWorker(
+internal sealed class SiemForwardingWorker(
     IServiceScopeFactory scopes,
     IOptions<SiemOptions> options,
     TimeProvider timeProvider,
-    ILogger<SiemForwardingWorker> logger) : BackgroundService
+    ILogger<SiemForwardingWorker> logger) : PollingWorker(scopes, timeProvider, logger)
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        SiemOptions siem = options.Value;
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            int forwarded = 0;
-            try
-            {
-                await using AsyncServiceScope scope = scopes.CreateAsyncScope();
-                forwarded = await scope.ServiceProvider.GetRequiredService<ISiemForwarder>()
-                    .ForwardPendingAsync(siem.BatchSize, stoppingToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                return;
-            }
-#pragma warning disable CA1031 // The worker outlives any one failed pass: the database or SIEM may be back on the next.
-            catch (Exception exception)
-#pragma warning restore CA1031
-            {
-                LogPassFailed(logger, exception.GetType().Name);
-            }
+    protected override TimeSpan PollInterval => options.Value.PollInterval;
 
-            if (forwarded < siem.BatchSize)
-            {
-                try
-                {
-                    await Task.Delay(siem.PollInterval, timeProvider, stoppingToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
-                }
-            }
-        }
-    }
+    protected override int BatchSize => options.Value.BatchSize;
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "SIEM forwarding pass failed: {Reason}. It is retried on the next pass.")]
-    private static partial void LogPassFailed(ILogger logger, string reason);
+    protected override string PassName => "SIEM forwarding";
+
+    protected override Task<int> RunPassAsync(IServiceProvider services, int batchSize, CancellationToken cancellationToken) =>
+        services.GetRequiredService<ISiemForwarder>().ForwardPendingAsync(batchSize, cancellationToken);
 }

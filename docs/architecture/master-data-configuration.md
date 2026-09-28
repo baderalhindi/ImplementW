@@ -168,3 +168,4 @@ Each mutation was applied to the source, the solution rebuilt with `-warnaserror
 | Date | Change |
 | --- | --- |
 | 2026-09-28 | Created (TASK-034) |
+| 2026-09-28 | F-13 addressed by TASK-035 (`approval-framework.md` D-6): the deciding user's type is checked at decision time, for delegators and delegates too, and the database refuses an external user as an approval task's decider or authority or as either side of a delegation. First consumer of `IConfigurationResolver` in process: APPROVAL_AUTHORITY is resolved and pinned when a run starts, WORKFLOW_POLICY `APPROVAL_TASK_DUE_DAYS` and `APPROVAL_ESCALATION_ROLE` when they are used. |

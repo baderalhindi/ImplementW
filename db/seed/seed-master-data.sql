@@ -39,13 +39,20 @@
 
 -- 1. The SERVICE principals. A SERVICE user is a non-human principal; it holds no role and cannot sign in. The
 -- directory-sync principal's id is PMPlatform.Infrastructure's UserAccessRepository.DirectorySyncPrincipalId; the
--- audit-capture principal's is PMPlatform.Application's AuditTrail.AuditCapturePrincipalId.
+-- audit-capture principal's is PMPlatform.Application's AuditTrail.AuditCapturePrincipalId; the approval-workflow
+-- principal's, which escalates overdue approval tasks, expires delegations and records outcome delivery (TASK-035), is
+-- PMPlatform.Application's ApprovalServicePrincipal.Id; the outbox-dispatch principal's, the author of every dispatch
+-- mark and failed attempt on common.outbox_message (TASK-035), is PMPlatform.Infrastructure's OutboxDispatcher.DispatchPrincipalId.
 INSERT INTO identity_access."user" (id, user_type, username, display_name, email, preferred_language, status, created_at, created_by, updated_at, updated_by)
 VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 'Platform seed (service principal)', 'svc.platform-seed@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
        ('00000000-0000-4000-8000-0000000000fe', 'SERVICE', 'svc.directory-sync', 'Directory synchronisation (service principal)', 'svc.directory-sync@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
        ('00000000-0000-4000-8000-0000000000fd', 'SERVICE', 'svc.audit-capture', 'Audit capture (service principal)', 'svc.audit-capture@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000fc', 'SERVICE', 'svc.approval-workflow', 'Approval workflow (service principal)', 'svc.approval-workflow@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000fb', 'SERVICE', 'svc.outbox-dispatch', 'Outbox dispatch (service principal)', 'svc.outbox-dispatch@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO NOTHING;
 
@@ -101,7 +108,8 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- PermissionCatalogue, row for row (SeedDataTests checks it). Only rows a controlled source fixes for all eight roles:
 -- ADM-041 is R01's (TASK-028); ADM-002–013 are R01's (TASK-032: "reachable only for R01 per RBAC", TASK-031); FG-04
 -- master data and configuration are R01's by delivery-team decision, pending Appendix A (TASK-034 record F-1); ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07, OWN because
--- each acts on the holder's own layout or report definition. Blueprint Appendix A, the rest of the matrix, is not in
+-- each acts on the holder's own layout or report definition. APPROVAL_VIEW and APPROVAL_DECIDE (TASK-035) are in the
+-- catalogue with no grant: which roles decide approvals is Appendix A's (approval-framework.md F-1). Blueprint Appendix A, the rest of the matrix, is not in
 -- the repository (record F-1).
 --
 -- The grants go into version 1 because no environment has run this seed with version 1 in use (none is provisioned).
@@ -124,7 +132,9 @@ FROM (VALUES
     ('CONFIGURATION_VIEW',          'عرض الإعدادات',       'View configuration',          'MASTER_DATA_CONFIG', false),
     ('CONFIGURATION_MANAGE',        'إدارة الإعدادات',      'Manage configuration',        'MASTER_DATA_CONFIG', true),
     ('LAYOUT_PERSONALIZE',          'تخصيص التخطيط',      'Personalize layout',          'DASHBOARDS',      false),
-    ('REPORT_COMPOSE',              'إعداد التقارير',      'Compose report',              'REPORTS',         false)
+    ('REPORT_COMPOSE',              'إعداد التقارير',      'Compose report',              'REPORTS',         false),
+    ('APPROVAL_VIEW',               'عرض الموافقات',       'View approvals',              'APPROVAL',        false),
+    ('APPROVAL_DECIDE',             'البت في الموافقات',    'Decide approvals',            'APPROVAL',        false)
 ) AS v (code, name_ar, name_en, permission_group, is_privileged)
 ON CONFLICT (code) DO UPDATE SET
     permission_group = EXCLUDED.permission_group,

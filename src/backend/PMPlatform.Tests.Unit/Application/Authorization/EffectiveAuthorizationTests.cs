@@ -28,6 +28,23 @@ public sealed class EffectiveAuthorizationTests
         Assert.Equal(AuthorizationDecision.NotFound(AuthorizationDenial.OutOfScope), await scenario.AuthorizeAsync(Write, ownProject with { ProjectId = OtherProjectId }));
     }
 
+    /// <summary>TASK-035: a request naming a role counts only the grants held through that role (an approval stage is a role's).</summary>
+    [Fact]
+    public async Task ARoleRestrictedRequestCountsOnlyThatRolesGrants()
+    {
+        AuthorizationScenario scenario = new AuthorizationScenario()
+            .WithUser(UserType.Internal, Grant("R02", Write, DataScope.All), Grant("R03", Write, DataScope.Dept, departmentId: DepartmentId));
+        AuthorizationSubject otherDepartment = new() { DepartmentId = OtherDepartmentId };
+
+        Assert.True((await scenario.Engine.AuthorizeAsync(UserId, new AuthorizationRequest(Write, otherDepartment) { RoleCode = "R02" }, CancellationToken.None)).IsAllowed);
+        Assert.Equal(
+            AuthorizationDenial.OutOfScope,
+            (await scenario.Engine.AuthorizeAsync(UserId, new AuthorizationRequest(Write, otherDepartment) { RoleCode = "R03" }, CancellationToken.None)).Denial);
+        Assert.Equal(
+            AuthorizationDenial.NotGranted,
+            (await scenario.Engine.AuthorizeAsync(UserId, new AuthorizationRequest(Write) { RoleCode = "R07" }, CancellationToken.None)).Denial);
+    }
+
     /// <summary>ADR-013: cross-entity isolation is absolute. Not even an ALL grant takes an external user outside their entity.</summary>
     [Fact]
     public async Task NoScopeTakesAnExternalUserOutsideTheirEntity()

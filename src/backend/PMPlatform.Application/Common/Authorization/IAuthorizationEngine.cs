@@ -16,6 +16,13 @@ public interface IAuthorizationEngine
     public Task<AuthorizationDecision> AuthorizeAsync(Guid userId, AuthorizationRequest request, CancellationToken cancellationToken);
 
     /// <summary>
+    /// The same decision as <see cref="AuthorizeAsync"/>, as a question about authority rather than a request: nothing
+    /// is recorded. For deciding who may act — whether a delegator could decide a task, what belongs in an inbox — where
+    /// a negative answer is not a refused request. The caller that refuses a request on the answer audits that refusal.
+    /// </summary>
+    public Task<AuthorizationDecision> EvaluateAsync(Guid userId, AuthorizationRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
     /// The fields of <paramref name="entityCode"/> the user may not see when reading it under
     /// <paramref name="permissionCode"/>: those classified above that permission's clearance (ADR-010).
     /// </summary>
