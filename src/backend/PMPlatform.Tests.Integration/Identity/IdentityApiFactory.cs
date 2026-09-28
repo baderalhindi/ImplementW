@@ -10,9 +10,11 @@ namespace PMPlatform.Tests.Integration.Identity;
 
 /// <summary>
 /// PMPlatform.Api hosted in the test process against the identity test database, the test directory and the test
-/// identity provider, with the clock and the log output under the test's control.
+/// identity provider, with the clock and the log output under the test's control. <paramref name="services"/> adds what a
+/// suite plays itself, such as a source module's approval outcome handler (TASK-035).
 /// </summary>
-public sealed class IdentityApiFactory(IReadOnlyDictionary<string, string?> settings, AdjustableTimeProvider clock, CapturedLogs logs)
+public sealed class IdentityApiFactory(
+    IReadOnlyDictionary<string, string?> settings, AdjustableTimeProvider clock, CapturedLogs logs, Action<IServiceCollection>? services = null)
     : WebApplicationFactory<Program>
 {
     /// <summary>A test value, never a real key.</summary>
@@ -23,10 +25,11 @@ public sealed class IdentityApiFactory(IReadOnlyDictionary<string, string?> sett
         builder.UseEnvironment("Development");
         builder.ConfigureAppConfiguration(configuration => configuration.AddInMemoryCollection(settings));
         builder.ConfigureLogging(logging => logging.AddProvider(logs).SetMinimumLevel(LogLevel.Trace));
-        builder.ConfigureTestServices(services =>
+        builder.ConfigureTestServices(collection =>
         {
-            services.RemoveAll<TimeProvider>();
-            services.AddSingleton<TimeProvider>(clock);
+            collection.RemoveAll<TimeProvider>();
+            collection.AddSingleton<TimeProvider>(clock);
+            services?.Invoke(collection);
         });
     }
 }

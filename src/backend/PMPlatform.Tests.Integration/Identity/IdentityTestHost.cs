@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using PMPlatform.Tests.Integration.AuditActivity;
 
 namespace PMPlatform.Tests.Integration.Identity;
@@ -32,8 +33,8 @@ public sealed class IdentityTestHost : IAsyncLifetime
         Api = CreateApi();
     }
 
-    /// <summary>The API with every identity setting in place, and <paramref name="overrides"/> on top.</summary>
-    public IdentityApiFactory CreateApi(IReadOnlyDictionary<string, string?>? overrides = null)
+    /// <summary>The API with every identity setting in place, <paramref name="overrides"/> on top, and <paramref name="services"/> added.</summary>
+    public IdentityApiFactory CreateApi(IReadOnlyDictionary<string, string?>? overrides = null, Action<IServiceCollection>? services = null)
     {
         Dictionary<string, string?> settings = new(TestDirectory.Settings);
         foreach ((string key, string? value) in IdentityProvider.Settings.Concat(MultiFactorProvider.Settings).Concat(overrides ?? new Dictionary<string, string?>()))
@@ -43,7 +44,7 @@ public sealed class IdentityTestHost : IAsyncLifetime
 
         settings["DB_CONNECTION_STRING"] = Database.ConnectionString;
         settings.TryAdd("JWT_SIGNING_KEY", IdentityApiFactory.SigningKey);
-        return new IdentityApiFactory(settings, Clock, Logs);
+        return new IdentityApiFactory(settings, Clock, Logs, services);
     }
 
     public async Task DisposeAsync()

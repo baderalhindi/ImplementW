@@ -37,25 +37,32 @@ internal sealed partial class AuthorizationEngine(
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        AuthorizationDecision decision = await EvaluateAsync(userId, request, cancellationToken).ConfigureAwait(false);
+        if (!decision.IsAllowed)
+        {
+            LogDenied(logger, userId, request.PermissionCode, decision.Outcome, decision.Denial);
+            bool userExists = await GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false) is not null;
+            await audit.RecordAsync(DeniedEntry(userId, userExists, request.PermissionCode, decision, request.Subject)).ConfigureAwait(false);
+        }
+
+        return decision;
+    }
+
+    public async Task<AuthorizationDecision> EvaluateAsync(Guid userId, AuthorizationRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
         PermissionDefinition permission = catalogue.Get(request.PermissionCode);
         AuthorizationPrincipal? principal = await GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false);
         IReadOnlyDictionary<Guid, int> ranks = request.Subject?.DataClassificationItemId is null
             ? new Dictionary<Guid, int>()
             : await GetClassificationRanksAsync(cancellationToken).ConfigureAwait(false);
 
-        AuthorizationDecision decision = principal is not { IsActive: true }
+        return principal is not { IsActive: true }
             ? AuthorizationDecision.Forbidden(AuthorizationDenial.InactivePrincipal)
             : request.Subject is null
-                ? DecideWithoutRecord(principal, permission)
-                : DecideOnRecord(principal, permission, request.Subject, ranks);
-
-        if (!decision.IsAllowed)
-        {
-            LogDenied(logger, userId, permission.Code, decision.Outcome, decision.Denial);
-            await audit.RecordAsync(DeniedEntry(userId, principal is not null, permission.Code, decision, request.Subject)).ConfigureAwait(false);
-        }
-
-        return decision;
+                ? DecideWithoutRecord(principal, permission, request.RoleCode)
+                : DecideOnRecord(principal, permission, request.RoleCode, request.Subject, ranks);
     }
 
     /// <summary>
@@ -108,18 +115,18 @@ internal sealed partial class AuthorizationEngine(
             .ToDictionary(f => f.FieldCode, f => f.MaskingRule, StringComparer.Ordinal));
     }
 
-    private static AuthorizationDecision DecideWithoutRecord(AuthorizationPrincipal principal, PermissionDefinition permission)
+    private static AuthorizationDecision DecideWithoutRecord(AuthorizationPrincipal principal, PermissionDefinition permission, string? roleCode)
     {
-        List<EffectiveGrant> granted = [.. principal.Grants.Where(g => g.PermissionCode == permission.Code)];
+        List<EffectiveGrant> granted = [.. Granted(principal, permission, roleCode)];
         return granted.Count == 0 ? AuthorizationDecision.Forbidden(AuthorizationDenial.NotGranted)
             : permission.Mode == AccessMode.Write && granted.All(g => g.Scope == DataScope.ReadOnly) ? AuthorizationDecision.Forbidden(AuthorizationDenial.ReadOnlyScope)
             : AuthorizationDecision.Allowed;
     }
 
     private AuthorizationDecision DecideOnRecord(
-        AuthorizationPrincipal principal, PermissionDefinition permission, AuthorizationSubject subject, IReadOnlyDictionary<Guid, int> ranks)
+        AuthorizationPrincipal principal, PermissionDefinition permission, string? roleCode, AuthorizationSubject subject, IReadOnlyDictionary<Guid, int> ranks)
     {
-        List<EffectiveGrant> granted = [.. principal.Grants.Where(g => g.PermissionCode == permission.Code)];
+        List<EffectiveGrant> granted = [.. Granted(principal, permission, roleCode)];
         List<EffectiveGrant> covering = [.. granted.Where(g => Covers(principal, g, subject))];
         List<EffectiveGrant> cleared = [.. covering.Where(g => Clears(g, subject.DataClassificationItemId, ranks))];
 
@@ -146,6 +153,10 @@ internal sealed partial class AuthorizationEngine(
             : subject.WorkflowActorUserIds is { } actors && !actors.Contains(principal.UserId) ? AuthorizationDecision.Forbidden(AuthorizationDenial.NotWorkflowActor)
             : AuthorizationDecision.Allowed;
     }
+
+    /// <summary>The user's grants of the permission, through <paramref name="roleCode"/> only when one is named.</summary>
+    private static IEnumerable<EffectiveGrant> Granted(AuthorizationPrincipal principal, PermissionDefinition permission, string? roleCode) =>
+        principal.Grants.Where(g => g.PermissionCode == permission.Code && (roleCode is null || g.RoleCode == roleCode));
 
     /// <summary>The project/business relationship (ADR-013), then the data scope with the assignment's anchors.</summary>
     private static bool Covers(AuthorizationPrincipal principal, EffectiveGrant grant, AuthorizationSubject subject)

@@ -3,17 +3,22 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.Events;
+using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.AuditActivity;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.MasterDataConfig;
+using PMPlatform.Infrastructure.Approval;
 using PMPlatform.Infrastructure.Audit;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
+using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
 using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using PMPlatform.Infrastructure.Persistence.MasterDataConfig;
+using PMPlatform.Infrastructure.Persistence.Messaging;
 using PMPlatform.Infrastructure.Secrets;
 
 namespace PMPlatform.Infrastructure;
@@ -55,8 +60,34 @@ public static class DependencyInjection
         services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
 
         services.AddAuditForwarding(configuration);
+        services.AddOutbox(configuration);
+
+        // TASK-035: WF-11 approvals, and the pass that escalates overdue tasks and expires delegations.
+        services.AddScoped<IApprovalRepository, ApprovalRepository>();
+        services.AddOptions<ApprovalMaintenanceOptions>()
+            .Bind(configuration.GetSection(ApprovalMaintenanceOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{ApprovalMaintenanceOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<ApprovalMaintenanceWorker>();
 
         return services;
+    }
+
+    /// <summary>
+    /// TASK-035: the transactional outbox (event-conventions EV-6) — producers stage into the request's context, and a
+    /// worker delivers each DOMAIN_EVENT after commit to its one consumer.
+    /// </summary>
+    private static void AddOutbox(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IOutbox, Outbox>();
+        services.AddOptions<OutboxOptions>()
+            .Bind(configuration.GetSection(OutboxOptions.Section))
+            .Validate(
+                options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0 && options.RetryBaseDelay > TimeSpan.Zero,
+                $"{OutboxOptions.Section}: PollInterval, BatchSize and RetryBaseDelay must be positive.")
+            .ValidateOnStart();
+        services.AddSingleton<IOutboxDispatcher, OutboxDispatcher>();
+        services.AddHostedService<OutboxDispatchWorker>();
     }
 
     /// <summary>

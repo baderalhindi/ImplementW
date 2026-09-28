@@ -2,6 +2,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.Events;
+using PMPlatform.Application.Features.Approval;
+using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.AuditActivity;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
@@ -57,6 +60,18 @@ public static class DependencyInjection
         services.AddScoped<IConfigurationAdministrationService, ConfigurationAdministrationService>();
         services.AddScoped<IConfigurationResolver, ConfigurationResolver>();
         services.AddScoped<IMasterDataResolver, MasterDataResolver>();
+
+        // TASK-035: the WF-11 approval runtime. Source modules start runs through IApprovalRequests and receive outcomes
+        // through their IApprovalOutcomeHandler, which the outbox dispatcher reaches through ApprovalOutcomeDispatch.
+        services.AddScoped<ApprovalPolicy>();
+        services.AddScoped<ApprovalAuthority>();
+        services.AddScoped<ApprovalEscalation>();
+        services.AddScoped<ApprovalOutcomes>();
+        services.AddScoped<IApprovalRequests, ApprovalRequestService>();
+        services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
+        services.AddScoped<IApprovalDelegationService, ApprovalDelegationService>();
+        services.AddScoped<IApprovalMaintenance, ApprovalMaintenance>();
+        services.AddScoped<IDomainEventConsumer, ApprovalOutcomeDispatch>();
 
         return services;
     }

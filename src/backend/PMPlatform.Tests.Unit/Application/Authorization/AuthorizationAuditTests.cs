@@ -34,6 +34,19 @@ public sealed class AuthorizationAuditTests
         Assert.Empty(scenario.Audit.All);
     }
 
+    /// <summary>TASK-035: a question about authority, such as whether a delegator could decide a task, is not a request and is not audited.</summary>
+    [Fact]
+    public async Task AnEvaluationIsNotAudited()
+    {
+        AuthorizationScenario scenario = new AuthorizationScenario().WithUser(UserType.Internal, Grant("R03", Write, DataScope.Dept, departmentId: DepartmentId));
+
+        AuthorizationDecision decision = await scenario.Engine.EvaluateAsync(
+            UserId, new AuthorizationRequest(Write, new AuthorizationSubject { DepartmentId = OtherDepartmentId }), CancellationToken.None);
+
+        Assert.Equal(AuthorizationDenial.OutOfScope, decision.Denial);
+        Assert.Empty(scenario.Audit.All);
+    }
+
     /// <summary>A token whose user does not exist cannot name an actor the store holds: the id is recorded as the subject.</summary>
     [Fact]
     public async Task AnUnknownUserIsTheSubjectNotTheActor()

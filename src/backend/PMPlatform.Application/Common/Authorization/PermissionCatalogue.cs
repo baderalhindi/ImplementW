@@ -48,6 +48,16 @@ public sealed class PermissionCatalogue
     /// <summary>FG-04: author, validate, publish and retire configuration versions (TASK-034).</summary>
     public const string ConfigurationManage = "CONFIGURATION_MANAGE";
 
+    /// <summary>WF-11 approval runs and their history (SCR-101, SCR-115), on the records the grant's scope covers (TASK-035).</summary>
+    public const string ApprovalView = "APPROVAL_VIEW";
+
+    /// <summary>
+    /// WF-11: decide an approval task (SCR-100) and delegate that authority (SCR-114). Held through the role an
+    /// APPROVAL_AUTHORITY stage names, with a scope covering the run's anchors (TASK-035). No role holds it until
+    /// Blueprint Appendix A grants it (record F-1).
+    /// </summary>
+    public const string ApprovalDecide = "APPROVAL_DECIDE";
+
     /// <summary>ADR-019: personalise one's own dashboard layout (TASK-111).</summary>
     public const string LayoutPersonalize = "LAYOUT_PERSONALIZE";
 
@@ -68,6 +78,8 @@ public sealed class PermissionCatalogue
             new(MasterDataManage, "MASTER_DATA_CONFIG", AccessMode.Write),
             new(ConfigurationView, "MASTER_DATA_CONFIG", AccessMode.Read),
             new(ConfigurationManage, "MASTER_DATA_CONFIG", AccessMode.Write),
+            new(ApprovalView, "APPROVAL", AccessMode.Read),
+            new(ApprovalDecide, "APPROVAL", AccessMode.Write),
             new(LayoutPersonalize, "DASHBOARDS", AccessMode.Write),
             new(ReportCompose, "REPORTS", AccessMode.Write),
         ]);

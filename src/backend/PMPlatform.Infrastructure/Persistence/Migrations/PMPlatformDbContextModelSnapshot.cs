@@ -23,6 +23,328 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("PMPlatform.Domain.Approval.ApprovalDelegation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DelegateUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("delegate_user_id");
+
+                    b.Property<Guid>("DelegatorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("delegator_user_id");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("RoutingKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("routing_key");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset>("ValidFrom")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_from");
+
+                    b.Property<DateTimeOffset>("ValidTo")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_to");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_approval_delegation");
+
+                    b.HasIndex("DelegatorUserId")
+                        .HasDatabaseName("ix_approval_delegation_delegator_user_id");
+
+                    b.HasIndex("DelegateUserId", "Status", "ValidTo")
+                        .HasDatabaseName("ix_approval_delegation_delegate_user_id_status_valid_to");
+
+                    b.ToTable("approval_delegation", "approval", t =>
+                        {
+                            t.HasCheckConstraint("ck_approval_delegation_period", "valid_to > valid_from");
+
+                            t.HasCheckConstraint("ck_approval_delegation_status", "\"status\" IN ('ACTIVE', 'REVOKED', 'EXPIRED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Approval.ApprovalInstance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuthorityConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("authority_configuration_version_id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("OutcomeDeliveredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("outcome_delivered_at");
+
+                    b.Property<string>("OutcomeIdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("outcome_idempotency_key");
+
+                    b.Property<Guid?>("PreviousInstanceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("previous_instance_id");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<string>("RoutingKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("routing_key");
+
+                    b.Property<Guid?>("ScopeDepartmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("scope_department_id");
+
+                    b.Property<Guid?>("ScopeProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("scope_project_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectModule")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("subject_module");
+
+                    b.Property<int>("SubjectRevisionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("subject_revision_no");
+
+                    b.Property<string>("SubjectType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("subject_type");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_approval_instance");
+
+                    b.HasIndex("AuthorityConfigurationVersionId")
+                        .HasDatabaseName("ix_approval_instance_authority_configuration_version_id");
+
+                    b.HasIndex("OutcomeIdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_approval_instance_outcome_idempotency_key");
+
+                    b.HasIndex("PreviousInstanceId")
+                        .HasDatabaseName("ix_approval_instance_previous_instance_id");
+
+                    b.HasIndex("ScopeDepartmentId")
+                        .HasDatabaseName("ix_approval_instance_scope_department_id");
+
+                    b.HasIndex("ScopeProjectId")
+                        .HasDatabaseName("ix_approval_instance_scope_project_id");
+
+                    b.HasIndex("RequestedByUserId", "RequestedAt", "Id")
+                        .HasDatabaseName("ix_approval_instance_requested_by_user_id_requested_at_id");
+
+                    b.HasIndex("SubjectModule", "SubjectType", "SubjectId", "SubjectRevisionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_approval_instance_subject_revision");
+
+                    b.ToTable("approval_instance", "approval", t =>
+                        {
+                            t.HasCheckConstraint("ck_approval_instance_status", "\"status\" IN ('PENDING', 'APPROVED', 'REJECTED', 'RETURNED', 'WITHDRAWN')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Approval.ApprovalTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActingUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("acting_user_id");
+
+                    b.Property<Guid?>("ApprovalDelegationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approval_delegation_id");
+
+                    b.Property<Guid>("ApprovalInstanceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approval_instance_id");
+
+                    b.Property<Guid>("AssignedRoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_role_id");
+
+                    b.Property<Guid?>("AssignedUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<DateTimeOffset?>("DueAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_at");
+
+                    b.Property<DateTimeOffset?>("EligibilityRevalidatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("eligibility_revalidated_at");
+
+                    b.Property<Guid?>("EscalatedToTaskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("escalated_to_task_id");
+
+                    b.Property<short>("SequenceNo")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sequence_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "DecisionReason", "PMPlatform.Domain.Approval.ApprovalTask.DecisionReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("decision_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("decision_reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_approval_task");
+
+                    b.HasIndex("ActingUserId")
+                        .HasDatabaseName("ix_approval_task_acting_user_id");
+
+                    b.HasIndex("ApprovalDelegationId")
+                        .HasDatabaseName("ix_approval_task_approval_delegation_id");
+
+                    b.HasIndex("EscalatedToTaskId")
+                        .HasDatabaseName("ix_approval_task_escalated_to_task_id");
+
+                    b.HasIndex("ApprovalInstanceId", "SequenceNo", "AssignedRoleId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_approval_task_instance_stage_role");
+
+                    b.HasIndex("AssignedRoleId", "Status", "DueAt", "Id")
+                        .HasDatabaseName("ix_approval_task_assigned_role_id_status_due_at_id");
+
+                    b.HasIndex("AssignedUserId", "Status", "DueAt", "Id")
+                        .HasDatabaseName("ix_approval_task_assigned_user_id_status_due_at_id");
+
+                    b.ToTable("approval_task", "approval", t =>
+                        {
+                            t.HasCheckConstraint("ck_approval_task_decision_reason_lang", "\"decision_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_approval_task_decision_reason_pair", "(\"decision_reason\" IS NULL) = (\"decision_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_approval_task_status", "\"status\" IN ('PENDING', 'APPROVED', 'REJECTED', 'RETURNED', 'DELEGATED', 'ESCALATED', 'CANCELLED', 'EXPIRED')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -265,6 +587,91 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("audit_forwarding_record", "audit_activity", t =>
                         {
                             t.HasCheckConstraint("ck_audit_forwarding_record_status", "\"status\" IN ('PENDING', 'FORWARDED', 'FAILED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Common.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("attempt_count");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DispatchedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dispatched_at");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("text")
+                        .HasColumnName("last_error");
+
+                    b.Property<string>("MessageKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("message_key");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("message_type");
+
+                    b.Property<DateTimeOffset?>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<string>("SourceModule")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("source_module");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_outbox_message");
+
+                    b.HasIndex("MessageType", "MessageKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_outbox_message_message_type_message_key");
+
+                    b.HasIndex("OccurredAt", "Id")
+                        .HasDatabaseName("ix_outbox_message_occurred_at_id")
+                        .HasFilter("dispatched_at IS NULL");
+
+                    b.ToTable("outbox_message", "common", t =>
+                        {
+                            t.HasCheckConstraint("ck_outbox_message_message_type", "\"message_type\" IN ('DOMAIN_EVENT', 'NOTIFICATION_INTENT', 'AUDIT_EVENT')");
                         });
                 });
 
@@ -3014,6 +3421,99 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_project_intake_milestone_title_lang", "\"title_lang\" IN ('ar', 'en')");
                         });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Approval.ApprovalDelegation", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("DelegateUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_approval_delegation_user_delegate_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("DelegatorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_approval_delegation_user_delegator_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Approval.ApprovalInstance", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorityConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_approval_instance_authority_configuration_version");
+
+                    b.HasOne("PMPlatform.Domain.Approval.ApprovalInstance", null)
+                        .WithMany()
+                        .HasForeignKey("PreviousInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_approval_instance_approval_instance_previous_instance_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_approval_instance_user_requested_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.Department", null)
+                        .WithMany()
+                        .HasForeignKey("ScopeDepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_approval_instance_department_scope_department_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ScopeProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_approval_instance_project_scope_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Approval.ApprovalTask", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActingUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_approval_task_user_acting_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Approval.ApprovalDelegation", null)
+                        .WithMany()
+                        .HasForeignKey("ApprovalDelegationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_approval_task_approval_delegation_approval_delegation_id");
+
+                    b.HasOne("PMPlatform.Domain.Approval.ApprovalInstance", null)
+                        .WithMany()
+                        .HasForeignKey("ApprovalInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_approval_task_approval_instance_approval_instance_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.Role", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedRoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_approval_task_role_assigned_role_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_approval_task_user_assigned_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Approval.ApprovalTask", null)
+                        .WithMany()
+                        .HasForeignKey("EscalatedToTaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_approval_task_approval_task_escalated_to_task_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEvent", b =>
