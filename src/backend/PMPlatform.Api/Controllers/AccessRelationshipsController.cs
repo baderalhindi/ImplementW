@@ -14,7 +14,7 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route(Collection)]
 [Tags("IdentityAccess")]
-public sealed class AccessRelationshipsController(IAccessRelationshipService assignments) : IdentityAccessControllerBase
+public sealed class AccessRelationshipsController(IAccessRelationshipService assignments) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/access-relationships";
 

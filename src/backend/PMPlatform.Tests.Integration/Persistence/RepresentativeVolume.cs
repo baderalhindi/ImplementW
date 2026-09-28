@@ -57,10 +57,14 @@ public sealed class RepresentativeVolume : IAsyncLifetime
         SELECT ('00000000-0042-4000-8000-' || lpad(n::text, 12, '0'))::uuid, 'FAMILY_' || n, 'عائلة ' || n, 'Family ' || n, now(), '{ServiceUserId}', now(), '{ServiceUserId}'
         FROM generate_series(1, 15) n;
 
-        INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, effective_from, lifecycle_state, created_at, created_by, updated_at, updated_by)
-        SELECT gen_random_uuid(), ('00000000-0042-4000-8000-' || lpad(f::text, 12, '0'))::uuid, v, timestamptz '2024-10-01' + v * interval '90 days',
+        -- Versions 1–5 published a quarter apart, in order (the guard_configuration_version trigger requires it); 6 a DRAFT.
+        INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, effective_from, published_at, lifecycle_state, created_at, created_by, updated_at, updated_by)
+        SELECT gen_random_uuid(), ('00000000-0042-4000-8000-' || lpad(f::text, 12, '0'))::uuid, v,
+               CASE WHEN v < 6 THEN timestamptz '2024-10-01' + v * interval '90 days' END,
+               CASE WHEN v < 6 THEN timestamptz '2024-10-01' + v * interval '90 days' END,
                CASE WHEN v = 6 THEN 'DRAFT' ELSE 'PUBLISHED' END, now(), '{ServiceUserId}', now(), '{ServiceUserId}'
-        FROM generate_series(1, 15) f CROSS JOIN generate_series(1, 6) v;
+        FROM generate_series(1, 15) f CROSS JOIN generate_series(1, 6) v
+        ORDER BY f, v;
 
         -- 3,000 projects: 250 per department, 20 per project manager, every second one entity-delivered.
         INSERT INTO project.project (id, formal_project_id, title, title_lang, description, description_lang, classification_item_id, department_id,

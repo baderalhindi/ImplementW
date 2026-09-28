@@ -9,6 +9,7 @@ internal sealed class KpiDefinitionConfiguration : IEntityTypeConfiguration<KpiD
     public void Configure(EntityTypeBuilder<KpiDefinition> builder)
     {
         builder.ToTable("kpi_definition", "master_data_config");
+        builder.HasRowVersion();
         builder.Property(e => e.Code).HasMaxLength(50);
         builder.HasIndex(e => e.Code).IsUnique();
         builder.HasBilingualLabel(e => e.Name, "name");

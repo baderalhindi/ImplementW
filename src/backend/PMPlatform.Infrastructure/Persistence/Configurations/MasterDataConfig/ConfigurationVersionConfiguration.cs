@@ -9,9 +9,16 @@ internal sealed class ConfigurationVersionConfiguration : IEntityTypeConfigurati
     public void Configure(EntityTypeBuilder<ConfigurationVersion> builder)
     {
         builder.ToTable("configuration_version", "master_data_config");
+        builder.HasRowVersion();
         builder.HasIndex(e => new { e.ConfigurationFamilyId, e.VersionNo }).IsUnique();
         builder.HasNarrative(e => e.ChangeSummary, "change_summary");
         builder.HasGovernedLifecycle();
+
+        // TASK-034: a version has an effective-from exactly when it was published; a retirement's effective-to is not
+        // before it (equal when withdrawn before taking effect). The order of publications and the immutability of a
+        // PUBLISHED version and its content are enforced by trigger (migration TASK-034_GuardConfigurationHistory).
+        builder.HasCheck("effective_from", "(published_at IS NULL) = (effective_from IS NULL)");
+        builder.HasCheck("effective_to", "effective_to IS NULL OR effective_to >= effective_from");
 
         builder.HasOne<ConfigurationFamily>().WithMany().HasForeignKey(e => e.ConfigurationFamilyId).OnDelete(DeleteBehavior.Restrict);
 

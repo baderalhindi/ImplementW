@@ -15,5 +15,8 @@ internal static class ErrorCodes
     public const string PreconditionFailed = "PRECONDITION_FAILED";
     public const string PreconditionRequired = "PRECONDITION_REQUIRED";
     public const string Unavailable = "UNAVAILABLE";
+
+    /// <summary>422: required configuration is absent or ambiguous; the operation fails closed (TASK-034, Blueprint Section 12).</summary>
+    public const string ConfigurationMissing = "CONFIGURATION_MISSING";
     public const string InternalError = "INTERNAL_ERROR";
 }

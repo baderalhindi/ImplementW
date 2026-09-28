@@ -11,7 +11,7 @@ namespace PMPlatform.Api.Controllers;
 /// <summary>ADM-013 Entities (TASK-031, ADR-013). Never deleted (RETAIN): ACTIVE ↔ SUSPENDED, then RETIRED, which is terminal.</summary>
 [Route(Collection)]
 [Tags("IdentityAccess")]
-public sealed class ExternalEntitiesController(IExternalEntityAdministrationService entities) : IdentityAccessControllerBase
+public sealed class ExternalEntitiesController(IExternalEntityAdministrationService entities) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/external-entities";
 

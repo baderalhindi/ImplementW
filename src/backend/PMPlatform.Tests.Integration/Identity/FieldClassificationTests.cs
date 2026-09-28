@@ -32,16 +32,18 @@ public sealed class FieldClassificationTests(IdentityTestHost host)
 
             Assert.Equal(["budget"], low.MaskedFields);
             Assert.Equal(MaskingRule.Withhold, low.RuleFor("budget"));
-            // "title" is classified only in the DRAFT version: later and already "effective", but not PUBLISHED, so not in force.
+            // "title" is classified only in the DRAFT version, which is not PUBLISHED, so not in force.
             Assert.True(low.Reveals("title"));
             Assert.Empty(high.MaskedFields);
         }
         finally
         {
             await SetClearanceAsync(null);
+            // A published version is history (TASK-034): it is retired, not deleted, and its rules keep the levels they name.
             await host.Database.ExecuteAsync($"""
-                DELETE FROM master_data_config.configuration_version WHERE id IN ('{PublishedVersion}', '{DraftVersion}');
-                DELETE FROM master_data_config.master_data_item WHERE id IN ('{LowLevel}', '{HighLevel}');
+                UPDATE master_data_config.configuration_version SET lifecycle_state = 'RETIRED', retired_at = now(), effective_to = now()
+                WHERE id = '{PublishedVersion}' AND lifecycle_state = 'PUBLISHED';
+                DELETE FROM master_data_config.configuration_version WHERE id = '{DraftVersion}';
                 """);
         }
     }
@@ -65,14 +67,18 @@ public sealed class FieldClassificationTests(IdentityTestHost host)
              (VALUES ('{LowLevel}', 'TEST_LOW', 1), ('{HighLevel}', 'TEST_HIGH', 2)) AS v (id, code, sort_order)
         WHERE c.code = 'DATA_CLASSIFICATION';
 
-        INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, lifecycle_state, effective_from, created_at, created_by, updated_at, updated_by)
-        SELECT v.id::uuid, f.id, v.version_no, v.state, v.effective_from, now(), '{IdentityDatabase.SeedPrincipalId}', now(), '{IdentityDatabase.SeedPrincipalId}'
+        -- Both versions start as DRAFT, since content is written only to a DRAFT (TASK-034); version 1 is then published.
+        INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, lifecycle_state, created_at, created_by, updated_at, updated_by)
+        SELECT v.id::uuid, f.id, v.version_no, 'DRAFT', now(), '{IdentityDatabase.SeedPrincipalId}', now(), '{IdentityDatabase.SeedPrincipalId}'
         FROM master_data_config.configuration_family f,
-             (VALUES ('{PublishedVersion}', 1, 'PUBLISHED', now() - interval '1 day'), ('{DraftVersion}', 2, 'DRAFT', now() - interval '1 hour')) AS v (id, version_no, state, effective_from)
+             (VALUES ('{PublishedVersion}', 1), ('{DraftVersion}', 2)) AS v (id, version_no)
         WHERE f.code = 'FIELD_CLASSIFICATION';
 
         INSERT INTO master_data_config.field_classification_rule (id, configuration_version_id, entity_code, field_code, data_classification_item_id, masking_rule, created_at, created_by, updated_at, updated_by)
         VALUES (gen_random_uuid(), '{PublishedVersion}', '{Entity}', 'budget', '{HighLevel}', 'WITHHOLD', now(), '{IdentityDatabase.SeedPrincipalId}', now(), '{IdentityDatabase.SeedPrincipalId}'),
                (gen_random_uuid(), '{DraftVersion}', '{Entity}', 'title', '{HighLevel}', 'WITHHOLD', now(), '{IdentityDatabase.SeedPrincipalId}', now(), '{IdentityDatabase.SeedPrincipalId}');
+
+        UPDATE master_data_config.configuration_version SET lifecycle_state = 'PUBLISHED', published_at = now() - interval '1 day', effective_from = now() - interval '1 day'
+        WHERE id = '{PublishedVersion}';
         """;
 }

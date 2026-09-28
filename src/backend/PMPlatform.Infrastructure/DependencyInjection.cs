@@ -6,12 +6,14 @@ using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.AuditActivity;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Application.Features.MasterDataConfig;
 using PMPlatform.Infrastructure.Audit;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
 using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
+using PMPlatform.Infrastructure.Persistence.MasterDataConfig;
 using PMPlatform.Infrastructure.Secrets;
 
 namespace PMPlatform.Infrastructure;
@@ -47,6 +49,10 @@ public static class DependencyInjection
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<IExternalEntityRepository, ExternalEntityRepository>();
         services.TryAddSingleton<IMobileNumberVerifier, UnconfiguredMobileNumberVerifier>();
+
+        // TASK-034: FG-04 master data and configuration.
+        services.AddScoped<IMasterDataRepository, MasterDataRepository>();
+        services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
 
         services.AddAuditForwarding(configuration);
 
