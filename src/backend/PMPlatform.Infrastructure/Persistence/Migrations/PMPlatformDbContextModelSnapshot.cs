@@ -3468,6 +3468,532 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("risk_rating_definition", "master_data_config");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationDelivery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("attempt_count");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("channel");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeadLetteredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dead_lettered_at");
+
+                    b.Property<DateTimeOffset?>("DeliveredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("delivered_at");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text")
+                        .HasColumnName("failure_reason");
+
+                    b.Property<DateTimeOffset?>("LastAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_attempt_at");
+
+                    b.Property<DateTimeOffset?>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<Guid>("NotificationIntentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("notification_intent_id");
+
+                    b.Property<Guid>("NotificationTemplateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("notification_template_id");
+
+                    b.Property<string>("ProviderMessageId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("provider_message_id");
+
+                    b.Property<DateTimeOffset?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<Guid>("RecipientUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipient_user_id");
+
+                    b.Property<string>("RenderedBody")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("rendered_body");
+
+                    b.Property<string>("RenderedLanguage")
+                        .IsRequired()
+                        .HasColumnType("char(2)")
+                        .HasColumnName("rendered_language");
+
+                    b.Property<string>("RenderedSubject")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("rendered_subject");
+
+                    b.Property<short?>("SegmentCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("segment_count");
+
+                    b.Property<DateTimeOffset?>("SentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sent_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("SuppressionReason")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("suppression_reason");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_delivery");
+
+                    b.HasIndex("NotificationTemplateId")
+                        .HasDatabaseName("ix_notification_delivery_notification_template_id");
+
+                    b.HasIndex("NextAttemptAt", "Id")
+                        .HasDatabaseName("ix_notification_delivery_send_queue")
+                        .HasFilter("status IN ('PENDING', 'FAILED')");
+
+                    b.HasIndex("NotificationIntentId", "RecipientUserId", "Channel")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notification_delivery_intent_recipient_channel");
+
+                    b.HasIndex("RecipientUserId", "Channel", "ReadAt")
+                        .HasDatabaseName("ix_notification_delivery_recipient_user_id_channel_read_at");
+
+                    b.HasIndex("RecipientUserId", "Channel", "CreatedAt", "Id")
+                        .HasDatabaseName("ix_notification_delivery_recipient_user_id_channel_created_at_");
+
+                    b.ToTable("notification_delivery", "notifications", t =>
+                        {
+                            t.HasCheckConstraint("ck_notification_delivery_attempt_count", "attempt_count >= 0");
+
+                            t.HasCheckConstraint("ck_notification_delivery_channel", "\"channel\" IN ('IN_APP', 'EMAIL', 'SMS')");
+
+                            t.HasCheckConstraint("ck_notification_delivery_dead_letter", "(status = 'DEAD_LETTER') = (dead_lettered_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_notification_delivery_read", "(status = 'READ') = (read_at IS NOT NULL) AND (read_at IS NULL OR channel = 'IN_APP')");
+
+                            t.HasCheckConstraint("ck_notification_delivery_reason", "(status = 'SUPPRESSED') = (suppression_reason IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_notification_delivery_rendered_language", "\"rendered_language\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_notification_delivery_segment_count", "(segment_count IS NULL OR segment_count >= 1) AND (segment_count IS NULL OR channel = 'SMS')");
+
+                            t.HasCheckConstraint("ck_notification_delivery_status", "\"status\" IN ('PENDING', 'SENT', 'DELIVERED', 'FAILED', 'DEAD_LETTER', 'SUPPRESSED', 'READ')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationIntent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ConditionRevalidatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("condition_revalidated_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DeepLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("deep_link");
+
+                    b.Property<string>("EventFamilyCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("event_family_code");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<DateTimeOffset?>("ScheduledFor")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_for");
+
+                    b.Property<Guid?>("ScopeProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("scope_project_id");
+
+                    b.Property<string>("SourceEventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("source_event_type");
+
+                    b.Property<string>("SourceModule")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("source_module");
+
+                    b.Property<string>("SourceReference")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("source_reference");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subject_id");
+
+                    b.Property<string>("SubjectType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("subject_type");
+
+                    b.Property<string>("SuppressionReason")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("suppression_reason");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_intent");
+
+                    b.HasIndex("Id")
+                        .HasDatabaseName("ix_notification_intent_routed")
+                        .HasFilter("status = 'ROUTED'");
+
+                    b.HasIndex("ScopeProjectId")
+                        .HasDatabaseName("ix_notification_intent_scope_project_id");
+
+                    b.HasIndex("ReceivedAt", "Id")
+                        .HasDatabaseName("ix_notification_intent_received_at_id");
+
+                    b.HasIndex("SourceEventType", "SourceReference")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notification_intent_source_event_type_source_reference");
+
+                    b.HasIndex("UpdatedAt", "Id")
+                        .HasDatabaseName("ix_notification_intent_route_queue")
+                        .HasFilter("status IN ('RECEIVED', 'SCHEDULED')");
+
+                    b.ToTable("notification_intent", "notifications", t =>
+                        {
+                            t.HasCheckConstraint("ck_notification_intent_reason", "(status IN ('SUPPRESSED', 'FAILED')) = (suppression_reason IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_notification_intent_scheduled", "status <> 'SCHEDULED' OR scheduled_for IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_notification_intent_status", "\"status\" IN ('RECEIVED', 'SCHEDULED', 'RESOLVING', 'ROUTED', 'SUPPRESSED', 'COMPLETED', 'FAILED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationIntentParameter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("NotificationIntentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("notification_intent_id");
+
+                    b.Property<string>("ParameterKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("parameter_key");
+
+                    b.Property<string>("ParameterValue")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("parameter_value");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_intent_parameter");
+
+                    b.HasIndex("NotificationIntentId", "ParameterKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notification_intent_parameter_intent_key");
+
+                    b.ToTable("notification_intent_parameter", "notifications", t =>
+                        {
+                            t.HasCheckConstraint("ck_notification_intent_parameter_append_only", "updated_at = created_at AND updated_by = created_by");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationPreference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("channel");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("EventFamilyCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("event_family_code");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_preference");
+
+                    b.HasIndex("UserId", "EventFamilyCode", "Channel")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notification_preference_user_family_channel");
+
+                    b.ToTable("notification_preference", "notifications", t =>
+                        {
+                            t.HasCheckConstraint("ck_notification_preference_channel", "\"channel\" IN ('IN_APP', 'EMAIL', 'SMS')");
+
+                            t.HasCheckConstraint("ck_notification_preference_channel_choice", "channel IN ('EMAIL', 'SMS')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BodyAr")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("body_ar");
+
+                    b.Property<string>("BodyEn")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("body_en");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("channel");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("EventFamilyCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("event_family_code");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("LifecycleState")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("lifecycle_state");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<Guid?>("PublishedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("published_by_user_id");
+
+                    b.Property<DateTimeOffset?>("RetiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("retired_at");
+
+                    b.Property<string>("SubjectAr")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("subject_ar");
+
+                    b.Property<string>("SubjectEn")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("subject_en");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset?>("ValidatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("validated_at");
+
+                    b.Property<Guid?>("ValidatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("validated_by_user_id");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_no");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_template");
+
+                    b.HasIndex("PublishedByUserId")
+                        .HasDatabaseName("ix_notification_template_published_by_user_id");
+
+                    b.HasIndex("ValidatedByUserId")
+                        .HasDatabaseName("ix_notification_template_validated_by_user_id");
+
+                    b.HasIndex("EventType", "Channel")
+                        .HasDatabaseName("ix_notification_template_published")
+                        .HasFilter("lifecycle_state = 'PUBLISHED'");
+
+                    b.HasIndex("EventType", "Channel", "VersionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notification_template_event_type_channel_version_no");
+
+                    b.ToTable("notification_template", "notifications", t =>
+                        {
+                            t.HasCheckConstraint("ck_notification_template_channel", "\"channel\" IN ('IN_APP', 'EMAIL', 'SMS')");
+
+                            t.HasCheckConstraint("ck_notification_template_lifecycle_state", "\"lifecycle_state\" IN ('DRAFT', 'VALIDATED', 'PUBLISHED', 'RETIRED')");
+
+                            t.HasCheckConstraint("ck_notification_template_subject", "(channel = 'SMS') = (subject_ar IS NULL) AND (subject_ar IS NULL) = (subject_en IS NULL)");
+
+                            t.HasCheckConstraint("ck_notification_template_version_no", "version_no >= 1");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4547,6 +5073,74 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_risk_rating_definition_configuration_version_configuration_");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationDelivery", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Notifications.NotificationIntent", null)
+                        .WithMany()
+                        .HasForeignKey("NotificationIntentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_notification_delivery_notification_intent_notification_inte");
+
+                    b.HasOne("PMPlatform.Domain.Notifications.NotificationTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("NotificationTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_notification_delivery_notification_template_notification_te");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecipientUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_notification_delivery_user_recipient_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationIntent", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ScopeProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_notification_intent_project_scope_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationIntentParameter", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Notifications.NotificationIntent", null)
+                        .WithMany()
+                        .HasForeignKey("NotificationIntentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_notification_intent_parameter_notification_intent_notificat");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationPreference", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_notification_preference_user_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationTemplate", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_notification_template_user_published_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ValidatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_notification_template_user_validated_by_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>

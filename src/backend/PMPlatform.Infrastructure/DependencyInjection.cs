@@ -10,11 +10,14 @@ using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig;
+using PMPlatform.Application.Features.Notifications;
 using PMPlatform.Infrastructure.Approval;
 using PMPlatform.Infrastructure.Audit;
 using PMPlatform.Infrastructure.DocumentManagement;
 using PMPlatform.Infrastructure.Identity;
+using PMPlatform.Infrastructure.Notifications;
 using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
@@ -23,6 +26,7 @@ using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using PMPlatform.Infrastructure.Persistence.MasterDataConfig;
 using PMPlatform.Infrastructure.Persistence.Messaging;
+using PMPlatform.Infrastructure.Persistence.Notifications;
 using PMPlatform.Infrastructure.Secrets;
 
 namespace PMPlatform.Infrastructure;
@@ -75,9 +79,63 @@ public static class DependencyInjection
         services.AddHostedService<ApprovalMaintenanceWorker>();
 
         services.AddDocumentManagement(configuration);
+        services.AddNotifications(configuration);
 
         return services;
     }
+
+    /// <summary>
+    /// TASK-039: WF-15. The e-mail channel is the Exchange relay when <c>EXCHANGE_SMTP_HOST</c> is set; a host with an unusable
+    /// port, sender or credential pair stops the API at start-up without logging a value. No SMS provider is selected, so the
+    /// gateway is the one that is not configured (TASK-103 replaces it). Links in e-mail and SMS are built on
+    /// <c>APP_BASE_URL</c>, which must be an absolute http(s) origin when set.
+    /// </summary>
+    private static void AddNotifications(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IRoleHolderDirectory, RoleHolderDirectory>();
+
+        services.AddOptions<NotificationDeliveryPolicy>()
+            .Bind(configuration.GetSection(NotificationDeliveryPolicy.Section))
+            .Configure<IConfiguration>((policy, source) => policy.AppBaseUrl = AppBaseUrlOf(source[AppBaseUrlKey]))
+            .Validate(
+                policy => policy.MaxAttempts > 0 && policy.RetryBaseDelay > TimeSpan.Zero && policy.SmsMaxSegments > 0 && policy.SmsDeepLinkAllowance >= 0,
+                $"{NotificationDeliveryPolicy.Section}: MaxAttempts, RetryBaseDelay and SmsMaxSegments must be positive.")
+            .Validate(_ => AppBaseUrlOf(configuration[AppBaseUrlKey]) is not null || string.IsNullOrWhiteSpace(configuration[AppBaseUrlKey]),
+                $"{AppBaseUrlKey} is not an absolute http(s) URL without a query or fragment.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<NotificationDeliveryPolicy>>().Value);
+
+        services.AddOptions<SmtpOptions>()
+            .Bind(configuration.GetSection(SmtpOptions.Section))
+            .Configure<IConfiguration>((options, source) =>
+            {
+                options.Host = source[SmtpOptions.HostKey];
+                options.PortText = source[SmtpOptions.PortKey];
+                options.User = source[ApplicationSecrets.ExchangeSmtpUser];
+                options.Password = source[ApplicationSecrets.ExchangeSmtpPassword];
+            })
+            .Validate(options => options.IsValid(),
+                $"{SmtpOptions.HostKey} is set, but {SmtpOptions.PortKey}, {SmtpOptions.Section}:FromAddress, or the {ApplicationSecrets.ExchangeSmtpUser}/{ApplicationSecrets.ExchangeSmtpPassword} pair is not usable.")
+            .ValidateOnStart();
+        services.TryAddSingleton<IEmailSender, SmtpEmailSender>();
+        services.TryAddSingleton<ISmsGateway, UnconfiguredSmsGateway>();
+
+        services.AddOptions<NotificationWorkerOptions>()
+            .Bind(configuration.GetSection(NotificationWorkerOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{NotificationWorkerOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<NotificationWorker>();
+    }
+
+    /// <summary>The application's public origin (Environment and Secrets sheet: Public, DEV/SIT/UAT/PROD).</summary>
+    private const string AppBaseUrlKey = "APP_BASE_URL";
+
+    private static Uri? AppBaseUrlOf(string? value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out Uri? url) && (url.Scheme == Uri.UriSchemeHttps || url.Scheme == Uri.UriSchemeHttp)
+        && string.IsNullOrEmpty(url.Query) && string.IsNullOrEmpty(url.Fragment)
+            ? url
+            : null;
 
     /// <summary>
     /// TASK-037: WF-12. The store is <c>DOCUMENT_STORAGE_CONNECTION_STRING</c>'s; a value in neither accepted form stops the

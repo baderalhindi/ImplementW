@@ -70,6 +70,18 @@ public sealed class PermissionCatalogue
     /// <summary>WF-12: edit a document's metadata, archive it, queue a failed scan again (MOD-051, MOD-053) (TASK-037).</summary>
     public const string DocumentManage = "DOCUMENT_MANAGE";
 
+    /// <summary>WF-15: the bilingual notification templates and their versions (TASK-039).</summary>
+    public const string NotificationTemplateView = "NOTIFICATION_TEMPLATE_VIEW";
+
+    /// <summary>WF-15: author, validate, publish and retire notification templates (TASK-039).</summary>
+    public const string NotificationTemplateManage = "NOTIFICATION_TEMPLATE_MANAGE";
+
+    /// <summary>WF-15 operations: received intents, their deliveries, retries, suppressions and dead letters (TASK-039).</summary>
+    public const string NotificationDeliveryView = "NOTIFICATION_DELIVERY_VIEW";
+
+    /// <summary>WF-15 operations: redrive a failed intent or a dead-lettered delivery (TASK-039).</summary>
+    public const string NotificationDeliveryManage = "NOTIFICATION_DELIVERY_MANAGE";
+
     /// <summary>ADR-019: personalise one's own dashboard layout (TASK-111).</summary>
     public const string LayoutPersonalize = "LAYOUT_PERSONALIZE";
 
@@ -95,6 +107,10 @@ public sealed class PermissionCatalogue
             new(DocumentView, "DOCUMENT_MANAGEMENT", AccessMode.Read),
             new(DocumentUpload, "DOCUMENT_MANAGEMENT", AccessMode.Write),
             new(DocumentManage, "DOCUMENT_MANAGEMENT", AccessMode.Write),
+            new(NotificationTemplateView, "NOTIFICATIONS", AccessMode.Read),
+            new(NotificationTemplateManage, "NOTIFICATIONS", AccessMode.Write),
+            new(NotificationDeliveryView, "NOTIFICATIONS", AccessMode.Read),
+            new(NotificationDeliveryManage, "NOTIFICATIONS", AccessMode.Write),
             new(LayoutPersonalize, "DASHBOARDS", AccessMode.Write),
             new(ReportCompose, "REPORTS", AccessMode.Write),
         ]);
@@ -109,7 +125,8 @@ public sealed class PermissionCatalogue
     /// entity Project Manager upload, view and see the version history of documents on their own project within
     /// classification rules: R04 at ENTITY. The scope reaches only a holder with an entity, so an internal R04 gains
     /// nothing from it, and an external holder's per-project assignment keeps it to that project (ADR-013). The other
-    /// document grants wait for Appendix A (document-management.md F-1).
+    /// document grants wait for Appendix A (document-management.md F-1). WF-15's notification templates and delivery operations
+    /// go to R01 at ALL, as a delivery-team decision like FG-04's (notification-runtime.md F-1): they are platform-wide.
     /// </summary>
     public static IReadOnlyList<ShippedGrant> ShippedDefaultGrants { get; } =
     [
@@ -125,6 +142,10 @@ public sealed class PermissionCatalogue
         new("R01", MasterDataManage, DataScope.All),
         new("R01", ConfigurationView, DataScope.All),
         new("R01", ConfigurationManage, DataScope.All),
+        new("R01", NotificationTemplateView, DataScope.All),
+        new("R01", NotificationTemplateManage, DataScope.All),
+        new("R01", NotificationDeliveryView, DataScope.All),
+        new("R01", NotificationDeliveryManage, DataScope.All),
         new("R04", DocumentView, DataScope.Entity),
         new("R04", DocumentUpload, DataScope.Entity),
         new("R02", LayoutPersonalize, DataScope.Own),

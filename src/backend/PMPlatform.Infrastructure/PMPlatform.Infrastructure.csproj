@@ -27,6 +27,10 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <!-- TASK-037: the WF-12 document store (DocumentManagement/CloudStorageDocumentStorage.cs). -->
     <PackageReference Include="Google.Cloud.Storage.V1" />
+    <!-- TASK-039: the WF-15 e-mail channel (Notifications/SmtpEmailSender.cs). Its compile assets stay here: MimeKit's
+         dependency System.Security.Cryptography.Pkcs carries a root namespace Internal.Cryptography, which would shadow names
+         such as a test fixture's Internal(...) in every project that references this one. Runtime assets still flow. -->
+    <PackageReference Include="MailKit" PrivateAssets="compile;contentfiles;analyzers;build" />
     <!-- TASK-024: `dotnet ef` runs with this project as its startup project, so the design-time package stays
          here and never flows into PMPlatform.Api's published image (PrivateAssets). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />

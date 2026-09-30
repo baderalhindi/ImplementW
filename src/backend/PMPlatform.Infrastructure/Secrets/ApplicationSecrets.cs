@@ -41,6 +41,12 @@ public static class ApplicationSecrets
     /// <summary>TASK-037: the private object store behind WF-12 documents, <c>gs://&lt;bucket&gt;</c> or, in DEV, <c>file:///&lt;path&gt;</c>.</summary>
     public const string DocumentStorageConnectionString = "DOCUMENT_STORAGE_CONNECTION_STRING";
 
+    /// <summary>TASK-039: the service account the WF-15 e-mail channel authenticates to AHDA's Exchange SMTP relay with.</summary>
+    public const string ExchangeSmtpUser = "EXCHANGE_SMTP_USER";
+
+    /// <summary>TASK-039: that service account's password.</summary>
+    public const string ExchangeSmtpPassword = "EXCHANGE_SMTP_PASSWORD";
+
     /// <summary>The configuration keys loaded from the secret store and required at start-up, in the order they are read.</summary>
     public static readonly IReadOnlyList<string> Keys = [DatabaseConnectionString, JwtSigningKey];
 
@@ -51,8 +57,12 @@ public static class ApplicationSecrets
     /// The MFA provider key is scoped to SIT/UAT/PROD and may not be needed at all if AHDA's identity provider applies
     /// the second factor (ADR-010 gate note); without it, a sign-in that requires MFA is refused, never let through.
     /// The SIEM token is scoped to SIT/UAT/PROD; without it, audit events are stored and wait to be forwarded. Without the
-    /// document store, uploads and downloads answer 503 and the API still starts.
+    /// document store, uploads and downloads answer 503 and the API still starts. The Exchange relay's account is scoped to
+    /// SIT/UAT/PROD; without it, a relay that needs no authentication is used as it is, and without a relay no e-mail is sent.
     /// </summary>
     public static readonly IReadOnlyList<string> OptionalKeys =
-        [DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey, SiemApiToken, DocumentStorageConnectionString];
+    [
+        DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey, SiemApiToken, DocumentStorageConnectionString,
+        ExchangeSmtpUser, ExchangeSmtpPassword,
+    ];
 }
