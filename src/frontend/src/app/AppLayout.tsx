@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 
 import { approvalNavigation } from '@/features/approvals/routes.tsx';
+import { documentNavigation } from '@/features/documents/routes.tsx';
 import {
   identityAccessNavigation,
   type NavigationItem,
@@ -56,8 +57,8 @@ function Navigation({
 }
 
 /**
- * The application shell: skip link, header, the navigation the session allows (approvals for everyone signed in,
- * administration for R01), and the page.
+ * The application shell: skip link, header, the navigation the session allows (approvals and documents for everyone
+ * signed in, administration for R01), and the page.
  */
 export function AppLayout(): ReactElement {
   const { t } = useI18n();
@@ -95,6 +96,7 @@ export function AppLayout(): ReactElement {
         {session !== null && (
           <div className="shell__sidebar">
             <Navigation label="approvals.nav.label" items={approvalNavigation} />
+            <Navigation label="documents.nav.label" items={documentNavigation} />
             {administrator && (
               <Navigation label="identityAccess.nav.label" items={identityAccessNavigation} />
             )}

@@ -87,6 +87,11 @@ h3 {
   font-size: 1.05rem;
 }
 
+/* The hidden attribute always hides, even on an element a class gives a display (e.g. .form while a file uploads). */
+[hidden] {
+  display: none !important;
+}
+
 .visually-hidden {
   position: absolute;
   inline-size: 1px;
@@ -749,6 +754,108 @@ textarea.field__input {
 
 .matrix__cell {
   white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------------------------- documents */
+
+/* A scan state spelled out (TASK-038 D-3). Each tone reuses a badge pair already checked for AA contrast. */
+.scan-notice {
+  margin-block: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  border-inline-start: 4px solid var(--color-border);
+  background: var(--color-neutral-surface);
+}
+
+.scan-notice__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.scan-notice__body {
+  margin: var(--space-1) 0 0;
+}
+
+.scan-notice--info {
+  border-inline-start-color: var(--color-info);
+  background: var(--color-info-surface);
+}
+
+.scan-notice--positive {
+  border-inline-start-color: var(--color-positive);
+  background: var(--color-positive-surface);
+}
+
+.scan-notice--warning {
+  border-inline-start-color: var(--color-warning);
+  background: var(--color-warning-surface);
+}
+
+/* Quarantined: the strongest signal on the page, a thicker danger edge as well as the colour and the words. */
+.scan-notice--negative {
+  border-inline-start: 8px solid var(--color-danger);
+  background: var(--color-danger-surface);
+  color: var(--color-danger);
+}
+
+.upload-progress {
+  inline-size: 100%;
+  block-size: 0.75rem;
+  margin-block-start: var(--space-2);
+  accent-color: var(--color-info);
+}
+
+/* A row whose file is quarantined, flagged by its edge as well as its badge. */
+.row--flagged > :first-child {
+  box-shadow: inset 4px 0 0 var(--color-danger);
+}
+
+[dir='rtl'] .row--flagged > :first-child {
+  box-shadow: inset -4px 0 0 var(--color-danger);
+}
+
+.version-cell {
+  white-space: nowrap;
+}
+
+.download {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.download__reason,
+.choice-list__reason {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.choice-list,
+.evidence-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choice-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.choice-list__reason {
+  flex-basis: 100%;
+}
+
+.evidence-list > li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block: var(--space-1);
 }
 
 /* ---------------------------------------------------------------------------------------------- dialog */

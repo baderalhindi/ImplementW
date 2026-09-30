@@ -25,6 +25,10 @@
     "no": "No",
     "none": "None"
   },
+  "people": {
+    "you": "You",
+    "unknownUser": "User {id}"
+  },
   "table": {
     "actions": "Actions"
   },
@@ -71,6 +75,7 @@
   "home": {
     "title": "Welcome, {name}",
     "approvals": "Go to your approval inbox",
+    "documents": "Go to the document library",
     "administration": "Go to users, roles and permissions administration"
   },
   "forbidden": {

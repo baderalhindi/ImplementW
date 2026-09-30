@@ -96,7 +96,7 @@ describe('SCR-100 Approval Inbox', () => {
 
     const table = await screen.findByRole('table');
     expect(
-      within(table).getByText(en('approvals.people.unknownUser', { id: 'b2b2b2b2' })),
+      within(table).getByText(en('common.people.unknownUser', { id: 'b2b2b2b2' })),
     ).toBeTruthy();
     expect(
       within(table).getByText(en('approvals.people.unknownRole', { id: 'd4d4d4d4' })),
@@ -104,7 +104,7 @@ describe('SCR-100 Approval Inbox', () => {
     expect(
       within(table).getByText(
         en('approvals.inbox.onBehalfOf', {
-          name: en('approvals.people.unknownUser', { id: 'c3c3c3c3' }),
+          name: en('common.people.unknownUser', { id: 'c3c3c3c3' }),
         }),
       ),
     ).toBeTruthy();

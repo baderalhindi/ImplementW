@@ -1,4 +1,4 @@
-/** Rows per page on the WF-11 lists (R-29 allows up to 200). */
+/** Rows per page on the list screens (R-29 allows up to 200). */
 export const PAGE_SIZE = 25;
 
 /** The `page` query parameter, or 1 when it is absent or not a positive integer. */
