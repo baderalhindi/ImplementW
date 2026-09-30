@@ -70,8 +70,8 @@
   },
   "home": {
     "title": "Welcome, {name}",
-    "administration": "Go to users, roles and permissions administration",
-    "nothingYet": "No screens are available for your role yet."
+    "approvals": "Go to your approval inbox",
+    "administration": "Go to users, roles and permissions administration"
   },
   "forbidden": {
     "title": "Access denied",

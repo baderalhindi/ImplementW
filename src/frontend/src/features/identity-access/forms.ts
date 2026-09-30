@@ -2,7 +2,13 @@ import { type RefObject, useCallback, useEffect, useState } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
-import { type FieldErrors, fieldErrorsOf, fieldMessage, problemMessage } from './problems.ts';
+import {
+  type FieldErrors,
+  fieldErrorsOf,
+  fieldMessage,
+  type ProblemDescriber,
+  problemMessage,
+} from './problems.ts';
 
 // Client-side checks mirror the API's shape validation (RequestValidation.cs), so most mistakes are caught before a
 // round trip; the API stays the authority and its field errors are shown the same way.
@@ -44,7 +50,7 @@ export function optionalText(value: string): string | null {
   return trimmed === '' ? null : trimmed;
 }
 
-export type SaveResult<T> = { ok: true; value: T } | { ok: false };
+export type SaveResult<T> = { ok: true; value: T } | { ok: false; error: unknown };
 
 export interface SaveAction {
   saving: boolean;
@@ -55,7 +61,8 @@ export interface SaveAction {
   run: <T>(action: () => Promise<T>) => Promise<SaveResult<T>>;
 }
 
-export function useSaveAction(): SaveAction {
+/** `describe` names a feature's own refusal codes; it defaults to the platform and FG-03 codes. */
+export function useSaveAction(describe: ProblemDescriber = problemMessage): SaveAction {
   const { t } = useI18n();
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -86,13 +93,13 @@ export function useSaveAction(): SaveAction {
         return { ok: true, value: await action() };
       } catch (error) {
         setFieldErrors(fieldErrorsOf(error, t));
-        setFormError(problemMessage(error, t));
-        return { ok: false };
+        setFormError(describe(error, t));
+        return { ok: false, error };
       } finally {
         setSaving(false);
       }
     },
-    [t],
+    [describe, t],
   );
 
   return { saving, formError, fieldErrors, validate, run };
@@ -108,7 +115,7 @@ export function useFocusFirstError(
       return;
     }
     const invalid = formRef.current?.querySelector<HTMLElement>(
-      '[aria-invalid="true"] input, input[aria-invalid="true"], select[aria-invalid="true"]',
+      '[aria-invalid="true"] input, input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"]',
     );
     invalid?.focus();
   }, [formRef, fieldErrors]);

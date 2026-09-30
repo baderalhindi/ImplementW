@@ -5,13 +5,13 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import { accessRelationshipsApi, MAX_PAGE_SIZE, usersApi } from '../api/identityAccessApi.ts';
 import { type UserDetail } from '../api/types.ts';
 import { AssignmentsTable } from '../assignments/AssignmentsTable.tsx';
 import { useUserNames } from '../assignments/useUserNames.ts';
 import { AssignRoleDialog } from '../assignments/AssignRoleDialog.tsx';
-import { StatusBadge } from '../components/StatusBadge.tsx';
 import { type OrganizationLookups, useOrganizationLookups } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
 import { UserStatusDialog } from './UserStatusDialog.tsx';

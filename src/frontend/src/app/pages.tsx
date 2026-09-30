@@ -9,7 +9,7 @@ import {
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 
-/** The landing page: the screens the session's roles can reach. Administration is the only one built so far. */
+/** The landing page: the screens the session can reach. Approvals are for everyone; administration for R01. */
 export function HomePage(): ReactElement {
   const { t } = useI18n();
   const { session } = useSession();
@@ -20,13 +20,16 @@ export function HomePage(): ReactElement {
   return (
     <>
       <PageHeader title={t('common.home.title', { name: session.user.displayName })} />
-      {administrator ? (
-        <p>
-          <Link to="/admin/users">{t('common.home.administration')}</Link>
-        </p>
-      ) : (
-        <p>{t('common.home.nothingYet')}</p>
-      )}
+      <ul className="link-list">
+        <li>
+          <Link to="/approvals/inbox">{t('common.home.approvals')}</Link>
+        </li>
+        {administrator && (
+          <li>
+            <Link to="/admin/users">{t('common.home.administration')}</Link>
+          </li>
+        )}
+      </ul>
     </>
   );
 }

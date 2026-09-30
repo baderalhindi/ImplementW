@@ -123,6 +123,80 @@ public sealed class ApprovalEndpointTests(ApprovalTestHost host)
         await AssertAnswerAsync(HttpStatusCode.Conflict, "TERMINAL_STATE", client.PostAsync($"{Delegations}/{id}/revoke", delegator));
     }
 
+    /// <summary>TASK-036's check, server half: a reject or return with no reason, an empty one or a blank one is refused and decides nothing.</summary>
+    [Theory]
+    [InlineData("reject")]
+    [InlineData("return")]
+    public async Task RejectingOrReturningWithAnEmptyReasonIsRefusedAndDecidesNothing(string decision)
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string approver = (await client.SignInOrFailAsync(2)).AccessToken;
+        string requester = (await client.SignInOrFailAsync(6)).AccessToken;
+        ApprovalInstanceDetail run = await host.StartAsync(await host.NewSubjectAsync(), 1, ApprovalTestHost.SingleStage);
+        string path = $"{Tasks}/{run.Tasks.Single().Id}/{decision}";
+
+        (object? Body, string Error)[] refusals =
+        [
+            (null, "reason REQUIRED"),
+            (new { }, "reason REQUIRED"),
+            (new { reason = new { text = "", language = "en" } }, "reason.text REQUIRED"),
+            (new { reason = new { text = "   ", language = "en" } }, "reason.text REQUIRED"),
+        ];
+        foreach ((object? body, string error) in refusals)
+        {
+            using HttpResponseMessage refused = await client.PostAsync(path, approver, body);
+            Assert.Equal((HttpStatusCode.BadRequest, "VALIDATION_FAILED"), (refused.StatusCode, await refused.CodeOfAsync()));
+            Assert.Equal([error], await refused.ReadFieldErrorsAsync());
+        }
+
+        using HttpResponseMessage history = await client.GetAsync($"{Instances}/{run.Id}", requester);
+        JsonObject unchanged = await history.ReadObjectAsync();
+        Assert.Equal(("PENDING", "PENDING"), (unchanged["status"]!.GetValue<string>(), unchanged["tasks"]![0]!["status"]!.GetValue<string>()));
+        Assert.Null(unchanged["tasks"]![0]!["decisionReason"]);
+    }
+
+    /// <summary>TASK-036's check: an approver given authority by delegation finds the delegated task in their inbox, marked with the delegator.</summary>
+    [Fact]
+    public async Task ADelegatesInboxListsTheDelegatedTaskOnBehalfOfTheDelegator()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string delegator = (await client.SignInOrFailAsync(2)).AccessToken;
+        string delegateToken = (await client.SignInOrFailAsync(3)).AccessToken;
+        ApprovalInstanceDetail run = await host.StartAsync(await host.NewSubjectAsync(), 1, ApprovalTestHost.SingleStage);
+        Guid task = run.Tasks.Single().Id;
+
+        // local.r03 decides R03 tasks of their department; this R02 stage is outside their own authority.
+        Assert.DoesNotContain(await InboxItemsAsync(client, delegateToken), item => item.TaskId == task);
+
+        using HttpResponseMessage created = await client.PostAsync(Delegations, delegator, new
+        {
+            delegateUserId = IdentityDatabase.UserId(3),
+            routingKey = ApprovalTestHost.SingleStage,
+            validTo = host.Clock.GetUtcNow().AddDays(1),
+        });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Guid delegation = AdministrationApi.IdOf(await created.ReadObjectAsync());
+        try
+        {
+            Assert.Contains(await InboxItemsAsync(client, delegateToken), item => item == (task, IdentityDatabase.UserId(2)));
+        }
+        finally
+        {
+            using HttpResponseMessage revoked = await client.PostAsync($"{Delegations}/{delegation}/revoke", delegator);
+            Assert.Equal(HttpStatusCode.OK, revoked.StatusCode);
+        }
+
+        Assert.DoesNotContain(await InboxItemsAsync(client, delegateToken), item => item.TaskId == task);
+    }
+
+    private static async Task<List<(Guid TaskId, string? OnBehalfOfUserId)>> InboxItemsAsync(HttpClient client, string token)
+    {
+        using HttpResponseMessage inbox = await client.GetAsync($"{Tasks}?pageSize=200", token);
+        Assert.Equal(HttpStatusCode.OK, inbox.StatusCode);
+        return [.. (await inbox.ReadObjectAsync())["items"]!.AsArray()
+            .Select(item => (item!["taskId"]!.GetValue<Guid>(), item["onBehalfOfUserId"]?.GetValue<string>()))];
+    }
+
     private static async Task AssertAnswerAsync(HttpStatusCode status, string code, Task<HttpResponseMessage> call)
     {
         using HttpResponseMessage response = await call;
