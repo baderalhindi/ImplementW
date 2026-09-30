@@ -5,6 +5,7 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { useSaveAction } from '../forms.ts';
+import { type ProblemDescriber } from '../problems.ts';
 
 export interface Confirmation {
   title: string;
@@ -12,6 +13,8 @@ export interface Confirmation {
   confirmLabel: string;
   destructive: boolean;
   action: () => Promise<unknown>;
+  /** The feature's refusal messages; the platform and FG-03 ones when omitted. */
+  describeProblem?: ProblemDescriber;
 }
 
 interface ConfirmDialogProps {
@@ -20,7 +23,7 @@ interface ConfirmDialogProps {
   onDone: () => void;
 }
 
-/** A lifecycle command (activate, deactivate, suspend, retire) confirmed before it is sent. */
+/** A lifecycle command (activate, deactivate, suspend, retire, revoke) confirmed before it is sent. */
 export function ConfirmDialog({ confirmation, onClose, onDone }: ConfirmDialogProps): ReactElement {
   return (
     <Dialog open={confirmation !== null} title={confirmation?.title ?? ''} onClose={onClose}>
@@ -41,7 +44,7 @@ function ConfirmBody({
   onDone: () => void;
 }): ReactElement {
   const { t } = useI18n();
-  const save = useSaveAction();
+  const save = useSaveAction(confirmation.describeProblem);
 
   const confirm = async () => {
     const result = await save.run(confirmation.action);

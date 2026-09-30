@@ -1,0 +1,176 @@
+{
+  "nav": {
+    "label": "Approvals",
+    "inbox": "Approval inbox",
+    "requests": "My requests",
+    "delegations": "Delegated approvals"
+  },
+  "people": {
+    "you": "You",
+    "unknownUser": "User {id}",
+    "unknownRole": "Role {id}"
+  },
+  "subject": {
+    "revision": "Revision {revision}"
+  },
+  "stage": "Stage {stage}",
+  "overdue": "Overdue",
+  "viewHistory": "View history",
+  "firstPage": "Go to the first page",
+  "instanceStatus": {
+    "PENDING": "Pending",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "RETURNED": "Returned",
+    "WITHDRAWN": "Withdrawn"
+  },
+  "taskStatus": {
+    "PENDING": "Pending",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "RETURNED": "Returned",
+    "DELEGATED": "Delegated",
+    "ESCALATED": "Escalated",
+    "CANCELLED": "Cancelled",
+    "EXPIRED": "Expired"
+  },
+  "delegationStatus": {
+    "ACTIVE": "Active",
+    "REVOKED": "Revoked",
+    "EXPIRED": "Expired"
+  },
+  "fields": {
+    "request": "Request",
+    "requestedBy": "Requested by",
+    "requestedAt": "Requested",
+    "stage": "Stage",
+    "dueAt": "Due",
+    "authority": "Authority",
+    "status": "Status",
+    "completedAt": "Completed",
+    "role": "Approver role",
+    "decidedBy": "Decided by",
+    "decidedAt": "Decided",
+    "reason": "Reason",
+    "routingKey": "Routing key",
+    "validFrom": "From",
+    "validTo": "Until",
+    "delegate": "Delegate",
+    "delegator": "Delegated by"
+  },
+  "inbox": {
+    "title": "Approval inbox",
+    "description": "Requests waiting for your decision, earliest due first. Only requests within your approval authority, or authority delegated to you, are listed.",
+    "loading": "Loading your approvals…",
+    "empty": "No pending approvals",
+    "emptyDescription": "There is nothing waiting for your decision.",
+    "caption": "Requests waiting for your decision",
+    "ownAuthority": "Your own",
+    "onBehalfOf": "On behalf of {name}"
+  },
+  "done": {
+    "approve": "Approved. The request moves to its next stage, or is complete if this was the last one.",
+    "reject": "Rejected. The requester can see your reason.",
+    "return": "Returned to the requester with your reason. A corrected version comes back as a new request.",
+    "escalate": "Escalated. The task has passed to the escalation role.",
+    "withdraw": "Request withdrawn.",
+    "delegate": "Delegation given.",
+    "revoke": "Delegation revoked."
+  },
+  "decision": {
+    "reason": "Reason",
+    "reasonRequiredHint": "Required. The requester reads this reason.",
+    "reasonOptionalHint": "Optional. The requester can read it.",
+    "approve": {
+      "action": "Approve",
+      "title": "Approve request",
+      "body": "Approve this request at your stage.",
+      "confirm": "Approve"
+    },
+    "reject": {
+      "action": "Reject",
+      "title": "Reject request",
+      "body": "Rejecting ends the request: it is refused and goes no further.",
+      "confirm": "Reject"
+    },
+    "return": {
+      "action": "Return",
+      "title": "Return request",
+      "body": "Returning ends this request and sends it back to its author, who can correct and resubmit it as a new revision.",
+      "confirm": "Return"
+    },
+    "escalate": {
+      "action": "Escalate",
+      "title": "Escalate overdue task",
+      "body": "The task is past its due date. Escalating passes it to the escalation role, which then decides in its place.",
+      "confirm": "Escalate"
+    }
+  },
+  "requests": {
+    "title": "My requests",
+    "description": "Requests you submitted for approval, newest first.",
+    "loading": "Loading your requests…",
+    "empty": "You have not submitted any requests for approval.",
+    "emptyFiltered": "None of your requests has this status.",
+    "caption": "Requests you submitted"
+  },
+  "withdraw": {
+    "action": "Withdraw",
+    "title": "Withdraw request",
+    "body": "Withdrawing ends the request without a decision and cancels the tasks still open. This cannot be undone.",
+    "confirm": "Withdraw"
+  },
+  "history": {
+    "title": "Approval history",
+    "onBehalfOf": "on behalf of {name}",
+    "outcomeDelivered": "Outcome sent to the source record",
+    "outcomePending": "Not yet",
+    "previous": "Previous revision",
+    "previousLink": "View the earlier request",
+    "currentStage": "Current stage",
+    "stageCaption": "Approvers of stage {stage}",
+    "notReached": "Stage not reached yet"
+  },
+  "delegations": {
+    "title": "Delegated approvals",
+    "description": "A delegate can decide what you could decide yourself, judged at the moment they act, and nothing more.",
+    "loading": "Loading delegations…",
+    "given": "Delegations you gave",
+    "givenCaption": "People you delegated to",
+    "givenEmpty": "You have not delegated your approval authority.",
+    "received": "Delegations to you",
+    "receivedCaption": "People who delegated to you",
+    "receivedEmpty": "No one has delegated approval authority to you.",
+    "allRoutingKeys": "All requests"
+  },
+  "delegate": {
+    "action": "Delegate approval authority",
+    "title": "Delegate approval authority",
+    "note": "Your delegate decides with your authority as it stands when they act. If you lose authority, so do they.",
+    "delegate": "Delegate",
+    "delegateHint": "An active internal user. External users cannot hold approval authority.",
+    "routingKey": "Routing key",
+    "routingKeyHint": "Leave empty to delegate every kind of request.",
+    "validFrom": "From",
+    "validFromHint": "Leave empty to start now.",
+    "validTo": "Until",
+    "confirm": "Delegate"
+  },
+  "revoke": {
+    "action": "Revoke",
+    "title": "Revoke delegation",
+    "body": "{name} will no longer be able to decide on your behalf. Decisions already made stand.",
+    "confirm": "Revoke"
+  },
+  "problems": {
+    "terminalState": "This has already been decided or ended, so nothing was changed. The list has been refreshed.",
+    "stageNotReached": "This task's stage has not been reached yet.",
+    "permissionDenied": "You do not have approval authority for this.",
+    "configurationMissing": "The approval route or workflow policy for this request is not configured. Contact the PMO.",
+    "concurrentDecision": "Someone else decided on this request just before you, so your decision was not saved. The list has been refreshed.",
+    "reasonRequired": "Enter a reason for rejecting or returning the request.",
+    "escalationNotAllowed": "This task cannot be escalated: it is not overdue, not in the current stage, or already an escalation.",
+    "delegateInvalid": "Choose an active internal user other than yourself.",
+    "delegationPeriodInvalid": "The period must not start in the past, and must end after it starts."
+  }
+}

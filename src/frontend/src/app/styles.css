@@ -19,6 +19,10 @@
   --color-positive: #155b2f;
   --color-positive-surface: #e6f4ea;
   --color-neutral-surface: #eceff2;
+  --color-info: #1d4f91;
+  --color-info-surface: #e6eef9;
+  --color-warning: #7a4100;
+  --color-warning-surface: #fdf0dc;
   --color-focus: #1f5fbf;
   --radius: 6px;
   --space-1: 0.25rem;
@@ -150,9 +154,14 @@ h3 {
   flex-direction: column;
 }
 
-.shell__nav {
+.shell__sidebar {
   border-block-end: 1px solid var(--color-border-subtle);
   background: var(--color-surface);
+}
+
+/* Approvals for everyone signed in, then administration for R01: one list per landmark. */
+.shell__nav + .shell__nav {
+  border-block-start: 1px solid var(--color-border-subtle);
 }
 
 .shell__nav ul {
@@ -197,7 +206,7 @@ h3 {
     min-block-size: calc(100vh - 4rem);
   }
 
-  .shell__nav {
+  .shell__sidebar {
     flex: 0 0 15rem;
     border-block-end: 0;
     border-inline-end: 1px solid var(--color-border-subtle);
@@ -269,6 +278,12 @@ h3 {
   background: var(--color-positive-surface);
   color: var(--color-positive);
   border-inline-start: 4px solid var(--color-positive);
+}
+
+.notice--warning {
+  background: var(--color-warning-surface);
+  color: var(--color-warning);
+  border-inline-start-color: var(--color-warning);
 }
 
 .link-list {
@@ -400,6 +415,16 @@ h3 {
   color: var(--color-text-muted);
 }
 
+.badge--info {
+  background: var(--color-info-surface);
+  color: var(--color-info);
+}
+
+.badge--warning {
+  background: var(--color-warning-surface);
+  color: var(--color-warning);
+}
+
 /* ---------------------------------------------------------------------------------------------- buttons */
 
 .button {
@@ -520,6 +545,11 @@ h3 {
   font: inherit;
 }
 
+textarea.field__input {
+  min-block-size: 6rem;
+  resize: vertical;
+}
+
 .field__input[aria-invalid='true'] {
   border-color: var(--color-danger);
   border-width: 2px;
@@ -632,8 +662,52 @@ h3 {
   white-space: nowrap;
 }
 
+/* A cell's secondary line: a date under a name, a role under a stage. */
+.cell__aside {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.cell__link {
+  display: inline-block;
+  margin-block-start: var(--space-1);
+}
+
+.subject {
+  display: block;
+}
+
+.subject__name {
+  display: block;
+  font-weight: 600;
+  unicode-bidi: isolate;
+}
+
+.subject__meta {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
 .cell--actions .button + .button {
   margin-inline-start: var(--space-2);
+}
+
+/* Several peer actions (approve, reject, return) stack when the row is narrow instead of scrolling out of view. */
+.cell--actions-wrap {
+  white-space: normal;
+}
+
+.cell--actions-wrap .actions-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-inline-size: 7rem;
+}
+
+.cell--actions-wrap .button + .button {
+  margin-inline-start: 0;
 }
 
 .pagination {

@@ -7,6 +7,7 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
+import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import {
   externalEntitiesApi,
@@ -20,7 +21,6 @@ import {
   type UserSummary,
 } from '../api/types.ts';
 import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
-import { StatusBadge } from '../components/StatusBadge.tsx';
 import { UserPicker } from '../components/UserPicker.tsx';
 import { useUserNames } from '../assignments/useUserNames.ts';
 import {

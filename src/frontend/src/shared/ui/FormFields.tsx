@@ -115,6 +115,54 @@ export function TextField({
   );
 }
 
+interface TextAreaFieldProps extends FieldBaseProps {
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+  /** The API's limit, announced to the browser so a paste cannot silently exceed it. */
+  maxLength?: number;
+}
+
+/** Free text a person writes (a reason, a note). `dir="auto"` follows the language the person types in. */
+export function TextAreaField({
+  label,
+  name,
+  value,
+  onChange,
+  error,
+  hint,
+  required = false,
+  disabled = false,
+  rows = 4,
+  maxLength,
+}: TextAreaFieldProps): ReactElement {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  return (
+    <div className="field">
+      <FieldLabel htmlFor={id} label={label} required={required} />
+      <textarea
+        id={id}
+        name={name}
+        className="field__input"
+        rows={rows}
+        maxLength={maxLength}
+        dir="auto"
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+        required={required}
+        disabled={disabled}
+        aria-invalid={error === undefined ? undefined : true}
+        aria-describedby={describedBy(hintId, errorId, hint, error)}
+      />
+      <FieldMessages hintId={hintId} errorId={errorId} hint={hint} error={error} />
+    </div>
+  );
+}
+
 export interface SelectOption {
   value: string;
   label: string;

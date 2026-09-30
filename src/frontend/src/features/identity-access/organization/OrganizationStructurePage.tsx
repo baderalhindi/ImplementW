@@ -4,9 +4,9 @@ import { Link } from 'react-router';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import { type DepartmentSummary } from '../api/types.ts';
-import { StatusBadge } from '../components/StatusBadge.tsx';
 import { labelOf, useOrganizationLookups } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
 

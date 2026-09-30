@@ -1,7 +1,11 @@
 import { type ReactElement } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 
-import { identityAccessNavigation } from '@/features/identity-access/routes.tsx';
+import { approvalNavigation } from '@/features/approvals/routes.tsx';
+import {
+  identityAccessNavigation,
+  type NavigationItem,
+} from '@/features/identity-access/routes.tsx';
 import { sessionStore } from '@/features/identity-access/session/sessionStore.ts';
 import { StepUpDialog } from '@/features/identity-access/session/StepUpDialog.tsx';
 import {
@@ -9,7 +13,7 @@ import {
   useHasRole,
   useSession,
 } from '@/features/identity-access/session/useSession.ts';
-import { useI18n } from '@/shared/i18n/i18n.ts';
+import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 
 function LanguageSwitch(): ReactElement {
   const { language, setLanguage } = useI18n();
@@ -28,7 +32,33 @@ function LanguageSwitch(): ReactElement {
   );
 }
 
-/** The application shell: skip link, header, the navigation the session's roles allow, and the page. */
+function Navigation({
+  label,
+  items,
+}: {
+  label: TranslationKey;
+  items: NavigationItem[];
+}): ReactElement {
+  const { t } = useI18n();
+  return (
+    <nav className="shell__nav" aria-label={t(label)}>
+      <ul>
+        {items.map((item) => (
+          <li key={item.to}>
+            <NavLink to={item.to} end={item.end ?? false}>
+              {t(item.label)}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/**
+ * The application shell: skip link, header, the navigation the session allows (approvals for everyone signed in,
+ * administration for R01), and the page.
+ */
 export function AppLayout(): ReactElement {
   const { t } = useI18n();
   const { session } = useSession();
@@ -62,18 +92,13 @@ export function AppLayout(): ReactElement {
         </div>
       </header>
       <div className="shell__body">
-        {administrator && (
-          <nav className="shell__nav" aria-label={t('identityAccess.nav.label')}>
-            <ul>
-              {identityAccessNavigation.map((item) => (
-                <li key={item.to}>
-                  <NavLink to={item.to} end={item.end ?? false}>
-                    {t(item.label)}
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
+        {session !== null && (
+          <div className="shell__sidebar">
+            <Navigation label="approvals.nav.label" items={approvalNavigation} />
+            {administrator && (
+              <Navigation label="identityAccess.nav.label" items={identityAccessNavigation} />
+            )}
+          </div>
         )}
         <main id="main" className="shell__main" tabIndex={-1}>
           <Outlet />

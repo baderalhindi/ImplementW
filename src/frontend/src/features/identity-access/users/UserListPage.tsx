@@ -6,10 +6,10 @@ import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import { usersApi } from '../api/identityAccessApi.ts';
 import { type UserQuery, type UserSort, type UserStatus, type UserType } from '../api/types.ts';
-import { StatusBadge } from '../components/StatusBadge.tsx';
 import { labelOf, type OrganizationLookups, useOrganizationLookups } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
 

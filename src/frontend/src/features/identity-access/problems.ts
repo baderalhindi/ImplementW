@@ -4,7 +4,10 @@ import { type TranslationKey, type TranslationParams } from '@/shared/i18n/i18n.
 // What the administrator reads for each refusal (identity-access-administration.md §4). The field paths are the
 // request's, so a server error lands on the input it names.
 
-type Translate = (key: TranslationKey, params?: TranslationParams) => string;
+export type Translate = (key: TranslationKey, params?: TranslationParams) => string;
+
+/** What the person reads for a refusal; a feature with codes of its own passes its describer to useSaveAction. */
+export type ProblemDescriber = (error: unknown, t: Translate) => string;
 
 const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   [NETWORK_ERROR_CODE]: 'common.problems.network',

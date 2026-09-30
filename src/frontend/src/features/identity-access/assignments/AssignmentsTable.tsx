@@ -5,10 +5,10 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
+import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import { accessRelationshipsApi } from '../api/identityAccessApi.ts';
 import { type AccessRelationshipSummary } from '../api/types.ts';
-import { StatusBadge } from '../components/StatusBadge.tsx';
 import { useSaveAction } from '../forms.ts';
 import { type OrganizationLookups } from '../lookups.ts';
 
