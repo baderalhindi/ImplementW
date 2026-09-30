@@ -30,6 +30,9 @@
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.12" />
     <!-- TASK-037: the WF-12 document store, the environment's private Cloud Storage bucket (infra/terraform/storage). -->
     <PackageVersion Include="Google.Cloud.Storage.V1" Version="5.0.0" />
+    <!-- TASK-039: the WF-15 e-mail channel, AHDA's Exchange SMTP relay (EXCHANGE_SMTP_*). MailKit, because System.Net.Mail's
+         SmtpClient is not recommended for new development and cannot require STARTTLS. -->
+    <PackageVersion Include="MailKit" Version="4.18.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />

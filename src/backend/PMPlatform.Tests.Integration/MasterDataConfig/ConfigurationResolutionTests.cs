@@ -231,7 +231,7 @@ public sealed class ConfigurationResolutionTests(MasterDataConfigTestHost host) 
             .ResolveAsync("NOTIFICATION_ROUTING", host.Clock.GetUtcNow(), CancellationToken.None);
         var family = routing.RequireNotificationEventFamily("SECURITY_ALERT");
         Assert.True(family.IsMandatory);
-        Assert.Contains(family.Channels, c => c is { Channel: Domain.MasterDataConfig.NotificationChannel.Sms, EnabledByDefault: true });
+        Assert.Contains(family.Channels, c => c is { Channel: Domain.Common.NotificationChannel.Sms, EnabledByDefault: true });
     }
 
     /// <summary>A Mandatory event family reaching R01 on the channels given.</summary>

@@ -1,4 +1,4 @@
-using PMPlatform.Domain.MasterDataConfig;
+using PMPlatform.Domain.Common;
 
 namespace PMPlatform.Application.Features.MasterDataConfig.Contracts.Content;
 

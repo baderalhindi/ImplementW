@@ -15,6 +15,8 @@ using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
+using PMPlatform.Application.Features.Notifications;
+using PMPlatform.Application.Features.Notifications.Contracts;
 
 namespace PMPlatform.Application;
 
@@ -83,6 +85,17 @@ public static class DependencyInjection
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IDocumentLinks, DocumentLinkService>();
         services.AddScoped<IDocumentScanning, DocumentScanning>();
+
+        // TASK-039: the WF-15 runtime. Intents arrive through the outbox dispatcher after their source committed; the worker
+        // routes and sends them. The channels, the repository and the recipient directory are Infrastructure's; a source
+        // module that schedules reminders registers its INotificationConditionSource.
+        services.AddScoped<INotificationIntentConsumer, NotificationIntentIntake>();
+        services.AddScoped<NotificationRouting>();
+        services.AddScoped<NotificationSending>();
+        services.AddScoped<INotificationProcessing, NotificationProcessing>();
+        services.AddScoped<INotificationInbox, NotificationInbox>();
+        services.AddScoped<INotificationTemplateAdministration, NotificationTemplateAdministration>();
+        services.AddScoped<INotificationOperations, NotificationOperations>();
 
         return services;
     }

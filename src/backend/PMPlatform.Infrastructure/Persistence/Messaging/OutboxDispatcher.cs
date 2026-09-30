@@ -9,7 +9,8 @@ using PMPlatform.Domain.Common;
 namespace PMPlatform.Infrastructure.Persistence.Messaging;
 
 /// <summary>
-/// Delivers DOMAIN_EVENT messages to their one consumer (event-conventions EV-6), each in its own scope and transaction.
+/// Delivers DOMAIN_EVENT messages to their one consumer, and NOTIFICATION_INTENT messages to Notifications' intent
+/// consumer (event-conventions §3, EV-6), each in its own scope and transaction.
 /// The message row is locked (<c>FOR UPDATE SKIP LOCKED</c>) and re-read as undispatched first, then the consumer runs
 /// and the message is marked dispatched in that same transaction. Whatever the consumer saves through the scope's
 /// context therefore commits exactly when the mark does: a retry, a second worker or a second API instance finds the
@@ -32,7 +33,8 @@ internal sealed partial class OutboxDispatcher(
         {
             DateTimeOffset now = timeProvider.GetUtcNow();
             due = await scope.ServiceProvider.GetRequiredService<PMPlatformDbContext>().Set<OutboxMessage>().AsNoTracking()
-                .Where(m => m.DispatchedAt == null && m.MessageType == EventKind.DomainEvent && m.AttemptCount < MaxAttempts
+                .Where(m => m.DispatchedAt == null && (m.MessageType == EventKind.DomainEvent || m.MessageType == EventKind.NotificationIntent)
+                            && m.AttemptCount < MaxAttempts
                             && (m.NextAttemptAt == null || m.NextAttemptAt <= now))
                 .OrderBy(m => m.OccurredAt).ThenBy(m => m.Id)
                 .Select(m => m.Id)
@@ -60,7 +62,7 @@ internal sealed partial class OutboxDispatcher(
             OutboxMessage? message = (await context.Set<OutboxMessage>()
                     .FromSql($"""
                         SELECT * FROM common.outbox_message
-                        WHERE id = {messageId} AND dispatched_at IS NULL AND message_type = 'DOMAIN_EVENT'
+                        WHERE id = {messageId} AND dispatched_at IS NULL AND message_type IN ('DOMAIN_EVENT', 'NOTIFICATION_INTENT')
                         FOR UPDATE SKIP LOCKED
                         """)
                     .ToListAsync(cancellationToken)
@@ -73,14 +75,7 @@ internal sealed partial class OutboxDispatcher(
 
             try
             {
-                string eventType = EventMessageKey.EventTypeOf(message.MessageKey);
-                IDomainEventConsumer consumer = scope.ServiceProvider.GetServices<IDomainEventConsumer>().Where(c => c.EventType == eventType).ToList() switch
-                {
-                    [var one] => one,
-                    [] => throw new InvalidOperationException($"No consumer is registered for {eventType}."),
-                    _ => throw new InvalidOperationException($"More than one consumer is registered for {eventType}."),
-                };
-                await consumer.HandleAsync(message.Payload, cancellationToken).ConfigureAwait(false);
+                await ConsumeAsync(scope.ServiceProvider, message, cancellationToken).ConfigureAwait(false);
 
                 DateTimeOffset now = timeProvider.GetUtcNow();
                 message.DispatchedAt = now;
@@ -103,6 +98,24 @@ internal sealed partial class OutboxDispatcher(
 
         await RecordFailureAsync(messageId, failure, cancellationToken).ConfigureAwait(false);
         return false;
+    }
+
+    /// <summary>A domain event goes to the one consumer of its type; every notification intent goes to Notifications.</summary>
+    private static Task ConsumeAsync(IServiceProvider services, OutboxMessage message, CancellationToken cancellationToken)
+    {
+        if (message.MessageType == EventKind.NotificationIntent)
+        {
+            return services.GetRequiredService<INotificationIntentConsumer>().HandleAsync(message.Payload, cancellationToken);
+        }
+
+        string eventType = EventMessageKey.EventTypeOf(message.MessageKey);
+        IDomainEventConsumer consumer = services.GetServices<IDomainEventConsumer>().Where(c => c.EventType == eventType).ToList() switch
+        {
+            [var one] => one,
+            [] => throw new InvalidOperationException($"No consumer is registered for {eventType}."),
+            _ => throw new InvalidOperationException($"More than one consumer is registered for {eventType}."),
+        };
+        return consumer.HandleAsync(message.Payload, cancellationToken);
     }
 
     /// <summary>In a transaction of its own, after the failed one was rolled back.</summary>
