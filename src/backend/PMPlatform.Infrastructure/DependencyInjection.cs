@@ -6,15 +6,19 @@ using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.AuditActivity;
+using PMPlatform.Application.Features.DocumentManagement;
+using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.MasterDataConfig;
 using PMPlatform.Infrastructure.Approval;
 using PMPlatform.Infrastructure.Audit;
+using PMPlatform.Infrastructure.DocumentManagement;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
+using PMPlatform.Infrastructure.Persistence.DocumentManagement;
 using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using PMPlatform.Infrastructure.Persistence.MasterDataConfig;
@@ -70,7 +74,45 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddHostedService<ApprovalMaintenanceWorker>();
 
+        services.AddDocumentManagement(configuration);
+
         return services;
+    }
+
+    /// <summary>
+    /// TASK-037: WF-12. The store is <c>DOCUMENT_STORAGE_CONNECTION_STRING</c>'s; a value in neither accepted form stops the
+    /// API at start-up. No malware-scanning provider is selected, so the scanner is the one that scans nothing and every
+    /// version stays SCAN_PENDING (fail closed); the provider's adapter replaces it.
+    /// </summary>
+    private static void AddDocumentManagement(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
+
+        services.AddOptions<DocumentUploadPolicy>()
+            .Bind(configuration.GetSection(DocumentUploadPolicy.Section))
+            .Validate(policy => policy.MaxFileSizeBytes > 0 && policy.AllowedContentTypes.Count > 0,
+                $"{DocumentUploadPolicy.Section}: MaxFileSizeBytes must be positive and AllowedContentTypes must name at least one media type.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<DocumentUploadPolicy>>().Value);
+
+        services.AddOptions<DocumentStorageOptions>()
+            .Configure<IConfiguration>((options, source) => options.ConnectionString = source[ApplicationSecrets.DocumentStorageConnectionString])
+            .Validate(options => options.Location is not null,
+                $"{ApplicationSecrets.DocumentStorageConnectionString} is neither gs://<bucket>[/<prefix>] nor file:///<absolute path>.")
+            .ValidateOnStart();
+        services.AddSingleton<IDocumentStorage>(provider => provider.GetRequiredService<IOptions<DocumentStorageOptions>>().Value.Location switch
+        {
+            { Kind: DocumentStorageKind.CloudStorage } location => new CloudStorageDocumentStorage(location.Root, location.Prefix),
+            { Kind: DocumentStorageKind.FileSystem } location => new FileSystemDocumentStorage(location.Root),
+            _ => new UnconfiguredDocumentStorage(),
+        });
+        services.TryAddSingleton<IMalwareScanner, UnconfiguredMalwareScanner>();
+
+        services.AddOptions<DocumentScanOptions>()
+            .Bind(configuration.GetSection(DocumentScanOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{DocumentScanOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<DocumentScanWorker>();
     }
 
     /// <summary>

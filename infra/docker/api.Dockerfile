@@ -27,6 +27,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app ./
+# TASK-037: the local stack mounts its document store here (DOCUMENT_STORAGE_CONNECTION_STRING=file:///…). A new named
+# volume takes this directory's owner, so the app user can write to it. Environments use Cloud Storage and never mount it.
+RUN mkdir -p /var/lib/pmplatform/documents && chown app:app /var/lib/pmplatform/documents
 USER app
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "PMPlatform.Api.dll"]

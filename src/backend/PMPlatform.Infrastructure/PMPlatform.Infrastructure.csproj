@@ -25,6 +25,8 @@
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <!-- TASK-037: the WF-12 document store (DocumentManagement/CloudStorageDocumentStorage.cs). -->
+    <PackageReference Include="Google.Cloud.Storage.V1" />
     <!-- TASK-024: `dotnet ef` runs with this project as its startup project, so the design-time package stays
          here and never flows into PMPlatform.Api's published image (PrivateAssets). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />

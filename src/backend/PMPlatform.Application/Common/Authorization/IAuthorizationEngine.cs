@@ -23,6 +23,13 @@ public interface IAuthorizationEngine
     public Task<AuthorizationDecision> EvaluateAsync(Guid userId, AuthorizationRequest request, CancellationToken cancellationToken);
 
     /// <summary>
+    /// The records the user reaches under <paramref name="permissionCode"/>, as clauses a collection query filters by
+    /// (api-conventions R-3: "filters the collection server-side"). Nothing is recorded: a list is not a refusal. Empty for
+    /// an inactive user or one without the permission; a write permission's READ-ONLY grants reach nothing.
+    /// </summary>
+    public Task<RecordScope> GetRecordScopeAsync(Guid userId, string permissionCode, CancellationToken cancellationToken);
+
+    /// <summary>
     /// The fields of <paramref name="entityCode"/> the user may not see when reading it under
     /// <paramref name="permissionCode"/>: those classified above that permission's clearance (ADR-010).
     /// </summary>

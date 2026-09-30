@@ -675,6 +675,408 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.BusinessLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
+
+                    b.Property<string>("LinkRole")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("link_role");
+
+                    b.Property<DateTimeOffset>("LinkedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("linked_at");
+
+                    b.Property<Guid>("LinkedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_by_user_id");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<string>("TargetModule")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("target_module");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("target_type");
+
+                    b.Property<DateTimeOffset?>("UnlinkedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("unlinked_at");
+
+                    b.Property<Guid?>("UnlinkedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("unlinked_by_user_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_business_link");
+
+                    b.HasIndex("LinkedByUserId")
+                        .HasDatabaseName("ix_business_link_linked_by_user_id");
+
+                    b.HasIndex("UnlinkedByUserId")
+                        .HasDatabaseName("ix_business_link_unlinked_by_user_id");
+
+                    b.HasIndex("TargetModule", "TargetType", "TargetId")
+                        .HasDatabaseName("ix_business_link_target");
+
+                    b.HasIndex("DocumentId", "TargetModule", "TargetType", "TargetId", "LinkRole")
+                        .IsUnique()
+                        .HasDatabaseName("ix_business_link_document_target_role");
+
+                    b.ToTable("business_link", "document_management", t =>
+                        {
+                            t.HasCheckConstraint("ck_business_link_link_role", "\"link_role\" IN ('ATTACHMENT', 'REFERENCE')");
+
+                            t.HasCheckConstraint("ck_business_link_unlinked", "(unlinked_at IS NULL) = (unlinked_by_user_id IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.Document", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DataClassificationItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("data_classification_item_id");
+
+                    b.Property<Guid>("DocumentTypeItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_type_item_id");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.DocumentManagement.Document.Description#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("description_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("description");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.DocumentManagement.Document.Title#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("title_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("title");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_document");
+
+                    b.HasIndex("DataClassificationItemId")
+                        .HasDatabaseName("ix_document_data_classification_item_id");
+
+                    b.HasIndex("DocumentTypeItemId")
+                        .HasDatabaseName("ix_document_document_type_item_id");
+
+                    b.HasIndex("OwnerUserId")
+                        .HasDatabaseName("ix_document_owner_user_id");
+
+                    b.HasIndex("UpdatedAt", "Id")
+                        .HasDatabaseName("ix_document_updated_at_id");
+
+                    b.HasIndex("ProjectId", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_document_project_id_updated_at_id");
+
+                    b.ToTable("document", "document_management", t =>
+                        {
+                            t.HasCheckConstraint("ck_document_description_lang", "\"description_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_document_description_pair", "(\"description\" IS NULL) = (\"description_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_document_status", "\"status\" IN ('ACTIVE', 'ARCHIVED')");
+
+                            t.HasCheckConstraint("ck_document_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.DocumentVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ChecksumSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("checksum_sha256")
+                        .IsFixedLength();
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("file_name");
+
+                    b.Property<DateTimeOffset?>("ScanCompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scan_completed_at");
+
+                    b.Property<string>("ScanReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("scan_reference");
+
+                    b.Property<string>("ScanState")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("scan_state");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<string>("StorageObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("storage_object_key");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset>("UploadedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("uploaded_at");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("uploaded_by_user_id");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_no");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_document_version");
+
+                    b.HasIndex("StorageObjectKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_document_version_storage_object_key");
+
+                    b.HasIndex("UpdatedAt")
+                        .HasDatabaseName("ix_document_version_scan_queue")
+                        .HasFilter("scan_state = 'SCAN_PENDING'");
+
+                    b.HasIndex("UploadedByUserId")
+                        .HasDatabaseName("ix_document_version_uploaded_by_user_id");
+
+                    b.HasIndex("DocumentId", "VersionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_document_version_document_id_version_no");
+
+                    b.ToTable("document_version", "document_management", t =>
+                        {
+                            t.HasCheckConstraint("ck_document_version_checksum_sha256", "checksum_sha256 ~ '^[0-9a-f]{64}$'");
+
+                            t.HasCheckConstraint("ck_document_version_scan_completed", "(scan_state = 'SCAN_PENDING') = (scan_completed_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_document_version_scan_state", "\"scan_state\" IN ('SCAN_PENDING', 'CLEAN', 'QUARANTINED', 'SCAN_FAILED')");
+
+                            t.HasCheckConstraint("ck_document_version_size_bytes", "size_bytes >= 0");
+
+                            t.HasCheckConstraint("ck_document_version_version_no", "version_no >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.EvidenceReference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BusinessLinkId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_link_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset>("DesignatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("designated_at");
+
+                    b.Property<Guid>("DesignatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("designated_by_user_id");
+
+                    b.Property<Guid>("DocumentVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_version_id");
+
+                    b.Property<Guid>("EvidenceTypeItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evidence_type_item_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_evidence_reference");
+
+                    b.HasIndex("DesignatedByUserId")
+                        .HasDatabaseName("ix_evidence_reference_designated_by_user_id");
+
+                    b.HasIndex("DocumentVersionId")
+                        .HasDatabaseName("ix_evidence_reference_document_version_id");
+
+                    b.HasIndex("EvidenceTypeItemId")
+                        .HasDatabaseName("ix_evidence_reference_evidence_type_item_id");
+
+                    b.HasIndex("BusinessLinkId", "DocumentVersionId", "EvidenceTypeItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_evidence_reference_link_version_type");
+
+                    b.ToTable("evidence_reference", "document_management", t =>
+                        {
+                            t.HasCheckConstraint("ck_evidence_reference_status", "\"status\" IN ('VALID', 'WITHDRAWN')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.AccessRelationship", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3561,6 +3963,107 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_audit_forwarding_record_audit_event_audit_event_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.BusinessLink", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.DocumentManagement.Document", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_business_link_document_document_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("LinkedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_business_link_user_linked_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UnlinkedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_business_link_user_unlinked_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.Document", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("DataClassificationItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_master_data_item_data_classification_item_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentTypeItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_master_data_item_document_type_item_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_user_owner_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_document_project_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.DocumentVersion", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.DocumentManagement.Document", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_version_document_document_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_document_version_user_uploaded_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.EvidenceReference", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.DocumentManagement.BusinessLink", null)
+                        .WithMany()
+                        .HasForeignKey("BusinessLinkId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_evidence_reference_business_link_business_link_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("DesignatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_evidence_reference_user_designated_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.DocumentManagement.DocumentVersion", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_evidence_reference_document_version_document_version_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("EvidenceTypeItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_evidence_reference_master_data_item_evidence_type_item_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.AccessRelationship", b =>
