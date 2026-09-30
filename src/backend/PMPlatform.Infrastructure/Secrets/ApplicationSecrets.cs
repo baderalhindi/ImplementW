@@ -38,6 +38,9 @@ public static class ApplicationSecrets
     /// <summary>TASK-033: the platform's token at AHDA's SIEM ingestion endpoint.</summary>
     public const string SiemApiToken = "SIEM_API_TOKEN";
 
+    /// <summary>TASK-037: the private object store behind WF-12 documents, <c>gs://&lt;bucket&gt;</c> or, in DEV, <c>file:///&lt;path&gt;</c>.</summary>
+    public const string DocumentStorageConnectionString = "DOCUMENT_STORAGE_CONNECTION_STRING";
+
     /// <summary>The configuration keys loaded from the secret store and required at start-up, in the order they are read.</summary>
     public static readonly IReadOnlyList<string> Keys = [DatabaseConnectionString, JwtSigningKey];
 
@@ -47,8 +50,9 @@ public static class ApplicationSecrets
     /// registers it (ADR-007). Without them the method reports "not configured" on ADM-041 and the API still starts.
     /// The MFA provider key is scoped to SIT/UAT/PROD and may not be needed at all if AHDA's identity provider applies
     /// the second factor (ADR-010 gate note); without it, a sign-in that requires MFA is refused, never let through.
-    /// The SIEM token is scoped to SIT/UAT/PROD; without it, audit events are stored and wait to be forwarded.
+    /// The SIEM token is scoped to SIT/UAT/PROD; without it, audit events are stored and wait to be forwarded. Without the
+    /// document store, uploads and downloads answer 503 and the API still starts.
     /// </summary>
     public static readonly IReadOnlyList<string> OptionalKeys =
-        [DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey, SiemApiToken];
+        [DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey, SiemApiToken, DocumentStorageConnectionString];
 }

@@ -16,6 +16,10 @@ internal static class ErrorCodes
     public const string PreconditionRequired = "PRECONDITION_REQUIRED";
     public const string Unavailable = "UNAVAILABLE";
 
+    /// <summary>413 / 415 on uploads (R-8, TASK-037).</summary>
+    public const string PayloadTooLarge = "PAYLOAD_TOO_LARGE";
+    public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";
+
     /// <summary>422: required configuration is absent or ambiguous; the operation fails closed (TASK-034, Blueprint Section 12).</summary>
     public const string ConfigurationMissing = "CONFIGURATION_MISSING";
     public const string InternalError = "INTERNAL_ERROR";

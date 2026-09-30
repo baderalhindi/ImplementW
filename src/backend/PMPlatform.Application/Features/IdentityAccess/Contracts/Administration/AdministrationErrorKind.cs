@@ -26,4 +26,10 @@ public enum AdministrationErrorKind
 
     /// <summary>503 <c>UNAVAILABLE</c>: a provider the operation needs is not configured or not reachable.</summary>
     Unavailable = 8,
+
+    /// <summary>413 <c>PAYLOAD_TOO_LARGE</c>: an upload above the configured size (R-8, TASK-037).</summary>
+    PayloadTooLarge = 9,
+
+    /// <summary>415 <c>UNSUPPORTED_MEDIA_TYPE</c>: an upload of a media type not accepted (R-8, TASK-037).</summary>
+    UnsupportedMediaType = 10,
 }

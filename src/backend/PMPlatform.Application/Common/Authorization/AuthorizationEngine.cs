@@ -65,6 +65,67 @@ internal sealed partial class AuthorizationEngine(
                 : DecideOnRecord(principal, permission, request.RoleCode, request.Subject, ranks);
     }
 
+    public async Task<RecordScope> GetRecordScopeAsync(Guid userId, string permissionCode, CancellationToken cancellationToken)
+    {
+        PermissionDefinition permission = catalogue.Get(permissionCode);
+        AuthorizationPrincipal? principal = await GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (principal is not { IsActive: true })
+        {
+            return RecordScope.None;
+        }
+
+        IReadOnlyDictionary<Guid, int> ranks = await GetClassificationRanksAsync(cancellationToken).ConfigureAwait(false);
+        return new RecordScope([.. Granted(principal, permission, roleCode: null)
+            .Where(g => permission.Mode == AccessMode.Read || g.Scope != DataScope.ReadOnly)
+            .Select(g => ClauseOf(principal, g, ranks))
+            .OfType<RecordScopeClause>()]);
+    }
+
+    /// <summary>
+    /// <see cref="Covers"/> and <see cref="Clears"/> as conditions on the record's anchors. Null when the grant can reach
+    /// nothing: an anchor its scope needs is missing, or ADR-013's isolation contradicts its entity.
+    /// </summary>
+    private static RecordScopeClause? ClauseOf(AuthorizationPrincipal principal, EffectiveGrant grant, IReadOnlyDictionary<Guid, int> ranks)
+    {
+        Guid? isolatedTo = null;
+        if (principal.UserType == UserType.External)
+        {
+            if (principal.ExternalEntityId is not { } own)
+            {
+                return null;
+            }
+
+            isolatedTo = own;
+        }
+
+        RecordScopeClause clause = new()
+        {
+            ProjectId = grant.ProjectId,
+            ExternalEntityId = isolatedTo,
+            ClearedClassificationIds = grant.ClearanceItemId is { } clearance && ranks.TryGetValue(clearance, out int held)
+                ? ranks.Where(r => r.Value <= held).Select(r => r.Key).ToHashSet()
+                : [],
+        };
+
+        switch (grant.Scope)
+        {
+            case DataScope.All or DataScope.ReadOnly:
+                return clause;
+            case DataScope.Dept:
+                Guid? department = grant.DepartmentId ?? principal.DepartmentId;
+                return department is null ? null : clause with { DepartmentId = department };
+            case DataScope.Own:
+                return clause with { OwnerUserId = principal.UserId };
+            case DataScope.Assigned:
+                return clause with { AssignedUserId = principal.UserId };
+            case DataScope.Entity:
+                Guid? entity = grant.ExternalEntityId ?? principal.ExternalEntityId;
+                return entity is null || (isolatedTo is not null && isolatedTo != entity) ? null : clause with { ExternalEntityId = entity };
+            default:
+                return null;
+        }
+    }
+
     /// <summary>
     /// The refusal, with the anchors of the record it was decided on. The caller's answer (403 or 404) is not changed by
     /// it. A token whose user does not exist names that id as the subject: it cannot be the actor of a stored event.

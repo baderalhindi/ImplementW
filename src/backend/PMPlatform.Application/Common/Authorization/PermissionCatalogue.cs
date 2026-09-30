@@ -58,6 +58,18 @@ public sealed class PermissionCatalogue
     /// </summary>
     public const string ApprovalDecide = "APPROVAL_DECIDE";
 
+    /// <summary>
+    /// WF-12: find and read documents, their version history, links and evidence references, and download CLEAN content
+    /// (SCR-120–124), on the documents the grant's scope and clearance cover (TASK-037).
+    /// </summary>
+    public const string DocumentView = "DOCUMENT_VIEW";
+
+    /// <summary>WF-12: upload a document and add a version to one (MOD-050, MOD-052) (TASK-037).</summary>
+    public const string DocumentUpload = "DOCUMENT_UPLOAD";
+
+    /// <summary>WF-12: edit a document's metadata, archive it, queue a failed scan again (MOD-051, MOD-053) (TASK-037).</summary>
+    public const string DocumentManage = "DOCUMENT_MANAGE";
+
     /// <summary>ADR-019: personalise one's own dashboard layout (TASK-111).</summary>
     public const string LayoutPersonalize = "LAYOUT_PERSONALIZE";
 
@@ -80,6 +92,9 @@ public sealed class PermissionCatalogue
             new(ConfigurationManage, "MASTER_DATA_CONFIG", AccessMode.Write),
             new(ApprovalView, "APPROVAL", AccessMode.Read),
             new(ApprovalDecide, "APPROVAL", AccessMode.Write),
+            new(DocumentView, "DOCUMENT_MANAGEMENT", AccessMode.Read),
+            new(DocumentUpload, "DOCUMENT_MANAGEMENT", AccessMode.Write),
+            new(DocumentManage, "DOCUMENT_MANAGEMENT", AccessMode.Write),
             new(LayoutPersonalize, "DASHBOARDS", AccessMode.Write),
             new(ReportCompose, "REPORTS", AccessMode.Write),
         ]);
@@ -90,7 +105,11 @@ public sealed class PermissionCatalogue
     /// configuration) goes to R01 at ALL too, as a delivery-team decision no controlled source states yet (TASK-034 F-1).
     /// Master data and configuration are platform-wide, with no record to scope. ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07 and withholds them from R04, R05, R06 and
     /// R08; each acts on the holder's own layout or report definition, hence OWN (the ADR names no scope). The report's
-    /// data is authorised independently for every viewer (CTL-15).
+    /// data is authorised independently for every viewer (CTL-15). ADR-013's participation amendment to TASK-037 lets an
+    /// entity Project Manager upload, view and see the version history of documents on their own project within
+    /// classification rules: R04 at ENTITY. The scope reaches only a holder with an entity, so an internal R04 gains
+    /// nothing from it, and an external holder's per-project assignment keeps it to that project (ADR-013). The other
+    /// document grants wait for Appendix A (document-management.md F-1).
     /// </summary>
     public static IReadOnlyList<ShippedGrant> ShippedDefaultGrants { get; } =
     [
@@ -106,6 +125,8 @@ public sealed class PermissionCatalogue
         new("R01", MasterDataManage, DataScope.All),
         new("R01", ConfigurationView, DataScope.All),
         new("R01", ConfigurationManage, DataScope.All),
+        new("R04", DocumentView, DataScope.Entity),
+        new("R04", DocumentUpload, DataScope.Entity),
         new("R02", LayoutPersonalize, DataScope.Own),
         new("R02", ReportCompose, DataScope.Own),
         new("R03", LayoutPersonalize, DataScope.Own),

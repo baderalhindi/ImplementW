@@ -6,6 +6,8 @@ using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.AuditActivity;
+using PMPlatform.Application.Features.DocumentManagement;
+using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
@@ -72,6 +74,15 @@ public static class DependencyInjection
         services.AddScoped<IApprovalDelegationService, ApprovalDelegationService>();
         services.AddScoped<IApprovalMaintenance, ApprovalMaintenance>();
         services.AddScoped<IDomainEventConsumer, ApprovalOutcomeDispatch>();
+
+        // TASK-037: WF-12 documents and evidence. The store, the scanner, the upload policy and the repository are
+        // Infrastructure's; modules attach documents and pin evidence through IDocumentLinks.
+        services.AddScoped<DocumentAccess>();
+        services.AddScoped<DocumentReferences>();
+        services.AddScoped<DocumentUploads>();
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IDocumentLinks, DocumentLinkService>();
+        services.AddScoped<IDocumentScanning, DocumentScanning>();
 
         return services;
     }

@@ -40,9 +40,12 @@ public sealed class ShippedGrantTests
     public async Task AGrantedCellAllowsItsHolder(string role, string permission)
     {
         AuthorizationScenario scenario = Scenario(role);
+        AuthorizationSubject inScope = ShippedGrant(role, permission)!.Scope == DataScope.Entity
+            ? new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId, OwnerUserId = OtherUserId }
+            : new AuthorizationSubject { OwnerUserId = UserId };
 
         Assert.Equal(AuthorizationDecision.Allowed, await scenario.AuthorizeAsync(permission));
-        Assert.Equal(AuthorizationDecision.Allowed, await scenario.AuthorizeAsync(permission, new AuthorizationSubject { OwnerUserId = UserId }));
+        Assert.Equal(AuthorizationDecision.Allowed, await scenario.AuthorizeAsync(permission, inScope));
     }
 
     [Theory]
@@ -51,20 +54,35 @@ public sealed class ShippedGrantTests
     {
         AuthorizationScenario scenario = Scenario(role);
         DataScope scope = ShippedGrant(role, permission)!.Scope;
+        AuthorizationDecision outOfScope = AuthorizationDecision.NotFound(AuthorizationDenial.OutOfScope);
 
-        (AuthorizationDecision decision, AuthorizationDecision expected) = scope switch
+        switch (scope)
         {
             // Another user's layout or report definition: not visible, so 404 (R-47).
-            DataScope.Own => (await scenario.AuthorizeAsync(permission, new AuthorizationSubject { OwnerUserId = OtherUserId }),
-                AuthorizationDecision.NotFound(AuthorizationDenial.OutOfScope)),
-            // ALL leaves nothing out of scope; the same holder, disabled, holds nothing.
-            DataScope.All => (await Disabled(scenario).AuthorizeAsync(permission), AuthorizationDecision.Forbidden(AuthorizationDenial.InactivePrincipal)),
-            // No shipped grant has another scope yet; the one that first does adds its deny case here.
-            DataScope.Dept or DataScope.Assigned or DataScope.Entity or DataScope.ReadOnly => throw new InvalidOperationException($"No deny case for {scope}."),
-            _ => throw new InvalidOperationException($"No deny case for {scope}."),
-        };
+            case DataScope.Own:
+                Assert.Equal(outOfScope, await scenario.AuthorizeAsync(permission, new AuthorizationSubject { OwnerUserId = OtherUserId }));
+                break;
 
-        Assert.Equal(expected, decision);
+            // ALL leaves nothing out of scope; the same holder, disabled, holds nothing.
+            case DataScope.All:
+                Assert.Equal(AuthorizationDecision.Forbidden(AuthorizationDenial.InactivePrincipal), await Disabled(scenario).AuthorizeAsync(permission));
+                break;
+
+            // ADR-013's entity Project Manager: another entity's project, and another project of their own entity, are both
+            // out of reach; and the same grant held by an internal R04, who has no entity, reaches nothing.
+            case DataScope.Entity:
+                Assert.Equal(outOfScope, await scenario.AuthorizeAsync(permission, new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = OtherEntityId }));
+                Assert.Equal(outOfScope, await scenario.AuthorizeAsync(permission, new AuthorizationSubject { ProjectId = OtherProjectId, ExternalEntityId = EntityId }));
+                AuthorizationScenario internalHolder = new AuthorizationScenario(PermissionCatalogue.Platform)
+                    .WithUser(UserType.Internal, Grant(role, permission, DataScope.Entity));
+                Assert.Equal(outOfScope, await internalHolder.AuthorizeAsync(permission, new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId }));
+                break;
+
+            // No shipped grant has another scope yet; the one that first does adds its deny case here.
+            case DataScope.Dept or DataScope.Assigned or DataScope.ReadOnly:
+            default:
+                throw new InvalidOperationException($"No deny case for {scope}.");
+        }
     }
 
     [Theory]
@@ -83,6 +101,18 @@ public sealed class ShippedGrantTests
     [InlineData(PermissionCatalogue.ReportCompose)]
     public void PersonalizeLayoutAndComposeReportGoToR02R03AndR07Only(string permission) =>
         Assert.Equal(["R02", "R03", "R07"], RoleCodes.Where(role => ShippedGrant(role, permission) is not null));
+
+    /// <summary>
+    /// ADR-013's amendment to TASK-037, verbatim: entity Project Managers may upload, view and see version history on their own
+    /// project. R04 at ENTITY, and nothing else: managing documents waits for Appendix A (document-management.md F-1).
+    /// </summary>
+    [Fact]
+    public void DocumentViewAndUploadGoToTheEntityProjectManagerOnly()
+    {
+        Assert.Equal(
+            [("R04", PermissionCatalogue.DocumentView, DataScope.Entity), ("R04", PermissionCatalogue.DocumentUpload, DataScope.Entity)],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("DOCUMENT_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+    }
 
     [Fact]
     public void OnlyR01ManagesIdentityIntegration() =>
@@ -105,8 +135,18 @@ public sealed class ShippedGrantTests
         return scenario;
     }
 
-    private static AuthorizationScenario Scenario(string role) =>
-        new AuthorizationScenario(PermissionCatalogue.Platform).WithUser(
-            UserTypeOf(role),
-            [.. PermissionCatalogue.ShippedDefaultGrants.Where(g => g.RoleCode == role).Select(g => Grant(role, g.PermissionCode, g.Scope))]);
+    /// <summary>
+    /// The role's holder with every shipped grant of the role. A role with an ENTITY grant is held as ADR-013's entity
+    /// Project Manager: an external user of <see cref="EntityId"/> whose assignment covers only <see cref="ProjectId"/>.
+    /// </summary>
+    private static AuthorizationScenario Scenario(string role)
+    {
+        List<ShippedGrant> grants = [.. PermissionCatalogue.ShippedDefaultGrants.Where(g => g.RoleCode == role)];
+        bool entityProjectManager = grants.Any(g => g.Scope == DataScope.Entity);
+        return new AuthorizationScenario(PermissionCatalogue.Platform).WithUser(
+            entityProjectManager ? UserType.External : UserTypeOf(role),
+            [.. grants.Select(g => entityProjectManager
+                ? Grant(role, g.PermissionCode, g.Scope, entityId: EntityId, projectId: ProjectId)
+                : Grant(role, g.PermissionCode, g.Scope))]);
+    }
 }

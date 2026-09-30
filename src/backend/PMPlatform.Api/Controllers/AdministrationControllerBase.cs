@@ -2,13 +2,14 @@ using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Errors;
+using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
 namespace PMPlatform.Api.Controllers;
 
 /// <summary>
-/// What the FG-03 (TASK-031) and FG-04 (TASK-034) administration controllers share: the caller's id, the api-conventions
+/// What the FG-03 (TASK-031), FG-04 (TASK-034), WF-11 (TASK-035) and WF-12 (TASK-037) controllers share: the caller's id, the api-conventions
 /// §4.4 answer to each refusal, and R-21 concurrency — an <c>ETag</c> on every single mutable resource, <c>If-Match</c> required on
 /// <c>PUT</c> and honoured on a command when sent.
 /// </summary>
@@ -81,6 +82,22 @@ public abstract class AdministrationControllerBase : ControllerBase
         return false;
     }
 
+    /// <summary>
+    /// R-8: a version's bytes as an attachment, never rendered by the browser, never cached (the content is classified).
+    /// The response disposes the stream.
+    /// </summary>
+    private protected IActionResult Attachment(AdministrationResult<DocumentContent> result)
+    {
+        if (!result.Succeeded)
+        {
+            return Failure(result.Error);
+        }
+
+        Response.Headers.XContentTypeOptions = "nosniff";
+        Response.Headers.CacheControl = "no-store";
+        return File(result.Value.Content, "application/octet-stream", result.Value.FileName);
+    }
+
     private protected IActionResult Failure(AdministrationError error)
     {
         ArgumentNullException.ThrowIfNull(error);
@@ -95,6 +112,8 @@ public abstract class AdministrationControllerBase : ControllerBase
             AdministrationErrorKind.TerminalState => ApiProblem.Result(HttpContext, StatusCodes.Status409Conflict, ErrorCodes.TerminalState, "Terminal state."),
             AdministrationErrorKind.PreconditionFailed => PreconditionFailed(),
             AdministrationErrorKind.Unavailable => ApiProblem.Result(HttpContext, StatusCodes.Status503ServiceUnavailable, ErrorCodes.Unavailable, "Unavailable."),
+            AdministrationErrorKind.PayloadTooLarge => ApiProblem.Result(HttpContext, StatusCodes.Status413PayloadTooLarge, ErrorCodes.PayloadTooLarge, "Payload too large."),
+            AdministrationErrorKind.UnsupportedMediaType => ApiProblem.Result(HttpContext, StatusCodes.Status415UnsupportedMediaType, ErrorCodes.UnsupportedMediaType, "Unsupported media type."),
             _ => throw new InvalidOperationException($"Unknown administration error {error.Kind}."),
         };
     }

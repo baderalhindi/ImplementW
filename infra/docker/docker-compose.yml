@@ -121,6 +121,11 @@ services:
       APP_BASE_URL: http://localhost:5173
       LOG_LEVEL: Information
       APM_ENVIRONMENT_TAG: dev
+      # TASK-037: WF-12's store is a directory on a named volume here; every environment uses its Cloud Storage bucket
+      # (gs://…). No malware-scanning provider is selected, so nothing uploaded here is ever scanned CLEAN (fail closed).
+      DOCUMENT_STORAGE_CONNECTION_STRING: file:///var/lib/pmplatform/documents
+    volumes:
+      - document-store:/var/lib/pmplatform/documents
     ports:
       - "${PMPLATFORM_API_PORT:-5080}:8080" # 5080 matches Properties/launchSettings.json
     healthcheck:
@@ -158,3 +163,4 @@ services:
 volumes:
   postgres-data:
   frontend-node-modules:
+  document-store:

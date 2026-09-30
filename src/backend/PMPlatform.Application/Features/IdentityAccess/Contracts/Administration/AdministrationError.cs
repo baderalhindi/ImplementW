@@ -15,6 +15,10 @@ public sealed record AdministrationError(AdministrationErrorKind Kind, string? C
 
     public static AdministrationError Unavailable { get; } = new(AdministrationErrorKind.Unavailable, null, []);
 
+    public static AdministrationError PayloadTooLarge { get; } = new(AdministrationErrorKind.PayloadTooLarge, null, []);
+
+    public static AdministrationError UnsupportedMediaType { get; } = new(AdministrationErrorKind.UnsupportedMediaType, null, []);
+
     public static AdministrationError Rule(string code, params FieldIssue[] fields) => new(AdministrationErrorKind.RuleViolated, code, fields);
 
     public static AdministrationError Conflict(string code, params FieldIssue[] fields) => new(AdministrationErrorKind.Conflict, code, fields);
