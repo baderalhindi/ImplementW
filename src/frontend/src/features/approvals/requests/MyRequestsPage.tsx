@@ -1,18 +1,18 @@
 import { type ReactElement, useCallback, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
+import { pageFrom, PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { SelectField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { PageNotice, type Notice } from '@/shared/ui/PageNotice.tsx';
 
 import { approvalInstancesApi } from '../api/approvalsApi.ts';
-import { PageNotice, type Notice } from '../components/PageNotice.tsx';
 import { SubjectSummary } from '../components/SubjectSummary.tsx';
 import { WithdrawDialog } from '../dialogs/WithdrawDialog.tsx';
-import { pageFrom, PAGE_SIZE } from '../paging.ts';
 import { INSTANCE_STATUSES, instanceTone } from '../presentation.ts';
 import { approvalProblemMessage } from '../problems.ts';
 

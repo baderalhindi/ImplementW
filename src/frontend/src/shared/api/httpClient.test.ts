@@ -2,7 +2,14 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { mockApi, problem } from '@/test/mockApi.ts';
 
-import { ApiError, apiRequest, configureAuthentication } from './httpClient.ts';
+import {
+  ApiError,
+  apiDownload,
+  apiRequest,
+  apiUpload,
+  attachmentFileName,
+  configureAuthentication,
+} from './httpClient.ts';
 
 function authentication(overrides: Partial<Parameters<typeof configureAuthentication>[0]> = {}) {
   const handlers = {
@@ -133,5 +140,81 @@ describe('apiRequest', () => {
     ).rejects.toMatchObject({ status: 401 });
     expect(api.requests[0]?.headers.get('Authorization')).toBeNull();
     expect(handlers.refresh).not.toHaveBeenCalled();
+  });
+});
+
+describe('apiUpload', () => {
+  test('sends the form with the token and an idempotency key, and reports progress', async () => {
+    authentication();
+    const api = mockApi().on('POST', /^\/documents$/, {
+      status: 201,
+      body: { id: 'd1' },
+      headers: { ETag: '"1"' },
+    });
+    const form = new FormData();
+    form.append('file', new File(['x'], 'a.txt'));
+    const progress: number[] = [];
+
+    const response = await apiUpload<{ id: string }>('/documents', form, {
+      onProgress: (fraction) => progress.push(fraction),
+    });
+
+    expect(response).toEqual({ data: { id: 'd1' }, etag: '"1"' });
+    expect(progress).toEqual([0.5, 1]);
+    const [request] = api.requests;
+    expect(request?.body).toBe(form);
+    expect(request?.headers.get('Authorization')).toBe('Bearer token-1');
+    expect(request?.headers.get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/);
+    // The browser writes the multipart Content-Type and its boundary.
+    expect(request?.headers.get('Content-Type')).toBeNull();
+  });
+
+  test('a refused upload is an ApiError, and a 401 is refreshed and retried with the same key', async () => {
+    const handlers = authentication({ refresh: vi.fn(() => Promise.resolve(true)) });
+    let calls = 0;
+    const api = mockApi().on('POST', /^\/documents$/, () => {
+      calls += 1;
+      return calls === 1
+        ? problem(401, 'AUTHENTICATION_REQUIRED')
+        : problem(413, 'PAYLOAD_TOO_LARGE');
+    });
+
+    await expect(apiUpload('/documents', new FormData())).rejects.toMatchObject({
+      status: 413,
+      code: 'PAYLOAD_TOO_LARGE',
+    });
+    expect(handlers.refresh).toHaveBeenCalledOnce();
+    const [first, retry] = api.requests;
+    expect(retry?.headers.get('Idempotency-Key')).toBe(first?.headers.get('Idempotency-Key'));
+  });
+});
+
+describe('apiDownload', () => {
+  test('returns the bytes and the attachment’s name', async () => {
+    authentication();
+    mockApi().on('GET', /\/content$/, {
+      body: new Blob(['%PDF']),
+      headers: { 'Content-Disposition': "attachment; filename=x.pdf; filename*=UTF-8''%D8%AA.pdf" },
+    });
+
+    const file = await apiDownload('/documents/1/versions/2/content');
+
+    expect(await file.content.text()).toBe('%PDF');
+    expect(file.fileName).toBe('ت.pdf');
+  });
+
+  test('a refusal is the R-23 envelope as ApiError', async () => {
+    authentication();
+    mockApi().on('GET', /\/content$/, problem(409, 'DOCUMENT_NOT_AVAILABLE'));
+    await expect(apiDownload('/documents/1/versions/2/content')).rejects.toBeInstanceOf(ApiError);
+  });
+
+  test('reads the plain and the RFC 6266 file name forms', () => {
+    expect(attachmentFileName(null)).toBeNull();
+    expect(attachmentFileName('attachment')).toBeNull();
+    expect(attachmentFileName('attachment; filename="a b.pdf"')).toBe('a b.pdf');
+    expect(attachmentFileName("attachment; filename*=UTF-8''%E0%A4%A.pdf; filename=b.pdf")).toBe(
+      'b.pdf',
+    );
   });
 });

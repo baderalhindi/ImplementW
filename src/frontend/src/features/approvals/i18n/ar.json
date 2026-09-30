@@ -6,8 +6,6 @@
     "delegations": "الموافقات المفوّضة"
   },
   "people": {
-    "you": "أنت",
-    "unknownUser": "المستخدم {id}",
     "unknownRole": "الدور {id}"
   },
   "subject": {

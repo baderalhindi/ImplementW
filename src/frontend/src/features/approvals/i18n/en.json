@@ -6,8 +6,6 @@
     "delegations": "Delegated approvals"
   },
   "people": {
-    "you": "You",
-    "unknownUser": "User {id}",
     "unknownRole": "Role {id}"
   },
   "subject": {

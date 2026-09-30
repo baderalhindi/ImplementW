@@ -1,6 +1,7 @@
 import { Navigate, Outlet, type RouteObject } from 'react-router';
 
 import { approvalRoutes } from '@/features/approvals/routes.tsx';
+import { documentRoutes } from '@/features/documents/routes.tsx';
 import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
 import { RequireRole } from '@/features/identity-access/session/RequireRole.tsx';
 import { RequireSession } from '@/features/identity-access/session/RequireSession.tsx';
@@ -36,6 +37,15 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: approvalRoutes,
+      },
+      {
+        path: 'documents',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: documentRoutes,
       },
       { path: '*', element: <NotFoundPage /> },
     ],

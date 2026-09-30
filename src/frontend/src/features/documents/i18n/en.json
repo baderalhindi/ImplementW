@@ -1,0 +1,199 @@
+{
+  "nav": {
+    "label": "Documents",
+    "library": "Document library",
+    "recent": "Recent documents"
+  },
+  "library": {
+    "title": "Document library",
+    "description": "Every document you may read, most recently changed first."
+  },
+  "project": {
+    "title": "Project {id} documents",
+    "description": "The documents of this project that you may read. A document uploaded here belongs to the project."
+  },
+  "recent": {
+    "title": "Recent documents",
+    "description": "The {count} documents you may read that changed most recently.",
+    "toLibrary": "See every document in the library"
+  },
+  "list": {
+    "loading": "Loading documents…",
+    "empty": "No documents yet",
+    "emptyFiltered": "No document matches these filters"
+  },
+  "filters": {
+    "title": "Title contains"
+  },
+  "fields": {
+    "title": "Title",
+    "description": "Description",
+    "documentType": "Document type",
+    "classification": "Classification",
+    "project": "Project",
+    "owner": "Owner",
+    "status": "Status",
+    "latestVersion": "Latest version",
+    "version": "Version",
+    "versionNo": "v{number}",
+    "file": "File",
+    "fileName": "File name",
+    "size": "Size",
+    "uploadedBy": "Uploaded by",
+    "uploadedAt": "Uploaded at",
+    "scanState": "Malware scan",
+    "scannedAt": "decided {time}",
+    "checksum": "SHA-256 checksum",
+    "createdAt": "Created",
+    "updatedAt": "Last changed"
+  },
+  "values": {
+    "noProject": "No project",
+    "project": "Project {id}"
+  },
+  "status": {
+    "ACTIVE": "Active",
+    "ARCHIVED": "Archived"
+  },
+  "scanState": {
+    "SCAN_PENDING": "Scanning",
+    "CLEAN": "Clean",
+    "QUARANTINED": "Quarantined",
+    "SCAN_FAILED": "Scan failed"
+  },
+  "scanNotice": {
+    "SCAN_PENDING": {
+      "title": "Checking the file for malware",
+      "body": "The file was received and is being scanned. Until it is found clean it cannot be downloaded or used as evidence."
+    },
+    "CLEAN": {
+      "title": "No malware found",
+      "body": "The file can be downloaded and used as evidence."
+    },
+    "QUARANTINED": {
+      "title": "Malware found: this file is quarantined",
+      "body": "The file is kept for the record but will never be served, downloaded or accepted as evidence. Upload a clean file as a new version."
+    },
+    "SCAN_FAILED": {
+      "title": "The file could not be scanned",
+      "body": "It stays unavailable until a document manager queues it for scanning again, or a new version replaces it."
+    }
+  },
+  "unavailable": {
+    "SCAN_PENDING": "Available once the scan finds it clean.",
+    "QUARANTINED": "Quarantined: malware was found. It cannot be downloaded or used as evidence.",
+    "SCAN_FAILED": "Not scanned: it cannot be downloaded or used as evidence."
+  },
+  "lookups": {
+    "unknownItem": "Item {id}",
+    "unavailable": "Document types and classifications could not be read, so a document cannot be described here.",
+    "nonePublished": "None is published yet. A master data administrator must publish one before a document can be uploaded."
+  },
+  "upload": {
+    "action": "Upload document",
+    "title": "Upload document",
+    "body": "The file is checked for malware after it is received. It can be downloaded and used as evidence only once it is found clean.",
+    "fileHint": "One file. Its size and type are checked by the server.",
+    "classificationHint": "How sensitive the content is. Only people cleared for this classification can read it.",
+    "confirm": "Upload",
+    "uploading": "Uploading",
+    "sent": "{percent}% sent",
+    "progressLabel": "Upload progress",
+    "cancel": "Cancel upload",
+    "close": "Close",
+    "openDocument": "Open the document",
+    "closeWhileScanning": "You can close this window: the scan continues, and the document's page shows its result.",
+    "watchFailed": "The scan result could not be read. Open the document to see it."
+  },
+  "replace": {
+    "action": "Upload new version",
+    "title": "Upload new version",
+    "body": "The file becomes the document's next version. Earlier versions, and evidence that relies on them, do not change.",
+    "confirm": "Upload version"
+  },
+  "edit": {
+    "action": "Edit details",
+    "title": "Edit document details"
+  },
+  "archive": {
+    "action": "Archive",
+    "title": "Archive this document?",
+    "body": "An archived document takes no new version and no change. Nothing is deleted: its versions, links and evidence stay readable.",
+    "confirm": "Archive document"
+  },
+  "attach": {
+    "title": "Attach a document",
+    "body": "Choose the document to attach to {target}. Only a document whose latest version is clean can be attached.",
+    "searchLabel": "Search documents by title",
+    "loading": "Loading documents…",
+    "empty": "No active document to attach",
+    "choose": "Document",
+    "chooseError": "Choose a document.",
+    "quarantined": "Quarantined: malware was found. It cannot be attached or used as evidence.",
+    "notClean": "Not clean yet: it can be attached once the scan finds it clean.",
+    "confirm": "Attach"
+  },
+  "detail": {
+    "loading": "Loading the document…",
+    "fallbackTitle": "Document",
+    "archived": "This document is archived. It takes no new version and no change.",
+    "details": "Details",
+    "latestVersion": "Latest version",
+    "noVersion": "No version has been recorded."
+  },
+  "download": {
+    "action": "Download",
+    "busy": "Downloading…"
+  },
+  "versions": {
+    "action": "Version history",
+    "title": "Version history",
+    "titleOf": "Version history: {title}",
+    "description": "Every version of the document, newest first. A version never changes once uploaded.",
+    "caption": "Versions",
+    "loading": "Loading versions…",
+    "empty": "No version has been recorded.",
+    "backToDocument": "Back to the document"
+  },
+  "rescan": {
+    "action": "Scan again"
+  },
+  "links": {
+    "title": "Where this document is used",
+    "loading": "Loading where it is used…",
+    "empty": "Not attached to any record",
+    "target": "Record",
+    "role": "Attached as",
+    "linked": "Attached by",
+    "ended": "Detached",
+    "evidence": "Evidence"
+  },
+  "linkRole": {
+    "ATTACHMENT": "Attachment",
+    "REFERENCE": "Reference"
+  },
+  "evidence": {
+    "satisfies": "Counts as evidence",
+    "VALID": "Does not count",
+    "WITHDRAWN": "Withdrawn",
+    "download": "Download evidence"
+  },
+  "done": {
+    "uploaded": "The file was uploaded and is being scanned.",
+    "versionAdded": "The new version was uploaded and is being scanned.",
+    "edited": "The document's details were saved.",
+    "archived": "The document was archived.",
+    "rescanQueued": "The version was queued for scanning again."
+  },
+  "problems": {
+    "notAvailable": "This version is not clean, so its content cannot be downloaded or used as evidence.",
+    "referenceInvalid": "A chosen document type, classification or project is not available. Choose another value.",
+    "versionConflict": "Another version was added at the same moment. Upload the file again.",
+    "payloadTooLarge": "The file is larger than the server accepts.",
+    "unsupportedMediaType": "This type of file is not accepted.",
+    "storageUnavailable": "Document storage is not available at the moment. Try again later.",
+    "archived": "The document is archived and takes no change.",
+    "notRescannable": "Only a version whose scan failed can be scanned again.",
+    "permissionDenied": "You do not have permission to do this with documents."
+  }
+}

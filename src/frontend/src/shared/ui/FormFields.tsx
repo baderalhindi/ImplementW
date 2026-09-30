@@ -163,6 +163,45 @@ export function TextAreaField({
   );
 }
 
+interface FileFieldProps extends FieldBaseProps {
+  /** The chosen file, or null when the choice is cleared. */
+  onChange: (file: File | null) => void;
+}
+
+/** One file to upload. The input keeps its own value (a browser never lets a script set it). */
+export function FileField({
+  label,
+  name,
+  onChange,
+  error,
+  hint,
+  required = false,
+  disabled = false,
+}: FileFieldProps): ReactElement {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  return (
+    <div className="field">
+      <FieldLabel htmlFor={id} label={label} required={required} />
+      <input
+        id={id}
+        name={name}
+        className="field__input field__input--file"
+        type="file"
+        onChange={(event) => {
+          onChange(event.target.files?.[0] ?? null);
+        }}
+        required={required}
+        disabled={disabled}
+        aria-invalid={error === undefined ? undefined : true}
+        aria-describedby={describedBy(hintId, errorId, hint, error)}
+      />
+      <FieldMessages hintId={hintId} errorId={errorId} hint={hint} error={error} />
+    </div>
+  );
+}
+
 export interface SelectOption {
   value: string;
   label: string;

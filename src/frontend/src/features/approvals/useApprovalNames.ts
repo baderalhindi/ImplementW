@@ -1,6 +1,5 @@
 import { rolesApi } from '@/features/identity-access/api/identityAccessApi.ts';
-import { useUserNames } from '@/features/identity-access/assignments/useUserNames.ts';
-import { useSession } from '@/features/identity-access/session/useSession.ts';
+import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
@@ -27,23 +26,11 @@ async function readRoleNames(signal: AbortSignal) {
  */
 export function useApprovalNames(userIds: (string | null)[]): ApprovalNames {
   const { t, language } = useI18n();
-  const { session } = useSession();
-  const selfId = session?.user.id ?? null;
-  const userNames = useUserNames(userIds.filter((id) => id !== selfId));
+  const user = usePersonNames(userIds);
   const roles = useApiResource(readRoleNames).data ?? [];
 
   return {
-    user: (id) => {
-      if (id === null) {
-        return '—';
-      }
-      if (id === selfId) {
-        return t('approvals.people.you');
-      }
-      return (
-        userNames.get(id) ?? t('approvals.people.unknownUser', { id: id.slice(0, SHORT_ID_LENGTH) })
-      );
-    },
+    user,
     role: (id) => {
       const role = roles.find((candidate) => candidate.id === id);
       return role === undefined

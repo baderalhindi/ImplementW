@@ -7,10 +7,10 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { PageNotice, type Notice } from '@/shared/ui/PageNotice.tsx';
 
 import { approvalInstancesApi } from '../api/approvalsApi.ts';
 import { type ApprovalInstanceDetail, type ApprovalTaskDetail } from '../api/types.ts';
-import { PageNotice, type Notice } from '../components/PageNotice.tsx';
 import { SubjectSummary } from '../components/SubjectSummary.tsx';
 import { DecisionDialog } from '../dialogs/DecisionDialog.tsx';
 import { type TaskAction, type TaskActionTarget } from '../dialogs/taskActions.ts';

@@ -9,10 +9,10 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { PageNotice, type Notice } from '@/shared/ui/PageNotice.tsx';
 
 import { approvalDelegationsApi } from '../api/approvalsApi.ts';
 import { type ApprovalDelegationDetail } from '../api/types.ts';
-import { PageNotice, type Notice } from '../components/PageNotice.tsx';
 import { DelegateDialog } from '../dialogs/DelegateDialog.tsx';
 import { delegationTone } from '../presentation.ts';
 import { approvalProblemMessage } from '../problems.ts';
