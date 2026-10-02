@@ -76,6 +76,7 @@
     "title": "Welcome, {name}",
     "approvals": "Go to your approval inbox",
     "documents": "Go to the document library",
+    "notifications": "Go to your notifications",
     "administration": "Go to users, roles and permissions administration"
   },
   "forbidden": {

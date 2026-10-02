@@ -9,7 +9,10 @@ import {
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 
-/** The landing page: the screens the session can reach. Approvals and documents are for everyone; administration for R01. */
+/**
+ * The landing page: the screens the session can reach. Approvals, documents and notifications are for everyone;
+ * administration for R01.
+ */
 export function HomePage(): ReactElement {
   const { t } = useI18n();
   const { session } = useSession();
@@ -26,6 +29,9 @@ export function HomePage(): ReactElement {
         </li>
         <li>
           <Link to="/documents">{t('common.home.documents')}</Link>
+        </li>
+        <li>
+          <Link to="/notifications">{t('common.home.notifications')}</Link>
         </li>
         {administrator && (
           <li>

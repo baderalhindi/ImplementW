@@ -1,0 +1,125 @@
+{
+  "nav": {
+    "label": "Notifications",
+    "all": "All notifications",
+    "alerts": "Alerts",
+    "escalations": "Escalations",
+    "history": "Notification history",
+    "preferences": "Notification preferences"
+  },
+  "bell": {
+    "text": "Notifications",
+    "unread": "{count} unread"
+  },
+  "all": {
+    "title": "All notifications",
+    "description": "Your in-app notifications, newest first."
+  },
+  "alert": {
+    "title": "Alerts",
+    "description": "Your notifications from alert families, newest first.",
+    "noFamilies": "No alert family is configured, so there are no alerts to show."
+  },
+  "escalation": {
+    "title": "Escalations",
+    "description": "Your notifications from escalation families, newest first.",
+    "noFamilies": "No escalation family is configured, so there are no escalations to show."
+  },
+  "list": {
+    "loading": "Loading notifications…",
+    "empty": "You have no notifications",
+    "emptyFiltered": "No notification matches these filters",
+    "open": "Open"
+  },
+  "filters": {
+    "readState": "Read state",
+    "family": "Family",
+    "channel": "Channel"
+  },
+  "readState": {
+    "unread": "Unread",
+    "read": "Read"
+  },
+  "fields": {
+    "status": "Status",
+    "notification": "Notification",
+    "family": "Family",
+    "received": "Received",
+    "readAt": "Read",
+    "channel": "Channel",
+    "outcome": "Outcome",
+    "created": "Created",
+    "sent": "Sent"
+  },
+  "channel": {
+    "IN_APP": "In-app",
+    "EMAIL": "Email",
+    "SMS": "SMS"
+  },
+  "status": {
+    "PENDING": "Pending",
+    "SENT": "Sent",
+    "DELIVERED": "Delivered",
+    "READ": "Read",
+    "FAILED": "Failed, will retry",
+    "DEAD_LETTER": "Not delivered",
+    "SUPPRESSED": "Not sent"
+  },
+  "suppressionReason": {
+    "RECIPIENT_OPTED_OUT": "You turned this channel off for this family.",
+    "CHANNEL_OFF_BY_DEFAULT": "This channel is off by default for this family.",
+    "CHANNEL_NOT_CONFIGURED": "This channel is not available yet.",
+    "MOBILE_UNVERIFIED": "You have no verified mobile number.",
+    "SMS_SEGMENT_BUDGET_EXCEEDED": "The text message was too long to send.",
+    "RECIPIENT_INELIGIBLE": "You no longer had access to the record when it was sent.",
+    "other": "Not sent ({reason})."
+  },
+  "values": {
+    "deliveredAt": "Delivered {at}",
+    "readAt": "Read {at}"
+  },
+  "detail": {
+    "title": "Notification",
+    "loading": "Loading the notification…",
+    "openRecord": "Open the related record",
+    "close": "Close"
+  },
+  "markAll": {
+    "action": "Mark all as read",
+    "title": "Mark all notifications as read",
+    "body": "Every notification you have received until now will be marked as read. Read notifications cannot be marked unread again; only new notifications will appear as unread.",
+    "confirm": "Mark all as read",
+    "done": "{count} notifications marked as read.",
+    "doneNone": "There were no unread notifications."
+  },
+  "history": {
+    "title": "Notification history",
+    "description": "Every notification sent to you on every channel, and what became of it, newest first.",
+    "loading": "Loading the history…",
+    "empty": "Nothing has been sent to you yet",
+    "emptyFiltered": "Nothing in your history matches these filters"
+  },
+  "preferences": {
+    "title": "Notification preferences",
+    "description": "Choose how you receive each family of notifications. In-app notifications are always on. You can turn email and text messages (SMS) off for families that are not mandatory.",
+    "loading": "Loading your preferences…",
+    "family": "Notification family",
+    "mandatory": "Mandatory",
+    "toggle": "{family} by {channel}",
+    "notRouted": "Not sent",
+    "alwaysOn": "Always on",
+    "fixedByMandatory": "Required for this family",
+    "fixed": "Cannot be changed",
+    "save": "Save preferences",
+    "reset": "Undo changes",
+    "unchanged": "You have not changed anything.",
+    "saved": "Preferences saved. They apply from the next notification sent.",
+    "notConfigured": "Notification preferences are not available yet: no notification routing is configured. In-app notifications are always on."
+  },
+  "problems": {
+    "configurationMissing": "No notification routing is configured yet.",
+    "preferenceNotConfigurable": "In-app notifications and mandatory families cannot be turned off. The page shows your current choices again.",
+    "preferenceInvalid": "A family or channel you changed is no longer available. The page shows the current families again.",
+    "notFound": "The notification was not found."
+  }
+}

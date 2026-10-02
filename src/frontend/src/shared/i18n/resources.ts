@@ -4,6 +4,8 @@ import documentsAr from '@/features/documents/i18n/ar.json';
 import documentsEn from '@/features/documents/i18n/en.json';
 import identityAccessAr from '@/features/identity-access/i18n/ar.json';
 import identityAccessEn from '@/features/identity-access/i18n/en.json';
+import notificationsAr from '@/features/notifications/i18n/ar.json';
+import notificationsEn from '@/features/notifications/i18n/en.json';
 
 import commonAr from './locales/ar.json';
 import commonEn from './locales/en.json';
@@ -16,6 +18,7 @@ const en = {
   identityAccess: identityAccessEn,
   approvals: approvalsEn,
   documents: documentsEn,
+  notifications: notificationsEn,
 };
 
 // English is the reference shape; resources.test.ts fails if Arabic lacks or adds a key.
@@ -28,6 +31,7 @@ export const resources: Record<Language, Resources> = {
     identityAccess: identityAccessAr,
     approvals: approvalsAr,
     documents: documentsAr,
+    notifications: notificationsAr,
   },
 };
 

@@ -41,7 +41,10 @@ describe('R01 only', () => {
         ).toBeNull();
         unmount();
       }
-      expect(api.requests).toHaveLength(0);
+      // The shell's unread badge (TASK-040) is the only call; nothing administrative is asked for.
+      expect(
+        api.requests.filter((request) => request.path !== '/notifications/unread-count'),
+      ).toHaveLength(0);
     },
   );
 

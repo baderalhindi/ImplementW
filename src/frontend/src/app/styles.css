@@ -858,6 +858,72 @@ textarea.field__input {
   padding-block: var(--space-1);
 }
 
+/* ---------------------------------------------------------------------------------------------- notifications */
+
+/* The header link to SCR-150 with the unread count (TASK-040). */
+.bell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.bell:hover {
+  background: var(--color-neutral-surface);
+}
+
+/* The number on the badge, white on the primary colour (the pair the active navigation link uses). */
+.bell__count {
+  min-inline-size: 1.5rem;
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* An unread notification reads heavier as well as saying "Unread". */
+.row--unread .button--link {
+  font-weight: 700;
+}
+
+.notification__subject {
+  margin-block: 0 var(--space-2);
+  font-size: 1.1rem;
+}
+
+/* Plain text as rendered for the recipient: its line breaks are kept, nothing in it is markup. */
+.notification__body {
+  margin-block: 0 var(--space-4);
+  white-space: pre-line;
+}
+
+.form--wide {
+  max-inline-size: none;
+}
+
+.preference {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.preference input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  accent-color: var(--color-primary);
+}
+
+.preference__family {
+  display: block;
+  margin-block-end: var(--space-1);
+}
+
 /* ---------------------------------------------------------------------------------------------- dialog */
 
 .dialog {
