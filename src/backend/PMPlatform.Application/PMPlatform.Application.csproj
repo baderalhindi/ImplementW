@@ -2,6 +2,8 @@
   <!-- L-2: references Domain only. Defines the interfaces Infrastructure implements. -->
   <ItemGroup>
     <InternalsVisibleTo Include="PMPlatform.Tests.Unit" />
+    <!-- TASK-043: the lifecycle e2e suite proves it exercised every edge of ProjectLifecycle, read from the machine itself. -->
+    <InternalsVisibleTo Include="PMPlatform.Tests.Integration" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../PMPlatform.Domain/PMPlatform.Domain.csproj" />

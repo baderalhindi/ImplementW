@@ -176,3 +176,4 @@ Each mutation was applied, the solution rebuilt, the Project tests run, and the 
 | --- | --- |
 | 2026-10-02 | Created (TASK-041) |
 | 2026-10-02 | TASK-042 (`project-registration-ui.md` D-9): `ListProjects` takes `projectManagerUserId` for SCR-026 My Projects, one more predicate inside the caller's `RecordScope`; `MyProjectsAreTheOnesTheCallerManagesWithinTheirScope` |
+| 2026-10-02 | TASK-043 (`project-lifecycle-contract-tests.md`): as built, the WF-01 API has 9 operations (the header's "10" counts one too many; §4 lists 9), all pinned by the contract snapshot `docs/api/openapi.v1.json`. Their document now states `status`, `participationMode` and `language` as UPPER_SNAKE enums and `registrationBudgetSar` as the R-16 string, as the API has always sent them. The two C-13 findings on `registrationBudgetSar`, which §7 row 7 did not count, are cleared |

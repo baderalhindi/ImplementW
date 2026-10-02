@@ -108,6 +108,16 @@ DB_CONNECTION_STRING="Host=localhost;Port=5432;Database=postgres;Username=pmplat
   dotnet test src/backend/PMPlatform.Tests.Integration
 ```
 
+The Project contract tests (TASK-043) compare the API's generated OpenAPI document with the committed snapshot
+`docs/api/openapi.v1.json` and fail on a breaking change (api-conventions R-10) or on any Project change the snapshot
+does not yet describe. A PR that changes the Project API rewrites the snapshot and commits it with the change; a break is
+also called out in the PR description (R-11):
+
+```sh
+UPDATE_OPENAPI_SNAPSHOT=1 DB_CONNECTION_STRING="…" \
+  dotnet test src/backend/PMPlatform.Tests.Integration --filter FullyQualifiedName~ProjectContractTests
+```
+
 Frontend:
 
 ```sh
