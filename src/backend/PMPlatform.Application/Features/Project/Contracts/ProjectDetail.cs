@@ -10,7 +10,7 @@ namespace PMPlatform.Application.Features.Project.Contracts;
 /// </summary>
 public sealed record ProjectDetail(
     Guid Id,
-    string? FormalProjectId,
+    [property: System.Text.Json.Serialization.JsonIgnore] string? FormalProjectId,
     NarrativeText Title,
     NarrativeText? Description,
     Guid ClassificationItemId,
@@ -18,7 +18,7 @@ public sealed record ProjectDetail(
     Guid? ExternalEntityId,
     Guid? ProjectManagerUserId,
     ProjectLifecycleState Status,
-    int RevisionNo,
+    long RevisionNo,
     Guid GovernanceProfileItemId,
     ParticipationMode ParticipationMode,
     Money? RegistrationBudgetSar,
