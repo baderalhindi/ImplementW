@@ -14,6 +14,44 @@ namespace PMPlatform.Tests.Integration.Project;
 [Collection(ProjectSuite.Name)]
 public sealed class ProjectAuthorizationTests(ProjectTestHost host)
 {
+    /// <summary>
+    /// TASK-042 validation: a Project Manager creates a project and submits it naming themselves; it is in their My Projects
+    /// (SCR-026) only once submitted, since a draft names no manager (TASK-041 D-9), and another department's Department
+    /// Manager neither lists nor opens it, while still seeing the projects of their own department.
+    /// </summary>
+    [Fact]
+    public async Task AProjectManagersProjectIsInTheirMyProjectsButNotInAnotherDepartmentsManagerView()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        Guid manager = ProjectDriver.Person(8);
+        string myProjects = $"{ProjectDriver.Projects}?projectManagerUserId={manager}&pageSize=200";
+
+        // local.r08, R04 over their entity: a project owned by the other department. local.r03 manages the first one.
+        JsonObject draft = await client.CreateOrFailAsync(
+            sessions.Entity, host.Registration(change: r => r["departmentId"] = ProjectTestHost.OtherDepartmentId.ToString()));
+        Guid projectId = AdministrationApi.IdOf(draft);
+        Assert.Equal(("DRAFT", null), (draft.Status(), draft.FormalProjectId()));
+        Assert.DoesNotContain(projectId.ToString(), await ListIdsAsync(client, sessions.Entity, myProjects));
+
+        JsonObject submitted = await client.CommandOrFailAsync(sessions.Entity, projectId, "submit", new { projectManagerUserId = manager });
+        Assert.Equal(("SUBMITTED", manager.ToString()), (submitted.Status(), submitted["projectManagerUserId"]!.GetValue<string>()));
+        Assert.Contains(projectId.ToString(), await ListIdsAsync(client, sessions.Entity, myProjects));
+
+        // Another department's manager: not in their register, not by filter, not by id.
+        IReadOnlyList<string> departmentView = await ListIdsAsync(client, sessions.Reviewer, $"{ProjectDriver.Projects}?pageSize=200");
+        Assert.DoesNotContain(projectId.ToString(), departmentView);
+        Assert.DoesNotContain(projectId.ToString(), await ListIdsAsync(client, sessions.Reviewer, myProjects));
+        using (HttpResponseMessage read = await client.GetAsync($"{ProjectDriver.Projects}/{projectId}", sessions.Reviewer))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, read.StatusCode);
+        }
+
+        // The control: the same manager sees a project of their own department, so the view is scoped, not empty.
+        Guid ownDepartment = AdministrationApi.IdOf(await client.CreateOrFailAsync(sessions.Entity, host.Registration()));
+        Assert.Contains(ownDepartment.ToString(), await ListIdsAsync(client, sessions.Reviewer, $"{ProjectDriver.Projects}?pageSize=200"));
+    }
+
     [Fact]
     public async Task AnEntityUserRegistersAndSeesOnlyTheirOwnEntitysProjects()
     {
@@ -137,9 +175,10 @@ public sealed class ProjectAuthorizationTests(ProjectTestHost host)
         Assert.Equal((HttpStatusCode.Forbidden, HttpStatusCode.Forbidden), (list.StatusCode, create.StatusCode));
     }
 
-    private static async Task<IReadOnlyList<string>> ListIdsAsync(HttpClient client, string token)
+    private static async Task<IReadOnlyList<string>> ListIdsAsync(HttpClient client, string token, string? path = null)
     {
-        using HttpResponseMessage page = await client.GetAsync($"{ProjectDriver.Projects}?pageSize=200", token);
+        using HttpResponseMessage page = await client.GetAsync(path ?? $"{ProjectDriver.Projects}?pageSize=200", token);
+        Assert.Equal(HttpStatusCode.OK, page.StatusCode);
         return [.. (await page.ReadObjectAsync())["items"]!.AsArray().Select(p => p!["id"]!.GetValue<string>())];
     }
 }
