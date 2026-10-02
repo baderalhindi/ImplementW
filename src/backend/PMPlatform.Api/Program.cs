@@ -40,18 +40,15 @@ configurationSources.Insert(environmentVariablesIndex, new JsonConfigurationSour
 builder.Configuration.AddSecretStore(required: !builder.Environment.IsDevelopment());
 
 builder.Services.AddControllers()
-    // api-conventions R-19: enumerations are UPPER_SNAKE_CASE strings.
-    // R-16: a SAR amount is a decimal string with two fraction digits.
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseUpper));
-        options.JsonSerializerOptions.Converters.Add(new MoneySarJsonConverter());
-    })
+    .AddJsonOptions(options => AddWireConverters(options.JsonSerializerOptions))
     // R-23: a body that does not bind (malformed JSON, no body) is a 400 in the platform envelope, and says only where.
     .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = context =>
         ApiProblem.Result(context.HttpContext, StatusCodes.Status400BadRequest, ErrorCodes.ValidationFailed, "Validation failed.",
             [new FieldError("body", FieldError.Malformed)]));
-builder.Services.AddOpenApi();
+// TASK-043: the document describes the wire. The generator reads these options, not MVC's, so it is given the same
+// converters; Money's converter is opaque to it, so its schema is declared (R-16).
+builder.Services.ConfigureHttpJsonOptions(options => AddWireConverters(options.SerializerOptions));
+builder.Services.AddOpenApi(options => options.AddSchemaTransformer<MoneySarSchemaTransformer>());
 builder.Services.AddHealthChecks();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -128,6 +125,14 @@ app.RequireKnownStepUpOperations();
 app.RequireEndpointAuthorization();
 
 await app.RunAsync().ConfigureAwait(false);
+
+// api-conventions R-19: enumerations are UPPER_SNAKE_CASE strings.
+// R-16: a SAR amount is a decimal string with two fraction digits.
+static void AddWireConverters(JsonSerializerOptions options)
+{
+    options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseUpper));
+    options.Converters.Add(new MoneySarJsonConverter());
+}
 
 /// <summary>The API's entry point; public so the integration tests can host it (WebApplicationFactory).</summary>
 public partial class Program;

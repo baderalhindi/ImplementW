@@ -93,6 +93,16 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Identity
 
+      # TASK-043: the WF-01 lifecycle across WF-11 and FG-06, and the Project API contract — a breaking change against
+      # docs/api/openapi.v1.json (api-conventions R-10) fails here. Same database and directory as above; the contract
+      # lint is the runner's python3.
+      - name: Project lifecycle and contract tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Project
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest
