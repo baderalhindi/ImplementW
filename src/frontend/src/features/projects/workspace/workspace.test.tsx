@@ -65,6 +65,7 @@ const TAB = {
   overview: en('projects.workspace.tabs.overview'),
   registration: en('projects.workspace.tabs.registration'),
   location: en('projects.workspace.tabs.location'),
+  progress: en('projects.workspace.tabs.progress'),
   reviews: en('projects.workspace.tabs.reviews'),
   documents: en('projects.workspace.tabs.documents'),
 };
@@ -80,6 +81,7 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.overview,
       TAB.registration,
       TAB.location,
+      TAB.progress,
       TAB.reviews,
       TAB.documents,
     ]);
@@ -89,7 +91,13 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
     openWorkspace(projectDetail(), entitySession());
     await screen.findByRole('heading', { level: 1 });
 
-    expect(tabNames()).toEqual([TAB.overview, TAB.registration, TAB.location, TAB.documents]);
+    expect(tabNames()).toEqual([
+      TAB.overview,
+      TAB.registration,
+      TAB.location,
+      TAB.progress,
+      TAB.documents,
+    ]);
   });
 
   test('an AHDA user whose assignments do not reach the project sees only what the API showed them', async () => {

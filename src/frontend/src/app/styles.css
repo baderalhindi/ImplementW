@@ -1042,3 +1042,69 @@ textarea.field__input {
 .tabs__panel {
   padding-block-start: var(--space-4);
 }
+
+/* ---------------------------------------------------------------------------------------------- progress */
+
+/* The two semantic states (M-12) differ in fill and border as well as colour: official is solid, live is dashed. */
+.badge--official {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: 2px solid var(--color-primary);
+}
+
+.badge--live {
+  background: var(--color-background);
+  color: var(--color-info);
+  border: 2px dashed var(--color-info);
+}
+
+.progress {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.progress-state {
+  padding: var(--space-4);
+  border-radius: var(--radius);
+}
+
+.progress-state--official {
+  border: 2px solid var(--color-primary);
+}
+
+.progress-state--live {
+  border: 2px dashed var(--color-info);
+}
+
+.progress-state__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block: 0 var(--space-3);
+  font-size: 1.125rem;
+}
+
+.progress__intake {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+}
+
+.figure {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.figure--none {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.figure-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}

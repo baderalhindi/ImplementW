@@ -31,6 +31,7 @@ const TAB_LABELS: Record<WorkspaceTabKey, TranslationKey> = {
   overview: 'projects.workspace.tabs.overview',
   registration: 'projects.workspace.tabs.registration',
   location: 'projects.workspace.tabs.location',
+  progress: 'projects.workspace.tabs.progress',
   reviews: 'projects.workspace.tabs.reviews',
   documents: 'projects.workspace.tabs.documents',
 };
@@ -157,7 +158,11 @@ export function ProjectWorkspace(): ReactElement | null {
         <ul>
           {visibleTabs(access).map((tab) => (
             <li key={tab.key}>
-              <NavLink to={`/projects/${detail.id}${tab.path === '' ? '' : `/${tab.path}`}`} end>
+              {/* Only the overview matches exactly: a tab with pages of its own (progress history) stays current. */}
+              <NavLink
+                to={`/projects/${detail.id}${tab.path === '' ? '' : `/${tab.path}`}`}
+                end={tab.path === ''}
+              >
                 {t(TAB_LABELS[tab.key])}
               </NavLink>
             </li>

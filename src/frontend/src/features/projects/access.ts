@@ -45,7 +45,8 @@ export function ownEntityId(user: SessionUser): string | null {
 /** Who sees a workspace tab, beyond seeing the project at all (which the API decided by answering). */
 export type TabAudience = 'anyone' | 'reached' | 'internalReached';
 
-export type WorkspaceTabKey = 'overview' | 'registration' | 'location' | 'reviews' | 'documents';
+export type WorkspaceTabKey =
+  'overview' | 'registration' | 'location' | 'progress' | 'reviews' | 'documents';
 
 export interface WorkspaceTab {
   key: WorkspaceTabKey;
@@ -55,7 +56,9 @@ export interface WorkspaceTab {
 }
 
 /**
- * SCR-040 Overview, SCR-041 Registration, SCR-035 Location, SCR-042 Review History, SCR-043 Documents (D-4).
+ * SCR-040 Overview, SCR-041 Registration, SCR-035 Location, SCR-048 Progress, SCR-042 Review History, SCR-043
+ * Documents (D-4). Progress is for those an assignment reaches: PROGRESS_VIEW ships to the project's Project Manager
+ * and its delivering entity (TASK-044 D-10), and the API answers an empty page to anyone it does not reach.
  * Review history is AHDA's: a review's requester is the AHDA reviewer (TASK-041 F-11) and a run carries no entity
  * anchor (TASK-035 F-8), so an external user can never read one.
  */
@@ -63,6 +66,7 @@ export const WORKSPACE_TABS: WorkspaceTab[] = [
   { key: 'overview', path: '', audience: 'anyone' },
   { key: 'registration', path: 'registration', audience: 'anyone' },
   { key: 'location', path: 'location', audience: 'anyone' },
+  { key: 'progress', path: 'progress', audience: 'reached' },
   { key: 'reviews', path: 'reviews', audience: 'internalReached' },
   { key: 'documents', path: 'documents', audience: 'reached' },
 ];

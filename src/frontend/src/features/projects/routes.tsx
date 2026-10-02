@@ -7,6 +7,7 @@ import { MyProjectsPage, ProjectRegisterPage } from './register/ProjectListPages
 import { DocumentsTab } from './workspace/DocumentsTab.tsx';
 import { LocationTab } from './workspace/LocationTab.tsx';
 import { OverviewTab } from './workspace/OverviewTab.tsx';
+import { ProgressHistoryTab, ProgressTab } from './workspace/ProgressTab.tsx';
 import { ProjectWorkspace, WorkspaceTabGuard } from './workspace/ProjectWorkspace.tsx';
 import { RegistrationTab } from './workspace/RegistrationTab.tsx';
 import { ReviewsTab } from './workspace/ReviewsTab.tsx';
@@ -29,6 +30,22 @@ export const projectRoutes: RouteObject[] = [
       { index: true, element: <OverviewTab /> }, // SCR-040 Overview
       { path: 'registration', element: <RegistrationTab /> }, // SCR-041
       { path: 'location', element: <LocationTab /> }, // SCR-035
+      {
+        path: 'progress', // SCR-048, MOD-020, MOD-021, MOD-022 (TASK-045)
+        element: (
+          <WorkspaceTabGuard tab="progress">
+            <ProgressTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'progress/history', // SCR-070
+        element: (
+          <WorkspaceTabGuard tab="progress">
+            <ProgressHistoryTab />
+          </WorkspaceTabGuard>
+        ),
+      },
       {
         path: 'reviews', // SCR-042
         element: (
