@@ -140,3 +140,4 @@ Each mutation was applied, `npx vitest run src/features/projects` run, and the s
 | --- | --- |
 | 2026-10-02 | Created (TASK-042) |
 | 2026-10-02 | Validation: integration test of My Projects vs another department's manager (§4 row 12); browser e2e Draft → Submitted (row 13); F-1 extended (external users), F-11 added |
+| 2026-10-02 | SCR-040 gains the Progress tab (SCR-048, SCR-070) after Location, audience `reached`; only the overview tab link matches exactly (TASK-045, `progress-ui.md` D-1, D-11) |
