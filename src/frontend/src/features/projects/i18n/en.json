@@ -1,0 +1,224 @@
+{
+  "nav": {
+    "label": "Projects",
+    "register": "Project register",
+    "mine": "My projects",
+    "create": "Create project"
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "RETURNED": "Returned",
+    "APPROVED_PLANNED": "Approved – planned",
+    "ACTIVE": "Active",
+    "SUSPENDED": "Suspended",
+    "COMPLETED": "Completed",
+    "CLOSED": "Closed"
+  },
+  "participationMode": {
+    "AHDA_MANAGED": "Managed by AHDA",
+    "ENTITY_MANAGED": "Managed by an external entity"
+  },
+  "legacyIntake": "Legacy intake – declared baseline",
+  "formalProjectId": {
+    "notIssued": "Not issued yet",
+    "notIssuedLong": "No Formal Project ID yet: AHDA issues it when it approves the registration.",
+    "issued": "Formal Project ID {id}"
+  },
+  "projectManager": {
+    "notNamed": "Not named yet"
+  },
+  "money": {
+    "sar": "{amount} SAR"
+  },
+  "lookups": {
+    "unknownItem": "Item {id}"
+  },
+  "fields": {
+    "title": "Project title",
+    "description": "Description",
+    "formalProjectId": "Formal Project ID",
+    "status": "Status",
+    "classification": "Classification",
+    "governanceProfile": "Governance profile",
+    "participation": "Participation",
+    "department": "Owning department",
+    "externalEntity": "External entity",
+    "projectManager": "Project Manager",
+    "registrationBudget": "Registration budget (SAR)",
+    "plannedStartDate": "Planned start date",
+    "plannedEndDate": "Planned end date",
+    "plannedPeriod": "Planned period",
+    "region": "Region",
+    "city": "City",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "coordinates": "Coordinates",
+    "revision": "Revision",
+    "activatedAt": "Activated",
+    "legacyIntakeDate": "Legacy intake date",
+    "createdAt": "Registered",
+    "updatedAt": "Last changed"
+  },
+  "filters": {
+    "q": "Title or Formal Project ID"
+  },
+  "list": {
+    "order": "Most recently changed first.",
+    "loading": "Loading projects…",
+    "emptyFiltered": "No project matches these filters."
+  },
+  "register": {
+    "title": "Project register",
+    "description": "Every project your role can see, at any stage.",
+    "emptyForRole": "Your role does not give you access to any project yet.",
+    "emptyForRoleDescription": "You see the projects your role assignments reach: those of your department, your entity or the projects you are assigned to. When a project in that scope is registered, it appears here. If you expected to see projects, ask your administrator to check your role assignments."
+  },
+  "mine": {
+    "title": "My projects",
+    "description": "The projects you are the Project Manager of.",
+    "empty": "You are not the Project Manager of any project.",
+    "emptyDescription": "A Project Manager is named when a registration is submitted for review. Drafts you are preparing are in the project register.",
+    "toRegister": "Go to the project register"
+  },
+  "create": {
+    "action": "Create project",
+    "title": "Create project",
+    "description": "Register a new project as a draft. It gets its Formal Project ID only when AHDA approves it.",
+    "submit": "Create draft"
+  },
+  "edit": {
+    "title": "Edit {title}",
+    "notEditable": "This project cannot be edited while it is {status}.",
+    "backToProject": "Back to the project"
+  },
+  "form": {
+    "sections": {
+      "project": "Project",
+      "organization": "Ownership and participation",
+      "budgetSchedule": "Budget and schedule",
+      "location": "Location"
+    },
+    "neededToSubmit": "Needed before submitting for review.",
+    "stillNeeded": "To save, fill in: {fields}.",
+    "correctValues": "To save, correct the highlighted values.",
+    "nonePublished": "No classification is published yet. An administrator must publish one before a project can be registered.",
+    "governanceProfileHint": "The profile sets which fields the project must have before it is submitted. AHDA confirms or changes it at review.",
+    "participationHint": "Who delivers the project. An entity-managed project names its entity.",
+    "departmentHint": "The AHDA department that owns the project.",
+    "ownEntity": "Your entity",
+    "budgetHint": "An amount such as 1500000 or 1500000.50.",
+    "latitudeHint": "Decimal degrees, from -90 to 90.",
+    "longitudeHint": "Decimal degrees, from -180 to 180.",
+    "unreadable": {
+      "title": "Your account cannot read some of the lists this form needs, so the project cannot be created here. Ask your administrator.",
+      "catalogues": "Classifications, governance profiles, regions and cities.",
+      "organization": "Departments and external entities."
+    }
+  },
+  "workspace": {
+    "revision": "Revision {revision}",
+    "tabUnavailable": "This section is not available to your role for this project.",
+    "tabs": {
+      "label": "Project sections",
+      "overview": "Overview",
+      "registration": "Registration",
+      "location": "Location",
+      "reviews": "Review history",
+      "documents": "Documents"
+    }
+  },
+  "overview": {
+    "missingForSubmission": "Before this project can be submitted for review, fill in:",
+    "declaredBaseline": "Entered by legacy intake: its baseline is declared, not approved.",
+    "next": {
+      "DRAFT": "Draft. Complete the registration and submit it for AHDA's review.",
+      "SUBMITTED": "Submitted. AHDA has not started its review yet; until it does, the registrant can withdraw it.",
+      "UNDER_REVIEW": "Under AHDA's review. The registration cannot be changed until the review ends.",
+      "RETURNED": "Returned by AHDA's review. Change the registration and submit it again as the next revision.",
+      "APPROVED_PLANNED": "Approved and planned. AHDA activates the project when work starts.",
+      "ACTIVE": "Active.",
+      "SUSPENDED": "Suspended.",
+      "COMPLETED": "Completed.",
+      "CLOSED": "Closed."
+    }
+  },
+  "location": {
+    "edit": "Change location",
+    "noMap": "A map is not shown: no map service is approved for the platform yet."
+  },
+  "reviews": {
+    "caption": "Review history",
+    "revision": "Revision {revision}",
+    "requestedAt": "Review started",
+    "outcome": "Outcome",
+    "completedAt": "Decided",
+    "empty": "This project has not been reviewed yet.",
+    "forbidden": "Your role cannot read this project's reviews."
+  },
+  "documents": {
+    "title": "Project documents",
+    "description": "Documents filed against this project."
+  },
+  "actions": {
+    "edit": "Edit registration",
+    "submit": "Submit for review",
+    "changeStatus": "Change status",
+    "delete": "Delete draft"
+  },
+  "delete": {
+    "title": "Delete draft",
+    "body": "Delete the draft “{title}”? It is removed permanently and cannot be recovered.",
+    "confirm": "Delete draft"
+  },
+  "submit": {
+    "title": "Submit for review",
+    "body": "Submitting sends the registration to AHDA for review and names its Project Manager. You can withdraw it until AHDA starts the review.",
+    "managerHint": "The Project Manager must hold the Project Manager role over this project: an AHDA employee, or a member of the delivering entity.",
+    "self": "Me ({name})",
+    "current": "The Project Manager named before",
+    "other": "Someone else",
+    "find": "Find the Project Manager",
+    "confirm": "Submit for review"
+  },
+  "changeStatus": {
+    "title": "Change status",
+    "command": "Change",
+    "confirm": "Apply",
+    "withdraw": {
+      "label": "Withdraw the submission",
+      "consequence": "The project returns to draft and its Project Manager is cleared. It can be changed and submitted again."
+    },
+    "startReview": {
+      "label": "Start AHDA's review",
+      "consequence": "Starts the approval route for this registration. The registrant can no longer withdraw it, and you cannot decide the review you started."
+    },
+    "activate": {
+      "label": "Activate the project",
+      "consequence": "Makes the project Active from now. This is the only way a project becomes Active, and it cannot be reversed here."
+    }
+  },
+  "done": {
+    "created": "The draft was created.",
+    "updated": "The registration was saved.",
+    "locationUpdated": "The location was saved.",
+    "deleted": "The draft was deleted.",
+    "submitted": "The project was submitted for review.",
+    "withdrawn": "The submission was withdrawn; the project is a draft again.",
+    "reviewStarted": "AHDA's review has started.",
+    "activated": "The project is now active."
+  },
+  "problems": {
+    "referenceInvalid": "One of the chosen values is no longer available: a classification, profile, region or city that is not published, an inactive department or entity, or a city outside the chosen region. Choose again.",
+    "participationInvalid": "An entity-managed project must name its external entity.",
+    "incomplete": "The registration budget and both planned dates are needed before the project can be submitted.",
+    "managerInvalid": "This person cannot be the Project Manager: they must hold the Project Manager role over this project now.",
+    "notEditable": "The project can no longer be changed in its current state. Reload the page to see it.",
+    "inUse": "This draft is referenced by another record and cannot be deleted.",
+    "invalidTransition": "The project is no longer in a state that allows this. Reload the page to see its current state.",
+    "reviewRouteMissing": "No approval route is configured for project registration yet, so the review cannot start. Ask an administrator.",
+    "permissionDenied": "Your role does not allow this for this project.",
+    "notFound": "The project was not found, or you do not have access to it."
+  }
+}

@@ -1,9 +1,13 @@
+import {
+  isPublished,
+  type MasterDataItemSummary,
+  readCatalogueItems,
+} from '@/shared/api/masterData.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { type SelectOption } from '@/shared/ui/FormFields.tsx';
 
-import { type DocumentCatalogueCode, masterDataApi } from './api/documentsApi.ts';
-import { type MasterDataItemSummary } from './api/types.ts';
+import { type DocumentCatalogueCode } from './api/documentsApi.ts';
 import { shortId } from './presentation.ts';
 
 type Catalogues = Record<DocumentCatalogueCode, MasterDataItemSummary[]>;
@@ -15,17 +19,8 @@ const CATALOGUE_CODES: DocumentCatalogueCode[] = [
 ];
 
 /** Module-level, so useApiResource reads the three catalogues once per mount. */
-async function readCatalogues(signal: AbortSignal): Promise<Catalogues> {
-  const catalogues = await masterDataApi.listCatalogues(signal);
-  const entries = await Promise.all(
-    CATALOGUE_CODES.map(async (code) => {
-      const catalogue = catalogues.find((candidate) => candidate.code === code);
-      const items =
-        catalogue === undefined ? [] : (await masterDataApi.listItems(catalogue.id, signal)).items;
-      return [code, items] as const;
-    }),
-  );
-  return Object.fromEntries(entries) as Catalogues;
+function readCatalogues(signal: AbortSignal): Promise<Catalogues> {
+  return readCatalogueItems(CATALOGUE_CODES, signal);
 }
 
 export interface DocumentLookups {
@@ -56,7 +51,7 @@ export function useDocumentLookups(): DocumentLookups {
     },
     options: (code) =>
       (data?.[code] ?? [])
-        .filter((item) => item.lifecycleState === 'PUBLISHED')
+        .filter(isPublished)
         .map((item) => ({ value: item.id, label: item.label[language] })),
     loading,
     error,

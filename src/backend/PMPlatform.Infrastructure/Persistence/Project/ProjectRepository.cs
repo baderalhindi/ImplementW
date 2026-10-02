@@ -48,6 +48,11 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
             rows = rows.Where(p => p.ExternalEntityId == externalEntityId);
         }
 
+        if (query.ProjectManagerUserId is { } projectManagerUserId)
+        {
+            rows = rows.Where(p => p.ProjectManagerUserId == projectManagerUserId);
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Q))
         {
             string pattern = AdministrationPersistence.ContainsPattern(query.Q.Trim());

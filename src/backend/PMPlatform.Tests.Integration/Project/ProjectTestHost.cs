@@ -29,6 +29,7 @@ public sealed class ProjectTestHost : IAsyncLifetime
     public static readonly Guid OtherRegionId = new("00000000-0410-4000-8000-000000000012");
     public static readonly Guid CityId = new("00000000-0410-4000-8000-000000000021");
     public static readonly Guid OtherEntityId = new("00000000-0410-4000-8000-000000000031");
+    public static readonly Guid OtherDepartmentId = new("00000000-0420-4000-8000-000000000001");
 
     private const string Seed = IdentityDatabase.SeedPrincipalId;
 
@@ -43,6 +44,10 @@ public sealed class ProjectTestHost : IAsyncLifetime
                      ('{CityId}', 'CITY', 'TEST_CITY', 'Test city', '{RegionId}', 'PUBLISHED'))
              AS i (id, catalogue, code, label_en, parent, state)
         JOIN master_data_config.master_data_catalogue c ON c.code = i.catalogue;
+
+        -- A second active department: local.r03 manages the first, so is another department's manager for this one.
+        INSERT INTO identity_access.department (id, code, name_ar, name_en, directory_reference, created_at, created_by, updated_at, updated_by)
+        VALUES ('{OtherDepartmentId}', 'DEPT-PROJECT-OTHER', 'إدارة أخرى', 'Other department', 'DEPT-OTHER', now(), '{Seed}', now(), '{Seed}');
 
         INSERT INTO identity_access.external_entity (id, code, name_ar, name_en, entity_type_item_id, status, created_at, created_by, updated_at, updated_by)
         SELECT '{OtherEntityId}', 'ENT-PROJECT-OTHER', 'جهة أخرى', 'Other active entity', entity_type_item_id, 'ACTIVE', now(), '{Seed}', now(), '{Seed}'

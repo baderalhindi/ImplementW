@@ -67,7 +67,7 @@ All paths are under `/api/v1`, tag `Project`, operation ids `Project_*`. Every n
 
 | Operation | Method and path | Permission | Success | Refusals beyond 401/403/404 |
 | --- | --- | --- | --- | --- |
-| `ListProjects` | `GET /projects?status=&departmentId=&externalEntityId=&q=&page=&pageSize=` | `PROJECT_VIEW` | 200 `ProjectPage`, only projects the caller reaches, most recently changed first; `q` matches the title or the Formal Project ID | 400 |
+| `ListProjects` | `GET /projects?status=&departmentId=&externalEntityId=&projectManagerUserId=&q=&page=&pageSize=` | `PROJECT_VIEW` | 200 `ProjectPage`, only projects the caller reaches, most recently changed first; `q` matches the title or the Formal Project ID; `projectManagerUserId` serves SCR-026 My Projects (I-04) and narrows the caller's scope, never widens it | 400 |
 | `GetProject` | `GET /projects/{id}` | `PROJECT_VIEW` | 200 `ProjectDetail`, `ETag` | — |
 | `CreateProject` | `POST /projects` | `PROJECT_REGISTER` | 201, `Location`, `ETag`; DRAFT | 400; 422 `PROJECT_REFERENCE_INVALID`, `PROJECT_PARTICIPATION_INVALID` |
 | `UpdateProject` | `PUT /projects/{id}`, `If-Match` | `PROJECT_REGISTER` | 200 | 400; 409 `PROJECT_NOT_EDITABLE`; 412; 422 as create; 428 |
@@ -175,3 +175,4 @@ Each mutation was applied, the solution rebuilt, the Project tests run, and the 
 | Date | Change |
 | --- | --- |
 | 2026-10-02 | Created (TASK-041) |
+| 2026-10-02 | TASK-042 (`project-registration-ui.md` D-9): `ListProjects` takes `projectManagerUserId` for SCR-026 My Projects, one more predicate inside the caller's `RecordScope`; `MyProjectsAreTheOnesTheCallerManagesWithinTheirScope` |

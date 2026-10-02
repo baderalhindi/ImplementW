@@ -73,6 +73,7 @@
     "unexpectedWithReference": "Something went wrong. Try again. If it happens again, quote reference {reference}."
   },
   "home": {
+    "projects": "Go to the project register",
     "title": "Welcome, {name}",
     "approvals": "Go to your approval inbox",
     "documents": "Go to the document library",

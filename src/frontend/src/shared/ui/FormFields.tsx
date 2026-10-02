@@ -66,11 +66,11 @@ function FieldMessages({
 interface TextFieldProps extends FieldBaseProps {
   value: string;
   onChange: (value: string) => void;
-  type?: 'text' | 'email' | 'tel' | 'password' | 'search' | 'datetime-local';
+  type?: 'text' | 'email' | 'tel' | 'password' | 'search' | 'date' | 'datetime-local';
   autoComplete?: string | undefined;
   /** Latin-script values (usernames, emails, codes, numbers) stay left-to-right inside an Arabic form. */
   dir?: 'ltr' | 'rtl' | 'auto';
-  inputMode?: 'text' | 'numeric' | 'tel' | 'email';
+  inputMode?: 'text' | 'numeric' | 'decimal' | 'tel' | 'email';
 }
 
 export function TextField({

@@ -66,7 +66,7 @@ export function configureAuthentication(handlers: AuthenticationHandlers | null)
 export type QueryValue = string | number | boolean | undefined | null;
 
 export interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT';
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   query?: Record<string, QueryValue>;
   body?: unknown;
   ifMatch?: string | null | undefined;
@@ -165,8 +165,11 @@ async function exchange(
   transport: Transport,
 ): Promise<Response> {
   const method = options.method ?? 'GET';
+  // GET and DELETE are idempotent by definition (R-40); only POST and PUT carry a key.
   const idempotencyKey =
-    method === 'GET' ? undefined : (options.idempotencyKey ?? crypto.randomUUID());
+    method === 'GET' || method === 'DELETE'
+      ? undefined
+      : (options.idempotencyKey ?? crypto.randomUUID());
   const attempt = () => transport(requestHeaders(options, idempotencyKey, accept));
 
   let response = await attempt();
@@ -203,7 +206,8 @@ export async function apiRequest<T>(
       signal: options.signal ?? null,
     }),
   );
-  const data = (await response.json()) as T;
+  // 204 No Content (a DELETE, R-40) has no body to parse.
+  const data = (response.status === 204 ? undefined : await response.json()) as T;
   return { data, etag: response.headers.get('ETag') };
 }
 
