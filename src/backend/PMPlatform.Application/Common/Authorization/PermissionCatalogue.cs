@@ -85,6 +85,21 @@ public sealed class PermissionCatalogue
     /// <summary>WF-01: the Planned → Active command (TASK-041). Internal users only (ADR-013).</summary>
     public const string ProjectActivate = "PROJECT_ACTIVATE";
 
+    /// <summary>
+    /// WF-02: a project's reporting periods, progress submissions, published snapshots and Overall Project Health (SCR-048,
+    /// SCR-070), on the projects the grant's scope covers (TASK-044).
+    /// </summary>
+    public const string ProgressView = "PROGRESS_VIEW";
+
+    /// <summary>
+    /// WF-02: start a period's progress update, edit its narrative and override, submit it (TASK-044). ADR-013: an assigned
+    /// entity Project Manager submits progress on their own project.
+    /// </summary>
+    public const string ProgressSubmit = "PROGRESS_SUBMIT";
+
+    /// <summary>WF-02: review a submission, return it or publish it (TASK-044). Internal users only, and never one's own submission (ADR-013).</summary>
+    public const string ProgressReview = "PROGRESS_REVIEW";
+
     /// <summary>WF-15: the bilingual notification templates and their versions (TASK-039).</summary>
     public const string NotificationTemplateView = "NOTIFICATION_TEMPLATE_VIEW";
 
@@ -126,6 +141,9 @@ public sealed class PermissionCatalogue
             new(ProjectRegister, "PROJECT", AccessMode.Write),
             new(ProjectReview, "PROJECT", AccessMode.Write),
             new(ProjectActivate, "PROJECT", AccessMode.Write),
+            new(ProgressView, "PROGRESS", AccessMode.Read),
+            new(ProgressSubmit, "PROGRESS", AccessMode.Write),
+            new(ProgressReview, "PROGRESS", AccessMode.Write),
             new(NotificationTemplateView, "NOTIFICATIONS", AccessMode.Read),
             new(NotificationTemplateManage, "NOTIFICATIONS", AccessMode.Write),
             new(NotificationDeliveryView, "NOTIFICATIONS", AccessMode.Read),
@@ -147,8 +165,13 @@ public sealed class PermissionCatalogue
     /// document grants wait for Appendix A (document-management.md F-1). ADR-013's amendment to TASK-041 lets external entity
     /// users create a project draft for their own entity, and lets entities see their own projects: R08 (External Entity
     /// User) and R04 (the entity Project Manager) view and register at ENTITY, which reaches only a holder with an entity.
-    /// AHDA's review and activation gates are internal-only and wait for Appendix A (project-registration.md F-1). WF-15's notification templates and delivery operations
-    /// go to R01 at ALL, as a delivery-team decision like FG-04's (notification-runtime.md F-1): they are platform-wide.
+    /// AHDA's review and activation gates are internal-only and wait for Appendix A (project-registration.md F-1). ADR-013's
+    /// amendment to TASK-044 lets an assigned entity Project Manager submit progress on their own project, and lets entities
+    /// see progress and health on their own projects: R04 views and submits at OWN — a project's owner is its Project Manager,
+    /// so OWN reaches exactly the projects the holder manages, internal or external, R04 being employer-neutral — and R08
+    /// views at ENTITY. Progress review is AHDA's gate and waits for Appendix A (progress-update.md F-2). WF-15's
+    /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
+    /// (notification-runtime.md F-1): they are platform-wide.
     /// </summary>
     public static IReadOnlyList<ShippedGrant> ShippedDefaultGrants { get; } =
     [
@@ -174,6 +197,9 @@ public sealed class PermissionCatalogue
         new("R04", ProjectRegister, DataScope.Entity),
         new("R08", ProjectView, DataScope.Entity),
         new("R08", ProjectRegister, DataScope.Entity),
+        new("R04", ProgressView, DataScope.Own),
+        new("R04", ProgressSubmit, DataScope.Own),
+        new("R08", ProgressView, DataScope.Entity),
         new("R02", LayoutPersonalize, DataScope.Own),
         new("R02", ReportCompose, DataScope.Own),
         new("R03", LayoutPersonalize, DataScope.Own),

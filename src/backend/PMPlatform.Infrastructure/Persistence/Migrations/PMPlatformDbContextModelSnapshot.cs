@@ -3994,6 +3994,424 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("ActualPercentCalculated")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("actual_percent_calculated");
+
+                    b.Property<decimal?>("ActualPercentOverride")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("actual_percent_override");
+
+                    b.Property<Guid?>("BaselineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("baseline_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal?>("PlannedPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("planned_percent");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid?>("ProjectIntakeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_intake_id");
+
+                    b.Property<Guid>("ReportingCycleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reporting_cycle_id");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewed_by_user_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<Guid?>("SubmittedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submitted_by_user_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Narrative", "PMPlatform.Domain.Progress.ProgressSubmission.Narrative#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("narrative_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("narrative");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "OverrideReason", "PMPlatform.Domain.Progress.ProgressSubmission.OverrideReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("override_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("override_reason");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ReturnReason", "PMPlatform.Domain.Progress.ProgressSubmission.ReturnReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("return_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("return_reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_progress_submission");
+
+                    b.HasIndex("ProjectIntakeId")
+                        .HasDatabaseName("ix_progress_submission_project_intake_id");
+
+                    b.HasIndex("ReviewedByUserId")
+                        .HasDatabaseName("ix_progress_submission_reviewed_by_user_id");
+
+                    b.HasIndex("SubmittedByUserId")
+                        .HasDatabaseName("ix_progress_submission_submitted_by_user_id");
+
+                    b.HasIndex("ProjectId", "SubmittedAt")
+                        .HasDatabaseName("ix_progress_submission_project_id_submitted_at");
+
+                    b.HasIndex("ReportingCycleId", "RevisionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_progress_submission_reporting_cycle_id_revision_no");
+
+                    b.ToTable("progress_submission", "progress", t =>
+                        {
+                            t.HasCheckConstraint("ck_progress_submission_narrative_lang", "\"narrative_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_progress_submission_narrative_pair", "(\"narrative\" IS NULL) = (\"narrative_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_progress_submission_override", "(actual_percent_override IS NULL) = (override_reason IS NULL)");
+
+                            t.HasCheckConstraint("ck_progress_submission_override_reason_lang", "\"override_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_progress_submission_override_reason_pair", "(\"override_reason\" IS NULL) = (\"override_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_progress_submission_percent", "actual_percent_calculated BETWEEN 0 AND 100 AND (actual_percent_override IS NULL OR actual_percent_override BETWEEN 0 AND 100) AND (planned_percent IS NULL OR planned_percent BETWEEN 0 AND 100)");
+
+                            t.HasCheckConstraint("ck_progress_submission_planned_baseline", "planned_percent IS NULL OR baseline_id IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_progress_submission_return_reason", "(status = 'RETURNED') = (return_reason IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_progress_submission_return_reason_lang", "\"return_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_progress_submission_return_reason_pair", "(\"return_reason\" IS NULL) = (\"return_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_progress_submission_reviewed", "(status IN ('RETURNED', 'PUBLISHED')) = (reviewed_at IS NOT NULL) AND (reviewed_at IS NULL) = (reviewed_by_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_progress_submission_revision_no", "revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_progress_submission_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'PUBLISHED')");
+
+                            t.HasCheckConstraint("ck_progress_submission_submitted", "(status = 'DRAFT') = (submitted_at IS NULL) AND (submitted_at IS NULL) = (submitted_by_user_id IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ProjectHealthStatus", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("ActualPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("actual_percent");
+
+                    b.Property<DateTimeOffset>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("HealthRuleConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("health_rule_configuration_version_id");
+
+                    b.Property<string>("OverallHealth")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("overall_health");
+
+                    b.Property<decimal?>("PlannedPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("planned_percent");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_health_status");
+
+                    b.HasIndex("HealthRuleConfigurationVersionId")
+                        .HasDatabaseName("ix_project_health_status_health_rule_configuration_version_id");
+
+                    b.HasIndex("ProjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_health_status_project_id");
+
+                    b.ToTable("project_health_status", "progress", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_health_status_overall_health", "\"overall_health\" IN ('GREEN', 'AMBER', 'RED', 'UNKNOWN')");
+
+                            t.HasCheckConstraint("ck_project_health_status_percent", "(actual_percent IS NULL OR actual_percent BETWEEN 0 AND 100) AND (planned_percent IS NULL OR planned_percent BETWEEN 0 AND 100)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Progress.PublishedProgressSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("ActualPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("actual_percent");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("FinancialStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("financial_status");
+
+                    b.Property<Guid>("HealthRuleConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("health_rule_configuration_version_id");
+
+                    b.Property<bool>("IsOverridden")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_overridden");
+
+                    b.Property<string>("OverallHealth")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("overall_health");
+
+                    b.Property<decimal?>("PlannedPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("planned_percent");
+
+                    b.Property<Guid>("ProgressSubmissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("progress_submission_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<Guid>("PublishedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("published_by_user_id");
+
+                    b.Property<Guid>("ReportingCycleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reporting_cycle_id");
+
+                    b.Property<string>("ScheduleHealth")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("schedule_health");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_published_progress_snapshot");
+
+                    b.HasIndex("HealthRuleConfigurationVersionId")
+                        .HasDatabaseName("ix_published_progress_snapshot_health_rule_configuration_versi");
+
+                    b.HasIndex("ProgressSubmissionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_published_progress_snapshot_progress_submission_id");
+
+                    b.HasIndex("PublishedByUserId")
+                        .HasDatabaseName("ix_published_progress_snapshot_published_by_user_id");
+
+                    b.HasIndex("ReportingCycleId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_published_progress_snapshot_reporting_cycle_id");
+
+                    b.HasIndex("ProjectId", "PublishedAt")
+                        .HasDatabaseName("ix_published_progress_snapshot_project_id_published_at");
+
+                    b.ToTable("published_progress_snapshot", "progress", t =>
+                        {
+                            t.HasCheckConstraint("ck_published_progress_snapshot_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_published_progress_snapshot_financial_status", "\"financial_status\" IN ('GREEN', 'AMBER', 'RED', 'UNKNOWN')");
+
+                            t.HasCheckConstraint("ck_published_progress_snapshot_overall_health", "\"overall_health\" IN ('GREEN', 'AMBER', 'RED', 'UNKNOWN')");
+
+                            t.HasCheckConstraint("ck_published_progress_snapshot_percent", "actual_percent BETWEEN 0 AND 100 AND (planned_percent IS NULL OR planned_percent BETWEEN 0 AND 100)");
+
+                            t.HasCheckConstraint("ck_published_progress_snapshot_schedule_health", "\"schedule_health\" IN ('GREEN', 'AMBER', 'RED', 'UNKNOWN')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ReportingCycle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("period_end");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date")
+                        .HasColumnName("period_start");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reporting_cycle");
+
+                    b.HasIndex("ProjectId", "PeriodStart")
+                        .IsUnique()
+                        .HasDatabaseName("ix_reporting_cycle_project_id_period_start");
+
+                    b.ToTable("reporting_cycle", "progress", t =>
+                        {
+                            t.HasCheckConstraint("ck_reporting_cycle_period", "period_end >= period_start AND due_date >= period_start");
+
+                            t.HasCheckConstraint("ck_reporting_cycle_status", "\"status\" IN ('OPEN', 'CLOSED')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5147,6 +5565,106 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ValidatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_notification_template_user_validated_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressSubmission", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_progress_submission_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.ProjectIntake", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectIntakeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_progress_submission_project_intake_project_intake_id");
+
+                    b.HasOne("PMPlatform.Domain.Progress.ReportingCycle", null)
+                        .WithMany()
+                        .HasForeignKey("ReportingCycleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_progress_submission_reporting_cycle_reporting_cycle_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_progress_submission_user_reviewed_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_progress_submission_user_submitted_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ProjectHealthStatus", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("HealthRuleConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_health_status_configuration_version_health_rule_con");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_health_status_project_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Progress.PublishedProgressSnapshot", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("HealthRuleConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_progress_snapshot_configuration_version_health_ru");
+
+                    b.HasOne("PMPlatform.Domain.Progress.ProgressSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("ProgressSubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_progress_snapshot_progress_submission_progress_su");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_progress_snapshot_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_progress_snapshot_user_published_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Progress.ReportingCycle", null)
+                        .WithMany()
+                        .HasForeignKey("ReportingCycleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_progress_snapshot_reporting_cycle_reporting_cycle");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ReportingCycle", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_reporting_cycle_project_project_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>

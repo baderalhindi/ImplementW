@@ -23,6 +23,9 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
         return project;
     }
 
+    public Task<ProjectEntity?> ReadAsync(Guid projectId, CancellationToken cancellationToken) =>
+        context.Set<ProjectEntity>().AsNoTracking().SingleOrDefaultAsync(p => p.Id == projectId, cancellationToken);
+
     public uint RowVersionOf(ProjectEntity project) =>
         context.Entry(project).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
 

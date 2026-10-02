@@ -10,6 +10,9 @@ public interface IProjectRepository
     /// <summary>Tracked. With <paramref name="expectedVersion"/>, the next save is conditional on it (R-21).</summary>
     public Task<ProjectEntity?> FindAsync(Guid projectId, uint? expectedVersion, CancellationToken cancellationToken);
 
+    /// <summary>Not tracked: for reading a project another unit of work does not change.</summary>
+    public Task<ProjectEntity?> ReadAsync(Guid projectId, CancellationToken cancellationToken);
+
     /// <summary>The row version of a tracked project, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(ProjectEntity project);
 

@@ -17,6 +17,8 @@ using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Application.Features.Notifications;
 using PMPlatform.Application.Features.Notifications.Contracts;
+using PMPlatform.Application.Features.Progress;
+using PMPlatform.Application.Features.Progress.Contracts;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.EventHandlers;
@@ -108,6 +110,17 @@ public static class DependencyInjection
         services.AddScoped<ProjectManagerEligibility>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IApprovalOutcomeHandler, ProjectApprovalOutcomeHandler>();
+        services.AddScoped<IProjectFactsReader, ProjectFactsReader>();
+
+        // TASK-044: WF-02 progress reporting and Overall Project Health (ICD-03). The repository is Infrastructure's. The
+        // inputs other modules own have no source until WF-03, WF-04 and WF-14 and their ADR-003 edges exist
+        // (progress-update.md F-1), so NoProgressInputs stands in; a host may register its own first.
+        services.AddScoped<ProgressAccess>();
+        services.AddScoped<ProgressPolicy>();
+        services.TryAddScoped<IProgressInputs, NoProgressInputs>();
+        services.AddScoped<IProgressService, ProgressService>();
+        services.AddScoped<ProgressOpeningPosition>();
+        services.AddScoped<IProjectHealthReader, ProjectHealthReader>();
 
         return services;
     }

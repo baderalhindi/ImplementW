@@ -13,6 +13,7 @@ using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig;
 using PMPlatform.Application.Features.Notifications;
+using PMPlatform.Application.Features.Progress;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Infrastructure.Approval;
 using PMPlatform.Infrastructure.Audit;
@@ -23,6 +24,7 @@ using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
 using PMPlatform.Infrastructure.Persistence.DocumentManagement;
+using PMPlatform.Infrastructure.Persistence.Progress;
 using PMPlatform.Infrastructure.Persistence.Project;
 using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
@@ -84,6 +86,10 @@ public static class DependencyInjection
 
         // TASK-041: WF-01's project schema.
         services.AddScoped<IProjectRepository, ProjectRepository>();
+
+        // TASK-044: WF-02's progress schema.
+        services.AddScoped<IProgressRepository, ProgressRepository>();
+
         services.AddNotifications(configuration);
 
         return services;
