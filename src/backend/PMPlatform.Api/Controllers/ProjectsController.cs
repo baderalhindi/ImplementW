@@ -24,20 +24,21 @@ public sealed class ProjectsController(IProjectService projects) : Administratio
 
     /// <summary>
     /// SCR-025: only projects the caller may see. Filters: <c>status</c> (a set), <c>departmentId</c>, <c>externalEntityId</c>,
-    /// <c>q</c> (title or Formal Project ID). Most recently changed first.
+    /// <c>projectManagerUserId</c> (SCR-026 My Projects), <c>q</c> (title or Formal Project ID). Most recently changed first.
     /// </summary>
     [HttpGet]
     [RequirePermission(PermissionCatalogue.ProjectView)]
     [ProducesResponseType<ProjectPage>(StatusCodes.Status200OK, "application/json")]
     [EndpointName("Project_ListProjects")]
     public async Task<IActionResult> List(
-        [FromQuery] string? status, [FromQuery] Guid? departmentId, [FromQuery] Guid? externalEntityId, [FromQuery] string? q,
-        [FromQuery] int? page, [FromQuery] int? pageSize, CancellationToken cancellationToken)
+        [FromQuery] string? status, [FromQuery] Guid? departmentId, [FromQuery] Guid? externalEntityId, [FromQuery] Guid? projectManagerUserId,
+        [FromQuery] string? q, [FromQuery] int? page, [FromQuery] int? pageSize, CancellationToken cancellationToken)
     {
         List<FieldError> errors = [];
         RequestValidation.Optional(q, "q", QueryTextLength, errors);
         ProjectQuery query = new(
-            QueryParameters.EnumSet<ProjectLifecycleState>(status, "status", errors), departmentId, externalEntityId, q, QueryParameters.Page(page, pageSize, errors));
+            QueryParameters.EnumSet<ProjectLifecycleState>(status, "status", errors), departmentId, externalEntityId, projectManagerUserId, q,
+            QueryParameters.Page(page, pageSize, errors));
         return errors.Count > 0 ? ValidationFailed(errors) : Ok(await projects.ListAsync(CallerId, query, cancellationToken));
     }
 

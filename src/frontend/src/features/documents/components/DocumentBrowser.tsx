@@ -22,6 +22,8 @@ interface DocumentBrowserProps {
   description: string;
   /** SCR-121's project; undefined on the library (SCR-120), which lists every document the caller may read. */
   projectId: string | undefined;
+  /** Inside another page (the project workspace's Documents tab): a section heading, not the page's h1. */
+  embedded?: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export function DocumentBrowser({
   title,
   description,
   projectId,
+  embedded = false,
 }: DocumentBrowserProps): ReactElement {
   const { t } = useI18n();
   const [params, setParams] = useSearchParams();
@@ -76,24 +79,31 @@ export function DocumentBrowser({
   };
 
   const filtered = q !== '' || status !== undefined;
+  const uploadButton = (
+    <button
+      type="button"
+      className="button button--primary"
+      onClick={() => {
+        setNotice(null);
+        setUploading(true);
+      }}
+    >
+      {t('documents.upload.action')}
+    </button>
+  );
   return (
     <>
-      <PageHeader
-        title={title}
-        description={description}
-        actions={
-          <button
-            type="button"
-            className="button button--primary"
-            onClick={() => {
-              setNotice(null);
-              setUploading(true);
-            }}
-          >
-            {t('documents.upload.action')}
-          </button>
-        }
-      />
+      {embedded ? (
+        <div className="section__header">
+          <div>
+            <h2>{title}</h2>
+            <p className="page-header__description">{description}</p>
+          </div>
+          {uploadButton}
+        </div>
+      ) : (
+        <PageHeader title={title} description={description} actions={uploadButton} />
+      )}
       <PageNotice notice={notice} />
 
       <form

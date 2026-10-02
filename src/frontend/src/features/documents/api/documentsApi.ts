@@ -14,8 +14,6 @@ import {
   type DocumentSummary,
   type DocumentUpdateRequest,
   type DocumentVersionDetail,
-  type MasterDataCatalogue,
-  type MasterDataItemSummary,
   type Page,
 } from './types.ts';
 
@@ -110,20 +108,3 @@ export const evidenceApi = {
 
 /** The catalogues a document names (db/seed codes). */
 export type DocumentCatalogueCode = 'DOCUMENT_TYPE' | 'DATA_CLASSIFICATION' | 'EVIDENCE_TYPE';
-
-/** R-29's largest page: a catalogue holds tens of items, so one page is all of it. */
-const CATALOGUE_PAGE_SIZE = 200;
-
-export const masterDataApi = {
-  /** Unpaged: the catalogues are a small closed set. Needs MASTER_DATA_VIEW (TASK-038 F-1). */
-  listCatalogues: (signal?: AbortSignal) =>
-    data(apiRequest<MasterDataCatalogue[]>('/master-data-catalogues', { signal })),
-  /** Every item of a catalogue, in display order, retired ones included so an existing document still reads. */
-  listItems: (catalogueId: string, signal?: AbortSignal) =>
-    data(
-      apiRequest<Page<MasterDataItemSummary>>('/master-data-items', {
-        query: { catalogueId, pageSize: CATALOGUE_PAGE_SIZE },
-        signal,
-      }),
-    ),
-};

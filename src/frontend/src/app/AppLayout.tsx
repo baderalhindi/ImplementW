@@ -16,6 +16,7 @@ import {
 } from '@/features/identity-access/session/useSession.ts';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell.tsx';
 import { notificationNavigation } from '@/features/notifications/routes.tsx';
+import { projectNavigation } from '@/features/projects/routes.tsx';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 
 function LanguageSwitch(): ReactElement {
@@ -60,7 +61,7 @@ function Navigation({
 
 /**
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
- * (approvals, documents and notifications for everyone signed in, administration for R01), and the page.
+ * (projects, approvals, documents and notifications for everyone signed in, administration for R01), and the page.
  */
 export function AppLayout(): ReactElement {
   const { t } = useI18n();
@@ -98,6 +99,7 @@ export function AppLayout(): ReactElement {
       <div className="shell__body">
         {session !== null && (
           <div className="shell__sidebar">
+            <Navigation label="projects.nav.label" items={projectNavigation} />
             <Navigation label="approvals.nav.label" items={approvalNavigation} />
             <Navigation label="documents.nav.label" items={documentNavigation} />
             <Navigation label="notifications.nav.label" items={notificationNavigation} />

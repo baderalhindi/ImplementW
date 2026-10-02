@@ -134,19 +134,4 @@ export interface DocumentUpdateRequest {
   dataClassificationItemId: string;
 }
 
-/** A master data item (FG-04) as `GET /master-data-items` lists it. */
-export interface MasterDataItemSummary {
-  id: string;
-  catalogueId: string;
-  code: string;
-  label: { ar: string; en: string };
-  parentItemId: string | null;
-  sortOrder: number;
-  lifecycleState: string;
-  isSystem: boolean;
-}
-
-export interface MasterDataCatalogue {
-  id: string;
-  code: string;
-}
+export type { MasterDataCatalogue, MasterDataItemSummary } from '@/shared/api/masterData.ts';

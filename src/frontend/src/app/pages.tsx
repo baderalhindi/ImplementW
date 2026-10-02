@@ -10,7 +10,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 
 /**
- * The landing page: the screens the session can reach. Approvals, documents and notifications are for everyone;
+ * The landing page: the screens the session can reach. Projects, approvals, documents and notifications are for everyone;
  * administration for R01.
  */
 export function HomePage(): ReactElement {
@@ -24,6 +24,9 @@ export function HomePage(): ReactElement {
     <>
       <PageHeader title={t('common.home.title', { name: session.user.displayName })} />
       <ul className="link-list">
+        <li>
+          <Link to="/projects">{t('common.home.projects')}</Link>
+        </li>
         <li>
           <Link to="/approvals/inbox">{t('common.home.approvals')}</Link>
         </li>

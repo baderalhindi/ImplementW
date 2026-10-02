@@ -159,4 +159,31 @@ public sealed class ProjectEndpointTests(ProjectTestHost host)
         using HttpResponseMessage unknown = await client.GetAsync($"{ProjectDriver.Projects}?status=CANCELLED", sessions.Approver);
         Assert.Equal(["status ENUM_VALUE"], await unknown.ReadFieldErrorsAsync());
     }
+
+    /// <summary>
+    /// SCR-026 My Projects: the projects a person manages, within what they may see. A draft names no manager yet, and the
+    /// filter never shows a project outside the caller's scope.
+    /// </summary>
+    [Fact]
+    public async Task MyProjectsAreTheOnesTheCallerManagesWithinTheirScope()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        Guid managed = await host.UnderReviewAsync(client, sessions);
+        Guid draft = AdministrationApi.IdOf(await client.CreateOrFailAsync(sessions.Entity, host.Registration()));
+        Guid manager = ProjectDriver.Person(8);
+
+        using HttpResponseMessage mine = await client.GetAsync($"{ProjectDriver.Projects}?projectManagerUserId={manager}&pageSize=200", sessions.Entity);
+        List<string> ids = [.. (await mine.ReadObjectAsync())["items"]!.AsArray().Select(p => p!["id"]!.GetValue<string>())];
+        Assert.Contains(managed.ToString(), ids);
+        Assert.DoesNotContain(draft.ToString(), ids);
+
+        using HttpResponseMessage someoneElse = await client.GetAsync($"{ProjectDriver.Projects}?projectManagerUserId={ProjectDriver.Person(5)}&pageSize=200", sessions.Entity);
+        JsonArray others = (await someoneElse.ReadObjectAsync())["items"]!.AsArray();
+        Assert.DoesNotContain(others, p => p!["id"]!.GetValue<string>() == managed.ToString());
+        Assert.All(others, p => Assert.Equal(ProjectDriver.Person(5).ToString(), p!["projectManagerUserId"]!.GetValue<string>()));
+
+        using HttpResponseMessage malformed = await client.GetAsync($"{ProjectDriver.Projects}?projectManagerUserId=me", sessions.Entity);
+        Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
+    }
 }

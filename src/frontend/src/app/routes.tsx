@@ -8,6 +8,7 @@ import { RequireSession } from '@/features/identity-access/session/RequireSessio
 import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
 import { SYSTEM_ADMINISTRATOR_ROLE } from '@/features/identity-access/session/useSession.ts';
 import { notificationRoutes } from '@/features/notifications/routes.tsx';
+import { projectRoutes } from '@/features/projects/routes.tsx';
 
 import { AppLayout } from './AppLayout.tsx';
 import { HomePage, NotFoundPage } from './pages.tsx';
@@ -29,6 +30,15 @@ export const appRoutes: RouteObject[] = [
           { index: true, element: <Navigate to="users" replace /> },
           ...identityAccessRoutes,
         ],
+      },
+      {
+        path: 'projects',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: projectRoutes,
       },
       {
         path: 'approvals',

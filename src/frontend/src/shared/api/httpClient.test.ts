@@ -59,6 +59,18 @@ describe('apiRequest', () => {
     expect(request?.body).toEqual({ name: 'x' });
   });
 
+  test('a delete sends If-Match, no idempotency key, and resolves on 204 without a body', async () => {
+    authentication();
+    const api = mockApi().on('DELETE', /^\/projects\/1$/, { status: 204 });
+
+    const response = await apiRequest('/projects/1', { method: 'DELETE', ifMatch: '"7"' });
+
+    expect(response).toEqual({ data: undefined, etag: null });
+    const [request] = api.requests;
+    expect(request?.headers.get('If-Match')).toBe('"7"');
+    expect(request?.headers.get('Idempotency-Key')).toBeNull();
+  });
+
   test('a refusal becomes an ApiError with its code, field issues and correlation id', async () => {
     authentication();
     mockApi().on(
