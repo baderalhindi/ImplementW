@@ -3789,6 +3789,384 @@
         }
       }
     },
+    "/api/v1/progress-submissions": {
+      "get": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "SCR-070: every revision of the project's periods, newest first. `projectId` is required (R-3).",
+        "operationId": "Progress_ListProgressSubmissions",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSubmissionPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "Starts the progress update of the project's earliest open period, as a DRAFT with the derived figures, pre-filled from\nthe last published period (ADR-017).",
+        "operationId": "Progress_StartProgressSubmission",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressSubmissionStartRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressSubmissionStartRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressSubmissionStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSubmissionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progress-submissions/{submissionId}": {
+      "get": {
+        "tags": [
+          "Progress"
+        ],
+        "operationId": "Progress_GetProgressSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSubmissionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "The narrative and the override of a DRAFT, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "Progress_UpdateProgressSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressSubmissionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressSubmissionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressSubmissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSubmissionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progress-submissions/{submissionId}/submit": {
+      "post": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "DRAFT → SUBMITTED: the derived figures are calculated again and fixed.",
+        "operationId": "Progress_SubmitProgressSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSubmissionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progress-submissions/{submissionId}/start-review": {
+      "post": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "SUBMITTED → UNDER_REVIEW, by AHDA; not by the submitter.",
+        "operationId": "Progress_StartProgressSubmissionReview",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSubmissionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progress-submissions/{submissionId}/return": {
+      "post": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "UNDER_REVIEW → RETURNED with the reason; the period continues as the next revision, a DRAFT.",
+        "operationId": "Progress_ReturnProgressSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressReturnCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressReturnCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressReturnCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSubmissionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/progress-submissions/{submissionId}/publish": {
+      "post": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "UNDER_REVIEW → PUBLISHED, by AHDA: the period's immutable snapshot is written with its Overall Project Health and the\nperiod is closed.",
+        "operationId": "Progress_PublishProgressSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressSubmissionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-health-statuses": {
+      "get": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "The project's live health: one item once computed. `projectId` is required (R-3).",
+        "operationId": "Progress_ListProjectHealthStatuses",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectHealthStatusPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects": {
       "get": {
         "tags": [
@@ -4159,6 +4537,116 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/published-progress-snapshots": {
+      "get": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "The project's snapshots, latest first. `projectId` is required (R-3).",
+        "operationId": "Progress_ListPublishedProgressSnapshots",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedProgressSnapshotPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reporting-cycles": {
+      "get": {
+        "tags": [
+          "Progress"
+        ],
+        "summary": "The project's periods, earliest first. `projectId` is required (R-3).",
+        "operationId": "Progress_ListReportingCycles",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportingCyclePage"
                 }
               }
             }
@@ -7971,6 +8459,15 @@
         },
         "description": "The governed lifecycle columns of a row (ERD D-12): its state, and who authored, validated and published it, and when."
       },
+      "HealthStatus": {
+        "enum": [
+          "GREEN",
+          "AMBER",
+          "RED",
+          "UNKNOWN"
+        ],
+        "description": "A health rating. UNKNOWN is a value of its own: a rating whose inputs are missing is UNKNOWN, never coerced to a\ncolour (ERD `published_progress_snapshot.overall_health`)."
+      },
       "IdentityIntegrationStatus": {
         "required": [
           "directory",
@@ -10532,6 +11029,331 @@
           }
         }
       },
+      "ProgressOverrideRequest": {
+        "required": [
+          "actualPercent",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "actualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "ADR-009: an override of the project roll-up, 0–100 to four places, and the reason for it, which is required."
+      },
+      "ProgressReturnCommand": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "Returning a submission says why."
+      },
+      "ProgressSubmissionDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "reportingCycleId",
+          "revisionNo",
+          "status",
+          "actualPercent",
+          "actualPercentCalculated",
+          "actualPercentOverride",
+          "overrideReason",
+          "isOverridden",
+          "plannedPercent",
+          "baselineId",
+          "narrative",
+          "projectIntakeId",
+          "submittedByUserId",
+          "submittedAt",
+          "reviewedByUserId",
+          "reviewedAt",
+          "returnReason",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reportingCycleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProgressSubmissionStatus"
+          },
+          "actualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "actualPercentCalculated": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "actualPercentOverride": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "overrideReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "isOverridden": {
+            "type": "boolean"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "baselineId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "projectIntakeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "submittedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reviewedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reviewedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "returnReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "One revision of a period's progress, with actual and planned side by side (ADR-009). decimal ProgressSubmissionDetail.ActualPercent is\nthe reported figure: the override when bool ProgressSubmissionDetail.IsOverridden, else the calculated one, which is always kept.\nGuid? ProgressSubmissionDetail.ProjectIntakeId marks the ADR-014 opening position."
+      },
+      "ProgressSubmissionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgressSubmissionDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "One page of a project's progress revisions, newest first (R-29)."
+      },
+      "ProgressSubmissionRequest": {
+        "required": [
+          "narrative",
+          "override"
+        ],
+        "type": "object",
+        "properties": {
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "override": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProgressOverrideRequest"
+              }
+            ]
+          }
+        },
+        "description": "What a person writes on a DRAFT, as a whole (R-5): the narrative and the override. There is no actual or planned\npercentage: both are derived (ADR-009), and an unknown property is ignored."
+      },
+      "ProgressSubmissionStartRequest": {
+        "required": [
+          "projectId"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "Starts the progress update of the project's next period. The figures are derived; nothing else is sent."
+      },
+      "ProgressSubmissionStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "PUBLISHED"
+        ],
+        "description": "The review and publication workflow of one revision of a period's progress (TASK-044). RETURNED and PUBLISHED are\nfinal: a returned revision is followed by revision + 1."
+      },
       "ProjectDetail": {
         "required": [
           "id",
@@ -10713,6 +11535,100 @@
           }
         },
         "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart."
+      },
+      "ProjectHealthStatusDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "overallHealth",
+          "actualPercent",
+          "plannedPercent",
+          "computedAt",
+          "healthRuleConfigurationVersionId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "overallHealth": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "actualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "healthRuleConfigurationVersionId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "The CURRENT/LIVE Overall Project Health, computed from the derived figures, with when it was computed."
+      },
+      "ProjectHealthStatusPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectHealthStatusDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's live health: one item once it has been computed, none before (R-29)."
       },
       "ProjectLifecycleState": {
         "enum": [
@@ -10986,6 +11902,140 @@
         },
         "description": "A row of SCR-025 Project Register."
       },
+      "PublishedProgressSnapshotDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "reportingCycleId",
+          "progressSubmissionId",
+          "publishedAt",
+          "publishedByUserId",
+          "actualPercent",
+          "isOverridden",
+          "plannedPercent",
+          "overallHealth",
+          "scheduleHealth",
+          "financialStatus",
+          "healthRuleConfigurationVersionId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reportingCycleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "progressSubmissionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publishedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isOverridden": {
+            "type": "boolean"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "overallHealth": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "scheduleHealth": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HealthStatus"
+              }
+            ]
+          },
+          "financialStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/HealthStatus"
+              }
+            ]
+          },
+          "healthRuleConfigurationVersionId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A PUBLISHED/OFFICIAL period record, as it was published; nothing changes it afterwards."
+      },
+      "PublishedProgressSnapshotPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishedProgressSnapshotDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "One page of a project's published snapshots, latest first (R-29)."
+      },
       "ReportFieldEntry": {
         "required": [
           "sourceEntityCode",
@@ -11073,6 +12123,91 @@
               "string"
             ],
             "format": "uuid"
+          }
+        }
+      },
+      "ReportingCyclePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportingCycleSummary"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "One page of a project's reporting periods, earliest first (R-29)."
+      },
+      "ReportingCycleStatus": {
+        "enum": [
+          "OPEN",
+          "CLOSED"
+        ],
+        "description": "A reporting period is OPEN until its progress is published, then CLOSED for good (TASK-044)."
+      },
+      "ReportingCycleSummary": {
+        "required": [
+          "id",
+          "projectId",
+          "periodStart",
+          "periodEnd",
+          "dueDate",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReportingCycleStatus"
           }
         }
       },
@@ -11969,6 +13104,9 @@
     },
     {
       "name": "Notifications"
+    },
+    {
+      "name": "Progress"
     },
     {
       "name": "Project"

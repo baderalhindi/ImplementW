@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PMPlatform.Infrastructure.Persistence;
@@ -12,9 +13,11 @@ using PMPlatform.Infrastructure.Persistence;
 namespace PMPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PMPlatformDbContext))]
-    partial class PMPlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002161054_TASK-044_CreateProgressTables")]
+    partial class TASK044_CreateProgressTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4124,15 +4127,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_progress_submission");
 
-                    b.HasIndex("ProjectIntakeId")
-                        .HasDatabaseName("ix_progress_submission_project_intake_id");
-
-                    b.HasIndex("ReviewedByUserId")
-                        .HasDatabaseName("ix_progress_submission_reviewed_by_user_id");
-
-                    b.HasIndex("SubmittedByUserId")
-                        .HasDatabaseName("ix_progress_submission_submitted_by_user_id");
-
                     b.HasIndex("ProjectId", "SubmittedAt")
                         .HasDatabaseName("ix_progress_submission_project_id_submitted_at");
 
@@ -4226,9 +4220,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_project_health_status");
 
-                    b.HasIndex("HealthRuleConfigurationVersionId")
-                        .HasDatabaseName("ix_project_health_status_health_rule_configuration_version_id");
-
                     b.HasIndex("ProjectId")
                         .IsUnique()
                         .HasDatabaseName("ix_project_health_status_project_id");
@@ -4321,15 +4312,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_published_progress_snapshot");
 
-                    b.HasIndex("HealthRuleConfigurationVersionId")
-                        .HasDatabaseName("ix_published_progress_snapshot_health_rule_configuration_versi");
-
                     b.HasIndex("ProgressSubmissionId")
                         .IsUnique()
                         .HasDatabaseName("ix_published_progress_snapshot_progress_submission_id");
-
-                    b.HasIndex("PublishedByUserId")
-                        .HasDatabaseName("ix_published_progress_snapshot_published_by_user_id");
 
                     b.HasIndex("ReportingCycleId")
                         .IsUnique()
@@ -5569,65 +5554,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressSubmission", b =>
                 {
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_progress_submission_project_project_id");
-
-                    b.HasOne("PMPlatform.Domain.Project.ProjectIntake", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectIntakeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_progress_submission_project_intake_project_intake_id");
-
                     b.HasOne("PMPlatform.Domain.Progress.ReportingCycle", null)
                         .WithMany()
                         .HasForeignKey("ReportingCycleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_progress_submission_reporting_cycle_reporting_cycle_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
-                        .WithMany()
-                        .HasForeignKey("ReviewedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_progress_submission_user_reviewed_by_user_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
-                        .WithMany()
-                        .HasForeignKey("SubmittedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_progress_submission_user_submitted_by_user_id");
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.Progress.ProjectHealthStatus", b =>
-                {
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
-                        .WithMany()
-                        .HasForeignKey("HealthRuleConfigurationVersionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_project_health_status_configuration_version_health_rule_con");
-
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_project_health_status_project_project_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Progress.PublishedProgressSnapshot", b =>
                 {
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
-                        .WithMany()
-                        .HasForeignKey("HealthRuleConfigurationVersionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_published_progress_snapshot_configuration_version_health_ru");
-
                     b.HasOne("PMPlatform.Domain.Progress.ProgressSubmission", null)
                         .WithMany()
                         .HasForeignKey("ProgressSubmissionId")
@@ -5635,36 +5571,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_published_progress_snapshot_progress_submission_progress_su");
 
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_published_progress_snapshot_project_project_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
-                        .WithMany()
-                        .HasForeignKey("PublishedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_published_progress_snapshot_user_published_by_user_id");
-
                     b.HasOne("PMPlatform.Domain.Progress.ReportingCycle", null)
                         .WithMany()
                         .HasForeignKey("ReportingCycleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_published_progress_snapshot_reporting_cycle_reporting_cycle");
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.Progress.ReportingCycle", b =>
-                {
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_reporting_cycle_project_project_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>

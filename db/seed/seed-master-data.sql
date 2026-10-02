@@ -124,7 +124,11 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- for Appendix A (document-management.md F-1). PROJECT_VIEW and PROJECT_REGISTER (TASK-041) go to R04 and R08 at ENTITY:
 -- ADR-013's amendment to TASK-041 lets external entity users create a project draft for their own entity, and entities
 -- see their own projects. PROJECT_REVIEW and PROJECT_ACTIVATE are AHDA's gates and wait for Appendix A
--- (project-registration.md F-1). The four WF-15 permissions (TASK-039) — notification templates and the
+-- (project-registration.md F-1). PROGRESS_VIEW and PROGRESS_SUBMIT (TASK-044) go to R04 at OWN, and PROGRESS_VIEW to R08 at
+-- ENTITY: ADR-013's amendment to TASK-044 lets an assigned entity Project Manager submit progress on their own project, and
+-- lets entities see progress and health on their own projects; a project's owner is its Project Manager, so OWN reaches
+-- exactly the projects the holder manages. PROGRESS_REVIEW is AHDA's gate and waits for Appendix A (progress-update.md
+-- F-2). The four WF-15 permissions (TASK-039) — notification templates and the
 -- delivery operations view with dead-letter redrive — go to R01 at ALL by delivery-team decision, as FG-04 did
 -- (notification-runtime.md F-1): templates and deliveries are platform-wide, with no record to scope. A person's own
 -- inbox and preferences need no permission. Blueprint Appendix A, the rest of the matrix, is not in
@@ -160,6 +164,9 @@ FROM (VALUES
     ('PROJECT_REGISTER',            'تسجيل المشاريع',      'Register projects',           'PROJECT',         false),
     ('PROJECT_REVIEW',              'مراجعة تسجيل المشاريع', 'Review project registrations', 'PROJECT',       false),
     ('PROJECT_ACTIVATE',            'تفعيل المشاريع',      'Activate projects',           'PROJECT',         false),
+    ('PROGRESS_VIEW',               'عرض تقدم المشاريع',    'View project progress',       'PROGRESS',        false),
+    ('PROGRESS_SUBMIT',             'رفع تقدم المشاريع',    'Submit project progress',     'PROGRESS',        false),
+    ('PROGRESS_REVIEW',             'مراجعة تقدم المشاريع ونشره', 'Review and publish project progress', 'PROGRESS', false),
     ('NOTIFICATION_TEMPLATE_VIEW',  'عرض قوالب الإشعارات',  'View notification templates', 'NOTIFICATIONS',   false),
     ('NOTIFICATION_TEMPLATE_MANAGE', 'إدارة قوالب الإشعارات', 'Manage notification templates', 'NOTIFICATIONS', true),
     ('NOTIFICATION_DELIVERY_VIEW',  'عرض عمليات الإشعارات', 'View notification deliveries', 'NOTIFICATIONS',  false),
@@ -200,6 +207,9 @@ FROM (VALUES
     ('R04', 'PROJECT_REGISTER',            'ENTITY'),
     ('R08', 'PROJECT_VIEW',                'ENTITY'),
     ('R08', 'PROJECT_REGISTER',            'ENTITY'),
+    ('R04', 'PROGRESS_VIEW',               'OWN'),
+    ('R04', 'PROGRESS_SUBMIT',             'OWN'),
+    ('R08', 'PROGRESS_VIEW',               'ENTITY'),
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R03', 'REPORT_COMPOSE',              'OWN'),
     ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),

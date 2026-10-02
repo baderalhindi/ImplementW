@@ -103,6 +103,15 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Project
 
+      # TASK-044: WF-02 progress and Overall Project Health — the published-snapshot immutability test, health computed
+      # and read as published, the review gate, and the database guards. Same database and directory as above.
+      - name: Progress integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Progress
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest
