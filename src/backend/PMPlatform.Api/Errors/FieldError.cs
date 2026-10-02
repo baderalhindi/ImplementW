@@ -9,4 +9,7 @@ internal sealed record FieldError(string Field, string Code)
     public const string EnumValue = "ENUM_VALUE";
     public const string OutOfRange = "OUT_OF_RANGE";
     public const string NotAllowed = "NOT_ALLOWED";
+
+    /// <summary>A date that must not precede another does (api-conventions R-23).</summary>
+    public const string DateBeforeStart = "DATE_BEFORE_START";
 }

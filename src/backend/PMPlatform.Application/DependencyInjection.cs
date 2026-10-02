@@ -17,6 +17,9 @@ using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Application.Features.Notifications;
 using PMPlatform.Application.Features.Notifications.Contracts;
+using PMPlatform.Application.Features.Project;
+using PMPlatform.Application.Features.Project.Contracts;
+using PMPlatform.Application.Features.Project.EventHandlers;
 
 namespace PMPlatform.Application;
 
@@ -55,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<IDepartmentAdministrationService, DepartmentAdministrationService>();
         services.AddScoped<IExternalEntityAdministrationService, ExternalEntityAdministrationService>();
         services.AddScoped<IRoleDirectory, RoleDirectory>();
+        services.AddScoped<IOrganizationDirectory, OrganizationDirectory>();
 
         // TASK-034: FG-04 master data and the versioned configuration engine, and the resolution every module uses
         // (E-U2). The repositories are Infrastructure's.
@@ -96,6 +100,14 @@ public static class DependencyInjection
         services.AddScoped<INotificationInbox, NotificationInbox>();
         services.AddScoped<INotificationTemplateAdministration, NotificationTemplateAdministration>();
         services.AddScoped<INotificationOperations, NotificationOperations>();
+
+        // TASK-041: WF-01 registration and activation. The repository is Infrastructure's; review outcomes arrive through
+        // the Project approval outcome handler (WF-11 edge 28).
+        services.AddScoped<ProjectAccess>();
+        services.AddScoped<ProjectReferences>();
+        services.AddScoped<ProjectManagerEligibility>();
+        services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IApprovalOutcomeHandler, ProjectApprovalOutcomeHandler>();
 
         return services;
     }

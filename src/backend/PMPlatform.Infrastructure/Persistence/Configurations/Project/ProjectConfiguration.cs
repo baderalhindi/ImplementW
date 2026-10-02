@@ -11,6 +11,7 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
     public void Configure(EntityTypeBuilder<ProjectEntity> builder)
     {
         builder.ToTable("project", "project");
+        builder.HasRowVersion();
         builder.Property(e => e.FormalProjectId).HasMaxLength(50);
         builder.HasIndex(e => e.FormalProjectId).IsUnique();
         builder.HasNarrative(e => e.Title, "title");

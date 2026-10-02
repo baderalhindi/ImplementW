@@ -114,6 +114,37 @@ public sealed class ShippedGrantTests
             PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("DOCUMENT_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
     }
 
+    /// <summary>
+    /// ADR-013's amendment to TASK-041, verbatim: external entity users may create a project draft for their own entity, and
+    /// entities see their own projects. R04 and R08 view and register at ENTITY; AHDA's review and activation gates ship to
+    /// no one until Appendix A (project-registration.md F-1).
+    /// </summary>
+    [Fact]
+    public void ProjectViewAndRegisterGoToEntityUsersOnly()
+    {
+        Assert.Equal(
+            [
+                ("R04", PermissionCatalogue.ProjectView, DataScope.Entity), ("R04", PermissionCatalogue.ProjectRegister, DataScope.Entity),
+                ("R08", PermissionCatalogue.ProjectView, DataScope.Entity), ("R08", PermissionCatalogue.ProjectRegister, DataScope.Entity),
+            ],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("PROJECT_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+    }
+
+    /// <summary>
+    /// ADR-013: an External Entity User (R08, an entity-wide assignment) registers a new project of their own entity, and no
+    /// other entity's, nor one with no entity at all.
+    /// </summary>
+    [Fact]
+    public async Task AnEntityUserRegistersANewProjectOfTheirOwnEntityOnly()
+    {
+        AuthorizationScenario scenario = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R08", PermissionCatalogue.ProjectRegister, DataScope.Entity, entityId: EntityId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await scenario.AuthorizeAsync(PermissionCatalogue.ProjectRegister, new AuthorizationSubject { DepartmentId = DepartmentId, ExternalEntityId = EntityId }));
+        Assert.False((await scenario.AuthorizeAsync(PermissionCatalogue.ProjectRegister, new AuthorizationSubject { DepartmentId = DepartmentId, ExternalEntityId = OtherEntityId })).IsAllowed);
+        Assert.False((await scenario.AuthorizeAsync(PermissionCatalogue.ProjectRegister, new AuthorizationSubject { DepartmentId = DepartmentId })).IsAllowed);
+    }
+
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>
     [Fact]
     public void NotificationTemplatesAndDeliveryOperationsGoToR01Only()

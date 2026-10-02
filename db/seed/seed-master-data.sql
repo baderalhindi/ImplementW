@@ -121,7 +121,10 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- DOCUMENT_UPLOAD go to R04 at ENTITY: ADR-013's amendment to TASK-037 lets an entity Project Manager upload, view and see
 -- version history on their own project within classification rules; ENTITY reaches only a holder with an entity, and the
 -- external holder's per-project assignment keeps it to that project. DOCUMENT_MANAGE and every other document grant wait
--- for Appendix A (document-management.md F-1). The four WF-15 permissions (TASK-039) — notification templates and the
+-- for Appendix A (document-management.md F-1). PROJECT_VIEW and PROJECT_REGISTER (TASK-041) go to R04 and R08 at ENTITY:
+-- ADR-013's amendment to TASK-041 lets external entity users create a project draft for their own entity, and entities
+-- see their own projects. PROJECT_REVIEW and PROJECT_ACTIVATE are AHDA's gates and wait for Appendix A
+-- (project-registration.md F-1). The four WF-15 permissions (TASK-039) — notification templates and the
 -- delivery operations view with dead-letter redrive — go to R01 at ALL by delivery-team decision, as FG-04 did
 -- (notification-runtime.md F-1): templates and deliveries are platform-wide, with no record to scope. A person's own
 -- inbox and preferences need no permission. Blueprint Appendix A, the rest of the matrix, is not in
@@ -153,6 +156,10 @@ FROM (VALUES
     ('DOCUMENT_VIEW',               'عرض الوثائق',         'View documents',              'DOCUMENT_MANAGEMENT', false),
     ('DOCUMENT_UPLOAD',             'رفع الوثائق',         'Upload documents',            'DOCUMENT_MANAGEMENT', false),
     ('DOCUMENT_MANAGE',             'إدارة الوثائق',        'Manage documents',            'DOCUMENT_MANAGEMENT', false),
+    ('PROJECT_VIEW',                'عرض المشاريع',        'View projects',               'PROJECT',         false),
+    ('PROJECT_REGISTER',            'تسجيل المشاريع',      'Register projects',           'PROJECT',         false),
+    ('PROJECT_REVIEW',              'مراجعة تسجيل المشاريع', 'Review project registrations', 'PROJECT',       false),
+    ('PROJECT_ACTIVATE',            'تفعيل المشاريع',      'Activate projects',           'PROJECT',         false),
     ('NOTIFICATION_TEMPLATE_VIEW',  'عرض قوالب الإشعارات',  'View notification templates', 'NOTIFICATIONS',   false),
     ('NOTIFICATION_TEMPLATE_MANAGE', 'إدارة قوالب الإشعارات', 'Manage notification templates', 'NOTIFICATIONS', true),
     ('NOTIFICATION_DELIVERY_VIEW',  'عرض عمليات الإشعارات', 'View notification deliveries', 'NOTIFICATIONS',  false),
@@ -189,6 +196,10 @@ FROM (VALUES
     ('R02', 'REPORT_COMPOSE',              'OWN'),
     ('R04', 'DOCUMENT_VIEW',               'ENTITY'),
     ('R04', 'DOCUMENT_UPLOAD',             'ENTITY'),
+    ('R04', 'PROJECT_VIEW',                'ENTITY'),
+    ('R04', 'PROJECT_REGISTER',            'ENTITY'),
+    ('R08', 'PROJECT_VIEW',                'ENTITY'),
+    ('R08', 'PROJECT_REGISTER',            'ENTITY'),
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R03', 'REPORT_COMPOSE',              'OWN'),
     ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),

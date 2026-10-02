@@ -9,6 +9,7 @@ using PMPlatform.Api.Auditing;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Correlation;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Models;
 using PMPlatform.Application;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
@@ -40,7 +41,12 @@ builder.Configuration.AddSecretStore(required: !builder.Environment.IsDevelopmen
 
 builder.Services.AddControllers()
     // api-conventions R-19: enumerations are UPPER_SNAKE_CASE strings.
-    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseUpper)))
+    // R-16: a SAR amount is a decimal string with two fraction digits.
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseUpper));
+        options.JsonSerializerOptions.Converters.Add(new MoneySarJsonConverter());
+    })
     // R-23: a body that does not bind (malformed JSON, no body) is a 400 in the platform envelope, and says only where.
     .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = context =>
         ApiProblem.Result(context.HttpContext, StatusCodes.Status400BadRequest, ErrorCodes.ValidationFailed, "Validation failed.",

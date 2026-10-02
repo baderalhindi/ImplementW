@@ -227,15 +227,8 @@ internal sealed class DocumentRepository(PMPlatformDbContext context) : IDocumen
     /// project's anchors. A document has no assignees, so an ASSIGNED clause reaches none. Every document is classified
     /// (the column is NOT NULL), so each clause requires a cleared classification.
     /// </summary>
-    private static Expression<Func<AnchoredDocument, bool>> Reached(RecordScope scope)
-    {
-        ParameterExpression row = Expression.Parameter(typeof(AnchoredDocument), "r");
-        Expression body = scope.Clauses
-            .Where(c => c.AssignedUserId is null)
-            .Select(c => (Expression)Expression.Invoke(ClauseOf(c), row))
-            .Aggregate((Expression)Expression.Constant(false), Expression.OrElse);
-        return Expression.Lambda<Func<AnchoredDocument, bool>>(new InvokeInliner().Visit(body), row);
-    }
+    private static Expression<Func<AnchoredDocument, bool>> Reached(RecordScope scope) =>
+        PredicateComposition.AnyOf(scope.Clauses.Where(c => c.AssignedUserId is null).Select(ClauseOf));
 
     private static Expression<Func<AnchoredDocument, bool>> ClauseOf(RecordScopeClause clause)
     {
@@ -259,19 +252,5 @@ internal sealed class DocumentRepository(PMPlatformDbContext context) : IDocumen
         public Guid? DepartmentId { get; init; }
 
         public Guid? ExternalEntityId { get; init; }
-    }
-
-    /// <summary>Replaces each <c>Invoke(lambda, arg)</c> with the lambda's body over the argument, so EF Core can translate it.</summary>
-    private sealed class InvokeInliner : ExpressionVisitor
-    {
-        protected override Expression VisitInvocation(InvocationExpression node) =>
-            node.Expression is LambdaExpression lambda
-                ? Visit(new ParameterReplacer(lambda.Parameters[0], node.Arguments[0]).Visit(lambda.Body))
-                : base.VisitInvocation(node);
-    }
-
-    private sealed class ParameterReplacer(ParameterExpression parameter, Expression replacement) : ExpressionVisitor
-    {
-        protected override Expression VisitParameter(ParameterExpression node) => node == parameter ? replacement : base.VisitParameter(node);
     }
 }

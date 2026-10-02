@@ -164,3 +164,4 @@ Each mutation was applied, the solution rebuilt, the approval tests run, and the
 | Date | Change |
 | --- | --- |
 | 2026-09-28 | Created (TASK-035) |
+| 2026-10-02 | TASK-041 (`project-registration.md`): Project is the first source module (F-4). Its review starts a run on routing key `PROJECT_REGISTRATION` when AHDA starts the review, not when the entity submits (that record's D-3); its `IApprovalOutcomeHandler` maps APPROVED to APPROVED_PLANNED and RETURNED, REJECTED and WITHDRAWN to RETURNED. |

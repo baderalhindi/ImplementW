@@ -12,4 +12,7 @@ public static class MasterDataCatalogueCodes
     public const string DocumentType = "DOCUMENT_TYPE";
     public const string ContributionType = "CONTRIBUTION_TYPE";
     public const string KpiUnit = "KPI_UNIT";
+    public const string ProjectClassification = "PROJECT_CLASSIFICATION";
+    public const string Region = "REGION";
+    public const string City = "CITY";
 }
