@@ -1092,6 +1092,11 @@ textarea.field__input {
   margin: 0;
 }
 
+/* A period's two dates stay on one line; the table scrolls sideways on a narrow screen instead. */
+.progress__period {
+  white-space: nowrap;
+}
+
 .figure {
   font-variant-numeric: tabular-nums;
   font-weight: 600;

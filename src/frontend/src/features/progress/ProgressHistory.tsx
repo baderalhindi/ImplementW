@@ -152,7 +152,9 @@ function HistoryRow({
   return (
     <tr>
       <td>
-        <span dir="ltr">{period}</span>
+        <span className="progress__period" dir="ltr">
+          {period}
+        </span>
         {openingPosition && (
           <span className="details__aside">{t('progress.intake.openingPosition')}</span>
         )}
