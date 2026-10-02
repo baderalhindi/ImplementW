@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi;
 using PMPlatform.Domain.Common;
 
 namespace PMPlatform.Api.Models;
@@ -20,8 +22,38 @@ internal static partial class MoneySar
             ? new Money(amount)
             : null;
 
-    [GeneratedRegex(@"^-?[0-9]{1,16}\.[0-9]{2}$", RegexOptions.CultureInvariant)]
+    /// <summary>The R-16 shape, as the OpenAPI document states it.</summary>
+    public const string Pattern = @"^-?[0-9]{1,16}\.[0-9]{2}$";
+
+    [GeneratedRegex(Pattern, RegexOptions.CultureInvariant)]
     private static partial Regex Shape();
+}
+
+/// <summary>
+/// R-16 in the OpenAPI document (TASK-043). <see cref="MoneySarJsonConverter"/> is opaque to the generator, which leaves a
+/// <see cref="Money"/> undescribed; a request carries an amount as a <c>…Sar</c> string the API reads with
+/// <see cref="MoneySar.Parse"/>. Both are stated as the decimal string they are on the wire.
+/// </summary>
+internal sealed class MoneySarSchemaTransformer : IOpenApiSchemaTransformer
+{
+    public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(schema);
+        ArgumentNullException.ThrowIfNull(context);
+        Type type = Nullable.GetUnderlyingType(context.JsonTypeInfo.Type) ?? context.JsonTypeInfo.Type;
+        if (type == typeof(Money))
+        {
+            // Nullability is the generator's: it wraps a Money? reference in oneOf with null.
+            schema.Type = JsonSchemaType.String;
+            schema.Pattern = MoneySar.Pattern;
+        }
+        else if (type == typeof(string) && context.JsonPropertyInfo?.Name.EndsWith("Sar", StringComparison.Ordinal) == true)
+        {
+            schema.Pattern = MoneySar.Pattern;
+        }
+
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary><see cref="MoneySar"/> for every <see cref="Money"/> the API writes or reads.</summary>
