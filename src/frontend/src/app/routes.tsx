@@ -7,6 +7,7 @@ import { RequireRole } from '@/features/identity-access/session/RequireRole.tsx'
 import { RequireSession } from '@/features/identity-access/session/RequireSession.tsx';
 import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
 import { SYSTEM_ADMINISTRATOR_ROLE } from '@/features/identity-access/session/useSession.ts';
+import { notificationRoutes } from '@/features/notifications/routes.tsx';
 
 import { AppLayout } from './AppLayout.tsx';
 import { HomePage, NotFoundPage } from './pages.tsx';
@@ -46,6 +47,15 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: documentRoutes,
+      },
+      {
+        path: 'notifications',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: notificationRoutes,
       },
       { path: '*', element: <NotFoundPage /> },
     ],
