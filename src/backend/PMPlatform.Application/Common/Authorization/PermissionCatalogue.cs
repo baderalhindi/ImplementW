@@ -70,6 +70,21 @@ public sealed class PermissionCatalogue
     /// <summary>WF-12: edit a document's metadata, archive it, queue a failed scan again (MOD-051, MOD-053) (TASK-037).</summary>
     public const string DocumentManage = "DOCUMENT_MANAGE";
 
+    /// <summary>WF-01: SCR-025 Project Register and SCR-026 Project Detail, on the projects the grant's scope covers (TASK-041).</summary>
+    public const string ProjectView = "PROJECT_VIEW";
+
+    /// <summary>
+    /// WF-01 registration (TASK-041): create a project draft, edit a DRAFT or RETURNED project, submit it, withdraw a
+    /// submission, delete one's own DRAFT. ADR-013: an entity user may register a project of their own entity.
+    /// </summary>
+    public const string ProjectRegister = "PROJECT_REGISTER";
+
+    /// <summary>WF-01: start AHDA's review of a SUBMITTED project, which starts its WF-11 run (TASK-041). Internal users only (ADR-013).</summary>
+    public const string ProjectReview = "PROJECT_REVIEW";
+
+    /// <summary>WF-01: the Planned → Active command (TASK-041). Internal users only (ADR-013).</summary>
+    public const string ProjectActivate = "PROJECT_ACTIVATE";
+
     /// <summary>WF-15: the bilingual notification templates and their versions (TASK-039).</summary>
     public const string NotificationTemplateView = "NOTIFICATION_TEMPLATE_VIEW";
 
@@ -107,6 +122,10 @@ public sealed class PermissionCatalogue
             new(DocumentView, "DOCUMENT_MANAGEMENT", AccessMode.Read),
             new(DocumentUpload, "DOCUMENT_MANAGEMENT", AccessMode.Write),
             new(DocumentManage, "DOCUMENT_MANAGEMENT", AccessMode.Write),
+            new(ProjectView, "PROJECT", AccessMode.Read),
+            new(ProjectRegister, "PROJECT", AccessMode.Write),
+            new(ProjectReview, "PROJECT", AccessMode.Write),
+            new(ProjectActivate, "PROJECT", AccessMode.Write),
             new(NotificationTemplateView, "NOTIFICATIONS", AccessMode.Read),
             new(NotificationTemplateManage, "NOTIFICATIONS", AccessMode.Write),
             new(NotificationDeliveryView, "NOTIFICATIONS", AccessMode.Read),
@@ -125,7 +144,10 @@ public sealed class PermissionCatalogue
     /// entity Project Manager upload, view and see the version history of documents on their own project within
     /// classification rules: R04 at ENTITY. The scope reaches only a holder with an entity, so an internal R04 gains
     /// nothing from it, and an external holder's per-project assignment keeps it to that project (ADR-013). The other
-    /// document grants wait for Appendix A (document-management.md F-1). WF-15's notification templates and delivery operations
+    /// document grants wait for Appendix A (document-management.md F-1). ADR-013's amendment to TASK-041 lets external entity
+    /// users create a project draft for their own entity, and lets entities see their own projects: R08 (External Entity
+    /// User) and R04 (the entity Project Manager) view and register at ENTITY, which reaches only a holder with an entity.
+    /// AHDA's review and activation gates are internal-only and wait for Appendix A (project-registration.md F-1). WF-15's notification templates and delivery operations
     /// go to R01 at ALL, as a delivery-team decision like FG-04's (notification-runtime.md F-1): they are platform-wide.
     /// </summary>
     public static IReadOnlyList<ShippedGrant> ShippedDefaultGrants { get; } =
@@ -148,6 +170,10 @@ public sealed class PermissionCatalogue
         new("R01", NotificationDeliveryManage, DataScope.All),
         new("R04", DocumentView, DataScope.Entity),
         new("R04", DocumentUpload, DataScope.Entity),
+        new("R04", ProjectView, DataScope.Entity),
+        new("R04", ProjectRegister, DataScope.Entity),
+        new("R08", ProjectView, DataScope.Entity),
+        new("R08", ProjectRegister, DataScope.Entity),
         new("R02", LayoutPersonalize, DataScope.Own),
         new("R02", ReportCompose, DataScope.Own),
         new("R03", LayoutPersonalize, DataScope.Own),
