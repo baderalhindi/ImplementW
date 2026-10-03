@@ -1,9 +1,9 @@
-namespace PMPlatform.Application.Features.Schedule;
+namespace PMPlatform.Application.Common.Graphs;
 
 /// <summary>
-/// The dependency network of a working schedule as a directed graph of activity ids (VAL-SCH-008): acyclic by rule, so
-/// a dependency that would close a cycle is refused before it is saved, and the forward pass can order activities so every
-/// predecessor comes before its successors.
+/// A dependency network as a directed graph of record ids, acyclic by rule: a dependency that would close a cycle is refused
+/// before it is saved, and the nodes can be ordered so every predecessor comes before its successors. Domain-neutral (M-10):
+/// WF-03's schedule activities (VAL-SCH-008) and WF-04's tasks (TASK-048) use it.
 /// </summary>
 internal static class DependencyGraph
 {

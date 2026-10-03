@@ -4778,6 +4778,304 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.ProjectTask.ActivityExecutionProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("ActualPercentComplete")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("actual_percent_complete");
+
+                    b.Property<DateTimeOffset>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("ScheduleActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("schedule_activity_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_activity_execution_progress");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("ix_activity_execution_progress_project_id");
+
+                    b.HasIndex("ScheduleActivityId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_activity_execution_progress_schedule_activity_id");
+
+                    b.ToTable("activity_execution_progress", "project_task", t =>
+                        {
+                            t.HasCheckConstraint("ck_activity_execution_progress_percent", "actual_percent_complete BETWEEN 0 AND 100");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ProjectTask.ProjectTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("ActualFinishDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_finish_date");
+
+                    b.Property<decimal?>("ActualPercentComplete")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("actual_percent_complete");
+
+                    b.Property<DateOnly?>("ActualStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_start_date");
+
+                    b.Property<Guid?>("AssigneeUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assignee_user_id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid?>("ParentTaskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_task_id");
+
+                    b.Property<int>("PlannedDurationDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("planned_duration_days");
+
+                    b.Property<DateOnly>("PlannedFinishDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_finish_date");
+
+                    b.Property<DateOnly>("PlannedStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_start_date");
+
+                    b.Property<Guid?>("PriorityItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("priority_item_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<int>("ReopenedCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("reopened_count");
+
+                    b.Property<Guid?>("ScheduleActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("schedule_activity_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "BlockedReason", "PMPlatform.Domain.ProjectTask.ProjectTask.BlockedReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("blocked_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("blocked_reason");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.ProjectTask.ProjectTask.Description#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("description_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("description");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.ProjectTask.ProjectTask.Title#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("title_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("title");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_task");
+
+                    b.HasIndex("ParentTaskId")
+                        .HasDatabaseName("ix_project_task_parent_task_id");
+
+                    b.HasIndex("PriorityItemId")
+                        .HasDatabaseName("ix_project_task_priority_item_id");
+
+                    b.HasIndex("ScheduleActivityId")
+                        .HasDatabaseName("ix_project_task_schedule_activity_id");
+
+                    b.HasIndex("AssigneeUserId", "Status", "PlannedFinishDate")
+                        .HasDatabaseName("ix_project_task_assignee_user_id_status_planned_finish_date");
+
+                    b.HasIndex("ProjectId", "Status", "PlannedFinishDate")
+                        .HasDatabaseName("ix_project_task_project_id_status_planned_finish_date");
+
+                    b.ToTable("project_task", "project_task", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_task_actual", "actual_finish_date IS NULL OR (actual_start_date IS NOT NULL AND actual_finish_date >= actual_start_date)");
+
+                            t.HasCheckConstraint("ck_project_task_blocked", "(status = 'BLOCKED') = (blocked_reason IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_project_task_blocked_reason_lang", "\"blocked_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_project_task_blocked_reason_pair", "(\"blocked_reason\" IS NULL) = (\"blocked_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_task_completed", "(status = 'COMPLETED') = (completed_at IS NOT NULL) AND (status = 'COMPLETED') = (actual_finish_date IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_project_task_description_lang", "\"description_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_project_task_description_pair", "(\"description\" IS NULL) = (\"description_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_task_hierarchy", "parent_task_id IS NULL OR parent_task_id <> id");
+
+                            t.HasCheckConstraint("ck_project_task_percent", "actual_percent_complete IS NULL OR actual_percent_complete BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("ck_project_task_planned", "planned_finish_date >= planned_start_date AND planned_duration_days = planned_finish_date - planned_start_date + 1");
+
+                            t.HasCheckConstraint("ck_project_task_reopened_count", "reopened_count >= 0");
+
+                            t.HasCheckConstraint("ck_project_task_started", "(status = 'NOT_STARTED' AND actual_start_date IS NULL) OR (status IN ('IN_PROGRESS', 'COMPLETED') AND actual_start_date IS NOT NULL) OR status IN ('BLOCKED', 'CANCELLED')");
+
+                            t.HasCheckConstraint("ck_project_task_status", "\"status\" IN ('NOT_STARTED', 'IN_PROGRESS', 'BLOCKED', 'COMPLETED', 'CANCELLED')");
+
+                            t.HasCheckConstraint("ck_project_task_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ProjectTask.TaskDependency", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DependencyType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("dependency_type");
+
+                    b.Property<Guid>("PredecessorTaskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("predecessor_task_id");
+
+                    b.Property<Guid>("SuccessorTaskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("successor_task_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_task_dependency");
+
+                    b.HasIndex("SuccessorTaskId")
+                        .HasDatabaseName("ix_task_dependency_successor_task_id");
+
+                    b.HasIndex("PredecessorTaskId", "SuccessorTaskId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_task_dependency_predecessor_task_id_successor_task_id");
+
+                    b.ToTable("task_dependency", "project_task", t =>
+                        {
+                            t.HasCheckConstraint("ck_task_dependency_dependency_type", "\"dependency_type\" IN ('FS', 'SS', 'FF', 'SF')");
+
+                            t.HasCheckConstraint("ck_task_dependency_ends", "predecessor_task_id <> successor_task_id");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineActivity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6355,6 +6653,74 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_project_intake_milestone_project_intake_project_intake_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ProjectTask.ActivityExecutionProgress", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_activity_execution_progress_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("ScheduleActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_activity_execution_progress_schedule_activity_schedule_acti");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ProjectTask.ProjectTask", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("AssigneeUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_task_user_assignee_user_id");
+
+                    b.HasOne("PMPlatform.Domain.ProjectTask.ProjectTask", null)
+                        .WithMany()
+                        .HasForeignKey("ParentTaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_task_project_task_parent_task_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("PriorityItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_task_master_data_item_priority_item_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_task_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("ScheduleActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_task_schedule_activity_schedule_activity_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ProjectTask.TaskDependency", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.ProjectTask.ProjectTask", null)
+                        .WithMany()
+                        .HasForeignKey("PredecessorTaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_task_dependency_project_task_predecessor_task_id");
+
+                    b.HasOne("PMPlatform.Domain.ProjectTask.ProjectTask", null)
+                        .WithMany()
+                        .HasForeignKey("SuccessorTaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_task_dependency_project_task_successor_task_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineActivity", b =>

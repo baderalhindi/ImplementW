@@ -72,6 +72,7 @@ internal static class ModuleRegistry
         ("IntegrationMonitoring", "ExternalParticipation"), // 33 event consumer
         ("IntegrationMonitoring", "AuditActivity"),  // 34 query
         ("Milestone", "Project"),                    // 35 event consumer
+        ("ProjectTask", "Project"),                  // 36 query
     };
 
     public static bool Allows(string referrer, string referenced) =>

@@ -212,6 +212,53 @@ public sealed class ShippedGrantTests
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ScheduleEdit, Managed(OtherProjectId, EntityId, UserId))).IsAllowed);
     }
 
+    /// <summary>
+    /// TASK-048: the Project Manager plans the tasks, may edit a task's actual percentage (ADR-009) and holds the controlled
+    /// reopen, at OWN — the projects they manage. The task owners' ASSIGNED grants wait for Appendix A (project-task.md F-2).
+    /// </summary>
+    [Fact]
+    public void TasksGoToTheProjectManagerOnly()
+    {
+        Assert.Equal(
+            [
+                ("R04", PermissionCatalogue.TaskView, DataScope.Own), ("R04", PermissionCatalogue.TaskUpdate, DataScope.Own),
+                ("R04", PermissionCatalogue.TaskManage, DataScope.Own), ("R04", PermissionCatalogue.TaskReopen, DataScope.Own),
+            ],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("TASK_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+    }
+
+    /// <summary>ADR-013's amendment to TASK-048: an assigned entity Project Manager acts directly on the tasks of their own project, and of no other.</summary>
+    [Fact]
+    public async Task OnlyTheProjectsOwnManagerActsOnItsTasks()
+    {
+        AuthorizationScenario entityManager = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R04", PermissionCatalogue.TaskUpdate, DataScope.Own, entityId: EntityId, projectId: ProjectId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityManager.AuthorizeAsync(PermissionCatalogue.TaskUpdate, Managed(ProjectId, EntityId, UserId)));
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.TaskUpdate, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.TaskUpdate, Managed(OtherProjectId, EntityId, UserId))).IsAllowed);
+    }
+
+    /// <summary>
+    /// TASK-048's acceptance criterion: reopening a completed task needs TASK_REOPEN itself. Holding the general edit permissions
+    /// over the task — TASK_UPDATE and TASK_MANAGE at ALL — is refused 403, since those let the caller see it (R-47).
+    /// </summary>
+    [Fact]
+    public async Task ReopeningNeedsTheReopenPermissionNotGeneralEditPermission()
+    {
+        AuthorizationSubject task = Managed(ProjectId, EntityId, OtherUserId) with { AssignedUserIds = [UserId] };
+        AuthorizationScenario editor = new AuthorizationScenario(PermissionCatalogue.Platform).WithUser(
+            UserType.Internal,
+            Grant("R02", PermissionCatalogue.TaskUpdate, DataScope.All),
+            Grant("R02", PermissionCatalogue.TaskManage, DataScope.All));
+        AuthorizationScenario reopener = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.Internal, Grant("R04", PermissionCatalogue.TaskReopen, DataScope.Assigned));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await editor.AuthorizeAsync(PermissionCatalogue.TaskManage, task));
+        Assert.Equal(AuthorizationDecision.Forbidden(AuthorizationDenial.NotGranted), await editor.AuthorizeAsync(PermissionCatalogue.TaskReopen, task));
+        Assert.Equal(AuthorizationDecision.Allowed, await reopener.AuthorizeAsync(PermissionCatalogue.TaskReopen, task));
+    }
+
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>
     [Fact]
     public void NotificationTemplatesAndDeliveryOperationsGoToR01Only()

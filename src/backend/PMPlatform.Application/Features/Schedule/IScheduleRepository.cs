@@ -31,6 +31,9 @@ public interface IScheduleRepository
     /// <summary>Tracked. With <paramref name="expectedVersion"/>, the next save is conditional on it (R-21).</summary>
     public Task<ScheduleActivity?> FindActivityAsync(Guid activityId, uint? expectedVersion, CancellationToken cancellationToken);
 
+    /// <summary>The activity and its schedule's project, not tracked: what WF-04 reads (edge 9). Null when there is no such activity.</summary>
+    public Task<(ScheduleActivity Activity, Guid ProjectId)?> ReadActivityAsync(Guid activityId, CancellationToken cancellationToken);
+
     /// <summary>Every dependency between the schedule's activities. Not tracked.</summary>
     public Task<IReadOnlyList<ScheduleDependency>> ListDependenciesAsync(Guid projectScheduleId, CancellationToken cancellationToken);
 

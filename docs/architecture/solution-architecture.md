@@ -192,7 +192,7 @@ The 21 modules fall into five groups. The group determines what a module may cal
 | **M-6** | **Audit is emitted through the outbox inside the writing transaction** (durable capture, Blueprint Section 18, TASK-073). AuditActivity never calls back into the emitting module and never re-derives what happened. |
 | **M-7** | **The authorization engine is never given a data dependency on a domain module.** The calling module supplies the authorization subject — owner, assignment, lifecycle state, sensitivity classification — as a typed value; IdentityAccess evaluates the Section 10.1 formula and returns a decision. Without this rule FG-03 acquires a read edge into all 20 other modules and the diagram inverts. |
 | **M-8** | **Approval is subject-agnostic.** A source module starts an approval with a subject reference (module, aggregate id, version) and a routing key. Approval returns the outcome as an idempotent typed event the source module handles (TASK-035). Approval holds no reference to any source module's types. |
-| **M-9** | **The core-domain call graph is acyclic.** Where a genuine two-way need exists, one direction is a synchronous call and the other is an event (the intake path in §7, edge 36, is the worked example). The rule is counted over the core-domain group. The foundation, workflow-service and sink groups are exempt because by §4.5 they never call a domain module at all, and the universal edges (E-U1 to E-U4) may therefore run between foundation modules in both directions — they carry a decision, a configuration value or an event, never a write to the caller's data. |
+| **M-9** | **The core-domain call graph is acyclic.** Where a genuine two-way need exists, one direction is a synchronous call and the other is an event (the intake path in §7, edge 35, is the worked example). The rule is counted over the core-domain group. The foundation, workflow-service and sink groups are exempt because by §4.5 they never call a domain module at all, and the universal edges (E-U1 to E-U4) may therefore run between foundation modules in both directions — they carry a decision, a configuration value or an event, never a write to the caller's data. |
 | **M-10** | **Shared code lives in `Application/Common` and `Domain/Common` and is domain-neutral**: identifiers, the SAR money type (ADR-008), bilingual label types (ADR-012), audit columns, pagination, the governed-configuration lifecycle primitive (§11.3). A type that means something to one domain never lands there. |
 | **M-11** | **One command, one transaction.** A command that legitimately writes two modules does so through both modules' application services inside one transaction against the single database. This is a deliberate benefit of the monolith and is not a boundary violation — the boundary is about *whose code writes*, not about transaction scope. |
 | **M-12** | **The read side never writes and never recalculates.** Dashboards and Reports read projections that carry semantic state (CURRENT/LIVE, PUBLISHED/OFFICIAL, HISTORICAL/SNAPSHOT), freshness and coverage, and they render what the owning module published. Overall Project Health is computed in WF-02 and nowhere else (ICD-03, TASK-044, TASK-069). |
@@ -250,6 +250,7 @@ flowchart LR
   SUS --> PRJ
   CLO --> PRJ
   TSK --> SCH
+  TSK --> PRJ
   MIL <-->|"split authority<br/>ICD-04"| SCH
   SCH --> CHG
   FIN --> CHG
@@ -344,6 +345,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 33 | ExternalParticipation | IntegrationMonitoring | event | Nafath invocation telemetry, if in scope | TASK-068; TASK-075 |
 | 34 | IntegrationMonitoring | AuditActivity | query | integration audit log view (ADM-053) | TASK-075 dep TASK-073 |
 | 35 | Project | Schedule, Progress, Milestone, FinancialKpi | event (`ProjectIntakeRecorded`) | legacy-intake Declared Baseline and opening position, each written by its owning module (§11.1) | TASK-104 |
+| 36 | ProjectTask | Project | query | project identity, anchors and lifecycle state, as edges 1–6: a task is authorized on its project's anchors (M-7) and executed only while the project is ACTIVE | TASK-048 (added 2026-10-03, `project-task.md` D-2) |
 
 ### 8.3 Count
 
@@ -352,7 +354,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | Modules | **21** |
 | WF/FG domains mapped | **21** (WF-01–WF-15, FG-01–FG-06), 1:1 |
 | Universal edge rules | 4 |
-| Specific edges | 35 |
+| Specific edges | 36 |
 | Edges whose mechanism is direct cross-module repository or table access | **0** |
 | Edges flagged as inferred pending a rank-1 spec | 4 (nos. 19, 25, 26, 27) |
 | Cycles in the core-domain call graph | **0** (edge 35 is an event; edge 10 is a declared split-authority contract, not two calls) |
@@ -517,3 +519,4 @@ On Q1 and Q2 being confirmed, the header status becomes **APPROVED**, the regist
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-20 | Initial record. Option A ratified as the delivery-team proposal, status held at Proposed — Pending AHDA Approval and paired with ADR-002 per the TASK-007 gate note. Three tiers and six API-01 rules recorded (§4.1); 21-module registry mapped 1:1 to WF-01–WF-15 and FG-01–FG-06 (§4.3); the six disputed module names settled and WF-04 renamed `ProjectTask` (§4.4); thirteen call rules (§6); module dependency diagram and a 4+35 edge register with zero repository edges (§7, §8); entity-to-module ownership register with four declared split-authority pairs and the WF-02 aggregate gap (§9); six-rule architecture-test enforcement suite (§10); five workbook consequences specified (§11); eight residual items (S-1 to S-8). | Architecture (TASK-007) |
+| 2026-10-03 | §8.2 edge 36 added, ProjectTask → Project (query), the `IProjectFactsReader` edges 1–6 give the other core modules: WF-04 decides every task operation on the project's anchors and gates execution on its lifecycle state, and edge 9 carries only the schedule activity. No cycle: Project calls no module back. Diagram and §8.3 count updated; M-9's reference to the intake path corrected from edge 36 to 35, its number in the register. `ModuleRegistry` records the edge. Proposed by the delivery team with TASK-048 (`project-task.md` F-1), for the Engagement Architect's confirmation. | Backend (TASK-048) |

@@ -112,6 +112,26 @@ public sealed class PermissionCatalogue
     /// </summary>
     public const string ScheduleEdit = "SCHEDULE_EDIT";
 
+    /// <summary>
+    /// WF-04: a project's tasks, subtasks, task dependencies and Activity Execution Progress (SCR-047, SCR-063–066), on the
+    /// tasks the grant's scope covers: OWN reaches the projects the holder manages, ASSIGNED the tasks assigned to the holder
+    /// (TASK-048).
+    /// </summary>
+    public const string TaskView = "TASK_VIEW";
+
+    /// <summary>
+    /// WF-04 execution (TASK-048): start, block, unblock and complete a task, and maintain a leaf's actual percentage. ADR-009:
+    /// the task owner maintains it and the Project Manager may edit it; ADR-013: an assigned entity Project Manager acts on the
+    /// tasks of their own project.
+    /// </summary>
+    public const string TaskUpdate = "TASK_UPDATE";
+
+    /// <summary>WF-04 planning (TASK-048): create and edit tasks and subtasks, assign them, set their dependencies, cancel a task.</summary>
+    public const string TaskManage = "TASK_MANAGE";
+
+    /// <summary>WF-04 (TASK-048): reopen a COMPLETED task. A permission of its own, so neither TASK_UPDATE nor TASK_MANAGE reopens one.</summary>
+    public const string TaskReopen = "TASK_REOPEN";
+
     /// <summary>WF-15: the bilingual notification templates and their versions (TASK-039).</summary>
     public const string NotificationTemplateView = "NOTIFICATION_TEMPLATE_VIEW";
 
@@ -158,6 +178,10 @@ public sealed class PermissionCatalogue
             new(ProgressReview, "PROGRESS", AccessMode.Write),
             new(ScheduleView, "SCHEDULE", AccessMode.Read),
             new(ScheduleEdit, "SCHEDULE", AccessMode.Write),
+            new(TaskView, "PROJECT_TASK", AccessMode.Read),
+            new(TaskUpdate, "PROJECT_TASK", AccessMode.Write),
+            new(TaskManage, "PROJECT_TASK", AccessMode.Write),
+            new(TaskReopen, "PROJECT_TASK", AccessMode.Write),
             new(NotificationTemplateView, "NOTIFICATIONS", AccessMode.Read),
             new(NotificationTemplateManage, "NOTIFICATIONS", AccessMode.Write),
             new(NotificationDeliveryView, "NOTIFICATIONS", AccessMode.Read),
@@ -186,7 +210,10 @@ public sealed class PermissionCatalogue
     /// views at ENTITY. Progress review is AHDA's gate and waits for Appendix A (progress-update.md F-2). WF-03's functional
     /// specification §3 makes the Project Manager (R04) the schedule's owner — building it, keeping its forecast, submitting its
     /// baselines — so R04 views and edits schedules at OWN, the projects the holder manages, internal or entity alike (ADR-013);
-    /// the other roles' schedule grants wait for Appendix A (schedule-baseline.md F-2). WF-15's
+    /// the other roles' schedule grants wait for Appendix A (schedule-baseline.md F-2). WF-04's four task permissions go to R04
+    /// at OWN: the Project Manager plans the project's tasks, may edit a task's actual percentage (ADR-009) and holds the
+    /// controlled reopen, on the projects the holder manages, internal or entity (ADR-013's amendment to TASK-048); the task
+    /// owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
     /// (notification-runtime.md F-1): they are platform-wide.
     /// </summary>
@@ -219,6 +246,10 @@ public sealed class PermissionCatalogue
         new("R08", ProgressView, DataScope.Entity),
         new("R04", ScheduleView, DataScope.Own),
         new("R04", ScheduleEdit, DataScope.Own),
+        new("R04", TaskView, DataScope.Own),
+        new("R04", TaskUpdate, DataScope.Own),
+        new("R04", TaskManage, DataScope.Own),
+        new("R04", TaskReopen, DataScope.Own),
         new("R02", LayoutPersonalize, DataScope.Own),
         new("R02", ReportCompose, DataScope.Own),
         new("R03", LayoutPersonalize, DataScope.Own),

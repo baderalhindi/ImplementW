@@ -176,6 +176,61 @@
         }
       }
     },
+    "/api/v1/activity-execution-progresses": {
+      "get": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "The project's Activity Execution Progress, by schedule activity. `projectId` is required (R-3).",
+        "operationId": "ProjectTask_ListActivityExecutionProgresses",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityExecutionProgressPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/approval-delegations": {
       "get": {
         "tags": [
@@ -4970,6 +5025,445 @@
         }
       }
     },
+    "/api/v1/project-tasks": {
+      "get": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "The project's tasks, each parent followed by its subtasks. `projectId` is required (R-3). A caller who may not see the\nproject's tasks as a whole sees the ones they own, where their grant reaches those.",
+        "operationId": "ProjectTask_ListProjectTasks",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "Adds a task, or a subtask of a top-level task, NOT_STARTED.",
+        "operationId": "ProjectTask_CreateProjectTask",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectTaskCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectTaskCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectTaskCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/{taskId}": {
+      "get": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "operationId": "ProjectTask_GetProjectTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "The task's plan and assignment, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "ProjectTask_UpdateProjectTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectTaskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectTaskRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/{taskId}/start": {
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "NOT_STARTED → IN_PROGRESS, once its FS and SS predecessors allow it.",
+        "operationId": "ProjectTask_StartProjectTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/{taskId}/block": {
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "NOT_STARTED or IN_PROGRESS → BLOCKED, with the reason.",
+        "operationId": "ProjectTask_BlockProjectTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskBlockCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskBlockCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskBlockCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/{taskId}/unblock": {
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "BLOCKED → IN_PROGRESS, or NOT_STARTED for a task blocked before it started.",
+        "operationId": "ProjectTask_UnblockProjectTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/{taskId}/complete": {
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "IN_PROGRESS → COMPLETED, once its FF and SF predecessors and its live subtasks allow it. A BLOCKED task is 409.",
+        "operationId": "ProjectTask_CompleteProjectTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/{taskId}/reopen": {
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "COMPLETED → IN_PROGRESS. TASK_REOPEN only: general edit permission does not reopen a task.",
+        "operationId": "ProjectTask_ReopenProjectTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/{taskId}/cancel": {
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "A live task → CANCELLED, final: RETAIN has no DELETE (R-5). Not while it has a live subtask or a dependency.",
+        "operationId": "ProjectTask_CancelProjectTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/{taskId}/report-progress": {
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "A leaf's actual percentage, entered by its owner or the Project Manager while it is IN_PROGRESS or BLOCKED (ADR-009).",
+        "operationId": "ProjectTask_ReportProjectTaskProgress",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskProgressCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskProgressCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskProgressCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTaskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/published-progress-snapshots": {
       "get": {
         "tags": [
@@ -5884,6 +6378,125 @@
         }
       }
     },
+    "/api/v1/task-dependencies": {
+      "get": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "The project's task dependencies, oldest first. `projectId` is required (R-3).",
+        "operationId": "ProjectTask_ListTaskDependencies",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDependencyPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "Links two live leaf tasks of one project; one that would close a cycle, or is already broken, is refused.",
+        "operationId": "ProjectTask_CreateTaskDependency",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskDependencyRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskDependencyRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskDependencyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDependencyDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/task-dependencies/{dependencyId}": {
+      "delete": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "HARD_WORKING. R-40: a dependency that is not there — removed already, or never the caller's to see — is 204 as well.",
+        "operationId": "ProjectTask_DeleteTaskDependency",
+        "parameters": [
+          {
+            "name": "dependencyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -6566,6 +7179,85 @@
           }
         },
         "description": "A row of ADM-010 Role Assignment: a user bound to a profile version with its scope anchors (ADR-018)."
+      },
+      "ActivityExecutionProgressDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "scheduleActivityId",
+          "actualPercentComplete",
+          "computedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scheduleActivityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actualPercentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A schedule activity's actual progress as WF-04 last rolled it up from its tasks (ADR-009): the fact WF-02 consumes."
+      },
+      "ActivityExecutionProgressPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityExecutionProgressDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's Activity Execution Progress (R-29)."
       },
       "ApprovalAuthorityEntry": {
         "required": [
@@ -13222,6 +13914,394 @@
         },
         "description": "A row of SCR-025 Project Register."
       },
+      "ProjectTaskCreateRequest": {
+        "required": [
+          "projectId",
+          "parentTaskId",
+          "scheduleActivityId",
+          "title",
+          "description",
+          "assigneeUserId",
+          "priorityItemId",
+          "plannedStartDate",
+          "plannedFinishDate"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "parentTaskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "scheduleActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "assigneeUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "plannedStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A new task of the project, or a subtask of `parentTaskId`, with the inputs ProjectTaskRequest describes."
+      },
+      "ProjectTaskDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "scheduleActivityId",
+          "parentTaskId",
+          "title",
+          "description",
+          "assigneeUserId",
+          "priorityItemId",
+          "status",
+          "plannedStartDate",
+          "plannedFinishDate",
+          "plannedDurationDays",
+          "actualStartDate",
+          "actualFinishDate",
+          "actualPercentComplete",
+          "percentComplete",
+          "subtaskCount",
+          "blockedReason",
+          "completedAt",
+          "reopenedCount",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scheduleActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "parentTaskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "assigneeUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectTaskStatus"
+          },
+          "plannedStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plannedFinishDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plannedDurationDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "actualStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "actualFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "actualPercentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "percentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "subtaskCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "blockedReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reopenedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A task or subtask. decimal? ProjectTaskDetail.ActualPercentComplete is the figure its owner entered (a leaf's only);\ndecimal ProjectTaskDetail.PercentComplete is the task's progress as ADR-009 rolls it up: a leaf's own, a parent's the planned-duration\nweighted mean of its live subtasks, 100 once COMPLETED. int ProjectTaskDetail.SubtaskCount counts the live subtasks."
+      },
+      "ProjectTaskPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectTaskDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's tasks (R-29)."
+      },
+      "ProjectTaskRequest": {
+        "required": [
+          "scheduleActivityId",
+          "title",
+          "description",
+          "assigneeUserId",
+          "priorityItemId",
+          "plannedStartDate",
+          "plannedFinishDate"
+        ],
+        "type": "object",
+        "properties": {
+          "scheduleActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "assigneeUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "plannedStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A task's plan and assignment, as a whole (R-5): the schedule activity it executes against, its title and description, its\nowner and priority, and its planned dates. The planned duration is derived from the dates, never sent; status, actual dates\nand percentages change only through the commands. An unknown property is ignored."
+      },
+      "ProjectTaskStatus": {
+        "enum": [
+          "NOT_STARTED",
+          "IN_PROGRESS",
+          "BLOCKED",
+          "COMPLETED",
+          "CANCELLED"
+        ],
+        "description": "ERD `project_task.status` (TASK-048). CANCELLED is final; COMPLETED is left only by a reopen."
+      },
       "PublishedProgressSnapshotDetail": {
         "required": [
           "id",
@@ -14645,6 +15725,166 @@
           }
         }
       },
+      "TaskBlockCommand": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "Why the task is blocked, in the language it was entered in."
+      },
+      "TaskDependencyDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "predecessorTaskId",
+          "successorTaskId",
+          "dependencyType",
+          "createdAt",
+          "createdBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "predecessorTaskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "successorTaskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dependencyType": {
+            "$ref": "#/components/schemas/TaskDependencyType"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "TaskDependencyPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskDependencyDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's task dependencies, oldest first (R-29)."
+      },
+      "TaskDependencyRequest": {
+        "required": [
+          "predecessorTaskId",
+          "successorTaskId",
+          "dependencyType"
+        ],
+        "type": "object",
+        "properties": {
+          "predecessorTaskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "successorTaskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dependencyType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A blocking dependency between two leaf tasks: FS or SS holds back the successor's start until the predecessor is completed\nor has started, FF or SF its completion."
+      },
+      "TaskDependencyType": {
+        "enum": [
+          "FS",
+          "SS",
+          "FF",
+          "SF"
+        ],
+        "description": "ERD `task_dependency.dependency_type`: which point of the predecessor gates which step of the successor. The first letter\nis the predecessor's point (Start = started, Finish = completed), the second the successor's step it gates."
+      },
+      "TaskProgressCommand": {
+        "required": [
+          "actualPercentComplete"
+        ],
+        "type": "object",
+        "properties": {
+          "actualPercentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "A leaf's actual percentage, 0–100 to four places (ADR-009)."
+      },
       "UnreadNotificationCount": {
         "required": [
           "unreadCount"
@@ -15057,6 +16297,9 @@
   "tags": [
     {
       "name": "IdentityAccess"
+    },
+    {
+      "name": "ProjectTask"
     },
     {
       "name": "Approval"

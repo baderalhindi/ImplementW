@@ -212,3 +212,4 @@ Each mutation was applied, the solution rebuilt, the named tests run, and the so
 | Date | Change |
 | --- | --- |
 | 2026-10-03 | Created (TASK-046) |
+| 2026-10-03 | TASK-048 (`project-task.md`): `DependencyGraph` moved to `Application/Common/Graphs`, unchanged, so WF-04's task network uses the same cycle check (M-10); `DependencyGraphTests` moved with it. `IScheduleActivityReader` added to Schedule's contracts — §8.2 edge 9, a non-authorizing read of an activity's project, kind, status and planned dates — with `IScheduleRepository.ReadActivityAsync`. §6 item 3 stands: WF-04 does not yet report actual dates or IN_PROGRESS/COMPLETED to `schedule_activity` (`project-task.md` F-3) |

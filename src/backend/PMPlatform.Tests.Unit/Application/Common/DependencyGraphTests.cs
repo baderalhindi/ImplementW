@@ -1,8 +1,8 @@
-using PMPlatform.Application.Features.Schedule;
+using PMPlatform.Application.Common.Graphs;
 
-namespace PMPlatform.Tests.Unit.Application.Schedule;
+namespace PMPlatform.Tests.Unit.Application.Common;
 
-/// <summary>VAL-SCH-008: the dependency network stays acyclic, and the forward pass visits every predecessor first.</summary>
+/// <summary>VAL-SCH-008 and TASK-048: a dependency network stays acyclic, and the forward pass visits every predecessor first.</summary>
 public sealed class DependencyGraphTests
 {
     private static readonly Guid A = Guid.NewGuid();
