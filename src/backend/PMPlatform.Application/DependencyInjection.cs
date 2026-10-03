@@ -22,6 +22,8 @@ using PMPlatform.Application.Features.Progress.Contracts;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.EventHandlers;
+using PMPlatform.Application.Features.ProjectTask;
+using PMPlatform.Application.Features.ProjectTask.Contracts;
 using PMPlatform.Application.Features.Schedule;
 using PMPlatform.Application.Features.Schedule.Contracts;
 using PMPlatform.Application.Features.Schedule.EventHandlers;
@@ -140,6 +142,17 @@ public static class DependencyInjection
         services.AddScoped<IProjectActivationPrecondition, BaselineActivationPrecondition>();
         services.AddScoped<ScheduleDeclaredBaseline>();
         services.AddScoped<IScheduleHealthReader, ScheduleHealthReader>();
+        services.AddScoped<IScheduleActivityReader, ScheduleActivityReader>();
+
+        // TASK-048: WF-04 tasks, their dependencies and the Activity Execution Progress. The repository is Infrastructure's;
+        // schedule activities are read through Schedule's reader (edge 9) and the project's facts through Project's (edge 36).
+        services.AddScoped<ProjectTaskAccess>();
+        services.AddScoped<ProjectTaskReferences>();
+        services.AddScoped<ActivityProgressProjection>();
+        services.AddScoped<ProjectTaskGate>();
+        services.AddScoped<IProjectTaskService, ProjectTaskService>();
+        services.AddScoped<ITaskExecutionService, TaskExecutionService>();
+        services.AddScoped<ITaskDependencyService, TaskDependencyService>();
 
         return services;
     }

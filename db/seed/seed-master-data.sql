@@ -131,7 +131,10 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- F-2). SCHEDULE_VIEW and SCHEDULE_EDIT (TASK-046) go to R04 at OWN: WF-03's functional specification §3 makes the Project
 -- Manager the schedule's owner — building it, keeping its forecast, submitting its baselines — and OWN reaches exactly the
 -- projects the holder manages, internal or entity (ADR-013). Baseline approval is WF-11's APPROVAL_DECIDE; the other roles'
--- schedule grants wait for Appendix A (schedule-baseline.md F-2). The four WF-15 permissions (TASK-039) — notification templates and the
+-- schedule grants wait for Appendix A (schedule-baseline.md F-2). TASK_VIEW, TASK_UPDATE, TASK_MANAGE and TASK_REOPEN
+-- (TASK-048) go to R04 at OWN: the Project Manager plans the project's tasks, may edit a task's actual percentage (ADR-009)
+-- and holds the controlled reopen, on the projects the holder manages, internal or entity (ADR-013's amendment to
+-- TASK-048). The task owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). The four WF-15 permissions (TASK-039) — notification templates and the
 -- delivery operations view with dead-letter redrive — go to R01 at ALL by delivery-team decision, as FG-04 did
 -- (notification-runtime.md F-1): templates and deliveries are platform-wide, with no record to scope. A person's own
 -- inbox and preferences need no permission. Blueprint Appendix A, the rest of the matrix, is not in
@@ -172,6 +175,10 @@ FROM (VALUES
     ('PROGRESS_REVIEW',             'مراجعة تقدم المشاريع ونشره', 'Review and publish project progress', 'PROGRESS', false),
     ('SCHEDULE_VIEW',               'عرض الجداول الزمنية',  'View project schedules',      'SCHEDULE',        false),
     ('SCHEDULE_EDIT',               'إعداد الجداول الزمنية والخطوط الأساسية', 'Build schedules and baselines', 'SCHEDULE', false),
+    ('TASK_VIEW',                   'عرض المهام',          'View tasks',                  'PROJECT_TASK',    false),
+    ('TASK_UPDATE',                 'تحديث تنفيذ المهام',   'Update task execution',       'PROJECT_TASK',    false),
+    ('TASK_MANAGE',                 'إدارة المهام',         'Manage tasks',                'PROJECT_TASK',    false),
+    ('TASK_REOPEN',                 'إعادة فتح المهام المكتملة', 'Reopen completed tasks', 'PROJECT_TASK',    false),
     ('NOTIFICATION_TEMPLATE_VIEW',  'عرض قوالب الإشعارات',  'View notification templates', 'NOTIFICATIONS',   false),
     ('NOTIFICATION_TEMPLATE_MANAGE', 'إدارة قوالب الإشعارات', 'Manage notification templates', 'NOTIFICATIONS', true),
     ('NOTIFICATION_DELIVERY_VIEW',  'عرض عمليات الإشعارات', 'View notification deliveries', 'NOTIFICATIONS',  false),
@@ -217,6 +224,10 @@ FROM (VALUES
     ('R08', 'PROGRESS_VIEW',               'ENTITY'),
     ('R04', 'SCHEDULE_VIEW',               'OWN'),
     ('R04', 'SCHEDULE_EDIT',               'OWN'),
+    ('R04', 'TASK_VIEW',                   'OWN'),
+    ('R04', 'TASK_UPDATE',                 'OWN'),
+    ('R04', 'TASK_MANAGE',                 'OWN'),
+    ('R04', 'TASK_REOPEN',                 'OWN'),
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R03', 'REPORT_COMPOSE',              'OWN'),
     ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),
