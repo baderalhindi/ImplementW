@@ -1,3 +1,4 @@
+using System.Globalization;
 using PMPlatform.Application.Features.ProjectTask;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.ProjectTask;
@@ -32,6 +33,43 @@ public sealed class TaskProgressRollupTests
         ];
 
         Assert.Equal(45m, TaskProgressRollup.PercentOf(parent, subtasks));
+    }
+
+    /// <summary>Mixed-state subtask sets, as "STATUS days [percent]"; each expected figure is worked by hand beside it.</summary>
+    public static TheoryData<string[], decimal> MixedStateScenarios() => new()
+    {
+        // (0×2 + 50×4 + 25×2 + 100×2) / 10 — the cancelled 10 days carry no weight.
+        { ["NotStarted 2", "InProgress 4 50", "Blocked 2 25", "Completed 2 100", "Cancelled 10 80"], 45m },
+        // (30×5 + 100×5) / 10
+        { ["InProgress 5 30", "Completed 5 100", "Cancelled 20 90"], 65m },
+        // (40×3 + 0×1 + 10×6 + 100×2) / 12 = 380 / 12
+        { ["Blocked 3 40", "NotStarted 1", "Blocked 6 10", "Completed 2 100"], 31.6667m },
+        // Every live subtask done: 100, whatever the cancelled one held.
+        { ["Completed 4 100", "Completed 6 100", "Cancelled 3 20"], 100m },
+        // Started but nothing entered yet, beside one not started: 0.
+        { ["InProgress 2", "NotStarted 2", "Cancelled 2 70"], 0m },
+    };
+
+    /// <summary>
+    /// TASK-048's acceptance criterion across five mixed-state subtask sets: the parent and the activity it executes against both
+    /// stand at the planned-duration-weighted mean of the live subtasks.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(MixedStateScenarios))]
+    public void MixedStateSubtasksRollUpIntoTheParentAndTheActivity(string[] subtaskSpecs, decimal expected)
+    {
+        ArgumentNullException.ThrowIfNull(subtaskSpecs);
+        ProjectTaskEntity parent = Task(ProjectTaskStatus.InProgress, 30, percent: 99m);
+        List<ProjectTaskEntity> tasks = [parent];
+        foreach (string[] spec in subtaskSpecs.Select(s => s.Split(' ')))
+        {
+            tasks.Add(Subtask(
+                parent, Enum.Parse<ProjectTaskStatus>(spec[0]), int.Parse(spec[1], CultureInfo.InvariantCulture),
+                spec.Length > 2 ? decimal.Parse(spec[2], CultureInfo.InvariantCulture) : null));
+        }
+
+        Assert.Equal(expected, TaskProgressRollup.PercentOf(parent, tasks));
+        Assert.Equal(expected, TaskProgressRollup.ActivityPercent(ActivityId, tasks));
     }
 
     /// <summary>The same subtasks make the activity's figure: its leaves are the subtasks, not the parent, whose own entry no longer counts.</summary>
