@@ -128,7 +128,10 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- ENTITY: ADR-013's amendment to TASK-044 lets an assigned entity Project Manager submit progress on their own project, and
 -- lets entities see progress and health on their own projects; a project's owner is its Project Manager, so OWN reaches
 -- exactly the projects the holder manages. PROGRESS_REVIEW is AHDA's gate and waits for Appendix A (progress-update.md
--- F-2). The four WF-15 permissions (TASK-039) — notification templates and the
+-- F-2). SCHEDULE_VIEW and SCHEDULE_EDIT (TASK-046) go to R04 at OWN: WF-03's functional specification §3 makes the Project
+-- Manager the schedule's owner — building it, keeping its forecast, submitting its baselines — and OWN reaches exactly the
+-- projects the holder manages, internal or entity (ADR-013). Baseline approval is WF-11's APPROVAL_DECIDE; the other roles'
+-- schedule grants wait for Appendix A (schedule-baseline.md F-2). The four WF-15 permissions (TASK-039) — notification templates and the
 -- delivery operations view with dead-letter redrive — go to R01 at ALL by delivery-team decision, as FG-04 did
 -- (notification-runtime.md F-1): templates and deliveries are platform-wide, with no record to scope. A person's own
 -- inbox and preferences need no permission. Blueprint Appendix A, the rest of the matrix, is not in
@@ -167,6 +170,8 @@ FROM (VALUES
     ('PROGRESS_VIEW',               'عرض تقدم المشاريع',    'View project progress',       'PROGRESS',        false),
     ('PROGRESS_SUBMIT',             'رفع تقدم المشاريع',    'Submit project progress',     'PROGRESS',        false),
     ('PROGRESS_REVIEW',             'مراجعة تقدم المشاريع ونشره', 'Review and publish project progress', 'PROGRESS', false),
+    ('SCHEDULE_VIEW',               'عرض الجداول الزمنية',  'View project schedules',      'SCHEDULE',        false),
+    ('SCHEDULE_EDIT',               'إعداد الجداول الزمنية والخطوط الأساسية', 'Build schedules and baselines', 'SCHEDULE', false),
     ('NOTIFICATION_TEMPLATE_VIEW',  'عرض قوالب الإشعارات',  'View notification templates', 'NOTIFICATIONS',   false),
     ('NOTIFICATION_TEMPLATE_MANAGE', 'إدارة قوالب الإشعارات', 'Manage notification templates', 'NOTIFICATIONS', true),
     ('NOTIFICATION_DELIVERY_VIEW',  'عرض عمليات الإشعارات', 'View notification deliveries', 'NOTIFICATIONS',  false),
@@ -210,6 +215,8 @@ FROM (VALUES
     ('R04', 'PROGRESS_VIEW',               'OWN'),
     ('R04', 'PROGRESS_SUBMIT',             'OWN'),
     ('R08', 'PROGRESS_VIEW',               'ENTITY'),
+    ('R04', 'SCHEDULE_VIEW',               'OWN'),
+    ('R04', 'SCHEDULE_EDIT',               'OWN'),
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R03', 'REPORT_COMPOSE',              'OWN'),
     ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),

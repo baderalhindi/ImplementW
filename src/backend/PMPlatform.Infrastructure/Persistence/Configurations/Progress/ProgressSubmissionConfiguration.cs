@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PMPlatform.Domain.IdentityAccess;
 using PMPlatform.Domain.Progress;
 using PMPlatform.Domain.Project;
+using PMPlatform.Domain.Schedule;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
 
 namespace PMPlatform.Infrastructure.Persistence.Configurations.Progress;
@@ -45,7 +46,6 @@ internal sealed class ProgressSubmissionConfiguration : IEntityTypeConfiguration
         builder.HasOne<ProjectIntake>().WithMany().HasForeignKey(e => e.ProjectIntakeId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.SubmittedByUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.ReviewedByUserId).OnDelete(DeleteBehavior.Restrict);
-
-        // baseline_id references schedule.project_baseline, which TASK-046 creates; TASK-046 adds the key (progress-update.md F-1).
+        builder.HasOne<ProjectBaseline>().WithMany().HasForeignKey(e => e.BaselineId).OnDelete(DeleteBehavior.Restrict);
     }
 }

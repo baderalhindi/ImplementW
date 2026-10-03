@@ -112,6 +112,16 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Progress
 
+      # TASK-046: WF-03 schedule and baselines — the concurrency test of a single ACTIVE baseline, atomic supersession,
+      # variance against the approved baseline, circular dependencies refused at save, and the database guards. Same database
+      # and directory as above.
+      - name: Schedule integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Schedule
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest

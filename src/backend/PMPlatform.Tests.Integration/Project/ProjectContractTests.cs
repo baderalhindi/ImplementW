@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Tests.Integration.Identity;
 using PMPlatform.Tests.Integration.Persistence;
+using PMPlatform.Tests.Integration.Schedule;
 
 namespace PMPlatform.Tests.Integration.Project;
 
@@ -138,6 +139,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         }
 
         await host.DecideAndDeliverAsync(projectId, ApprovalTaskDecision.Approve);
+        await ScheduleFixture.ActiveBaselineAsync(host.Database, projectId);
         using HttpResponseMessage activated = await client.PostAsync($"{path}/activate", sessions.Approver);
         Assert.Equal("ACTIVE", (await CheckAsync("POST", $"{item}/activate", activated))!.Status());
 

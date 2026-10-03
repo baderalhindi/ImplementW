@@ -22,6 +22,9 @@ using PMPlatform.Application.Features.Progress.Contracts;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.EventHandlers;
+using PMPlatform.Application.Features.Schedule;
+using PMPlatform.Application.Features.Schedule.Contracts;
+using PMPlatform.Application.Features.Schedule.EventHandlers;
 
 namespace PMPlatform.Application;
 
@@ -121,6 +124,22 @@ public static class DependencyInjection
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ProgressOpeningPosition>();
         services.AddScoped<IProjectHealthReader, ProjectHealthReader>();
+
+        // TASK-046: WF-03 schedule and baselines. The repository is Infrastructure's; baseline outcomes arrive through the
+        // Schedule approval outcome handler (WF-11 edges 21, 28), and Project's activation command consults the baseline
+        // precondition (ADR-009). No change authorisation can be read until TASK-060 (schedule-baseline.md F-1), so
+        // NoRebaselineAuthorization stands in; a host may register its own first.
+        services.AddScoped<ScheduleAccess>();
+        services.AddScoped<SchedulePolicy>();
+        services.AddScoped<ScheduleHealthProjection>();
+        services.AddScoped<BaselineActivation>();
+        services.TryAddScoped<IRebaselineAuthorization, NoRebaselineAuthorization>();
+        services.AddScoped<IScheduleService, ScheduleService>();
+        services.AddScoped<IBaselineService, BaselineService>();
+        services.AddScoped<IApprovalOutcomeHandler, BaselineApprovalOutcomeHandler>();
+        services.AddScoped<IProjectActivationPrecondition, BaselineActivationPrecondition>();
+        services.AddScoped<ScheduleDeclaredBaseline>();
+        services.AddScoped<IScheduleHealthReader, ScheduleHealthReader>();
 
         return services;
     }

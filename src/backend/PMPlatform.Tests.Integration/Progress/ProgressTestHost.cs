@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using PMPlatform.Application.Features.Progress;
 using PMPlatform.Tests.Integration.Identity;
+using PMPlatform.Tests.Integration.Schedule;
 
 namespace PMPlatform.Tests.Integration.Progress;
 
@@ -9,7 +10,8 @@ namespace PMPlatform.Tests.Integration.Progress;
 /// for AHDA's side — Appendix A grants no review (progress-update.md F-2) — beside the shipped R04 and R08 grants; a
 /// published GOVERNANCE_PROFILE version giving STANDARD a 7-day cadence; a published WORKFLOW_POLICY version holding the
 /// health thresholds, AMBER from 5 and RED from 15 points of slippage; and <see cref="Inputs"/> standing in for WF-03, WF-04
-/// and WF-14, which are not built (F-1). Projects are inserted ACTIVE, as fixtures may: an INSERT is no lifecycle transition.
+/// and WF-14, which are not connected (F-1), with the baseline they report written ACTIVE so that progress_submission.baseline_id's
+/// key holds. Projects are inserted ACTIVE, as fixtures may: an INSERT is no lifecycle transition.
 /// </summary>
 /// <remarks>
 /// People: local.r02 views, submits and reviews everything (R02, ALL). local.r03 views and reviews for their department (R03,
@@ -91,6 +93,10 @@ public sealed class ProgressTestHost : IAsyncLifetime
             JOIN master_data_config.master_data_catalogue c ON c.id = i.catalogue_id
             WHERE c.code = 'GOVERNANCE_PROFILE' AND i.code = 'STANDARD'
             """)));
+
+        // progress_submission.baseline_id references schedule.project_baseline (TASK-046), so the baseline the fake inputs
+        // report exists, ACTIVE on a project of its own.
+        await ScheduleFixture.ActiveBaselineAsync(Database, await this.ProjectAsync(), FakeProgressInputs.BaselineId);
         Api = Identity.CreateApi(
             new Dictionary<string, string?>
             {

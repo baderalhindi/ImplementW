@@ -187,6 +187,31 @@ public sealed class ShippedGrantTests
         Assert.False((await internalManager.AuthorizeAsync(PermissionCatalogue.ProgressSubmit, Managed(OtherProjectId, null, OtherUserId))).IsAllowed);
     }
 
+    /// <summary>
+    /// WF-03's specification §3: the Project Manager owns the schedule — builds it, keeps its forecast, submits its baselines.
+    /// R04 views and edits at OWN, the projects they manage; baseline approval is WF-11's APPROVAL_DECIDE, and the other roles'
+    /// schedule grants wait for Appendix A (schedule-baseline.md F-2).
+    /// </summary>
+    [Fact]
+    public void ScheduleGoesToTheProjectManagerOnly()
+    {
+        Assert.Equal(
+            [("R04", PermissionCatalogue.ScheduleView, DataScope.Own), ("R04", PermissionCatalogue.ScheduleEdit, DataScope.Own)],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("SCHEDULE_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+    }
+
+    /// <summary>ADR-013: an entity Project Manager edits the schedule of the project they manage and of no other, as an internal one does.</summary>
+    [Fact]
+    public async Task OnlyTheProjectsOwnManagerEditsItsSchedule()
+    {
+        AuthorizationScenario entityManager = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R04", PermissionCatalogue.ScheduleEdit, DataScope.Own, entityId: EntityId, projectId: ProjectId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityManager.AuthorizeAsync(PermissionCatalogue.ScheduleEdit, Managed(ProjectId, EntityId, UserId)));
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ScheduleEdit, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ScheduleEdit, Managed(OtherProjectId, EntityId, UserId))).IsAllowed);
+    }
+
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>
     [Fact]
     public void NotificationTemplatesAndDeliveryOperationsGoToR01Only()

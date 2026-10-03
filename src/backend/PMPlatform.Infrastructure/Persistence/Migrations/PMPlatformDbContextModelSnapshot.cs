@@ -4124,6 +4124,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_progress_submission");
 
+                    b.HasIndex("BaselineId")
+                        .HasDatabaseName("ix_progress_submission_baseline_id");
+
                     b.HasIndex("ProjectIntakeId")
                         .HasDatabaseName("ix_progress_submission_project_intake_id");
 
@@ -4772,6 +4775,612 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_project_intake_milestone_append_only", "updated_at = created_at AND updated_by = created_by");
 
                             t.HasCheckConstraint("ck_project_intake_milestone_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineActivity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActivityKind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("activity_kind");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid?>("ParentActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_activity_id");
+
+                    b.Property<int>("PlannedDurationDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("planned_duration_days");
+
+                    b.Property<DateOnly>("PlannedFinishDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_finish_date");
+
+                    b.Property<DateOnly>("PlannedStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_start_date");
+
+                    b.Property<Guid>("ProjectBaselineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_baseline_id");
+
+                    b.Property<Guid>("ScheduleActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("schedule_activity_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_baseline_activity");
+
+                    b.HasIndex("ParentActivityId")
+                        .HasDatabaseName("ix_baseline_activity_parent_activity_id");
+
+                    b.HasIndex("ScheduleActivityId")
+                        .HasDatabaseName("ix_baseline_activity_schedule_activity_id");
+
+                    b.HasIndex("ProjectBaselineId", "ScheduleActivityId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_baseline_activity_project_baseline_id_schedule_activity_id");
+
+                    b.ToTable("baseline_activity", "schedule", t =>
+                        {
+                            t.HasCheckConstraint("ck_baseline_activity_activity_kind", "\"activity_kind\" IN ('SUMMARY', 'ACTIVITY')");
+
+                            t.HasCheckConstraint("ck_baseline_activity_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_baseline_activity_planned", "planned_duration_days >= 1 AND planned_finish_date >= planned_start_date");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineDependency", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DependencyType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("dependency_type");
+
+                    b.Property<int>("LagDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("lag_days");
+
+                    b.Property<Guid>("PredecessorActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("predecessor_activity_id");
+
+                    b.Property<Guid>("ProjectBaselineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_baseline_id");
+
+                    b.Property<Guid>("SuccessorActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("successor_activity_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_baseline_dependency");
+
+                    b.HasIndex("PredecessorActivityId")
+                        .HasDatabaseName("ix_baseline_dependency_predecessor_activity_id");
+
+                    b.HasIndex("SuccessorActivityId")
+                        .HasDatabaseName("ix_baseline_dependency_successor_activity_id");
+
+                    b.HasIndex("ProjectBaselineId", "PredecessorActivityId", "SuccessorActivityId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_baseline_dependency_project_baseline_id_predecessor_activit");
+
+                    b.ToTable("baseline_dependency", "schedule", t =>
+                        {
+                            t.HasCheckConstraint("ck_baseline_dependency_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_baseline_dependency_dependency_type", "\"dependency_type\" IN ('FS', 'SS', 'FF')");
+
+                            t.HasCheckConstraint("ck_baseline_dependency_ends", "predecessor_activity_id <> successor_activity_id");
+
+                            t.HasCheckConstraint("ck_baseline_dependency_lag_days", "lag_days >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectBaseline", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("activated_at");
+
+                    b.Property<DateOnly>("BaselineFinishDate")
+                        .HasColumnType("date")
+                        .HasColumnName("baseline_finish_date");
+
+                    b.Property<string>("BaselineType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("baseline_type");
+
+                    b.Property<Guid?>("ChangeAuthorizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("change_authorization_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("DeclaredEndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("declared_end_date");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid?>("ProjectIntakeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_intake_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SupersededAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("superseded_at");
+
+                    b.Property<Guid?>("SupersededByBaselineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("superseded_by_baseline_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_no");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "DeclaredScope", "PMPlatform.Domain.Schedule.ProjectBaseline.DeclaredScope#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("declared_scope_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("declared_scope");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_baseline");
+
+                    b.HasIndex("ProjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_baseline_active_project_id")
+                        .HasFilter("status = 'ACTIVE'");
+
+                    b.HasIndex("ProjectIntakeId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_baseline_project_intake_id");
+
+                    b.HasIndex("SupersededByBaselineId")
+                        .HasDatabaseName("ix_project_baseline_superseded_by_baseline_id");
+
+                    b.HasIndex("ProjectId", "VersionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_baseline_project_id_version_no");
+
+                    b.ToTable("project_baseline", "schedule", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_baseline_activated", "(status IN ('ACTIVE', 'SUPERSEDED')) = (activated_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_project_baseline_baseline_type", "\"baseline_type\" IN ('APPROVED', 'DECLARED')");
+
+                            t.HasCheckConstraint("ck_project_baseline_declared", "(baseline_type = 'DECLARED') = (project_intake_id IS NOT NULL) AND (baseline_type = 'DECLARED') = (declared_end_date IS NOT NULL) AND (baseline_type = 'DECLARED' OR declared_scope IS NULL) AND (baseline_type = 'APPROVED' OR change_authorization_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_baseline_declared_scope_lang", "\"declared_scope_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_project_baseline_declared_scope_pair", "(\"declared_scope\" IS NULL) = (\"declared_scope_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_baseline_numbers", "version_no >= 1 AND revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_project_baseline_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'ACTIVE', 'SUPERSEDED', 'REJECTED', 'WITHDRAWN')");
+
+                            t.HasCheckConstraint("ck_project_baseline_superseded", "(status = 'SUPERSEDED') = (superseded_at IS NOT NULL) AND (superseded_at IS NULL) = (superseded_by_baseline_id IS NULL) AND (superseded_by_baseline_id IS NULL OR superseded_by_baseline_id <> id)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectSchedule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("CalendarItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("calendar_item_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_schedule");
+
+                    b.HasIndex("CalendarItemId")
+                        .HasDatabaseName("ix_project_schedule_calendar_item_id");
+
+                    b.HasIndex("ProjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_schedule_project_id");
+
+                    b.ToTable("project_schedule", "schedule");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ScheduleActivity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActivityKind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("activity_kind");
+
+                    b.Property<DateOnly?>("ActualFinishDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_finish_date");
+
+                    b.Property<DateOnly?>("ActualStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_start_date");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("ForecastFinishDate")
+                        .HasColumnType("date")
+                        .HasColumnName("forecast_finish_date");
+
+                    b.Property<DateOnly>("ForecastStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("forecast_start_date");
+
+                    b.Property<Guid?>("ParentActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_activity_id");
+
+                    b.Property<int>("PlannedDurationDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("planned_duration_days");
+
+                    b.Property<DateOnly>("PlannedFinishDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_finish_date");
+
+                    b.Property<DateOnly>("PlannedStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_start_date");
+
+                    b.Property<Guid>("ProjectScheduleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_schedule_id");
+
+                    b.Property<DateOnly>("RequestedStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("requested_start_date");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("WbsCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("wbs_code");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Name", "PMPlatform.Domain.Schedule.ScheduleActivity.Name#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("name_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("name");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_schedule_activity");
+
+                    b.HasIndex("ParentActivityId")
+                        .HasDatabaseName("ix_schedule_activity_parent_activity_id");
+
+                    b.HasIndex("ProjectScheduleId", "WbsCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_schedule_activity_project_schedule_id_wbs_code");
+
+                    b.ToTable("schedule_activity", "schedule", t =>
+                        {
+                            t.HasCheckConstraint("ck_schedule_activity_activity_kind", "\"activity_kind\" IN ('SUMMARY', 'ACTIVITY')");
+
+                            t.HasCheckConstraint("ck_schedule_activity_actual", "actual_finish_date IS NULL OR (actual_start_date IS NOT NULL AND actual_finish_date >= actual_start_date)");
+
+                            t.HasCheckConstraint("ck_schedule_activity_forecast", "forecast_finish_date >= forecast_start_date");
+
+                            t.HasCheckConstraint("ck_schedule_activity_hierarchy", "parent_activity_id IS NULL OR parent_activity_id <> id");
+
+                            t.HasCheckConstraint("ck_schedule_activity_name_lang", "\"name_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_schedule_activity_planned", "planned_duration_days >= 1 AND planned_finish_date >= planned_start_date");
+
+                            t.HasCheckConstraint("ck_schedule_activity_status", "\"status\" IN ('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ScheduleDependency", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DependencyType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("dependency_type");
+
+                    b.Property<int>("LagDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("lag_days");
+
+                    b.Property<Guid>("PredecessorActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("predecessor_activity_id");
+
+                    b.Property<Guid>("SuccessorActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("successor_activity_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_schedule_dependency");
+
+                    b.HasIndex("SuccessorActivityId")
+                        .HasDatabaseName("ix_schedule_dependency_successor_activity_id");
+
+                    b.HasIndex("PredecessorActivityId", "SuccessorActivityId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_schedule_dependency_predecessor_activity_id_successor_activ");
+
+                    b.ToTable("schedule_dependency", "schedule", t =>
+                        {
+                            t.HasCheckConstraint("ck_schedule_dependency_dependency_type", "\"dependency_type\" IN ('FS', 'SS', 'FF')");
+
+                            t.HasCheckConstraint("ck_schedule_dependency_ends", "predecessor_activity_id <> successor_activity_id");
+
+                            t.HasCheckConstraint("ck_schedule_dependency_lag_days", "lag_days >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ScheduleHealthStatus", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<int?>("FinishVarianceDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("finish_variance_days");
+
+                    b.Property<Guid?>("HealthRuleConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("health_rule_configuration_version_id");
+
+                    b.Property<Guid?>("ProjectBaselineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_baseline_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("ScheduleHealth")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("schedule_health");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_schedule_health_status");
+
+                    b.HasIndex("HealthRuleConfigurationVersionId")
+                        .HasDatabaseName("ix_schedule_health_status_health_rule_configuration_version_id");
+
+                    b.HasIndex("ProjectBaselineId")
+                        .HasDatabaseName("ix_schedule_health_status_project_baseline_id");
+
+                    b.HasIndex("ProjectId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_schedule_health_status_project_id");
+
+                    b.ToTable("schedule_health_status", "schedule", t =>
+                        {
+                            t.HasCheckConstraint("ck_schedule_health_status_schedule_health", "\"schedule_health\" IN ('GREEN', 'AMBER', 'RED', 'UNKNOWN')");
+
+                            t.HasCheckConstraint("ck_schedule_health_status_variance", "finish_variance_days IS NULL OR project_baseline_id IS NOT NULL");
                         });
                 });
 
@@ -5569,6 +6178,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressSubmission", b =>
                 {
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectBaseline", null)
+                        .WithMany()
+                        .HasForeignKey("BaselineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_progress_submission_project_baseline_baseline_id");
+
                     b.HasOne("PMPlatform.Domain.Project.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectId")
@@ -5740,6 +6355,146 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_project_intake_milestone_project_intake_project_intake_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineActivity", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("ParentActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_baseline_activity_schedule_activity_parent_activity_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectBaseline", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectBaselineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_baseline_activity_project_baseline_project_baseline_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("ScheduleActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_baseline_activity_schedule_activity_schedule_activity_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineDependency", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("PredecessorActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_baseline_dependency_schedule_activity_predecessor_activity_");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectBaseline", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectBaselineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_baseline_dependency_project_baseline_project_baseline_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("SuccessorActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_baseline_dependency_schedule_activity_successor_activity_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectBaseline", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_baseline_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.ProjectIntake", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectIntakeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_baseline_project_intake_project_intake_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectBaseline", null)
+                        .WithMany()
+                        .HasForeignKey("SupersededByBaselineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_baseline_project_baseline_superseded_by_baseline_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectSchedule", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("CalendarItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_schedule_master_data_item_calendar_item_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_schedule_project_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ScheduleActivity", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("ParentActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_schedule_activity_schedule_activity_parent_activity_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectSchedule", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_schedule_activity_project_schedule_project_schedule_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ScheduleDependency", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("PredecessorActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_schedule_dependency_schedule_activity_predecessor_activity_");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("SuccessorActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_schedule_dependency_schedule_activity_successor_activity_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ScheduleHealthStatus", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("HealthRuleConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_schedule_health_status_configuration_version_health_rule_co");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectBaseline", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectBaselineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_schedule_health_status_project_baseline_project_baseline_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_schedule_health_status_project_project_id");
                 });
 #pragma warning restore 612, 618
         }
