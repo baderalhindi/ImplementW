@@ -1,0 +1,295 @@
+{
+  "forbidden": "You do not have permission to see this project's schedule.",
+  "nav": {
+    "label": "Schedule views",
+    "manager": "Schedule manager",
+    "gantt": "Gantt",
+    "baselines": "Baselines"
+  },
+  "notInitialized": {
+    "title": "This project has no schedule yet.",
+    "hint": "Set up the schedule to start the work breakdown. It can be planned once the project is approved.",
+    "waiting": "The project's Project Manager sets up the schedule once the project is approved."
+  },
+  "summary": {
+    "title": "Schedule status",
+    "health": "Schedule health",
+    "healthNone": "Not computed yet",
+    "computedAt": "computed {at}",
+    "noActiveBaseline": "No active baseline",
+    "baselineFinish": "{name}, finish {date}",
+    "activatedAt": "active since {at}",
+    "forecastFinish": "Finish {date}",
+    "forecastNone": "No activity planned yet",
+    "candidate": "Baseline candidate",
+    "forecastFollowsPlan": "Until a baseline is active, the Current Forecast follows the plan. Once one is approved, the forecast is updated on its own and the baseline does not move.",
+    "frozen": "A baseline candidate is with AHDA for review, so the plan is frozen: activities and dependencies cannot change until it is decided. Forecasts can still be updated."
+  },
+  "health": {
+    "GREEN": "On track",
+    "AMBER": "At risk",
+    "RED": "Delayed",
+    "UNKNOWN": "Unknown"
+  },
+  "variance": {
+    "none": "No baseline",
+    "onBaseline": "On the baseline",
+    "lateOne": "1 day late",
+    "late": "{days} days late",
+    "earlyOne": "1 day early",
+    "early": "{days} days early"
+  },
+  "days": {
+    "one": "1 day",
+    "many": "{days} days"
+  },
+  "dates": {
+    "range": "{start} to {finish}",
+    "to": "to"
+  },
+  "legend": {
+    "title": "Legend",
+    "forecast": "Current Forecast",
+    "forecastDetail": "Solid bar: when the activity is now expected to start and finish.",
+    "forecastFollowsPlan": "Solid bar: follows the plan until a baseline is active.",
+    "baseline": "Approved Baseline",
+    "baselineNone": "Hatched bar beneath: no baseline is active yet.",
+    "summary": "Summary",
+    "summaryDetail": "Thin dark bar: spans the activities under it.",
+    "conflict": "Starts before a predecessor allows",
+    "conflictDetail": "Dashed red outline: update this forecast too."
+  },
+  "activities": {
+    "title": "Work breakdown",
+    "caption": "Activities with their plan, Current Forecast and Approved Baseline",
+    "empty": "No activity has been added yet.",
+    "wbs": "WBS",
+    "activity": "Activity",
+    "planned": "Planned",
+    "finishVariance": "Finish variance",
+    "summary": "Summary",
+    "after": "After {list}",
+    "notBaselined": "Not in the baseline"
+  },
+  "activityStatus": {
+    "PLANNED": "Planned",
+    "IN_PROGRESS": "In progress",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "activity": {
+    "createTitle": "Add activity",
+    "editTitle": "Edit activity",
+    "intro": "The planned and forecast dates are calculated from the requested start, the duration and the dependencies.",
+    "summaryNote": "This is a summary: its dates span the activities under it. Its own start and duration apply only if it has none.",
+    "parent": "Parent",
+    "noParent": "None (top level)",
+    "parentHint": "An activity linked by a dependency cannot be a parent.",
+    "wbsCode": "WBS code",
+    "wbsCodeHint": "Unique in the schedule, up to {max} characters.",
+    "name": "Name",
+    "nameHint": "Up to {max} characters.",
+    "requestedStart": "Requested start",
+    "requestedStartHint": "The activity starts later if a dependency requires it.",
+    "duration": "Duration (working days)",
+    "durationHint": "1 to 9999 working days, the first day counted. Every day is a working day until a working calendar is set.",
+    "sortOrder": "Sort order",
+    "sortOrderHint": "0 or more. Activities are listed by sort order, then WBS code."
+  },
+  "reforecast": {
+    "title": "Update forecast",
+    "intro": "Enter when the activity is now expected to start and finish. The Approved Baseline does not change.",
+    "start": "Forecast start",
+    "finish": "Forecast finish",
+    "confirm": "Save forecast"
+  },
+  "constraint": {
+    "held": "Cannot start before {date}: {predecessor} comes first ({type}, lag {lag})."
+  },
+  "dependency": {
+    "title": "Add dependency",
+    "intro": "Link two activities so one follows the other. Only activities without sub-activities can be linked.",
+    "predecessor": "Predecessor",
+    "successor": "Successor",
+    "type": "Type",
+    "lag": "Lag (working days)",
+    "lagHint": "0 or more working days after the predecessor's date.",
+    "circular": "This would create a circular dependency: {chain}. An activity cannot depend, directly or through others, on itself. Choose a different pair or remove a dependency in the chain first.",
+    "confirm": "Add dependency"
+  },
+  "dependencyType": {
+    "FS": "Finish to start: the successor starts after the predecessor finishes",
+    "SS": "Start to start: the successor starts when the predecessor starts",
+    "FF": "Finish to finish: the successor finishes no earlier than the predecessor"
+  },
+  "dependencyTypeShort": {
+    "FS": "finish to start",
+    "SS": "start to start",
+    "FF": "finish to finish"
+  },
+  "dependencies": {
+    "title": "Dependencies",
+    "caption": "Dependencies between activities",
+    "empty": "No dependency has been added yet."
+  },
+  "cancelActivity": {
+    "title": "Cancel activity",
+    "body": "Cancel {activity}? It leaves the plan and cannot be restored. Its record is kept.",
+    "confirm": "Cancel activity"
+  },
+  "removeDependency": {
+    "title": "Remove dependency",
+    "body": "Remove this dependency? The successor's planned dates are calculated again without it."
+  },
+  "gantt": {
+    "title": "Gantt",
+    "empty": "No activity to show yet.",
+    "activity": "Activity",
+    "instructionsPlan": "Drag an activity's bar to move its planned dates, or focus it and use the arrow keys (Page Up and Page Down for a week), then press Enter to save or Escape to cancel. An activity cannot start before its predecessors allow.",
+    "instructionsForecast": "Drag an activity's bar to move its Current Forecast, or focus it and use the arrow keys (Page Up and Page Down for a week), then press Enter to save or Escape to cancel. A forecast cannot start before its predecessors' forecasts allow. The Approved Baseline does not move.",
+    "frozen": "The plan is frozen while a baseline candidate is under review, so its bars cannot be moved.",
+    "moveLabel": "Move {activity}",
+    "moving": "New dates {start} to {finish}. Release, or press Enter, to save.",
+    "unchanged": "Nothing was changed.",
+    "cancelled": "Move cancelled.",
+    "forecastRange": "Current Forecast {start} to {finish}",
+    "baselineRange": "Approved Baseline {start} to {finish}"
+  },
+  "baselineStatus": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "With AHDA for review",
+    "UNDER_REVIEW": "Under review",
+    "RETURNED": "Returned",
+    "ACTIVE": "Active",
+    "SUPERSEDED": "Superseded",
+    "REJECTED": "Rejected",
+    "WITHDRAWN": "Withdrawn"
+  },
+  "baselineType": {
+    "APPROVED": "Approved baseline",
+    "DECLARED": "Declared baseline"
+  },
+  "baseline": {
+    "name": "Version {version} · revision {revision} · {type}"
+  },
+  "baselines": {
+    "title": "Baselines",
+    "caption": "Baselines of the project, latest first",
+    "empty": "No baseline has been created yet.",
+    "emptyHint": "Create a baseline candidate from the working schedule and submit it for approval.",
+    "baseline": "Baseline",
+    "candidate": "Candidate",
+    "status": "Status",
+    "finish": "Baseline finish",
+    "activated": "Activated",
+    "superseded": "Superseded",
+    "supersededAt": "superseded {at}",
+    "declaredEnd": "Declared end date",
+    "declaredScope": "Declared scope",
+    "reviewHistory": "Review history",
+    "candidateNoCopy": "The frozen copy of the activities is taken when this baseline becomes active. Until then it is reviewed against the working schedule, which is frozen while it is with AHDA.",
+    "endedNoCopy": "This candidate never became active, so it has no frozen copy.",
+    "declaredNoCopy": "A declared baseline records the end date and scope given at intake. It has no activities.",
+    "copyTitle": "Frozen activities",
+    "copyCaption": "The baseline's frozen copy of the activities",
+    "copyDependencies": "Frozen dependencies",
+    "copyDependency": "{predecessor} → {successor}, {type}, lag {lag}"
+  },
+  "submit": {
+    "title": "Submit baseline",
+    "activities": "Activities in the plan",
+    "plannedFinish": "Planned finish",
+    "replaces": "Replaces",
+    "consequence": "If the project's governance profile requires approval, the baseline goes to AHDA for review and the plan is frozen until it is decided. If not, it becomes the active baseline at once. Either way, the active baseline is replaced only when the new one becomes active.",
+    "changeAuthorization": "Change authorisation ID",
+    "changeAuthorizationHint": "A new baseline after an approved one implements an approved change request. Enter the ID of its change authorisation.",
+    "confirm": "Submit baseline"
+  },
+  "approve": {
+    "title": "Decide on baseline",
+    "submitted": "Submitted",
+    "inspect": "Inspect the plan on the Gantt",
+    "decision": "Decision",
+    "decisions": {
+      "approve": "Approve",
+      "return": "Return for revision",
+      "reject": "Reject"
+    },
+    "consequences": {
+      "approve": "Approving makes this the active baseline, replacing the current one. Variance is then measured against it.",
+      "return": "Returning sends the baseline back to the Project Manager with your reason. The plan can be changed and the baseline submitted again.",
+      "reject": "Rejecting ends this candidate. The active baseline stays as it is."
+    },
+    "reason": "Reason",
+    "confirm": "Record decision",
+    "onBehalfOf": "You are deciding on behalf of {person}, who delegated this approval to you."
+  },
+  "deleteDraft": {
+    "title": "Delete draft baseline",
+    "body": "Delete this draft baseline? It has not been submitted. Another candidate can be created afterwards."
+  },
+  "actions": {
+    "initialize": "Set up schedule",
+    "addActivity": "Add activity",
+    "editActivity": "Edit {activity}",
+    "reforecast": "Update forecast",
+    "reforecastActivity": "Update forecast of {activity}",
+    "cancel": "Cancel",
+    "cancelActivity": "Cancel {activity}",
+    "addDependency": "Add dependency",
+    "removeDependency": "Remove",
+    "createCandidate": "Create baseline candidate",
+    "submitBaseline": "Submit",
+    "deleteDraft": "Delete draft",
+    "decideBaseline": "Decide"
+  },
+  "done": {
+    "initialized": "The schedule was set up.",
+    "activityCreated": "The activity was added and the plan calculated again.",
+    "activityUpdated": "The activity was saved and the plan calculated again.",
+    "activityCancelled": "The activity was cancelled.",
+    "reforecast": "The forecast was saved.",
+    "dependencyAdded": "The dependency was added and the plan calculated again.",
+    "dependencyRemoved": "The dependency was removed and the plan calculated again.",
+    "planMoved": "{activity} now starts {start} and finishes {finish}. The plan was calculated again.",
+    "forecastMoved": "The forecast of {activity} is now {start} to {finish}.",
+    "candidateCreated": "A draft baseline candidate was created from the working schedule.",
+    "baselineSubmitted": "The baseline was submitted to AHDA for review. The plan is frozen until it is decided.",
+    "baselineActivated": "The baseline is now the active baseline.",
+    "draftDeleted": "The draft baseline was deleted.",
+    "approved": "Your approval was recorded. The baseline becomes active as soon as the approval is applied.",
+    "returned": "The baseline was returned to the Project Manager.",
+    "rejected": "The baseline was rejected.",
+    "stale": "The schedule changed since it was shown, so nothing was saved. It has been read again."
+  },
+  "fieldErrors": {
+    "sameActivity": "Choose two different activities.",
+    "durationOutOfRange": "Enter a whole number of working days from 1 to 9999.",
+    "lagOutOfRange": "Enter a whole number of working days from 0 to 9999.",
+    "sortOrderOutOfRange": "Enter a whole number, 0 or more.",
+    "daysMalformed": "Enter a whole number, with no decimals or other characters."
+  },
+  "problems": {
+    "projectNotEligible": "The schedule can be changed only while the project is approved or active.",
+    "notInitialized": "This project has no schedule yet.",
+    "exists": "The schedule was already set up. It has been read again.",
+    "notEditable": "The plan cannot be changed while a baseline candidate is under review, or the activity is cancelled.",
+    "wbsCodeExists": "Another activity already has this WBS code.",
+    "hierarchyInvalid": "That parent is not allowed: it must be a live activity of this schedule that no dependency links.",
+    "hierarchyCircular": "That parent is not allowed: an activity cannot be placed under itself or one of its own sub-activities.",
+    "activityInUse": "The activity still has sub-activities or dependencies. Remove them first.",
+    "forecastInvalid": "A forecast can be set only on an activity without sub-activities that is not cancelled.",
+    "dependencyInvalid": "A dependency must link two different activities of this schedule that have no sub-activities.",
+    "dependencyCircular": "This dependency would create a circular dependency with one added meanwhile. The schedule has been read again.",
+    "dependencyExists": "These two activities are already linked.",
+    "activeBaselineRequired": "A forecast can be set only once the project has an active baseline.",
+    "candidateExists": "A baseline candidate is already on its way. It has been read again.",
+    "baselineEmpty": "The schedule has no activity to baseline. Add activities first.",
+    "baselineNotEditable": "Only a draft baseline can be deleted.",
+    "changeAuthorizationRequired": "A new baseline after an approved one needs the ID of an approved change authorisation for this project.",
+    "singleActiveBaseline": "Another baseline became active at the same moment. The schedule has been read again.",
+    "configurationMissing": "Baseline approval is not configured for this project's governance profile yet. Ask the AHDA PMO.",
+    "invalidTransition": "The baseline is no longer in a state that allows this. It has been read again.",
+    "permissionDenied": "You do not have permission to change this schedule."
+  }
+}

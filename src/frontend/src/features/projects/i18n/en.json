@@ -126,6 +126,7 @@
       "registration": "Registration",
       "location": "Location",
       "progress": "Progress",
+      "schedule": "Schedule",
       "reviews": "Review history",
       "documents": "Documents"
     }
