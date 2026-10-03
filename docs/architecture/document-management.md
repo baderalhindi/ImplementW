@@ -173,3 +173,4 @@ Each mutation was applied, the solution rebuilt, the authorization and document 
 | Date | Change |
 | --- | --- |
 | 2026-09-30 | Created (TASK-037) |
+| 2026-10-03 | TASK-050 (`milestone-achievement.md` D-8): Milestone is the first module to attach and pin evidence (§8.2 edge 16), on the achievement revision as the target (`Milestone`/`MilestoneAchievement`), and checks EVIDENCE_POLICY's mandatory types with `GetSatisfiedEvidenceTypesAsync` at submission. F-8 is met for Milestone: MOD-054 attaches through `POST /milestone-achievements/{id}/evidence`. F-7 shows there: withdrawn evidence is pinned again only as a new version (`milestone-achievement.md` F-9). |
