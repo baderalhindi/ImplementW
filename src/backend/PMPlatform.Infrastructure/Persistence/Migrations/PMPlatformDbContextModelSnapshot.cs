@@ -3468,6 +3468,171 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("risk_rating_definition", "master_data_config");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Milestone.MilestoneAchievement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("AcceptedActualAchievementDate")
+                        .HasColumnType("date")
+                        .HasColumnName("accepted_actual_achievement_date");
+
+                    b.Property<DateOnly>("ClaimedAchievementDate")
+                        .HasColumnType("date")
+                        .HasColumnName("claimed_achievement_date");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid?>("ProjectIntakeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_intake_id");
+
+                    b.Property<Guid>("ProjectMilestoneId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_milestone_id");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewed_by_user_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<Guid?>("SubmittedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submitted_by_user_id");
+
+                    b.Property<Guid?>("SupersededByAchievementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("superseded_by_achievement_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Narrative", "PMPlatform.Domain.Milestone.MilestoneAchievement.Narrative#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("narrative_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("narrative");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ReturnReason", "PMPlatform.Domain.Milestone.MilestoneAchievement.ReturnReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("return_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("return_reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_milestone_achievement");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("ix_milestone_achievement_project_id");
+
+                    b.HasIndex("ProjectIntakeId")
+                        .HasDatabaseName("ix_milestone_achievement_project_intake_id");
+
+                    b.HasIndex("ReviewedByUserId")
+                        .HasDatabaseName("ix_milestone_achievement_reviewed_by_user_id");
+
+                    b.HasIndex("SubmittedByUserId")
+                        .HasDatabaseName("ix_milestone_achievement_submitted_by_user_id");
+
+                    b.HasIndex("SupersededByAchievementId")
+                        .HasDatabaseName("ix_milestone_achievement_superseded_by_achievement_id");
+
+                    b.HasIndex("ProjectMilestoneId", "RevisionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_milestone_achievement_project_milestone_id_revision_no");
+
+                    b.HasIndex(new[] { "ProjectMilestoneId" }, "ix_milestone_achievement_accepted_project_milestone_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_milestone_achievement_accepted_project_milestone_id")
+                        .HasFilter("status = 'ACCEPTED'");
+
+                    b.HasIndex(new[] { "ProjectMilestoneId" }, "ix_milestone_achievement_open_project_milestone_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_milestone_achievement_open_project_milestone_id")
+                        .HasFilter("status IN ('DRAFT', 'SUBMITTED')");
+
+                    b.ToTable("milestone_achievement", "milestone", t =>
+                        {
+                            t.HasCheckConstraint("ck_milestone_achievement_accepted", "(status IN ('ACCEPTED', 'SUPERSEDED')) = (accepted_actual_achievement_date IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_narrative_lang", "\"narrative_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_narrative_pair", "(\"narrative\" IS NULL) = (\"narrative_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_return_reason", "return_reason IS NULL OR status = 'RETURNED'");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_return_reason_lang", "\"return_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_return_reason_pair", "(\"return_reason\" IS NULL) = (\"return_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_reviewed", "(status IN ('RETURNED', 'ACCEPTED', 'SUPERSEDED')) = (reviewed_at IS NOT NULL) AND (reviewed_at IS NULL) = (reviewed_by_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_revision_no", "revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'RETURNED', 'ACCEPTED', 'SUPERSEDED')");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_submitted", "(status = 'DRAFT') = (submitted_at IS NULL) AND (submitted_at IS NULL) = (submitted_by_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_milestone_achievement_superseded", "(status = 'SUPERSEDED') = (superseded_by_achievement_id IS NOT NULL) AND (superseded_by_achievement_id IS NULL OR superseded_by_achievement_id <> id)");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationDelivery", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5222,6 +5387,57 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineMilestone", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("PlannedDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_date");
+
+                    b.Property<Guid>("ProjectBaselineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_baseline_id");
+
+                    b.Property<Guid>("ProjectMilestoneId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_milestone_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_baseline_milestone");
+
+                    b.HasIndex("ProjectMilestoneId")
+                        .HasDatabaseName("ix_baseline_milestone_project_milestone_id");
+
+                    b.HasIndex("ProjectBaselineId", "ProjectMilestoneId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_baseline_milestone_project_baseline_id_project_milestone_id");
+
+                    b.ToTable("baseline_milestone", "schedule", t =>
+                        {
+                            t.HasCheckConstraint("ck_baseline_milestone_append_only", "updated_at = created_at AND updated_by = created_by");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectBaseline", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5354,6 +5570,110 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_project_baseline_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'ACTIVE', 'SUPERSEDED', 'REJECTED', 'WITHDRAWN')");
 
                             t.HasCheckConstraint("ck_project_baseline_superseded", "(status = 'SUPERSEDED') = (superseded_at IS NOT NULL) AND (superseded_at IS NULL) = (superseded_by_baseline_id IS NULL) AND (superseded_by_baseline_id IS NULL OR superseded_by_baseline_id <> id)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectMilestone", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("ForecastDate")
+                        .HasColumnType("date")
+                        .HasColumnName("forecast_date");
+
+                    b.Property<Guid>("MilestoneCategoryItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("milestone_category_item_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("ProjectScheduleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_schedule_id");
+
+                    b.Property<Guid?>("ScheduleActivityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("schedule_activity_id");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.Schedule.ProjectMilestone.Title#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("title_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("title");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_milestone");
+
+                    b.HasIndex("MilestoneCategoryItemId")
+                        .HasDatabaseName("ix_project_milestone_milestone_category_item_id");
+
+                    b.HasIndex("ProjectScheduleId")
+                        .HasDatabaseName("ix_project_milestone_project_schedule_id");
+
+                    b.HasIndex("ScheduleActivityId")
+                        .HasDatabaseName("ix_project_milestone_schedule_activity_id");
+
+                    b.HasIndex("ProjectId", "ForecastDate")
+                        .HasDatabaseName("ix_project_milestone_project_id_forecast_date");
+
+                    b.HasIndex("Status", "ForecastDate")
+                        .HasDatabaseName("ix_project_milestone_status_forecast_date");
+
+                    b.ToTable("project_milestone", "schedule", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_milestone_sort_order", "sort_order >= 0");
+
+                            t.HasCheckConstraint("ck_project_milestone_status", "\"status\" IN ('PLANNED', 'ACHIEVED', 'CANCELLED')");
+
+                            t.HasCheckConstraint("ck_project_milestone_title_lang", "\"title_lang\" IN ('ar', 'en')");
                         });
                 });
 
@@ -6406,6 +6726,47 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_risk_rating_definition_configuration_version_configuration_");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Milestone.MilestoneAchievement", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_milestone_achievement_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.ProjectIntake", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectIntakeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_milestone_achievement_project_intake_project_intake_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectMilestone", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectMilestoneId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_milestone_achievement_project_milestone_project_milestone_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_milestone_achievement_user_reviewed_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_milestone_achievement_user_submitted_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Milestone.MilestoneAchievement", null)
+                        .WithMany()
+                        .HasForeignKey("SupersededByAchievementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_milestone_achievement_milestone_achievement_superseded_by_a");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Notifications.NotificationDelivery", b =>
                 {
                     b.HasOne("PMPlatform.Domain.Notifications.NotificationIntent", null)
@@ -6770,6 +7131,23 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_baseline_dependency_schedule_activity_successor_activity_id");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineMilestone", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectBaseline", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectBaselineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_baseline_milestone_project_baseline_project_baseline_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectMilestone", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectMilestoneId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_baseline_milestone_project_milestone_project_milestone_id");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectBaseline", b =>
                 {
                     b.HasOne("PMPlatform.Domain.Project.Project", null)
@@ -6790,6 +7168,36 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SupersededByBaselineId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_project_baseline_project_baseline_superseded_by_baseline_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectMilestone", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("MilestoneCategoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_milestone_master_data_item_milestone_category_item_");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_milestone_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectSchedule", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_milestone_project_schedule_project_schedule_id");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ScheduleActivity", null)
+                        .WithMany()
+                        .HasForeignKey("ScheduleActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_milestone_schedule_activity_schedule_activity_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectSchedule", b =>

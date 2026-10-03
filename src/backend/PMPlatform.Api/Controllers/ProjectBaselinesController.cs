@@ -17,7 +17,7 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route(Collection)]
 [Tags("Schedule")]
-public sealed class ProjectBaselinesController(IBaselineService baselines) : AdministrationControllerBase
+public sealed class ProjectBaselinesController(IBaselineService baselines, IProjectMilestoneService milestones) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/project-baselines";
 
@@ -101,5 +101,17 @@ public sealed class ProjectBaselinesController(IBaselineService baselines) : Adm
         List<FieldError> errors = [];
         PageRequest paging = QueryParameters.Page(page, pageSize, errors);
         return errors.Count > 0 ? ValidationFailed(errors) : Respond(await baselines.ListDependenciesAsync(CallerId, baselineId, paging, cancellationToken));
+    }
+
+    /// <summary>The milestone dates the baseline froze as it activated (TASK-050).</summary>
+    [HttpGet("{baselineId:guid}/baseline-milestones")]
+    [RequirePermission(PermissionCatalogue.ScheduleView)]
+    [ProducesResponseType<BaselineMilestonePage>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Schedule_ListBaselineMilestones")]
+    public async Task<IActionResult> ListMilestones(Guid baselineId, [FromQuery] int? page, [FromQuery] int? pageSize, CancellationToken cancellationToken)
+    {
+        List<FieldError> errors = [];
+        PageRequest paging = QueryParameters.Page(page, pageSize, errors);
+        return errors.Count > 0 ? ValidationFailed(errors) : Respond(await milestones.ListBaselineMilestonesAsync(CallerId, baselineId, paging, cancellationToken));
     }
 }

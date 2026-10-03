@@ -302,7 +302,7 @@ public sealed class AdministrationContractTests(IdentityTestHost host)
             using HttpResponseMessage renamed = await client.PutAsync($"{AdministrationApi.Roles}/{r06RoleId}", token, new { name = new { ar = "مستعرض فقط", en = "Read-only viewer" } }, AdministrationApi.ETagOf(role));
 
             Assert.Equal(["R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08"], (await roles.ReadArrayAsync()).Select(r => r!["code"]!.GetValue<string>()));
-            Assert.Equal(36, (await permissions.ReadArrayAsync()).Count);
+            Assert.Equal(38, (await permissions.ReadArrayAsync()).Count);
             Assert.Equal("R01-DEFAULT", Assert.Single((await profiles.ReadObjectAsync())["items"]!.AsArray())!["code"]!.GetValue<string>());
             JsonObject version = (await profile.ReadObjectAsync())["versions"]!.AsArray()[0]!.AsObject();
             Assert.Equal(("PUBLISHED", 16), (version["lifecycleState"]!.GetValue<string>(), version["grants"]!.AsArray().Count));

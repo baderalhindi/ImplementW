@@ -19,5 +19,15 @@ public sealed record ScheduleForecast(DateOnly ForecastStartDate, DateOnly Forec
 
 public sealed record ScheduleDependencyDraft(Guid PredecessorActivityId, Guid SuccessorActivityId, ScheduleDependencyType DependencyType, int LagDays);
 
+/// <summary>
+/// A new milestone of the project's schedule (TASK-050): its title, its MILESTONE_CATEGORY item, its Current Forecast date,
+/// and the activity it completes, if any.
+/// </summary>
+public sealed record ProjectMilestoneDraft(
+    Guid ProjectId, Guid? ScheduleActivityId, NarrativeText Title, Guid MilestoneCategoryItemId, DateOnly ForecastDate, int SortOrder);
+
+/// <summary>A milestone's editable inputs, as a whole (R-5).</summary>
+public sealed record ProjectMilestoneChanges(Guid? ScheduleActivityId, NarrativeText Title, Guid MilestoneCategoryItemId, DateOnly ForecastDate, int SortOrder);
+
 /// <summary>Submitting a candidate; a rebaseline names the WF-08 change authorisation it implements (BR-SCH-034).</summary>
 public sealed record BaselineSubmission(Guid? ChangeAuthorizationId);

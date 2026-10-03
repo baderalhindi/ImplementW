@@ -132,6 +132,19 @@ public sealed class PermissionCatalogue
     /// <summary>WF-04 (TASK-048): reopen a COMPLETED task. A permission of its own, so neither TASK_UPDATE nor TASK_MANAGE reopens one.</summary>
     public const string TaskReopen = "TASK_REOPEN";
 
+    /// <summary>
+    /// WF-05: the achievement revisions of a project's milestones and their evidence (TASK-050), on the projects the grant's
+    /// scope covers.
+    /// </summary>
+    public const string MilestoneView = "MILESTONE_VIEW";
+
+    /// <summary>
+    /// WF-05 (TASK-050): claim a milestone's achievement — open a revision, edit it while DRAFT, attach its evidence, submit
+    /// it to WF-11 — and correct an accepted one with a new revision. ADR-013: an entity Project Manager may submit claims on
+    /// their own project; acceptance stays with WF-05, decided through WF-11's APPROVAL_DECIDE, never by this permission.
+    /// </summary>
+    public const string MilestoneSubmit = "MILESTONE_SUBMIT";
+
     /// <summary>WF-15: the bilingual notification templates and their versions (TASK-039).</summary>
     public const string NotificationTemplateView = "NOTIFICATION_TEMPLATE_VIEW";
 
@@ -182,6 +195,8 @@ public sealed class PermissionCatalogue
             new(TaskUpdate, "PROJECT_TASK", AccessMode.Write),
             new(TaskManage, "PROJECT_TASK", AccessMode.Write),
             new(TaskReopen, "PROJECT_TASK", AccessMode.Write),
+            new(MilestoneView, "MILESTONE", AccessMode.Read),
+            new(MilestoneSubmit, "MILESTONE", AccessMode.Write),
             new(NotificationTemplateView, "NOTIFICATIONS", AccessMode.Read),
             new(NotificationTemplateManage, "NOTIFICATIONS", AccessMode.Write),
             new(NotificationDeliveryView, "NOTIFICATIONS", AccessMode.Read),
@@ -213,7 +228,10 @@ public sealed class PermissionCatalogue
     /// the other roles' schedule grants wait for Appendix A (schedule-baseline.md F-2). WF-04's four task permissions go to R04
     /// at OWN: the Project Manager plans the project's tasks, may edit a task's actual percentage (ADR-009) and holds the
     /// controlled reopen, on the projects the holder manages, internal or entity (ADR-013's amendment to TASK-048); the task
-    /// owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). WF-15's
+    /// owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). WF-05's view and submit go to R04 at OWN: ADR-013's
+    /// amendment to TASK-050 lets an entity Project Manager submit achievement claims on their own project, and OWN reaches the
+    /// projects the holder manages, internal or entity; acceptance is WF-11's and the other roles' milestone grants wait for
+    /// Appendix A (milestone-achievement.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
     /// (notification-runtime.md F-1): they are platform-wide.
     /// </summary>
@@ -250,6 +268,8 @@ public sealed class PermissionCatalogue
         new("R04", TaskUpdate, DataScope.Own),
         new("R04", TaskManage, DataScope.Own),
         new("R04", TaskReopen, DataScope.Own),
+        new("R04", MilestoneView, DataScope.Own),
+        new("R04", MilestoneSubmit, DataScope.Own),
         new("R02", LayoutPersonalize, DataScope.Own),
         new("R02", ReportCompose, DataScope.Own),
         new("R03", LayoutPersonalize, DataScope.Own),

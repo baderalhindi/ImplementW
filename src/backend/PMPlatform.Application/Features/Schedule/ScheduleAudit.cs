@@ -16,6 +16,7 @@ internal static class ScheduleAudit
     public const string DependencyType = "ScheduleDependency";
     public const string BaselineType = "ProjectBaseline";
     public const string HealthType = "ScheduleHealthStatus";
+    public const string MilestoneType = "ProjectMilestone";
 
     /// <summary>Why an approved candidate was returned instead of activated.</summary>
     public const string RebaselineNotAuthorized = "REBASELINE_NOT_AUTHORIZED";
@@ -74,6 +75,39 @@ internal static class ScheduleAudit
         [
             .. DependencyAttributes(dependency),
             AuditAttribute.Of(ScheduleAuditAttributes.RecalculatedActivityCount, recalculated),
+        ]);
+
+    public static AuditEntry MilestoneCreated(Guid actorId, ProjectFacts project, ProjectMilestone milestone) =>
+        Entry(AuditEventClass.DataChange, ScheduleAuditEvents.MilestoneCreated, actorId, project, SubjectOf(milestone),
+        [
+            AuditAttribute.Of(ScheduleAuditAttributes.ProjectScheduleId, milestone.ProjectScheduleId),
+            AuditAttribute.Of(ScheduleAuditAttributes.ScheduleActivityId, milestone.ScheduleActivityId),
+            AuditAttribute.Of(ScheduleAuditAttributes.MilestoneCategoryItemId, milestone.MilestoneCategoryItemId),
+            AuditAttribute.Of(ScheduleAuditAttributes.ForecastDate, milestone.ForecastDate),
+            AuditAttribute.Of(ScheduleAuditAttributes.SortOrder, milestone.SortOrder),
+        ]);
+
+    public static AuditEntry MilestoneChanged(Guid actorId, ProjectFacts project, MilestoneInputs before, ProjectMilestone milestone) =>
+        Entry(AuditEventClass.DataChange, ScheduleAuditEvents.MilestoneChanged, actorId, project, SubjectOf(milestone),
+            new[]
+            {
+                AuditAttribute.Change(ScheduleAuditAttributes.ScheduleActivityId, before.ScheduleActivityId, milestone.ScheduleActivityId),
+                AuditAttribute.WithheldChange(ScheduleAuditAttributes.Title, before.Title.Text, milestone.Title.Text),
+                AuditAttribute.Change(ScheduleAuditAttributes.MilestoneCategoryItemId, before.MilestoneCategoryItemId, milestone.MilestoneCategoryItemId),
+                AuditAttribute.Change(ScheduleAuditAttributes.ForecastDate, before.ForecastDate, milestone.ForecastDate),
+                AuditAttribute.Change(ScheduleAuditAttributes.SortOrder, before.SortOrder, milestone.SortOrder),
+            }.OfType<AuditAttribute>());
+
+    public static AuditEntry MilestoneCancelled(Guid actorId, ProjectFacts project, ProjectMilestone milestone) =>
+        Entry(AuditEventClass.LifecycleTransition, ScheduleAuditEvents.MilestoneCancelled, actorId, project, SubjectOf(milestone),
+            [AuditAttribute.Change(ScheduleAuditAttributes.Status, ProjectMilestoneStatus.Planned, milestone.Status)!]);
+
+    /// <summary>ICD-04: WF-05 accepted the achievement; the accepted date is WF-05's and is not copied here.</summary>
+    public static AuditEntry MilestoneAchieved(Guid actorId, ProjectFacts project, ProjectMilestone milestone, Guid milestoneAchievementId) =>
+        Entry(AuditEventClass.LifecycleTransition, ScheduleAuditEvents.MilestoneAchieved, actorId, project, SubjectOf(milestone),
+        [
+            AuditAttribute.Change(ScheduleAuditAttributes.Status, ProjectMilestoneStatus.Planned, milestone.Status)!,
+            AuditAttribute.Of(ScheduleAuditAttributes.MilestoneAchievementId, milestoneAchievementId),
         ]);
 
     public static AuditEntry BaselineCreated(Guid actorId, ProjectFacts project, ProjectBaseline baseline) =>
@@ -190,6 +224,14 @@ internal static class ScheduleAudit
     private static AuditSubject SubjectOf(ScheduleDependency dependency) => new(Module, DependencyType, dependency.Id);
 
     private static AuditSubject SubjectOf(ProjectBaseline baseline) => new(Module, BaselineType, baseline.Id);
+
+    private static AuditSubject SubjectOf(ProjectMilestone milestone) => new(Module, MilestoneType, milestone.Id);
+}
+
+/// <summary>A milestone's inputs before a change, for its audit event.</summary>
+internal sealed record MilestoneInputs(Guid? ScheduleActivityId, NarrativeText Title, Guid MilestoneCategoryItemId, DateOnly ForecastDate, int SortOrder)
+{
+    public static MilestoneInputs Of(ProjectMilestone m) => new(m.ScheduleActivityId, m.Title, m.MilestoneCategoryItemId, m.ForecastDate, m.SortOrder);
 }
 
 /// <summary>An activity's inputs before a change, for its audit event.</summary>

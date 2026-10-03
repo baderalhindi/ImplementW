@@ -176,9 +176,10 @@ internal sealed class BaselineService(
         if (!approvalRequired)
         {
             IReadOnlyList<ScheduleDependency> dependencies = await repository.ListDependenciesAsync(schedule.Id, cancellationToken).ConfigureAwait(false);
+            IReadOnlyList<ProjectMilestone> milestones = await repository.ListMilestonesAsync(schedule.Id, cancellationToken).ConfigureAwait(false);
             return await ActivatedAsync(
                 work, baseline,
-                await activation.ActivateAsync(new Activation(callerId, project, baseline, active, activities, dependencies, ApprovalRequired: false, now), cancellationToken)
+                await activation.ActivateAsync(new Activation(callerId, project, baseline, active, activities, dependencies, milestones, ApprovalRequired: false, now), cancellationToken)
                     .ConfigureAwait(false),
                 cancellationToken).ConfigureAwait(false);
         }

@@ -57,6 +57,12 @@ public static class ScheduleErrorCodes
     /// <summary>422: a rebaseline needs an applicable approved WF-08 change authorisation (BR-SCH-034).</summary>
     public const string ChangeAuthorizationRequired = "SCHEDULE_CHANGE_AUTHORIZATION_REQUIRED";
 
+    /// <summary>422: the milestone's category is not a PUBLISHED MILESTONE_CATEGORY item (TASK-050).</summary>
+    public const string MilestoneCategoryInvalid = "SCHEDULE_MILESTONE_CATEGORY_INVALID";
+
+    /// <summary>422: the activity a milestone completes is not a live activity of the project's schedule (TASK-050).</summary>
+    public const string MilestoneActivityInvalid = "SCHEDULE_MILESTONE_ACTIVITY_INVALID";
+
     /// <summary>409: the database refused a second ACTIVE baseline of the project (api-conventions R-27's example).</summary>
     public const string SingleActiveBaseline = "SCHEDULE_SINGLE_ACTIVE_BASELINE";
 }

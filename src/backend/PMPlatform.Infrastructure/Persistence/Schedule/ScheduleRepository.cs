@@ -80,6 +80,29 @@ internal sealed class ScheduleRepository(PMPlatformDbContext context) : ISchedul
     public Task<ScheduleDependency?> FindDependencyAsync(Guid dependencyId, CancellationToken cancellationToken) =>
         context.Set<ScheduleDependency>().SingleOrDefaultAsync(d => d.Id == dependencyId, cancellationToken);
 
+    public async Task<IReadOnlyList<ProjectMilestone>> ListMilestonesAsync(Guid projectScheduleId, CancellationToken cancellationToken) =>
+        await context.Set<ProjectMilestone>().AsNoTracking().Where(m => m.ProjectScheduleId == projectScheduleId).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    // I-35: SCR-046's milestones tab, a project's milestones by forecast date.
+    public Task<(IReadOnlyList<ProjectMilestone> Items, int TotalCount)> PageMilestonesAsync(Guid projectId, PageRequest page, CancellationToken cancellationToken) =>
+        PageAsync(
+            context.Set<ProjectMilestone>().AsNoTracking().Where(m => m.ProjectId == projectId).OrderBy(m => m.ForecastDate).ThenBy(m => m.Id),
+            page, cancellationToken);
+
+    public async Task<ProjectMilestone?> FindMilestoneAsync(Guid milestoneId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        ProjectMilestone? milestone = await context.Set<ProjectMilestone>().SingleOrDefaultAsync(m => m.Id == milestoneId, cancellationToken).ConfigureAwait(false);
+        if (milestone is not null)
+        {
+            AdministrationPersistence.ExpectVersion(context, milestone, expectedVersion);
+        }
+
+        return milestone;
+    }
+
+    public Task<ProjectMilestone?> ReadMilestoneAsync(Guid milestoneId, CancellationToken cancellationToken) =>
+        context.Set<ProjectMilestone>().AsNoTracking().SingleOrDefaultAsync(m => m.Id == milestoneId, cancellationToken);
+
     public async Task<IReadOnlyList<ProjectBaseline>> ListBaselinesAsync(Guid projectId, bool track, CancellationToken cancellationToken)
     {
         IQueryable<ProjectBaseline> rows = context.Set<ProjectBaseline>();
@@ -122,6 +145,14 @@ internal sealed class ScheduleRepository(PMPlatformDbContext context) : ISchedul
             context.Set<BaselineDependency>().AsNoTracking().Where(d => d.ProjectBaselineId == baselineId).OrderBy(d => d.PredecessorActivityId).ThenBy(d => d.SuccessorActivityId),
             page, cancellationToken);
 
+    public async Task<IReadOnlyList<BaselineMilestone>> ListBaselineMilestonesAsync(Guid baselineId, CancellationToken cancellationToken) =>
+        await context.Set<BaselineMilestone>().AsNoTracking().Where(m => m.ProjectBaselineId == baselineId).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public Task<(IReadOnlyList<BaselineMilestone> Items, int TotalCount)> PageBaselineMilestonesAsync(Guid baselineId, PageRequest page, CancellationToken cancellationToken) =>
+        PageAsync(
+            context.Set<BaselineMilestone>().AsNoTracking().Where(m => m.ProjectBaselineId == baselineId).OrderBy(m => m.PlannedDate).ThenBy(m => m.ProjectMilestoneId),
+            page, cancellationToken);
+
     public Task<ScheduleHealthStatus?> FindHealthStatusAsync(Guid projectId, bool track, CancellationToken cancellationToken)
     {
         IQueryable<ScheduleHealthStatus> rows = context.Set<ScheduleHealthStatus>();
@@ -136,6 +167,8 @@ internal sealed class ScheduleRepository(PMPlatformDbContext context) : ISchedul
 
     public uint RowVersionOf(ProjectBaseline baseline) => RowVersion(baseline);
 
+    public uint RowVersionOf(ProjectMilestone milestone) => RowVersion(milestone);
+
     public void Add(ProjectSchedule schedule) => context.Add(schedule);
 
     public void Add(ScheduleActivity activity) => context.Add(activity);
@@ -149,6 +182,10 @@ internal sealed class ScheduleRepository(PMPlatformDbContext context) : ISchedul
     public void Add(BaselineDependency baselineDependency) => context.Add(baselineDependency);
 
     public void Add(ScheduleHealthStatus healthStatus) => context.Add(healthStatus);
+
+    public void Add(ProjectMilestone milestone) => context.Add(milestone);
+
+    public void Add(BaselineMilestone baselineMilestone) => context.Add(baselineMilestone);
 
     public void Remove(ScheduleDependency dependency) => context.Remove(dependency);
 

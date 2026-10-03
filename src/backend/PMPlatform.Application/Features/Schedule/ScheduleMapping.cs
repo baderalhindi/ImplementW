@@ -32,9 +32,24 @@ internal static class ScheduleMapping
 
     public static BaselineDependencyDetail ToDetail(BaselineDependency d) => new(d.PredecessorActivityId, d.SuccessorActivityId, d.DependencyType, d.LagDays);
 
+    /// <summary>The milestone with the ACTIVE baseline's date for it, if the baseline has one, and the forecast's variance from that date.</summary>
+    public static ProjectMilestoneDetail ToDetail(ProjectMilestone m, ActiveMilestoneBaseline? baseline)
+    {
+        BaselineMilestone? reference = baseline?.Milestones.GetValueOrDefault(m.Id);
+        return new ProjectMilestoneDetail(
+            m.Id, m.ProjectId, m.ProjectScheduleId, m.ScheduleActivityId, m.Title, m.MilestoneCategoryItemId, m.ForecastDate, m.Status, m.SortOrder,
+            reference is null ? null : baseline!.BaselineId, reference?.PlannedDate, ScheduleVariance.Of(m, reference),
+            m.CreatedAt, m.CreatedBy, m.UpdatedAt, m.UpdatedBy);
+    }
+
+    public static BaselineMilestoneDetail ToDetail(BaselineMilestone m) => new(m.ProjectMilestoneId, m.PlannedDate);
+
     public static ScheduleHealthStatusDetail ToDetail(ScheduleHealthStatus h) =>
         new(h.Id, h.ProjectId, h.ProjectBaselineId, h.ScheduleHealth, h.FinishVarianceDays, h.ComputedAt, h.HealthRuleConfigurationVersionId);
 }
+
+/// <summary>The ACTIVE baseline's id and its frozen milestone dates by milestone id: the reference of a milestone's variance.</summary>
+internal sealed record ActiveMilestoneBaseline(Guid BaselineId, IReadOnlyDictionary<Guid, BaselineMilestone> Milestones);
 
 /// <summary>The ACTIVE baseline and its frozen activities by schedule activity id: the reference of every variance.</summary>
 internal sealed record ActiveBaseline(ProjectBaseline Baseline, IReadOnlyDictionary<Guid, BaselineActivity> Activities);

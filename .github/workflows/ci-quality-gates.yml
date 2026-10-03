@@ -131,6 +131,15 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.ProjectTask
 
+      # TASK-050: WF-05 milestone achievement and WF-03's shared milestone — a correction as a new revision with the accepted one
+      # kept and SUPERSEDED, acceptance through WF-11, mandatory evidence, and the database guards. Same database and directory as above.
+      - name: Milestone integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Milestone
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest

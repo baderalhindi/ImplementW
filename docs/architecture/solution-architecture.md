@@ -251,7 +251,8 @@ flowchart LR
   CLO --> PRJ
   TSK --> SCH
   TSK --> PRJ
-  MIL <-->|"split authority<br/>ICD-04"| SCH
+  MIL -->|"split authority<br/>ICD-04"| SCH
+  MIL --> PRJ
   SCH --> CHG
   FIN --> CHG
   FIN --> PRG
@@ -319,7 +320,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 7 | Suspension | Project | command | Active↔Suspended lifecycle transition, distinct from the request record | TASK-062 |
 | 8 | Closure | Project | command | Completed then Closed transitions; Closed is terminal | TASK-063 |
 | 9 | ProjectTask | Schedule | query | activity identity and dates the task executes against | TASK-048 dep TASK-046 |
-| 10 | Milestone ↔ Schedule | — | split-authority contract | WF-03 owns schedule representation and dates; WF-05 owns achievement evidence and the accepted Actual Achievement Date | ICD-04; TASK-050 |
+| 10 | Milestone | Schedule | split-authority contract | WF-03 owns schedule representation and dates; WF-05 owns achievement evidence and the accepted Actual Achievement Date. One direction: WF-05 queries the shared milestone (`IProjectMilestoneReader`) and, on acceptance, has WF-03 record it ACHIEVED in the same transaction (`IMilestoneAchievementRecorder`); WF-03 never calls WF-05 | ICD-04; TASK-050 (direction set 2026-10-03, `milestone-achievement.md` D-2) |
 | 11 | Schedule | ChangeRequest | query | version-pinned ChangeAuthorization, read before rebaseline | TASK-060 |
 | 12 | FinancialKpi | ChangeRequest | query | version-pinned ChangeAuthorization, read before a commitment change | TASK-060 |
 | 13 | FinancialKpi | Progress | query | reporting-cycle and period alignment | TASK-052 dep TASK-044 |
@@ -346,6 +347,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 34 | IntegrationMonitoring | AuditActivity | query | integration audit log view (ADM-053) | TASK-075 dep TASK-073 |
 | 35 | Project | Schedule, Progress, Milestone, FinancialKpi | event (`ProjectIntakeRecorded`) | legacy-intake Declared Baseline and opening position, each written by its owning module (§11.1) | TASK-104 |
 | 36 | ProjectTask | Project | query | project identity, anchors and lifecycle state, as edges 1–6: a task is authorized on its project's anchors (M-7) and executed only while the project is ACTIVE | TASK-048 (added 2026-10-03, `project-task.md` D-2) |
+| 37 | Milestone | Project | query | project identity, anchors and lifecycle state, as edges 1–6: an achievement claim is authorized on its project's anchors (M-7) and made only while the project is ACTIVE | TASK-050 (added 2026-10-03, `milestone-achievement.md` D-3) |
 
 ### 8.3 Count
 
@@ -354,10 +356,10 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | Modules | **21** |
 | WF/FG domains mapped | **21** (WF-01–WF-15, FG-01–FG-06), 1:1 |
 | Universal edge rules | 4 |
-| Specific edges | 36 |
+| Specific edges | 37 |
 | Edges whose mechanism is direct cross-module repository or table access | **0** |
 | Edges flagged as inferred pending a rank-1 spec | 4 (nos. 19, 25, 26, 27) |
-| Cycles in the core-domain call graph | **0** (edge 35 is an event; edge 10 is a declared split-authority contract, not two calls) |
+| Cycles in the core-domain call graph | **0** (edge 35 is an event; edge 10, the declared split-authority contract, runs Milestone → Schedule only) |
 
 ## 9. Entity ownership register
 
@@ -520,3 +522,4 @@ On Q1 and Q2 being confirmed, the header status becomes **APPROVED**, the regist
 | --- | --- | --- |
 | 2026-09-20 | Initial record. Option A ratified as the delivery-team proposal, status held at Proposed — Pending AHDA Approval and paired with ADR-002 per the TASK-007 gate note. Three tiers and six API-01 rules recorded (§4.1); 21-module registry mapped 1:1 to WF-01–WF-15 and FG-01–FG-06 (§4.3); the six disputed module names settled and WF-04 renamed `ProjectTask` (§4.4); thirteen call rules (§6); module dependency diagram and a 4+35 edge register with zero repository edges (§7, §8); entity-to-module ownership register with four declared split-authority pairs and the WF-02 aggregate gap (§9); six-rule architecture-test enforcement suite (§10); five workbook consequences specified (§11); eight residual items (S-1 to S-8). | Architecture (TASK-007) |
 | 2026-10-03 | §8.2 edge 36 added, ProjectTask → Project (query), the `IProjectFactsReader` edges 1–6 give the other core modules: WF-04 decides every task operation on the project's anchors and gates execution on its lifecycle state, and edge 9 carries only the schedule activity. No cycle: Project calls no module back. Diagram and §8.3 count updated; M-9's reference to the intake path corrected from edge 36 to 35, its number in the register. `ModuleRegistry` records the edge. Proposed by the delivery team with TASK-048 (`project-task.md` F-1), for the Engagement Architect's confirmation. | Backend (TASK-048) |
+| 2026-10-03 | §8.2 edge 10's direction set: Milestone → Schedule only, a query of the shared milestone and a command that records it ACHIEVED on acceptance, in the accepting transaction; Schedule calls Milestone in no way, so the pair is no cycle. Edge 37 added, Milestone → Project (query), as edge 36 for ProjectTask. Edge 25 implemented through WF-11 (S-4 decided for WF-05 by the delivery team, pending the WF-05 specification). Diagram, §8.3 count and cycle note updated; `ModuleRegistry` records edge 10. Proposed with TASK-050 (`milestone-achievement.md` F-1, F-3), for the Engagement Architect's confirmation. | Backend (TASK-050) |

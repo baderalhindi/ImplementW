@@ -12,6 +12,7 @@ using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig;
+using PMPlatform.Application.Features.Milestone;
 using PMPlatform.Application.Features.Notifications;
 using PMPlatform.Application.Features.Progress;
 using PMPlatform.Application.Features.Project;
@@ -26,6 +27,7 @@ using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
 using PMPlatform.Infrastructure.Persistence.DocumentManagement;
+using PMPlatform.Infrastructure.Persistence.Milestone;
 using PMPlatform.Infrastructure.Persistence.Progress;
 using PMPlatform.Infrastructure.Persistence.Project;
 using PMPlatform.Infrastructure.Persistence.ProjectTask;
@@ -99,6 +101,9 @@ public static class DependencyInjection
 
         // TASK-048: WF-04's project_task schema.
         services.AddScoped<IProjectTaskRepository, ProjectTaskRepository>();
+
+        // TASK-050: WF-05's milestone schema.
+        services.AddScoped<IMilestoneRepository, MilestoneRepository>();
 
         services.AddNotifications(configuration);
 

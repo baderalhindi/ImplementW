@@ -72,6 +72,33 @@ public sealed record BaselineActivityDetail(
 /// <summary>A dependency as its baseline froze it.</summary>
 public sealed record BaselineDependencyDetail(Guid PredecessorActivityId, Guid SuccessorActivityId, ScheduleDependencyType DependencyType, int LagDays);
 
+/// <summary>
+/// A milestone as WF-03 holds it (ICD-04): its schedule representation and status, with the ACTIVE baseline's planned date and
+/// the forecast's variance from it in working days, positive = late; both null when the ACTIVE baseline does not include the
+/// milestone, or there is none. Its achievement — evidence and the accepted Actual Achievement Date — is WF-05's:
+/// <c>GET /milestone-achievements?projectMilestoneId={id}</c>.
+/// </summary>
+public sealed record ProjectMilestoneDetail(
+    Guid Id,
+    Guid ProjectId,
+    Guid ProjectScheduleId,
+    Guid? ScheduleActivityId,
+    NarrativeText Title,
+    Guid MilestoneCategoryItemId,
+    DateOnly ForecastDate,
+    ProjectMilestoneStatus Status,
+    int SortOrder,
+    Guid? BaselineId,
+    DateOnly? BaselinePlannedDate,
+    int? ForecastVarianceDays,
+    DateTimeOffset CreatedAt,
+    Guid CreatedBy,
+    DateTimeOffset UpdatedAt,
+    Guid UpdatedBy);
+
+/// <summary>A milestone's date as its baseline froze it.</summary>
+public sealed record BaselineMilestoneDetail(Guid ProjectMilestoneId, DateOnly PlannedDate);
+
 /// <summary>The CURRENT/LIVE Schedule Health, as WF-03 last computed it.</summary>
 public sealed record ScheduleHealthStatusDetail(
     Guid Id, Guid ProjectId, Guid? ProjectBaselineId, ScheduleHealth ScheduleHealth, int? FinishVarianceDays, DateTimeOffset ComputedAt, Guid? HealthRuleConfigurationVersionId);
