@@ -43,6 +43,18 @@ public interface IScheduleRepository
     /// <summary>Tracked.</summary>
     public Task<ScheduleDependency?> FindDependencyAsync(Guid dependencyId, CancellationToken cancellationToken);
 
+    /// <summary>Every milestone of the schedule, cancelled ones included. Not tracked.</summary>
+    public Task<IReadOnlyList<ProjectMilestone>> ListMilestonesAsync(Guid projectScheduleId, CancellationToken cancellationToken);
+
+    /// <summary>One page of the project's milestones, earliest forecast first, with the total. Not tracked.</summary>
+    public Task<(IReadOnlyList<ProjectMilestone> Items, int TotalCount)> PageMilestonesAsync(Guid projectId, PageRequest page, CancellationToken cancellationToken);
+
+    /// <summary>Tracked. With <paramref name="expectedVersion"/>, the next save is conditional on it (R-21).</summary>
+    public Task<ProjectMilestone?> FindMilestoneAsync(Guid milestoneId, uint? expectedVersion, CancellationToken cancellationToken);
+
+    /// <summary>Not tracked: what WF-05 reads (edge 10).</summary>
+    public Task<ProjectMilestone?> ReadMilestoneAsync(Guid milestoneId, CancellationToken cancellationToken);
+
     /// <summary>Every baseline of the project; tracked when <paramref name="track"/>.</summary>
     public Task<IReadOnlyList<ProjectBaseline>> ListBaselinesAsync(Guid projectId, bool track, CancellationToken cancellationToken);
 
@@ -64,6 +76,11 @@ public interface IScheduleRepository
 
     public Task<(IReadOnlyList<BaselineDependency> Items, int TotalCount)> PageBaselineDependenciesAsync(Guid baselineId, PageRequest page, CancellationToken cancellationToken);
 
+    /// <summary>The milestone dates the baseline froze. Not tracked.</summary>
+    public Task<IReadOnlyList<BaselineMilestone>> ListBaselineMilestonesAsync(Guid baselineId, CancellationToken cancellationToken);
+
+    public Task<(IReadOnlyList<BaselineMilestone> Items, int TotalCount)> PageBaselineMilestonesAsync(Guid baselineId, PageRequest page, CancellationToken cancellationToken);
+
     /// <summary>The project's live Schedule Health row; tracked when <paramref name="track"/>.</summary>
     public Task<ScheduleHealthStatus?> FindHealthStatusAsync(Guid projectId, bool track, CancellationToken cancellationToken);
 
@@ -75,6 +92,8 @@ public interface IScheduleRepository
     public uint RowVersionOf(ScheduleDependency dependency);
 
     public uint RowVersionOf(ProjectBaseline baseline);
+
+    public uint RowVersionOf(ProjectMilestone milestone);
 
     public void Add(ProjectSchedule schedule);
 
@@ -89,6 +108,10 @@ public interface IScheduleRepository
     public void Add(BaselineDependency baselineDependency);
 
     public void Add(ScheduleHealthStatus healthStatus);
+
+    public void Add(ProjectMilestone milestone);
+
+    public void Add(BaselineMilestone baselineMilestone);
 
     /// <summary>HARD_WORKING.</summary>
     public void Remove(ScheduleDependency dependency);

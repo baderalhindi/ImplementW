@@ -42,8 +42,8 @@ internal static class ModuleRegistry
         ("Suspension", "Project"),                   // 7 command
         ("Closure", "Project"),                      // 8 command
         ("ProjectTask", "Schedule"),                 // 9
-        // 10 Milestone ↔ Schedule is a split-authority contract (ICD-04), not a call; the direction
-        //    TASK-050 implements is added by revising §8.2 first.
+        ("Milestone", "Schedule"),                   // 10 split-authority contract (ICD-04), WF-05 → WF-03 only: query the
+                                                     //    shared milestone, record it ACHIEVED on acceptance (TASK-050)
         ("Schedule", "ChangeRequest"),               // 11
         ("FinancialKpi", "ChangeRequest"),           // 12
         ("FinancialKpi", "Progress"),                // 13

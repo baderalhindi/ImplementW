@@ -15,6 +15,7 @@ internal sealed class ApprovalRequestService(
     ApprovalPolicy policy,
     IAuthorizationEngine engine,
     IEnumerable<IApprovalOutcomeHandler> outcomeHandlers,
+    IApprovalRunReader runReader,
     IAuditTrail audit,
     TimeProvider timeProvider) : IApprovalRequests
 {
@@ -90,7 +91,6 @@ internal sealed class ApprovalRequestService(
         return ApprovalMapping.ToDetail(instance, tasks);
     }
 
-    public async Task<IReadOnlyList<ApprovalInstanceDetail>> FindBySubjectAsync(string subjectModule, string subjectType, Guid subjectId, CancellationToken cancellationToken) =>
-        [.. (await repository.FindBySubjectAsync(subjectModule, subjectType, subjectId, cancellationToken).ConfigureAwait(false))
-            .Select(run => ApprovalMapping.ToDetail(run.Instance, run.Tasks))];
+    public Task<IReadOnlyList<ApprovalInstanceDetail>> FindBySubjectAsync(string subjectModule, string subjectType, Guid subjectId, CancellationToken cancellationToken) =>
+        runReader.FindBySubjectAsync(subjectModule, subjectType, subjectId, cancellationToken);
 }

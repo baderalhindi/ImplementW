@@ -134,7 +134,11 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- schedule grants wait for Appendix A (schedule-baseline.md F-2). TASK_VIEW, TASK_UPDATE, TASK_MANAGE and TASK_REOPEN
 -- (TASK-048) go to R04 at OWN: the Project Manager plans the project's tasks, may edit a task's actual percentage (ADR-009)
 -- and holds the controlled reopen, on the projects the holder manages, internal or entity (ADR-013's amendment to
--- TASK-048). The task owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). The four WF-15 permissions (TASK-039) — notification templates and the
+-- TASK-048). The task owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). MILESTONE_VIEW and MILESTONE_SUBMIT
+-- (TASK-050) go to R04 at OWN: ADR-013's amendment to TASK-050 lets an entity Project Manager submit milestone achievement
+-- claims on their own project, and OWN reaches the projects the holder manages, internal or entity. Acceptance stays with
+-- WF-05, decided through WF-11's APPROVAL_DECIDE; the other roles' milestone grants wait for Appendix A
+-- (milestone-achievement.md F-2). The four WF-15 permissions (TASK-039) — notification templates and the
 -- delivery operations view with dead-letter redrive — go to R01 at ALL by delivery-team decision, as FG-04 did
 -- (notification-runtime.md F-1): templates and deliveries are platform-wide, with no record to scope. A person's own
 -- inbox and preferences need no permission. Blueprint Appendix A, the rest of the matrix, is not in
@@ -179,6 +183,8 @@ FROM (VALUES
     ('TASK_UPDATE',                 'تحديث تنفيذ المهام',   'Update task execution',       'PROJECT_TASK',    false),
     ('TASK_MANAGE',                 'إدارة المهام',         'Manage tasks',                'PROJECT_TASK',    false),
     ('TASK_REOPEN',                 'إعادة فتح المهام المكتملة', 'Reopen completed tasks', 'PROJECT_TASK',    false),
+    ('MILESTONE_VIEW',              'عرض إنجاز المعالم',    'View milestone achievements', 'MILESTONE',       false),
+    ('MILESTONE_SUBMIT',            'تقديم إنجاز المعالم',  'Submit milestone achievements', 'MILESTONE',     false),
     ('NOTIFICATION_TEMPLATE_VIEW',  'عرض قوالب الإشعارات',  'View notification templates', 'NOTIFICATIONS',   false),
     ('NOTIFICATION_TEMPLATE_MANAGE', 'إدارة قوالب الإشعارات', 'Manage notification templates', 'NOTIFICATIONS', true),
     ('NOTIFICATION_DELIVERY_VIEW',  'عرض عمليات الإشعارات', 'View notification deliveries', 'NOTIFICATIONS',  false),
@@ -228,6 +234,8 @@ FROM (VALUES
     ('R04', 'TASK_UPDATE',                 'OWN'),
     ('R04', 'TASK_MANAGE',                 'OWN'),
     ('R04', 'TASK_REOPEN',                 'OWN'),
+    ('R04', 'MILESTONE_VIEW',              'OWN'),
+    ('R04', 'MILESTONE_SUBMIT',            'OWN'),
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R03', 'REPORT_COMPOSE',              'OWN'),
     ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),

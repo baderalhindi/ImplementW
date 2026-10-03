@@ -22,6 +22,9 @@ using PMPlatform.Application.Features.Progress.Contracts;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.EventHandlers;
+using PMPlatform.Application.Features.Milestone;
+using PMPlatform.Application.Features.Milestone.Contracts;
+using PMPlatform.Application.Features.Milestone.EventHandlers;
 using PMPlatform.Application.Features.ProjectTask;
 using PMPlatform.Application.Features.ProjectTask.Contracts;
 using PMPlatform.Application.Features.Schedule;
@@ -82,6 +85,7 @@ public static class DependencyInjection
         services.AddScoped<ApprovalAuthority>();
         services.AddScoped<ApprovalEscalation>();
         services.AddScoped<ApprovalOutcomes>();
+        services.AddScoped<IApprovalRunReader, ApprovalRunReader>();
         services.AddScoped<IApprovalRequests, ApprovalRequestService>();
         services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
         services.AddScoped<IApprovalDelegationService, ApprovalDelegationService>();
@@ -144,6 +148,12 @@ public static class DependencyInjection
         services.AddScoped<IScheduleHealthReader, ScheduleHealthReader>();
         services.AddScoped<IScheduleActivityReader, ScheduleActivityReader>();
 
+        // TASK-050: WF-03's side of the shared milestone (ICD-04) — the milestones of the schedule, and the contract WF-05 reads
+        // and records an acceptance through (edge 10).
+        services.AddScoped<IProjectMilestoneService, ProjectMilestoneService>();
+        services.AddScoped<IProjectMilestoneReader, ProjectMilestoneReader>();
+        services.AddScoped<IMilestoneAchievementRecorder, MilestoneAchievementRecorder>();
+
         // TASK-048: WF-04 tasks, their dependencies and the Activity Execution Progress. The repository is Infrastructure's;
         // schedule activities are read through Schedule's reader (edge 9) and the project's facts through Project's (edge 36).
         services.AddScoped<ProjectTaskAccess>();
@@ -153,6 +163,13 @@ public static class DependencyInjection
         services.AddScoped<IProjectTaskService, ProjectTaskService>();
         services.AddScoped<ITaskExecutionService, TaskExecutionService>();
         services.AddScoped<ITaskDependencyService, TaskDependencyService>();
+
+        // TASK-050: WF-05 achievement claims and their revisions. The repository is Infrastructure's; the milestone is WF-03's,
+        // read through Schedule's reader (edge 10); acceptance comes from WF-11 through the outcome handler (edges 25, 28).
+        services.AddScoped<MilestoneAccess>();
+        services.AddScoped<MilestoneEvidencePolicy>();
+        services.AddScoped<IMilestoneAchievementService, MilestoneAchievementService>();
+        services.AddScoped<IApprovalOutcomeHandler, MilestoneAchievementOutcomeHandler>();
 
         return services;
     }

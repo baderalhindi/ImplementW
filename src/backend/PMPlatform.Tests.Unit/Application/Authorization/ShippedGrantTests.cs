@@ -259,6 +259,30 @@ public sealed class ShippedGrantTests
         Assert.Equal(AuthorizationDecision.Allowed, await reopener.AuthorizeAsync(PermissionCatalogue.TaskReopen, task));
     }
 
+    /// <summary>
+    /// TASK-050: the Project Manager views and submits milestone achievement claims at OWN — the projects they manage. Acceptance is
+    /// WF-11's APPROVAL_DECIDE, not a milestone permission; the other roles' grants wait for Appendix A (milestone-achievement.md F-2).
+    /// </summary>
+    [Fact]
+    public void MilestoneAchievementsGoToTheProjectManagerOnly()
+    {
+        Assert.Equal(
+            [("R04", PermissionCatalogue.MilestoneView, DataScope.Own), ("R04", PermissionCatalogue.MilestoneSubmit, DataScope.Own)],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("MILESTONE_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+    }
+
+    /// <summary>ADR-013's amendment to TASK-050: an entity Project Manager submits achievement claims on their own project, and on no other.</summary>
+    [Fact]
+    public async Task OnlyTheProjectsOwnManagerSubmitsItsAchievementClaims()
+    {
+        AuthorizationScenario entityManager = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R04", PermissionCatalogue.MilestoneSubmit, DataScope.Own, entityId: EntityId, projectId: ProjectId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityManager.AuthorizeAsync(PermissionCatalogue.MilestoneSubmit, Managed(ProjectId, EntityId, UserId)));
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.MilestoneSubmit, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.MilestoneSubmit, Managed(OtherProjectId, EntityId, UserId))).IsAllowed);
+    }
+
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>
     [Fact]
     public void NotificationTemplatesAndDeliveryOperationsGoToR01Only()

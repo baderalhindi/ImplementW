@@ -54,6 +54,18 @@ public static class ScheduleAuditEvents
     /// <summary>LIFECYCLE_TRANSITION, FAILED: a WF-11 outcome for a revision that is no longer under review (EV-5).</summary>
     public const string ApprovalOutcomeIgnored = "Schedule.ApprovalOutcomeIgnored";
 
+    /// <summary>DATA_CHANGE: a milestone was added to the schedule (TASK-050).</summary>
+    public const string MilestoneCreated = "Schedule.MilestoneCreated";
+
+    /// <summary>DATA_CHANGE: a milestone's inputs changed (the title withheld).</summary>
+    public const string MilestoneChanged = "Schedule.MilestoneChanged";
+
+    /// <summary>LIFECYCLE_TRANSITION: PLANNED → CANCELLED.</summary>
+    public const string MilestoneCancelled = "Schedule.MilestoneCancelled";
+
+    /// <summary>LIFECYCLE_TRANSITION: PLANNED → ACHIEVED, recorded when WF-05 accepted an achievement of the milestone (ICD-04).</summary>
+    public const string MilestoneAchieved = "Schedule.MilestoneAchieved";
+
     /// <summary>DATA_CHANGE: ADR-014's Declared Baseline was recorded ACTIVE from an intake.</summary>
     public const string DeclaredBaselineRecorded = "Schedule.DeclaredBaselineRecorded";
 

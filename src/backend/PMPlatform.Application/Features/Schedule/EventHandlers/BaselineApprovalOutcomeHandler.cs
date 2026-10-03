@@ -81,6 +81,7 @@ internal sealed class BaselineApprovalOutcomeHandler(
                 active,
                 await repository.ListActivitiesAsync(schedule.Id, track: false, cancellationToken).ConfigureAwait(false),
                 await repository.ListDependenciesAsync(schedule.Id, cancellationToken).ConfigureAwait(false),
+                await repository.ListMilestonesAsync(schedule.Id, cancellationToken).ConfigureAwait(false),
                 ApprovalRequired: true,
                 timeProvider.GetUtcNow()),
             cancellationToken).ConfigureAwait(false);

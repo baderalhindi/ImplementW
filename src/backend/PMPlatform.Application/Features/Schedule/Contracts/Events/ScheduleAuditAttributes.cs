@@ -36,4 +36,9 @@ public static class ScheduleAuditAttributes
     public const string FinishVarianceDays = "finish_variance_days";
     public const string ProjectBaselineId = "project_baseline_id";
     public const string HealthRuleConfigurationVersionId = "health_rule_configuration_version_id";
+    public const string ScheduleActivityId = "schedule_activity_id";
+    public const string Title = "title";
+    public const string MilestoneCategoryItemId = "milestone_category_item_id";
+    public const string ForecastDate = "forecast_date";
+    public const string MilestoneAchievementId = "milestone_achievement_id";
 }

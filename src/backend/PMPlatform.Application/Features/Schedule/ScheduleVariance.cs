@@ -21,6 +21,13 @@ internal static class ScheduleVariance
                 WorkingDays.Variance(reference.PlannedFinishDate, activity.ForecastFinishDate));
     }
 
+    /// <summary>A milestone's forecast against its date in the baseline; null when the baseline has none.</summary>
+    public static int? Of(ProjectMilestone milestone, BaselineMilestone? reference)
+    {
+        ArgumentNullException.ThrowIfNull(milestone);
+        return reference is null ? null : WorkingDays.Variance(reference.PlannedDate, milestone.ForecastDate);
+    }
+
     /// <summary>The project's finish variance: forecast finish against the baseline's finish; null without either.</summary>
     public static int? ProjectFinish(ProjectBaseline? baseline, DateOnly? forecastFinish) =>
         baseline is null || forecastFinish is null ? null : WorkingDays.Variance(baseline.BaselineFinishDate, forecastFinish.Value);

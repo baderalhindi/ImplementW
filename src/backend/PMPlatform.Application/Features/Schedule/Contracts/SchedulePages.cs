@@ -18,5 +18,11 @@ public sealed record BaselineActivityPage(IReadOnlyList<BaselineActivityDetail> 
 /// <summary>The dependencies a baseline froze (R-29).</summary>
 public sealed record BaselineDependencyPage(IReadOnlyList<BaselineDependencyDetail> Items, int Page, int PageSize, int TotalCount);
 
+/// <summary>A project's milestones, earliest forecast first (R-29).</summary>
+public sealed record ProjectMilestonePage(IReadOnlyList<ProjectMilestoneDetail> Items, int Page, int PageSize, int TotalCount);
+
+/// <summary>The milestones a baseline froze (R-29).</summary>
+public sealed record BaselineMilestonePage(IReadOnlyList<BaselineMilestoneDetail> Items, int Page, int PageSize, int TotalCount);
+
 /// <summary>A project's live Schedule Health: one item once computed (R-29).</summary>
 public sealed record ScheduleHealthStatusPage(IReadOnlyList<ScheduleHealthStatusDetail> Items, int Page, int PageSize, int TotalCount);

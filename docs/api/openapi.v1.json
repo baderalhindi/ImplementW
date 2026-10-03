@@ -2931,6 +2931,367 @@
         }
       }
     },
+    "/api/v1/milestone-achievements": {
+      "get": {
+        "tags": [
+          "Milestone"
+        ],
+        "summary": "The revisions of one milestone (`projectMilestoneId`) or of a project's milestones (`projectId`), exactly one of the two, newest first.",
+        "operationId": "Milestone_ListMilestoneAchievements",
+        "parameters": [
+          {
+            "name": "projectMilestoneId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneAchievementPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Milestone"
+        ],
+        "summary": "Opens the milestone's next revision as a DRAFT: a first claim, a claim after a return, or a correction of an accepted one.",
+        "operationId": "Milestone_CreateMilestoneAchievement",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneAchievementCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneAchievementCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneAchievementCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneAchievementDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/milestone-achievements/{achievementId}": {
+      "get": {
+        "tags": [
+          "Milestone"
+        ],
+        "operationId": "Milestone_GetMilestoneAchievement",
+        "parameters": [
+          {
+            "name": "achievementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneAchievementDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Milestone"
+        ],
+        "summary": "A DRAFT's claim, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "Milestone_UpdateMilestoneAchievement",
+        "parameters": [
+          {
+            "name": "achievementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneAchievementRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneAchievementRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneAchievementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneAchievementDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Milestone"
+        ],
+        "summary": "HARD_DRAFT. R-40: a revision that is not there — deleted already, or never the caller's to see — is 204 as well.",
+        "operationId": "Milestone_DeleteMilestoneAchievement",
+        "parameters": [
+          {
+            "name": "achievementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/milestone-achievements/{achievementId}/submit": {
+      "post": {
+        "tags": [
+          "Milestone"
+        ],
+        "summary": "DRAFT → SUBMITTED to WF-11, once the evidence the policy makes mandatory is held. From here only WF-11's outcome changes it.",
+        "operationId": "Milestone_SubmitMilestoneAchievement",
+        "parameters": [
+          {
+            "name": "achievementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneAchievementDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/milestone-achievements/{achievementId}/evidence": {
+      "get": {
+        "tags": [
+          "Milestone"
+        ],
+        "summary": "The revision's evidence links, and the evidence types EVIDENCE_POLICY makes mandatory against those it holds (PTBC-006).",
+        "operationId": "Milestone_GetMilestoneAchievementEvidence",
+        "parameters": [
+          {
+            "name": "achievementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MilestoneEvidenceDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Milestone"
+        ],
+        "summary": "MOD-054 Attach (ADR-003 §8.2 edge 16): links a document to a DRAFT and pins one of its CLEAN versions as evidence of a type.\nA version not CLEAN is 409 `DOCUMENT_NOT_AVAILABLE`, and nothing is linked.",
+        "operationId": "Milestone_AttachMilestoneAchievementEvidence",
+        "parameters": [
+          {
+            "name": "achievementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneEvidenceRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneEvidenceRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MilestoneEvidenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceReferenceDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/milestone-achievements/{achievementId}/evidence/{evidenceReferenceId}/withdraw": {
+      "post": {
+        "tags": [
+          "Milestone"
+        ],
+        "summary": "Withdraws a piece of a DRAFT's evidence; the document and its history remain.",
+        "operationId": "Milestone_WithdrawMilestoneAchievementEvidence",
+        "parameters": [
+          {
+            "name": "achievementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "evidenceReferenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceReferenceDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/notification-deliveries": {
       "get": {
         "tags": [
@@ -4499,6 +4860,62 @@
         }
       }
     },
+    "/api/v1/project-baselines/{baselineId}/baseline-milestones": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The milestone dates the baseline froze as it activated (TASK-050).",
+        "operationId": "Schedule_ListBaselineMilestones",
+        "parameters": [
+          {
+            "name": "baselineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineMilestonePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/project-health-statuses": {
       "get": {
         "tags": [
@@ -4547,6 +4964,213 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectHealthStatusPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-milestones": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The project's milestones, earliest forecast first, with the ACTIVE baseline's date and the variance. `projectId` is required (R-3).",
+        "operationId": "Schedule_ListProjectMilestones",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMilestonePage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Adds a PLANNED milestone to the project's schedule.",
+        "operationId": "Schedule_CreateProjectMilestone",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMilestoneCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMilestoneCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMilestoneCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMilestoneDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-milestones/{milestoneId}": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "operationId": "Schedule_GetProjectMilestone",
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMilestoneDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "A PLANNED milestone's inputs, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "Schedule_UpdateProjectMilestone",
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMilestoneRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMilestoneRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMilestoneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMilestoneDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-milestones/{milestoneId}/cancel": {
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "PLANNED → CANCELLED: RETAIN has no DELETE (R-5); no achievement of a cancelled milestone is accepted.",
+        "operationId": "Schedule_CancelProjectMilestone",
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMilestoneDetail"
                 }
               }
             }
@@ -8092,6 +8716,66 @@
         },
         "description": "The dependencies a baseline froze (R-29)."
       },
+      "BaselineMilestoneDetail": {
+        "required": [
+          "projectMilestoneId",
+          "plannedDate"
+        ],
+        "type": "object",
+        "properties": {
+          "projectMilestoneId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plannedDate": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "description": "A milestone's date as its baseline froze it."
+      },
+      "BaselineMilestonePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaselineMilestoneDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "The milestones a baseline froze (R-29)."
+      },
       "BaselineSubmitCommand": {
         "required": [
           "changeAuthorizationId"
@@ -11204,6 +11888,339 @@
         },
         "description": "Completes a sign-in with the second factor: the MFA token, the challenge and the code the person entered."
       },
+      "MilestoneAchievementCreateRequest": {
+        "required": [
+          "projectMilestoneId",
+          "claimedAchievementDate",
+          "narrative"
+        ],
+        "type": "object",
+        "properties": {
+          "projectMilestoneId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "claimedAchievementDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A new revision of a milestone's achievement claim: the shared milestone it claims, and the claim\nMilestoneAchievementRequest describes. The same request opens a first claim, a claim after a return, and a\ncorrection of an accepted achievement."
+      },
+      "MilestoneAchievementDetail": {
+        "required": [
+          "id",
+          "projectMilestoneId",
+          "projectId",
+          "revisionNo",
+          "status",
+          "isCurrent",
+          "claimedAchievementDate",
+          "acceptedActualAchievementDate",
+          "narrative",
+          "submittedByUserId",
+          "submittedAt",
+          "reviewedByUserId",
+          "reviewedAt",
+          "returnReason",
+          "supersededByAchievementId",
+          "projectIntakeId",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectMilestoneId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MilestoneAchievementStatus"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "claimedAchievementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "acceptedActualAchievementDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "submittedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reviewedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reviewedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "returnReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "supersededByAchievementId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projectIntakeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "One revision of a milestone's achievement claim. bool MilestoneAchievementDetail.IsCurrent marks the milestone's ACCEPTED revision, whose\nDateOnly? MilestoneAchievementDetail.AcceptedActualAchievementDate is the milestone's Actual Achievement Date (ICD-04). A SUPERSEDED revision keeps\nits accepted date and names the revision that superseded it. Its review history is\n`GET /approval-instances?subjectModule=Milestone&amp;subjectType=MilestoneAchievement&amp;subjectId={id}`."
+      },
+      "MilestoneAchievementPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MilestoneAchievementDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "Achievement revisions, newest first (R-29)."
+      },
+      "MilestoneAchievementRequest": {
+        "required": [
+          "claimedAchievementDate",
+          "narrative"
+        ],
+        "type": "object",
+        "properties": {
+          "claimedAchievementDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A DRAFT's claim, as a whole (R-5): the date the milestone was achieved on and, optionally, what the claimant says of it. The\nstatus, the accepted date and the review are set by the workflow, never sent; an unknown property is ignored."
+      },
+      "MilestoneAchievementStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "RETURNED",
+          "ACCEPTED",
+          "SUPERSEDED"
+        ],
+        "description": "ERD `milestone_achievement.status` (TASK-050). A revision is born DRAFT and SUBMITTED to WF-11; the outcome makes it\nACCEPTED or RETURNED. An ACCEPTED revision becomes SUPERSEDED when a later revision of the same milestone is accepted.\nRETURNED and SUPERSEDED are final: a correction is always a new revision, never an edit."
+      },
+      "MilestoneEvidenceDetail": {
+        "required": [
+          "milestoneAchievementId",
+          "evidencePolicyVersionId",
+          "mandatoryEvidenceTypeItemIds",
+          "satisfiedEvidenceTypeItemIds",
+          "links"
+        ],
+        "type": "object",
+        "properties": {
+          "milestoneAchievementId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "evidencePolicyVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "mandatoryEvidenceTypeItemIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "satisfiedEvidenceTypeItemIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusinessLinkDetail"
+            }
+          }
+        },
+        "description": "A revision's evidence (PTBC-006): the EVIDENCE_POLICY version in force now and the evidence types it makes mandatory for the\nmilestone's category, the types the revision holds satisfying evidence for (a VALID reference to a CLEAN version on an\nactive link), and its links. Guid? MilestoneEvidenceDetail.EvidencePolicyVersionId is null while no EVIDENCE_POLICY version is published:\nthen nothing is mandatory yet, which the UI labels optional pending policy."
+      },
+      "MilestoneEvidenceRequest": {
+        "required": [
+          "documentId",
+          "documentVersionId",
+          "evidenceTypeItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "documentVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "evidenceTypeItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "A document to attach as evidence: the document, the version of it to pin, and the EVIDENCE_TYPE item it is evidence of."
+      },
       "MobileVerificationChallenge": {
         "required": [
           "challengeId",
@@ -13559,6 +14576,274 @@
           "CLOSED"
         ],
         "description": "TASK-041 (Draft → Submitted → Under Review → Returned / Approved-Planned; Planned → Active), TASK-062\n(Active ↔ Suspended), TASK-063 (Completed → Closed; Closed is terminal)."
+      },
+      "ProjectMilestoneCreateRequest": {
+        "required": [
+          "projectId",
+          "scheduleActivityId",
+          "title",
+          "milestoneCategoryItemId",
+          "forecastDate",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "scheduleActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "milestoneCategoryItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "forecastDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A new milestone of the project's schedule: the project, and the inputs ProjectMilestoneRequest describes."
+      },
+      "ProjectMilestoneDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "projectScheduleId",
+          "scheduleActivityId",
+          "title",
+          "milestoneCategoryItemId",
+          "forecastDate",
+          "status",
+          "sortOrder",
+          "baselineId",
+          "baselinePlannedDate",
+          "forecastVarianceDays",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectScheduleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scheduleActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "milestoneCategoryItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "forecastDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectMilestoneStatus"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "baselineId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "baselinePlannedDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "forecastVarianceDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A milestone as WF-03 holds it (ICD-04): its schedule representation and status, with the ACTIVE baseline's planned date and\nthe forecast's variance from it in working days, positive = late; both null when the ACTIVE baseline does not include the\nmilestone, or there is none. Its achievement — evidence and the accepted Actual Achievement Date — is WF-05's:\n`GET /milestone-achievements?projectMilestoneId={id}`."
+      },
+      "ProjectMilestonePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectMilestoneDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's milestones, earliest forecast first (R-29)."
+      },
+      "ProjectMilestoneRequest": {
+        "required": [
+          "scheduleActivityId",
+          "title",
+          "milestoneCategoryItemId",
+          "forecastDate",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "scheduleActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "milestoneCategoryItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "forecastDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A milestone's inputs, as a whole (R-5): its title, its MILESTONE_CATEGORY item, its Current Forecast date, the activity it\ncompletes, if any, and its sort order. The status is set by its commands and by WF-05's acceptance, never sent."
+      },
+      "ProjectMilestoneStatus": {
+        "enum": [
+          "PLANNED",
+          "ACHIEVED",
+          "CANCELLED"
+        ],
+        "description": "ERD `project_milestone.status`. WF-03 plans and cancels a milestone; ACHIEVED is set by WF-03 when WF-05 accepts an\nachievement of it (ICD-04, TASK-050). ACHIEVED and CANCELLED are final."
       },
       "ProjectPage": {
         "required": [
@@ -16309,6 +17594,9 @@
     },
     {
       "name": "DocumentManagement"
+    },
+    {
+      "name": "Milestone"
     },
     {
       "name": "Notifications"
