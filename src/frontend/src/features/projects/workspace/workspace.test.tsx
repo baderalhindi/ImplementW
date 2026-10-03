@@ -66,6 +66,7 @@ const TAB = {
   registration: en('projects.workspace.tabs.registration'),
   location: en('projects.workspace.tabs.location'),
   progress: en('projects.workspace.tabs.progress'),
+  schedule: en('projects.workspace.tabs.schedule'),
   reviews: en('projects.workspace.tabs.reviews'),
   documents: en('projects.workspace.tabs.documents'),
 };
@@ -82,6 +83,7 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.registration,
       TAB.location,
       TAB.progress,
+      TAB.schedule,
       TAB.reviews,
       TAB.documents,
     ]);
@@ -96,6 +98,7 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.registration,
       TAB.location,
       TAB.progress,
+      TAB.schedule,
       TAB.documents,
     ]);
   });

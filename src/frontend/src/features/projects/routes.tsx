@@ -11,6 +11,7 @@ import { ProgressHistoryTab, ProgressTab } from './workspace/ProgressTab.tsx';
 import { ProjectWorkspace, WorkspaceTabGuard } from './workspace/ProjectWorkspace.tsx';
 import { RegistrationTab } from './workspace/RegistrationTab.tsx';
 import { ReviewsTab } from './workspace/ReviewsTab.tsx';
+import { BaselinesTab, GanttTab, ScheduleTab } from './workspace/ScheduleTab.tsx';
 
 /**
  * WF-01, mounted under /projects for any signed-in person. No role is checked here: which projects a person sees and
@@ -43,6 +44,30 @@ export const projectRoutes: RouteObject[] = [
         element: (
           <WorkspaceTabGuard tab="progress">
             <ProgressHistoryTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'schedule', // SCR-060, MOD-015 (TASK-047)
+        element: (
+          <WorkspaceTabGuard tab="schedule">
+            <ScheduleTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'schedule/gantt', // SCR-045
+        element: (
+          <WorkspaceTabGuard tab="schedule">
+            <GanttTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'schedule/baselines', // SCR-061, MOD-017, MOD-018
+        element: (
+          <WorkspaceTabGuard tab="schedule">
+            <BaselinesTab />
           </WorkspaceTabGuard>
         ),
       },

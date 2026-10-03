@@ -1113,3 +1113,236 @@ textarea.field__input {
   align-items: center;
   gap: var(--space-2);
 }
+
+/* ---------------------------------------------------------------------------------------------- schedule */
+
+.schedule {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.schedule-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-nav a {
+  display: block;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.schedule-nav a[aria-current='page'] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+/* A row's actions wrap under each other instead of widening the table past a laptop screen. */
+.schedule__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.schedule__actions .button {
+  white-space: nowrap;
+}
+
+.row--muted td {
+  color: var(--color-text-muted);
+}
+
+.date-range {
+  display: grid;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/*
+ * The Gantt (SCR-045). The label column has a bounded width and the timeline takes the rest; every bar is placed in
+ * per cent of the timeline, so the chart fits any width and the page never scrolls sideways (TASK-047 criterion 3).
+ */
+.gantt {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.gantt__status {
+  min-block-size: 1.6em;
+  margin: 0;
+}
+
+.gantt__chart {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.gantt__header,
+.gantt__row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 14rem) minmax(0, 1fr);
+}
+
+.gantt__header {
+  background: var(--color-surface);
+  border-block-end: 1px solid var(--color-border-subtle);
+  font-weight: 600;
+}
+
+.gantt__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gantt__row + .gantt__row {
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.gantt__label {
+  min-inline-size: 0;
+  padding: var(--space-2) var(--space-3);
+  border-inline-end: 1px solid var(--color-border-subtle);
+  overflow-wrap: anywhere;
+}
+
+.gantt__code {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.gantt__name--summary {
+  font-weight: 600;
+}
+
+.gantt__axis {
+  position: relative;
+  min-block-size: 2.5rem;
+  overflow: hidden;
+}
+
+.gantt__tick {
+  position: absolute;
+  inset-block: 0;
+  padding: var(--space-2) var(--space-1);
+  border-inline-start: 1px solid var(--color-border);
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.gantt__track {
+  position: relative;
+  min-block-size: 2.75rem;
+  overflow: hidden;
+}
+
+.gantt__bar {
+  position: absolute;
+  min-inline-size: 4px;
+}
+
+/* Current Forecast: a solid bar in the upper half of the row. */
+.gantt__bar--forecast {
+  inset-block-start: 0.45rem;
+  block-size: 1.1rem;
+  background: var(--color-primary);
+  border-radius: 3px;
+}
+
+/* Approved Baseline: a thinner hatched bar beneath, so it differs in shape and fill, not colour alone. */
+.gantt__bar--baseline {
+  inset-block-start: 1.75rem;
+  block-size: 0.6rem;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-text-muted) 0 2px,
+    var(--color-background) 2px 5px
+  );
+  border: 1px solid var(--color-text);
+}
+
+/* Summary: a thin dark bar spanning its activities. */
+.gantt__bar--summary {
+  inset-block-start: 0.75rem;
+  block-size: 0.5rem;
+  background: var(--color-text);
+}
+
+.gantt__bar--conflict {
+  outline: 2px dashed var(--color-danger);
+  outline-offset: 1px;
+}
+
+.gantt__bar[role='slider'] {
+  cursor: grab;
+  touch-action: none;
+}
+
+.gantt__bar[role='slider']:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.gantt__bar--moving {
+  cursor: grabbing;
+  box-shadow:
+    0 0 0 2px var(--color-background),
+    0 0 0 4px var(--color-focus);
+}
+
+.gantt-legend {
+  margin-block-end: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.gantt-legend__title {
+  margin-block-end: var(--space-2);
+  font-size: 1rem;
+}
+
+.gantt-legend__items {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gantt-legend__items li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.gantt-legend__swatch {
+  position: static;
+  flex: none;
+  display: inline-block;
+  inline-size: 2.5rem;
+  margin-block-start: 0.35rem;
+}
+
+@media (min-width: 48rem) {
+  .gantt-legend__items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 60rem) {
+  .gantt__header,
+  .gantt__row {
+    grid-template-columns: minmax(10rem, 17rem) minmax(0, 1fr);
+  }
+}

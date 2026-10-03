@@ -32,6 +32,7 @@ const TAB_LABELS: Record<WorkspaceTabKey, TranslationKey> = {
   registration: 'projects.workspace.tabs.registration',
   location: 'projects.workspace.tabs.location',
   progress: 'projects.workspace.tabs.progress',
+  schedule: 'projects.workspace.tabs.schedule',
   reviews: 'projects.workspace.tabs.reviews',
   documents: 'projects.workspace.tabs.documents',
 };
