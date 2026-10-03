@@ -12,6 +12,8 @@ import projectsAr from '@/features/projects/i18n/ar.json';
 import projectsEn from '@/features/projects/i18n/en.json';
 import scheduleAr from '@/features/schedule/i18n/ar.json';
 import scheduleEn from '@/features/schedule/i18n/en.json';
+import tasksAr from '@/features/tasks/i18n/ar.json';
+import tasksEn from '@/features/tasks/i18n/en.json';
 
 import commonAr from './locales/ar.json';
 import commonEn from './locales/en.json';
@@ -28,6 +30,7 @@ const en = {
   projects: projectsEn,
   progress: progressEn,
   schedule: scheduleEn,
+  tasks: tasksEn,
 };
 
 // English is the reference shape; resources.test.ts fails if Arabic lacks or adds a key.
@@ -44,6 +47,7 @@ export const resources: Record<Language, Resources> = {
     projects: projectsAr,
     progress: progressAr,
     schedule: scheduleAr,
+    tasks: tasksAr,
   },
 };
 

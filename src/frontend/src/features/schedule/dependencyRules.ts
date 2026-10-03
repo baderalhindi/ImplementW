@@ -1,3 +1,5 @@
+import { cyclePath as graphCyclePath } from '@/shared/graph/dependencyGraph.ts';
+
 import {
   type ScheduleActivityDetail,
   type ScheduleDependencyDetail,
@@ -47,35 +49,11 @@ type Edge = Pick<ScheduleDependencyDetail, 'predecessorActivityId' | 'successorA
  * both ends is a cycle of one.
  */
 export function cyclePath(edges: Edge[], predecessor: string, successor: string): string[] | null {
-  if (predecessor === successor) {
-    return [successor];
-  }
-  const next = new Map<string, string[]>();
-  for (const edge of edges) {
-    next.set(edge.predecessorActivityId, [
-      ...(next.get(edge.predecessorActivityId) ?? []),
-      edge.successorActivityId,
-    ]);
-  }
-  // Breadth first from the successor, so the chain shown is the shortest one.
-  const cameFrom = new Map<string, string | null>([[successor, null]]);
-  const queue = [successor];
-  for (let node = queue.shift(); node !== undefined; node = queue.shift()) {
-    if (node === predecessor) {
-      const path: string[] = [];
-      for (let at: string | null = node; at !== null; at = cameFrom.get(at) ?? null) {
-        path.unshift(at);
-      }
-      return path;
-    }
-    for (const reached of next.get(node) ?? []) {
-      if (!cameFrom.has(reached)) {
-        cameFrom.set(reached, node);
-        queue.push(reached);
-      }
-    }
-  }
-  return null;
+  return graphCyclePath(
+    edges.map((edge) => ({ from: edge.predecessorActivityId, to: edge.successorActivityId })),
+    predecessor,
+    successor,
+  );
 }
 
 export interface DependencyValues {

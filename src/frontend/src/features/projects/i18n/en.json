@@ -127,6 +127,7 @@
       "location": "Location",
       "progress": "Progress",
       "schedule": "Schedule",
+      "tasks": "Tasks",
       "reviews": "Review history",
       "documents": "Documents"
     }

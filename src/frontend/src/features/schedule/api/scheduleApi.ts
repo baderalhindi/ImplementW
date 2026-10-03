@@ -1,6 +1,7 @@
 import { type ApprovalInstanceSummary } from '@/features/approvals/api/types.ts';
 import { type Page } from '@/features/projects/api/types.ts';
 import { apiRequest, type ApiResponse } from '@/shared/api/httpClient.ts';
+import { MAX_PAGE_SIZE, readAllPages } from '@/shared/api/paging.ts';
 
 import {
   type BaselineActivityDetail,
@@ -21,31 +22,10 @@ import {
 // of an activity requires If-Match (428 without); the commands honour it when sent.
 
 /** R-29's largest page. A schedule is read whole: the Gantt, the cycle check and the drag rules need every row. */
-export const SCHEDULE_PAGE_SIZE = 200;
+export const SCHEDULE_PAGE_SIZE = MAX_PAGE_SIZE;
 
 async function data<T>(request: Promise<ApiResponse<T>>): Promise<T> {
   return (await request).data;
-}
-
-/** Every item of a collection, reading page after page of SCHEDULE_PAGE_SIZE until the total is reached. */
-async function allItems<T>(
-  path: string,
-  query: Record<string, string>,
-  signal?: AbortSignal,
-): Promise<T[]> {
-  const items: T[] = [];
-  for (let page = 1; ; page += 1) {
-    const result = await data(
-      apiRequest<Page<T>>(path, {
-        query: { ...query, page, pageSize: SCHEDULE_PAGE_SIZE },
-        signal,
-      }),
-    );
-    items.push(...result.items);
-    if (result.items.length === 0 || items.length >= result.totalCount) {
-      return items;
-    }
-  }
 }
 
 export const scheduleApi = {
@@ -64,7 +44,7 @@ export const scheduleApi = {
     }),
   /** Sort order then WBS code, cancelled activities included, each with its baseline dates and variance. */
   activities: (projectId: string, signal?: AbortSignal) =>
-    allItems<ScheduleActivityDetail>('/schedule-activities', { projectId }, signal),
+    readAllPages<ScheduleActivityDetail>('/schedule-activities', { projectId }, signal),
   /** One activity with the ETag its PUT sends back. */
   activity: (id: string, signal?: AbortSignal) =>
     apiRequest<ScheduleActivityDetail>(`/schedule-activities/${id}`, { signal }),
@@ -90,7 +70,7 @@ export const scheduleApi = {
       ifMatch: etag,
     }),
   dependencies: (projectId: string, signal?: AbortSignal) =>
-    allItems<ScheduleDependencyDetail>('/schedule-dependencies', { projectId }, signal),
+    readAllPages<ScheduleDependencyDetail>('/schedule-dependencies', { projectId }, signal),
   createDependency: (request: ScheduleDependencyRequest) =>
     apiRequest<ScheduleDependencyDetail>('/schedule-dependencies', {
       method: 'POST',
@@ -101,7 +81,7 @@ export const scheduleApi = {
     apiRequest<undefined>(`/schedule-dependencies/${id}`, { method: 'DELETE' }),
   /** Latest version first. */
   baselines: (projectId: string, signal?: AbortSignal) =>
-    allItems<ProjectBaselineDetail>('/project-baselines', { projectId }, signal),
+    readAllPages<ProjectBaselineDetail>('/project-baselines', { projectId }, signal),
   /** A DRAFT candidate from the working schedule, the project's next version. */
   createBaseline: (projectId: string) =>
     apiRequest<ProjectBaselineDetail>('/project-baselines', {
@@ -121,9 +101,13 @@ export const scheduleApi = {
   deleteBaseline: (id: string) =>
     apiRequest<undefined>(`/project-baselines/${id}`, { method: 'DELETE' }),
   baselineActivities: (id: string, signal?: AbortSignal) =>
-    allItems<BaselineActivityDetail>(`/project-baselines/${id}/baseline-activities`, {}, signal),
+    readAllPages<BaselineActivityDetail>(
+      `/project-baselines/${id}/baseline-activities`,
+      {},
+      signal,
+    ),
   baselineDependencies: (id: string, signal?: AbortSignal) =>
-    allItems<BaselineDependencyDetail>(
+    readAllPages<BaselineDependencyDetail>(
       `/project-baselines/${id}/baseline-dependencies`,
       {},
       signal,

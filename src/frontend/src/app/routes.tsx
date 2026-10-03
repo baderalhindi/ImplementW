@@ -9,6 +9,7 @@ import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
 import { SYSTEM_ADMINISTRATOR_ROLE } from '@/features/identity-access/session/useSession.ts';
 import { notificationRoutes } from '@/features/notifications/routes.tsx';
 import { projectRoutes } from '@/features/projects/routes.tsx';
+import { taskRoutes } from '@/features/tasks/routes.tsx';
 
 import { AppLayout } from './AppLayout.tsx';
 import { HomePage, NotFoundPage } from './pages.tsx';
@@ -39,6 +40,15 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: projectRoutes,
+      },
+      {
+        path: 'tasks',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: taskRoutes,
       },
       {
         path: 'approvals',

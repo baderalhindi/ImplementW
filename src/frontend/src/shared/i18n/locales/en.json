@@ -74,6 +74,7 @@
   },
   "home": {
     "projects": "Go to the project register",
+    "tasks": "Go to your tasks",
     "title": "Welcome, {name}",
     "approvals": "Go to your approval inbox",
     "documents": "Go to the document library",
