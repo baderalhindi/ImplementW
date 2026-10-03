@@ -19,6 +19,7 @@ internal sealed class ProjectService(
     ProjectReferences references,
     ProjectManagerEligibility managers,
     IApprovalRequests approvals,
+    IEnumerable<IProjectActivationPrecondition> activationPreconditions,
     IAuthorizationEngine engine,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProjectService
@@ -294,6 +295,16 @@ internal sealed class ProjectService(
         if (!ProjectLifecycle.Allows(project.LifecycleState, ProjectLifecycleState.Active))
         {
             return TransitionRefused(project);
+        }
+
+        // ADR-009: what other modules require before a project goes Active, WF-03's ACTIVE baseline first among them.
+        ProjectFacts facts = ProjectFactsReader.FactsOf(project);
+        foreach (IProjectActivationPrecondition precondition in activationPreconditions)
+        {
+            if (await precondition.CheckAsync(facts, cancellationToken).ConfigureAwait(false) is { } unmet)
+            {
+                return unmet;
+            }
         }
 
         project.LifecycleState = ProjectLifecycleState.Active;

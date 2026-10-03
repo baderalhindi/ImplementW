@@ -100,6 +100,18 @@ public sealed class PermissionCatalogue
     /// <summary>WF-02: review a submission, return it or publish it (TASK-044). Internal users only, and never one's own submission (ADR-013).</summary>
     public const string ProgressReview = "PROGRESS_REVIEW";
 
+    /// <summary>
+    /// WF-03: a project's schedule, activities, dependencies, baselines, variance and Schedule Health (SCR-044, SCR-045,
+    /// SCR-061), on the projects the grant's scope covers (TASK-046).
+    /// </summary>
+    public const string ScheduleView = "SCHEDULE_VIEW";
+
+    /// <summary>
+    /// WF-03: build the schedule, maintain its forecast, prepare and submit baseline candidates (TASK-046). Approval is WF-11's
+    /// APPROVAL_DECIDE, not this permission.
+    /// </summary>
+    public const string ScheduleEdit = "SCHEDULE_EDIT";
+
     /// <summary>WF-15: the bilingual notification templates and their versions (TASK-039).</summary>
     public const string NotificationTemplateView = "NOTIFICATION_TEMPLATE_VIEW";
 
@@ -144,6 +156,8 @@ public sealed class PermissionCatalogue
             new(ProgressView, "PROGRESS", AccessMode.Read),
             new(ProgressSubmit, "PROGRESS", AccessMode.Write),
             new(ProgressReview, "PROGRESS", AccessMode.Write),
+            new(ScheduleView, "SCHEDULE", AccessMode.Read),
+            new(ScheduleEdit, "SCHEDULE", AccessMode.Write),
             new(NotificationTemplateView, "NOTIFICATIONS", AccessMode.Read),
             new(NotificationTemplateManage, "NOTIFICATIONS", AccessMode.Write),
             new(NotificationDeliveryView, "NOTIFICATIONS", AccessMode.Read),
@@ -169,7 +183,10 @@ public sealed class PermissionCatalogue
     /// amendment to TASK-044 lets an assigned entity Project Manager submit progress on their own project, and lets entities
     /// see progress and health on their own projects: R04 views and submits at OWN — a project's owner is its Project Manager,
     /// so OWN reaches exactly the projects the holder manages, internal or external, R04 being employer-neutral — and R08
-    /// views at ENTITY. Progress review is AHDA's gate and waits for Appendix A (progress-update.md F-2). WF-15's
+    /// views at ENTITY. Progress review is AHDA's gate and waits for Appendix A (progress-update.md F-2). WF-03's functional
+    /// specification §3 makes the Project Manager (R04) the schedule's owner — building it, keeping its forecast, submitting its
+    /// baselines — so R04 views and edits schedules at OWN, the projects the holder manages, internal or entity alike (ADR-013);
+    /// the other roles' schedule grants wait for Appendix A (schedule-baseline.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
     /// (notification-runtime.md F-1): they are platform-wide.
     /// </summary>
@@ -200,6 +217,8 @@ public sealed class PermissionCatalogue
         new("R04", ProgressView, DataScope.Own),
         new("R04", ProgressSubmit, DataScope.Own),
         new("R08", ProgressView, DataScope.Entity),
+        new("R04", ScheduleView, DataScope.Own),
+        new("R04", ScheduleEdit, DataScope.Own),
         new("R02", LayoutPersonalize, DataScope.Own),
         new("R02", ReportCompose, DataScope.Own),
         new("R03", LayoutPersonalize, DataScope.Own),

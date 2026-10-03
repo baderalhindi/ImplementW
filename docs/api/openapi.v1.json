@@ -4112,6 +4112,338 @@
         }
       }
     },
+    "/api/v1/project-baselines": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The project's baselines, latest version first. `projectId` is required (R-3).",
+        "operationId": "Schedule_ListProjectBaselines",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBaselinePage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Opens the project's next baseline version as a DRAFT candidate; one candidate at a time.",
+        "operationId": "Schedule_CreateProjectBaseline",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleProjectRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleProjectRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBaselineDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-baselines/{baselineId}": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "operationId": "Schedule_GetProjectBaseline",
+        "parameters": [
+          {
+            "name": "baselineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBaselineDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "HARD_DRAFT. R-40: a baseline that is not there — deleted already, or never the caller's to see — is 204 as well.",
+        "operationId": "Schedule_DeleteProjectBaseline",
+        "parameters": [
+          {
+            "name": "baselineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/project-baselines/{baselineId}/submit": {
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "DRAFT or RETURNED → SUBMITTED to WF-11, freezing the plan until the outcome; or → ACTIVE where no approval is required.",
+        "operationId": "Schedule_SubmitProjectBaseline",
+        "parameters": [
+          {
+            "name": "baselineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BaselineSubmitCommand"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BaselineSubmitCommand"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BaselineSubmitCommand"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBaselineDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-baselines/{baselineId}/baseline-activities": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The activities the baseline froze as it activated.",
+        "operationId": "Schedule_ListBaselineActivities",
+        "parameters": [
+          {
+            "name": "baselineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineActivityPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-baselines/{baselineId}/baseline-dependencies": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The dependencies the baseline froze as it activated.",
+        "operationId": "Schedule_ListBaselineDependencies",
+        "parameters": [
+          {
+            "name": "baselineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaselineDependencyPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/project-health-statuses": {
       "get": {
         "tags": [
@@ -4160,6 +4492,100 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectHealthStatusPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-schedules": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The project's schedule: one item once initialized. `projectId` is required (R-3).",
+        "operationId": "Schedule_ListProjectSchedules",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSchedulePage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Initializes the project's schedule while the project is APPROVED_PLANNED or ACTIVE.",
+        "operationId": "Schedule_InitializeProjectSchedule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleProjectRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleProjectRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectScheduleDetail"
                 }
               }
             }
@@ -4752,6 +5178,439 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RoleDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-activities": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The project's activities in sort order, then WBS code. `projectId` is required (R-3).",
+        "operationId": "Schedule_ListScheduleActivities",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleActivityPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Adds an activity; its parent, if any, becomes a summary.",
+        "operationId": "Schedule_CreateScheduleActivity",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleActivityCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleActivityCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleActivityCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleActivityDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-activities/{activityId}": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "operationId": "Schedule_GetScheduleActivity",
+        "parameters": [
+          {
+            "name": "activityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleActivityDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The activity's inputs, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "Schedule_UpdateScheduleActivity",
+        "parameters": [
+          {
+            "name": "activityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleActivityRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleActivityRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleActivityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleActivityDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-activities/{activityId}/cancel": {
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "PLANNED → CANCELLED: RETAIN has no DELETE (R-5); a cancelled activity leaves the plan and the forecast.",
+        "operationId": "Schedule_CancelScheduleActivity",
+        "parameters": [
+          {
+            "name": "activityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleActivityDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-activities/{activityId}/reforecast": {
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Sets a leaf's Current Forecast once the project has an ACTIVE baseline; the baseline never moves (BR-SCH-004).",
+        "operationId": "Schedule_ReforecastScheduleActivity",
+        "parameters": [
+          {
+            "name": "activityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleForecastRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleForecastRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleForecastRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleActivityDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-dependencies": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The project's dependencies, oldest first. `projectId` is required (R-3).",
+        "operationId": "Schedule_ListScheduleDependencies",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleDependencyPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Adds a dependency between two leaf activities; one that would close a cycle is refused (VAL-SCH-008).",
+        "operationId": "Schedule_CreateScheduleDependency",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleDependencyRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleDependencyRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleDependencyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleDependencyDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-dependencies/{dependencyId}": {
+      "delete": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "HARD_WORKING. R-40: a dependency that is not there — removed already, or never the caller's to see — is 204 as well.",
+        "operationId": "Schedule_DeleteScheduleDependency",
+        "parameters": [
+          {
+            "name": "dependencyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-health-statuses": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The project's live Schedule Health: one item once computed. `projectId` is required (R-3).",
+        "operationId": "Schedule_ListScheduleHealthStatuses",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleHealthStatusPage"
                 }
               }
             }
@@ -6381,6 +7240,188 @@
           "EXPIRED"
         ],
         "description": "ERD `approval_task.status`. Every state but PENDING is terminal."
+      },
+      "BaselineActivityDetail": {
+        "required": [
+          "scheduleActivityId",
+          "parentActivityId",
+          "activityKind",
+          "plannedStartDate",
+          "plannedFinishDate",
+          "plannedDurationDays"
+        ],
+        "type": "object",
+        "properties": {
+          "scheduleActivityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "activityKind": {
+            "$ref": "#/components/schemas/ScheduleActivityKind"
+          },
+          "plannedStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plannedFinishDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plannedDurationDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "An activity as its baseline froze it."
+      },
+      "BaselineActivityPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaselineActivityDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "The activities a baseline froze (R-29)."
+      },
+      "BaselineDependencyDetail": {
+        "required": [
+          "predecessorActivityId",
+          "successorActivityId",
+          "dependencyType",
+          "lagDays"
+        ],
+        "type": "object",
+        "properties": {
+          "predecessorActivityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "successorActivityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dependencyType": {
+            "$ref": "#/components/schemas/ScheduleDependencyType"
+          },
+          "lagDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A dependency as its baseline froze it."
+      },
+      "BaselineDependencyPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaselineDependencyDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "The dependencies a baseline froze (R-29)."
+      },
+      "BaselineSubmitCommand": {
+        "required": [
+          "changeAuthorizationId"
+        ],
+        "type": "object",
+        "properties": {
+          "changeAuthorizationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "Submitting a candidate. A rebaseline names the approved WF-08 change authorisation it implements (BR-SCH-034)."
+      },
+      "BaselineType": {
+        "enum": [
+          "APPROVED",
+          "DECLARED"
+        ],
+        "description": "ERD `project_baseline.baseline_type`: the Approved Baseline, or ADR-014's Declared Baseline."
       },
       "BilingualLabel": {
         "required": [
@@ -11354,6 +12395,189 @@
         ],
         "description": "The review and publication workflow of one revision of a period's progress (TASK-044). RETURNED and PUBLISHED are\nfinal: a returned revision is followed by revision + 1."
       },
+      "ProjectBaselineDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "baselineType",
+          "versionNo",
+          "revisionNo",
+          "status",
+          "baselineFinishDate",
+          "activatedAt",
+          "supersededAt",
+          "supersededByBaselineId",
+          "changeAuthorizationId",
+          "projectIntakeId",
+          "declaredEndDate",
+          "declaredScope",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "baselineType": {
+            "$ref": "#/components/schemas/BaselineType"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectBaselineStatus"
+          },
+          "baselineFinishDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "activatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "supersededAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "supersededByBaselineId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "changeAuthorizationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projectIntakeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "declaredEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "declaredScope": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A baseline of the project, APPROVED or DECLARED (ADR-014), with its place in the project's baseline history."
+      },
+      "ProjectBaselinePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectBaselineDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's baselines, latest version first (R-29)."
+      },
+      "ProjectBaselineStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "ACTIVE",
+          "SUPERSEDED",
+          "REJECTED",
+          "WITHDRAWN"
+        ],
+        "description": "ERD `project_baseline.status`. A candidate is DRAFT, SUBMITTED to WF-11, and ends ACTIVE, RETURNED (resubmitted\nas the next revision), REJECTED or WITHDRAWN; an ACTIVE baseline becomes SUPERSEDED when another activates.\nUNDER_REVIEW is in the ERD's value set but no edge reaches it: WF-11 gives the source no signal between start and\noutcome (schedule-baseline.md F-8)."
+      },
       "ProjectDetail": {
         "required": [
           "id",
@@ -11814,6 +13038,102 @@
           }
         },
         "description": "MOD-001 Create Project and the edit of a DRAFT or RETURNED project: the whole registration (R-5). There is no\n`formalProjectId`: AHDA issues it on approval (ADR-013)."
+      },
+      "ProjectScheduleDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "calendarItemId",
+          "activeBaselineId",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "calendarItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "activeBaselineId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A project's working schedule, with the baseline that is ACTIVE now, if any."
+      },
+      "ProjectSchedulePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectScheduleDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's schedule: one item once initialized (R-29)."
       },
       "ProjectSubmitCommand": {
         "required": [
@@ -12481,6 +13801,651 @@
           null
         ]
       },
+      "ScheduleActivityCreateRequest": {
+        "required": [
+          "projectId",
+          "parentActivityId",
+          "wbsCode",
+          "name",
+          "requestedStartDate",
+          "plannedDurationDays",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "parentActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "wbsCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "requestedStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedDurationDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A new activity of the project's schedule: the project, and the inputs ScheduleActivityRequest describes."
+      },
+      "ScheduleActivityDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "projectScheduleId",
+          "parentActivityId",
+          "wbsCode",
+          "name",
+          "activityKind",
+          "status",
+          "sortOrder",
+          "requestedStartDate",
+          "plannedStartDate",
+          "plannedFinishDate",
+          "plannedDurationDays",
+          "forecastStartDate",
+          "forecastFinishDate",
+          "actualStartDate",
+          "actualFinishDate",
+          "baselineId",
+          "baselineStartDate",
+          "baselineFinishDate",
+          "startVarianceDays",
+          "finishVarianceDays",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectScheduleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parentActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "wbsCode": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "activityKind": {
+            "$ref": "#/components/schemas/ScheduleActivityKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ScheduleActivityStatus"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requestedStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plannedStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plannedFinishDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "plannedDurationDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "forecastStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "forecastFinishDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "actualStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "actualFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "baselineId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "baselineStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "baselineFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "startVarianceDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "finishVarianceDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "An activity with its three sets of dates side by side (BR-SCH-002): the working plan, the Current Forecast, and the\nACTIVE baseline's copy, with the forecast's variance from the baseline in working days, positive = late. The baseline\ndates and the variance are null when the ACTIVE baseline does not include the activity, or there is none."
+      },
+      "ScheduleActivityKind": {
+        "enum": [
+          "SUMMARY",
+          "ACTIVITY"
+        ],
+        "description": "ERD `schedule_activity.activity_kind`."
+      },
+      "ScheduleActivityPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleActivityDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's activities in work-breakdown order (R-29)."
+      },
+      "ScheduleActivityRequest": {
+        "required": [
+          "parentActivityId",
+          "wbsCode",
+          "name",
+          "requestedStartDate",
+          "plannedDurationDays",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "parentActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "wbsCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "requestedStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedDurationDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "An activity's inputs, as a whole (R-5): its place in the work breakdown, its WBS code and name, and — for a leaf — the\nrequested start and the duration in working days. Planned and forecast dates are calculated, never sent (DCL-SCH-03);\nan unknown property is ignored."
+      },
+      "ScheduleActivityStatus": {
+        "enum": [
+          "PLANNED",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "CANCELLED"
+        ],
+        "description": "ERD `schedule_activity.status`. WF-03 writes PLANNED and CANCELLED; IN_PROGRESS and COMPLETED are execution\nstates WF-04 reports (the spec's DCL-SCH-18). CANCELLED is final."
+      },
+      "ScheduleDependencyDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "predecessorActivityId",
+          "successorActivityId",
+          "dependencyType",
+          "lagDays",
+          "createdAt",
+          "createdBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "predecessorActivityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "successorActivityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dependencyType": {
+            "$ref": "#/components/schemas/ScheduleDependencyType"
+          },
+          "lagDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ScheduleDependencyPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleDependencyDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's dependencies (R-29)."
+      },
+      "ScheduleDependencyRequest": {
+        "required": [
+          "predecessorActivityId",
+          "successorActivityId",
+          "dependencyType",
+          "lagDays"
+        ],
+        "type": "object",
+        "properties": {
+          "predecessorActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "successorActivityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dependencyType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lagDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A dependency between two leaf activities: FS, SS or FF (BR-SCH-024; SF is deferred) with a non-negative lag in working\ndays, 0 when absent (BR-SCH-025)."
+      },
+      "ScheduleDependencyType": {
+        "enum": [
+          "FS",
+          "SS",
+          "FF"
+        ],
+        "description": "The dependency types of the WF-03 MVP (the spec's BR-SCH-024, DCL-SCH-07): finish-to-start, start-to-start and\nfinish-to-finish. Start-to-finish is deferred, although the ERD lists it (schedule-baseline.md F-11)."
+      },
+      "ScheduleForecastRequest": {
+        "required": [
+          "forecastStartDate",
+          "forecastFinishDate"
+        ],
+        "type": "object",
+        "properties": {
+          "forecastStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "forecastFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A leaf's Current Forecast: when it is now expected to start and finish."
+      },
+      "ScheduleHealth": {
+        "enum": [
+          "GREEN",
+          "AMBER",
+          "RED",
+          "UNKNOWN"
+        ],
+        "description": "Schedule Health (ERD `schedule_health_status.schedule_health`): the spec's On Track, At Risk and Delayed are\nGREEN, AMBER and RED. UNKNOWN is a value of its own, never coerced to a colour."
+      },
+      "ScheduleHealthStatusDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "projectBaselineId",
+          "scheduleHealth",
+          "finishVarianceDays",
+          "computedAt",
+          "healthRuleConfigurationVersionId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectBaselineId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "scheduleHealth": {
+            "$ref": "#/components/schemas/ScheduleHealth"
+          },
+          "finishVarianceDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "healthRuleConfigurationVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "The CURRENT/LIVE Schedule Health, as WF-03 last computed it."
+      },
+      "ScheduleHealthStatusPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleHealthStatusDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's live Schedule Health: one item once computed (R-29)."
+      },
+      "ScheduleProjectRequest": {
+        "required": [
+          "projectId"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "A command on a project's schedule that names only the project: initializing it, opening a baseline candidate."
+      },
       "SessionCreateRequest": {
         "required": [
           "username",
@@ -13107,6 +15072,9 @@
     },
     {
       "name": "Progress"
+    },
+    {
+      "name": "Schedule"
     },
     {
       "name": "Project"

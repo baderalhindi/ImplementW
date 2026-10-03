@@ -7,6 +7,7 @@ using PMPlatform.Application.Features.Approval.Contracts.Events;
 using PMPlatform.Domain.Approval;
 using PMPlatform.Tests.Integration.Identity;
 using PMPlatform.Tests.Integration.MasterDataConfig;
+using PMPlatform.Tests.Integration.Schedule;
 
 namespace PMPlatform.Tests.Integration.Project;
 
@@ -50,6 +51,8 @@ public sealed class RegistrationLifecycleTests(ProjectTestHost host)
         Assert.Matches("^PRJ-[0-9]{6,}$", approved.FormalProjectId());
         Assert.Null(approved["activatedAt"]);
 
+        // ADR-009: WF-03's ACTIVE baseline is the activation precondition (schedule-baseline.md D-11).
+        await ScheduleFixture.ActiveBaselineAsync(host.Database, projectId);
         JsonObject active = await client.CommandOrFailAsync(sessions.Approver, projectId, "activate");
         Assert.Equal(("ACTIVE", approved.FormalProjectId()), (active.Status(), active.FormalProjectId()));
         Assert.NotNull(active["activatedAt"]);

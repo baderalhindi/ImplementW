@@ -182,3 +182,4 @@ Each mutation was applied, the solution rebuilt, the named tests run, and the so
 | Date | Change |
 | --- | --- |
 | 2026-10-02 | Created (TASK-044) |
+| 2026-10-03 | TASK-046 (`schedule-baseline.md`): `schedule.project_baseline` exists, and migration `TASK-046_AddProgressBaselineForeignKey` adds `fk_progress_submission_project_baseline_baseline_id` (F-1's last sentence). The Progress test host writes the baseline `FakeProgressInputs` reports, ACTIVE on a project of its own. F-1 otherwise stands: §8.2 still gives Progress no edge to Schedule; WF-03's baseline copy (`baseline_activity`, with each activity's kind and parent) and `IScheduleHealthReader` are what an edge would read. |
