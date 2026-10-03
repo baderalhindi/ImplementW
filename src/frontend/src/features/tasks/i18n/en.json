@@ -1,0 +1,263 @@
+{
+  "nav": {
+    "label": "Tasks",
+    "mine": "My tasks",
+    "team": "Team tasks",
+    "overdue": "Overdue tasks",
+    "updates": "Updates required"
+  },
+  "lists": {
+    "mine": {
+      "title": "My tasks",
+      "description": "The tasks you own, in every project you can see.",
+      "caption": "Tasks you own"
+    },
+    "team": {
+      "title": "Team tasks",
+      "description": "Every task of the projects you manage, whoever owns it.",
+      "caption": "Tasks of the projects you manage"
+    },
+    "overdue": {
+      "title": "Overdue tasks",
+      "description": "Your tasks and those of the projects you manage whose planned finish has passed, most overdue first.",
+      "caption": "Overdue tasks"
+    },
+    "updates": {
+      "title": "Updates required",
+      "description": "Your tasks and those of the projects you manage that are waiting for a start or a progress figure.",
+      "caption": "Tasks that need an update"
+    }
+  },
+  "project": {
+    "title": "Tasks",
+    "caption": "The project's tasks, each with its subtasks"
+  },
+  "forbidden": "You do not have access to tasks.",
+  "status": {
+    "NOT_STARTED": "Not started",
+    "IN_PROGRESS": "In progress",
+    "BLOCKED": "Blocked",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "filter": {
+    "label": "Show",
+    "open": "Open tasks",
+    "all": "All tasks"
+  },
+  "table": {
+    "task": "Task",
+    "project": "Project",
+    "status": "Status",
+    "owner": "Owner",
+    "planned": "Planned",
+    "progress": "Progress",
+    "subtaskOf": "Subtask of {parent}",
+    "subtasksOne": "1 subtask",
+    "subtasks": "{count} subtasks"
+  },
+  "overdue": {
+    "one": "Overdue by 1 day",
+    "many": "Overdue by {days} days"
+  },
+  "updates": {
+    "notStarted": "Not started; planned to start on {date}",
+    "noProgress": "No progress entered yet",
+    "staleProgress": "Progress unchanged for {days} days"
+  },
+  "empty": {
+    "mine": {
+      "title": "No tasks are assigned to you",
+      "body": "When a Project Manager makes you the owner of a task, it appears here, whichever project it belongs to."
+    },
+    "team": {
+      "title": "The projects you manage have no tasks yet",
+      "body": "Plan tasks in a project's Tasks tab; every task of the projects you manage appears here.",
+      "noProjectTitle": "You do not manage a project",
+      "noProjectBody": "Team tasks lists every task of the projects you manage. Your own tasks are under My tasks."
+    },
+    "overdue": {
+      "title": "Nothing is overdue",
+      "body": "A task is overdue when its planned finish has passed and it is neither completed nor cancelled. Your tasks and those of the projects you manage are checked."
+    },
+    "updates": {
+      "title": "No task needs an update",
+      "body": "A task needs an update when its planned start has passed and it has not started, or when it has started and has no progress figure, or its figure has not changed for 7 days."
+    },
+    "project": {
+      "title": "This project has no tasks yet",
+      "manager": "Add the first task to plan the work against the schedule.",
+      "waiting": "The Project Manager has not planned any task yet.",
+      "notPlanned": "Tasks are planned once the project is approved."
+    },
+    "filtered": {
+      "title": "No task matches this choice",
+      "body": "Open tasks are those not started, in progress or blocked. Choose \"All tasks\" to see completed and cancelled tasks too."
+    }
+  },
+  "fields": {
+    "title": "Title",
+    "description": "Description",
+    "scheduleActivity": "Schedule activity",
+    "priority": "Priority",
+    "plannedStart": "Planned start",
+    "plannedFinish": "Planned finish",
+    "owner": "Owner"
+  },
+  "owner": {
+    "self": "Me ({name})",
+    "manager": "{name}, Project Manager",
+    "other": "Someone else",
+    "none": "No owner",
+    "find": "Find a person",
+    "userId": "The person's user ID",
+    "userIdHint": "You cannot search for people, so enter the user ID the administrator gave you, such as 3c3c3c3c-0000-4000-8000-000000000103.",
+    "hint": "The owner must hold a role on this project. The server checks this when you save."
+  },
+  "form": {
+    "createTitle": "Add task",
+    "subtaskTitle": "Add subtask",
+    "editTitle": "Edit task",
+    "subtaskOf": "This subtask belongs to {parent}.",
+    "noActivity": "No schedule activity",
+    "activityHint": "The activity of the project's schedule this task carries out. Its progress feeds the activity's.",
+    "activitiesUnreadable": "The project's schedule cannot be shown to you, so no schedule activity can be chosen here.",
+    "subtaskActivityHint": "A subtask carries out its parent's schedule activity.",
+    "noPriority": "No priority",
+    "prioritiesUnreadable": "The priority list cannot be shown to you, so no priority can be chosen here."
+  },
+  "assign": {
+    "title": "Assign task",
+    "intro": "Choose who owns {task}. The owner starts the task, reports its progress and completes it.",
+    "confirm": "Assign"
+  },
+  "dependency": {
+    "title": "Add dependency",
+    "intro": "Choose two tasks without subtasks, and how the first holds back the second.",
+    "predecessor": "First task (predecessor)",
+    "successor": "Task held back (successor)",
+    "type": "How it holds back",
+    "circular": "This would create a circular dependency: {chain}. Choose tasks that do not already depend on each other.",
+    "confirm": "Add dependency"
+  },
+  "dependencyType": {
+    "FS": "Finish to start: the second starts after the first is completed",
+    "SS": "Start to start: the second starts after the first has started",
+    "FF": "Finish to finish: the second is completed after the first is completed",
+    "SF": "Start to finish: the second is completed after the first has started"
+  },
+  "dependencyTypeShort": {
+    "FS": "finish to start",
+    "SS": "start to start",
+    "FF": "finish to finish",
+    "SF": "start to finish"
+  },
+  "detail": {
+    "title": "Task",
+    "percent": "{percent} complete",
+    "blockedBecause": "Blocked: {reason}",
+    "parent": "Parent task",
+    "noActivity": "None",
+    "noPriority": "None",
+    "days": "{days} days",
+    "daysOne": "1 day",
+    "actual": "Actual",
+    "notStarted": "Not started",
+    "rolledUp": "Rolled up from its {count} subtasks",
+    "notEntered": "No figure entered yet",
+    "entered": "As entered by the owner",
+    "reopened": "Times reopened",
+    "work": "Work on this task",
+    "waitingFor": "Waiting for: {list}.",
+    "subtasksOpen": "It can be completed once its {count} open subtasks are completed.",
+    "unblockFirst": "A blocked task is unblocked before it can be completed.",
+    "subtasks": "Subtasks",
+    "noSubtasks": "No subtasks.",
+    "dependencies": "Dependencies",
+    "waitsFor": "Waits for",
+    "holdsBack": "Holds back",
+    "met": "met",
+    "notMet": "not met yet"
+  },
+  "commands": {
+    "start": "Start",
+    "block": "Block",
+    "unblock": "Unblock",
+    "complete": "Complete",
+    "reportProgress": "Report progress",
+    "reopen": "Reopen",
+    "cancel": "Cancel task"
+  },
+  "block": {
+    "reason": "Why is it blocked?",
+    "confirm": "Block task"
+  },
+  "progress": {
+    "percent": "Percentage complete",
+    "hint": "From 0 to 100, up to four decimal places.",
+    "confirm": "Save progress"
+  },
+  "cancel": {
+    "body": "A cancelled task cannot be started, changed or reopened again.",
+    "confirm": "Yes, cancel the task",
+    "keep": "Keep task"
+  },
+  "removeDependency": {
+    "title": "Remove dependency",
+    "body": "The second task will no longer wait for the first. A dependency is not edited; add it again to change it."
+  },
+  "actions": {
+    "create": "Add task",
+    "edit": "Edit",
+    "assign": "Assign",
+    "addSubtask": "Add subtask",
+    "addDependency": "Add dependency",
+    "removeDependency": "Remove",
+    "removeDependencyOn": "Remove the dependency on {task}",
+    "close": "Close"
+  },
+  "done": {
+    "created": "Task added.",
+    "subtaskCreated": "Subtask added.",
+    "updated": "Task updated.",
+    "assigned": "Owner changed.",
+    "started": "Task started.",
+    "blocked": "Task blocked.",
+    "unblocked": "Task unblocked.",
+    "completed": "Task completed.",
+    "reopened": "Task reopened.",
+    "cancelled": "Task cancelled.",
+    "progressReported": "Progress saved.",
+    "dependencyAdded": "Dependency added.",
+    "dependencyRemoved": "Dependency removed.",
+    "stale": "Someone changed this task meanwhile, so nothing was saved. The latest version is shown."
+  },
+  "fieldErrors": {
+    "assigneeNotEligible": "This person holds no role on this project, so they cannot own its tasks. Choose someone who works on the project.",
+    "userIdMalformed": "Enter a user ID in the form 3c3c3c3c-0000-4000-8000-000000000103.",
+    "scheduleActivityInvalid": "Choose an activity of this project's schedule that has no sub-activities and is not cancelled.",
+    "priorityInvalid": "Choose a priority from the list.",
+    "finishBeforeStart": "The planned finish cannot be before the planned start.",
+    "percentOutOfRange": "Enter a percentage from 0 to 100.",
+    "percentMalformed": "Enter a number such as 40 or 62.5, with at most four decimal places.",
+    "sameTask": "Choose two different tasks.",
+    "dependencyBroken": "The second task has already taken the step this dependency would hold back, so it cannot be added now."
+  },
+  "problems": {
+    "projectNotEligible": "This project is not in a state that allows this: tasks are planned once the project is approved and worked on while it is active.",
+    "notEditable": "This task is cancelled and cannot be changed.",
+    "hierarchyInvalid": "A subtask can only be added under an open task that is not itself a subtask and has no dependencies.",
+    "scheduleActivityInvalid": "The schedule activity is not one this task can carry out.",
+    "assigneeNotEligible": "The server did not accept this owner: they hold no role on this project. Nothing was changed.",
+    "priorityInvalid": "The priority is no longer offered. Choose another.",
+    "dependencyUnmet": "A task it depends on has not reached the point this needs yet. See its dependencies.",
+    "subtasksOpen": "Its subtasks must be completed first, or its parent is completed.",
+    "inUse": "It cannot be cancelled while it has open subtasks or dependencies.",
+    "progressNotEnterable": "Progress can only be entered on a task without subtasks while it is in progress or blocked.",
+    "dependencyInvalid": "A dependency joins two different tasks without subtasks, of the same project, that are not cancelled.",
+    "dependencyCircular": "This would create a circular dependency.",
+    "dependencyExists": "These two tasks are already linked.",
+    "invalidTransition": "The task is no longer in a state that allows this. A blocked task is unblocked before it is completed.",
+    "permissionDenied": "You do not have permission to do this to this task."
+  }
+}

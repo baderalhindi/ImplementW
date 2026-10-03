@@ -1,6 +1,7 @@
 import { type ReactElement, type SyntheticEvent } from 'react';
 
 import { useSaveAction } from '@/features/identity-access/forms.ts';
+import { type ProblemDescriber } from '@/features/identity-access/problems.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
@@ -19,9 +20,15 @@ interface ConfirmDialogProps {
   onDone: () => void;
   /** The record moved on since it was read: the screen reads it again. */
   onStale: () => void;
+  /** Another feature's wording and staleness (WF-04's dependency removal); the schedule's by default. */
+  describe?: ProblemDescriber;
+  isStale?: (error: unknown) => boolean;
 }
 
-/** One command with no input, confirmed: cancelling an activity, removing a dependency, deleting a draft baseline. */
+/**
+ * One command with no input, confirmed: cancelling an activity, removing a dependency (of activities or of tasks),
+ * deleting a draft baseline.
+ */
 export function ConfirmDialog(props: ConfirmDialogProps): ReactElement {
   return (
     <Dialog open={props.open} title={props.title} onClose={props.onClose}>
@@ -38,16 +45,18 @@ function ConfirmBody({
   onClose,
   onDone,
   onStale,
+  describe = scheduleProblemMessage,
+  isStale: stale = isStale,
 }: ConfirmDialogProps): ReactElement {
   const { t } = useI18n();
-  const save = useSaveAction(scheduleProblemMessage);
+  const save = useSaveAction(describe);
 
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
     const result = await save.run(action);
     if (result.ok) {
       onDone();
-    } else if (isStale(result.error)) {
+    } else if (stale(result.error)) {
       onStale();
     }
   };

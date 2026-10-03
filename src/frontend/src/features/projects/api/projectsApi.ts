@@ -1,5 +1,6 @@
 import { type ApprovalInstanceSummary } from '@/features/approvals/api/types.ts';
 import { apiRequest, type ApiResponse } from '@/shared/api/httpClient.ts';
+import { readAllPages } from '@/shared/api/paging.ts';
 
 import {
   type GovernanceProfileResolution,
@@ -29,6 +30,9 @@ export const projectsApi = {
   /** SCR-025 and SCR-026: only projects the caller may see, most recently changed first (P-2). */
   list: (query: ProjectQuery, signal?: AbortSignal) =>
     data(apiRequest<Page<ProjectSummary>>('/projects', { query: { ...query }, signal })),
+  /** Every project the caller may see that matches, page after page (the cross-project task lists, TASK-049 D-2). */
+  listAll: (query: Omit<ProjectQuery, 'page' | 'pageSize'>, signal?: AbortSignal) =>
+    readAllPages<ProjectSummary>('/projects', { ...query }, signal),
   get: (id: string, signal?: AbortSignal) =>
     apiRequest<ProjectDetail>(`/projects/${id}`, { signal }),
   /** SCR-033: a DRAFT, revision 1. */

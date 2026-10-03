@@ -195,3 +195,4 @@ Each mutation was applied, the unit and integration test projects rebuilt, the n
 | --- | --- |
 | 2026-10-03 | Created (TASK-048) |
 | 2026-10-03 | Validation pass: `MixedStateSubtasksRollUpIntoTheParentAndTheActivity` (five mixed-state scenarios) added; the blocked-completion refusal checked by a direct API call against the running stack (§7 row 9); F-18 recorded |
+| 2026-10-03 | TASK-049 built SCR-047 and SCR-063–066 on this API (`task-boards-ui.md`). F-8 stands: the lists read each visible project's tasks (`task-boards-ui.md` F-4), which also ties them to `PROJECT_VIEW` (F-5 there). The live check confirmed 422 `TASK_ASSIGNEE_NOT_ELIGIBLE` on `assigneeUserId` for an owner with no role over the project |
