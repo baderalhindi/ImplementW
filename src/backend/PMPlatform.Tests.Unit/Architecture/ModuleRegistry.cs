@@ -73,6 +73,7 @@ internal static class ModuleRegistry
         ("IntegrationMonitoring", "AuditActivity"),  // 34 query
         ("Milestone", "Project"),                    // 35 event consumer
         ("ProjectTask", "Project"),                  // 36 query
+        ("FinancialKpi", "DocumentManagement"),      // 38 command: an Approved Budget version's referenced document (TASK-052)
     };
 
     public static bool Allows(string referrer, string referenced) =>

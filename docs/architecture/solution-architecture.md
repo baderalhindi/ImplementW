@@ -274,6 +274,7 @@ flowchart LR
   APR -.->|"outcome event"| CORE
 
   MIL --> DOC
+  FIN --> DOC
   EXT --> DOC
   EXT --> PRJ
   EXT -->|"staged contribution<br/>via typed target adapter"| CORE
@@ -348,6 +349,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 35 | Project | Schedule, Progress, Milestone, FinancialKpi | event (`ProjectIntakeRecorded`) | legacy-intake Declared Baseline and opening position, each written by its owning module (§11.1) | TASK-104 |
 | 36 | ProjectTask | Project | query | project identity, anchors and lifecycle state, as edges 1–6: a task is authorized on its project's anchors (M-7) and executed only while the project is ACTIVE | TASK-048 (added 2026-10-03, `project-task.md` D-2) |
 | 37 | Milestone | Project | query | project identity, anchors and lifecycle state, as edges 1–6: an achievement claim is authorized on its project's anchors (M-7) and made only while the project is ACTIVE | TASK-050 (added 2026-10-03, `milestone-achievement.md` D-3) |
+| 38 | FinancialKpi | DocumentManagement | command | an Approved Budget version's referenced document, linked and pinned as CLEAN evidence of that version (ADR-008 gate: "any change to Approved Budget requires a referenced document") | TASK-052 (added 2026-10-04, `financial-kpi.md` D-6) |
 
 ### 8.3 Count
 
@@ -356,7 +358,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | Modules | **21** |
 | WF/FG domains mapped | **21** (WF-01–WF-15, FG-01–FG-06), 1:1 |
 | Universal edge rules | 4 |
-| Specific edges | 37 |
+| Specific edges | 38 |
 | Edges whose mechanism is direct cross-module repository or table access | **0** |
 | Edges flagged as inferred pending a rank-1 spec | 4 (nos. 19, 25, 26, 27) |
 | Cycles in the core-domain call graph | **0** (edge 35 is an event; edge 10, the declared split-authority contract, runs Milestone → Schedule only) |
@@ -523,3 +525,4 @@ On Q1 and Q2 being confirmed, the header status becomes **APPROVED**, the regist
 | 2026-09-20 | Initial record. Option A ratified as the delivery-team proposal, status held at Proposed — Pending AHDA Approval and paired with ADR-002 per the TASK-007 gate note. Three tiers and six API-01 rules recorded (§4.1); 21-module registry mapped 1:1 to WF-01–WF-15 and FG-01–FG-06 (§4.3); the six disputed module names settled and WF-04 renamed `ProjectTask` (§4.4); thirteen call rules (§6); module dependency diagram and a 4+35 edge register with zero repository edges (§7, §8); entity-to-module ownership register with four declared split-authority pairs and the WF-02 aggregate gap (§9); six-rule architecture-test enforcement suite (§10); five workbook consequences specified (§11); eight residual items (S-1 to S-8). | Architecture (TASK-007) |
 | 2026-10-03 | §8.2 edge 36 added, ProjectTask → Project (query), the `IProjectFactsReader` edges 1–6 give the other core modules: WF-04 decides every task operation on the project's anchors and gates execution on its lifecycle state, and edge 9 carries only the schedule activity. No cycle: Project calls no module back. Diagram and §8.3 count updated; M-9's reference to the intake path corrected from edge 36 to 35, its number in the register. `ModuleRegistry` records the edge. Proposed by the delivery team with TASK-048 (`project-task.md` F-1), for the Engagement Architect's confirmation. | Backend (TASK-048) |
 | 2026-10-03 | §8.2 edge 10's direction set: Milestone → Schedule only, a query of the shared milestone and a command that records it ACHIEVED on acceptance, in the accepting transaction; Schedule calls Milestone in no way, so the pair is no cycle. Edge 37 added, Milestone → Project (query), as edge 36 for ProjectTask. Edge 25 implemented through WF-11 (S-4 decided for WF-05 by the delivery team, pending the WF-05 specification). Diagram, §8.3 count and cycle note updated; `ModuleRegistry` records edge 10. Proposed with TASK-050 (`milestone-achievement.md` F-1, F-3), for the Engagement Architect's confirmation. | Backend (TASK-050) |
+| 2026-10-04 | §8.2 edge 38 added, FinancialKpi → DocumentManagement (command), as edge 16 for Milestone: the ADR-008 gate requires a referenced document for any change to the Approved Budget, and the ERD names it as an EvidenceReference. Edges 5 (`IProjectFactsReader`), 13 (`IReportingCycleReader`, new in Progress's contracts) and 26 (WF-11, for commitment and KPI target versions; S-4 decided for WF-14 by the delivery team, pending the WF-14 specification) implemented. Edge 12 is not: ChangeRequest is not built (TASK-060). No cycle: DocumentManagement and Progress call FinancialKpi in no way. Diagram and §8.3 count updated; `ModuleRegistry` records edge 38. Proposed with TASK-052 (`financial-kpi.md` F-1, F-3), for the Engagement Architect's confirmation. | Backend (TASK-052) |

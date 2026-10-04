@@ -22,6 +22,9 @@ using PMPlatform.Application.Features.Progress.Contracts;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.EventHandlers;
+using PMPlatform.Application.Features.FinancialKpi;
+using PMPlatform.Application.Features.FinancialKpi.Contracts;
+using PMPlatform.Application.Features.FinancialKpi.EventHandlers;
 using PMPlatform.Application.Features.Milestone;
 using PMPlatform.Application.Features.Milestone.Contracts;
 using PMPlatform.Application.Features.Milestone.EventHandlers;
@@ -130,6 +133,7 @@ public static class DependencyInjection
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ProgressOpeningPosition>();
         services.AddScoped<IProjectHealthReader, ProjectHealthReader>();
+        services.AddScoped<IReportingCycleReader, ReportingCycleReader>();
 
         // TASK-046: WF-03 schedule and baselines. The repository is Infrastructure's; baseline outcomes arrive through the
         // Schedule approval outcome handler (WF-11 edges 21, 28), and Project's activation command consults the baseline
@@ -170,6 +174,21 @@ public static class DependencyInjection
         services.AddScoped<MilestoneEvidencePolicy>();
         services.AddScoped<IMilestoneAchievementService, MilestoneAchievementService>();
         services.AddScoped<IApprovalOutcomeHandler, MilestoneAchievementOutcomeHandler>();
+
+        // TASK-052: WF-14's two subdomains. Financial Progress — source modes, Approved Budget versions (WF-11, edge 26; documents,
+        // edge 38), periodic updates aligned to WF-02's periods (edge 13) and their published snapshots; KPI Performance — assignments,
+        // target versions (WF-11, edge 26) and pinned measurements. The repository is Infrastructure's.
+        services.AddScoped<FinancialKpiAccess>();
+        services.AddScoped<FinancialPolicy>();
+        services.AddScoped<KpiDefinitions>();
+        services.AddScoped<KpiScope>();
+        services.AddScoped<IFinancialSourceModeService, FinancialSourceModeService>();
+        services.AddScoped<IFinancialCommitmentService, FinancialCommitmentService>();
+        services.AddScoped<IFinancialProgressService, FinancialProgressService>();
+        services.AddScoped<IKpiAssignmentService, KpiAssignmentService>();
+        services.AddScoped<IKpiTargetVersionService, KpiTargetVersionService>();
+        services.AddScoped<IKpiMeasurementService, KpiMeasurementService>();
+        services.AddScoped<IApprovalOutcomeHandler, FinancialKpiApprovalOutcomeHandler>();
 
         return services;
     }

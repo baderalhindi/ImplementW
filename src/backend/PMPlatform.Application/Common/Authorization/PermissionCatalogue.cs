@@ -145,6 +145,37 @@ public sealed class PermissionCatalogue
     /// </summary>
     public const string MilestoneSubmit = "MILESTONE_SUBMIT";
 
+    /// <summary>
+    /// WF-14 Financial Progress (TASK-052): a project's Approved Budget versions, financial updates, published financial
+    /// snapshots, live position, source modes and portfolio totals. ADR-013: an entity sees budget and expenditure for its own
+    /// project, masked by audience (ADR-010).
+    /// </summary>
+    public const string FinancialView = "FINANCIAL_VIEW";
+
+    /// <summary>WF-14 (TASK-052): open and edit an Approved Budget version, attach its referenced document, submit it to WF-11; enter and submit a period's actuals and forecast.</summary>
+    public const string FinancialSubmit = "FINANCIAL_SUBMIT";
+
+    /// <summary>WF-14 (TASK-052): review a period's financial update, return it or publish it. Internal users only, and never one's own submission (ADR-013).</summary>
+    public const string FinancialReview = "FINANCIAL_REVIEW";
+
+    /// <summary>WF-14 (TASK-052, ADR-008): set a financial field's source mode — MANUAL, INTEGRATED or HYBRID — per project.</summary>
+    public const string FinancialSourceManage = "FINANCIAL_SOURCE_MANAGE";
+
+    /// <summary>
+    /// WF-14 KPI Performance (TASK-052): a project's KPI assignments, target versions, measurements and portfolio aggregates.
+    /// ADR-013: an entity sees KPI status for its own project, masked by audience (ADR-010).
+    /// </summary>
+    public const string KpiView = "KPI_VIEW";
+
+    /// <summary>WF-14 (TASK-052): assign a KPI to a project, suspend or retire it, and open and submit its target versions to WF-11.</summary>
+    public const string KpiManage = "KPI_MANAGE";
+
+    /// <summary>WF-14 (TASK-052): record, edit and submit a KPI measurement.</summary>
+    public const string KpiRecord = "KPI_RECORD";
+
+    /// <summary>WF-14 (TASK-052): publish a submitted measurement. Internal users only, and never the person who recorded it (ADR-013).</summary>
+    public const string KpiReview = "KPI_REVIEW";
+
     /// <summary>WF-15: the bilingual notification templates and their versions (TASK-039).</summary>
     public const string NotificationTemplateView = "NOTIFICATION_TEMPLATE_VIEW";
 
@@ -197,6 +228,14 @@ public sealed class PermissionCatalogue
             new(TaskReopen, "PROJECT_TASK", AccessMode.Write),
             new(MilestoneView, "MILESTONE", AccessMode.Read),
             new(MilestoneSubmit, "MILESTONE", AccessMode.Write),
+            new(FinancialView, "FINANCIAL", AccessMode.Read),
+            new(FinancialSubmit, "FINANCIAL", AccessMode.Write),
+            new(FinancialReview, "FINANCIAL", AccessMode.Write),
+            new(FinancialSourceManage, "FINANCIAL", AccessMode.Write),
+            new(KpiView, "KPI", AccessMode.Read),
+            new(KpiManage, "KPI", AccessMode.Write),
+            new(KpiRecord, "KPI", AccessMode.Write),
+            new(KpiReview, "KPI", AccessMode.Write),
             new(NotificationTemplateView, "NOTIFICATIONS", AccessMode.Read),
             new(NotificationTemplateManage, "NOTIFICATIONS", AccessMode.Write),
             new(NotificationDeliveryView, "NOTIFICATIONS", AccessMode.Read),
@@ -231,7 +270,9 @@ public sealed class PermissionCatalogue
     /// owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). WF-05's view and submit go to R04 at OWN: ADR-013's
     /// amendment to TASK-050 lets an entity Project Manager submit achievement claims on their own project, and OWN reaches the
     /// projects the holder manages, internal or entity; acceptance is WF-11's and the other roles' milestone grants wait for
-    /// Appendix A (milestone-achievement.md F-2). WF-15's
+    /// Appendix A (milestone-achievement.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
+    /// status for its own project, masked by audience per ADR-010: R08 and R04 view financials and KPIs at ENTITY, which reaches
+    /// only a holder with an entity; entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
     /// (notification-runtime.md F-1): they are platform-wide.
     /// </summary>
@@ -270,6 +311,10 @@ public sealed class PermissionCatalogue
         new("R04", TaskReopen, DataScope.Own),
         new("R04", MilestoneView, DataScope.Own),
         new("R04", MilestoneSubmit, DataScope.Own),
+        new("R04", FinancialView, DataScope.Entity),
+        new("R08", FinancialView, DataScope.Entity),
+        new("R04", KpiView, DataScope.Entity),
+        new("R08", KpiView, DataScope.Entity),
         new("R02", LayoutPersonalize, DataScope.Own),
         new("R02", ReportCompose, DataScope.Own),
         new("R03", LayoutPersonalize, DataScope.Own),

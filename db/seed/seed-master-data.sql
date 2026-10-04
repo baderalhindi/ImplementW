@@ -138,7 +138,11 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- (TASK-050) go to R04 at OWN: ADR-013's amendment to TASK-050 lets an entity Project Manager submit milestone achievement
 -- claims on their own project, and OWN reaches the projects the holder manages, internal or entity. Acceptance stays with
 -- WF-05, decided through WF-11's APPROVAL_DECIDE; the other roles' milestone grants wait for Appendix A
--- (milestone-achievement.md F-2). The four WF-15 permissions (TASK-039) — notification templates and the
+-- (milestone-achievement.md F-2). The eight WF-14 permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
+-- FINANCIAL_REVIEW, FINANCIAL_SOURCE_MANAGE, KPI_VIEW, KPI_MANAGE, KPI_RECORD, KPI_REVIEW — ship with FINANCIAL_VIEW and KPI_VIEW
+-- to R04 and R08 at ENTITY: ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI status for its own
+-- project, masked by audience (ADR-010); ENTITY reaches only a holder with an entity. Entering, reviewing and source
+-- configuration wait for Appendix A (financial-kpi.md F-2). The four WF-15 permissions (TASK-039) — notification templates and the
 -- delivery operations view with dead-letter redrive — go to R01 at ALL by delivery-team decision, as FG-04 did
 -- (notification-runtime.md F-1): templates and deliveries are platform-wide, with no record to scope. A person's own
 -- inbox and preferences need no permission. Blueprint Appendix A, the rest of the matrix, is not in
@@ -185,6 +189,14 @@ FROM (VALUES
     ('TASK_REOPEN',                 'إعادة فتح المهام المكتملة', 'Reopen completed tasks', 'PROJECT_TASK',    false),
     ('MILESTONE_VIEW',              'عرض إنجاز المعالم',    'View milestone achievements', 'MILESTONE',       false),
     ('MILESTONE_SUBMIT',            'تقديم إنجاز المعالم',  'Submit milestone achievements', 'MILESTONE',     false),
+    ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
+    ('FINANCIAL_SUBMIT',            'تقديم البيانات المالية', 'Submit financial figures',  'FINANCIAL',       false),
+    ('FINANCIAL_REVIEW',            'مراجعة البيانات المالية', 'Review financial figures', 'FINANCIAL',       false),
+    ('FINANCIAL_SOURCE_MANAGE',     'إدارة مصادر البيانات المالية', 'Manage financial sources', 'FINANCIAL', false),
+    ('KPI_VIEW',                    'عرض مؤشرات الأداء',    'View KPI performance',        'KPI',             false),
+    ('KPI_MANAGE',                  'إدارة مؤشرات الأداء',  'Manage KPI assignments and targets', 'KPI',      false),
+    ('KPI_RECORD',                  'تسجيل قياسات المؤشرات', 'Record KPI measurements',    'KPI',             false),
+    ('KPI_REVIEW',                  'اعتماد نشر القياسات',  'Publish KPI measurements',    'KPI',             false),
     ('NOTIFICATION_TEMPLATE_VIEW',  'عرض قوالب الإشعارات',  'View notification templates', 'NOTIFICATIONS',   false),
     ('NOTIFICATION_TEMPLATE_MANAGE', 'إدارة قوالب الإشعارات', 'Manage notification templates', 'NOTIFICATIONS', true),
     ('NOTIFICATION_DELIVERY_VIEW',  'عرض عمليات الإشعارات', 'View notification deliveries', 'NOTIFICATIONS',  false),
@@ -236,6 +248,10 @@ FROM (VALUES
     ('R04', 'TASK_REOPEN',                 'OWN'),
     ('R04', 'MILESTONE_VIEW',              'OWN'),
     ('R04', 'MILESTONE_SUBMIT',            'OWN'),
+    ('R04', 'FINANCIAL_VIEW',              'ENTITY'),
+    ('R08', 'FINANCIAL_VIEW',              'ENTITY'),
+    ('R04', 'KPI_VIEW',                    'ENTITY'),
+    ('R08', 'KPI_VIEW',                    'ENTITY'),
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R03', 'REPORT_COMPOSE',              'OWN'),
     ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),

@@ -283,6 +283,35 @@ public sealed class ShippedGrantTests
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.MilestoneSubmit, Managed(OtherProjectId, EntityId, UserId))).IsAllowed);
     }
 
+    /// <summary>
+    /// TASK-052, ADR-013's amendment: an entity sees budget, expenditure and KPI status for its own project — R04 and R08 view
+    /// financials and KPIs at ENTITY. Entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2).
+    /// </summary>
+    [Fact]
+    public void FinancialsAndKpisAreSeenByTheEntityOnly()
+    {
+        Assert.Equal(
+            [
+                ("R04", PermissionCatalogue.FinancialView, DataScope.Entity), ("R08", PermissionCatalogue.FinancialView, DataScope.Entity),
+                ("R04", PermissionCatalogue.KpiView, DataScope.Entity), ("R08", PermissionCatalogue.KpiView, DataScope.Entity),
+            ],
+            PermissionCatalogue.ShippedDefaultGrants
+                .Where(g => g.PermissionCode.StartsWith("FINANCIAL_", StringComparison.Ordinal) || g.PermissionCode.StartsWith("KPI_", StringComparison.Ordinal))
+                .Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+    }
+
+    /// <summary>ADR-013's amendment to TASK-052: an entity user sees the financials of its own entity's projects and of no other entity's.</summary>
+    [Fact]
+    public async Task AnEntitySeesTheFinancialsOfItsOwnProjectsOnly()
+    {
+        AuthorizationScenario entityUser = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R08", PermissionCatalogue.FinancialView, DataScope.Entity, entityId: EntityId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityUser.AuthorizeAsync(PermissionCatalogue.FinancialView, Managed(ProjectId, EntityId, OtherUserId)));
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.FinancialView, Managed(OtherProjectId, OtherEntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.FinancialSubmit, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+    }
+
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>
     [Fact]
     public void NotificationTemplatesAndDeliveryOperationsGoToR01Only()
