@@ -143,7 +143,7 @@ Each mutation was applied to the source, `vitest run src/features/financial-kpi`
 | F-12 | **Arabic strings are the delivery team's**, not reviewed by AHDA | AHDA | Wording may change |
 | F-13 | **"Today" is the UTC date** (TASK-050 F-13): between midnight and 03:00 in Riyadh the as-of date cannot be the local today | Engineering Architect | Early-morning entries need yesterday's date |
 | F-14 | **The production bundle is 1,333 KB in one chunk** (1,208 KB after TASK-051); no route is code-split (TASK-038 F-5) | Frontend lead | Initial load grows with every module |
-| F-15 | **Security Lead review (CTL-43) cannot be requested**: the CODEOWNERS teams do not exist (TASK-031 F-13). This change renders classified financial data | Maintainer | The PR's CTL-43 box stays unticked |
+| F-15 | **No Security Lead review is requested (CTL-43)**: this change touches no authentication, RBAC, data scope or upload; it renders what the API's masking leaves (ADR-010) and offers commands as navigation only. The CODEOWNERS teams still do not exist (TASK-031 F-13) | Maintainer | — |
 | F-16 | **The register's aggregate reads only up to 200 projects per KPI** (the API's limit) | Engineering Architect | A larger portfolio is aggregated in part without saying so |
 | F-17 | **The API reports `isUnitCompatible: false` when no figure exists at all** (no unit to compare, `KpiAggregation`). The SPA reads `measuredCount: 0` first and says "No average" (D-11); another client could say "units differ" | Engineering Architect (TASK-052) | Misleading wording in other consumers |
 
