@@ -140,6 +140,15 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Milestone
 
+      # TASK-052: WF-14 Financial Progress and KPI Performance — measurements pinned to their target version, Unknown never 0,
+      # portfolio aggregates only over compatible figures, immutable published snapshots, and the database guards. Same database and directory as above.
+      - name: FinancialKpi integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.FinancialKpi
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest

@@ -2203,6 +2203,1029 @@
         }
       }
     },
+    "/api/v1/financial-commitments": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The project's versions, newest first; `isCurrent` marks the ACTIVE one.",
+        "operationId": "FinancialKpi_ListFinancialCommitments",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialCommitmentPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Opens the project's next Approved Budget version as a DRAFT.",
+        "operationId": "FinancialKpi_CreateFinancialCommitment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialCommitmentCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialCommitmentCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialCommitmentCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialCommitmentDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-commitments/{commitmentId}": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_GetFinancialCommitment",
+        "parameters": [
+          {
+            "name": "commitmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialCommitmentDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "A DRAFT or RETURNED version's figures, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "FinancialKpi_UpdateFinancialCommitment",
+        "parameters": [
+          {
+            "name": "commitmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialCommitmentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialCommitmentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialCommitmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialCommitmentDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "HARD_DRAFT. R-40: a version that is not there is 204 as well.",
+        "operationId": "FinancialKpi_DeleteFinancialCommitment",
+        "parameters": [
+          {
+            "name": "commitmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-commitments/{commitmentId}/submit": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "DRAFT or RETURNED → SUBMITTED to WF-11, once a referenced document is held (422 `FINANCIAL_BUDGET_DOCUMENT_REQUIRED`).",
+        "operationId": "FinancialKpi_SubmitFinancialCommitment",
+        "parameters": [
+          {
+            "name": "commitmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialCommitmentDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-commitments/{commitmentId}/documents": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The version's referenced documents and the evidence types it holds CLEAN evidence for.",
+        "operationId": "FinancialKpi_GetFinancialCommitmentDocuments",
+        "parameters": [
+          {
+            "name": "commitmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommitmentDocumentDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "ADR-003 §8.2 edge 38: links a document to a DRAFT or RETURNED version and pins one of its CLEAN versions as the reference.\nA version not CLEAN is 409 `DOCUMENT_NOT_AVAILABLE`, and nothing is linked.",
+        "operationId": "FinancialKpi_AttachFinancialCommitmentDocument",
+        "parameters": [
+          {
+            "name": "commitmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitmentDocumentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitmentDocumentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitmentDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceReferenceDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-commitments/{commitmentId}/documents/{evidenceReferenceId}/withdraw": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Withdraws a DRAFT or RETURNED version's referenced document; the document and its history remain.",
+        "operationId": "FinancialKpi_WithdrawFinancialCommitmentDocument",
+        "parameters": [
+          {
+            "name": "commitmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "evidenceReferenceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceReferenceDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/published-financial-snapshots": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The project's published snapshots, latest first (I-40).",
+        "operationId": "FinancialKpi_ListPublishedFinancialSnapshots",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedFinancialSnapshotPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-positions": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The project's CURRENT/LIVE position: one item for a project the caller may see.",
+        "operationId": "FinancialKpi_ListFinancialPositions",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialPositionPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-portfolio-aggregates": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Totals over the projects named (`projectId`, repeated, 1 to 200) from their latest snapshots\n(`semanticState=PUBLISHED_OFFICIAL`, the default) or their live positions (`CURRENT_LIVE`). A project not counted\nis listed with its reason and the aggregate is partial; with none counted every total is null.",
+        "operationId": "FinancialKpi_GetFinancialPortfolioAggregate",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "semanticState",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialPortfolioAggregate"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-progress-updates": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Every revision of the project's periods, newest first.",
+        "operationId": "FinancialKpi_ListFinancialProgressUpdates",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialProgressUpdatePage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Opens the earliest begun WF-02 period without published figures as a DRAFT, every figure Unknown (MISSING).",
+        "operationId": "FinancialKpi_StartFinancialProgressUpdate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialProgressUpdateStartRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialProgressUpdateStartRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialProgressUpdateStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialProgressUpdateDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-progress-updates/{updateId}": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_GetFinancialProgressUpdate",
+        "parameters": [
+          {
+            "name": "updateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialProgressUpdateDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "A DRAFT's figures and provenance, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "FinancialKpi_UpdateFinancialProgressUpdate",
+        "parameters": [
+          {
+            "name": "updateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialProgressUpdateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialProgressUpdateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialProgressUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialProgressUpdateDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "HARD_DRAFT. R-40: an update that is not there is 204 as well.",
+        "operationId": "FinancialKpi_DeleteFinancialProgressUpdate",
+        "parameters": [
+          {
+            "name": "updateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/financial-progress-updates/{updateId}/submit": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_SubmitFinancialProgressUpdate",
+        "parameters": [
+          {
+            "name": "updateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialProgressUpdateDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-progress-updates/{updateId}/start-review": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "SUBMITTED → UNDER_REVIEW, by AHDA; not by the submitter.",
+        "operationId": "FinancialKpi_StartFinancialProgressUpdateReview",
+        "parameters": [
+          {
+            "name": "updateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialProgressUpdateDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-progress-updates/{updateId}/return": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "UNDER_REVIEW → RETURNED with the reason; the period continues as revision + 1.",
+        "operationId": "FinancialKpi_ReturnFinancialProgressUpdate",
+        "parameters": [
+          {
+            "name": "updateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressReturnCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressReturnCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressReturnCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialProgressUpdateDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-progress-updates/{updateId}/publish": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "UNDER_REVIEW → PUBLISHED, writing the period's snapshot with the status rated under pinned thresholds.",
+        "operationId": "FinancialKpi_PublishFinancialProgressUpdate",
+        "parameters": [
+          {
+            "name": "updateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialProgressUpdateDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-source-modes": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Every financial field of the project with its mode; a field never configured is MANUAL, with no `id`.",
+        "operationId": "FinancialKpi_ListFinancialSourceModes",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialSourceModePage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_CreateFinancialSourceMode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialSourceModeCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialSourceModeCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialSourceModeCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialSourceModeDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/financial-source-modes/{sourceModeId}": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_GetFinancialSourceMode",
+        "parameters": [
+          {
+            "name": "sourceModeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialSourceModeDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The field's mode. INTEGRATED is locked (409 `FINANCIAL_SOURCE_MODE_LOCKED`). Requires `If-Match` (R-21).",
+        "operationId": "FinancialKpi_UpdateFinancialSourceMode",
+        "parameters": [
+          {
+            "name": "sourceModeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialSourceModeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialSourceModeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinancialSourceModeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialSourceModeDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/identity-integration": {
       "get": {
         "tags": [
@@ -2257,6 +3280,322 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IdentityIntegrationTestResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-assignments": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The project's assignments, newest first, each with its KPI's unit.",
+        "operationId": "FinancialKpi_ListKpiAssignments",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiAssignmentPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Assigns a PUBLISHED KPI to the project, ACTIVE. A KPI is assigned to a project once (409 `KPI_ALREADY_ASSIGNED`).",
+        "operationId": "FinancialKpi_CreateKpiAssignment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiAssignmentCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiAssignmentCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiAssignmentCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiAssignmentDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-assignments/{assignmentId}": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_GetKpiAssignment",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiAssignmentDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The assignment's owner and frequency, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "FinancialKpi_UpdateKpiAssignment",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiAssignmentRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiAssignmentRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiAssignmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiAssignmentDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-assignments/{assignmentId}/suspend": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "ACTIVE → SUSPENDED: no target version or measurement is recorded while suspended.",
+        "operationId": "FinancialKpi_SuspendKpiAssignment",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiAssignmentDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-assignments/{assignmentId}/reactivate": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "SUSPENDED → ACTIVE.",
+        "operationId": "FinancialKpi_ReactivateKpiAssignment",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiAssignmentDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-assignments/{assignmentId}/retire": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "ACTIVE or SUSPENDED → RETIRED, final (RETAIN: an assignment is never deleted).",
+        "operationId": "FinancialKpi_RetireKpiAssignment",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiAssignmentDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-portfolio-aggregates": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The latest published measurement of each KPI named (`kpiDefinitionId`, repeated) on each project named\n(`projectId`, repeated, 1 to 200). Values are combined only when every KPI measures in one unit; otherwise\n`meanValue` is null and the aggregate is partial. RAG ratings are always counted.",
+        "operationId": "FinancialKpi_GetKpiPortfolioAggregate",
+        "parameters": [
+          {
+            "name": "kpiDefinitionId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiPortfolioAggregate"
                 }
               }
             }
@@ -2530,6 +3869,496 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/KpiDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-measurements": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The assignment's measurements, latest period first.",
+        "operationId": "FinancialKpi_ListKpiMeasurements",
+        "parameters": [
+          {
+            "name": "kpiAssignmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiMeasurementPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Records a period's measurement as a DRAFT, pinned to the ACTIVE target version (422 `KPI_TARGET_NOT_APPROVED` without one).",
+        "operationId": "FinancialKpi_CreateKpiMeasurement",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiMeasurementCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiMeasurementCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiMeasurementCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiMeasurementDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-measurements/{measurementId}": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_GetKpiMeasurement",
+        "parameters": [
+          {
+            "name": "measurementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiMeasurementDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "A DRAFT's value, as a whole, re-rated against its pinned version. Requires `If-Match` (R-21).",
+        "operationId": "FinancialKpi_UpdateKpiMeasurement",
+        "parameters": [
+          {
+            "name": "measurementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiMeasurementRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiMeasurementRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiMeasurementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiMeasurementDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "HARD_DRAFT. R-40: a measurement that is not there is 204 as well.",
+        "operationId": "FinancialKpi_DeleteKpiMeasurement",
+        "parameters": [
+          {
+            "name": "measurementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-measurements/{measurementId}/submit": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_SubmitKpiMeasurement",
+        "parameters": [
+          {
+            "name": "measurementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiMeasurementDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-measurements/{measurementId}/publish": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "SUBMITTED → PUBLISHED, by AHDA; not by the person who recorded it.",
+        "operationId": "FinancialKpi_PublishKpiMeasurement",
+        "parameters": [
+          {
+            "name": "measurementId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiMeasurementDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-target-versions": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The assignment's versions, newest first; `isCurrent` marks the ACTIVE one.",
+        "operationId": "FinancialKpi_ListKpiTargetVersions",
+        "parameters": [
+          {
+            "name": "kpiAssignmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiTargetVersionPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_CreateKpiTargetVersion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiTargetVersionCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiTargetVersionCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiTargetVersionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiTargetVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-target-versions/{targetVersionId}": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "operationId": "FinancialKpi_GetKpiTargetVersion",
+        "parameters": [
+          {
+            "name": "targetVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiTargetVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "A DRAFT or RETURNED version's target and thresholds, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "FinancialKpi_UpdateKpiTargetVersion",
+        "parameters": [
+          {
+            "name": "targetVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiTargetVersionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiTargetVersionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/KpiTargetVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiTargetVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "HARD_DRAFT. R-40: a version that is not there is 204 as well.",
+        "operationId": "FinancialKpi_DeleteKpiTargetVersion",
+        "parameters": [
+          {
+            "name": "targetVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-target-versions/{targetVersionId}/submit": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "DRAFT or RETURNED → SUBMITTED to WF-11.",
+        "operationId": "FinancialKpi_SubmitKpiTargetVersion",
+        "parameters": [
+          {
+            "name": "targetVersionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpiTargetVersionDetail"
                 }
               }
             }
@@ -7883,6 +9712,48 @@
         },
         "description": "A project's Activity Execution Progress (R-29)."
       },
+      "AggregateCoverage": {
+        "enum": [
+          "COMPLETE",
+          "PARTIAL",
+          "NONE"
+        ],
+        "description": "How much of the requested portfolio an aggregate covers (api-conventions R-20(c))."
+      },
+      "AggregateExclusion": {
+        "required": [
+          "projectId",
+          "kpiDefinitionId",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kpiDefinitionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/AggregateExclusionReason"
+          }
+        }
+      },
+      "AggregateExclusionReason": {
+        "enum": [
+          "NOT_AVAILABLE",
+          "CURRENCY_UNVERIFIED",
+          "VALUE_NOT_MEASURED",
+          "MASKED",
+          "NO_PUBLISHED_FIGURE"
+        ],
+        "description": "Why a project's figure is left out of an aggregate."
+      },
       "ApprovalAuthorityEntry": {
         "required": [
           "subjectTypeCode",
@@ -8557,6 +10428,19 @@
         ],
         "description": "ERD `approval_task.status`. Every state but PENDING is terminal."
       },
+      "ApprovedVersionStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "ACTIVE",
+          "SUPERSEDED",
+          "REJECTED",
+          "WITHDRAWN"
+        ],
+        "description": "ERD `financial_commitment.status` and `kpi_target_version.status`: a version approved through WF-11. It is born\nDRAFT, SUBMITTED to WF-11, and ends ACTIVE, RETURNED (resubmitted as the next revision), REJECTED or WITHDRAWN; an ACTIVE\nversion becomes SUPERSEDED when the next one activates. UNDER_REVIEW is in the ERD's value set but no edge reaches it: WF-11\ngives the source no signal between start and outcome (financial-kpi.md F-9)."
+      },
       "BaselineActivityDetail": {
         "required": [
           "scheduleActivityId",
@@ -8923,6 +10807,74 @@
           }
         },
         "description": "A record of another module that a document is linked to, by identity only (M-4): the owning module's ADR-003 name,\nthe record type and its id. DocumentManagement never reads it."
+      },
+      "CommitmentDocumentDetail": {
+        "required": [
+          "financialCommitmentId",
+          "satisfiedEvidenceTypeItemIds",
+          "links"
+        ],
+        "type": "object",
+        "properties": {
+          "financialCommitmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "satisfiedEvidenceTypeItemIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusinessLinkDetail"
+            }
+          }
+        },
+        "description": "A commitment version's referenced documents (ADR-008 gate): its document links, and the evidence types it holds satisfying\nevidence for (a VALID reference to a CLEAN version on an active link). Submission needs at least one."
+      },
+      "CommitmentDocumentRequest": {
+        "required": [
+          "documentId",
+          "documentVersionId",
+          "evidenceTypeItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "documentVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "evidenceTypeItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "A document to attach as a version's reference: the document, the version of it to pin, and its EVIDENCE_TYPE item."
+      },
+      "CommitmentType": {
+        "enum": [
+          "APPROVED_BUDGET",
+          "DECLARED_BUDGET",
+          "OPEN_COMMITMENT"
+        ],
+        "description": "ERD `financial_commitment.commitment_type`."
       },
       "ConfigurationContent": {
         "type": "object",
@@ -10626,6 +12578,981 @@
           }
         }
       },
+      "FinancialCommitmentCreateRequest": {
+        "required": [
+          "projectId",
+          "amountSar",
+          "effectiveFrom",
+          "sourceReference",
+          "asOfDate"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "amountSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "effectiveFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "sourceReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "asOfDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A new Approved Budget version of the project: FinancialCommitmentRequest and the project."
+      },
+      "FinancialCommitmentDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "commitmentType",
+          "versionNo",
+          "revisionNo",
+          "status",
+          "isCurrent",
+          "amountSar",
+          "effectiveFrom",
+          "activatedAt",
+          "supersededByCommitmentId",
+          "changeAuthorizationId",
+          "projectIntakeId",
+          "sourceType",
+          "sourceReference",
+          "asOfDate",
+          "enteredByUserId",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy",
+          "maskedFields"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "commitmentType": {
+            "$ref": "#/components/schemas/CommitmentType"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovedVersionStatus"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "amountSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "effectiveFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "activatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "supersededByCommitmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "changeAuthorizationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projectIntakeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/FinancialSourceType"
+          },
+          "sourceReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "One commitment version. bool FinancialCommitmentDetail.IsCurrent marks the ACTIVE one, the budget of record. A field the caller's audience may\nnot see (ADR-010) is null here and named in IReadOnlyList&lt;string&gt; FinancialCommitmentDetail.MaskedFields; the API omits it (R-20). Its review history is\n`GET /approval-instances?subjectModule=FinancialKpi&amp;subjectType=FinancialCommitment&amp;subjectId={id}`."
+      },
+      "FinancialCommitmentPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialCommitmentDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's commitment versions, newest first (R-29)."
+      },
+      "FinancialCommitmentRequest": {
+        "required": [
+          "amountSar",
+          "effectiveFrom",
+          "sourceReference",
+          "asOfDate"
+        ],
+        "type": "object",
+        "properties": {
+          "amountSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "effectiveFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "sourceReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "asOfDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "An Approved Budget version's figures, as a whole (R-5): the project total in SAR (R-16), when it applies from, and its manual\nprovenance — a document or system reference and the date the figure is true as of. Who entered it is the caller; the status,\nversion and revision are the workflow's."
+      },
+      "FinancialField": {
+        "enum": [
+          "APPROVED_BUDGET",
+          "ACTUAL_EXPENDITURE",
+          "FORECAST_AT_COMPLETION",
+          "OPEN_COMMITMENT"
+        ],
+        "description": "ERD `financial_source_mode.field_code`: the financial fields whose source is set per project (ADR-008)."
+      },
+      "FinancialPortfolioAggregate": {
+        "required": [
+          "semanticState",
+          "currencyCode",
+          "isPartial",
+          "coverage",
+          "requestedProjectCount",
+          "includedProjectCount",
+          "totalApprovedBudgetSar",
+          "totalActualExpenditureToDateSar",
+          "totalForecastAtCompletionSar",
+          "exclusions"
+        ],
+        "type": "object",
+        "properties": {
+          "semanticState": {
+            "$ref": "#/components/schemas/SemanticState"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "isPartial": {
+            "type": "boolean"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/AggregateCoverage"
+          },
+          "requestedProjectCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "includedProjectCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalApprovedBudgetSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "totalActualExpenditureToDateSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "totalForecastAtCompletionSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "exclusions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AggregateExclusion"
+            }
+          }
+        },
+        "description": "Financial totals over a portfolio of projects, in SAR. A project counts only when its figures are measured, visible to the\ncaller and verified as SAR; otherwise it is listed in IReadOnlyList&lt;AggregateExclusion&gt; FinancialPortfolioAggregate.Exclusions and bool FinancialPortfolioAggregate.IsPartial is true. With no\nproject counted, every total is null — never 0."
+      },
+      "FinancialPositionDetail": {
+        "required": [
+          "projectId",
+          "semanticState",
+          "financialCommitmentId",
+          "approvedBudgetSar",
+          "financialProgressUpdateId",
+          "updateStatus",
+          "actualExpenditureToDateSar",
+          "forecastAtCompletionSar",
+          "valueStatus",
+          "financialStatus",
+          "thresholdConfigurationVersionId",
+          "asOfDate",
+          "computedAt",
+          "maskedFields"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "semanticState": {
+            "$ref": "#/components/schemas/SemanticState"
+          },
+          "financialCommitmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "approvedBudgetSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "financialProgressUpdateId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "updateStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FinancialUpdateStatus"
+              }
+            ]
+          },
+          "actualExpenditureToDateSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "forecastAtCompletionSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "valueStatus": {
+            "$ref": "#/components/schemas/ValueStatus"
+          },
+          "financialStatus": {
+            "$ref": "#/components/schemas/FinancialStatus"
+          },
+          "thresholdConfigurationVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "asOfDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A project's CURRENT/LIVE financial position, computed on read and never stored: the ACTIVE Approved Budget, and the figures of\nthe latest revision submitted for review or published. FinancialStatus FinancialPositionDetail.FinancialStatus is rated under the thresholds in force\nnow, UNKNOWN when there are none or a figure is missing (Guid? FinancialPositionDetail.ThresholdConfigurationVersionId null). Distinct from\nevery PublishedFinancialSnapshotDetail (M-12)."
+      },
+      "FinancialPositionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialPositionDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's live financial position: one item for a project the caller may see, none otherwise (R-29)."
+      },
+      "FinancialProgressUpdateDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "reportingCycleId",
+          "revisionNo",
+          "status",
+          "actualExpenditureToDateSar",
+          "forecastAtCompletionSar",
+          "valueStatus",
+          "narrative",
+          "projectIntakeId",
+          "sourceType",
+          "sourceReference",
+          "asOfDate",
+          "enteredByUserId",
+          "submittedByUserId",
+          "submittedAt",
+          "reviewedByUserId",
+          "reviewedAt",
+          "returnReason",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy",
+          "maskedFields"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reportingCycleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FinancialUpdateStatus"
+          },
+          "actualExpenditureToDateSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "forecastAtCompletionSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "valueStatus": {
+            "$ref": "#/components/schemas/ValueStatus"
+          },
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "projectIntakeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/FinancialSourceType"
+          },
+          "sourceReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "submittedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reviewedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reviewedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "returnReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "One revision of a period's CURRENT/LIVE actuals and forecast. A figure that is not known is null and\nValueStatus FinancialProgressUpdateDetail.ValueStatus says why — never 0 (TASK-052). Masked fields as FinancialCommitmentDetail."
+      },
+      "FinancialProgressUpdatePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialProgressUpdateDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's financial update revisions, newest first (R-29)."
+      },
+      "FinancialProgressUpdateRequest": {
+        "required": [
+          "actualExpenditureToDateSar",
+          "forecastAtCompletionSar",
+          "valueStatus",
+          "narrative",
+          "sourceReference",
+          "asOfDate"
+        ],
+        "type": "object",
+        "properties": {
+          "actualExpenditureToDateSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "forecastAtCompletionSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valueStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValueStatus"
+              }
+            ]
+          },
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "sourceReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "asOfDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A DRAFT update's figures, as a whole (R-5). A figure that is not known is sent as null, with `valueStatus` saying why\n(MISSING, STALE, NOT_APPLICABLE) — never as `\"0.00\"`. A figure is present exactly when MEASURED."
+      },
+      "FinancialProgressUpdateStartRequest": {
+        "required": [
+          "projectId"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "Opens the financial update of the project's next period. Every figure starts Unknown; nothing else is sent."
+      },
+      "FinancialSourceModeCreateRequest": {
+        "required": [
+          "projectId",
+          "fieldCode",
+          "sourceMode"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "fieldCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FinancialField"
+              }
+            ]
+          },
+          "sourceMode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SourceMode"
+              }
+            ]
+          }
+        },
+        "description": "Sets a financial field's source mode for the first time (ADR-008)."
+      },
+      "FinancialSourceModeDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "fieldCode",
+          "sourceMode",
+          "configuredAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fieldCode": {
+            "$ref": "#/components/schemas/FinancialField"
+          },
+          "sourceMode": {
+            "$ref": "#/components/schemas/SourceMode"
+          },
+          "configuredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "The source mode of one financial field of a project. A field never configured is MANUAL, the launch mode, with no\nGuid? FinancialSourceModeDetail.Id (ADR-008)."
+      },
+      "FinancialSourceModePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinancialSourceModeDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's financial fields and their source modes, in field order (R-29)."
+      },
+      "FinancialSourceModeRequest": {
+        "required": [
+          "sourceMode"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceMode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SourceMode"
+              }
+            ]
+          }
+        },
+        "description": "A field's source mode, as a whole (R-5)."
+      },
+      "FinancialSourceType": {
+        "enum": [
+          "MANUAL",
+          "ETIMAD",
+          "OTHER"
+        ],
+        "description": "Where a financial figure came from (ADR-008 extension, TASK-108; ERD D-10 `source_type`)."
+      },
+      "FinancialStatus": {
+        "enum": [
+          "GREEN",
+          "AMBER",
+          "RED",
+          "UNKNOWN"
+        ],
+        "description": "ERD `published_financial_snapshot.financial_status`. UNKNOWN is a value of its own: a position without the figures to\nrate it is UNKNOWN, never coerced to a colour."
+      },
+      "FinancialUpdateStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "PUBLISHED",
+          null
+        ]
+      },
       "GovernanceProfileEntry": {
         "required": [
           "governanceProfileItemId",
@@ -11038,6 +13965,190 @@
           }
         }
       },
+      "KpiAssignmentCreateRequest": {
+        "required": [
+          "projectId",
+          "kpiDefinitionId",
+          "ownerUserId",
+          "measurementFrequencyItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "kpiDefinitionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "measurementFrequencyItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "Assigns a PUBLISHED catalogue KPI to a project: its owner, if any, and a PUBLISHED MEASUREMENT_FREQUENCY item."
+      },
+      "KpiAssignmentDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "kpiDefinitionId",
+          "unitItemId",
+          "ownerUserId",
+          "measurementFrequencyItemId",
+          "status",
+          "assignedAt",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kpiDefinitionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unitItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "measurementFrequencyItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/KpiAssignmentStatus"
+          },
+          "assignedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A KPI assigned to a project, with the definition's unit, so a reader can tell which measurements compare."
+      },
+      "KpiAssignmentPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KpiAssignmentDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's KPI assignments, newest first (R-29)."
+      },
+      "KpiAssignmentRequest": {
+        "required": [
+          "ownerUserId",
+          "measurementFrequencyItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "measurementFrequencyItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "An assignment's owner and frequency, as a whole (R-5). Its project and KPI never change."
+      },
+      "KpiAssignmentStatus": {
+        "enum": [
+          "ACTIVE",
+          "SUSPENDED",
+          "RETIRED"
+        ],
+        "description": "ERD `kpi_assignment.status`: ACTIVE and SUSPENDED move both ways; RETIRED is final."
+      },
       "KpiDefinitionCreateRequest": {
         "required": [
           "code",
@@ -11269,6 +14380,326 @@
           "TARGET_BAND"
         ]
       },
+      "KpiMeasurementCreateRequest": {
+        "required": [
+          "kpiAssignmentId",
+          "periodStart",
+          "periodEnd",
+          "measuredValue",
+          "valueStatus",
+          "asOfDate",
+          "narrative"
+        ],
+        "type": "object",
+        "properties": {
+          "kpiAssignmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "periodStart": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "measuredValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "valueStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValueStatus"
+              }
+            ]
+          },
+          "asOfDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A new measurement of the assignment for a period: KpiMeasurementRequest, the assignment and the period."
+      },
+      "KpiMeasurementDetail": {
+        "required": [
+          "id",
+          "kpiAssignmentId",
+          "projectId",
+          "kpiTargetVersionId",
+          "targetVersionNo",
+          "targetValue",
+          "periodStart",
+          "periodEnd",
+          "measuredValue",
+          "valueStatus",
+          "ragStatus",
+          "asOfDate",
+          "recordedByUserId",
+          "narrative",
+          "status",
+          "submittedAt",
+          "publishedByUserId",
+          "publishedAt",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy",
+          "maskedFields"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kpiAssignmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kpiTargetVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetVersionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "targetValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "measuredValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "valueStatus": {
+            "$ref": "#/components/schemas/ValueStatus"
+          },
+          "ragStatus": {
+            "$ref": "#/components/schemas/KpiRagStatus"
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "recordedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/KpiMeasurementStatus"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "publishedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "publishedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A measurement and the target version it is pinned to, as that version stands (it never changes once ACTIVE). A value that is\nnot known is null and ValueStatus KpiMeasurementDetail.ValueStatus says why; KpiRagStatus KpiMeasurementDetail.RagStatus is then UNKNOWN or NOT_APPLICABLE — never 0,\nnever GREEN. Masked fields as FinancialCommitmentDetail."
+      },
+      "KpiMeasurementPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KpiMeasurementDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "An assignment's measurements, latest period first (R-29)."
+      },
+      "KpiMeasurementRequest": {
+        "required": [
+          "measuredValue",
+          "valueStatus",
+          "asOfDate",
+          "narrative"
+        ],
+        "type": "object",
+        "properties": {
+          "measuredValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "valueStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ValueStatus"
+              }
+            ]
+          },
+          "asOfDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "narrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A DRAFT measurement's value, as a whole (R-5). A value that is not known is sent as null with `valueStatus` saying why —\nnever as 0. Its period and its pinned target version never change."
+      },
+      "KpiMeasurementStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "PUBLISHED"
+        ],
+        "description": "ERD `kpi_measurement.status`: DRAFT → SUBMITTED → PUBLISHED. PUBLISHED is final."
+      },
       "KpiPolicyEntry": {
         "required": [
           "kpiDefinitionId",
@@ -11350,6 +14781,386 @@
             "format": "double"
           }
         }
+      },
+      "KpiPortfolioAggregate": {
+        "required": [
+          "isUnitCompatible",
+          "unitItemId",
+          "isPartial",
+          "coverage",
+          "measuredCount",
+          "meanValue",
+          "ragCounts",
+          "exclusions"
+        ],
+        "type": "object",
+        "properties": {
+          "isUnitCompatible": {
+            "type": "boolean"
+          },
+          "unitItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "isPartial": {
+            "type": "boolean"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/AggregateCoverage"
+          },
+          "measuredCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "meanValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "ragCounts": {
+            "$ref": "#/components/schemas/KpiRagCounts"
+          },
+          "exclusions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AggregateExclusion"
+            }
+          }
+        },
+        "description": "The latest PUBLISHED measurement of each requested KPI on each requested project. Values are combined only when every KPI\nmeasures in one unit (bool KpiPortfolioAggregate.IsUnitCompatible); otherwise decimal? KpiPortfolioAggregate.MeanValue is null and the aggregate is\npartial. RAG ratings are unitless and always counted. A measurement without a value counts in the RAG counts and is listed\nin IReadOnlyList&lt;AggregateExclusion&gt; KpiPortfolioAggregate.Exclusions."
+      },
+      "KpiRagCounts": {
+        "required": [
+          "green",
+          "amber",
+          "red",
+          "unknown",
+          "notApplicable"
+        ],
+        "type": "object",
+        "properties": {
+          "green": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "amber": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "red": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unknown": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "notApplicable": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "The count of each RAG rating among the counted measurements."
+      },
+      "KpiRagStatus": {
+        "enum": [
+          "GREEN",
+          "AMBER",
+          "RED",
+          "UNKNOWN",
+          "NOT_APPLICABLE"
+        ],
+        "description": "ERD `kpi_measurement.rag_status`, rated against the pinned target version. UNKNOWN when there is no figure or no\nthresholds to rate it by, NOT_APPLICABLE when the KPI does not apply to the period: neither is ever coerced to a colour."
+      },
+      "KpiTargetVersionCreateRequest": {
+        "required": [
+          "kpiAssignmentId",
+          "targetValue",
+          "greenThreshold",
+          "amberThreshold",
+          "effectiveFrom"
+        ],
+        "type": "object",
+        "properties": {
+          "kpiAssignmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "targetValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "greenThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "amberThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "effectiveFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A new target version of the assignment: KpiTargetVersionRequest and the assignment."
+      },
+      "KpiTargetVersionDetail": {
+        "required": [
+          "id",
+          "kpiAssignmentId",
+          "versionNo",
+          "revisionNo",
+          "status",
+          "isCurrent",
+          "targetValue",
+          "greenThreshold",
+          "amberThreshold",
+          "effectiveFrom",
+          "activatedAt",
+          "supersededByTargetVersionId",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kpiAssignmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovedVersionStatus"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "targetValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "greenThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "amberThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "effectiveFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "activatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "supersededByTargetVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "One target version. bool KpiTargetVersionDetail.IsCurrent marks the ACTIVE one, the version a measurement recorded now pins. Its review\nhistory is `GET /approval-instances?subjectModule=FinancialKpi&amp;subjectType=KpiTargetVersion&amp;subjectId={id}`."
+      },
+      "KpiTargetVersionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KpiTargetVersionDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "An assignment's target versions, newest first (R-29)."
+      },
+      "KpiTargetVersionRequest": {
+        "required": [
+          "targetValue",
+          "greenThreshold",
+          "amberThreshold",
+          "effectiveFrom"
+        ],
+        "type": "object",
+        "properties": {
+          "targetValue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "greenThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "amberThreshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "effectiveFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A target version's figures, as a whole (R-5): the target in the KPI's unit and the RAG thresholds, both or neither, to four\nplaces (numeric(18,4))."
       },
       "Language": {
         "enum": [
@@ -15587,6 +19398,172 @@
         ],
         "description": "ERD `project_task.status` (TASK-048). CANCELLED is final; COMPLETED is left only by a reopen."
       },
+      "PublishedFinancialSnapshotDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "reportingCycleId",
+          "financialProgressUpdateId",
+          "financialCommitmentId",
+          "semanticState",
+          "publishedAt",
+          "publishedByUserId",
+          "approvedBudgetSar",
+          "actualExpenditureToDateSar",
+          "forecastAtCompletionSar",
+          "valueStatus",
+          "financialStatus",
+          "thresholdConfigurationVersionId",
+          "sourceType",
+          "sourceReference",
+          "asOfDate",
+          "enteredByUserId",
+          "maskedFields"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reportingCycleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "financialProgressUpdateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "financialCommitmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "semanticState": {
+            "$ref": "#/components/schemas/SemanticState"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publishedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "approvedBudgetSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "actualExpenditureToDateSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "forecastAtCompletionSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "valueStatus": {
+            "$ref": "#/components/schemas/ValueStatus"
+          },
+          "financialStatus": {
+            "$ref": "#/components/schemas/FinancialStatus"
+          },
+          "thresholdConfigurationVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/FinancialSourceType"
+          },
+          "sourceReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "enteredByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "The PUBLISHED/OFFICIAL financial position of a period, as stored at publication and never since changed."
+      },
+      "PublishedFinancialSnapshotPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishedFinancialSnapshotDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's published financial snapshots, latest first (R-29)."
+      },
       "PublishedProgressSnapshotDetail": {
         "required": [
           "id",
@@ -16811,6 +20788,13 @@
         },
         "description": "A command on a project's schedule that names only the project: initializing it, opening a baseline candidate."
       },
+      "SemanticState": {
+        "enum": [
+          "CURRENT_LIVE",
+          "PUBLISHED_OFFICIAL"
+        ],
+        "description": "Which of the two views a financial representation is (api-conventions R-20(c), M-12): the CURRENT/LIVE position, computed on\nread from the figures as they stand, or the PUBLISHED/OFFICIAL snapshot, fixed at publication. They are never merged."
+      },
       "SessionCreateRequest": {
         "required": [
           "username",
@@ -16896,6 +20880,14 @@
           }
         },
         "description": "The OIDC client settings. Authority, client id and callback URL are Public in the Environment and Secrets sheet; the client secret is reduced to whether it is set."
+      },
+      "SourceMode": {
+        "enum": [
+          "MANUAL",
+          "INTEGRATED",
+          "HYBRID"
+        ],
+        "description": "ERD `financial_source_mode.source_mode` (ADR-008 gate): MANUAL at launch; INTEGRATED and HYBRID are built and left\nunconnected. A field that is INTEGRATED takes no manual figure, and never goes back to MANUAL: manual substitution during\na source outage is not permitted."
       },
       "SsoSessionCreateRequest": {
         "required": [
@@ -17576,6 +21568,15 @@
           }
         },
         "description": "ADM-005 Edit User: the editable representation in full (R-5); user type and entity are fixed at creation."
+      },
+      "ValueStatus": {
+        "enum": [
+          "MEASURED",
+          "MISSING",
+          "STALE",
+          "NOT_APPLICABLE"
+        ],
+        "description": "ERD `value_status` on financial updates and KPI measurements: whether there is a figure, and if not, why. A figure is\npresent exactly when MEASURED; MISSING, STALE and NOT_APPLICABLE carry none and are never read as zero (TASK-052)."
       }
     }
   },
@@ -17594,6 +21595,9 @@
     },
     {
       "name": "DocumentManagement"
+    },
+    {
+      "name": "FinancialKpi"
     },
     {
       "name": "Milestone"

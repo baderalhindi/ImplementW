@@ -11,6 +11,7 @@ using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.FinancialKpi;
 using PMPlatform.Application.Features.MasterDataConfig;
 using PMPlatform.Application.Features.Milestone;
 using PMPlatform.Application.Features.Notifications;
@@ -27,6 +28,7 @@ using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
 using PMPlatform.Infrastructure.Persistence.DocumentManagement;
+using PMPlatform.Infrastructure.Persistence.FinancialKpi;
 using PMPlatform.Infrastructure.Persistence.Milestone;
 using PMPlatform.Infrastructure.Persistence.Progress;
 using PMPlatform.Infrastructure.Persistence.Project;
@@ -104,6 +106,9 @@ public static class DependencyInjection
 
         // TASK-050: WF-05's milestone schema.
         services.AddScoped<IMilestoneRepository, MilestoneRepository>();
+
+        // TASK-052: WF-14's financial_kpi schema.
+        services.AddScoped<IFinancialKpiRepository, FinancialKpiRepository>();
 
         services.AddNotifications(configuration);
 

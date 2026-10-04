@@ -1077,6 +1077,971 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialCommitment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("activated_at");
+
+                    b.Property<decimal>("AmountSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount_sar");
+
+                    b.Property<DateOnly>("AsOfDate")
+                        .HasColumnType("date")
+                        .HasColumnName("as_of_date");
+
+                    b.Property<Guid?>("ChangeAuthorizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("change_authorization_id");
+
+                    b.Property<string>("CommitmentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("commitment_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("EffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_from");
+
+                    b.Property<Guid>("EnteredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entered_by_user_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid?>("ProjectIntakeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_intake_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("SourceReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("source_reference");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("source_type");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid?>("SupersededByCommitmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("superseded_by_commitment_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_no");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_financial_commitment");
+
+                    b.HasIndex("EnteredByUserId")
+                        .HasDatabaseName("ix_financial_commitment_entered_by_user_id");
+
+                    b.HasIndex("ProjectIntakeId")
+                        .HasDatabaseName("ix_financial_commitment_project_intake_id");
+
+                    b.HasIndex("SupersededByCommitmentId")
+                        .HasDatabaseName("ix_financial_commitment_superseded_by_commitment_id");
+
+                    b.HasIndex("ProjectId", "CommitmentType", "VersionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_financial_commitment_project_id_commitment_type_version_no");
+
+                    b.HasIndex(new[] { "ProjectId", "CommitmentType" }, "ix_financial_commitment_active_project_id_commitment_type")
+                        .IsUnique()
+                        .HasDatabaseName("ix_financial_commitment_active_project_id_commitment_type")
+                        .HasFilter("status = 'ACTIVE'");
+
+                    b.HasIndex(new[] { "ProjectId", "CommitmentType" }, "ix_financial_commitment_open_project_id_commitment_type")
+                        .IsUnique()
+                        .HasDatabaseName("ix_financial_commitment_open_project_id_commitment_type")
+                        .HasFilter("status IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED')");
+
+                    b.ToTable("financial_commitment", "financial_kpi", t =>
+                        {
+                            t.HasCheckConstraint("ck_financial_commitment_activated", "(status IN ('ACTIVE', 'SUPERSEDED')) = (activated_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_financial_commitment_amount", "amount_sar >= 0");
+
+                            t.HasCheckConstraint("ck_financial_commitment_commitment_type", "\"commitment_type\" IN ('APPROVED_BUDGET', 'DECLARED_BUDGET', 'OPEN_COMMITMENT')");
+
+                            t.HasCheckConstraint("ck_financial_commitment_intake", "(commitment_type = 'DECLARED_BUDGET') = (project_intake_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_financial_commitment_numbers", "version_no >= 1 AND revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_financial_commitment_source_reference", "source_type = 'MANUAL' OR source_reference IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_financial_commitment_source_type", "\"source_type\" IN ('MANUAL', 'ETIMAD', 'OTHER')");
+
+                            t.HasCheckConstraint("ck_financial_commitment_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'ACTIVE', 'SUPERSEDED', 'REJECTED', 'WITHDRAWN')");
+
+                            t.HasCheckConstraint("ck_financial_commitment_superseded", "(status = 'SUPERSEDED') = (superseded_by_commitment_id IS NOT NULL) AND (superseded_by_commitment_id IS NULL OR superseded_by_commitment_id <> id)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialCommitmentLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AmountSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount_sar");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EtimadCategoryItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("etimad_category_item_id");
+
+                    b.Property<Guid>("FinancialCommitmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("financial_commitment_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_financial_commitment_line");
+
+                    b.HasIndex("EtimadCategoryItemId")
+                        .HasDatabaseName("ix_financial_commitment_line_etimad_category_item_id");
+
+                    b.HasIndex("FinancialCommitmentId", "EtimadCategoryItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_financial_commitment_line_financial_commitment_id_etimad_ca");
+
+                    b.ToTable("financial_commitment_line", "financial_kpi", t =>
+                        {
+                            t.HasCheckConstraint("ck_financial_commitment_line_amount", "amount_sar >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialProgressUpdate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("ActualExpenditureToDateSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("actual_expenditure_to_date_sar");
+
+                    b.Property<DateOnly>("AsOfDate")
+                        .HasColumnType("date")
+                        .HasColumnName("as_of_date");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EnteredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entered_by_user_id");
+
+                    b.Property<decimal?>("ForecastAtCompletionSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("forecast_at_completion_sar");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid?>("ProjectIntakeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_intake_id");
+
+                    b.Property<Guid>("ReportingCycleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reporting_cycle_id");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewed_by_user_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("SourceReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("source_reference");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("source_type");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<Guid?>("SubmittedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submitted_by_user_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("ValueStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("value_status");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Narrative", "PMPlatform.Domain.FinancialKpi.FinancialProgressUpdate.Narrative#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("narrative_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("narrative");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ReturnReason", "PMPlatform.Domain.FinancialKpi.FinancialProgressUpdate.ReturnReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("return_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("return_reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_financial_progress_update");
+
+                    b.HasIndex("EnteredByUserId")
+                        .HasDatabaseName("ix_financial_progress_update_entered_by_user_id");
+
+                    b.HasIndex("ProjectIntakeId")
+                        .HasDatabaseName("ix_financial_progress_update_project_intake_id");
+
+                    b.HasIndex("ReviewedByUserId")
+                        .HasDatabaseName("ix_financial_progress_update_reviewed_by_user_id");
+
+                    b.HasIndex("SubmittedByUserId")
+                        .HasDatabaseName("ix_financial_progress_update_submitted_by_user_id");
+
+                    b.HasIndex("ProjectId", "AsOfDate")
+                        .HasDatabaseName("ix_financial_progress_update_project_id_as_of_date");
+
+                    b.HasIndex("ReportingCycleId", "RevisionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_financial_progress_update_reporting_cycle_id_revision_no");
+
+                    b.HasIndex(new[] { "ReportingCycleId" }, "ix_financial_progress_update_open_reporting_cycle_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_financial_progress_update_open_reporting_cycle_id")
+                        .HasFilter("status IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW')");
+
+                    b.ToTable("financial_progress_update", "financial_kpi", t =>
+                        {
+                            t.HasCheckConstraint("ck_financial_progress_update_amounts", "(actual_expenditure_to_date_sar IS NULL OR actual_expenditure_to_date_sar >= 0) AND (forecast_at_completion_sar IS NULL OR forecast_at_completion_sar >= 0)");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_forecast", "forecast_at_completion_sar IS NULL OR actual_expenditure_to_date_sar IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_narrative_lang", "\"narrative_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_narrative_pair", "(\"narrative\" IS NULL) = (\"narrative_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_return_reason", "(status = 'RETURNED') = (return_reason IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_return_reason_lang", "\"return_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_return_reason_pair", "(\"return_reason\" IS NULL) = (\"return_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_reviewed", "(status IN ('RETURNED', 'PUBLISHED')) = (reviewed_at IS NOT NULL) AND (reviewed_at IS NULL) = (reviewed_by_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_revision_no", "revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_source_reference", "source_type = 'MANUAL' OR source_reference IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_source_type", "\"source_type\" IN ('MANUAL', 'ETIMAD', 'OTHER')");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'PUBLISHED')");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_submitted", "(status = 'DRAFT') = (submitted_at IS NULL) AND (submitted_at IS NULL) = (submitted_by_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_financial_progress_update_value_status", "(value_status = 'MEASURED') = (actual_expenditure_to_date_sar IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialProgressUpdateLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("ActualSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("actual_sar");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EtimadCategoryItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("etimad_category_item_id");
+
+                    b.Property<Guid>("FinancialProgressUpdateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("financial_progress_update_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_financial_progress_update_line");
+
+                    b.HasIndex("EtimadCategoryItemId")
+                        .HasDatabaseName("ix_financial_progress_update_line_etimad_category_item_id");
+
+                    b.HasIndex("FinancialProgressUpdateId", "EtimadCategoryItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_financial_progress_update_line_financial_progress_update_id");
+
+                    b.ToTable("financial_progress_update_line", "financial_kpi", t =>
+                        {
+                            t.HasCheckConstraint("ck_financial_progress_update_line_amount", "actual_sar >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialSourceMode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ConfiguredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("configured_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("FieldCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("field_code");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("SourceMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("source_mode");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_financial_source_mode");
+
+                    b.HasIndex("ProjectId", "FieldCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_financial_source_mode_project_id_field_code");
+
+                    b.ToTable("financial_source_mode", "financial_kpi", t =>
+                        {
+                            t.HasCheckConstraint("ck_financial_source_mode_field_code", "\"field_code\" IN ('APPROVED_BUDGET', 'ACTUAL_EXPENDITURE', 'FORECAST_AT_COMPLETION', 'OPEN_COMMITMENT')");
+
+                            t.HasCheckConstraint("ck_financial_source_mode_source_mode", "\"source_mode\" IN ('MANUAL', 'INTEGRATED', 'HYBRID')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.KpiAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AssignedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assigned_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("KpiDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kpi_definition_id");
+
+                    b.Property<Guid>("MeasurementFrequencyItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("measurement_frequency_item_id");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kpi_assignment");
+
+                    b.HasIndex("KpiDefinitionId")
+                        .HasDatabaseName("ix_kpi_assignment_kpi_definition_id");
+
+                    b.HasIndex("MeasurementFrequencyItemId")
+                        .HasDatabaseName("ix_kpi_assignment_measurement_frequency_item_id");
+
+                    b.HasIndex("OwnerUserId")
+                        .HasDatabaseName("ix_kpi_assignment_owner_user_id");
+
+                    b.HasIndex("ProjectId", "KpiDefinitionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kpi_assignment_project_id_kpi_definition_id");
+
+                    b.ToTable("kpi_assignment", "financial_kpi", t =>
+                        {
+                            t.HasCheckConstraint("ck_kpi_assignment_status", "\"status\" IN ('ACTIVE', 'SUSPENDED', 'RETIRED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.KpiMeasurement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("AsOfDate")
+                        .HasColumnType("date")
+                        .HasColumnName("as_of_date");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("KpiAssignmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kpi_assignment_id");
+
+                    b.Property<Guid>("KpiTargetVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kpi_target_version_id");
+
+                    b.Property<decimal?>("MeasuredValue")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("measured_value");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("period_end");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date")
+                        .HasColumnName("period_start");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<Guid?>("PublishedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("published_by_user_id");
+
+                    b.Property<string>("RagStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("rag_status");
+
+                    b.Property<Guid>("RecordedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("ValueStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("value_status");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Narrative", "PMPlatform.Domain.FinancialKpi.KpiMeasurement.Narrative#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("narrative_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("narrative");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_kpi_measurement");
+
+                    b.HasIndex("KpiTargetVersionId")
+                        .HasDatabaseName("ix_kpi_measurement_kpi_target_version_id");
+
+                    b.HasIndex("PublishedByUserId")
+                        .HasDatabaseName("ix_kpi_measurement_published_by_user_id");
+
+                    b.HasIndex("RecordedByUserId")
+                        .HasDatabaseName("ix_kpi_measurement_recorded_by_user_id");
+
+                    b.HasIndex("KpiAssignmentId", "PeriodStart")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kpi_measurement_kpi_assignment_id_period_start");
+
+                    b.ToTable("kpi_measurement", "financial_kpi", t =>
+                        {
+                            t.HasCheckConstraint("ck_kpi_measurement_narrative_lang", "\"narrative_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_kpi_measurement_narrative_pair", "(\"narrative\" IS NULL) = (\"narrative_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_kpi_measurement_period", "period_end >= period_start");
+
+                            t.HasCheckConstraint("ck_kpi_measurement_published", "(status = 'PUBLISHED') = (published_at IS NOT NULL) AND (published_at IS NULL) = (published_by_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_kpi_measurement_rag_status", "(value_status = 'NOT_APPLICABLE') = (rag_status = 'NOT_APPLICABLE') AND (rag_status NOT IN ('GREEN', 'AMBER', 'RED') OR measured_value IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_kpi_measurement_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'PUBLISHED')");
+
+                            t.HasCheckConstraint("ck_kpi_measurement_submitted", "(status = 'DRAFT') = (submitted_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_kpi_measurement_value_status", "(value_status = 'MEASURED') = (measured_value IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.KpiTargetVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("activated_at");
+
+                    b.Property<decimal?>("AmberThreshold")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("amber_threshold");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("EffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_from");
+
+                    b.Property<decimal?>("GreenThreshold")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("green_threshold");
+
+                    b.Property<Guid>("KpiAssignmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kpi_assignment_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid?>("SupersededByTargetVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("superseded_by_target_version_id");
+
+                    b.Property<decimal>("TargetValue")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("target_value");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_no");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kpi_target_version");
+
+                    b.HasIndex("SupersededByTargetVersionId")
+                        .HasDatabaseName("ix_kpi_target_version_superseded_by_target_version_id");
+
+                    b.HasIndex("KpiAssignmentId", "VersionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kpi_target_version_kpi_assignment_id_version_no");
+
+                    b.HasIndex(new[] { "KpiAssignmentId" }, "ix_kpi_target_version_active_kpi_assignment_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kpi_target_version_active_kpi_assignment_id")
+                        .HasFilter("status = 'ACTIVE'");
+
+                    b.HasIndex(new[] { "KpiAssignmentId" }, "ix_kpi_target_version_open_kpi_assignment_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kpi_target_version_open_kpi_assignment_id")
+                        .HasFilter("status IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED')");
+
+                    b.ToTable("kpi_target_version", "financial_kpi", t =>
+                        {
+                            t.HasCheckConstraint("ck_kpi_target_version_activated", "(status IN ('ACTIVE', 'SUPERSEDED')) = (activated_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_kpi_target_version_numbers", "version_no >= 1 AND revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_kpi_target_version_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'ACTIVE', 'SUPERSEDED', 'REJECTED', 'WITHDRAWN')");
+
+                            t.HasCheckConstraint("ck_kpi_target_version_superseded", "(status = 'SUPERSEDED') = (superseded_by_target_version_id IS NOT NULL) AND (superseded_by_target_version_id IS NULL OR superseded_by_target_version_id <> id)");
+
+                            t.HasCheckConstraint("ck_kpi_target_version_thresholds", "(green_threshold IS NULL) = (amber_threshold IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.PublishedFinancialSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("ActualExpenditureToDateSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("actual_expenditure_to_date_sar");
+
+                    b.Property<decimal?>("ApprovedBudgetSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("approved_budget_sar");
+
+                    b.Property<DateOnly>("AsOfDate")
+                        .HasColumnType("date")
+                        .HasColumnName("as_of_date");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EnteredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entered_by_user_id");
+
+                    b.Property<Guid?>("FinancialCommitmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("financial_commitment_id");
+
+                    b.Property<Guid>("FinancialProgressUpdateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("financial_progress_update_id");
+
+                    b.Property<string>("FinancialStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("financial_status");
+
+                    b.Property<decimal?>("ForecastAtCompletionSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("forecast_at_completion_sar");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<Guid>("PublishedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("published_by_user_id");
+
+                    b.Property<Guid>("ReportingCycleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reporting_cycle_id");
+
+                    b.Property<string>("SourceReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("source_reference");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("source_type");
+
+                    b.Property<Guid>("ThresholdConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("threshold_configuration_version_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("ValueStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("value_status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_published_financial_snapshot");
+
+                    b.HasIndex("EnteredByUserId")
+                        .HasDatabaseName("ix_published_financial_snapshot_entered_by_user_id");
+
+                    b.HasIndex("FinancialCommitmentId")
+                        .HasDatabaseName("ix_published_financial_snapshot_financial_commitment_id");
+
+                    b.HasIndex("FinancialProgressUpdateId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_published_financial_snapshot_financial_progress_update_id");
+
+                    b.HasIndex("PublishedByUserId")
+                        .HasDatabaseName("ix_published_financial_snapshot_published_by_user_id");
+
+                    b.HasIndex("ReportingCycleId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_published_financial_snapshot_reporting_cycle_id");
+
+                    b.HasIndex("ThresholdConfigurationVersionId")
+                        .HasDatabaseName("ix_published_financial_snapshot_threshold_configuration_versio");
+
+                    b.HasIndex("ProjectId", "AsOfDate")
+                        .HasDatabaseName("ix_published_financial_snapshot_project_id_as_of_date");
+
+                    b.ToTable("published_financial_snapshot", "financial_kpi", t =>
+                        {
+                            t.HasCheckConstraint("ck_published_financial_snapshot_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_published_financial_snapshot_budget", "(financial_commitment_id IS NULL) = (approved_budget_sar IS NULL)");
+
+                            t.HasCheckConstraint("ck_published_financial_snapshot_financial_status", "financial_status = 'UNKNOWN' OR (value_status = 'MEASURED' AND approved_budget_sar > 0 AND forecast_at_completion_sar IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_published_financial_snapshot_source_type", "\"source_type\" IN ('MANUAL', 'ETIMAD', 'OTHER')");
+
+                            t.HasCheckConstraint("ck_published_financial_snapshot_value_status", "(value_status = 'MEASURED') = (actual_expenditure_to_date_sar IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.AccessRelationship", b =>
                 {
                     b.Property<Guid>("Id")
@@ -6241,6 +7206,248 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_evidence_reference_master_data_item_evidence_type_item_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialCommitment", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("EnteredByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_commitment_user_entered_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_commitment_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.ProjectIntake", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectIntakeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_financial_commitment_project_intake_project_intake_id");
+
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.FinancialCommitment", null)
+                        .WithMany()
+                        .HasForeignKey("SupersededByCommitmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_financial_commitment_financial_commitment_superseded_by_com");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialCommitmentLine", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("EtimadCategoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_commitment_line_master_data_item_etimad_category_");
+
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.FinancialCommitment", null)
+                        .WithMany()
+                        .HasForeignKey("FinancialCommitmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_commitment_line_financial_commitment_financial_co");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialProgressUpdate", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("EnteredByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_progress_update_user_entered_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_progress_update_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.ProjectIntake", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectIntakeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_financial_progress_update_project_intake_project_intake_id");
+
+                    b.HasOne("PMPlatform.Domain.Progress.ReportingCycle", null)
+                        .WithMany()
+                        .HasForeignKey("ReportingCycleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_progress_update_reporting_cycle_reporting_cycle_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_financial_progress_update_user_reviewed_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_financial_progress_update_user_submitted_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialProgressUpdateLine", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("EtimadCategoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_progress_update_line_master_data_item_etimad_cate");
+
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.FinancialProgressUpdate", null)
+                        .WithMany()
+                        .HasForeignKey("FinancialProgressUpdateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_progress_update_line_financial_progress_update_fi");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialSourceMode", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_financial_source_mode_project_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.KpiAssignment", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.KpiDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("KpiDefinitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kpi_assignment_kpi_definition_kpi_definition_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("MeasurementFrequencyItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kpi_assignment_master_data_item_measurement_frequency_item_");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_kpi_assignment_user_owner_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kpi_assignment_project_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.KpiMeasurement", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.KpiAssignment", null)
+                        .WithMany()
+                        .HasForeignKey("KpiAssignmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kpi_measurement_kpi_assignment_kpi_assignment_id");
+
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.KpiTargetVersion", null)
+                        .WithMany()
+                        .HasForeignKey("KpiTargetVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kpi_measurement_kpi_target_version_kpi_target_version_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_kpi_measurement_user_published_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kpi_measurement_user_recorded_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.KpiTargetVersion", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.KpiAssignment", null)
+                        .WithMany()
+                        .HasForeignKey("KpiAssignmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_kpi_target_version_kpi_assignment_kpi_assignment_id");
+
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.KpiTargetVersion", null)
+                        .WithMany()
+                        .HasForeignKey("SupersededByTargetVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_kpi_target_version_kpi_target_version_superseded_by_target_");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.PublishedFinancialSnapshot", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("EnteredByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_financial_snapshot_user_entered_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.FinancialCommitment", null)
+                        .WithMany()
+                        .HasForeignKey("FinancialCommitmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_published_financial_snapshot_financial_commitment_financial");
+
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.FinancialProgressUpdate", null)
+                        .WithMany()
+                        .HasForeignKey("FinancialProgressUpdateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_financial_snapshot_financial_progress_update_fina");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_financial_snapshot_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_financial_snapshot_user_published_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Progress.ReportingCycle", null)
+                        .WithMany()
+                        .HasForeignKey("ReportingCycleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_financial_snapshot_reporting_cycle_reporting_cycl");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ThresholdConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_published_financial_snapshot_configuration_version_threshol");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.AccessRelationship", b =>
