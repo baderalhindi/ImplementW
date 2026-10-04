@@ -140,6 +140,36 @@ Each mutation was applied, the affected project rebuilt, the named tests run, an
 | M-11 | A masked field is sent as null instead of omitted | `AnEntitySeesItsOwnProjectsFinancialsMaskedByAudience` |
 | M-12 | A new update presumes a zero actual | `AMissingFinancialValueIsUnknownNeverZero` |
 
+### 7.2 Live validation check
+
+Run 2026-10-04 against the API image built from this branch (`docker compose … build api migrate`), as a second container on a
+scratch database `task052_live` in `AHDA-postgres`, migrated by the image's `migrate` command to `TASK-052_GuardFinancialKpiHistory`
+and seeded with the compose seed (the data-integrity check: no violation). A fixture added what no environment has yet: three
+ACTIVE projects managed by local.r04 — A delivered by ENT-LOCAL, B and C AHDA's — WF-02 periods for A and B, three PUBLISHED KPI
+definitions in two units, the financial-status thresholds, COMMITMENT and KPI_TARGET routes decided by R02, and the test grants
+of F-2. Everything else went through HTTP as local.r04 (enters), local.r02 (reviews, decides in `/approval-tasks`) and local.r08
+(R08 on ENT-LOCAL); WF-11's outcomes reached WF-14 through the API's own outbox worker. Two SQL steps stand in for what the stack
+lacks: the malware scanner's CLEAN verdict (no provider is configured locally, so an upload is never scanned), and read-only
+row probes. The database refusals were attempted as raw `UPDATE`s. **19 of 19 checks passed**:
+
+| Check | Observed |
+| --- | --- |
+| Criterion 1: an earlier measurement keeps its target version and rating after a new target is approved | measurement under v1 (target 95): v1, AMBER, after v2 (target 80) was approved; v1 SUPERSEDED by v2; the row's `to_jsonb` identical before and after |
+| Criterion 1: a measurement recorded now pins the new version | v2, GREEN for the same 92 |
+| Criterion 1: the database refuses to re-pin | `its assignment, period and pinned target version never change` |
+| Criterion 2: a new update is MISSING with null figures; `"0.00"` for Unknown is refused | `"actualExpenditureToDateSar":null` in the 201 body; 422 `FINANCIAL_KPI_VALUE_STATUS_INVALID` |
+| Criterion 2: the published snapshot and the live position carry null and UNKNOWN | snapshot STALE, `null`, UNKNOWN, `PUBLISHED_OFFICIAL`; position `null`, UNKNOWN, `CURRENT_LIVE`; the column is NULL |
+| Criterion 2: KPI | N/A → NOT_APPLICABLE, MISSING → UNKNOWN, value `null` |
+| Criterion 3: financial | A (Unknown) and B (measured): PARTIAL, 1 of 2 counted, totals B's only, A listed VALUE_NOT_MEASURED; B alone: COMPLETE, SAR |
+| Criterion 3: KPI | percent with days: `isUnitCompatible` false, `meanValue` null, partial, RAG counted; one unit: mean 4.0, COMPLETE |
+| ADR-008 gate: referenced document | no document → 422; a scan-pending one → 409 `DOCUMENT_NOT_AVAILABLE`, nothing linked; with a CLEAN one approved → ACTIVE, MANUAL provenance, entered by local.r04 |
+| ADR-008 gate: INTEGRATED | manual budget → 422 `FINANCIAL_FIELD_INTEGRATED`; INTEGRATED → MANUAL → 409 `FINANCIAL_SOURCE_MODE_LOCKED` |
+| Published snapshot immutable, live view apart | a later budget version (B: 1,000,000 → 1,200,000): snapshot unchanged, live position 1,200,000, the first version SUPERSEDED; raw `UPDATE` refused (APPEND_ONLY) |
+| ADR-013 | local.r08 sees A's position and KPIs, nothing of B, and is refused an entry (403) |
+
+The fixture granted local.r04 its reads through a second assignment (R03 at DEPT): R04's shipped views are ENTITY, which reach
+nothing for an internal Project Manager, and a profile holds one grant per permission — the shape F-2 already leaves to Appendix A.
+
 ## 8. Acceptance criteria, deliverables and amendments
 
 | Item | Result |
@@ -182,3 +212,4 @@ Each mutation was applied, the affected project rebuilt, the named tests run, an
 | Date | Change |
 | --- | --- |
 | 2026-10-04 | Created (TASK-052) |
+| 2026-10-04 | §7.2: the live validation check against the API image built from the branch, 19 of 19 checks passed |
