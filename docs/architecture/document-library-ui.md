@@ -143,3 +143,4 @@ Evidence actions: no document was linked, so SCR-123 showed no evidence row. MOD
 | Date | Change |
 | --- | --- |
 | 2026-09-30 | Created (TASK-038) |
+| 2026-10-04 | MOD-054 first mounted, by TASK-051's MOD-019: `evidenceTypes` (a required "Evidence of" choice), `describe`, and the type passed to `onAttach` as a second argument; MOD-050 opened from MOD-019 too (`milestone-ui.md` D-8) |

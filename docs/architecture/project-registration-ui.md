@@ -143,3 +143,4 @@ Each mutation was applied, `npx vitest run src/features/projects` run, and the s
 | 2026-10-02 | SCR-040 gains the Progress tab (SCR-048, SCR-070) after Location, audience `reached`; only the overview tab link matches exactly (TASK-045, `progress-ui.md` D-1, D-11) |
 | 2026-10-03 | SCR-040 gains the Schedule tab (SCR-060, SCR-045, SCR-061) after Progress, audience `reached` (TASK-047, `schedule-ui.md` D-1, D-13) |
 | 2026-10-03 | SCR-040 gains the Tasks tab (SCR-047) after Schedule, audience `reached` (TASK-049, `task-boards-ui.md` D-1, D-11) |
+| 2026-10-04 | SCR-040 gains the Milestones tab (SCR-046) after Tasks, audience `reached` (TASK-051, `milestone-ui.md` D-1, D-11) |
