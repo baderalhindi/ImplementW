@@ -10,7 +10,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 
 /**
- * The landing page: the screens the session can reach. Projects, tasks, milestones, approvals, documents and
+ * The landing page: the screens the session can reach. Projects, tasks, milestones, KPIs, approvals, documents and
  * notifications are for everyone; administration for R01.
  */
 export function HomePage(): ReactElement {
@@ -32,6 +32,9 @@ export function HomePage(): ReactElement {
         </li>
         <li>
           <Link to="/milestones">{t('common.home.milestones')}</Link>
+        </li>
+        <li>
+          <Link to="/kpis">{t('common.home.kpis')}</Link>
         </li>
         <li>
           <Link to="/approvals/inbox">{t('common.home.approvals')}</Link>

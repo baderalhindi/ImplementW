@@ -2,6 +2,7 @@ import { Navigate, Outlet, type RouteObject } from 'react-router';
 
 import { approvalRoutes } from '@/features/approvals/routes.tsx';
 import { documentRoutes } from '@/features/documents/routes.tsx';
+import { kpiRoutes } from '@/features/financial-kpi/routes.tsx';
 import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
 import { milestoneRoutes } from '@/features/milestones/routes.tsx';
 import { RequireRole } from '@/features/identity-access/session/RequireRole.tsx';
@@ -59,6 +60,15 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: milestoneRoutes,
+      },
+      {
+        path: 'kpis',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: kpiRoutes,
       },
       {
         path: 'approvals',

@@ -1068,6 +1068,11 @@ textarea.field__input {
   gap: var(--space-6);
 }
 
+/* A wide table or chart scrolls or scales inside its section instead of widening the page on a narrow screen. */
+.progress > * {
+  min-inline-size: 0;
+}
+
 .progress-state {
   padding: var(--space-4);
   border-radius: var(--radius);
@@ -1559,4 +1564,183 @@ textarea.field__input {
 
 .revision-list__number {
   font-weight: 600;
+}
+
+/* ------------------------------------------------------------------------------------------ financials and KPIs */
+
+/*
+ * A figure that is Missing, Stale or N/A, withheld, or absent (TASK-053 criterion 1): an icon and the words on a
+ * bordered flag, grey or (stale) amber, never blank, never 0 and never the success colour.
+ */
+.value-state {
+  display: inline-flex;
+  inline-size: fit-content;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.value-state--neutral {
+  background: var(--color-neutral-surface);
+  color: var(--color-text-muted);
+}
+
+.value-state--warning {
+  background: var(--color-warning-surface);
+  color: var(--color-warning);
+}
+
+.value-state__icon {
+  flex: none;
+}
+
+/* A figure with its source and as-of date on the line below (ADR-008 extended). */
+.figure-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.provenance {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.provenance__source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+/* A manual figure is visibly manual: a dashed border and the pencil, beside the words. */
+.provenance__source--manual {
+  border: 1px dashed var(--color-text-muted);
+  color: var(--color-text);
+}
+
+.sensitive-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.badge--sensitive {
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-text);
+}
+
+/* SCR-073's trend. Time runs left to right in both languages; the colours repeat the table under it. */
+.kpi-trend {
+  margin: 0;
+}
+
+.kpi-trend__chart {
+  inline-size: 100%;
+  block-size: auto;
+  max-inline-size: 48rem;
+  font-size: 11px;
+}
+
+.kpi-trend__chart text {
+  fill: var(--color-text-muted);
+}
+
+.kpi-trend__tick line {
+  stroke: var(--color-border-subtle);
+}
+
+.kpi-trend__target line {
+  stroke: var(--color-info);
+  stroke-width: 2;
+}
+
+.kpi-trend__target text {
+  fill: var(--color-info);
+  font-weight: 600;
+}
+
+.kpi-trend__target .kpi-trend__change {
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.kpi-trend__line {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 1.5;
+}
+
+.kpi-trend__point {
+  stroke: var(--color-text);
+  stroke-width: 1.5;
+  fill: var(--color-background);
+}
+
+.kpi-trend__point--green {
+  fill: var(--color-positive);
+}
+
+.kpi-trend__point--amber {
+  fill: var(--color-warning);
+}
+
+.kpi-trend__point--red {
+  fill: var(--color-danger);
+}
+
+.kpi-trend__gap rect {
+  fill: var(--color-background);
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+
+.kpi-trend__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.kpi-trend__key::before {
+  display: inline-block;
+  inline-size: 1rem;
+  margin-inline-end: var(--space-1);
+  vertical-align: middle;
+  content: '';
+}
+
+.kpi-trend__key--value::before {
+  block-size: 0.625rem;
+  inline-size: 0.625rem;
+  border: 1.5px solid var(--color-text);
+  border-radius: 50%;
+}
+
+.kpi-trend__key--target::before {
+  border-block-start: 2px solid var(--color-info);
+}
+
+.kpi-trend__key--gap::before {
+  block-size: 0.625rem;
+  inline-size: 0.625rem;
+  border: 1.5px solid var(--color-text-muted);
 }

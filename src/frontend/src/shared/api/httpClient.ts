@@ -63,7 +63,8 @@ export function configureAuthentication(handlers: AuthenticationHandlers | null)
   authentication = handlers;
 }
 
-export type QueryValue = string | number | boolean | undefined | null;
+/** A list is sent as the parameter repeated (`projectId=a&projectId=b`), the way the API binds an array. */
+export type QueryValue = string | number | boolean | readonly string[] | undefined | null;
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -80,7 +81,11 @@ export interface RequestOptions {
 function buildUrl(path: string, query?: Record<string, QueryValue>): string {
   const search = new URLSearchParams();
   for (const [name, value] of Object.entries(query ?? {})) {
-    if (value !== undefined && value !== null && value !== '') {
+    if (typeof value === 'object' && value !== null) {
+      for (const item of value) {
+        search.append(name, item);
+      }
+    } else if (value !== undefined && value !== null && value !== '') {
       search.set(name, String(value));
     }
   }

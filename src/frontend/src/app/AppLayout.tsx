@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router';
 
 import { approvalNavigation } from '@/features/approvals/routes.tsx';
 import { documentNavigation } from '@/features/documents/routes.tsx';
+import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
 import {
   identityAccessNavigation,
   type NavigationItem,
@@ -63,7 +64,7 @@ function Navigation({
 
 /**
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
- * (projects, tasks, milestones, approvals, documents and notifications for everyone signed in, administration for R01),
+ * (projects, tasks, milestones, KPIs, approvals, documents and notifications for everyone signed in, administration for R01),
  * and the page.
  */
 export function AppLayout(): ReactElement {
@@ -105,6 +106,7 @@ export function AppLayout(): ReactElement {
             <Navigation label="projects.nav.label" items={projectNavigation} />
             <Navigation label="tasks.nav.label" items={taskNavigation} />
             <Navigation label="milestones.nav.label" items={milestoneNavigation} />
+            <Navigation label="financialKpi.nav.label" items={kpiNavigation} />
             <Navigation label="approvals.nav.label" items={approvalNavigation} />
             <Navigation label="documents.nav.label" items={documentNavigation} />
             <Navigation label="notifications.nav.label" items={notificationNavigation} />
