@@ -213,3 +213,4 @@ nothing for an internal Project Manager, and a profile holds one grant per permi
 | --- | --- |
 | 2026-10-04 | Created (TASK-052) |
 | 2026-10-04 | §7.2: the live validation check against the API image built from the branch, 19 of 19 checks passed |
+| 2026-10-05 | §6 item 1 consumed by TASK-053 (`financial-kpi-ui.md`): null with its `valueStatus` shown as No data/Stale/Not applicable, `maskedFields` as Restricted, `semanticState` badged, the KPI aggregate's coverage and exclusions shown; the validation check run against this API (`financial-kpi-ui.md` §4 rows 8, 9). F-17 there: `isUnitCompatible` is false when no figure exists |
