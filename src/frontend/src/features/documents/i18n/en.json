@@ -131,6 +131,9 @@
     "chooseError": "Choose a document.",
     "quarantined": "Quarantined: malware was found. It cannot be attached or used as evidence.",
     "notClean": "Not clean yet: it can be attached once the scan finds it clean.",
+    "evidenceType": "Evidence of",
+    "chooseEvidenceType": "Choose what it is evidence of",
+    "noEvidenceTypes": "No evidence type can be chosen: none is published, or the evidence types cannot be read with your access. Nothing can be attached as evidence until one can.",
     "confirm": "Attach"
   },
   "detail": {

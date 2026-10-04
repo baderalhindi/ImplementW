@@ -142,14 +142,14 @@ function item(
   };
 }
 
-const CATALOGUES = [
+export const CATALOGUES = [
   { id: 'c0000000-0000-4000-8000-000000000001', code: 'PROJECT_CLASSIFICATION' },
   { id: 'c0000000-0000-4000-8000-000000000002', code: 'GOVERNANCE_PROFILE' },
   { id: 'c0000000-0000-4000-8000-000000000003', code: 'REGION' },
   { id: 'c0000000-0000-4000-8000-000000000004', code: 'CITY' },
 ];
 
-const ITEMS: Record<string, MasterDataItemSummary[]> = {
+export const ITEMS: Record<string, MasterDataItemSummary[]> = {
   'c0000000-0000-4000-8000-000000000001': [
     item(CLASSIFICATION_ID, 'c1', 'INFRASTRUCTURE', 'Infrastructure', 'بنية تحتية'),
   ],

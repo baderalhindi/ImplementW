@@ -1,0 +1,241 @@
+{
+  "nav": {
+    "label": "Milestones",
+    "register": "Milestone register"
+  },
+  "forbidden": "You do not have access to milestones.",
+  "claimsForbidden": "Achievement claims are not shown: you do not have access to them.",
+  "project": {
+    "title": "Milestones",
+    "caption": "The project's milestones, earliest forecast first"
+  },
+  "register": {
+    "title": "Milestone register",
+    "description": "Every milestone of the projects you can see, earliest forecast first, with where its achievement claim stands.",
+    "caption": "Milestones of every project you can see"
+  },
+  "actions": {
+    "create": "Add milestone",
+    "edit": "Edit milestone",
+    "cancel": "Cancel milestone",
+    "close": "Close"
+  },
+  "status": {
+    "PLANNED": "Planned",
+    "ACHIEVED": "Achieved",
+    "CANCELLED": "Cancelled"
+  },
+  "revisionStatus": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "RETURNED": "Returned",
+    "ACCEPTED": "Accepted",
+    "SUPERSEDED": "Superseded"
+  },
+  "achievement": {
+    "unclaimed": "Not claimed",
+    "accepted": "Accepted",
+    "claim": {
+      "draft": "Claim in draft",
+      "submitted": "Claim under review",
+      "returned": "Claim returned"
+    },
+    "correction": {
+      "draft": "Correction in draft",
+      "submitted": "Correction under review",
+      "returned": "Correction returned"
+    }
+  },
+  "table": {
+    "milestone": "Milestone",
+    "project": "Project",
+    "category": "Category",
+    "forecast": "Forecast",
+    "status": "Status",
+    "achievement": "Achievement",
+    "notBaselined": "Not in the active baseline",
+    "baseline": "Baseline {date} · {variance}",
+    "claimsHidden": "Not available",
+    "achievedOn": "Achieved on {date}"
+  },
+  "returned": {
+    "title": "Returned for correction",
+    "titleBy": "Returned for correction by {reviewer} on {date}",
+    "noReason": "Returned without a reason: the claim was withdrawn from review.",
+    "line": "Returned: {reason}"
+  },
+  "filter": {
+    "label": "Show",
+    "all": "All milestones",
+    "planned": "Planned",
+    "overdue": "Overdue",
+    "draft": "Claim in draft",
+    "inReview": "Under review",
+    "returned": "Returned",
+    "achieved": "Achieved",
+    "cancelled": "Cancelled"
+  },
+  "empty": {
+    "project": {
+      "title": "This project has no milestones yet",
+      "planner": "Add the milestones the project will be measured against: each gets a forecast date, and its achievement is claimed here once it happens.",
+      "waiting": "The Project Manager has not planned any milestone yet.",
+      "notPlanned": "Milestones are planned once the project is approved."
+    },
+    "register": {
+      "title": "No milestones to show",
+      "body": "Milestones appear here once a Project Manager plans them in a project you can see."
+    },
+    "filtered": {
+      "title": "No milestone matches this choice",
+      "body": "Choose \"All milestones\" to see every milestone again."
+    }
+  },
+  "fields": {
+    "title": "Title",
+    "category": "Category",
+    "forecastDate": "Forecast date",
+    "activity": "Schedule activity it completes",
+    "sortOrder": "Sort order",
+    "claimedDate": "Date achieved",
+    "narrative": "What was achieved"
+  },
+  "form": {
+    "createTitle": "Add milestone",
+    "editTitle": "Edit milestone",
+    "intro": "A milestone belongs to the project's schedule. Its achievement is claimed separately, once it happens.",
+    "chooseCategory": "Choose a category",
+    "categoriesUnreadable": "The categories cannot be read with your access; the current one is kept.",
+    "categoriesUnreadableCreate": "The milestone categories cannot be read with your access, so a milestone cannot be added here. Ask an administrator for access to master data.",
+    "forecastHint": "The date the milestone is currently expected on.",
+    "activitiesUnreadable": "The schedule's activities cannot be read with your access, so no activity can be chosen.",
+    "noActivity": "No activity",
+    "activityHint": "Optional: the schedule activity whose completion this milestone marks.",
+    "sortOrderHint": "Optional: a whole number from 0, to order milestones forecast for the same date."
+  },
+  "detail": {
+    "title": "Milestone",
+    "noActivity": "No activity",
+    "baseline": "Baseline date",
+    "accepted": "Achieved on {date} (revision {revision}), accepted by {reviewer}."
+  },
+  "claim": {
+    "title": "Achievement claim",
+    "forbidden": "You do not have access to this milestone's achievement claims.",
+    "start": {
+      "first": "Claim the achievement",
+      "afterReturn": "Claim again",
+      "correction": "Correct the achievement"
+    },
+    "correctionNote": "A correction is a new revision. The accepted achievement stays as it is until the correction is accepted.",
+    "dateHint": "The date the milestone was achieved on. It cannot be after today.",
+    "narrativeHint": "Optional: what was delivered, for the reviewer.",
+    "evidenceNext": "The claim is saved as a draft. You then attach its evidence and submit it for review.",
+    "create": "Save as draft",
+    "save": "Save changes",
+    "submittedBy": "Submitted by {person} on {date}. It is with AHDA for review and cannot be changed meanwhile.",
+    "draftReadOnly": "A draft prepared by the Project Manager. Only they can change or submit it.",
+    "delete": "Delete draft",
+    "deleteBody": "Delete this draft claim? Its evidence links end with it. Earlier revisions are not affected.",
+    "deleteConfirm": "Yes, delete the draft",
+    "keep": "Keep the draft",
+    "why": {
+      "cancelled": "This milestone is cancelled, so its achievement cannot be claimed.",
+      "notManager": "Only the project's Project Manager claims its milestones' achievements.",
+      "projectNotActive": "Achievements are claimed while the project is active."
+    }
+  },
+  "revision": {
+    "title": "Revisions",
+    "number": "Revision {number}",
+    "current": "Current",
+    "submitted": "Submitted {date}",
+    "reviewed": "Reviewed {date} by {reviewer}",
+    "acceptedDate": "Accepted date {date}",
+    "supersededBy": "Superseded by revision {number}"
+  },
+  "evidence": {
+    "title": "Evidence",
+    "pending": {
+      "title": "Evidence is optional pending policy",
+      "body": "No evidence policy has been published yet (PTBC-006), so no evidence is mandatory and the server accepts this claim without any. The reviewer sees whatever you attach."
+    },
+    "notRequired": {
+      "title": "No evidence is required",
+      "body": "The evidence policy in force makes no evidence mandatory for this milestone's category."
+    },
+    "required": {
+      "title": "The evidence policy in force requires:",
+      "missing": "missing",
+      "held": "attached"
+    },
+    "undetermined": {
+      "title": "The evidence policy cannot be determined",
+      "body": "The server cannot read the evidence policy unambiguously, so it refuses every submission until AHDA corrects the policy."
+    },
+    "none": "No evidence is attached.",
+    "unknownDocument": "Document {id}",
+    "of": "Evidence of: {type}",
+    "version": "version {number}",
+    "counts": "Counts as evidence",
+    "doesNotCount": "Does not count: the version is not clean",
+    "withdraw": "Withdraw",
+    "withdrawNamed": "Withdraw the evidence {document}",
+    "attach": "Attach a document",
+    "upload": "Upload a document",
+    "uploadHint": "A new upload is scanned first; attach it once the scan finds it clean.",
+    "target": "this achievement claim"
+  },
+  "submit": {
+    "title": "Submit for review",
+    "action": "Submit for review",
+    "missing": "Attach the evidence the policy requires before submitting. Missing: {types}.",
+    "undetermined": "The claim cannot be submitted while the evidence policy cannot be determined.",
+    "saveFirst": "Save your changes to the claim before submitting it.",
+    "confirmWithoutEvidence": "No evidence is attached. Nothing is mandatory until an evidence policy is published, so the server will accept this claim without evidence. Submit it without evidence?",
+    "confirm": "Yes, submit without evidence",
+    "keepEditing": "Keep editing"
+  },
+  "cancel": {
+    "body": "Cancel this milestone? A cancelled milestone stays in the schedule's history and can no longer be claimed or changed.",
+    "confirm": "Yes, cancel the milestone",
+    "keep": "Keep the milestone"
+  },
+  "done": {
+    "created": "The milestone was added.",
+    "updated": "The milestone was saved.",
+    "cancelled": "The milestone was cancelled.",
+    "claimOpened": "The claim was saved as a draft. Attach its evidence, then submit it.",
+    "claimSaved": "The claim was saved.",
+    "submitted": "The claim was submitted for review.",
+    "claimDeleted": "The draft claim was deleted.",
+    "evidenceAttached": "The evidence was attached.",
+    "evidenceWithdrawn": "The evidence was withdrawn.",
+    "stale": "Someone changed this milestone or its claim meanwhile. It was read again; nothing was changed."
+  },
+  "problems": {
+    "projectNotActive": "Achievements are claimed while the project is active. Nothing was changed.",
+    "notClaimable": "This milestone is cancelled or no longer available, so it cannot be claimed.",
+    "claimedDateInvalid": "The date achieved cannot be after today.",
+    "achievementOpen": "This milestone already has a claim in draft or under review.",
+    "achievementNotEditable": "Only a draft claim can be changed.",
+    "evidenceRequired": "The server refused the submission: the evidence the policy requires is not all attached and clean. The evidence was read again.",
+    "scheduleProjectNotEligible": "Milestones are planned while the project is approved or active.",
+    "scheduleNotInitialized": "The project's schedule has not been started yet. Start it in the Schedule tab first.",
+    "scheduleNotEditable": "This milestone cannot be changed: it is achieved or cancelled, or a baseline is with AHDA for approval.",
+    "categoryInvalid": "Choose a published milestone category.",
+    "activityInvalid": "Choose a live activity of this project's schedule.",
+    "linkEnded": "This document was detached from the claim earlier and cannot be attached to it again. Upload it as a new document.",
+    "evidenceWithdrawn": "This version was withdrawn from the claim earlier and cannot be attached again. Upload a new version of the document.",
+    "configurationMissing": "The approval route or the evidence policy for milestone achievements is not configured. Ask AHDA to publish it.",
+    "invalidTransition": "This claim or milestone is no longer in a state that allows this.",
+    "permissionDenied": "You are not allowed to do this."
+  },
+  "fieldErrors": {
+    "claimedDateInFuture": "The date achieved cannot be after today.",
+    "categoryInvalid": "This category is not published. Choose another.",
+    "activityInvalid": "This activity is not a live activity of the project's schedule.",
+    "sortOrderOutOfRange": "Enter a whole number from 0.",
+    "evidenceTypeInvalid": "This evidence type is not published. Choose another."
+  }
+}

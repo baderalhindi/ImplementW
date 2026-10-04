@@ -1,9 +1,11 @@
 import { type ReactElement, type SyntheticEvent, useCallback, useId, useState } from 'react';
 
 import { useSaveAction } from '@/features/identity-access/forms.ts';
+import { type ProblemDescriber } from '@/features/identity-access/problems.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
+import { SelectField, type SelectOption } from '@/shared/ui/FormFields.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 
 import { documentsApi } from '../api/documentsApi.ts';
@@ -22,18 +24,26 @@ interface AttachDocumentDialogProps {
   /** The record being attached to, as its module names it (e.g. a milestone's title). */
   targetLabel: string;
   /**
-   * The owning module's attach call. WF-12 exposes no link API: a module links a document in process through
-   * IDocumentLinks after authorizing its own record (TASK-037 D-8, F-8), so the module supplies the request.
+   * Given: the document is attached as evidence, of one of these EVIDENCE_TYPE items, which the person chooses (TASK-037
+   * D-12). An empty list says no evidence type can be chosen, and nothing can be attached.
    */
-  onAttach: (document: DocumentSummary) => Promise<unknown>;
+  evidenceTypes?: SelectOption[] | undefined;
+  /** The owning module's wording of a refusal; WF-12's by default. */
+  describe?: ProblemDescriber | undefined;
+  /**
+   * The owning module's attach call, with the evidence type chosen (null when not attaching as evidence). WF-12 exposes
+   * no link API: a module links a document in process through IDocumentLinks after authorizing its own record
+   * (TASK-037 D-8, F-8), so the module supplies the request.
+   */
+  onAttach: (document: DocumentSummary, evidenceTypeItemId: string | null) => Promise<unknown>;
   onClose: () => void;
   onDone: () => void;
 }
 
 /**
- * MOD-054 Attach: choose one of the project's active documents for a record of another module. A document whose
- * latest version is not CLEAN — scanning, scan failed or quarantined — cannot be chosen: its content cannot be served
- * or be evidence (TASK-037 D-4, D-12), and the list says why next to it.
+ * MOD-054 Attach: choose one of the project's active documents for a record of another module, and, as evidence, what
+ * it is evidence of. A document whose latest version is not CLEAN — scanning, scan failed or quarantined — cannot be
+ * chosen: its content cannot be served or be evidence (TASK-037 D-4, D-12), and the list says why next to it.
  */
 export function AttachDocumentDialog(props: AttachDocumentDialogProps): ReactElement {
   const { t } = useI18n();
@@ -47,16 +57,20 @@ export function AttachDocumentDialog(props: AttachDocumentDialogProps): ReactEle
 function AttachForm({
   projectId,
   targetLabel,
+  evidenceTypes,
+  describe = documentProblemMessage,
   onAttach,
   onClose,
   onDone,
 }: AttachDocumentDialogProps): ReactElement {
   const { t } = useI18n();
   const id = useId();
-  const save = useSaveAction(documentProblemMessage);
+  const save = useSaveAction(describe);
   const [text, setText] = useState('');
   const [query, setQuery] = useState('');
   const [chosen, setChosen] = useState<DocumentSummary | null>(null);
+  const [evidenceTypeItemId, setEvidenceTypeItemId] = useState('');
+  const asEvidence = evidenceTypes !== undefined;
   const load = useCallback(
     (signal: AbortSignal) =>
       documentsApi.list(
@@ -79,10 +93,16 @@ function AttachForm({
 
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
-    if (!save.validate({ document: chosen === null ? 'REQUIRED' : null }) || chosen === null) {
+    if (
+      !save.validate({
+        document: chosen === null ? 'REQUIRED' : null,
+        evidenceTypeItemId: asEvidence && evidenceTypeItemId === '' ? 'REQUIRED' : null,
+      }) ||
+      chosen === null
+    ) {
       return;
     }
-    const result = await save.run(() => onAttach(chosen));
+    const result = await save.run(() => onAttach(chosen, asEvidence ? evidenceTypeItemId : null));
     if (result.ok) {
       onDone();
     }
@@ -185,8 +205,27 @@ function AttachForm({
             )}
           </fieldset>
         ))}
+      {asEvidence &&
+        (evidenceTypes.length === 0 ? (
+          <p className="form__note">{t('documents.attach.noEvidenceTypes')}</p>
+        ) : (
+          <SelectField
+            label={t('documents.attach.evidenceType')}
+            name="evidenceTypeItemId"
+            required
+            value={evidenceTypeItemId}
+            options={evidenceTypes}
+            placeholder={t('documents.attach.chooseEvidenceType')}
+            onChange={setEvidenceTypeItemId}
+            error={save.fieldErrors.evidenceTypeItemId}
+          />
+        ))}
       <div className="form__actions">
-        <button type="submit" className="button button--primary" disabled={save.saving}>
+        <button
+          type="submit"
+          className="button button--primary"
+          disabled={save.saving || evidenceTypes?.length === 0}
+        >
           {save.saving ? t('common.states.saving') : t('documents.attach.confirm')}
         </button>
         <button type="button" className="button" disabled={save.saving} onClick={onClose}>

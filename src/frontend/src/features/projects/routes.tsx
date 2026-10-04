@@ -6,6 +6,7 @@ import { CreateProjectPage, EditProjectPage } from './form/ProjectFormPages.tsx'
 import { MyProjectsPage, ProjectRegisterPage } from './register/ProjectListPages.tsx';
 import { DocumentsTab } from './workspace/DocumentsTab.tsx';
 import { LocationTab } from './workspace/LocationTab.tsx';
+import { MilestonesTab } from './workspace/MilestonesTab.tsx';
 import { OverviewTab } from './workspace/OverviewTab.tsx';
 import { ProgressHistoryTab, ProgressTab } from './workspace/ProgressTab.tsx';
 import { ProjectWorkspace, WorkspaceTabGuard } from './workspace/ProjectWorkspace.tsx';
@@ -77,6 +78,14 @@ export const projectRoutes: RouteObject[] = [
         element: (
           <WorkspaceTabGuard tab="tasks">
             <TasksTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'milestones', // SCR-046, MOD-016, MOD-019 (TASK-051)
+        element: (
+          <WorkspaceTabGuard tab="milestones">
+            <MilestonesTab />
           </WorkspaceTabGuard>
         ),
       },
