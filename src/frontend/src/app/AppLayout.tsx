@@ -14,6 +14,7 @@ import {
   useHasRole,
   useSession,
 } from '@/features/identity-access/session/useSession.ts';
+import { milestoneNavigation } from '@/features/milestones/routes.tsx';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell.tsx';
 import { notificationNavigation } from '@/features/notifications/routes.tsx';
 import { projectNavigation } from '@/features/projects/routes.tsx';
@@ -62,8 +63,8 @@ function Navigation({
 
 /**
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
- * (projects, tasks, approvals, documents and notifications for everyone signed in, administration for R01), and the
- * page.
+ * (projects, tasks, milestones, approvals, documents and notifications for everyone signed in, administration for R01),
+ * and the page.
  */
 export function AppLayout(): ReactElement {
   const { t } = useI18n();
@@ -103,6 +104,7 @@ export function AppLayout(): ReactElement {
           <div className="shell__sidebar">
             <Navigation label="projects.nav.label" items={projectNavigation} />
             <Navigation label="tasks.nav.label" items={taskNavigation} />
+            <Navigation label="milestones.nav.label" items={milestoneNavigation} />
             <Navigation label="approvals.nav.label" items={approvalNavigation} />
             <Navigation label="documents.nav.label" items={documentNavigation} />
             <Navigation label="notifications.nav.label" items={notificationNavigation} />

@@ -1,0 +1,145 @@
+# Milestone Register & Achievement UI (WF-05 Frontend)
+
+| Field | Value |
+| --- | --- |
+| Task | TASK-051 — Build Milestone Register & Achievement UI (WF-05 Frontend) (P8 - Execution & Performance) |
+| Depends on | TASK-050 — the milestone API (`milestone-achievement.md` §3–§5): the shared milestone (`/project-milestones`), its achievement revisions (`/milestone-achievements`), their evidence and the policy in force. Every screen reads and writes through it, every evidence label is what it answers, and every refusal shown is one it returns. TASK-038 — MOD-054 Attach and MOD-050 Upload, mounted here for the first time (D-8). TASK-042, TASK-049 — the project workspace and the task screens this follows |
+| Record date | 2026-10-04 |
+| Status | **BUILT AND VERIFIED LOCALLY**: component tests against a mocked API (§4 row 4), 10 mutation tests (§4.1), the request shapes against the compose API (§4 row 8), and **the workbook's validation check in Chromium against the real TASK-050 API** on a scratch database, signed in for real (§4 rows 9, 10: 20 of 20). **In a real environment** no claim can be submitted until AHDA publishes a MILESTONE_ACHIEVEMENT approval route (TASK-050 F-3); a Project Manager cannot choose a milestone category or an evidence type without `MASTER_DATA_VIEW` (F-3); and an internal Project Manager cannot read their own project (F-5) |
+| Branch | `feat/task-051-wf05-milestone-achievement-frontend` |
+| Deliverables | React components and routes for SCR-046, SCR-062, MOD-016 and MOD-019 in `src/frontend/src/features/milestones` (`ProjectMilestones.tsx`, `MilestoneRegisterPage.tsx`, `routes.tsx`, `dialogs/`, `components/`, `api/`, `access.ts`, `milestoneRules.ts`, `presentation.ts`, `problems.ts`, `useMilestoneData.ts`); i18n `features/milestones/i18n/{ar,en}.json`. The workspace's Milestones tab, the `/milestones` route and its navigation (D-1); MOD-054 extended to attach evidence of a type (D-8). 43 frontend tests. This record |
+| Environment variables / secrets | None |
+| Workbook read | The TASK-051 row of `AHDA_RPMO_Platform_Implementation_Plan_v2.xlsx`, read 2026-10-04: description, acceptance criteria, directory, deliverables, branch, and the validation check "Submit an achievement without evidence and confirm the UI's current policy label matches the backend's current enforcement state; verify a returned achievement displays the reviewer's reason without requiring an extra click". `milestone-achievement.md`; `document-management.md` §4, §5; `document-library-ui.md` D-9; `task-boards-ui.md`; `ptbc-themes.csv` PTBC-006, PTBC-019. Blueprint Appendix B (the screen inventory) and a WF-05 specification are not in the repository (F-1) |
+
+## 1. Scope
+
+| | Subject | Owner |
+| --- | --- | --- |
+| **In** | SCR-046 Project Milestones (the workspace's Milestones tab); SCR-062 Milestone Register | This task |
+| **In** | MOD-016 Create/Edit Milestone (WF-03's side: title, category, forecast date, activity, sort order) and cancelling a milestone | This task |
+| **In** | MOD-019 Milestone Achievement, a drawer: the claim (Draft → Submit → Returned or Accepted), a claim after a return, a correction of an accepted achievement, its evidence under the policy in force, every revision | This task |
+| **In** | Evidence attachment through WF-12: MOD-054 Attach as evidence of a type, MOD-050 Upload, withdrawal | This task |
+| **Out** | Accepting or returning a claim: WF-11's decision in the approval inbox (TASK-036 MOD-040–042), internal only | TASK-036, TASK-050 D-7 |
+| **Out** | The EVIDENCE_POLICY itself (PTBC-006, PTBC-019) and the MILESTONE_ACHIEVEMENT approval route | AHDA (F-2, F-6) |
+| **Out** | Notifications of submission, return and acceptance | TASK-039 configuration (TASK-050 F-17) |
+
+## 2. Decisions
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D-1 | **Where it lives.** The screens are in `features/milestones`. SCR-046 is the workspace's Milestones tab, after Tasks, audience `reached` (`SCHEDULE_VIEW` and `MILESTONE_VIEW` ship to the Project Manager, TASK-050 D-10), lent the workspace's context by `projects/workspace/MilestonesTab.tsx`; route `/projects/:projectId/milestones` behind `WorkspaceTabGuard tab="milestones"`. SCR-062 is `/milestones`, behind `RequireSession`, with a "Milestones" group in the sidebar and a home-page link | ADR-002 module → `features/milestones`; `task-boards-ui.md` D-1 |
+| D-2 | **The register reads every visible project's milestones.** The API lists milestones and claims one project at a time (TASK-050 D-14), so `useMilestonePortfolio` reads `GET /projects?status=APPROVED_PLANNED,ACTIVE,SUSPENDED,COMPLETED,CLOSED` (the states a schedule exists in) page after page, then each project's `/project-milestones` and `/milestone-achievements?projectId=`, six projects at a time, every page of 200 (R-29). A 403 on the milestones (no `SCHEDULE_VIEW`) is "You do not have access to milestones"; a 403 on the claims (no `MILESTONE_VIEW`) lists the milestones with "Not available" in the claim column and a note that claims are not shown. Earliest forecast first; filters: all, planned, overdue, claim in draft, under review, returned, achieved, cancelled | F-7 |
+| D-3 | **Where a claim stands** is its newest revision (`milestoneRules.ts` `achievementState`): not claimed; claim in draft / under review / returned; accepted. While a correction is prepared, reviewed or returned the accepted revision is still current (TASK-050 D-4), so those states read "Correction in draft / under review / returned" and MOD-019 keeps "Achieved on {date} (revision n), accepted by …" above the claim. A PLANNED milestone whose forecast has passed carries the overdue flag of TASK-049 (icon and words) | TASK-050 D-4 |
+| D-4 | **Criterion 1: the evidence label is the server's statement, never a rule of the client's** (`evidenceRule`, `EvidencePolicyLabel`). `GET …/evidence` gives four states, each worded and marked with `data-policy`: **pending** — `evidencePolicyVersionId` null: "Evidence is optional pending policy. No evidence policy has been published yet (PTBC-006), so no evidence is mandatory and the server accepts this claim without any"; **not required** — a policy in force makes nothing mandatory for the category; **required** — each mandatory type listed with "attached" or "missing" (held = in `satisfiedEvidenceTypeItemIds`: VALID, active link, CLEAN, as WF-12 decides it); **undetermined** — 422 `CONFIGURATION_MISSING` on the read: the server fails closed and the label says it refuses every submission. The label is shown on a draft and, read only, on a submitted claim | Acceptance criterion 1; PTBC-006; TASK-050 D-8 |
+| D-5 | **Criterion 1: what the Submit button does.** While a mandatory type is missing, the policy is undetermined, or the claim has unsaved changes, Submit is disabled and the reason is shown beside it and linked by `aria-describedby` ("Attach the evidence the policy requires before submitting. Missing: Completion certificate."); nothing is sent. **Pending policy with no evidence attached: Submit first asks** "No evidence is attached. Nothing is mandatory until an evidence policy is published, so the server will accept this claim without evidence. Submit it without evidence?" — "Yes, submit without evidence" / "Keep editing" — so an unvalidated submission is never silent. The API decides again: its 422 `MILESTONE_EVIDENCE_REQUIRED` is shown and the evidence read again, so the label changes to the policy the server now enforces (the workbook's validation check, §4 row 10) | Acceptance criterion 1 ("rather than silently allowing an unvalidated submission") |
+| D-6 | **Criterion 2: a returned claim's reason is shown where the claim is, without a click.** On SCR-046 and SCR-062 the row carries "Returned: {reason}" under the title, a 4 px edge on the reading side (mirrored in Arabic) and the "Claim returned" badge. MOD-019 opens with a bordered, headed callout before anything else: "Returned for correction by {reviewer} on {date}" and the reason, in the language it was written in. In the revision history every returned revision keeps its reason on its own line. A return without a reason (the claimant withdrew the run, TASK-050 D-7) says so. The warning colour repeats what the heading, words and edge say | Acceptance criterion 2; workbook validation check |
+| D-7 | **MOD-019 is a drawer on the platform's native modal** (`Dialog variant="drawer"`: `showModal`, focus held, Escape closes, laid out along the inline-end edge, full width at 390 px). It reads the milestone (with its ETag) and its revisions (`?projectMilestoneId=`) itself, so SCR-046 and SCR-062 open the same component. The open revision (DRAFT or SUBMITTED) is read on its own for its ETag and its evidence; every command sends that ETag (R-21) and a 412, `MILESTONE_ACHIEVEMENT_NOT_EDITABLE`, `INVALID_TRANSITION` or 404 reads it again with "Someone changed this milestone or its claim meanwhile". One modal at a time (`dialogs/milestoneDialog.ts`): MOD-016, MOD-054 and MOD-050 open in its place and return to it when they close. Sections in reading order: status, returned reason, accepted line, details, claim (form, evidence, submission), revisions, Edit/Cancel milestone, Close | `task-boards-ui.md` D-6, D-8 |
+| D-8 | **Evidence through WF-12** (edge 16). MOD-054 gains `evidenceTypes` (a required "Evidence of" choice; with none to offer it says so and cannot be sent) and `describe` (the owning module's wording); its `onAttach` receives the type as a second argument (null otherwise), so the WF-12 tests keep their call. MOD-019 offers the policy's mandatory types first — even unnamed, when the EVIDENCE_TYPE catalogue cannot be read (F-3) — then every other PUBLISHED one. The chosen document's latest version is pinned: `GET /documents/{id}` for its id, then `POST …/evidence {documentId, documentVersionId, evidenceTypeItemId}` with the revision's ETag (an attachment changes the revision's version, TASK-050 D-8). A document not CLEAN cannot be chosen (TASK-038 D-4). "Upload a document" opens MOD-050 for the project; the upload is attached once its scan finds it clean. A piece is withdrawn from the draft by a button naming its document | TASK-037 D-8, F-8; TASK-038 D-9 |
+| D-9 | **What is checked before sending mirrors the API.** A claim: a date not after today, UTC (`DATE_IN_FUTURE` → "The date achieved cannot be after today", as the API's `claimedAchievementDate NOT_ALLOWED`), a narrative of 2000 characters at most. MOD-016: a title, a category, a forecast date, a sort order that is a whole number from 0 (blank sends 0), an activity of the schedule that is not cancelled. The next claim is "Claim the achievement", "Claim again" (after a return) or "Correct the achievement" (after an acceptance, with a note that the accepted one stays until the correction is accepted); none is offered while a revision is open or the milestone is cancelled. A claim refused 409 `MILESTONE_ACHIEVEMENT_OPEN` (opened meanwhile, or retried, TASK-050 F-15) reads the milestone again | TASK-050 §5, D-12 |
+| D-10 | **Access is navigation, not protection** (`access.ts`). Planning (MOD-016, cancel): the project's own Project Manager while the project is APPROVED_PLANNED or ACTIVE, on a PLANNED milestone (`SCHEDULE_EDIT` at OWN). Claims (open, edit, evidence, submit, delete a draft): the Project Manager while the project is ACTIVE (`MILESTONE_SUBMIT` at OWN; ADR-013: an entity Project Manager too). Anyone else reads a draft and a submitted claim with their evidence, without changing them. Acceptance is never offered here: it is an internal approver's in `/approval-tasks` | TASK-050 D-7, D-10, D-11 |
+| D-11 | **Additions to the foundation**, all backward compatible: `Dialog`'s `variant` (`modal` by default); MOD-054's `evidenceTypes`, `describe` and the type argument of `onAttach` (D-8); `milestones` in `WorkspaceTabKey` and `WORKSPACE_TABS`; the `milestones` i18n namespace and `common.home.milestones`; `.dialog--drawer`, `.returned-reason`, `.row--returned`, `.evidence-policy` and `.revision-list` styles; `src/test/milestoneFixtures.ts`, with `projectFixtures.ts` exporting its catalogues for it. The tab assertions in `projects` include Milestones. Reused, not copied: the overdue flag, `todayUtc` and `activityName` of `features/tasks`, `varianceLabel` of `features/schedule` | — |
+
+## 3. Screens and routes
+
+| Screen | Route | Component |
+| --- | --- | --- |
+| SCR-046 Project Milestones | `/projects/:projectId/milestones` (workspace tab) | `ProjectMilestones` (via `MilestonesTab`) |
+| SCR-062 Milestone Register | `/milestones` | `MilestoneRegisterPage` |
+| MOD-016 Create Milestone | SCR-046 "Add milestone" | `MilestoneFormDialog` (`milestoneId` null) |
+| MOD-016 Edit Milestone | MOD-019 "Edit milestone" | `MilestoneFormDialog` |
+| MOD-019 Milestone Achievement | a milestone's title, on SCR-046 or SCR-062 | `AchievementDialog` (drawer), `ClaimSection` |
+| MOD-054 Attach (as evidence) | MOD-019 "Attach a document" | `documents/dialogs/AttachDocumentDialog` |
+| MOD-050 Upload Document | MOD-019 "Upload a document" | `documents/dialogs/UploadDocumentDialog` |
+
+### 3.1 Empty states
+
+| Screen | When | Title | Body |
+| --- | --- | --- | --- |
+| SCR-046 | No milestone, to the Project Manager | This project has no milestones yet | Add the milestones the project will be measured against: each gets a forecast date, and its achievement is claimed here once it happens. (with "Add milestone") |
+| SCR-046 | No milestone, to anyone else, project APPROVED_PLANNED or ACTIVE | This project has no milestones yet | The Project Manager has not planned any milestone yet. |
+| SCR-046 | No milestone, project in any other state | This project has no milestones yet | Milestones are planned once the project is approved. |
+| SCR-062 | No milestone in any visible project | No milestones to show | Milestones appear here once a Project Manager plans them in a project you can see. |
+| SCR-062 | The filter matches nothing | No milestone matches this choice | Choose "All milestones" to see every milestone again. |
+| Both | No `SCHEDULE_VIEW` (403) | You do not have access to milestones. | — |
+| Both | No `MILESTONE_VIEW` (403 on claims) | (the list, with "Not available") | Achievement claims are not shown: you do not have access to them. |
+
+## 4. Verification
+
+Run 2026-10-04 on macOS with Docker Desktop: frontend in `AHDA-frontend` (Node 24); the compose API image built from TASK-050 (`ahda-api`, schema at `20261003144702_TASK-050_GuardMilestoneAchievement`).
+
+| # | Command | Result |
+| --- | --- | --- |
+| 1 | `npm run lint` | 0 problems |
+| 2 | `npm run format:check` | All matched files use Prettier code style |
+| 3 | `npm run typecheck` | No errors |
+| 4 | `npm test` | 35 files, 477 tests passed (33 files and 434 on `dev`, TASK-049 §4 row 4; TASK-050 changed no frontend file). 43 new: 12 in `milestones/rules.test.ts`, 29 in `milestones/milestones.test.tsx`, 2 in `documents/dialogs/attach.test.tsx` (MOD-054 as evidence). One existing assertion changed with D-8 (`onAttach` called with `(document, null)`); the two tab assertions in `projects` include Milestones |
+| 5 | `npm run build` | Built. 1,208 KB JS (304 KB gzip); the >500 KB chunk warning was already on `dev` (TASK-038 F-5; F-14) |
+| 6 | `npm audit` | 0 vulnerabilities. No dependency added |
+| 7 | — | No backend file changed; the `dotnet` gates do not apply |
+| 8 | curl on the compose API (`localhost:5080`, database `pmplatform`) as `local.r04`, with the SPA's queries | `GET /projects?status=…&pageSize=200` 200 (0 projects, F-5); `GET /project-milestones?projectId=…&page=1&pageSize=200` 200; MOD-016's body for an unknown project 404; with no title, category or date and sort order −1, 400 naming `title`, `milestoneCategoryItemId`, `forecastDate` REQUIRED and `sortOrder` OUT_OF_RANGE. Every `/milestone-achievements` call **403**: the two milestone permissions never landed in this local database (TASK-050 F-16), so row 9 used a scratch one. `GET /master-data-catalogues` 403 (F-3) |
+| 9 | Live fixture (git-ignored `artifacts/task-051/live`, not committed): scratch database `task051_live` in `AHDA-postgres`, migrated by the `ahda-migrate` image and seeded by the compose seed files (no integrity violation); a second API container from `ahda-api` on port 5081; `setup.sql` adds what no environment has — an ACTIVE project managed by local.r04, a PUBLISHED Handover category and Completion certificate evidence type, a published MILESTONE_ACHIEVEMENT route decided by R02 and R02's `APPROVAL_DECIDE`/`APPROVAL_VIEW`/`MILESTONE_VIEW`. `prepare.py` over HTTP: local.r04 initialises the schedule and plans "Berth 1 handed over" and "Quay wall complete"; claims the quay wall and submits; local.r02 returns it in `/approval-tasks` with "Attach the signed completion certificate for the quay wall." | Under no EVIDENCE_POLICY, `GET …/evidence` answered `evidencePolicyVersionId: null`, no mandatory type, and the claim was submitted **without evidence: 200** — what the "optional pending policy" label states. After the return the revision is RETURNED with the reason and R02 as reviewer. Container and database removed after; `pmplatform` untouched |
+| 10 | **Browser check** (`check.mjs` in the same folder): Chromium headless with puppeteer-core 24 inside `AHDA-frontend`, against a second Vite on 5174 forwarding `/api` to the 5081 API. Sign-in is real (`local.r04`); every milestone, claim, evidence and approval read and command goes to the real API. Only the two project reads are served from the browser, because local.r04 cannot read the project it manages (F-5). Mid-run the host published an EVIDENCE_POLICY making the certificate mandatory for Handover (`policy.sql`), through a file handshake, while a draft was open | **20 of 20 checks passed.** **Criterion 2**: SCR-046's returned row read "Returned: Attach the signed completion certificate for the quay wall." with an inset 4 px edge, before any click; MOD-019 opened with the callout "Returned for correction by User 00000000 on 2026-10-04" (F-4) above the details, on screen without scrolling; in Arabic the edge on the right. **Validation check, no policy**: a new draft on "Berth 1 handed over" was labelled "Evidence is optional pending policy" (`data-policy="pending"`); Submit asked first and sent nothing; on "Yes, submit without evidence" the real API answered **200 SUBMITTED** with the revision's ETag — label and enforcement agree. **Validation check, policy published while a draft was open**: the "Claim again" draft on the quay wall still showed pending; Submit → confirm → the real API answered **422 `MILESTONE_EVIDENCE_REQUIRED`**; the UI showed the refusal, read the evidence again and **the label became "The evidence policy in force requires: Item 51510000 — missing"** (F-3), Submit disabled with "Attach the evidence the policy requires before submitting. Missing: Item 51510000." — label and enforcement agree again. axe on MOD-019 (returned; draft under the policy; Arabic), colour contrast included: no violation. SCR-062 listed both milestones with their project. No horizontal page scroll at 1366 and 390 px; the drawer fits 390 px. Screenshots `out/01`–`11` reviewed |
+
+The tests, by acceptance criterion:
+
+| Item | Tests |
+| --- | --- |
+| 1. Submission requires the evidence configured as mandatory for the category; until PTBC-006/019 are resolved the UI labels evidence optional-pending-policy rather than silently allowing an unvalidated submission | `milestones.test.tsx`: no policy → the pending label and body, Submit asks first and sends nothing, then sends with If-Match; a mandatory type missing → the required label, Submit disabled with the type named by `aria-describedby`, no request; the mandatory type held → submitted without a question; an undetermined policy (422 `CONFIGURATION_MISSING`) → blocked and said; the server's 422 `MILESTONE_EVIDENCE_REQUIRED` under a stale pending label → the refusal shown, the evidence read again, the label switches to required and Submit is disabled; a reviewer sees the label read only. `rules.test.ts`: the four rules from the API's answer, submission allowed or not, only VALID evidence on active links in force. Live: rows 9, 10. M-1, M-2, M-5, M-6 |
+| 2. Returned achievements show the reviewer's reason prominently | `milestones.test.tsx`: the reason on SCR-046's row with the `row--returned` edge and the overdue flag; on SCR-062's row under the returned filter; MOD-019's headed callout naming reviewer and date, before the details; "Claim again" offered. Live: row 10. M-3, M-4 |
+| Workbook validation check | Live, row 10: submit without evidence under no policy (pending label, 200) and under a policy published meanwhile (422, label switched to required); the returned reason on the row and leading MOD-019 without a click |
+| SCR-046, SCR-062 and the empty states | Order, category, baseline and variance, statuses, claim state, accepted date; the add action for the Project Manager only; the empty state; claims refused (403) listed as not available; the register across two projects with the project linked, the returned and cancelled filters, the empty and filtered-empty states, Arabic with axe; axe on the tab |
+| MOD-016 | Required fields refused before sending (3 errors, no request), then the exact body and MOD-019 of the new milestone; categories unreadable → cannot add, said; an edit sends If-Match and a 412 reads it again |
+| MOD-019 and the evidence flow | A claim after a return: a future date refused before sending, then the exact body; MOD-054 as evidence: the type required, the latest version pinned, the revision's ETag sent; withdrawal named and with the ETag; a draft saved with If-Match and submission waiting for the save; anyone else reads the draft only; an accepted achievement's line, the correction note and button, the current revision; a cancelled milestone not claimable; axe on the drawer. `attach.test.tsx`: the evidence type chosen and handed over; no type to offer → said, nothing can be attached. M-7 to M-10 |
+
+### 4.1 Mutation tests
+
+Each mutation was applied to the source, `vitest run src/features/milestones src/features/documents/dialogs/attach.test.tsx` run in `AHDA-frontend`, and the source restored (script and output in the git-ignored `artifacts/task-051/`). All ten were caught on the first run.
+
+| # | Mutation | Tests failed |
+| --- | --- | --- |
+| M-1 | A missing mandatory type does not block submission | 3: criterion 1 (screen, rules), the validation check |
+| M-2 | Pending policy, no evidence: submitted without asking | 2: criterion 1, the validation check |
+| M-3 | A returned claim's reason is not on its row | 2: criterion 2 (SCR-046), SCR-062 |
+| M-4 | MOD-019 does not lead with the returned reason | 1: criterion 2 |
+| M-5 | No published policy reads as "no evidence required" | 4 |
+| M-6 | The server's evidence refusal does not read the evidence again | 1: the validation check |
+| M-7 | Evidence is attached without If-Match | 1 |
+| M-8 | A claim dated after today is sent | 2 |
+| M-9 | Anyone may change and submit a claim | 2 |
+| M-10 | MOD-054 attaches evidence of no type | 2 |
+
+## 5. Acceptance criteria and deliverables
+
+| Item | Result |
+| --- | --- |
+| Achievement submission requires at least the evidence configured as mandatory for the milestone's category (once PTBC-006/PTBC-019 are resolved; until then, the UI clearly labels evidence as optional-pending-policy rather than silently allowing an unvalidated submission) | **MET.** D-4, D-5; §4 rows 4, 9, 10; M-1, M-2, M-5, M-6. The policy itself is AHDA's (F-2) |
+| Returned achievements show the reviewer's reason prominently | **MET.** D-6; §4 rows 4, 10; M-3, M-4. The reviewer is named only where `USER_VIEW` allows (F-4) |
+| Description: SCR-062, SCR-046, MOD-016 and MOD-019 covering Draft/Submit/Return/Accept with document attachment (integrating WF-12) | **MET.** §3, D-7, D-8. Return and acceptance are decided in WF-11's inbox, not here (§1) |
+| Deliverables: React components/routes for SCR-046/062, MOD-016, MOD-019 | **MET.** §3 |
+| Workbook validation check | **MET** in Chromium against the real TASK-050 API (§4 row 10): the label matched what the server enforced with no policy (accepted without evidence) and after a policy was published (refused, label switched); the returned reason shown without a click |
+
+## 6. Findings
+
+| # | Finding | Owner | Consequence if unresolved |
+| --- | --- | --- | --- |
+| F-1 | **No screen inventory and no WF-05 specification.** Blueprint Appendix B is not in the repository, and TASK-050 F-7 applies: these screens follow the API contract and the earlier UI records | PMO | Layout and wording may differ from the Blueprint's |
+| F-2 | **PTBC-006 and PTBC-019 are open.** With no EVIDENCE_POLICY, the server accepts every claim without evidence (TASK-050 F-5); the UI says so and asks before such a submission (D-4, D-5), but cannot refuse it: the rule is AHDA's to publish | AHDA PMO | Achievements are accepted without evidence until a policy is published |
+| F-3 | **A Project Manager cannot read the catalogues a milestone names.** Categories and evidence types come from `GET /master-data-catalogues` (`MASTER_DATA_VIEW`, R01 only, TASK-038 F-1); R04 gets 403 (§4 row 8). MOD-016 then cannot add a milestone (no category can be chosen; an edit keeps the current one); categories and evidence types read "Item 51510000"; under a published policy MOD-054 offers only the mandatory types, unnamed; **under no policy no evidence type can be offered, so R04 cannot attach evidence at all**. Fix: a read of a catalogue's PUBLISHED items open to any signed-in caller, or labels in the representations (as TASK-038 F-1) | Engineering Architect (API); PMO (Appendix A) | Project Managers cannot plan milestones or attach evidence through the UI |
+| F-4 | **The reviewer is named by ID** ("User 00000000") without `USER_VIEW` (R01 only), as TASK-049 F-3 | Identity; PMO (Appendix A) | The returned callout says who returned the claim only by an ID |
+| F-5 | **An internal Project Manager cannot read their own project** (TASK-041 F-1, TASK-049 F-5): local.r04 gets 0 projects and 404 on the project it manages, so the workspace's Milestones tab and the register are empty for them although the milestone API answers. The browser check served the two project reads (§4 row 10) | PMO (Appendix A); TASK-110 | Internal Project Managers cannot reach their milestones in a real environment |
+| F-6 | **No approval route is published** (TASK-050 F-3): on a fresh environment submission answers 422 `CONFIGURATION_MISSING`, shown as "The approval route or the evidence policy for milestone achievements is not configured. Ask AHDA to publish it." | AHDA (APPROVAL_AUTHORITY) | No claim can be submitted |
+| F-7 | **No cross-project milestone query.** SCR-062 reads every visible project, then each one's milestones and claims: 1 + 2N requests per visit, six projects at a time | Engineering Architect, with TASK-050 | A slower register for people who see many projects |
+| F-8 | **A new revision starts with no evidence** (TASK-050 F-10). A claim after a return or a correction attaches its documents again; the previous revision's are not offered for re-attachment | PMO | Re-attaching on every correction |
+| F-9 | **Withdrawn evidence cannot be pinned again on the same revision** (TASK-050 F-9; 422 `DOCUMENT_EVIDENCE_WITHDRAWN`, `DOCUMENT_LINK_ENDED`): the message says to upload a new version or document | Engineering Architect (ERD) | A mistaken withdrawal costs an upload |
+| F-10 | **A submitted claim's label shows the policy in force now**, not the version checked at its submission: `GET …/evidence` has no "as submitted" form; the version checked is on the `AchievementSubmitted` audit event | Engineering Architect | A reviewer reading a claim after a policy change sees the new rule beside the old evidence |
+| F-11 | **The review history is not shown here.** The reviewer, date and reason come from the revision; WF-11's run (`/approval-instances?subjectModule=Milestone&…`) is not linked from MOD-019 | PMO | The full decision trail is read in the approval screens |
+| F-12 | **Arabic strings are the delivery team's**, not reviewed by AHDA | AHDA | Wording may change |
+| F-13 | **"Today" is the UTC date** (TASK-050 F-13): a claim dated today in Riyadh between midnight and 03:00 is refused as after today, and the overdue flag appears up to three hours late | Engineering Architect; AHDA PMO | Early-morning claims need yesterday's date |
+| F-14 | **The production bundle is 1,208 KB in one chunk** (1,125 KB after TASK-049); no route is code-split (TASK-038 F-5) | Frontend lead | Initial load grows with every module |
+| F-15 | **Security Lead review (CTL-43) cannot be requested**: the CODEOWNERS teams do not exist (TASK-031 F-13). This change mounts document upload and evidence attachment | Maintainer | The PR's CTL-43 box stays unticked |
+
+## 7. Change log
+
+| Date | Change |
+| --- | --- |
+| 2026-10-04 | Created (TASK-051) |

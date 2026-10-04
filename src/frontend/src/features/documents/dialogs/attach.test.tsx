@@ -28,7 +28,10 @@ const SCANNING = documentSummary({
   latestScanState: 'SCAN_PENDING',
 });
 
-function openAttach(onAttach = vi.fn(() => Promise.resolve())) {
+function openAttach(
+  onAttach = vi.fn(() => Promise.resolve()),
+  evidenceTypes?: { value: string; label: string }[],
+) {
   const api = mockApi().on('GET', /^\/documents$/, {
     body: page([CLEAN, QUARANTINED, SCANNING]),
   });
@@ -39,6 +42,7 @@ function openAttach(onAttach = vi.fn(() => Promise.resolve())) {
         open
         projectId={PROJECT_ID}
         targetLabel="Milestone 3"
+        evidenceTypes={evidenceTypes}
         onAttach={onAttach}
         onClose={vi.fn()}
         onDone={onDone}
@@ -82,7 +86,7 @@ describe('MOD-054 Attach', () => {
     await user.click(await within(dialog).findByRole('radio', { name: 'Signed acceptance' }));
     await user.click(within(dialog).getByRole('button', { name: en('documents.attach.confirm') }));
 
-    expect(onAttach).toHaveBeenCalledWith(CLEAN);
+    expect(onAttach).toHaveBeenCalledWith(CLEAN, null);
     expect(onDone).toHaveBeenCalledOnce();
   });
 
@@ -96,5 +100,32 @@ describe('MOD-054 Attach', () => {
 
     expect(within(dialog).getByText(en('documents.attach.chooseError'))).toBeTruthy();
     expect(onAttach).not.toHaveBeenCalled();
+  });
+
+  test('as evidence, what it is evidence of is chosen and handed over with the document', async () => {
+    const { onAttach } = openAttach(undefined, [
+      { value: 'certificate', label: 'Completion certificate' },
+    ]);
+    const user = userEvent.setup();
+    const dialog = screen.getByRole('dialog');
+
+    await user.click(await within(dialog).findByRole('radio', { name: 'Signed acceptance' }));
+    await user.click(within(dialog).getByRole('button', { name: en('documents.attach.confirm') }));
+    expect(onAttach).not.toHaveBeenCalled();
+
+    await user.selectOptions(within(dialog).getByLabelText(/^Evidence of/), 'certificate');
+    await user.click(within(dialog).getByRole('button', { name: en('documents.attach.confirm') }));
+    expect(onAttach).toHaveBeenCalledWith(CLEAN, 'certificate');
+  });
+
+  test('as evidence with no type to choose, it says so and nothing can be attached', async () => {
+    openAttach(undefined, []);
+    const dialog = screen.getByRole('dialog');
+    await within(dialog).findByRole('radio', { name: 'Signed acceptance' });
+
+    expect(within(dialog).getByText(en('documents.attach.noEvidenceTypes'))).toBeTruthy();
+    expect(
+      within(dialog).getByRole('button', { name: en('documents.attach.confirm') }),
+    ).toHaveProperty('disabled', true);
   });
 });

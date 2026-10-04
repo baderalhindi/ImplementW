@@ -1456,3 +1456,107 @@ textarea.field__input {
   border-radius: var(--radius);
   background: var(--color-surface);
 }
+
+/* ------------------------------------------------------------------------------------------ milestones */
+
+/* MOD-019: the same native modal, laid out as a panel along the inline-end edge. */
+.dialog--drawer {
+  inline-size: min(44rem, 100vw);
+  max-inline-size: 100vw;
+  block-size: 100vh;
+  max-block-size: 100vh;
+  margin-block: 0;
+  margin-inline: auto 0;
+  border-radius: 0;
+}
+
+/* A returned claim's reason: a bordered callout, told apart by its heading and edge as well as its colour. */
+.returned-reason {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-warning);
+  border-inline-start-width: 4px;
+  border-radius: var(--radius);
+  background: var(--color-warning-surface);
+  color: var(--color-text);
+}
+
+.returned-reason__title {
+  margin: 0 0 var(--space-1);
+  color: var(--color-warning);
+  font-size: 1rem;
+}
+
+.returned-reason__text {
+  margin: 0;
+  font-weight: 600;
+}
+
+.returned-reason-line {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--color-warning);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.row--returned > :first-child {
+  box-shadow: inset 4px 0 0 var(--color-warning);
+}
+
+[dir='rtl'] .row--returned > :first-child {
+  box-shadow: inset -4px 0 0 var(--color-warning);
+}
+
+/* The evidence rule in force; "optional pending policy" and "cannot be determined" stand out from a settled rule. */
+.evidence-policy {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.evidence-policy p {
+  margin: 0;
+}
+
+.evidence-policy--pending {
+  border-color: var(--color-info);
+  border-inline-start-width: 4px;
+  background: var(--color-info-surface);
+}
+
+.evidence-policy--blocked {
+  border-color: var(--color-danger);
+  border-inline-start-width: 4px;
+  background: var(--color-danger-surface);
+}
+
+.evidence-policy__title {
+  font-weight: 600;
+}
+
+.evidence-policy__types {
+  margin: var(--space-1) 0 0;
+  padding-inline-start: var(--space-4);
+}
+
+.evidence-list__document {
+  font-weight: 600;
+}
+
+.revision-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.revision-list > li {
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.revision-list__number {
+  font-weight: 600;
+}

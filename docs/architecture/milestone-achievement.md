@@ -191,3 +191,4 @@ Each mutation was applied, the solution rebuilt, the 20 Milestone integration te
 | Date | Change |
 | --- | --- |
 | 2026-10-03 | Created (TASK-050) |
+| 2026-10-04 | §6 item 1 consumed by TASK-051 (`milestone-ui.md`): `evidencePolicyVersionId: null` labelled optional pending policy, the returned reason shown on the row and in MOD-019; the validation check run against this API (`milestone-ui.md` §4 rows 9, 10) |
