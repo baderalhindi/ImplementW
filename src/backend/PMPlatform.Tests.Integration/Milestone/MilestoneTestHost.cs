@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using PMPlatform.Application.Features.DocumentManagement;
+using PMPlatform.Application.Features.Schedule;
 using PMPlatform.Tests.Integration.DocumentManagement;
 using PMPlatform.Tests.Integration.Identity;
+using PMPlatform.Tests.Integration.Schedule;
 
 namespace PMPlatform.Tests.Integration.Milestone;
 
@@ -104,6 +106,9 @@ public sealed class MilestoneTestHost : IAsyncLifetime
     /// <summary>The document store: a directory under the test output, removed with the host.</summary>
     public string StoreDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "milestone-documents-" + Guid.NewGuid().ToString("N"));
 
+    /// <summary>The WF-08 change authorisations a test declares applicable, for a rebaseline (schedule-baseline.md F-1); none until it says.</summary>
+    internal FakeRebaselineAuthorization Rebaselines { get; } = new();
+
     public Guid StandardProfileId { get; private set; }
 
     public async Task InitializeAsync()
@@ -124,7 +129,11 @@ public sealed class MilestoneTestHost : IAsyncLifetime
                 ["Approval:Maintenance:PollInterval"] = "01:00:00",
                 ["DocumentManagement:Scan:PollInterval"] = "01:00:00",
             },
-            services => services.AddSingleton<IMalwareScanner>(Scanner));
+            services =>
+            {
+                services.AddSingleton<IMalwareScanner>(Scanner);
+                services.AddSingleton<IRebaselineAuthorization>(Rebaselines);
+            });
     }
 
     public async Task DisposeAsync()

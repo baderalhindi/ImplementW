@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using PMPlatform.Tests.Integration.Persistence;
 
 namespace PMPlatform.Tests.Integration.Project;
@@ -16,6 +18,21 @@ internal sealed class OpenApiDocument(JsonObject root)
 
     /// <summary>Set to 1 to rewrite the snapshot from the API as built; the diff of the file is then what review sees.</summary>
     public const string UpdateVariable = "UPDATE_OPENAPI_SNAPSHOT";
+
+    /// <summary>
+    /// The TASK-009 lint's findings that no module can clear yet, because the API emits no R-52 extension, no <c>default</c>
+    /// response and no response header (project-lifecycle-contract-tests.md F-1).
+    /// </summary>
+    public static readonly IReadOnlyList<Regex> OpenPlatformFindings =
+    [
+        KnownFinding(@"C-4: .*: x-module must equal the module tag"),
+        KnownFinding(@"C-5: .*: responses\.default \(ProblemDetails\) is required \(R-53\)"),
+        KnownFinding(@"C-7: .*: x-write-class must be 'sensitive' or 'non-sensitive' \(R-35\)"),
+        KnownFinding(@"C-7: .*: a command endpoint is always a sensitive write \(R-4, R-35\)"),
+        KnownFinding(@"C-8: PUT .*: PUT without a required If-Match header \(R-21\)"),
+        KnownFinding(@"C-12: .*: X-Correlation-Id response header not declared \(R-41\)"),
+        KnownFinding(@"C-12: .*: Location header not declared \(R-5\)"),
+    ];
 
     private static readonly string[] Methods = ["get", "put", "post", "delete", "patch", "head", "options"];
 
@@ -36,6 +53,53 @@ internal sealed class OpenApiDocument(JsonObject root)
         OpenApiDocument document = Parse(await response.Content.ReadAsStringAsync());
         document.Root.Remove("servers");
         return document;
+    }
+
+    /// <summary>The document the API serves; with <see cref="UpdateVariable"/> set, also written as the snapshot.</summary>
+    public static async Task<OpenApiDocument> BuiltAsync(HttpClient client)
+    {
+        OpenApiDocument built = await FetchAsync(client);
+        if (Environment.GetEnvironmentVariable(UpdateVariable) == "1")
+        {
+            string snapshot = Path.Combine(Path.GetDirectoryName(RepositoryFile.Path("global.json"))!, SnapshotPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(snapshot)!);
+            built.Write(snapshot);
+        }
+
+        return built;
+    }
+
+    /// <summary>
+    /// TASK-009's lint, <c>contract-check.py</c>, run over this document: its findings on the operations <paramref name="tag"/>
+    /// carries and on the schemas they reach.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> LintAsync(string tag)
+    {
+        string document = Path.Combine(AppContext.BaseDirectory, $"openapi.v1.{Guid.NewGuid():N}.json");
+        Write(document);
+        ProcessStartInfo start = new("python3") { RedirectStandardOutput = true, RedirectStandardError = true };
+        start.ArgumentList.Add(RepositoryFile.Path("docs/architecture/contract-check.py"));
+        start.ArgumentList.Add(document);
+        (int exitCode, string output) = (0, "");
+        try
+        {
+            using Process process = Process.Start(start)!;
+            Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
+            Task<string> standardError = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            (exitCode, output) = (process.ExitCode, await standardOutput + await standardError);
+        }
+        finally
+        {
+            File.Delete(document);
+        }
+
+        Assert.True(exitCode is 0 or 1, $"contract-check.py did not run: {output}");
+        Assert.Contains(" operations, ", output, StringComparison.Ordinal);
+        string paths = string.Join('|', Operations(tag).Select(o => Regex.Escape(o.Path)).Distinct());
+        string schemas = string.Join('|', Surface(tag)["schemas"]!.AsObject().Select(s => Regex.Escape(s.Key)));
+        Regex onSurface = new($@"^C-\d+: ((?:[A-Z]+ )?(?:{paths})[: ]|(?:{schemas})[.: ])", RegexOptions.CultureInvariant);
+        return [.. output.Split('\n').Where(line => onSurface.IsMatch(line))];
     }
 
     public void Write(string path) => File.WriteAllText(path, Root.ToJsonString(Written) + "\n");
@@ -196,6 +260,8 @@ internal sealed class OpenApiDocument(JsonObject root)
         JsonArray a => a.Where(e => e is not null).SelectMany(e => References(e!)),
         _ => [],
     };
+
+    private static Regex KnownFinding(string pattern) => new($"^{pattern}$", RegexOptions.CultureInvariant);
 }
 
 /// <summary>A schema with its reference followed: its component name if it has one, its JSON types without <c>null</c>, and whether null is allowed.</summary>

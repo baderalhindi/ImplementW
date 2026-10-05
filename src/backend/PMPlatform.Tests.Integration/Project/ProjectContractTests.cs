@@ -1,10 +1,7 @@
-using System.Diagnostics;
 using System.Net;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Tests.Integration.Identity;
-using PMPlatform.Tests.Integration.Persistence;
 using PMPlatform.Tests.Integration.Schedule;
 
 namespace PMPlatform.Tests.Integration.Project;
@@ -23,21 +20,6 @@ namespace PMPlatform.Tests.Integration.Project;
 public sealed class ProjectContractTests(ProjectTestHost host)
 {
     private const string Tag = "Project";
-
-    /// <summary>
-    /// The TASK-009 lint's findings on the Project surface that no module can clear yet, because the API emits no R-52
-    /// extension, no <c>default</c> response and no response header (record F-1). Any other finding fails.
-    /// </summary>
-    private static readonly Regex[] OpenPlatformFindings =
-    [
-        KnownFinding(@"C-4: .*: x-module must equal the module tag"),
-        KnownFinding(@"C-5: .*: responses\.default \(ProblemDetails\) is required \(R-53\)"),
-        KnownFinding(@"C-7: .*: x-write-class must be 'sensitive' or 'non-sensitive' \(R-35\)"),
-        KnownFinding(@"C-7: .*: a command endpoint is always a sensitive write \(R-4, R-35\)"),
-        KnownFinding(@"C-8: PUT .*: PUT without a required If-Match header \(R-21\)"),
-        KnownFinding(@"C-12: .*: X-Correlation-Id response header not declared \(R-41\)"),
-        KnownFinding(@"C-12: .*: Location header not declared \(R-5\)"),
-    ];
 
     /// <summary>
     /// The acceptance criterion: a removed operation, status code, response property or enum value, or a changed type,
@@ -78,17 +60,9 @@ public sealed class ProjectContractTests(ProjectTestHost host)
     [Fact]
     public async Task TheProjectApiFollowsTheConventions()
     {
-        OpenApiDocument built = await BuiltAsync();
-        string document = Path.Combine(AppContext.BaseDirectory, "openapi.v1.generated.json");
-        built.Write(document);
+        IReadOnlyList<string> findings = await (await BuiltAsync()).LintAsync(Tag);
 
-        (int exitCode, string output) = await RunAsync("python3", RepositoryFile.Path("docs/architecture/contract-check.py"), document);
-
-        Assert.True(exitCode is 0 or 1, $"contract-check.py did not run: {output}");
-        Assert.Contains(" operations, ", output, StringComparison.Ordinal);
-        string schemas = string.Join('|', built.Surface(Tag)["schemas"]!.AsObject().Select(s => Regex.Escape(s.Key)));
-        Regex projectFinding = new($@"^C-\d+: ([A-Z]+ /api/v1/projects[/: ]|({schemas})[.: ])", RegexOptions.CultureInvariant);
-        Assert.DoesNotContain(output.Split('\n'), line => projectFinding.IsMatch(line) && !OpenPlatformFindings.Any(known => known.IsMatch(line)));
+        Assert.DoesNotContain(findings, line => !OpenApiDocument.OpenPlatformFindings.Any(known => known.IsMatch(line)));
     }
 
     /// <summary>
@@ -155,35 +129,9 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         Assert.Empty(checkedOperations.Values.SelectMany(v => v));
     }
 
-    /// <summary>The document as the API serves it; with <see cref="OpenApiDocument.UpdateVariable"/> set, also written as the snapshot.</summary>
     private async Task<OpenApiDocument> BuiltAsync()
     {
         using HttpClient client = host.Api.CreateClient();
-        OpenApiDocument built = await OpenApiDocument.FetchAsync(client);
-        if (Environment.GetEnvironmentVariable(OpenApiDocument.UpdateVariable) == "1")
-        {
-            string snapshot = Path.Combine(Path.GetDirectoryName(RepositoryFile.Path("global.json"))!, OpenApiDocument.SnapshotPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(snapshot)!);
-            built.Write(snapshot);
-        }
-
-        return built;
+        return await OpenApiDocument.BuiltAsync(client);
     }
-
-    private static async Task<(int ExitCode, string Output)> RunAsync(string program, params string[] arguments)
-    {
-        ProcessStartInfo start = new(program) { RedirectStandardOutput = true, RedirectStandardError = true };
-        foreach (string argument in arguments)
-        {
-            start.ArgumentList.Add(argument);
-        }
-
-        using Process process = Process.Start(start)!;
-        Task<string> output = process.StandardOutput.ReadToEndAsync();
-        Task<string> error = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-        return (process.ExitCode, await output + await error);
-    }
-
-    private static Regex KnownFinding(string pattern) => new($"^{pattern}$", RegexOptions.CultureInvariant);
 }
