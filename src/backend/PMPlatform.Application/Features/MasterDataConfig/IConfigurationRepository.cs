@@ -31,6 +31,9 @@ public interface IConfigurationRepository
 
     public Task<ConfigurationContent> ReadContentAsync(Guid versionId, CancellationToken cancellationToken);
 
+    /// <summary>The rating rows of a RISK_MATRIX version, with their ids.</summary>
+    public Task<IReadOnlyList<RiskRatingDefinition>> ListRiskRatingsAsync(Guid versionId, CancellationToken cancellationToken);
+
     public void AddVersion(ConfigurationVersion version);
 
     /// <summary>

@@ -6206,6 +6206,540 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Risk.Risk", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<Guid?>("ClosedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closed_by_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("IdentifiedDate")
+                        .HasColumnType("date")
+                        .HasColumnName("identified_date");
+
+                    b.Property<DateTimeOffset?>("MaterialisedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("materialised_at");
+
+                    b.Property<DateOnly?>("NextReviewDate")
+                        .HasColumnType("date")
+                        .HasColumnName("next_review_date");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<int>("ReopenedCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("reopened_count");
+
+                    b.Property<Guid>("RiskCategoryItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("risk_category_item_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ClosureRationale", "PMPlatform.Domain.Risk.Risk.ClosureRationale#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("closure_rationale_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("closure_rationale");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.Risk.Risk.Description#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("description_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("description");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.Risk.Risk.Title#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("title_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("title");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_risk");
+
+                    b.HasIndex("ClosedByUserId")
+                        .HasDatabaseName("ix_risk_closed_by_user_id");
+
+                    b.HasIndex("NextReviewDate")
+                        .HasDatabaseName("ix_risk_next_review_date");
+
+                    b.HasIndex("RiskCategoryItemId")
+                        .HasDatabaseName("ix_risk_risk_category_item_id");
+
+                    b.HasIndex("OwnerUserId", "Status")
+                        .HasDatabaseName("ix_risk_owner_user_id_status");
+
+                    b.HasIndex("UpdatedAt", "Id")
+                        .HasDatabaseName("ix_risk_updated_at_id");
+
+                    b.HasIndex("ProjectId", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_risk_project_id_updated_at_id");
+
+                    b.HasIndex("Status", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_risk_status_updated_at_id");
+
+                    b.ToTable("risk", "risk", t =>
+                        {
+                            t.HasCheckConstraint("ck_risk_closed", "(status = 'CLOSED') = (closed_at IS NOT NULL) AND (status = 'CLOSED') = (closed_by_user_id IS NOT NULL) AND (status = 'CLOSED') = (closure_rationale IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_risk_closure_rationale_lang", "\"closure_rationale_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_risk_closure_rationale_pair", "(\"closure_rationale\" IS NULL) = (\"closure_rationale_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_risk_description_lang", "\"description_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_risk_reopened_count", "reopened_count >= 0");
+
+                            t.HasCheckConstraint("ck_risk_status", "\"status\" IN ('IDENTIFIED', 'ASSESSED', 'TREATMENT', 'MONITORING', 'CLOSED')");
+
+                            t.HasCheckConstraint("ck_risk_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Risk.RiskAcceptance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.Property<Guid>("AcceptedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accepted_by_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("ExpiresOn")
+                        .HasColumnType("date")
+                        .HasColumnName("expires_on");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<Guid>("RiskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("risk_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Rationale", "PMPlatform.Domain.Risk.RiskAcceptance.Rationale#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("rationale_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("rationale");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_risk_acceptance");
+
+                    b.HasIndex("AcceptedByUserId")
+                        .HasDatabaseName("ix_risk_acceptance_accepted_by_user_id");
+
+                    b.HasIndex("RiskId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_risk_acceptance_active_risk_id")
+                        .HasFilter("status = 'ACTIVE'");
+
+                    b.HasIndex("Status", "ExpiresOn")
+                        .HasDatabaseName("ix_risk_acceptance_status_expires_on");
+
+                    b.ToTable("risk_acceptance", "risk", t =>
+                        {
+                            t.HasCheckConstraint("ck_risk_acceptance_expires_on", "expires_on > (accepted_at AT TIME ZONE 'UTC')::date");
+
+                            t.HasCheckConstraint("ck_risk_acceptance_rationale_lang", "\"rationale_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_risk_acceptance_revoked", "(status = 'REVOKED') = (revoked_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_risk_acceptance_status", "\"status\" IN ('ACTIVE', 'EXPIRED', 'REVOKED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Risk.RiskAssessmentImpact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ImpactDimensionItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("impact_dimension_item_id");
+
+                    b.Property<short>("ImpactLevel")
+                        .HasColumnType("smallint")
+                        .HasColumnName("impact_level");
+
+                    b.Property<Guid>("RiskAssessmentVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("risk_assessment_version_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Rationale", "PMPlatform.Domain.Risk.RiskAssessmentImpact.Rationale#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("rationale_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("rationale");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_risk_assessment_impact");
+
+                    b.HasIndex("ImpactDimensionItemId")
+                        .HasDatabaseName("ix_risk_assessment_impact_impact_dimension_item_id");
+
+                    b.HasIndex("RiskAssessmentVersionId", "ImpactDimensionItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_risk_assessment_impact_risk_assessment_version_id_impact_di");
+
+                    b.ToTable("risk_assessment_impact", "risk", t =>
+                        {
+                            t.HasCheckConstraint("ck_risk_assessment_impact_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_risk_assessment_impact_impact_level", "impact_level BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("ck_risk_assessment_impact_rationale_lang", "\"rationale_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_risk_assessment_impact_rationale_pair", "(\"rationale\" IS NULL) = (\"rationale_lang\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Risk.RiskAssessmentVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AssessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("assessed_at");
+
+                    b.Property<Guid>("AssessedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assessed_by_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("MatrixConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("matrix_configuration_version_id");
+
+                    b.Property<short>("OverallImpactLevel")
+                        .HasColumnType("smallint")
+                        .HasColumnName("overall_impact_level");
+
+                    b.Property<short>("ProbabilityLevel")
+                        .HasColumnType("smallint")
+                        .HasColumnName("probability_level");
+
+                    b.Property<Guid>("RiskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("risk_id");
+
+                    b.Property<Guid>("RiskRatingDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("risk_rating_definition_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_no");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Rationale", "PMPlatform.Domain.Risk.RiskAssessmentVersion.Rationale#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("rationale_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("rationale");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_risk_assessment_version");
+
+                    b.HasIndex("AssessedByUserId")
+                        .HasDatabaseName("ix_risk_assessment_version_assessed_by_user_id");
+
+                    b.HasIndex("MatrixConfigurationVersionId")
+                        .HasDatabaseName("ix_risk_assessment_version_matrix_configuration_version_id");
+
+                    b.HasIndex("RiskRatingDefinitionId")
+                        .HasDatabaseName("ix_risk_assessment_version_risk_rating_definition_id");
+
+                    b.HasIndex("RiskId", "VersionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_risk_assessment_version_risk_id_version_no");
+
+                    b.ToTable("risk_assessment_version", "risk", t =>
+                        {
+                            t.HasCheckConstraint("ck_risk_assessment_version_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_risk_assessment_version_overall_impact_level", "overall_impact_level BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("ck_risk_assessment_version_probability_level", "probability_level BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("ck_risk_assessment_version_rationale_lang", "\"rationale_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_risk_assessment_version_rationale_pair", "(\"rationale\" IS NULL) = (\"rationale_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_risk_assessment_version_version_no", "version_no >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Risk.RiskTreatmentAction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("action_type");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<Guid>("RiskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("risk_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.Risk.RiskTreatmentAction.Description#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("description_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("description");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.Risk.RiskTreatmentAction.Title#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("title_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("title");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_risk_treatment_action");
+
+                    b.HasIndex("OwnerUserId")
+                        .HasDatabaseName("ix_risk_treatment_action_owner_user_id");
+
+                    b.HasIndex("RiskId")
+                        .HasDatabaseName("ix_risk_treatment_action_risk_id");
+
+                    b.ToTable("risk_treatment_action", "risk", t =>
+                        {
+                            t.HasCheckConstraint("ck_risk_treatment_action_action_type", "\"action_type\" IN ('MITIGATE', 'AVOID', 'TRANSFER', 'CONTINGENCY')");
+
+                            t.HasCheckConstraint("ck_risk_treatment_action_completed", "(status = 'COMPLETED') = (completed_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_risk_treatment_action_description_lang", "\"description_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_risk_treatment_action_description_pair", "(\"description\" IS NULL) = (\"description_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_risk_treatment_action_status", "\"status\" IN ('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')");
+
+                            t.HasCheckConstraint("ck_risk_treatment_action_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineActivity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8289,6 +8823,116 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_task_dependency_project_task_successor_task_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Risk.Risk", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ClosedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_risk_user_closed_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_risk_user_owner_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("RiskCategoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_master_data_item_risk_category_item_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Risk.RiskAcceptance", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("AcceptedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_acceptance_user_accepted_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Risk.Risk", null)
+                        .WithMany()
+                        .HasForeignKey("RiskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_acceptance_risk_risk_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Risk.RiskAssessmentImpact", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("ImpactDimensionItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_assessment_impact_master_data_item_impact_dimension_it");
+
+                    b.HasOne("PMPlatform.Domain.Risk.RiskAssessmentVersion", null)
+                        .WithMany()
+                        .HasForeignKey("RiskAssessmentVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_assessment_impact_risk_assessment_version_risk_assessm");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Risk.RiskAssessmentVersion", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("AssessedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_assessment_version_user_assessed_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("MatrixConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_assessment_version_configuration_version_matrix_config");
+
+                    b.HasOne("PMPlatform.Domain.Risk.Risk", null)
+                        .WithMany()
+                        .HasForeignKey("RiskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_assessment_version_risk_risk_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.RiskRatingDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("RiskRatingDefinitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_assessment_version_risk_rating_definition_risk_rating_");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Risk.RiskTreatmentAction", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_risk_treatment_action_user_owner_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Risk.Risk", null)
+                        .WithMany()
+                        .HasForeignKey("RiskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_risk_treatment_action_risk_risk_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Schedule.BaselineActivity", b =>

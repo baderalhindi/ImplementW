@@ -17,4 +17,11 @@ public interface IConfigurationResolver
     /// <summary>A version a record pinned when it used it (ERD D-13): later publications never change what it resolves to.</summary>
     /// <exception cref="ConfigurationMissingException">The version does not exist or was never published.</exception>
     public Task<ResolvedConfiguration> ResolvePinnedAsync(Guid versionId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// ADR-011: the ratings of a published RISK_MATRIX version with their row ids, which a record that pins the version stores
+    /// beside it (ERD §7 row 12). The content of <see cref="ResolvedConfiguration"/> names a rating by code only.
+    /// </summary>
+    /// <exception cref="ConfigurationMissingException">The version does not exist or was never published.</exception>
+    public Task<IReadOnlyList<RiskRatingReference>> ListRiskRatingsAsync(Guid versionId, CancellationToken cancellationToken);
 }

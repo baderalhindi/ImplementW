@@ -28,8 +28,12 @@ using PMPlatform.Application.Features.FinancialKpi.EventHandlers;
 using PMPlatform.Application.Features.Milestone;
 using PMPlatform.Application.Features.Milestone.Contracts;
 using PMPlatform.Application.Features.Milestone.EventHandlers;
+using PMPlatform.Application.Features.ManagementConcern;
+using PMPlatform.Application.Features.ManagementConcern.Contracts;
 using PMPlatform.Application.Features.ProjectTask;
 using PMPlatform.Application.Features.ProjectTask.Contracts;
+using PMPlatform.Application.Features.Risk;
+using PMPlatform.Application.Features.Risk.Contracts;
 using PMPlatform.Application.Features.Schedule;
 using PMPlatform.Application.Features.Schedule.Contracts;
 using PMPlatform.Application.Features.Schedule.EventHandlers;
@@ -189,6 +193,20 @@ public static class DependencyInjection
         services.AddScoped<IKpiTargetVersionService, KpiTargetVersionService>();
         services.AddScoped<IKpiMeasurementService, KpiMeasurementService>();
         services.AddScoped<IApprovalOutcomeHandler, FinancialKpiApprovalOutcomeHandler>();
+
+        // TASK-055: WF-06's risk register — risks, assessment versions pinned to the RISK_MATRIX version in force, treatment actions,
+        // time-bound acceptances and their expiry, and the reminder condition source. Materialisation into an issue goes through
+        // WF-07's IRiskIssueMaterialisation (edge 15), unbuilt until TASK-057 registers its own. The repository is Infrastructure's.
+        services.AddScoped<RiskAccess>();
+        services.AddScoped<RiskReferences>();
+        services.AddScoped<RiskViews>();
+        services.AddScoped<RiskGate>();
+        services.AddScoped<IRiskService, RiskService>();
+        services.AddScoped<IRiskLifecycleService, RiskLifecycleService>();
+        services.AddScoped<IRiskTreatmentService, RiskTreatmentService>();
+        services.AddScoped<IRiskMaintenance, RiskMaintenance>();
+        services.AddScoped<INotificationConditionSource, RiskConditionSource>();
+        services.TryAddScoped<IRiskIssueMaterialisation, UnbuiltIssueRegister>();
 
         return services;
     }

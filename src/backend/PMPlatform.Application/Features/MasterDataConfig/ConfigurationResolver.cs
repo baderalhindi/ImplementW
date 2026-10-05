@@ -38,6 +38,15 @@ internal sealed partial class ConfigurationResolver(IConfigurationRepository con
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<RiskRatingReference>> ListRiskRatingsAsync(Guid versionId, CancellationToken cancellationToken)
+    {
+        ConfigurationVersionRow? row = (await configuration.FindVersionAsync(versionId, cancellationToken).ConfigureAwait(false))?.Value;
+        return row?.Version is not { PublishedAt: not null }
+            ? throw FailClosed(row?.FamilyCode ?? versionId.ToString(), ConfigurationMissingReason.VersionNotPublished)
+            : [.. (await configuration.ListRiskRatingsAsync(versionId, cancellationToken).ConfigureAwait(false))
+                .Select(r => new RiskRatingReference(r.Id, r.Code, r.Label, r.SortOrder))];
+    }
+
     private async Task<ResolvedConfiguration> ContentOfAsync(string familyCode, PublishedVersionWindow window, CancellationToken cancellationToken)
     {
         ConfigurationContent content = await configuration.ReadContentAsync(window.VersionId, cancellationToken).ConfigureAwait(false);
