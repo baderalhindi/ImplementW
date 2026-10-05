@@ -85,6 +85,15 @@ Each mutation was applied to production code, the solution built, the Execution 
 | M-5 | A Schedule response property removed: `ScheduleHealthStatusDetail.ComputedAt` hidden with `[JsonIgnore]` | `EachExecutionApiKeepsEveryPromiseOfTheSnapshot(Schedule)`, `EachExecutionSnapshotIsTheApiAsBuilt(Schedule)` |
 | M-6 | A Progress route renamed against the conventions: `api/v1/projectHealthStatuses` | `EachExecutionApiFollowsTheConventions(Progress)`, `EachExecutionApiKeepsEveryPromiseOfTheSnapshot(Progress)`, `EachExecutionSnapshotIsTheApiAsBuilt(Progress)` |
 
+### 5.2 Validation in CI
+
+M-1, the row's example, was also run in CI on 2026-10-05: draft PR #61 (never merged; closed and its branch deleted) committed a duplicate Overall Health in WF-14 (`PublishedFinancialSnapshotDetail.OverallHealth`) on top of this branch.
+
+| Run | Commit | Result |
+| --- | --- | --- |
+| 37354073725 | `df6be80`, the violation | `backend` **failed**, only in "Execution domain contract and integration tests": `OnlyWf02ServesOverallHealth` ("Found: FinancialKpi: overallHealth; …") and `EachExecutionSnapshotIsTheApiAsBuilt(FinancialKpi)`, 2 of 21. Every earlier step passed, the unit architecture tests and the FinancialKpi suite included, so the new step is the one that catches it |
+| 37354774276 | `8912fb2`, the revert (tree identical to this branch) | All checks pass; the Execution step 21 of 21 |
+
 ## 6. Acceptance criteria and deliverables
 
 | Item | Result |
