@@ -1,0 +1,218 @@
+# Risk Management (WF-06 Backend)
+
+| Field | Value |
+| --- | --- |
+| Task | TASK-055 — Build Risk Management (WF-06 Backend) (P9 - Risk & Issue Management (WF-06/07)) |
+| Depends on | TASK-041 — Build Project Creation & Registration (`project-registration.md`): the project's anchors, lifecycle state and governance profile through `IProjectFactsReader` (ADR-003 §8.2 edge 3). TASK-034 (`master-data-configuration.md`): the RISK_MATRIX and GOVERNANCE_PROFILE versions and the RISK_CATEGORY catalogue (E-U2). TASK-030 and TASK-033: the authorization engine and the audit trail. TASK-039 (`notification-runtime.md`): the reminder condition seam. TASK-057 (WF-07, not built): the issue a risk materialises into (edge 15, F-1) |
+| Record date | 2026-10-05 |
+| Status | **BUILT AND VERIFIED LOCALLY** against `AHDA-postgres` and `AHDA-ldap`, in process through the real API pipeline, and against a stack built from this branch (§7). In a real environment the Project Manager registers, edits, treats, monitors and closes risks; **no one can rate, accept or reopen one until Appendix A grants those permissions (F-2), and no assessment succeeds until AHDA publishes a RISK_MATRIX version (F-4)**; materialisation answers 503 until TASK-057 builds WF-07 (F-1) |
+| Branch | `feat/task-055-wf06-risk-management-backend` |
+| Directory | `src/backend/PMPlatform.Application/Features/Risk` |
+| Deliverables | **WF-06 risk service**: `IRiskService` (`RiskService`: the register, edits, assessment and acceptance history), `IRiskLifecycleService` (`RiskLifecycleService`: the state machine's commands), `IRiskTreatmentService` (`RiskTreatmentService`: treatment and mitigation actions), `IRiskMaintenance` (`RiskMaintenance`, run by `RiskMaintenanceWorker`: acceptance expiry), four controllers, 22 operations (§4). **Assessment versioning**: `RiskAssessmentVersion` and `RiskAssessmentImpact`, append-only, each version pinned to the RISK_MATRIX version in force when it was made, with its overall impact and rating stored beside the pin (`RiskRating`, `RiskViews`); FG-04 gains `IConfigurationResolver.ListRiskRatingsAsync` for the rating row a version pins. **Materialisation-to-issue integration**: `IRiskIssueMaterialisation` in ManagementConcern's contracts (edge 15), the issue raised in the risk's transaction and named on the risk; `UnbuiltIssueRegister` until TASK-057 (F-1). **Tests**: 16 unit, 17 integration, 10 mutations (§7). Supporting: the `risk` schema (three migrations), `IRiskRepository`, `RiskWorkflow`, five permissions with R04's grants, the `svc.risk-review` service principal, `RiskConditionSource`, a CI step |
+| Environment variables / secrets | None. `Risk:Maintenance:PollInterval` and `:BatchSize` are optional settings with defaults (15 minutes, 100) |
+| Gate decision applied | **ADR-011**: impact is multi-dimensional, five levels each, the dimension set the matrix version defines — D-4, D-5. **Risk acceptance carries an expiry and returns for review; no permanent acceptance** — D-7. **Matrix values and rating labels outstanding (OQ-006): built generically** — D-4, F-4 |
+| Participation amendment | **ADR-013**: entity Project Managers register and update risks on their own project; rating and acceptance authority unchanged — D-10. **ADR-015**: risk management is required for Standard and Full; Light carries issues only — D-11 |
+| Sources read | The TASK-055 row as supplied on 2026-10-05 (description, acceptance criteria, directory, deliverables, gate decision, participation amendment), checked against the workbook's Implementation Plan row, Architecture Decisions ADR-011, Open Questions OQ-006 and the 19 Sep 2026 Decision Log; the TASK-056 and TASK-057 rows for what they expect of this API. No WF-06 functional specification was available (F-7). ERD D-9, D-13, §5.9, §5.10, §6 rows 17–19, §7 row 12, F-027 to F-032; `erd.dbml` `risk.*` and `management_concern.management_concern`; `indexing-strategy.md` I-11 to I-15, F-3; `solution-architecture.md` M-1 to M-13, §8.2 edges 3 and 15; `master-data-configuration.md` D-8, D-14, D-15; `notification-runtime.md` D-5, F-4; `api-conventions-samples.openapi.json` `Risk_ListRisks`; ADR-011 and ADR-013 (`adrs/ADR-register.md`); ADR-015 as `governance_profile_setting.risk_management_required` carries it (TASK-034 D-15) |
+
+## 1. Scope
+
+| | Subject | Owner |
+| --- | --- | --- |
+| **In** | The risk register: register, edit, owner, category, next review, close, the controlled reopen | This task |
+| **In** | Versioned assessments rated by the published probability/impact matrix (PTBC-017), pinned to the version in force | This task |
+| **In** | Treatment and mitigation actions | This task |
+| **In** | Time-bound acceptance, its revocation and its expiry, which returns the risk for review | This task |
+| **In** | Materialisation into an issue: the command, the transaction, the linkage on the risk | This task (the issue itself is TASK-057's, F-1) |
+| **Out** | The ManagementConcern aggregate, its `originating_risk_id` foreign key and its issue-side API | TASK-057 (F-1) |
+| **Out** | Review-due and acceptance-expiry notifications | TASK-039 configuration (F-5) |
+| **Out** | A register across projects (SCR-080 ALL scope, SCR-081 Critical Risks) | TASK-056 / a later query (F-9) |
+| **Out** | SCR-080–082 and MOD-030–035 | TASK-056 |
+| **Out** | The matrix's values, boundaries and labels | AHDA (OQ-006, F-4) |
+
+## 2. Decisions
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D-1 | **Module shape.** `Features/Risk`: `Contracts` (`IRiskService`, `IRiskLifecycleService`, `IRiskTreatmentService`, the DTOs, inputs and pages, `RiskErrorCodes`, `Events`), the three services and `RiskMaintenance`, `RiskWorkflow`, `RiskRating`, `RiskGate` (project facts, authorization, load and save), `RiskAccess`, `RiskReferences`, `RiskViews` (representations, ratings read from the pinned version), `RiskAudit`, `RiskConditionSource`, `RiskServicePrincipal` and the repository port. Entities in `Domain/Risk`; repository, configurations and the worker in `Infrastructure`. The entity is `Risk` inside namespace `Risk`, so files alias it (`RiskEntity`), as ProjectTask does | ADR-003 §4.3 row 6, §6 |
+| D-2 | **Tables.** ERD §5.9 as `erd.dbml` gives them: `risk`, `risk_assessment_version`, `risk_assessment_impact`, `risk_treatment_action`, `risk_acceptance`, with indexes I-11 to I-15 and the ERD's unique keys. Beyond the ERD (F-10): CHECK constraints for the state facts (CLOSED exactly while rationale, closer and time are set; an action COMPLETED exactly while `completed_at` is; an acceptance REVOKED exactly while `revoked_at` is; levels 1–5; an expiry after the day of acceptance), `xmin` as the concurrency token of risks, actions and acceptances, a partial unique index for one ACTIVE acceptance per risk, and `(status, expires_on)` for the expiry pass | ERD §5.9 |
+| D-3 | **The state machine** (§3), twelve edges in `RiskWorkflow`, one command per edge family (R-4). `assess`: IDENTIFIED → ASSESSED on the first assessment; a reassessment keeps the state. `start-treatment`: ASSESSED or MONITORING → TREATMENT, with a PLANNED or IN_PROGRESS action (422 `RISK_TREATMENT_ACTION_REQUIRED`) and no ACTIVE acceptance (409 `RISK_ACCEPTANCE_ACTIVE`). `monitor`: ASSESSED or TREATMENT → MONITORING. `accept`: ASSESSED, TREATMENT or MONITORING → MONITORING. `revoke-acceptance` and the expiry pass: MONITORING → ASSESSED. `close`: any open state → CLOSED, with a rationale. `reopen`: CLOSED → ASSESSED, or IDENTIFIED for a risk never assessed. An unrated risk is neither treated, monitored nor accepted (409 `INVALID_TRANSITION`); a CLOSED risk takes no command but the reopen (409 `RISK_CLOSED`) | Row: "Identified to Assessed to Treatment/Monitoring to Closed" |
+| D-4 | **Assessment versioning, the acceptance criterion.** `assess` resolves RISK_MATRIX as of now (fails closed, 422 `CONFIGURATION_MISSING`), checks the assessment against that version — a probability level it defines, exactly one impact for each dimension it defines levels for, at a level it defines (422 `RISK_IMPACT_INVALID`, every miss as a field issue) — and writes version n+1 with `matrix_configuration_version_id` = that version, the overall impact and `risk_rating_definition_id` = the rating row of the version's cell. Nothing reads the rating back from the matrix in force: `RiskViews` labels a recorded rating from the version it pinned, by the stored row id. A later publication changes nothing recorded; a new assessment is rated by, and pins, the version in force then. Generic (OQ-006): no level, dimension, boundary, cell or label is named in code; the version holds them. The rating's row id comes from `IConfigurationResolver.ListRiskRatingsAsync(versionId)`, new in FG-04, because published content names a rating by code only | Acceptance criterion 1; ERD D-13, §7 row 12 |
+| D-5 | **The overall impact is the highest dimension level.** The ERD stores `overall_impact_level` "derived from the dimension levels by the pinned rule"; no RISK_MATRIX version carries a rule (TASK-034 D-14), so the rule is the conservative one — a severe dimension is never averaged away by mild ones. It is stored with the version it was computed under, so a later rule changes no recorded assessment (F-3) | ADR-011; ERD §7 row 12 |
+| D-6 | **Treatment actions.** `risk-treatment-actions`: PLANNED → IN_PROGRESS → COMPLETED, PLANNED or IN_PROGRESS → CANCELLED; COMPLETED and CANCELLED are final (409 `RISK_ACTION_NOT_EDITABLE`). Types MITIGATE, AVOID, TRANSFER, CONTINGENCY (ERD). Changed only while the risk is open. Each write also touches the risk row, so its version serialises the risk's own commands: starting treatment cannot miss an action cancelled at the same moment | Row: "treatment/mitigation actions" |
+| D-7 | **Acceptance, the gate decision.** `accept {expiresOn, rationale}`: an expiry after today (422 `RISK_ACCEPTANCE_EXPIRY_INVALID`; also a CHECK), one ACTIVE per risk (409 `RISK_ACCEPTANCE_ACTIVE`; also a unique index); the risk → MONITORING and its next review = the expiry. On that day `RiskMaintenance`, as `svc.risk-review`, marks it EXPIRED and returns the risk to ASSESSED for review, the review due that day, audited with actor type SERVICE. `revoke-acceptance` does the same at once. `close` revokes an ACTIVE acceptance with the risk. An acceptance is never rewritten or extended: a new decision is a new acceptance (database guard). An accepted risk is not treated: the acceptance is revoked first, by its authority (D-3) | Gate decision: "acceptance carries an expiry and returns for review; no permanent acceptance" |
+| D-8 | **The reopen, the acceptance criterion.** Decided on `RISK_REOPEN` alone (`RiskWorkflow.PermissionOf`, and the endpoint's `RequirePermission`): `RISK_MANAGE`, general edit, never reopens a risk (403). The reopen clears the closure, raises `reopened_count` by one and is audited `Risk.RiskReopened`, LIFECYCLE_TRANSITION, with the actor, the status change and the count. The database lets the count rise only on a move out of CLOSED, by one | Acceptance criterion 2 |
+| D-9 | **Materialisation (edge 15).** `materialise {categoryItemId, priorityItemId, title?, description?}` on an open risk not yet materialised (409 `RISK_ALREADY_MATERIALISED`) calls `IRiskIssueMaterialisation.RaiseIssueAsync`, defined in ManagementConcern's contracts for WF-07 to implement, inside the risk's unit of work: the issue (holding `originating_risk_id`) and `risk.materialised_at` commit together or not at all (M-11), and WF-07's refusal is the answer with its own code. The command carries the risk's latest impacts on the shared dimension set (ADR-011) for WF-07's severity; title and description default to the risk's. The risk's status does not change: closing it is a decision. The risk side of the linkage is `RiskDetail.materialisedIssueIds`, read through the same contract for a page of risks at once; the issue side is WF-07's `originating_risk_id`, the ERD's one foreign key. Until TASK-057 the only implementation is `UnbuiltIssueRegister` (503, no issues), registered with `TryAdd` so WF-07's replaces it (F-1) | Row: "materialization linkage to WF-07 Issues"; ERD §5.10 |
+| D-10 | **ADR-013: five permissions, R04's register-and-update grants ship.** `RISK_VIEW` (Read), `RISK_MANAGE` (register, edit, actions, treatment, monitoring, close, materialise), `RISK_ASSESS`, `RISK_ACCEPT` and `RISK_REOPEN`, group `RISK`. R04 holds `RISK_VIEW` and `RISK_MANAGE` at OWN, the projects the holder manages, internal or entity. "Rating and acceptance authority unchanged": `assess`, `accept` and `revoke-acceptance` are refused to an external user whatever they hold (403, audited `Risk.AuthorityRefused` with reason `EXTERNAL_USER`), a check on the person as WF-11's is (`approval-framework.md` D-6), because R04 is held by internal and external users alike. Who holds the three controlled permissions is Appendix A's (F-2) | Participation amendment; acceptance criterion 2 |
+| D-11 | **ADR-015: Light carries issues only.** Registration resolves GOVERNANCE_PROFILE as of now and refuses a project whose profile has `risk_management_required = false` (422 `RISK_NOT_IN_PROFILE`), failing closed without a version. It gates registration only: a project later moved to Light keeps its risks workable (F-16) | Participation amendment |
+| D-12 | **What a risk names, and when** (`RiskReferences`). Its category is a PUBLISHED RISK_CATEGORY item (422 `RISK_CATEGORY_INVALID`); its owner, and an action's, holds some role over the project now, as ProjectTask's assignee does (422 `RISK_OWNER_NOT_ELIGIBLE`); it is identified on or before today (422 `RISK_IDENTIFIED_DATE_INVALID`). Risks are registered while the project is APPROVED_PLANNED, ACTIVE or SUSPENDED and changed then or once COMPLETED, so open risks can be closed before closure (422 `RISK_PROJECT_NOT_ELIGIBLE`; F-15). An edit checks only the references it changes | ERD §5.9 |
+| D-13 | **The database holds the history** (migration `TASK-055_GuardRiskHistory`). An assessment version and its impacts are never updated or deleted; a version comes next after every earlier one; an impact is written with its assessment, never added to a recorded one; a CLOSED risk is not assessed. A risk is born IDENTIFIED, moves only along the twelve edges, is frozen while CLOSED, raises its reopen count only on a reopen and keeps its project and its materialisation. An acceptance is born ACTIVE, only expires or is revoked, and is never rewritten; an action is born PLANNED and moves only forward. Nothing is deleted and no table is truncated. The guards read only the `risk` schema (README R-7), so that an assessment's rating row belongs to its pinned version is the application's rule, not the database's (F-11) | Acceptance criterion 1, for any writer |
+| D-14 | **API shape (R-2 to R-5, R-21, R-47).** `/risks` with `projectId` required (R-3) and the filters `status` (a set), `ownerUserId`, `nextReviewDateFrom`, `nextReviewDateTo`, most recently changed first (indexing-strategy P-2, served by I-11); each risk carries its current assessment with its rating, the expiry of its ACTIVE acceptance and its materialised issues. Commands on `/risks/{id}/…` answer with the risk and honour `If-Match` when sent; `PUT` requires it. Assessments and acceptances are read through `/risk-assessments?riskId=` and `/risk-acceptances?riskId=`, written only by the commands. A risk the caller may not see is 404, one they may see but not change 403; a collection they may not see is an empty page | api-conventions |
+| D-15 | **Every change is audited** in the saving transaction (event-conventions §4 row 22), all on the risk as subject but the actions' own: `RiskRegistered`, `RiskChanged` (title and description withheld), `RiskAssessed` (version, pinned matrix version, probability, overall impact, rating id and code, status change), `RiskMaterialised` (the issue's id), `TreatmentActionCreated`, `TreatmentActionChanged` (DATA_CHANGE); `TreatmentStarted`, `MonitoringStarted`, `RiskAccepted`, `AcceptanceRevoked`, `AcceptanceExpired`, `RiskClosed` (rationale withheld), `RiskReopened` (with the count), and the three action transitions (LIFECYCLE_TRANSITION); `AuthorityRefused` (AUTHORIZATION_DENIAL) | event-conventions EV-9 |
+| D-16 | **Reminder revalidation.** `RiskConditionSource` answers Notifications for `sourceModule` Risk with the risk's status now, as `risk.status` holds it, so a review reminder can be suppressed once its risk moved (`notification-runtime.md` D-5). Risk publishes no reminder yet (F-5). The Notifications test host, which plays every source module, removes it in favour of its own | TASK-039 |
+
+## 3. The risk state machine
+
+| From | To | Command | Permission | Waits for | Writes |
+| --- | --- | --- | --- | --- | --- |
+| — | IDENTIFIED | `POST /risks` | `RISK_MANAGE` | the project APPROVED_PLANNED, ACTIVE or SUSPENDED, its profile carrying risk management | the register fields |
+| IDENTIFIED | ASSESSED | `assess` | `RISK_ASSESS`, internal | a RISK_MATRIX version in force the assessment fits | assessment version 1, pinned |
+| ASSESSED, TREATMENT, MONITORING | (same) | `assess` | `RISK_ASSESS`, internal | as above | assessment version n+1, pinned |
+| ASSESSED, MONITORING | TREATMENT | `start-treatment` | `RISK_MANAGE` | a PLANNED or IN_PROGRESS action; no ACTIVE acceptance | — |
+| ASSESSED, TREATMENT | MONITORING | `monitor` | `RISK_MANAGE` | — | — |
+| ASSESSED, TREATMENT, MONITORING | MONITORING | `accept {expiresOn, rationale}` | `RISK_ACCEPT`, internal | an expiry after today; no ACTIVE acceptance | an ACTIVE acceptance; next review = expiry |
+| MONITORING | ASSESSED | `revoke-acceptance` | `RISK_ACCEPT`, internal | an ACTIVE acceptance | the acceptance REVOKED |
+| MONITORING | ASSESSED | the expiry pass | the clock (`svc.risk-review`) | the expiry reached | the acceptance EXPIRED; next review = expiry |
+| IDENTIFIED, ASSESSED, TREATMENT, MONITORING | CLOSED | `close {rationale}` | `RISK_MANAGE` | — | rationale, closer, time; an ACTIVE acceptance REVOKED |
+| CLOSED | ASSESSED, or IDENTIFIED if never assessed | `reopen` | `RISK_REOPEN` | — | the closure cleared; `reopened_count` + 1 |
+| any open state | (same) | `materialise` | `RISK_MANAGE` | not materialised before; WF-07 accepts the issue | `materialised_at`; the issue, by WF-07 |
+
+Every command needs the project APPROVED_PLANNED, ACTIVE, SUSPENDED or COMPLETED. No other move exists, and the database refuses them.
+
+## 4. Endpoints
+
+All paths are under `/api/v1`, tag `Risk`, operation ids `Risk_*`. Every non-2xx answer is the R-23 envelope; every `POST` and `PUT` also answers 400 `IDEMPOTENCY_KEY_REQUIRED`/`…_INVALID`. Commands honour `If-Match` when sent (R-21) and answer 412 when it is stale.
+
+| Operation | Method and path | Permission | Success | Refusals beyond 401/403/404 |
+| --- | --- | --- | --- | --- |
+| `ListRisks` | `GET /risks?projectId=&status=&ownerUserId=&nextReviewDateFrom=&nextReviewDateTo=` | `RISK_VIEW` | 200 `RiskPage`, most recently changed first | 400 |
+| `GetRisk` | `GET /risks/{id}` | `RISK_VIEW` | 200, `ETag` | — |
+| `RegisterRisk` | `POST /risks {projectId, title, description, riskCategoryItemId, ownerUserId, identifiedDate, nextReviewDate}` | `RISK_MANAGE` | 201, IDENTIFIED | 400; 422 `RISK_PROJECT_NOT_ELIGIBLE`, `RISK_NOT_IN_PROFILE`, `RISK_CATEGORY_INVALID`, `RISK_OWNER_NOT_ELIGIBLE`, `RISK_IDENTIFIED_DATE_INVALID`, `CONFIGURATION_MISSING` |
+| `UpdateRisk` | `PUT /risks/{id}`, `If-Match` | `RISK_MANAGE` | 200 | 400; 409 `RISK_CLOSED`; 412; 422 as register but the profile; 428 |
+| `AssessRisk` | `POST /risks/{id}/assess {probabilityLevel, impacts[{impactDimensionItemId, impactLevel, rationale}], rationale}` | `RISK_ASSESS`, internal | 200 | 400; 409 `RISK_CLOSED`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE`, `RISK_IMPACT_INVALID`, `CONFIGURATION_MISSING` |
+| `StartRiskTreatment` | `POST /risks/{id}/start-treatment` | `RISK_MANAGE` | 200 | 409 `INVALID_TRANSITION`, `RISK_CLOSED`, `RISK_ACCEPTANCE_ACTIVE`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE`, `RISK_TREATMENT_ACTION_REQUIRED` |
+| `MonitorRisk` | `POST /risks/{id}/monitor` | `RISK_MANAGE` | 200 | 409 `INVALID_TRANSITION`, `RISK_CLOSED`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE` |
+| `AcceptRisk` | `POST /risks/{id}/accept {expiresOn, rationale}` | `RISK_ACCEPT`, internal | 200 | 400; 409 `INVALID_TRANSITION`, `RISK_CLOSED`, `RISK_ACCEPTANCE_ACTIVE`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE`, `RISK_ACCEPTANCE_EXPIRY_INVALID` |
+| `RevokeRiskAcceptance` | `POST /risks/{id}/revoke-acceptance` | `RISK_ACCEPT`, internal | 200 | 409 `INVALID_TRANSITION`, `RISK_CLOSED`, `RISK_ACCEPTANCE_NOT_ACTIVE`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE` |
+| `CloseRisk` | `POST /risks/{id}/close {rationale}` | `RISK_MANAGE` | 200 | 400 (no or blank rationale); 409 `RISK_CLOSED`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE` |
+| `ReopenRisk` | `POST /risks/{id}/reopen` | `RISK_REOPEN` | 200 | 409 `INVALID_TRANSITION`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE` |
+| `MaterialiseRisk` | `POST /risks/{id}/materialise {categoryItemId, priorityItemId, title, description}` | `RISK_MANAGE` | 200, with `materialisedIssueIds` | 400; 409 `RISK_CLOSED`, `RISK_ALREADY_MATERIALISED`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE` and WF-07's codes; **503 until TASK-057** |
+| `ListRiskAssessments` | `GET /risk-assessments?riskId=` | `RISK_VIEW` | 200 `RiskAssessmentPage`, newest first, each with its impacts and recorded rating | 400 |
+| `GetRiskAssessment` | `GET /risk-assessments/{id}` | `RISK_VIEW` | 200 | — |
+| `ListRiskAcceptances` | `GET /risk-acceptances?riskId=` | `RISK_VIEW` | 200 `RiskAcceptancePage`, newest first | 400 |
+| `ListRiskTreatmentActions` | `GET /risk-treatment-actions?riskId=` | `RISK_VIEW` | 200 `RiskTreatmentActionPage`, oldest first | 400 |
+| `GetRiskTreatmentAction` | `GET /risk-treatment-actions/{id}` | `RISK_VIEW` | 200, `ETag` | — |
+| `CreateRiskTreatmentAction` | `POST /risk-treatment-actions {riskId, title, description, actionType, ownerUserId, dueDate}` | `RISK_MANAGE` | 201, PLANNED | 400; 409 `RISK_CLOSED`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE`, `RISK_OWNER_NOT_ELIGIBLE` |
+| `UpdateRiskTreatmentAction` | `PUT /risk-treatment-actions/{id}`, `If-Match` | `RISK_MANAGE` | 200 | 400; 409 `RISK_CLOSED`, `RISK_ACTION_NOT_EDITABLE`; 412; 422 as create; 428 |
+| `StartRiskTreatmentAction` | `POST /risk-treatment-actions/{id}/start` | `RISK_MANAGE` | 200 | 409 `INVALID_TRANSITION`, `RISK_CLOSED`, `RISK_ACTION_NOT_EDITABLE`; 412; 422 `RISK_PROJECT_NOT_ELIGIBLE` |
+| `CompleteRiskTreatmentAction` | `POST /risk-treatment-actions/{id}/complete` | `RISK_MANAGE` | 200 | as start |
+| `CancelRiskTreatmentAction` | `POST /risk-treatment-actions/{id}/cancel` | `RISK_MANAGE` | 200 | as start |
+
+The rating, the overall impact and the pinned version are never input: an assessment sends levels only.
+
+## 5. Error codes
+
+`RiskErrorCodes` (R-27), beside the platform's `INVALID_TRANSITION` and `CONFIGURATION_MISSING`:
+
+| Code | Status | When |
+| --- | --- | --- |
+| `RISK_PROJECT_NOT_ELIGIBLE` | 422 | Registration before approval or after the project is COMPLETED; any change before approval or once CLOSED |
+| `RISK_NOT_IN_PROFILE` | 422 | The project's governance profile carries no risk management (ADR-015) |
+| `RISK_CATEGORY_INVALID` | 422 | The category is not a PUBLISHED RISK_CATEGORY item |
+| `RISK_OWNER_NOT_ELIGIBLE` | 422 | The risk's or the action's owner holds no role over the project now |
+| `RISK_IDENTIFIED_DATE_INVALID` | 422 | Identified after today |
+| `RISK_CLOSED` | 409 | A change to a CLOSED risk, or to its actions, other than the reopen |
+| `RISK_IMPACT_INVALID` | 422 | The assessment does not fit the matrix in force; every miss is a field issue |
+| `RISK_TREATMENT_ACTION_REQUIRED` | 422 | Treatment starts with no PLANNED or IN_PROGRESS action |
+| `RISK_ACCEPTANCE_ACTIVE` | 409 | A second acceptance, or treatment while accepted |
+| `RISK_ACCEPTANCE_NOT_ACTIVE` | 409 | A revocation with no ACTIVE acceptance |
+| `RISK_ACCEPTANCE_EXPIRY_INVALID` | 422 | An expiry today or earlier |
+| `RISK_ALREADY_MATERIALISED` | 409 | An issue was already raised from the risk |
+| `RISK_ACTION_NOT_EDITABLE` | 409 | The action is COMPLETED or CANCELLED |
+
+## 6. How other modules build on it
+
+1. **TASK-057 (WF-07)** implements `IRiskIssueMaterialisation` and registers it in place of `UnbuiltIssueRegister`: `RaiseIssueAsync` stages an ISSUE with `originating_risk_id` on the request's context without committing — the risk's unit of work commits both — and refuses with WF-07's own codes; `ListByOriginatingRisksAsync` reads by that column. Its migration adds the ERD's foreign key to `risk.risk` and an index on it (ERD §5.10). Its issue-side API exposes `originatingRiskId`. Its tests then run the validation check against the real register (F-1).
+2. **TASK-056** builds SCR-080–082 on `/risks` and its subresources: the heat-map reads the published RISK_MATRIX version through FG-04's resolution API, and a risk's rating through `currentAssessment.rating`, which is the pinned version's. MOD-035's non-empty closure rationale is enforced here too (400).
+3. **Notifications**: a review-due or acceptance-expiry reminder is a NOTIFICATION_INTENT with `sourceModule` Risk and a condition on the risk's status; `RiskConditionSource` already revalidates it (F-5).
+4. **Dashboards (edge 29)** read the register; SCR-081's critical filter is on the latest assessment's rating, which `risk` does not store (`indexing-strategy.md` F-3).
+
+## 7. Verification
+
+Run 2026-10-05 on macOS, Docker Desktop, PostgreSQL 17 (`AHDA-postgres`) and `AHDA-ldap`, with `NUGET_PACKAGES` set to `/Volumes/SanDisk/Bader/Development/Caches/nuget`. The branch was cut from `dev` at dc5c60c; the counts on `dev` are this branch's before its tests were added: 1131 unit, 612 integration.
+
+| # | Command | Result |
+| --- | --- | --- |
+| 1 | `dotnet build src/backend/PMPlatform.slnx -warnaserror`, and `--configuration Release -warnaserror` | 0 warnings, 0 errors, both |
+| 2 | `dotnet test src/backend/PMPlatform.Tests.Unit` | 1147 passed, 16 new: `RiskWorkflowTests` 8, `RiskRatingTests` 5, `ShippedGrantTests` 3 (`RisksAreRegisteredAndUpdatedByTheProjectManagerOnly`, `OnlyTheProjectsOwnManagerManagesItsRisks`, `ReopeningARiskNeedsTheReopenPermissionNotGeneralEditPermission`); the shipped-grant theories gain 42 rows for the five permissions (the runner counts a theory once). The two resolver stubs in `ProgressPolicyTests` and `MilestoneEvidencePolicyTests` implement the new `ListRiskRatingsAsync`. A-1 to A-6 (edge 15 was already registered) and `TheModelHasNoChangeWithoutAMigration` pass |
+| 3 | `DB_CONNECTION_STRING=… dotnet test src/backend/PMPlatform.Tests.Integration` | 629 passed, 17 new: `RiskLifecycleTests` 5, `RiskRegisterTests` 4, `RiskAssessmentTests` 3, `RiskGuardTests` 3, `RiskMaterialisationTests` 2. Changed with this task: two count assertions moved with the catalogue (`SeedDataTests` 130 → 135 labels, `AdministrationContractTests` 46 → 51 permissions), and `NotificationTestHost` removes the real Risk condition source before adding its own (D-16). `EveryMigrationRollsBackToTheSchemaBeforeIt` runs the three new Downs |
+| 4 | `.github/scripts/migration-dry-run.sh`, then `seed-dry-run.sh`, on one scratch database in `AHDA-postgres` (dropped after) | "2493 statement(s), applied twice, no destructive statement"; "12 table(s) seeded, unchanged by a second run, no integrity violation" (209 foreign keys, 243 check constraints, 340 indexes) |
+| 5 | `UPDATE_OPENAPI_SNAPSHOT=1 … --filter ProjectContractTests`, then a JSON diff of `docs/api/openapi.v1.json` against `dev` | 4 passed. The snapshot gains 18 paths (22 operations), 24 schemas and the `Risk` tag; no existing path or schema changed. The enums are the wire values (`IDENTIFIED`…`CLOSED`, `MITIGATE`…`CONTINGENCY`) |
+| 6 | `python3 docs/architecture/contract-check.py docs/api/openapi.v1.json` | 249 operations, 1087 findings (991 on `dev`). The 96 new ones are all on the Risk surface and in classes the platform already has: C-4 22, C-5 22, C-7 26 and C-12 24 (the R-52 extensions no module emits, `project-lifecycle-contract-tests.md` F-1), and C-8 2 on the two `PUT`s, as on every `PUT`. No C-2 or C-9: a first draft's `GET /risks/{id}/materialised-issues` raised both and was folded into `RiskDetail` (D-9) |
+| 7 | `contract-check.py --self-test`, and the eight other `docs/architecture/*-check.py` gates | 29 mutations, 0 missed; all OK |
+| 8 | `.github/scripts/migration-forward-only.sh` (`BASE_REF=origin/dev`) | "no migration on origin/dev was changed; 3 added after 20261004183817_TASK-052_GuardFinancialKpiHistory" |
+| 9 | A stack built from this branch (`docker compose … build api migrate`): a scratch `task055_live` migrated by the `ahda-migrate` image (to `TASK-055_GuardRiskHistory`) and seeded by the compose seed, a fixture project managed by local.r04, and an `ahda-api` container, driven over HTTP (`artifacts/task-055/live`, git-ignored). RISK_MATRIX versions were published in SQL as DRAFT → PUBLISHED: FG-04's publishers hold R01, which needs a second factor the stack has no provider for; the API path is row 3's | Assess before any matrix is published: **422 `CONFIGURATION_MISSING`** (F-4). Version A published; assess 3 × 4: HIGH, pinned to A. Version B published, rating that cell LOW: the risk and its assessment still **HIGH, pinned to A**, in the API and the database; a reassessment of the same figures LOW, pinned to B; history `[(2, LOW), (1, HIGH)]`. Materialise: **503 `UNAVAILABLE`**, `materialised_at` empty, no issue (F-1). Close; reopen by local.r02 (`RISK_MANAGE` at ALL) **403**, by local.r04 (the Project Manager) **403**, by local.r03 (`RISK_REOPEN` at DEPT) ASSESSED, count 1; audit `RiskRegistered` by r04, `RiskAssessed` ×2 by r02, `RiskClosed` by r04, `RiskReopened` by r03. Register on a Light project: **422 `RISK_NOT_IN_PROFILE`**. The container and database were removed after |
+
+The tests, by criterion:
+
+| Criterion | Tests |
+| --- | --- |
+| 1. A risk's rating is computed from the published matrix version pinned at assessment time; re-publishing the matrix does not change a past assessment's recorded rating | `ARatingIsPinnedToTheMatrixInForceAndARepublicationNeverChangesIt` (the workbook's check: assess 3 × 4 under the version in force; publish, through FG-04's author, reviewer and publisher, a version rating that cell the other way; the risk, its history and the database keep the first rating and version; a reassessment of the same figures takes the new rating and pins the new version). `ARecordedAssessmentIsNeverRewritten` (the database refuses an update or delete of a version or its impacts, an impact added later, a version out of order). `TheRatingIsTheCellOfTheVersionInForce`, `TheOverallImpactIsTheHighestDimensionLevel`, `EveryWayAnAssessmentMissesTheMatrixIsReported`, `ALevelTheVersionDoesNotDefineIsRefused`; `AnAssessmentFitsTheDimensionsOfTheMatrixInForce` |
+| 2. Reopening a closed risk requires the specific reopen permission and is captured in Audit | `ReopeningAClosedRiskNeedsTheReopenPermissionAndIsAudited`: local.r02, holding `RISK_MANAGE` at ALL, 403; the Project Manager who closed it 403; an edit of the closed risk 409 `RISK_CLOSED`; local.r03, holding `RISK_REOPEN` for the department, reopens it — ASSESSED, count 1, the closure cleared, `Risk.RiskReopened` with local.r03 as actor and CLOSED → ASSESSED. `ReopeningARiskNeedsTheReopenPermissionNotGeneralEditPermission` (the engine), `EachControlledCommandHasItsOwnPermission`, `ClosedIsLeftOnlyByAReopen`, `AClosedRiskIsFrozenUntilItIsReopened`, `ARiskMovesOnlyAlongItsStateMachine` (the database: the count rises only on a reopen) |
+| Validation: materialise a risk into an issue and confirm the linkage is queryable from both sides | `AMaterialisedRiskAndItsIssueEachNameTheOther` (WF-07 played by `TestIssueRegister`, F-1: the risk, read alone and in the register, names the issue; the issue's `originating_risk_id` names the risk; a second materialisation 409; audited with the issue's id). `ARefusedIssueLeavesTheRiskUnmaterialised` (one transaction: WF-07's refusal is the answer and the risk is not marked) |
+| Gate decision: no permanent acceptance; it expires and returns for review | `AnAcceptanceExpiresAndReturnsTheRiskForReview` (no expiry 400, today 422; accepted until tomorrow, MONITORING, review due then; a second acceptance and treatment refused; nothing lapses before its day; two days on, the pass expires it as `svc.risk-review` and the risk is ASSESSED, review due on the expiry). `RevokingOrClosingEndsAnAcceptance`, `AnAcceptanceIsNeverExtendedAndAMaterialisationNeverMoves`, `AnAcceptanceThatEndsReturnsTheRiskForReview` |
+| Gate decision: multi-dimensional five-level impact, built generically | `AnAssessmentFitsTheDimensionsOfTheMatrixInForce` (the four seeded dimensions; one missing, an unknown one, a level out of the scale), `RiskRatingTests` |
+| Participation amendment ADR-013 | `TheEntityProjectManagerRegistersAndUpdatesRisksOnTheirOwnProjectOnly` (local.r08 registers and edits on their project; another manager's project 404 and an empty page). `RatingAndAcceptanceStayWithAhdaWhateverAnEntityUserHolds` (local.r08 holds `RISK_ASSESS` and `RISK_ACCEPT` on their project and is refused both, audited `EXTERNAL_USER`; the internal Project Manager with the same grant rates). `RisksAreRegisteredAndUpdatedByTheProjectManagerOnly`, `OnlyTheProjectsOwnManagerManagesItsRisks` |
+| Participation amendment ADR-015 | `ALightProjectCarriesNoRisks` (Light 422 `RISK_NOT_IN_PROFILE`; Full registers) |
+| Description: lifecycle, treatment/mitigation actions | `TreatmentNeedsALiveActionAndMonitoringFollowsIt`, `ARiskNamesPublishedReferencesOnAnApprovedProject`, `TheRegisterListsTheProjectsRisksWithTheirRating`, `RiskWorkflowTests` |
+
+### 7.1 Mutation tests
+
+Each mutation was applied, the solution rebuilt, the Risk unit tests and `ShippedGrantTests` and the Risk integration tests run, and the source restored with a fresh mtime (script and output in the git-ignored `artifacts/task-055`). The restored solution built with `-warnaserror` and passed again. 10 mutations, none survived.
+
+| # | Mutation | Tests failed |
+| --- | --- | --- |
+| M-1 | A recorded assessment is labelled with the rating of the matrix in force now, not the one it pinned | `ARatingIsPinnedToTheMatrixInForceAndARepublicationNeverChangesIt` |
+| M-2 | The database lets a recorded assessment be updated | `ARecordedAssessmentIsNeverRewritten` |
+| M-3 | Reopen is decided on `RISK_MANAGE`, the general edit permission | `EachControlledCommandHasItsOwnPermission`, `ReopeningAClosedRiskNeedsTheReopenPermissionAndIsAudited`, `AClosedRiskIsFrozenUntilItIsReopened` (the reopener holds `RISK_REOPEN`, not `RISK_MANAGE`). The endpoint's `RequirePermission(RISK_REOPEN)` still refuses general editors, so the rule is held twice |
+| M-4 | A reopen is not captured in Audit | `ReopeningAClosedRiskNeedsTheReopenPermissionAndIsAudited` |
+| M-5 | ADR-013: an external user holding `RISK_ASSESS` or `RISK_ACCEPT` is allowed | `RatingAndAcceptanceStayWithAhdaWhateverAnEntityUserHolds` |
+| M-6 | ADR-015: a Light project takes risks | `ALightProjectCarriesNoRisks` |
+| M-7 | An expired acceptance leaves its risk in MONITORING | `AnAcceptanceExpiresAndReturnsTheRiskForReview` |
+| M-8 | An acceptance may expire on the day it is given | `AnAcceptanceExpiresAndReturnsTheRiskForReview` (the database's CHECK refused the write, as a 500) |
+| M-9 | The overall impact is the rounded mean of the dimensions | `TheOverallImpactIsTheHighestDimensionLevel`, `TheRatingIsTheCellOfTheVersionInForce`, `ARatingIsPinnedToTheMatrixInForceAndARepublicationNeverChangesIt` |
+| M-10 | WF-07's refusal of the issue is ignored and the risk marked materialised | `ARefusedIssueLeavesTheRiskUnmaterialised` |
+
+## 8. Acceptance criteria, deliverables and amendments
+
+| Item | Result |
+| --- | --- |
+| A risk's rating is always computed from the currently-published assessment matrix version pinned at assessment time (re-publishing the matrix does not retroactively change a past assessment's recorded rating) | **MET.** D-4, D-13; §7 criterion 1; M-1, M-2, M-9 |
+| Reopening a closed risk requires the specific reopen permission and is captured in Audit | **MET.** D-8, D-10; §7 criterion 2; M-3, M-4 |
+| Validation: re-publish the matrix and confirm a previously assessed risk's historical rating is unchanged | **MET** in process and against the stack built from this branch (§7) |
+| Validation: materialise a risk into an issue and confirm the linkage is queryable from both sides | **MET with WF-07 played by the tests** (D-9, F-1); against the stack, materialisation answers 503 until TASK-057 |
+| Description: lifecycle, versioned assessment on the FG-04 matrix (PTBC-017), treatment/mitigation actions, materialisation linkage to WF-07 | **MET** against the sources in the header, without a WF-06 specification (F-7) |
+| Deliverables: WF-06 risk service, assessment versioning, materialisation-to-issue integration | **MET** (header row "Deliverables"); the integration's other side is TASK-057's (§6 item 1) |
+| Gate decision: ADR-011 multi-dimensional five-level impact | **MET.** D-4, D-5 |
+| Gate decision: acceptance carries an expiry and returns for review; no permanent acceptance | **MET.** D-7; M-7, M-8 |
+| Gate decision: matrix values and labels outstanding (OQ-006), built generically | **MET.** D-4; nothing assessable in an environment until AHDA publishes a version (F-4) |
+| Participation amendment ADR-013 | **MET.** D-10; M-5; the controlled grants wait for Appendix A (F-2) |
+| Participation amendment ADR-015 | **MET.** D-11; M-6 |
+
+## 9. Findings
+
+| # | Finding | Owner | Consequence if unresolved |
+| --- | --- | --- | --- |
+| F-1 | **WF-07 is not built, so materialisation is refused (503) and the issue side cannot be queried.** TASK-057 depends only on TASK-041 and comes after this task. This task defines edge 15's contract in ManagementConcern's contracts (`IRiskIssueMaterialisation`, D-9) and registers `UnbuiltIssueRegister` until WF-07 replaces it; the validation check runs with a test double that writes in the risk's transaction as WF-07 must | TASK-057 | Users cannot raise an issue from a risk; the materialisation check has not run against the real register |
+| F-2 | **Only R04's `RISK_VIEW` and `RISK_MANAGE` ship** (D-10). ADR-013 keeps rating and acceptance with AHDA but no controlled source says which internal roles rate, accept or reopen, at what scope; Blueprint Appendix A is not in the repository. The tests grant R02 view, manage, assess and accept at ALL; R03 view and reopen at DEPT; R04 assess and accept at OWN | PMO (Appendix A); TASK-110 | In an environment no one can assess, accept or reopen a risk: every risk stays IDENTIFIED until it is closed |
+| F-3 | **The overall-impact rule is the delivery team's** (D-5): the highest dimension level. The ERD says "by the pinned rule"; RISK_MATRIX holds no rule (OQ-006) | AHDA Risk and Portfolio Office (OQ-006) | If AHDA wants another aggregation, a rule entry in RISK_MATRIX and this code change; recorded assessments keep theirs |
+| F-4 | **No RISK_MATRIX version is published**: db/seed's version 1 is a DRAFT without ratings or cells (TASK-034 D-14). Every assessment fails closed, 422 `CONFIGURATION_MISSING`, until AHDA publishes one | AHDA (OQ-006) | Risks can be registered, treated and closed but never rated |
+| F-5 | **No notifications.** Review-due and acceptance-expiry raise no NotificationIntent: NOTIFICATION_ROUTING has no WF-06 event family and no template exists (`notification-runtime.md` F-4). `RiskConditionSource` is in place for when they do | TASK-039 configuration; PMO | Owners learn of due reviews and expired acceptances in the UI only |
+| F-6 | **No upper bound on an acceptance's duration.** "No permanent acceptance" is enforced as a finite expiry after today; no source sets a maximum (e.g., a review at least yearly) | AHDA Risk and Portfolio Office | An acceptance can be given for many years |
+| F-7 | **No WF-06 functional specification was read.** These rules are inferred from the row, the ERD and the decisions above: treatment needs an action; an accepted risk is not treated; closing revokes an acceptance; a reopen returns to ASSESSED; MITIGATE/AVOID/TRANSFER/CONTINGENCY; the action state names (ERD §6 row 18, E-1) | PMO (WF-06 specification) | A specification may change a rule, and its error code with it |
+| F-8 | **A risk materialises once**: `risk.materialised_at` is one column (ERD). A risk that occurs again after its issue is closed cannot raise a second issue from itself | Engineering Architect (TASK-008) | A recurring risk's second occurrence is raised as an issue without its origin |
+| F-9 | **No register across projects.** `projectId` is required (R-3), as every module requires it; the `Risk_ListRisks` sample in `api-conventions-samples.openapi.json` also declares `ratingCode`, `q` and `sort`, and a project-free ALL/DEPT scope, which this API does not serve. I-12 and I-13 exist for it (`indexing-strategy.md` A-1, F-3) | TASK-056; Engineering Architect | SCR-080's portfolio view and SCR-081 read one project at a time |
+| F-10 | **Beyond the ERD** (D-2): the CHECK constraints, `xmin` on three tables, the partial unique index, `(status, expires_on)`, and the guard functions. `erd.dbml` is not changed | Engineering Architect (TASK-008) | The ERD understates the schema |
+| F-11 | **Not held by the database**: that an assessment's rating row belongs to the version it pins, and that the version is a published RISK_MATRIX one. The guards read only the `risk` schema (README R-7); the foreign keys hold existence, the application the rest | Engineering Architect | A hand-written assessment could pair a version with another version's rating |
+| F-12 | **Edge 15 carries a read** (`ListByOriginatingRisksAsync`) as well as its command: the risk side of the linkage. Recorded in `solution-architecture.md` §8.2 and its change log; no new edge | Engagement Architect | — |
+| F-13 | **Security Lead review (CTL-43) cannot be requested**: the CODEOWNERS teams do not exist (TASK-031 F-13). This change touches RBAC | Maintainer | The PR's CTL-43 box stays unticked |
+| F-14 | **Idempotency keys are required, not replayed** (TASK-031 F-2). A retried registration registers a second risk | Engineering Architect | The SPA must not retry a create blindly |
+| F-15 | **Project eligibility is inferred** (D-12): registration while APPROVED_PLANNED, ACTIVE or SUSPENDED; changes also once COMPLETED, so closure can find the register closed | PMO | A specification may allow risks before approval, or forbid them while suspended |
+| F-16 | **ADR-015 gates registration only** (D-11). A project whose profile becomes Light keeps its risks, which stay workable | PMO | A Light project can carry risks registered before its profile changed |
+| F-17 | **Dates are UTC calendar dates** — identified date, expiry, next review — as in `progress-update.md` F-7. An acceptance expiring on day D lapses at 00:00 UTC, 03:00 in Riyadh | Engineering Architect | An acceptance lapses three hours into its expiry day, local time |
+| F-18 | **No field is masked** (R-20): FIELD_CLASSIFICATION classifies no risk field yet | AHDA Cybersecurity (UGV-01) | — |
+
+## 10. Change log
+
+| Date | Change |
+| --- | --- |
+| 2026-10-05 | Created (TASK-055) |

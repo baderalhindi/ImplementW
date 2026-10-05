@@ -312,6 +312,48 @@ public sealed class ShippedGrantTests
         Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.FinancialSubmit, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
     }
 
+    /// <summary>
+    /// TASK-055, ADR-013's amendment: entity Project Managers register and update risks on their own project — R04 views and manages
+    /// risks at OWN. Rating, acceptance and the reopen wait for Appendix A (risk-management.md F-2).
+    /// </summary>
+    [Fact]
+    public void RisksAreRegisteredAndUpdatedByTheProjectManagerOnly()
+    {
+        Assert.Equal(
+            [("R04", PermissionCatalogue.RiskView, DataScope.Own), ("R04", PermissionCatalogue.RiskManage, DataScope.Own)],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("RISK_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+    }
+
+    /// <summary>ADR-013's amendment to TASK-055: an entity Project Manager manages the risks of their own project, and of no other.</summary>
+    [Fact]
+    public async Task OnlyTheProjectsOwnManagerManagesItsRisks()
+    {
+        AuthorizationScenario entityManager = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R04", PermissionCatalogue.RiskManage, DataScope.Own, entityId: EntityId, projectId: ProjectId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityManager.AuthorizeAsync(PermissionCatalogue.RiskManage, Managed(ProjectId, EntityId, UserId)));
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.RiskManage, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.RiskManage, Managed(OtherProjectId, EntityId, UserId))).IsAllowed);
+    }
+
+    /// <summary>
+    /// TASK-055's acceptance criterion: reopening a closed risk needs RISK_REOPEN itself. Holding the general edit permission over every
+    /// risk — RISK_MANAGE at ALL — is refused 403, since it lets the caller see the risk (R-47).
+    /// </summary>
+    [Fact]
+    public async Task ReopeningARiskNeedsTheReopenPermissionNotGeneralEditPermission()
+    {
+        AuthorizationSubject risk = Managed(ProjectId, EntityId, OtherUserId);
+        AuthorizationScenario editor = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.Internal, Grant("R02", PermissionCatalogue.RiskView, DataScope.All), Grant("R02", PermissionCatalogue.RiskManage, DataScope.All));
+        AuthorizationScenario reopener = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.Internal, Grant("R03", PermissionCatalogue.RiskReopen, DataScope.All));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await editor.AuthorizeAsync(PermissionCatalogue.RiskManage, risk));
+        Assert.Equal(AuthorizationDecision.Forbidden(AuthorizationDenial.NotGranted), await editor.AuthorizeAsync(PermissionCatalogue.RiskReopen, risk));
+        Assert.Equal(AuthorizationDecision.Allowed, await reopener.AuthorizeAsync(PermissionCatalogue.RiskReopen, risk));
+    }
+
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>
     [Fact]
     public void NotificationTemplatesAndDeliveryOperationsGoToR01Only()

@@ -46,7 +46,8 @@
 -- the document-scan principal's, the author of every malware-scan result on document_management.document_version
 -- (TASK-037), is PMPlatform.Application's DocumentServicePrincipal.Id; the notification-dispatch principal's, the author of
 -- every received intent, routing, delivery attempt and completion in the notifications schema (TASK-039), is
--- PMPlatform.Application's NotificationServicePrincipal.Id.
+-- PMPlatform.Application's NotificationServicePrincipal.Id; the risk-review principal's, which expires risk acceptances and
+-- returns their risks for review (TASK-055), is PMPlatform.Application's RiskServicePrincipal.Id.
 INSERT INTO identity_access."user" (id, user_type, username, display_name, email, preferred_language, status, created_at, created_by, updated_at, updated_by)
 VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 'Platform seed (service principal)', 'svc.platform-seed@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
@@ -61,6 +62,8 @@ VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 
        ('00000000-0000-4000-8000-0000000000fa', 'SERVICE', 'svc.document-scan', 'Document malware scan (service principal)', 'svc.document-scan@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
        ('00000000-0000-4000-8000-0000000000f9', 'SERVICE', 'svc.notification-dispatch', 'Notification dispatch (service principal)', 'svc.notification-dispatch@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000f8', 'SERVICE', 'svc.risk-review', 'Risk acceptance review (service principal)', 'svc.risk-review@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO NOTHING;
 
@@ -138,7 +141,11 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- (TASK-050) go to R04 at OWN: ADR-013's amendment to TASK-050 lets an entity Project Manager submit milestone achievement
 -- claims on their own project, and OWN reaches the projects the holder manages, internal or entity. Acceptance stays with
 -- WF-05, decided through WF-11's APPROVAL_DECIDE; the other roles' milestone grants wait for Appendix A
--- (milestone-achievement.md F-2). The eight WF-14 permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
+-- (milestone-achievement.md F-2). The five WF-06 permissions (TASK-055) — RISK_VIEW, RISK_MANAGE, RISK_ASSESS, RISK_ACCEPT,
+-- RISK_REOPEN — ship with RISK_VIEW and RISK_MANAGE to R04 at OWN: ADR-013's amendment to TASK-055 lets entity Project
+-- Managers register and update risks on their own project, and OWN reaches the projects the holder manages, internal or
+-- entity. Rating and acceptance authority is unchanged — the application refuses RISK_ASSESS and RISK_ACCEPT to an external
+-- user whatever they hold — and those grants, with the reopen, wait for Appendix A (risk-management.md F-2). The eight WF-14 permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
 -- FINANCIAL_REVIEW, FINANCIAL_SOURCE_MANAGE, KPI_VIEW, KPI_MANAGE, KPI_RECORD, KPI_REVIEW — ship with FINANCIAL_VIEW and KPI_VIEW
 -- to R04 and R08 at ENTITY: ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI status for its own
 -- project, masked by audience (ADR-010); ENTITY reaches only a holder with an entity. Entering, reviewing and source
@@ -189,6 +196,11 @@ FROM (VALUES
     ('TASK_REOPEN',                 'إعادة فتح المهام المكتملة', 'Reopen completed tasks', 'PROJECT_TASK',    false),
     ('MILESTONE_VIEW',              'عرض إنجاز المعالم',    'View milestone achievements', 'MILESTONE',       false),
     ('MILESTONE_SUBMIT',            'تقديم إنجاز المعالم',  'Submit milestone achievements', 'MILESTONE',     false),
+    ('RISK_VIEW',                   'عرض سجل المخاطر',      'View the risk register',      'RISK',            false),
+    ('RISK_MANAGE',                 'إدارة المخاطر',        'Register and manage risks',   'RISK',            false),
+    ('RISK_ASSESS',                 'تقييم المخاطر',        'Assess and rate risks',       'RISK',            false),
+    ('RISK_ACCEPT',                 'قبول المخاطر',         'Accept risks until an expiry', 'RISK',           false),
+    ('RISK_REOPEN',                 'إعادة فتح المخاطر المغلقة', 'Reopen closed risks',     'RISK',            false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
     ('FINANCIAL_SUBMIT',            'تقديم البيانات المالية', 'Submit financial figures',  'FINANCIAL',       false),
     ('FINANCIAL_REVIEW',            'مراجعة البيانات المالية', 'Review financial figures', 'FINANCIAL',       false),
@@ -248,6 +260,8 @@ FROM (VALUES
     ('R04', 'TASK_REOPEN',                 'OWN'),
     ('R04', 'MILESTONE_VIEW',              'OWN'),
     ('R04', 'MILESTONE_SUBMIT',            'OWN'),
+    ('R04', 'RISK_VIEW',                   'OWN'),
+    ('R04', 'RISK_MANAGE',                 'OWN'),
     ('R04', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R08', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R04', 'KPI_VIEW',                    'ENTITY'),

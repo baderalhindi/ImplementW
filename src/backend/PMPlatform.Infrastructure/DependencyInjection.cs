@@ -18,12 +18,14 @@ using PMPlatform.Application.Features.Notifications;
 using PMPlatform.Application.Features.Progress;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.ProjectTask;
+using PMPlatform.Application.Features.Risk;
 using PMPlatform.Application.Features.Schedule;
 using PMPlatform.Infrastructure.Approval;
 using PMPlatform.Infrastructure.Audit;
 using PMPlatform.Infrastructure.DocumentManagement;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Notifications;
+using PMPlatform.Infrastructure.Risk;
 using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
@@ -33,6 +35,7 @@ using PMPlatform.Infrastructure.Persistence.Milestone;
 using PMPlatform.Infrastructure.Persistence.Progress;
 using PMPlatform.Infrastructure.Persistence.Project;
 using PMPlatform.Infrastructure.Persistence.ProjectTask;
+using PMPlatform.Infrastructure.Persistence.Risk;
 using PMPlatform.Infrastructure.Persistence.Schedule;
 using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
@@ -109,6 +112,14 @@ public static class DependencyInjection
 
         // TASK-052: WF-14's financial_kpi schema.
         services.AddScoped<IFinancialKpiRepository, FinancialKpiRepository>();
+
+        // TASK-055: WF-06's risk schema, and the pass that expires lapsed risk acceptances.
+        services.AddScoped<IRiskRepository, RiskRepository>();
+        services.AddOptions<RiskMaintenanceOptions>()
+            .Bind(configuration.GetSection(RiskMaintenanceOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{RiskMaintenanceOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<RiskMaintenanceWorker>();
 
         services.AddNotifications(configuration);
 

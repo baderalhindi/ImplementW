@@ -93,6 +93,9 @@ internal sealed class ConfigurationRepository(PMPlatformDbContext context) : ICo
             .Where(v => v.ConfigurationFamilyId == familyId)
             .MaxAsync(v => (int?)v.VersionNo, cancellationToken).ConfigureAwait(false) ?? 0;
 
+    public async Task<IReadOnlyList<RiskRatingDefinition>> ListRiskRatingsAsync(Guid versionId, CancellationToken cancellationToken) =>
+        await Rows<RiskRatingDefinition>(versionId).ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public async Task<ConfigurationContent> ReadContentAsync(Guid versionId, CancellationToken cancellationToken)
     {
         List<GovernanceProfileSetting> settings = await Rows<GovernanceProfileSetting>(versionId).ToListAsync(cancellationToken).ConfigureAwait(false);

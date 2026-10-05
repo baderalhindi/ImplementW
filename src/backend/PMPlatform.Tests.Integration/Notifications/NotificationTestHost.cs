@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Notifications;
@@ -208,6 +209,8 @@ public sealed class NotificationTestHost : IAsyncLifetime
                 services.AddSingleton<ISmsGateway>(Sms);
             }
 
+            // The tests play every source module, Risk included: its own condition source gives way to theirs.
+            services.RemoveAll<INotificationConditionSource>();
             services.AddScoped<INotificationConditionSource, TestRiskSource>();
             if (!withWorkers)
             {

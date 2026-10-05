@@ -160,6 +160,16 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Execution
 
+      # TASK-055: WF-06 Risk Management — a rating pinned to the RISK_MATRIX version in force at assessment and unchanged by a
+      # re-publication, the reopen that only RISK_REOPEN allows and its audit, acceptance expiry, ADR-013's authority and ADR-015's
+      # Light profile, materialisation into an issue, and the database guards. Same database and directory as above.
+      - name: Risk integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Risk
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest

@@ -66,5 +66,7 @@ public sealed class ProgressPolicyTests
             Task.FromResult(new ResolvedConfiguration(VersionId, familyCode, 1, asOf.AddDays(-1), null, content));
 
         public Task<ResolvedConfiguration> ResolvePinnedAsync(Guid versionId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<RiskRatingReference>> ListRiskRatingsAsync(Guid versionId, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 }

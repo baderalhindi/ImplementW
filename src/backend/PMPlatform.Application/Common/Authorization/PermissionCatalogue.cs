@@ -145,6 +145,25 @@ public sealed class PermissionCatalogue
     /// </summary>
     public const string MilestoneSubmit = "MILESTONE_SUBMIT";
 
+    /// <summary>WF-06: a project's risk register, assessment versions, treatment actions, acceptances and the issues raised from its risks (TASK-055).</summary>
+    public const string RiskView = "RISK_VIEW";
+
+    /// <summary>
+    /// WF-06 (TASK-055): register and edit risks, assign their owners, plan and progress their treatment actions, move them to
+    /// treatment or monitoring, close them, and raise an issue from one. ADR-013: an entity Project Manager registers and updates
+    /// risks on their own project.
+    /// </summary>
+    public const string RiskManage = "RISK_MANAGE";
+
+    /// <summary>WF-06 (TASK-055): record an assessment, which rates the risk. Internal users only: rating authority is unchanged by ADR-013.</summary>
+    public const string RiskAssess = "RISK_ASSESS";
+
+    /// <summary>WF-06 (TASK-055): accept a risk until an expiry, and revoke an acceptance. Internal users only: acceptance authority is unchanged by ADR-013.</summary>
+    public const string RiskAccept = "RISK_ACCEPT";
+
+    /// <summary>WF-06 (TASK-055): reopen a CLOSED risk. A permission of its own, so RISK_MANAGE never reopens one.</summary>
+    public const string RiskReopen = "RISK_REOPEN";
+
     /// <summary>
     /// WF-14 Financial Progress (TASK-052): a project's Approved Budget versions, financial updates, published financial
     /// snapshots, live position, source modes and portfolio totals. ADR-013: an entity sees budget and expenditure for its own
@@ -228,6 +247,11 @@ public sealed class PermissionCatalogue
             new(TaskReopen, "PROJECT_TASK", AccessMode.Write),
             new(MilestoneView, "MILESTONE", AccessMode.Read),
             new(MilestoneSubmit, "MILESTONE", AccessMode.Write),
+            new(RiskView, "RISK", AccessMode.Read),
+            new(RiskManage, "RISK", AccessMode.Write),
+            new(RiskAssess, "RISK", AccessMode.Write),
+            new(RiskAccept, "RISK", AccessMode.Write),
+            new(RiskReopen, "RISK", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
             new(FinancialSubmit, "FINANCIAL", AccessMode.Write),
             new(FinancialReview, "FINANCIAL", AccessMode.Write),
@@ -270,7 +294,10 @@ public sealed class PermissionCatalogue
     /// owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). WF-05's view and submit go to R04 at OWN: ADR-013's
     /// amendment to TASK-050 lets an entity Project Manager submit achievement claims on their own project, and OWN reaches the
     /// projects the holder manages, internal or entity; acceptance is WF-11's and the other roles' milestone grants wait for
-    /// Appendix A (milestone-achievement.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
+    /// Appendix A (milestone-achievement.md F-2). ADR-013's amendment to TASK-055 lets entity Project Managers register and update risks on
+    /// their own project: R04 views and manages risks at OWN, the projects the holder manages, internal or entity. Rating and
+    /// acceptance authority is unchanged — RISK_ASSESS and RISK_ACCEPT are refused to an external user whatever they hold — and
+    /// those grants, with the reopen, wait for Appendix A (risk-management.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
     /// status for its own project, masked by audience per ADR-010: R08 and R04 view financials and KPIs at ENTITY, which reaches
     /// only a holder with an entity; entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
@@ -311,6 +338,8 @@ public sealed class PermissionCatalogue
         new("R04", TaskReopen, DataScope.Own),
         new("R04", MilestoneView, DataScope.Own),
         new("R04", MilestoneSubmit, DataScope.Own),
+        new("R04", RiskView, DataScope.Own),
+        new("R04", RiskManage, DataScope.Own),
         new("R04", FinancialView, DataScope.Entity),
         new("R08", FinancialView, DataScope.Entity),
         new("R04", KpiView, DataScope.Entity),

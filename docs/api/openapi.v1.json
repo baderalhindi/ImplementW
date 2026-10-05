@@ -8027,6 +8027,960 @@
         }
       }
     },
+    "/api/v1/risk-acceptances": {
+      "get": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "The risk's acceptances, newest first. `riskId` is required (R-3).",
+        "operationId": "Risk_ListRiskAcceptances",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskAcceptancePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risk-assessments": {
+      "get": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "The risk's assessment versions, newest first. `riskId` is required (R-3).",
+        "operationId": "Risk_ListRiskAssessments",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskAssessmentPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risk-assessments/{assessmentId}": {
+      "get": {
+        "tags": [
+          "Risk"
+        ],
+        "operationId": "Risk_GetRiskAssessment",
+        "parameters": [
+          {
+            "name": "assessmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskAssessmentDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks": {
+      "get": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "The project's risks, most recently changed first, each with its current assessment and rating. `projectId` is required\n(R-3). Filters: `status` (a set), `ownerUserId`, `nextReviewDateFrom` and `nextReviewDateTo` (both included).",
+        "operationId": "Risk_ListRisks",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "nextReviewDateFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "nextReviewDateTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "Registers a risk, IDENTIFIED (MOD-030). Refused on a project whose governance profile carries no risk management (ADR-015).",
+        "operationId": "Risk_RegisterRisk",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{riskId}": {
+      "get": {
+        "tags": [
+          "Risk"
+        ],
+        "operationId": "Risk_GetRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "The risk's register fields, as a whole (MOD-031, MOD-033). Requires `If-Match` (R-21).",
+        "operationId": "Risk_UpdateRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{riskId}/assess": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "Records an assessment (MOD-032), rated by the RISK_MATRIX version in force now, which it pins: publishing the matrix again\nnever changes this rating. IDENTIFIED → ASSESSED on the first. Internal users only (ADR-013).",
+        "operationId": "Risk_AssessRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskAssessCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskAssessCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskAssessCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{riskId}/start-treatment": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "ASSESSED or MONITORING → TREATMENT, with a live treatment action and no active acceptance.",
+        "operationId": "Risk_StartRiskTreatment",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{riskId}/monitor": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "ASSESSED or TREATMENT → MONITORING.",
+        "operationId": "Risk_MonitorRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{riskId}/accept": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "Accepts an assessed risk until `expiresOn`, after today — there is no permanent acceptance — and moves it to MONITORING.\nOn that day it returns for review. Internal users only (ADR-013).",
+        "operationId": "Risk_AcceptRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskAcceptCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskAcceptCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskAcceptCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{riskId}/revoke-acceptance": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "Ends the active acceptance before its expiry; the risk returns to ASSESSED for review. Internal users only (ADR-013).",
+        "operationId": "Risk_RevokeRiskAcceptance",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{riskId}/close": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "An open risk → CLOSED, with its rationale (MOD-035); an active acceptance ends with it. RETAIN has no DELETE (R-5).",
+        "operationId": "Risk_CloseRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskCloseCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskCloseCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskCloseCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{riskId}/reopen": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "CLOSED → ASSESSED, or IDENTIFIED if never assessed. RISK_REOPEN only: general edit permission never reopens a risk.",
+        "operationId": "Risk_ReopenRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{riskId}/materialise": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "Raises an issue from an open risk through WF-07 (edge 15) and records when; the issue holds the risk as its origin. 503 until\nWF-07 is built (TASK-057).",
+        "operationId": "Risk_MaterialiseRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskMaterialiseCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskMaterialiseCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskMaterialiseCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risk-treatment-actions": {
+      "get": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "The risk's actions, oldest first. `riskId` is required (R-3).",
+        "operationId": "Risk_ListRiskTreatmentActions",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskTreatmentActionPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "Adds an action to an open risk, PLANNED.",
+        "operationId": "Risk_CreateRiskTreatmentAction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskTreatmentActionCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskTreatmentActionCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskTreatmentActionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskTreatmentActionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risk-treatment-actions/{actionId}": {
+      "get": {
+        "tags": [
+          "Risk"
+        ],
+        "operationId": "Risk_GetRiskTreatmentAction",
+        "parameters": [
+          {
+            "name": "actionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskTreatmentActionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "The open action's plan, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "Risk_UpdateRiskTreatmentAction",
+        "parameters": [
+          {
+            "name": "actionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskTreatmentActionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskTreatmentActionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskTreatmentActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskTreatmentActionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risk-treatment-actions/{actionId}/start": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "PLANNED → IN_PROGRESS.",
+        "operationId": "Risk_StartRiskTreatmentAction",
+        "parameters": [
+          {
+            "name": "actionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskTreatmentActionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risk-treatment-actions/{actionId}/complete": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "IN_PROGRESS → COMPLETED.",
+        "operationId": "Risk_CompleteRiskTreatmentAction",
+        "parameters": [
+          {
+            "name": "actionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskTreatmentActionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risk-treatment-actions/{actionId}/cancel": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "PLANNED or IN_PROGRESS → CANCELLED, final: RETAIN has no DELETE (R-5).",
+        "operationId": "Risk_CancelRiskTreatmentAction",
+        "parameters": [
+          {
+            "name": "actionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskTreatmentActionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/roles": {
       "get": {
         "tags": [
@@ -19916,6 +20870,703 @@
         },
         "description": "The content of the version that resolution chose, with the id a record pins (ERD D-13). Each `Require…`\nreturns the entry or throws ConfigurationMissingException: there is no default to fall back on."
       },
+      "RiskAcceptanceDetail": {
+        "required": [
+          "id",
+          "riskId",
+          "acceptedByUserId",
+          "acceptedAt",
+          "expiresOn",
+          "rationale",
+          "status",
+          "revokedAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "riskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "acceptedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "acceptedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "rationale": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RiskAcceptanceStatus"
+          },
+          "revokedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RiskAcceptancePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskAcceptanceDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A risk's acceptances, newest first."
+      },
+      "RiskAcceptanceStatus": {
+        "enum": [
+          "ACTIVE",
+          "EXPIRED",
+          "REVOKED"
+        ],
+        "description": "ERD `risk_acceptance.status`: ACTIVE until it EXPIRES on its date or is REVOKED; both are final."
+      },
+      "RiskAcceptCommand": {
+        "required": [
+          "expiresOn",
+          "rationale"
+        ],
+        "type": "object",
+        "properties": {
+          "expiresOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "rationale": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "An acceptance until `expiresOn`, the first day it no longer holds, with why the risk is tolerated meanwhile."
+      },
+      "RiskAssessCommand": {
+        "required": [
+          "probabilityLevel",
+          "impacts",
+          "rationale"
+        ],
+        "type": "object",
+        "properties": {
+          "probabilityLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "impacts": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RiskImpactRequest"
+            }
+          },
+          "rationale": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "An assessment: a probability level and one impact level for each dimension of the matrix in force, 1–5 (ADR-011). The overall\nimpact and the rating are the server's; a client never sends them."
+      },
+      "RiskAssessmentDetail": {
+        "required": [
+          "id",
+          "riskId",
+          "versionNo",
+          "assessedAt",
+          "assessedByUserId",
+          "matrixConfigurationVersionId",
+          "probabilityLevel",
+          "overallImpactLevel",
+          "rating",
+          "impacts",
+          "rationale"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "riskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "assessedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "assessedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matrixConfigurationVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "probabilityLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "overallImpactLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "rating": {
+            "$ref": "#/components/schemas/RiskRatingDetail"
+          },
+          "impacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskAssessmentImpactDetail"
+            }
+          },
+          "rationale": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          }
+        },
+        "description": "One assessment version, whole: its probability, its impact per dimension, the overall impact (the highest of them) and the\nrating, all as recorded against Guid RiskAssessmentDetail.MatrixConfigurationVersionId. Nothing in it changes when the matrix is\npublished again."
+      },
+      "RiskAssessmentImpactDetail": {
+        "required": [
+          "impactDimensionItemId",
+          "impactLevel",
+          "rationale"
+        ],
+        "type": "object",
+        "properties": {
+          "impactDimensionItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "impactLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "rationale": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          }
+        }
+      },
+      "RiskAssessmentPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskAssessmentDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A risk's assessment versions, newest first."
+      },
+      "RiskAssessmentSummary": {
+        "required": [
+          "id",
+          "versionNo",
+          "assessedAt",
+          "matrixConfigurationVersionId",
+          "probabilityLevel",
+          "overallImpactLevel",
+          "rating"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "assessedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "matrixConfigurationVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "probabilityLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "overallImpactLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "rating": {
+            "$ref": "#/components/schemas/RiskRatingDetail"
+          }
+        },
+        "description": "The figures of an assessment that decide its rating."
+      },
+      "RiskCloseCommand": {
+        "required": [
+          "rationale"
+        ],
+        "type": "object",
+        "properties": {
+          "rationale": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "Why the risk is closed; required, never empty (TASK-056's closure rationale, enforced here too)."
+      },
+      "RiskCreateRequest": {
+        "required": [
+          "projectId",
+          "title",
+          "description",
+          "riskCategoryItemId",
+          "ownerUserId",
+          "identifiedDate",
+          "nextReviewDate"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "riskCategoryItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "identifiedDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "nextReviewDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A new risk of the project, IDENTIFIED, with the fields RiskRequest describes. A rating is never sent: it comes from an assessment."
+      },
+      "RiskDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "title",
+          "description",
+          "riskCategoryItemId",
+          "ownerUserId",
+          "status",
+          "identifiedDate",
+          "nextReviewDate",
+          "currentAssessment",
+          "acceptedUntil",
+          "materialisedAt",
+          "materialisedIssueIds",
+          "closureRationale",
+          "closedAt",
+          "closedByUserId",
+          "reopenedCount",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "description": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "riskCategoryItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RiskStatus"
+          },
+          "identifiedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "nextReviewDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "currentAssessment": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RiskAssessmentSummary"
+              }
+            ]
+          },
+          "acceptedUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "materialisedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "materialisedIssueIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "closureRationale": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "closedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reopenedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A risk register entry. RiskAssessmentSummary? RiskDetail.CurrentAssessment is its latest assessment, whose rating was fixed by the matrix version\nthat assessment pinned; null while the risk was never assessed. DateOnly? RiskDetail.AcceptedUntil is the expiry of its ACTIVE\nacceptance, if it has one. IReadOnlyList&lt;Guid&gt; RiskDetail.MaterialisedIssueIds are the issues WF-07 raised from it (edge 15), each holding the\nrisk as its `originating_risk_id`: the risk side of the linkage."
+      },
+      "RiskImpactRequest": {
+        "required": [
+          "impactDimensionItemId",
+          "impactLevel",
+          "rationale"
+        ],
+        "type": "object",
+        "properties": {
+          "impactDimensionItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "impactLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "rationale": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        }
+      },
+      "RiskMaterialiseCommand": {
+        "required": [
+          "categoryItemId",
+          "priorityItemId",
+          "title",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "The issue to raise from the risk: WF-07's category and priority, and its title and description, the risk's by default."
+      },
       "RiskMatrixCellEntry": {
         "required": [
           "probabilityLevel",
@@ -19980,6 +21631,69 @@
           }
         }
       },
+      "RiskPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's risks, most recently changed first (R-29; indexing-strategy P-2)."
+      },
+      "RiskRatingDetail": {
+        "required": [
+          "id",
+          "code",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          }
+        },
+        "description": "A rating as the pinned RISK_MATRIX version defines it (ADR-011; labels outstanding, OQ-006)."
+      },
       "RiskRatingEntry": {
         "required": [
           "code",
@@ -20039,6 +21753,336 @@
             "format": "int16"
           }
         }
+      },
+      "RiskRequest": {
+        "required": [
+          "title",
+          "description",
+          "riskCategoryItemId",
+          "ownerUserId",
+          "identifiedDate",
+          "nextReviewDate"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "riskCategoryItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "identifiedDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "nextReviewDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A risk's register fields, as a whole (R-5): title, description, category, owner, the day it was identified and its next review.\nStatus, rating and closure change only through the commands. An unknown property is ignored."
+      },
+      "RiskStatus": {
+        "enum": [
+          "IDENTIFIED",
+          "ASSESSED",
+          "TREATMENT",
+          "MONITORING",
+          "CLOSED"
+        ],
+        "description": "ERD `risk.status` (TASK-055): Identified → Assessed → Treatment/Monitoring → Closed. CLOSED is left only by a reopen."
+      },
+      "RiskTreatmentActionCreateRequest": {
+        "required": [
+          "riskId",
+          "title",
+          "description",
+          "actionType",
+          "ownerUserId",
+          "dueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "riskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "actionType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A new action of the risk, PLANNED, with the plan RiskTreatmentActionRequest describes."
+      },
+      "RiskTreatmentActionDetail": {
+        "required": [
+          "id",
+          "riskId",
+          "title",
+          "description",
+          "actionType",
+          "ownerUserId",
+          "dueDate",
+          "status",
+          "completedAt",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "riskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "actionType": {
+            "$ref": "#/components/schemas/RiskTreatmentActionType"
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RiskTreatmentActionStatus"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "RiskTreatmentActionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskTreatmentActionDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A risk's treatment actions, oldest first."
+      },
+      "RiskTreatmentActionRequest": {
+        "required": [
+          "title",
+          "description",
+          "actionType",
+          "ownerUserId",
+          "dueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "actionType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "An action's plan, as a whole (R-5): title, description, type (MITIGATE, AVOID, TRANSFER, CONTINGENCY), owner and due date."
+      },
+      "RiskTreatmentActionStatus": {
+        "enum": [
+          "PLANNED",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "CANCELLED"
+        ],
+        "description": "ERD `risk_treatment_action.status`: PLANNED → IN_PROGRESS → COMPLETED, and CANCELLED from either open state. COMPLETED and CANCELLED are final."
+      },
+      "RiskTreatmentActionType": {
+        "enum": [
+          "MITIGATE",
+          "AVOID",
+          "TRANSFER",
+          "CONTINGENCY"
+        ],
+        "description": "ERD `risk_treatment_action.action_type`. Accepting a risk is not an action: it is a RiskAcceptance."
       },
       "RoleDetail": {
         "required": [
@@ -21613,6 +23657,9 @@
     },
     {
       "name": "Project"
+    },
+    {
+      "name": "Risk"
     }
   ]
 }

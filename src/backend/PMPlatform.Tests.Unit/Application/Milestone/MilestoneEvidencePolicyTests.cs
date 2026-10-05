@@ -84,5 +84,7 @@ public sealed class MilestoneEvidencePolicyTests
         }
 
         public Task<ResolvedConfiguration> ResolvePinnedAsync(Guid versionId, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<RiskRatingReference>> ListRiskRatingsAsync(Guid versionId, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 }
