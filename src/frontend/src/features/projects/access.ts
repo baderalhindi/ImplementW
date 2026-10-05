@@ -53,6 +53,8 @@ export type WorkspaceTabKey =
   | 'schedule'
   | 'tasks'
   | 'milestones'
+  | 'financials'
+  | 'kpis'
   | 'reviews'
   | 'documents';
 
@@ -65,11 +67,12 @@ export interface WorkspaceTab {
 
 /**
  * SCR-040 Overview, SCR-041 Registration, SCR-035 Location, SCR-048 Progress, SCR-060 Schedule, SCR-047 Tasks,
- * SCR-046 Milestones, SCR-042 Review History, SCR-043 Documents (D-4). Progress is for those an assignment reaches: PROGRESS_VIEW ships to
+ * SCR-046 Milestones, SCR-049 Financials, SCR-050 KPIs, SCR-042 Review History, SCR-043 Documents (D-4). Progress is for those an assignment reaches: PROGRESS_VIEW ships to
  * the project's Project Manager and its delivering entity (TASK-044 D-10), and the API answers an empty page to anyone
  * it does not reach. Schedule likewise: SCHEDULE_VIEW ships to the project's Project Manager (TASK-046 D-12); and Tasks:
  * TASK_VIEW ships to the Project Manager, and a task's owner holds a role over the project (TASK-048 D-11, D-12); and
- * Milestones: SCHEDULE_VIEW and MILESTONE_VIEW ship to the Project Manager (TASK-050 D-10).
+ * Milestones: SCHEDULE_VIEW and MILESTONE_VIEW ship to the Project Manager (TASK-050 D-10); and Financials and KPIs:
+ * FINANCIAL_VIEW and KPI_VIEW ship to the delivering entity (TASK-052 D-10, ADR-013).
  * Review history is AHDA's: a review's requester is the AHDA reviewer (TASK-041 F-11) and a run carries no entity
  * anchor (TASK-035 F-8), so an external user can never read one.
  */
@@ -81,6 +84,8 @@ export const WORKSPACE_TABS: WorkspaceTab[] = [
   { key: 'schedule', path: 'schedule', audience: 'reached' },
   { key: 'tasks', path: 'tasks', audience: 'reached' },
   { key: 'milestones', path: 'milestones', audience: 'reached' },
+  { key: 'financials', path: 'financials', audience: 'reached' },
+  { key: 'kpis', path: 'kpis', audience: 'reached' },
   { key: 'reviews', path: 'reviews', audience: 'internalReached' },
   { key: 'documents', path: 'documents', audience: 'reached' },
 ];

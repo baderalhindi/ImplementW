@@ -1,0 +1,365 @@
+{
+  "nav": {
+    "label": "KPIs",
+    "register": "KPI register"
+  },
+  "sensitive": {
+    "badge": "Sensitive",
+    "note": "Financial figures are sensitive. What you see depends on your role; a figure withheld from you reads \"Restricted\"."
+  },
+  "value": {
+    "MEASURED": "Measured",
+    "MISSING": "No data",
+    "STALE": "Stale",
+    "NOT_APPLICABLE": "Not applicable",
+    "restricted": "Restricted",
+    "noBudget": "No approved budget",
+    "noForecast": "No forecast given"
+  },
+  "figures": {
+    "sar": "SAR {amount}",
+    "financialStatus": "Financial status",
+    "approvedBudget": "Approved budget",
+    "actual": "Actual expenditure to date",
+    "forecast": "Forecast at completion",
+    "valueStatus": "Figures",
+    "source": "Source",
+    "period": "Period"
+  },
+  "provenance": {
+    "asOf": "as of {date}",
+    "asOfRestricted": "as-of date restricted",
+    "reference": "ref. {reference}",
+    "enteredBy": "entered by {name}",
+    "sourceRestricted": "Source restricted",
+    "noUpdate": "No financial update has been recorded"
+  },
+  "source": {
+    "MANUAL": "Manual entry",
+    "ETIMAD": "Etimad",
+    "OTHER": "Other system"
+  },
+  "financialStatus": {
+    "GREEN": "On budget",
+    "AMBER": "At risk of overrun",
+    "RED": "Overrun",
+    "UNKNOWN": "Unknown: figures missing"
+  },
+  "rag": {
+    "GREEN": "Green",
+    "AMBER": "Amber",
+    "RED": "Red",
+    "UNKNOWN": "Not rated",
+    "NOT_APPLICABLE": "Not applicable"
+  },
+  "updateStatus": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "RETURNED": "Returned",
+    "PUBLISHED": "Published"
+  },
+  "versionStatus": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "RETURNED": "Returned",
+    "ACTIVE": "In force",
+    "SUPERSEDED": "Superseded",
+    "REJECTED": "Rejected",
+    "WITHDRAWN": "Withdrawn"
+  },
+  "measurementStatus": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "PUBLISHED": "Published"
+  },
+  "assignmentStatus": {
+    "ACTIVE": "Active",
+    "SUSPENDED": "Suspended",
+    "RETIRED": "Retired"
+  },
+  "direction": {
+    "HIGHER_IS_BETTER": "Higher is better",
+    "LOWER_IS_BETTER": "Lower is better",
+    "TARGET_BAND": "Closer to the target is better"
+  },
+  "kpi": {
+    "unnamed": "KPI {id}"
+  },
+  "actions": {
+    "start": "Start the financial update",
+    "update": "Update financial progress",
+    "review": "Review",
+    "history": "Financial progress history",
+    "back": "Back to financials",
+    "backToKpis": "Back to KPIs",
+    "recordValue": "Record value",
+    "editValue": "Edit value",
+    "publishValue": "Publish value"
+  },
+  "financials": {
+    "forbidden": "You do not have access to this project's financials.",
+    "official": {
+      "title": "Official financial position",
+      "none": "Nothing has been published yet.",
+      "publishedAt": "Published"
+    },
+    "live": {
+      "title": "Current financial position",
+      "none": "No current position is available.",
+      "updateStatus": "Latest update",
+      "unpublished": "Includes figures AHDA has not yet published",
+      "computedAt": "Computed"
+    }
+  },
+  "current": {
+    "title": "Financial update in progress",
+    "none": "No financial update is in progress",
+    "notActive": "Financial figures are reported once the project is active.",
+    "startHint": "Report the actual expenditure and forecast for the next period. Every figure starts as \"No data\" until you enter it.",
+    "returned": "Returned for correction",
+    "next": {
+      "DRAFT": "The Project Manager completes the figures and submits them.",
+      "SUBMITTED": "Waiting for AHDA to start the review.",
+      "UNDER_REVIEW": "AHDA is reviewing the figures.",
+      "RETURNED": "Returned: the next revision is prepared.",
+      "PUBLISHED": "Published."
+    }
+  },
+  "sources": {
+    "title": "Where the figures come from",
+    "field": {
+      "APPROVED_BUDGET": "Approved budget",
+      "ACTUAL_EXPENDITURE": "Actual expenditure",
+      "FORECAST_AT_COMPLETION": "Forecast at completion"
+    },
+    "mode": {
+      "MANUAL": "Manual entry",
+      "INTEGRATED": "Integrated source",
+      "HYBRID": "Integrated source, manual entry allowed"
+    },
+    "notConnected": "No integrated source is connected yet: an integrated figure stays \"No data\" until one is."
+  },
+  "update": {
+    "title": "Update financial progress",
+    "period": "Period {period}, revision {revision}",
+    "manual": "Amounts are in SAR. What you enter is recorded as a manual entry, with you as the person who entered it.",
+    "valueStatus": "What is known for this period",
+    "status": {
+      "MEASURED": "The figures are known",
+      "MISSING": "No data: the figures are not available",
+      "STALE": "Stale: the latest figures are out of date",
+      "NOT_APPLICABLE": "Not applicable to this period"
+    },
+    "noFigure": "No figure is sent. The period will show \"{state}\", never 0.",
+    "actual": "Actual expenditure to date (SAR)",
+    "forecast": "Forecast at completion (SAR)",
+    "amountHint": "Digits only, up to two decimal places, for example 1250000.00.",
+    "forecastHint": "Optional. Leave it empty if there is no forecast; it will show \"No forecast given\", never 0.",
+    "actualIntegrated": "Actual expenditure comes from an integrated source and cannot be entered by hand. Record why there is no figure instead.",
+    "forecastIntegrated": "The forecast comes from an integrated source and cannot be entered by hand.",
+    "asOfDate": "As of",
+    "asOfHint": "The day the figures are true as of. It cannot be after today.",
+    "sourceReference": "Source reference",
+    "sourceReferenceHint": "Optional. The document or system the figures come from, up to {max} characters.",
+    "narrative": "Narrative",
+    "saveAndSubmit": "Save and submit",
+    "saveDraft": "Save draft"
+  },
+  "review": {
+    "title": "Review financial update",
+    "decision": "Decision",
+    "publish": "Publish the figures",
+    "return": "Return for correction",
+    "publishConsequence": "Publishing writes the period's official record, rated under the thresholds in force. It cannot be changed afterwards.",
+    "reason": "Reason for returning",
+    "returnConsequence": "The Project Manager sees this reason and prepares the next revision.",
+    "startConsequence": "Starting the review lets you publish or return the figures.",
+    "start": "Start the review",
+    "confirm": "Confirm decision"
+  },
+  "history": {
+    "title": "Financial progress",
+    "snapshots": "Published periods",
+    "snapshotsCaption": "Official financial records, latest first",
+    "updates": "Updates and revisions",
+    "updatesCaption": "Every revision of every period, newest first",
+    "noUpdates": "No financial update has been recorded yet",
+    "budgets": "Approved budget versions",
+    "budgetsCaption": "Every version of the approved budget, newest first",
+    "revision": "Revision",
+    "status": "Status",
+    "submitted": "Submitted",
+    "reviewed": "Reviewed",
+    "published": "Published",
+    "returnReason": "Returned: {reason}",
+    "version": "Version",
+    "versionRevision": "Version {version}, revision {revision}",
+    "declared": "Declared at intake",
+    "effectiveFrom": "Effective from",
+    "activatedAt": "In force since"
+  },
+  "kpis": {
+    "title": "Key performance indicators",
+    "caption": "The project's KPIs and where each stands this period",
+    "forbidden": "You do not have access to KPIs.",
+    "empty": "No KPIs are assigned to this project",
+    "emptyBody": "AHDA assigns KPIs and approves their targets. Once one is assigned, its values are recorded here.",
+    "kpi": "KPI",
+    "project": "Project",
+    "target": "Target in force",
+    "noTarget": "No approved target",
+    "thisPeriod": "This period",
+    "noDataThisPeriod": "No data for this period",
+    "rating": "Rating",
+    "status": "Status",
+    "lastPublished": "Last published",
+    "nonePublished": "None published",
+    "actions": "Actions",
+    "unitFrequency": "{unit} · {frequency}",
+    "owner": "Owner: {name}",
+    "targetVersion": "Version {version}: {target}",
+    "period": "Period",
+    "value": "Value ({unit})",
+    "pinnedTarget": "Rated against",
+    "recorded": "Recorded",
+    "recordedBy": "{name}, as of {date}"
+  },
+  "kpiValue": {
+    "title": "Update KPI value: {kpi}",
+    "pinsTarget": "This value will be rated against target version {version} ({target} {unit}), the one in force now, for good. A later target never changes it.",
+    "pinnedTarget": "This value is rated against target version {version} ({target} {unit}), the one in force when it was recorded.",
+    "noTarget": "This KPI has no approved target, so no value can be recorded yet.",
+    "periodStart": "Period start",
+    "periodEnd": "Period end",
+    "periodHint": "The period this value covers. The current month is suggested.",
+    "period": "{start} to {end}",
+    "valueStatus": "What is known for this period",
+    "status": {
+      "MEASURED": "The value is known",
+      "MISSING": "No data: the value is not available",
+      "STALE": "Stale: the latest value is out of date",
+      "NOT_APPLICABLE": "Not applicable to this period"
+    },
+    "value": "Value ({unit})",
+    "valueHint": "Up to four decimal places.",
+    "noValue": "No value is sent. The period will show \"{state}\", never 0, and is not rated."
+  },
+  "publish": {
+    "title": "Publish KPI value: {kpi}",
+    "consequence": "Publishing makes this the official value for the period. It cannot be changed afterwards.",
+    "confirm": "Publish"
+  },
+  "trend": {
+    "heading": "{kpi}: history and trend",
+    "unit": "Unit",
+    "direction": "Direction",
+    "frequency": "Measured",
+    "owner": "Owner",
+    "chartTitle": "Trend",
+    "explanation": "Each value is drawn beside the target it was rated against when it was recorded. When a new target is approved, the line steps to it from the next value on; earlier values keep their own target.",
+    "title": "Trend of {kpi} ({unit})",
+    "summary": "{count} periods, {gaps} without a value.",
+    "segment": "Target version {version}: {target}, from {from} to {to}.",
+    "targetLabel": "Target v{version}: {target}",
+    "pointTitle": "{period}: {value}, rated {rating} against target version {version} ({target})",
+    "gapRow": "No value",
+    "gap": {
+      "MISSING": "No data",
+      "STALE": "Stale",
+      "NOT_APPLICABLE": "N/A",
+      "RESTRICTED": "Restricted"
+    },
+    "legend": {
+      "value": "Value",
+      "target": "Target, as pinned when each value was recorded",
+      "gap": "Period without a value"
+    },
+    "empty": "No values recorded yet",
+    "notFound": "This KPI is not assigned to this project.",
+    "valuesTitle": "Values",
+    "valuesCaption": "Every value of this KPI, latest period first, with the target it is rated against",
+    "targetsTitle": "Target versions",
+    "targetsCaption": "Every version of this KPI's target, newest first",
+    "targetValue": "Target ({unit})",
+    "thresholds": "Rating thresholds",
+    "thresholdValues": "Green {green}, amber {amber}",
+    "noThresholds": "None: values are not rated"
+  },
+  "register": {
+    "title": "KPI register",
+    "description": "Every KPI of the projects you can see, with where each stands this period.",
+    "listTitle": "KPIs by project",
+    "caption": "KPIs of every project you can see",
+    "filter": "Show",
+    "filters": {
+      "all": "All KPIs",
+      "noData": "No data this period",
+      "red": "Red this period",
+      "amber": "Amber this period",
+      "green": "Green this period"
+    },
+    "empty": "No KPIs to show",
+    "emptyBody": "KPIs appear here once AHDA assigns them to a project you can see.",
+    "filteredEmpty": "No KPI matches this choice",
+    "filteredEmptyBody": "Choose \"All KPIs\" to see every KPI again."
+  },
+  "aggregate": {
+    "title": "Across projects",
+    "explanation": "The latest published value of each KPI, combined only where every project measures it in the same unit.",
+    "coverage": {
+      "COMPLETE": "Complete",
+      "PARTIAL": "Partial",
+      "NONE": "Nothing counted"
+    },
+    "mean": "Average {value} {unit} over {count} projects",
+    "noMean": "No average: no project has a published measured value.",
+    "unitsDiffer": "Not combined: the projects measure this KPI in different units.",
+    "ragCounts": "Green {green} · Amber {amber} · Red {red} · Not rated {unknown} · Not applicable {notApplicable}",
+    "partial": "Left out:",
+    "exclusion": "{project}: {reason}",
+    "reason": {
+      "NOT_AVAILABLE": "not visible to you",
+      "CURRENCY_UNVERIFIED": "currency not verified",
+      "VALUE_NOT_MEASURED": "no measured value",
+      "MASKED": "restricted",
+      "NO_PUBLISHED_FIGURE": "nothing published"
+    },
+    "unavailable": "The combined figures are not available to you."
+  },
+  "done": {
+    "updateSaved": "The financial update was saved.",
+    "updateSubmitted": "The financial update was submitted for review.",
+    "reviewStarted": "The review has started.",
+    "published": "The financial figures were published.",
+    "returned": "The financial update was returned for correction.",
+    "valueSaved": "The KPI value was saved.",
+    "valueSubmitted": "The KPI value was submitted.",
+    "valuePublished": "The KPI value was published.",
+    "stale": "Someone changed this record meanwhile. It has been read again; nothing was changed."
+  },
+  "problems": {
+    "projectNotEligible": "Figures are reported only for an active project.",
+    "fieldIntegrated": "This figure comes from an integrated source and cannot be entered by hand.",
+    "nothingToReport": "There is no period to report yet: periods begin once progress reporting starts.",
+    "updateExists": "A financial update is already in progress. It has been read again.",
+    "notEditable": "This record can no longer be changed.",
+    "valueStatusInvalid": "A figure is given only when it is known; otherwise say why there is none.",
+    "asOfDateInvalid": "The as-of date cannot be after today.",
+    "assignmentNotActive": "This KPI is suspended or retired.",
+    "targetNotApproved": "This KPI has no approved target, so no value can be recorded yet.",
+    "measurementExists": "A value is already recorded for this period.",
+    "periodInvalid": "The period ends before it starts.",
+    "configurationMissing": "The financial-status thresholds are not configured, so nothing can be published. Ask AHDA to publish them.",
+    "invalidTransition": "This record has moved on. It has been read again.",
+    "permissionDenied": "You do not have permission to do this."
+  },
+  "fieldErrors": {
+    "asOfInFuture": "The as-of date cannot be after today.",
+    "periodEndBeforeStart": "The period cannot end before it starts.",
+    "amountMalformed": "Enter an amount in SAR: digits only, up to two decimal places.",
+    "kpiValueMalformed": "Enter a number.",
+    "kpiValueOutOfRange": "Enter a number with up to four decimal places."
+  }
+}

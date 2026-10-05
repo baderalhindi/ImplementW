@@ -5,6 +5,8 @@ import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 import { CreateProjectPage, EditProjectPage } from './form/ProjectFormPages.tsx';
 import { MyProjectsPage, ProjectRegisterPage } from './register/ProjectListPages.tsx';
 import { DocumentsTab } from './workspace/DocumentsTab.tsx';
+import { FinancialHistoryTab, FinancialsTab } from './workspace/FinancialsTab.tsx';
+import { KpiHistoryTab, KpisTab } from './workspace/KpisTab.tsx';
 import { LocationTab } from './workspace/LocationTab.tsx';
 import { MilestonesTab } from './workspace/MilestonesTab.tsx';
 import { OverviewTab } from './workspace/OverviewTab.tsx';
@@ -86,6 +88,38 @@ export const projectRoutes: RouteObject[] = [
         element: (
           <WorkspaceTabGuard tab="milestones">
             <MilestonesTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'financials', // SCR-049, MOD-023 (TASK-053)
+        element: (
+          <WorkspaceTabGuard tab="financials">
+            <FinancialsTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'financials/history', // SCR-071
+        element: (
+          <WorkspaceTabGuard tab="financials">
+            <FinancialHistoryTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'kpis', // SCR-050, MOD-024 (TASK-053)
+        element: (
+          <WorkspaceTabGuard tab="kpis">
+            <KpisTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'kpis/:assignmentId', // SCR-073
+        element: (
+          <WorkspaceTabGuard tab="kpis">
+            <KpiHistoryTab />
           </WorkspaceTabGuard>
         ),
       },

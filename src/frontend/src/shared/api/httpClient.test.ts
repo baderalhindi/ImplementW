@@ -45,6 +45,17 @@ describe('apiRequest', () => {
     expect(request?.query.toString()).toBe('q=a');
   });
 
+  test('a list in the query is sent as the parameter repeated', async () => {
+    authentication();
+    const api = mockApi().on('GET', /^\/kpi-portfolio-aggregates$/, { body: {} });
+
+    await apiRequest('/kpi-portfolio-aggregates', {
+      query: { kpiDefinitionId: ['k1'], projectId: ['p1', 'p2'], none: [] },
+    });
+
+    expect(api.requests[0]?.query.toString()).toBe('kpiDefinitionId=k1&projectId=p1&projectId=p2');
+  });
+
   test('a write carries a uuid Idempotency-Key and the If-Match it is given', async () => {
     authentication();
     const api = mockApi().on('PUT', /^\/roles\/1$/, { body: {} });

@@ -129,6 +129,8 @@
       "schedule": "Schedule",
       "tasks": "Tasks",
       "milestones": "Milestones",
+      "financials": "Financials",
+      "kpis": "KPIs",
       "reviews": "Review history",
       "documents": "Documents"
     }

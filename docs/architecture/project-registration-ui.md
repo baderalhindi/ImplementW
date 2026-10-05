@@ -144,3 +144,4 @@ Each mutation was applied, `npx vitest run src/features/projects` run, and the s
 | 2026-10-03 | SCR-040 gains the Schedule tab (SCR-060, SCR-045, SCR-061) after Progress, audience `reached` (TASK-047, `schedule-ui.md` D-1, D-13) |
 | 2026-10-03 | SCR-040 gains the Tasks tab (SCR-047) after Schedule, audience `reached` (TASK-049, `task-boards-ui.md` D-1, D-11) |
 | 2026-10-04 | SCR-040 gains the Milestones tab (SCR-046) after Tasks, audience `reached` (TASK-051, `milestone-ui.md` D-1, D-11) |
+| 2026-10-05 | SCR-040 gains the Financials (SCR-049, SCR-071) and KPIs (SCR-050, SCR-073) tabs after Milestones, audience `reached` (TASK-053, `financial-kpi-ui.md` D-1, D-12) |
