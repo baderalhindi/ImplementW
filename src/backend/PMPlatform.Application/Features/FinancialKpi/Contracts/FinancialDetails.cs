@@ -89,7 +89,11 @@ public sealed record PublishedFinancialSnapshotDetail(
     string? SourceReference,
     DateOnly AsOfDate,
     Guid EnteredByUserId,
-    IReadOnlyList<string> MaskedFields);
+    IReadOnlyList<string> MaskedFields)
+{
+    /// <summary>TASK-054 validation only, never to merge: a second Overall Health, computed by WF-14 from its own status.</summary>
+    public FinancialStatus OverallHealth => FinancialStatus is FinancialStatus.Unknown ? FinancialStatus.Unknown : FinancialStatus;
+}
 
 /// <summary>
 /// A project's CURRENT/LIVE financial position, computed on read and never stored: the ACTIVE Approved Budget, and the figures of
