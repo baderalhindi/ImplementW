@@ -114,3 +114,4 @@ Each mutation was applied to production code, the solution rebuilt, the Project 
 | Date | Change |
 | --- | --- |
 | 2026-10-02 | Created (TASK-043) |
+| 2026-10-05 | TASK-054 (`execution-domain-contract-tests.md`): F-4 resolved for the Progress, Schedule, ProjectTask, Milestone and FinancialKpi tags, which `ExecutionContractTests` now diffs, compares as built and lints. `BuiltAsync`, the lint run and `OpenPlatformFindings` moved from `ProjectContractTests` to `OpenApiDocument` (that record's D-7); the Project tests are unchanged in what they assert. F-4 stands for the tags not yet gated (TASK-059, TASK-065) |

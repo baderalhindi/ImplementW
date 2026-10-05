@@ -149,6 +149,17 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.FinancialKpi
 
+      # TASK-054: the execution domain's separations under real interaction — Overall Health held and served by WF-02 alone, one
+      # shared milestone row across WF-03 and WF-05, WF-14's published period unchanged by later corrections, and variance and
+      # Schedule Health against the one ACTIVE Approved Baseline — and the WF-02/03/04/05/14 APIs against docs/api/openapi.v1.json
+      # (api-conventions R-10). Same database and directory as above.
+      - name: Execution domain contract and integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Execution
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest
