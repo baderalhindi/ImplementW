@@ -108,7 +108,7 @@ The severity, the overall impact and the pinned version are never input: a conce
 
 ## 6. How other modules build on it
 
-1. **TASK-058** builds SCR-083–088 and MOD-036–039 on these 15 operations: severity is shown from `severityItemId` (labelled by FG-04's CONCERN_SEVERITY items), never edited; MOD-039 sends a reason only, and a retry must resend the same `Idempotency-Key`.
+1. **TASK-058** builds SCR-083–088 and MOD-036–039 on these 15 operations: severity is shown from `severityItemId` (labelled by FG-04's CONCERN_SEVERITY items), never edited; MOD-039 sends a reason only, and a retry must resend the same `Idempotency-Key`. Consumed by TASK-058 (`issues-challenges-ui.md`).
 2. **Configuration**: an environment needs, before WF-07 works end to end, the CONCERN_SEVERITY items and the `CONCERN_SEVERITY_LEVEL_1…5` values in a published RISK_MATRIX version; WORKFLOW_POLICY `CONCERN_ESCALATION_ROLE`; APPROVAL_AUTHORITY `MANAGEMENT_CONCERN_RESOLUTION`; NOTIFICATION_ROUTING family `CONCERN_ESCALATION` with a published template for `ManagementConcern.ConcernEscalated` (F-3, F-5).
 3. **WF-06**: materialisation now raises a real issue (D-10; `risk-management.md` change log).
 4. **Dashboards and reports** read the register; the specification's controlled reporting projection is not built (F-1).
@@ -204,3 +204,4 @@ Each mutation was applied, the solution rebuilt, the ManagementConcern unit test
 | Date | Change |
 | --- | --- |
 | 2026-10-06 | Created (TASK-057) |
+| 2026-10-06 | §6 item 1 consumed by TASK-058 (`issues-challenges-ui.md`); its F-1 records that the shipped escalation addressee (R03) cannot list projects |
