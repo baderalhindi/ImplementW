@@ -115,6 +115,43 @@ export function TextField({
   );
 }
 
+interface ReadOnlyFieldProps {
+  label: string;
+  name: string;
+  value: string;
+  /** Why it cannot be changed here, and how it does change. */
+  hint: string;
+}
+
+/**
+ * A value shown in a form that the person cannot change there (a server-computed figure): a labelled read-only input,
+ * so it is announced as read-only and still reached and read in the form's order.
+ */
+export function ReadOnlyField({ label, name, value, hint }: ReadOnlyFieldProps): ReactElement {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  return (
+    <div className="field">
+      <label className="field__label" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        name={name}
+        className="field__input field__input--readonly"
+        type="text"
+        value={value}
+        readOnly
+        dir="auto"
+        aria-describedby={hintId}
+      />
+      <p id={hintId} className="field__hint">
+        {hint}
+      </p>
+    </div>
+  );
+}
+
 interface TextAreaFieldProps extends FieldBaseProps {
   value: string;
   onChange: (value: string) => void;

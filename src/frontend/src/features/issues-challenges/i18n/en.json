@@ -1,0 +1,321 @@
+{
+  "nav": {
+    "label": "Issues and challenges",
+    "issues": "Issues",
+    "challenges": "Challenges",
+    "escalations": "Escalations",
+    "registers": "Issue and challenge registers"
+  },
+  "forbidden": "You cannot see issues and challenges here.",
+  "type": {
+    "ISSUE": "Issue",
+    "CHALLENGE": "Challenge"
+  },
+  "status": {
+    "OPEN": "Open",
+    "ASSIGNED": "Assigned",
+    "IN_PROGRESS": "In progress",
+    "PENDING_VALIDATION": "Pending validation",
+    "RESOLVED": "Resolved",
+    "CLOSED": "Closed"
+  },
+  "escalationStatus": {
+    "OPEN": "Open",
+    "RESOLVED": "Resolved",
+    "WITHDRAWN": "Withdrawn"
+  },
+  "severity": {
+    "none": "Not assessed"
+  },
+  "issues": {
+    "title": "Issue register",
+    "description": "Issues across the projects you can see, most severe first.",
+    "caption": "Issues across projects",
+    "projectTitle": "Issues",
+    "projectCaption": "This project's issues",
+    "emptyTitle": "No issues raised",
+    "emptyRaiser": "Raise an issue when a problem is affecting the project now.",
+    "emptyReader": "The Project Manager and the delivering entity raise this project's issues.",
+    "emptyAcross": "No project you can see has an issue."
+  },
+  "challenges": {
+    "title": "Challenge register",
+    "description": "Challenges across the projects you can see, most severe first.",
+    "caption": "Challenges across projects",
+    "projectTitle": "Challenges",
+    "projectCaption": "This project's challenges",
+    "emptyTitle": "No challenges raised",
+    "emptyRaiser": "Raise a challenge when a constraint or dependency needs management attention.",
+    "emptyReader": "The Project Manager and the delivering entity raise this project's challenges.",
+    "emptyAcross": "No project you can see has a challenge."
+  },
+  "summary": {
+    "open": "Open",
+    "unassigned": "Not yet assigned",
+    "escalated": "Escalated",
+    "overdue": "Overdue",
+    "reviewDue": "Review due",
+    "pendingValidation": "Pending validation"
+  },
+  "filter": {
+    "view": "Show",
+    "views": {
+      "open": "Open",
+      "mine": "Assigned to me",
+      "escalated": "Escalated",
+      "overdue": "Overdue",
+      "pendingValidation": "Pending validation",
+      "closed": "Closed",
+      "all": "All"
+    },
+    "severity": "Severity",
+    "priority": "Priority"
+  },
+  "empty": {
+    "filtered": "Nothing matches this view."
+  },
+  "table": {
+    "title": "Title",
+    "project": "Project",
+    "assignee": "Assignee",
+    "status": "Status",
+    "severity": "Severity",
+    "priority": "Priority",
+    "target": "Target resolution",
+    "escalation": "Escalation",
+    "unassigned": "Not assigned",
+    "noTarget": "No target date",
+    "none": "None",
+    "escalated": "Escalated",
+    "overdue": "Overdue",
+    "reviewDue": "Review due",
+    "returned": "Returned by validation",
+    "fromRisk": "Raised from a risk",
+    "overallImpact": "Overall impact: level {level}"
+  },
+  "fields": {
+    "type": "Type",
+    "title": "Title",
+    "description": "Description",
+    "category": "Category",
+    "priority": "Priority",
+    "severity": "Severity",
+    "targetResolutionDate": "Target resolution date",
+    "resolution": "Resolution",
+    "reason": "Reason for escalation",
+    "direction": "Management direction"
+  },
+  "actions": {
+    "createIssue": "Raise issue",
+    "createChallenge": "Raise challenge",
+    "editIssue": "Edit issue",
+    "editChallenge": "Edit challenge",
+    "assess": "Assess impact",
+    "reassess": "Reassess impact",
+    "assign": "Assign",
+    "reassign": "Reassign",
+    "submitResolution": "Submit resolution",
+    "escalate": "Escalate",
+    "backToIssues": "Back to the issues",
+    "backToChallenges": "Back to the challenges",
+    "backToEscalations": "Back to the escalations"
+  },
+  "form": {
+    "createIssue": "Raise an issue",
+    "createChallenge": "Raise a challenge",
+    "editIssue": "Edit issue",
+    "editChallenge": "Edit challenge",
+    "createIssueIntro": "An issue is a problem affecting the project now. It is raised open; the Project Manager assesses its impact and assigns it.",
+    "createChallengeIntro": "A challenge is a constraint or dependency that needs management attention. Raising it creates no risk or issue.",
+    "issueDescriptionHint": "What is happening, what it affects, and since when.",
+    "challengeDescriptionHint": "The constraint or dependency, who controls it, and what it holds up.",
+    "choose": "Choose…",
+    "priorityHint": "How soon it should be handled. You set the priority; it is separate from the severity.",
+    "targetHint": "Optional. Today or later.",
+    "severityOnCreate": "Severity is not entered: the platform computes it from the impact assessment.",
+    "severityReadOnly": "Computed by the platform from the impact assessment; it cannot be edited. It changes only when the impact is reassessed.",
+    "cataloguesUnreadable": "The categories and priorities cannot be read with your access, so nothing can be raised here."
+  },
+  "detail": {
+    "commands": "Commands",
+    "notFound": "This item does not belong to this project.",
+    "raised": "Raised",
+    "nextReview": "Next review",
+    "lastReviewed": "Last reviewed {date}",
+    "revision": "Revision",
+    "originatingRisk": "Originating risk",
+    "openRisk": "Open the risk",
+    "resolved": "Resolved",
+    "closed": "Closed",
+    "severityComputed": "Computed by the platform; not editable.",
+    "impactsTitle": "Impact assessment",
+    "impactsCaption": "Impact levels by dimension",
+    "dimension": "Dimension",
+    "level": "Level",
+    "notAssessed": "The impact has not been assessed, so there is no severity yet.",
+    "pinnedCurrent": "The severity was computed under the risk matrix in force, version {version}.",
+    "pinnedOther": "The severity was computed under an earlier risk matrix version and is kept as computed.",
+    "withValidation": "With validation (revision {revision}). The fields are fixed until it is decided.",
+    "returned": "Returned by validation: revise it and submit again (revision {revision}).",
+    "validated": "Validated.",
+    "escalationsTitle": "Escalations",
+    "escalationsCaption": "Escalations of this item",
+    "noEscalations": "Not escalated",
+    "closeWaitsForEscalation": "It can be closed once its open escalation is resolved or withdrawn."
+  },
+  "assess": {
+    "title": "Assess the impact of “{concern}”",
+    "intro": "Levels from the risk matrix in force, version {version}: the same scale risks use.",
+    "impacts": "Impact by dimension",
+    "impactsHint": "Give a level for each dimension that applies; at least one.",
+    "notApplicable": "Not applicable",
+    "levelOption": "{level} — {label}",
+    "previewPending": "Choose at least one level.",
+    "preview": "Overall impact: level {level} (the highest). The platform computes the severity from it when you save.",
+    "confirm": "Save assessment"
+  },
+  "assign": {
+    "title": "Assign “{concern}”",
+    "confirm": "Assign"
+  },
+  "submit": {
+    "title": "Submit the resolution of “{concern}”",
+    "validation": "The resolution goes to validation; it is resolved only when validation approves it.",
+    "frozen": "Its fields and impact are fixed while it is validated.",
+    "ownDecision": "You cannot validate a resolution you submitted.",
+    "hint": "What was done and why the problem no longer affects the project.",
+    "confirm": "Submit for validation"
+  },
+  "escalate": {
+    "title": "Escalate “{concern}”",
+    "notApproval": "Escalation is not approval: it asks management for attention or direction.",
+    "statusKeptIssue": "The issue's status does not change.",
+    "statusKeptChallenge": "The challenge's status does not change.",
+    "routing": "The platform sends it to the role configured for escalations.",
+    "reasonHint": "What management needs to know, and what you need from them.",
+    "confirm": "Escalate"
+  },
+  "resolveEscalation": {
+    "title": "Resolve escalation {number}",
+    "statusKept": "Resolving the escalation records your direction; it does not change the item's status.",
+    "hint": "The decision or direction you give.",
+    "confirm": "Resolve",
+    "named": "Resolve escalation {number}"
+  },
+  "withdrawEscalation": {
+    "title": "Withdraw escalation {number}",
+    "consequence": "The escalation ends without a direction. The item's status does not change.",
+    "confirm": "Withdraw",
+    "named": "Withdraw escalation {number}"
+  },
+  "command": {
+    "start": {
+      "title": "Start work",
+      "consequence": "The item moves to In progress.",
+      "confirm": "Start work",
+      "done": "Work has started."
+    },
+    "review": {
+      "title": "Record review",
+      "consequence": "Records that it was reviewed today. The next review date follows the project's governance profile.",
+      "confirm": "Record review",
+      "done": "The review was recorded."
+    },
+    "close": {
+      "title": "Close",
+      "consequence": "The validated item is closed. Nothing about it can change afterwards.",
+      "confirm": "Close",
+      "done": "It was closed."
+    }
+  },
+  "escalations": {
+    "title": "Escalations",
+    "description": "Issue and challenge escalations across the projects you can see.",
+    "caption": "Escalations",
+    "summary": {
+      "open": "Open escalations"
+    },
+    "filter": {
+      "status": "Status",
+      "type": "Type",
+      "views": {
+        "open": "Open only",
+        "resolved": "Resolved",
+        "withdrawn": "Withdrawn",
+        "all": "All (open and ended)"
+      }
+    },
+    "showing": {
+      "open": "Showing open escalations: {count}",
+      "resolved": "Showing resolved escalations: {count}",
+      "withdrawn": "Showing withdrawn escalations: {count}",
+      "all": "Showing all escalations, open first: {count}"
+    },
+    "empty": {
+      "open": "No open escalations",
+      "resolved": "No resolved escalations",
+      "withdrawn": "No withdrawn escalations",
+      "all": "No escalations",
+      "hint": "Choose another status to see the resolved and withdrawn ones."
+    },
+    "table": {
+      "escalation": "Escalation",
+      "concern": "Issue or challenge",
+      "addressedTo": "Addressed to",
+      "raised": "Raised",
+      "reason": "Reason",
+      "actions": "Actions"
+    },
+    "number": "Escalation {number}",
+    "openFor": "Open for {days} day(s)",
+    "wasOpenFor": "Was open for {days} day(s)",
+    "ended": "Ended {date} by {name}"
+  },
+  "escalation": {
+    "unknownRole": "Role {id}"
+  },
+  "escalationDetail": {
+    "title": "Escalation {number}: {concern}",
+    "age": "Age",
+    "ended": "Ended",
+    "concernTitle": "The escalated item",
+    "concernNow": "As it stands now.",
+    "projectUnreadable": "Not readable with your access"
+  },
+  "done": {
+    "raised": "It was raised.",
+    "updated": "The changes were saved.",
+    "assessed": "The impact was assessed and the severity computed.",
+    "assigned": "It was assigned.",
+    "submitted": "The resolution was submitted for validation.",
+    "escalated": "It was escalated.",
+    "escalationResolved": "The escalation was resolved.",
+    "escalationWithdrawn": "The escalation was withdrawn.",
+    "stale": "It changed while you were working on it. It has been read again."
+  },
+  "fieldErrors": {
+    "targetInPast": "Choose today or a later date.",
+    "impactsRequired": "Give a level for at least one dimension.",
+    "resolutionRequired": "Enter the resolution.",
+    "reasonRequired": "Enter the reason for escalation.",
+    "assigneeRequired": "Choose who it is assigned to."
+  },
+  "problems": {
+    "projectNotEligible": "The project's state does not allow this.",
+    "categoryInvalid": "Choose a published category.",
+    "priorityInvalid": "Choose a published priority.",
+    "impactInvalid": "The impact levels do not fit the risk matrix in force.",
+    "assigneeNotEligible": "That person holds no role on this project.",
+    "targetDateInvalid": "The target resolution date cannot be in the past.",
+    "closed": "It is closed and cannot change.",
+    "notEditable": "Its resolution is with validation, so it cannot be changed now.",
+    "escalationOpen": "It already has an open escalation.",
+    "notEscalatable": "A resolved or closed item cannot be escalated.",
+    "escalationNotOpen": "The escalation has already ended.",
+    "approvalPending": "A validation is already pending.",
+    "keyReused": "This request was already sent with different content. Close the dialog and try again.",
+    "configurationMissing": "The platform is not configured for this yet (risk matrix, governance profile, escalation route or validation route).",
+    "invalidTransition": "Its state no longer allows this.",
+    "permissionDenied": "You are not allowed to do this."
+  }
+}

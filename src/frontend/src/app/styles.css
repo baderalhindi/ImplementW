@@ -555,6 +555,13 @@ textarea.field__input {
   resize: vertical;
 }
 
+/* A value the form shows but does not take (a server-computed severity): a dashed edge on the neutral ground, and the
+   field's hint says why. */
+.field__input--readonly {
+  border-style: dashed;
+  background: var(--color-neutral-surface);
+}
+
 .field__input[aria-invalid='true'] {
   border-color: var(--color-danger);
   border-width: 2px;

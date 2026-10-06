@@ -4,6 +4,7 @@ import { approvalRoutes } from '@/features/approvals/routes.tsx';
 import { documentRoutes } from '@/features/documents/routes.tsx';
 import { kpiRoutes } from '@/features/financial-kpi/routes.tsx';
 import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
+import { issuesChallengesRoutes } from '@/features/issues-challenges/routes.tsx';
 import { milestoneRoutes } from '@/features/milestones/routes.tsx';
 import { RequireRole } from '@/features/identity-access/session/RequireRole.tsx';
 import { RequireSession } from '@/features/identity-access/session/RequireSession.tsx';
@@ -79,6 +80,15 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: riskRoutes,
+      },
+      {
+        path: 'issues-challenges',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: issuesChallengesRoutes,
       },
       {
         path: 'approvals',

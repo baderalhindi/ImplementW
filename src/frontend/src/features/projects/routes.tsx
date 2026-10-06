@@ -6,6 +6,7 @@ import { CreateProjectPage, EditProjectPage } from './form/ProjectFormPages.tsx'
 import { MyProjectsPage, ProjectRegisterPage } from './register/ProjectListPages.tsx';
 import { DocumentsTab } from './workspace/DocumentsTab.tsx';
 import { FinancialHistoryTab, FinancialsTab } from './workspace/FinancialsTab.tsx';
+import { ChallengesTab, ConcernDetailTab, IssuesTab } from './workspace/IssuesChallengesTab.tsx';
 import { KpiHistoryTab, KpisTab } from './workspace/KpisTab.tsx';
 import { LocationTab } from './workspace/LocationTab.tsx';
 import { MilestonesTab } from './workspace/MilestonesTab.tsx';
@@ -137,6 +138,30 @@ export const projectRoutes: RouteObject[] = [
         element: (
           <WorkspaceTabGuard tab="risks">
             <RiskDetailTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'issues-challenges', // SCR-083, MOD-036 (TASK-058)
+        element: (
+          <WorkspaceTabGuard tab="issuesChallenges">
+            <IssuesTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'issues-challenges/challenges', // SCR-085, MOD-038
+        element: (
+          <WorkspaceTabGuard tab="issuesChallenges">
+            <ChallengesTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'issues-challenges/:concernId', // SCR-084, SCR-086, MOD-037, MOD-039 (the escalation notification's link)
+        element: (
+          <WorkspaceTabGuard tab="issuesChallenges">
+            <ConcernDetailTab />
           </WorkspaceTabGuard>
         ),
       },
