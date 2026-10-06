@@ -71,7 +71,7 @@ describe('scope reach (access.ts)', () => {
     expect(ownEntityId(reviewerSession().user)).toBeNull();
   });
 
-  test('tabs: review history is AHDA’s, progress, schedule, tasks, milestones, financials, KPIs and documents need reach, the rest are for anyone the API showed the project', () => {
+  test('tabs: review history is AHDA’s, progress, schedule, tasks, milestones, financials, KPIs, risks and documents need reach, the rest are for anyone the API showed the project', () => {
     const keys = (access: ProjectAccess) => visibleTabs(access).map((tab) => tab.key);
     expect(keys(internalReached)).toEqual([
       'overview',
@@ -83,6 +83,7 @@ describe('scope reach (access.ts)', () => {
       'milestones',
       'financials',
       'kpis',
+      'risks',
       'reviews',
       'documents',
     ]);
@@ -96,6 +97,7 @@ describe('scope reach (access.ts)', () => {
       'milestones',
       'financials',
       'kpis',
+      'risks',
       'documents',
     ]);
     expect(keys(internalUnreached)).toEqual(['overview', 'registration', 'location']);

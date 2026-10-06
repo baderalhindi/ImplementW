@@ -19,6 +19,7 @@ import { milestoneNavigation } from '@/features/milestones/routes.tsx';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell.tsx';
 import { notificationNavigation } from '@/features/notifications/routes.tsx';
 import { projectNavigation } from '@/features/projects/routes.tsx';
+import { riskNavigation } from '@/features/risks/routes.tsx';
 import { taskNavigation } from '@/features/tasks/routes.tsx';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 
@@ -64,7 +65,7 @@ function Navigation({
 
 /**
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
- * (projects, tasks, milestones, KPIs, approvals, documents and notifications for everyone signed in, administration for R01),
+ * (projects, tasks, milestones, KPIs, risks, approvals, documents and notifications for everyone signed in, administration for R01),
  * and the page.
  */
 export function AppLayout(): ReactElement {
@@ -107,6 +108,7 @@ export function AppLayout(): ReactElement {
             <Navigation label="tasks.nav.label" items={taskNavigation} />
             <Navigation label="milestones.nav.label" items={milestoneNavigation} />
             <Navigation label="financialKpi.nav.label" items={kpiNavigation} />
+            <Navigation label="risks.nav.label" items={riskNavigation} />
             <Navigation label="approvals.nav.label" items={approvalNavigation} />
             <Navigation label="documents.nav.label" items={documentNavigation} />
             <Navigation label="notifications.nav.label" items={notificationNavigation} />

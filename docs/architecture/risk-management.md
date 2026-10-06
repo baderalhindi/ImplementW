@@ -122,7 +122,7 @@ The rating, the overall impact and the pinned version are never input: an assess
 ## 6. How other modules build on it
 
 1. **TASK-057 (WF-07)** implements `IRiskIssueMaterialisation` and registers it in place of `UnbuiltIssueRegister`: `RaiseIssueAsync` stages an ISSUE with `originating_risk_id` on the request's context without committing — the risk's unit of work commits both — and refuses with WF-07's own codes; `ListByOriginatingRisksAsync` reads by that column. Its migration adds the ERD's foreign key to `risk.risk` and an index on it (ERD §5.10). Its issue-side API exposes `originatingRiskId`. Its tests then run the validation check against the real register (F-1).
-2. **TASK-056** builds SCR-080–082 on `/risks` and its subresources: the heat-map reads the published RISK_MATRIX version through FG-04's resolution API, and a risk's rating through `currentAssessment.rating`, which is the pinned version's. MOD-035's non-empty closure rationale is enforced here too (400).
+2. **TASK-056** builds SCR-080–082 on `/risks` and its subresources: the heat-map reads the published RISK_MATRIX version through FG-04's resolution API, and a risk's rating through `currentAssessment.rating`, which is the pinned version's. MOD-035's non-empty closure rationale is enforced here too (400). Built: `risk-management-ui.md`.
 3. **Notifications**: a review-due or acceptance-expiry reminder is a NOTIFICATION_INTENT with `sourceModule` Risk and a condition on the risk's status; `RiskConditionSource` already revalidates it (F-5).
 4. **Dashboards (edge 29)** read the register; SCR-081's critical filter is on the latest assessment's rating, which `risk` does not store (`indexing-strategy.md` F-3).
 
@@ -216,3 +216,4 @@ Each mutation was applied, the solution rebuilt, the Risk unit tests and `Shippe
 | Date | Change |
 | --- | --- |
 | 2026-10-05 | Created (TASK-055) |
+| 2026-10-06 | §6 item 2 consumed by TASK-056 (`risk-management-ui.md`): the heat-map drawn from the RISK_MATRIX resolution, ratings shown as `currentAssessment.rating`, MOD-035's rationale refused client-side and the 400 confirmed live (`risk-management-ui.md` §4 rows 8, 9). F-7 there: the WF-06 specification is in `Project Files.zip`; its wider model is `risk-management-ui.md` F-3 |
