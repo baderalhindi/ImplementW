@@ -11,6 +11,7 @@ import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
 import { SYSTEM_ADMINISTRATOR_ROLE } from '@/features/identity-access/session/useSession.ts';
 import { notificationRoutes } from '@/features/notifications/routes.tsx';
 import { projectRoutes } from '@/features/projects/routes.tsx';
+import { riskRoutes } from '@/features/risks/routes.tsx';
 import { taskRoutes } from '@/features/tasks/routes.tsx';
 
 import { AppLayout } from './AppLayout.tsx';
@@ -69,6 +70,15 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: kpiRoutes,
+      },
+      {
+        path: 'risks',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: riskRoutes,
       },
       {
         path: 'approvals',

@@ -14,6 +14,8 @@ import progressAr from '@/features/progress/i18n/ar.json';
 import progressEn from '@/features/progress/i18n/en.json';
 import projectsAr from '@/features/projects/i18n/ar.json';
 import projectsEn from '@/features/projects/i18n/en.json';
+import risksAr from '@/features/risks/i18n/ar.json';
+import risksEn from '@/features/risks/i18n/en.json';
 import scheduleAr from '@/features/schedule/i18n/ar.json';
 import scheduleEn from '@/features/schedule/i18n/en.json';
 import tasksAr from '@/features/tasks/i18n/ar.json';
@@ -37,6 +39,7 @@ const en = {
   tasks: tasksEn,
   milestones: milestonesEn,
   financialKpi: financialKpiEn,
+  risks: risksEn,
 };
 
 // English is the reference shape; resources.test.ts fails if Arabic lacks or adds a key.
@@ -56,6 +59,7 @@ export const resources: Record<Language, Resources> = {
     tasks: tasksAr,
     milestones: milestonesAr,
     financialKpi: financialKpiAr,
+    risks: risksAr,
   },
 };
 

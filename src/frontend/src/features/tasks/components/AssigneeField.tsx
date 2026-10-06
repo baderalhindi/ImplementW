@@ -18,10 +18,13 @@ interface AssigneeFieldProps {
   onChange: (value: AssigneeValue) => void;
   canSearch: boolean;
   error?: string | undefined;
+  /** The API's field the owner is sent as, so its refusal lands here: a task's `assigneeUserId`, a risk's `ownerUserId`. */
+  name?: string;
 }
 
 /**
- * The task's owner (MOD-010, MOD-013, MOD-014). An owner must hold a role over the project (ERD "must hold a project
+ * The task's owner (MOD-010, MOD-013, MOD-014), and a risk's or treatment action's (MOD-030, MOD-033, MOD-034, TASK-056:
+ * the same rule, RISK_OWNER_NOT_ELIGIBLE). An owner must hold a role over the project (ERD "must hold a project
  * relationship", TASK-048 D-12): that is the API's decision, and its refusal is shown on this field (acceptance
  * criterion 2). Offered by name: the person, the Project Manager and whoever owns a task here already.
  */
@@ -33,6 +36,7 @@ export function AssigneeField({
   onChange,
   canSearch,
   error,
+  name = 'assigneeUserId',
 }: AssigneeFieldProps): ReactElement {
   const { t } = useI18n();
   const id = useId();
@@ -96,7 +100,7 @@ export function AssigneeField({
         ) : (
           <TextField
             label={t('tasks.owner.userId')}
-            name="assigneeUserId"
+            name={name}
             value={value.typedId}
             dir="ltr"
             required

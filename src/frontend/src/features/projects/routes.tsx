@@ -14,6 +14,7 @@ import { ProgressHistoryTab, ProgressTab } from './workspace/ProgressTab.tsx';
 import { ProjectWorkspace, WorkspaceTabGuard } from './workspace/ProjectWorkspace.tsx';
 import { RegistrationTab } from './workspace/RegistrationTab.tsx';
 import { ReviewsTab } from './workspace/ReviewsTab.tsx';
+import { RiskDetailTab, RisksTab } from './workspace/RisksTab.tsx';
 import { BaselinesTab, GanttTab, ScheduleTab } from './workspace/ScheduleTab.tsx';
 import { TasksTab } from './workspace/TasksTab.tsx';
 
@@ -120,6 +121,22 @@ export const projectRoutes: RouteObject[] = [
         element: (
           <WorkspaceTabGuard tab="kpis">
             <KpiHistoryTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'risks', // SCR-080, MOD-030 (TASK-056)
+        element: (
+          <WorkspaceTabGuard tab="risks">
+            <RisksTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'risks/:riskId', // SCR-082, MOD-031–035 (TASK-056)
+        element: (
+          <WorkspaceTabGuard tab="risks">
+            <RiskDetailTab />
           </WorkspaceTabGuard>
         ),
       },

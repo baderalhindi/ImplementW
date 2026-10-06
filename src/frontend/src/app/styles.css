@@ -1744,3 +1744,167 @@ textarea.field__input {
   inline-size: 0.625rem;
   border: 1.5px solid var(--color-text-muted);
 }
+
+/* ---------------------------------------------------------------------------------------------- risks */
+
+/*
+ * A rating's severity step (riskRules.ts severityStep), least (1) to most (5) severe, from the published order of the
+ * matrix version's ratings: the version carries no colours (TBC-RSK-005). Each step pairs a light ground with a dark
+ * text of at least 4.5:1, and the rating is always written out, so the colour only repeats it (WCAG 1.4.1).
+ */
+.risk-rating--1 {
+  background-color: #e6f4ea;
+  color: #155b2f;
+}
+
+.risk-rating--2 {
+  background-color: #f1f5d6;
+  color: #3f4700;
+}
+
+.risk-rating--3 {
+  background-color: #fdf0dc;
+  color: #7a4100;
+}
+
+.risk-rating--4 {
+  background-color: #fbe2d0;
+  color: #873000;
+}
+
+.risk-rating--5 {
+  background-color: #fbeaea;
+  color: #a4221b;
+  font-weight: 700;
+}
+
+.risk-rating--none {
+  background-color: var(--color-neutral-surface);
+  color: var(--color-text);
+}
+
+.risk-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+
+.risk-summary__card {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background-color: var(--color-surface);
+}
+
+.risk-summary__card dt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.risk-summary__card dd {
+  margin: var(--space-1) 0 0;
+  font-size: 1.5rem;
+}
+
+.risk-matrix {
+  margin: var(--space-4) 0;
+}
+
+.risk-matrix__scroll {
+  overflow-x: auto;
+}
+
+/* In MOD-032's form grid the preview may shrink below the matrix's width: the matrix scrolls in its figure instead of
+   widening the dialog past the screen. */
+.risk-assess__preview {
+  min-inline-size: 0;
+}
+
+.risk-matrix__grid {
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
+.risk-matrix__caption {
+  margin-block-end: var(--space-2);
+  font-weight: 600;
+  text-align: start;
+}
+
+.risk-matrix__grid th {
+  padding: var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: start;
+}
+
+.risk-matrix__corner {
+  color: var(--color-text-muted);
+}
+
+.risk-matrix__cell {
+  min-inline-size: 6.5rem;
+  padding: var(--space-2);
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.risk-matrix__cell span {
+  display: block;
+}
+
+.risk-matrix__count {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+}
+
+/* The marked cell: a thick dark frame and its words, never the colour alone. */
+.risk-matrix__cell--marked {
+  border: 3px solid var(--color-text);
+}
+
+.risk-matrix__marker {
+  margin-block-start: var(--space-1);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.risk-matrix__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.risk-matrix__ratings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.risk-detail__commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block-end: var(--space-4);
+}
+
+.risk-detail__text {
+  white-space: pre-line;
+}
+
+.risk-detail__impacts,
+.risk-close__warnings {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+}
