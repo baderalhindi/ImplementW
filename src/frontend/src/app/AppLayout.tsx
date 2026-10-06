@@ -8,6 +8,7 @@ import {
   identityAccessNavigation,
   type NavigationItem,
 } from '@/features/identity-access/routes.tsx';
+import { issuesChallengesNavigation } from '@/features/issues-challenges/routes.tsx';
 import { sessionStore } from '@/features/identity-access/session/sessionStore.ts';
 import { StepUpDialog } from '@/features/identity-access/session/StepUpDialog.tsx';
 import {
@@ -65,7 +66,7 @@ function Navigation({
 
 /**
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
- * (projects, tasks, milestones, KPIs, risks, approvals, documents and notifications for everyone signed in, administration for R01),
+ * (projects, tasks, milestones, KPIs, risks, issues and challenges, approvals, documents and notifications for everyone signed in, administration for R01),
  * and the page.
  */
 export function AppLayout(): ReactElement {
@@ -109,6 +110,7 @@ export function AppLayout(): ReactElement {
             <Navigation label="milestones.nav.label" items={milestoneNavigation} />
             <Navigation label="financialKpi.nav.label" items={kpiNavigation} />
             <Navigation label="risks.nav.label" items={riskNavigation} />
+            <Navigation label="issuesChallenges.nav.label" items={issuesChallengesNavigation} />
             <Navigation label="approvals.nav.label" items={approvalNavigation} />
             <Navigation label="documents.nav.label" items={documentNavigation} />
             <Navigation label="notifications.nav.label" items={notificationNavigation} />

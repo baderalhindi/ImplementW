@@ -38,6 +38,7 @@ const TAB_LABELS: Record<WorkspaceTabKey, TranslationKey> = {
   financials: 'projects.workspace.tabs.financials',
   kpis: 'projects.workspace.tabs.kpis',
   risks: 'projects.workspace.tabs.risks',
+  issuesChallenges: 'projects.workspace.tabs.issuesChallenges',
   reviews: 'projects.workspace.tabs.reviews',
   documents: 'projects.workspace.tabs.documents',
 };
