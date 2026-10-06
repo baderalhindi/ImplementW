@@ -145,7 +145,14 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- RISK_REOPEN — ship with RISK_VIEW and RISK_MANAGE to R04 at OWN: ADR-013's amendment to TASK-055 lets entity Project
 -- Managers register and update risks on their own project, and OWN reaches the projects the holder manages, internal or
 -- entity. Rating and acceptance authority is unchanged — the application refuses RISK_ASSESS and RISK_ACCEPT to an external
--- user whatever they hold — and those grants, with the reopen, wait for Appendix A (risk-management.md F-2). The eight WF-14 permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
+-- user whatever they hold — and those grants, with the reopen, wait for Appendix A (risk-management.md F-2). The five WF-07
+-- permissions (TASK-057) — CONCERN_VIEW, CONCERN_RAISE, CONCERN_MANAGE, CONCERN_ESCALATE, CONCERN_ESCALATION_RESOLVE — ship with
+-- CONCERN_VIEW and CONCERN_RAISE to R08 at ENTITY and to R04 at OWN: ADR-013's amendment to TASK-057 lets entities raise a blocker or
+-- an issue on their own project and see its status (intake and visibility, not escalation). WF-07's specification §3 makes the
+-- Project Manager the primary manager of a project's issues and challenges, who escalates them: CONCERN_MANAGE and CONCERN_ESCALATE
+-- go to R04 at OWN, and the application refuses both to an external user whatever they hold. §3 gives the Department Manager
+-- escalation handling: CONCERN_VIEW and CONCERN_ESCALATION_RESOLVE go to R03 at DEPT. The rest wait for Appendix A
+-- (management-concern.md F-2). The eight WF-14 permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
 -- FINANCIAL_REVIEW, FINANCIAL_SOURCE_MANAGE, KPI_VIEW, KPI_MANAGE, KPI_RECORD, KPI_REVIEW — ship with FINANCIAL_VIEW and KPI_VIEW
 -- to R04 and R08 at ENTITY: ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI status for its own
 -- project, masked by audience (ADR-010); ENTITY reaches only a holder with an entity. Entering, reviewing and source
@@ -201,6 +208,11 @@ FROM (VALUES
     ('RISK_ASSESS',                 'تقييم المخاطر',        'Assess and rate risks',       'RISK',            false),
     ('RISK_ACCEPT',                 'قبول المخاطر',         'Accept risks until an expiry', 'RISK',           false),
     ('RISK_REOPEN',                 'إعادة فتح المخاطر المغلقة', 'Reopen closed risks',     'RISK',            false),
+    ('CONCERN_VIEW',                'عرض المشكلات والتحديات', 'View issues and challenges', 'MANAGEMENT_CONCERN', false),
+    ('CONCERN_RAISE',               'رفع المشكلات والتحديات', 'Raise issues and challenges', 'MANAGEMENT_CONCERN', false),
+    ('CONCERN_MANAGE',              'إدارة المشكلات والتحديات', 'Manage issues and challenges', 'MANAGEMENT_CONCERN', false),
+    ('CONCERN_ESCALATE',            'تصعيد المشكلات والتحديات', 'Escalate issues and challenges', 'MANAGEMENT_CONCERN', false),
+    ('CONCERN_ESCALATION_RESOLVE',  'معالجة التصعيدات',     'Resolve escalations',         'MANAGEMENT_CONCERN', false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
     ('FINANCIAL_SUBMIT',            'تقديم البيانات المالية', 'Submit financial figures',  'FINANCIAL',       false),
     ('FINANCIAL_REVIEW',            'مراجعة البيانات المالية', 'Review financial figures', 'FINANCIAL',       false),
@@ -262,6 +274,14 @@ FROM (VALUES
     ('R04', 'MILESTONE_SUBMIT',            'OWN'),
     ('R04', 'RISK_VIEW',                   'OWN'),
     ('R04', 'RISK_MANAGE',                 'OWN'),
+    ('R04', 'CONCERN_VIEW',                'OWN'),
+    ('R04', 'CONCERN_RAISE',               'OWN'),
+    ('R04', 'CONCERN_MANAGE',              'OWN'),
+    ('R04', 'CONCERN_ESCALATE',            'OWN'),
+    ('R08', 'CONCERN_VIEW',                'ENTITY'),
+    ('R08', 'CONCERN_RAISE',               'ENTITY'),
+    ('R03', 'CONCERN_VIEW',                'DEPT'),
+    ('R03', 'CONCERN_ESCALATION_RESOLVE',  'DEPT'),
     ('R04', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R08', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R04', 'KPI_VIEW',                    'ENTITY'),

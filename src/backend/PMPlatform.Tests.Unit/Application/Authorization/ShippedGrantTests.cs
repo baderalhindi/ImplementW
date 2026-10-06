@@ -44,6 +44,7 @@ public sealed class ShippedGrantTests
 
         // The entity Project Manager owns the project their assignment covers: the one they manage (ADR-013).
         AuthorizationSubject inScope = scope == DataScope.Entity ? new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId, OwnerUserId = OtherUserId }
+            : scope == DataScope.Dept ? new AuthorizationSubject { ProjectId = ProjectId, DepartmentId = DepartmentId, OwnerUserId = OtherUserId }
             : IsEntityProjectManager(role) ? new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId, OwnerUserId = UserId }
             : new AuthorizationSubject { OwnerUserId = UserId };
 
@@ -84,8 +85,13 @@ public sealed class ShippedGrantTests
                 Assert.Equal(outOfScope, await internalHolder.AuthorizeAsync(permission, new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId }));
                 break;
 
+            // Another department's record is out of reach (TASK-057: R03's escalations of its own department only).
+            case DataScope.Dept:
+                Assert.Equal(outOfScope, await scenario.AuthorizeAsync(permission, new AuthorizationSubject { ProjectId = ProjectId, DepartmentId = OtherDepartmentId, OwnerUserId = OtherUserId }));
+                break;
+
             // No shipped grant has another scope yet; the one that first does adds its deny case here.
-            case DataScope.Dept or DataScope.Assigned or DataScope.ReadOnly:
+            case DataScope.Assigned or DataScope.ReadOnly:
             default:
                 throw new InvalidOperationException($"No deny case for {scope}.");
         }
@@ -352,6 +358,53 @@ public sealed class ShippedGrantTests
         Assert.Equal(AuthorizationDecision.Allowed, await editor.AuthorizeAsync(PermissionCatalogue.RiskManage, risk));
         Assert.Equal(AuthorizationDecision.Forbidden(AuthorizationDenial.NotGranted), await editor.AuthorizeAsync(PermissionCatalogue.RiskReopen, risk));
         Assert.Equal(AuthorizationDecision.Allowed, await reopener.AuthorizeAsync(PermissionCatalogue.RiskReopen, risk));
+    }
+
+    /// <summary>
+    /// TASK-057, ADR-013's amendment: entities raise a blocker or an issue on their own project and see its status — R08 at ENTITY and
+    /// R04 at OWN view and raise. WF-07 §3: the Project Manager manages and escalates (R04 at OWN; the application refuses an external
+    /// holder both); the Department Manager handles escalations (R03 at DEPT). The rest wait for Appendix A (management-concern.md F-2).
+    /// </summary>
+    [Fact]
+    public void ConcernsAreRaisedByEntitiesManagedByTheProjectManagerAndTheirEscalationsResolvedByTheDepartmentManager()
+    {
+        Assert.Equal(
+            [
+                ("R04", PermissionCatalogue.ConcernView, DataScope.Own), ("R04", PermissionCatalogue.ConcernRaise, DataScope.Own),
+                ("R04", PermissionCatalogue.ConcernManage, DataScope.Own), ("R04", PermissionCatalogue.ConcernEscalate, DataScope.Own),
+                ("R08", PermissionCatalogue.ConcernView, DataScope.Entity), ("R08", PermissionCatalogue.ConcernRaise, DataScope.Entity),
+                ("R03", PermissionCatalogue.ConcernView, DataScope.Dept), ("R03", PermissionCatalogue.ConcernEscalationResolve, DataScope.Dept),
+            ],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("CONCERN_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+    }
+
+    /// <summary>ADR-013's amendment to TASK-057: an entity user raises concerns on its own entity's projects and on no other entity's.</summary>
+    [Fact]
+    public async Task AnEntityRaisesConcernsOnItsOwnProjectsOnly()
+    {
+        AuthorizationScenario entityUser = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R08", PermissionCatalogue.ConcernRaise, DataScope.Entity, entityId: EntityId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityUser.AuthorizeAsync(PermissionCatalogue.ConcernRaise, Managed(ProjectId, EntityId, OtherUserId)));
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.ConcernRaise, Managed(OtherProjectId, OtherEntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.ConcernEscalate, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+    }
+
+    /// <summary>
+    /// TASK-057: an escalation is resolved through the role it is addressed to. CONCERN_ESCALATION_RESOLVE held through another role does
+    /// not reach it, so a holder of the permission as R03 is refused an escalation addressed to R02.
+    /// </summary>
+    [Fact]
+    public async Task AnEscalationIsResolvedThroughTheRoleItIsAddressedTo()
+    {
+        AuthorizationSubject concern = Managed(ProjectId, null, OtherUserId);
+        AuthorizationScenario departmentManager = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.Internal, Grant("R03", PermissionCatalogue.ConcernEscalationResolve, DataScope.Dept));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await departmentManager.Engine.AuthorizeAsync(
+            UserId, new AuthorizationRequest(PermissionCatalogue.ConcernEscalationResolve, concern) { RoleCode = "R03" }, CancellationToken.None));
+        Assert.False((await departmentManager.Engine.AuthorizeAsync(
+            UserId, new AuthorizationRequest(PermissionCatalogue.ConcernEscalationResolve, concern) { RoleCode = "R02" }, CancellationToken.None)).IsAllowed);
     }
 
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>

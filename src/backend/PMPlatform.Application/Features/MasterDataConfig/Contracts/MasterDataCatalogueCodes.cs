@@ -6,6 +6,9 @@ public static class MasterDataCatalogueCodes
     public const string GovernanceProfile = "GOVERNANCE_PROFILE";
     public const string ImpactDimension = "IMPACT_DIMENSION";
     public const string RiskCategory = "RISK_CATEGORY";
+    public const string ConcernCategory = "CONCERN_CATEGORY";
+    public const string ConcernSeverity = "CONCERN_SEVERITY";
+    public const string Priority = "PRIORITY";
     public const string DataClassification = "DATA_CLASSIFICATION";
     public const string DocumentControlLevel = "DOCUMENT_CONTROL_LEVEL";
     public const string MilestoneCategory = "MILESTONE_CATEGORY";

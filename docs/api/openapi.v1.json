@@ -803,6 +803,215 @@
         }
       }
     },
+    "/api/v1/concern-escalations": {
+      "get": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "The concern's escalations, newest first. `managementConcernId` is required (R-3).",
+        "operationId": "ManagementConcern_ListConcernEscalations",
+        "parameters": [
+          {
+            "name": "managementConcernId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernEscalationPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "Escalates an open concern (MOD-039) to the role WORKFLOW_POLICY routes escalations to. Internal users only (ADR-013). A retry\nwith the same key and body answers 201 with the same escalation and `Idempotent-Replayed: true`.",
+        "operationId": "ManagementConcern_EscalateManagementConcern",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernEscalationCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernEscalationCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernEscalationCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernEscalationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/concern-escalations/{escalationId}": {
+      "get": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "operationId": "ManagementConcern_GetConcernEscalation",
+        "parameters": [
+          {
+            "name": "escalationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernEscalationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/concern-escalations/{escalationId}/resolve": {
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "OPEN → RESOLVED, with the direction given. Held through the role the escalation is addressed to; internal users only.",
+        "operationId": "ManagementConcern_ResolveConcernEscalation",
+        "parameters": [
+          {
+            "name": "escalationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernResolutionCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernResolutionCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernResolutionCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernEscalationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/concern-escalations/{escalationId}/withdraw": {
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "OPEN → WITHDRAWN, by its escalator.",
+        "operationId": "ManagementConcern_WithdrawConcernEscalation",
+        "parameters": [
+          {
+            "name": "escalationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernEscalationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/configuration-families": {
       "get": {
         "tags": [
@@ -4359,6 +4568,455 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/KpiTargetVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns": {
+      "get": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "The project's issues and challenges, most recently changed first. `projectId` is required (R-3). Filters: `concernType`\nand `status` (sets), `assigneeUserId`.",
+        "operationId": "ManagementConcern_ListManagementConcerns",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "concernType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assigneeUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "Raises an issue (MOD-036) or a challenge (MOD-038), OPEN. Entities raise on their own project (ADR-013).",
+        "operationId": "ManagementConcern_RaiseManagementConcern",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns/{concernId}": {
+      "get": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "operationId": "ManagementConcern_GetManagementConcern",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "The concern's own fields, as a whole (MOD-037). Requires `If-Match` (R-21). Internal users only.",
+        "operationId": "ManagementConcern_UpdateManagementConcern",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns/{concernId}/assess": {
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "Replaces the concern's impacts; the server recomputes its severity under the scale in force and pins that version.",
+        "operationId": "ManagementConcern_AssessManagementConcern",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernAssessCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernAssessCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernAssessCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns/{concernId}/assign": {
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "OPEN → ASSIGNED; reassigns an ASSIGNED or IN_PROGRESS concern.",
+        "operationId": "ManagementConcern_AssignManagementConcern",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernAssignCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernAssignCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernAssignCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns/{concernId}/start": {
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "ASSIGNED → IN_PROGRESS.",
+        "operationId": "ManagementConcern_StartManagementConcern",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns/{concernId}/submit-resolution": {
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "IN_PROGRESS → PENDING_VALIDATION, with the resolution; its validation is routed through WF-11.",
+        "operationId": "ManagementConcern_SubmitManagementConcernResolution",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernResolutionCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernResolutionCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConcernResolutionCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns/{concernId}/review": {
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "Records a review; the next one is due at the cadence of the project's governance profile (ADR-015).",
+        "operationId": "ManagementConcern_ReviewManagementConcern",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns/{concernId}/close": {
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "RESOLVED → CLOSED, once no escalation of it is OPEN. RETAIN has no DELETE (R-5).",
+        "operationId": "ManagementConcern_CloseManagementConcern",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConcernDetail"
                 }
               }
             }
@@ -11829,6 +12487,669 @@
           "OPEN_COMMITMENT"
         ],
         "description": "ERD `financial_commitment.commitment_type`."
+      },
+      "ConcernAssessCommand": {
+        "required": [
+          "impacts"
+        ],
+        "type": "object",
+        "properties": {
+          "impacts": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ConcernImpactRequest"
+            }
+          }
+        },
+        "description": "A reassessment: the concern's impacts, at least one. Its overall impact and severity are the server's."
+      },
+      "ConcernAssignCommand": {
+        "required": [
+          "assigneeUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "assigneeUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ConcernCreateRequest": {
+        "required": [
+          "projectId",
+          "concernType",
+          "title",
+          "description",
+          "categoryItemId",
+          "priorityItemId",
+          "impacts",
+          "targetResolutionDate"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "concernType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "categoryItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "impacts": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ConcernImpactRequest"
+            }
+          },
+          "targetResolutionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A new issue or challenge of the project, OPEN, with the fields ConcernRequest describes and, optionally, its impacts on\nthe shared scale. A severity is never sent: the server computes it from the impacts, and ignores one a client adds."
+      },
+      "ConcernDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "concernType",
+          "title",
+          "description",
+          "categoryItemId",
+          "priorityItemId",
+          "overallImpactLevel",
+          "severityItemId",
+          "severityConfigurationVersionId",
+          "impacts",
+          "status",
+          "revisionNo",
+          "raisedByUserId",
+          "raisedAt",
+          "assigneeUserId",
+          "originatingRiskId",
+          "targetResolutionDate",
+          "nextReviewDate",
+          "lastReviewedAt",
+          "resolution",
+          "resolvedAt",
+          "closedAt",
+          "openEscalation",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "concernType": {
+            "$ref": "#/components/schemas/ConcernType"
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "description": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "categoryItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "overallImpactLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "severityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "severityConfigurationVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "impacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConcernImpactDetail"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConcernStatus"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "raisedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "raisedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "assigneeUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "originatingRiskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "targetResolutionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "nextReviewDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastReviewedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "resolution": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "resolvedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "openEscalation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConcernEscalationDetail"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "An issue or a challenge. Guid? ConcernDetail.SeverityItemId is computed by the server from IReadOnlyList&lt;ConcernImpactDetail&gt; ConcernDetail.Impacts under the rule of\nGuid? ConcernDetail.SeverityConfigurationVersionId, and is null until the concern is assessed; Guid ConcernDetail.PriorityItemId is chosen by\npeople. ConcernEscalationDetail? ConcernDetail.OpenEscalation is the concern's OPEN escalation, if it has one: an overlay that never changes its status."
+      },
+      "ConcernEscalationCreateRequest": {
+        "required": [
+          "managementConcernId",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "managementConcernId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "An escalation of a concern, with why. Where it goes is the server's routing, not the escalator's choice."
+      },
+      "ConcernEscalationDetail": {
+        "required": [
+          "id",
+          "managementConcernId",
+          "escalationNo",
+          "escalatedByUserId",
+          "escalatedAt",
+          "escalatedToRoleId",
+          "reason",
+          "status",
+          "resolvedAt",
+          "resolvedByUserId",
+          "resolution",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "managementConcernId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "escalationNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "escalatedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "escalatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "escalatedToRoleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConcernEscalationStatus"
+          },
+          "resolvedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "resolvedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "resolution": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ConcernEscalationPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConcernEscalationDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A concern's escalations, newest first."
+      },
+      "ConcernEscalationStatus": {
+        "enum": [
+          "OPEN",
+          "RESOLVED",
+          "WITHDRAWN"
+        ],
+        "description": "ERD `concern_escalation.status`: an escalation is OPEN until it is RESOLVED by its addressee or WITHDRAWN by its escalator."
+      },
+      "ConcernImpactDetail": {
+        "required": [
+          "impactDimensionItemId",
+          "impactLevel",
+          "rationale"
+        ],
+        "type": "object",
+        "properties": {
+          "impactDimensionItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "impactLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "rationale": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          }
+        }
+      },
+      "ConcernImpactRequest": {
+        "required": [
+          "impactDimensionItemId",
+          "impactLevel",
+          "rationale"
+        ],
+        "type": "object",
+        "properties": {
+          "impactDimensionItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "impactLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "rationale": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "An impact level, 1–5, of one dimension of the shared scale (ADR-011); which levels a version defines is the server's rule."
+      },
+      "ConcernPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConcernDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's concerns, most recently changed first (R-29; indexing-strategy P-2)."
+      },
+      "ConcernRequest": {
+        "required": [
+          "title",
+          "description",
+          "categoryItemId",
+          "priorityItemId",
+          "targetResolutionDate"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "categoryItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "targetResolutionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A concern's own fields, as a whole (R-5): title, description, category, priority and target resolution date. Its type, status and\nseverity change only through the commands; a severity sent here is an unknown property, and ignored."
+      },
+      "ConcernResolutionCommand": {
+        "required": [
+          "resolution"
+        ],
+        "type": "object",
+        "properties": {
+          "resolution": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "The resolution put to validation, or an escalation's direction: required, never blank."
+      },
+      "ConcernStatus": {
+        "enum": [
+          "OPEN",
+          "ASSIGNED",
+          "IN_PROGRESS",
+          "PENDING_VALIDATION",
+          "RESOLVED",
+          "CLOSED"
+        ],
+        "description": "ERD `management_concern.status` (TASK-057): Open → Assigned → In Progress → Pending Validation → Resolved → Closed.\nValidation is decided through WF-11; a return sends the concern back to IN_PROGRESS. CLOSED is final."
+      },
+      "ConcernType": {
+        "enum": [
+          "ISSUE",
+          "CHALLENGE"
+        ],
+        "description": "ERD `management_concern.concern_type`: one aggregate for both (WF-07 ISS-GP-01). Fixed when the concern is raised."
       },
       "ConfigurationContent": {
         "type": "object",
@@ -23633,6 +24954,9 @@
     },
     {
       "name": "Approval"
+    },
+    {
+      "name": "ManagementConcern"
     },
     {
       "name": "MasterDataConfig"

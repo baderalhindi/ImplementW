@@ -164,6 +164,24 @@ public sealed class PermissionCatalogue
     /// <summary>WF-06 (TASK-055): reopen a CLOSED risk. A permission of its own, so RISK_MANAGE never reopens one.</summary>
     public const string RiskReopen = "RISK_REOPEN";
 
+    /// <summary>WF-07 (TASK-057): a project's issues and challenges, their impacts, computed severity, status and escalations.</summary>
+    public const string ConcernView = "CONCERN_VIEW";
+
+    /// <summary>WF-07 (TASK-057): raise an issue or a challenge. ADR-013: an entity raises a blocker or an issue on its own project.</summary>
+    public const string ConcernRaise = "CONCERN_RAISE";
+
+    /// <summary>
+    /// WF-07 (TASK-057): edit, assess, assign, progress, review and close concerns, and submit a resolution for validation. Internal
+    /// users only: ADR-013 gives entities intake and visibility, not management.
+    /// </summary>
+    public const string ConcernManage = "CONCERN_MANAGE";
+
+    /// <summary>WF-07 (TASK-057): escalate a concern, and withdraw one's own escalation. Internal users only: ADR-013, "not escalation".</summary>
+    public const string ConcernEscalate = "CONCERN_ESCALATE";
+
+    /// <summary>WF-07 (TASK-057): resolve an escalation, held through the role it is addressed to. Internal users only.</summary>
+    public const string ConcernEscalationResolve = "CONCERN_ESCALATION_RESOLVE";
+
     /// <summary>
     /// WF-14 Financial Progress (TASK-052): a project's Approved Budget versions, financial updates, published financial
     /// snapshots, live position, source modes and portfolio totals. ADR-013: an entity sees budget and expenditure for its own
@@ -252,6 +270,11 @@ public sealed class PermissionCatalogue
             new(RiskAssess, "RISK", AccessMode.Write),
             new(RiskAccept, "RISK", AccessMode.Write),
             new(RiskReopen, "RISK", AccessMode.Write),
+            new(ConcernView, "MANAGEMENT_CONCERN", AccessMode.Read),
+            new(ConcernRaise, "MANAGEMENT_CONCERN", AccessMode.Write),
+            new(ConcernManage, "MANAGEMENT_CONCERN", AccessMode.Write),
+            new(ConcernEscalate, "MANAGEMENT_CONCERN", AccessMode.Write),
+            new(ConcernEscalationResolve, "MANAGEMENT_CONCERN", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
             new(FinancialSubmit, "FINANCIAL", AccessMode.Write),
             new(FinancialReview, "FINANCIAL", AccessMode.Write),
@@ -297,7 +320,13 @@ public sealed class PermissionCatalogue
     /// Appendix A (milestone-achievement.md F-2). ADR-013's amendment to TASK-055 lets entity Project Managers register and update risks on
     /// their own project: R04 views and manages risks at OWN, the projects the holder manages, internal or entity. Rating and
     /// acceptance authority is unchanged — RISK_ASSESS and RISK_ACCEPT are refused to an external user whatever they hold — and
-    /// those grants, with the reopen, wait for Appendix A (risk-management.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
+    /// those grants, with the reopen, wait for Appendix A (risk-management.md F-2). ADR-013's amendment to TASK-057 lets entities raise a
+    /// blocker or an issue on their own project and see its status — intake and visibility, not escalation: R08 views and raises concerns
+    /// at ENTITY, and R04 at OWN, the projects the holder manages, internal or entity. WF-07's specification §3 makes the Project Manager
+    /// the primary manager of a project's issues and challenges, who assesses, assigns, plans resolution and escalates: R04 manages and
+    /// escalates at OWN, and the application refuses both to an external user whatever they hold. §3 gives the Department Manager
+    /// "escalation handling": R03 views concerns and resolves escalations at DEPT, through the role an escalation is addressed to. The
+    /// other roles' concern grants wait for Appendix A (management-concern.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
     /// status for its own project, masked by audience per ADR-010: R08 and R04 view financials and KPIs at ENTITY, which reaches
     /// only a holder with an entity; entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
@@ -340,6 +369,14 @@ public sealed class PermissionCatalogue
         new("R04", MilestoneSubmit, DataScope.Own),
         new("R04", RiskView, DataScope.Own),
         new("R04", RiskManage, DataScope.Own),
+        new("R04", ConcernView, DataScope.Own),
+        new("R04", ConcernRaise, DataScope.Own),
+        new("R04", ConcernManage, DataScope.Own),
+        new("R04", ConcernEscalate, DataScope.Own),
+        new("R08", ConcernView, DataScope.Entity),
+        new("R08", ConcernRaise, DataScope.Entity),
+        new("R03", ConcernView, DataScope.Dept),
+        new("R03", ConcernEscalationResolve, DataScope.Dept),
         new("R04", FinancialView, DataScope.Entity),
         new("R08", FinancialView, DataScope.Entity),
         new("R04", KpiView, DataScope.Entity),

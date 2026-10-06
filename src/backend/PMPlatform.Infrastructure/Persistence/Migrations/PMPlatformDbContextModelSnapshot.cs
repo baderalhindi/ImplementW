@@ -2821,6 +2821,423 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ConcernEscalation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset>("EscalatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("escalated_at");
+
+                    b.Property<Guid>("EscalatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("escalated_by_user_id");
+
+                    b.Property<Guid>("EscalatedToRoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("escalated_to_role_id");
+
+                    b.Property<int>("EscalationNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("escalation_no");
+
+                    b.Property<Guid>("ManagementConcernId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("management_concern_id");
+
+                    b.Property<Guid>("RequestKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_key");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<Guid?>("ResolvedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Reason", "PMPlatform.Domain.ManagementConcern.ConcernEscalation.Reason#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("reason");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Resolution", "PMPlatform.Domain.ManagementConcern.ConcernEscalation.Resolution#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("resolution_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("resolution");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_concern_escalation");
+
+                    b.HasIndex("ManagementConcernId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_concern_escalation_one_open")
+                        .HasFilter("status = 'OPEN'");
+
+                    b.HasIndex("ResolvedByUserId")
+                        .HasDatabaseName("ix_concern_escalation_resolved_by_user_id");
+
+                    b.HasIndex("EscalatedByUserId", "RequestKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_concern_escalation_escalated_by_user_id_request_key");
+
+                    b.HasIndex("EscalatedToRoleId", "Status")
+                        .HasDatabaseName("ix_concern_escalation_escalated_to_role_id_status");
+
+                    b.HasIndex("ManagementConcernId", "EscalationNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_concern_escalation_management_concern_id_escalation_no");
+
+                    b.HasIndex("Status", "EscalatedAt", "Id")
+                        .HasDatabaseName("ix_concern_escalation_status_escalated_at_id");
+
+                    b.ToTable("concern_escalation", "management_concern", t =>
+                        {
+                            t.HasCheckConstraint("ck_concern_escalation_ended", "(status = 'OPEN') = (resolved_at IS NULL) AND (status = 'OPEN') = (resolved_by_user_id IS NULL) AND (status = 'RESOLVED') = (resolution IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_concern_escalation_escalation_no", "escalation_no >= 1");
+
+                            t.HasCheckConstraint("ck_concern_escalation_reason_lang", "\"reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_concern_escalation_resolution_lang", "\"resolution_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_concern_escalation_resolution_pair", "(\"resolution\" IS NULL) = (\"resolution_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_concern_escalation_status", "\"status\" IN ('OPEN', 'RESOLVED', 'WITHDRAWN')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ConcernImpact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ImpactDimensionItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("impact_dimension_item_id");
+
+                    b.Property<short>("ImpactLevel")
+                        .HasColumnType("smallint")
+                        .HasColumnName("impact_level");
+
+                    b.Property<Guid>("ManagementConcernId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("management_concern_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Rationale", "PMPlatform.Domain.ManagementConcern.ConcernImpact.Rationale#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("rationale_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("rationale");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_concern_impact");
+
+                    b.HasIndex("ImpactDimensionItemId")
+                        .HasDatabaseName("ix_concern_impact_impact_dimension_item_id");
+
+                    b.HasIndex("ManagementConcernId", "ImpactDimensionItemId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_concern_impact_concern_dimension");
+
+                    b.ToTable("concern_impact", "management_concern", t =>
+                        {
+                            t.HasCheckConstraint("ck_concern_impact_impact_level", "impact_level BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("ck_concern_impact_rationale_lang", "\"rationale_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_concern_impact_rationale_pair", "(\"rationale\" IS NULL) = (\"rationale_lang\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ManagementConcern", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AssigneeUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assignee_user_id");
+
+                    b.Property<Guid>("CategoryItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_item_id");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<string>("ConcernType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("concern_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("LastReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_reviewed_at");
+
+                    b.Property<DateOnly>("NextReviewDate")
+                        .HasColumnType("date")
+                        .HasColumnName("next_review_date");
+
+                    b.Property<Guid?>("OriginatingRiskId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("originating_risk_id");
+
+                    b.Property<short?>("OverallImpactLevel")
+                        .HasColumnType("smallint")
+                        .HasColumnName("overall_impact_level");
+
+                    b.Property<Guid>("PriorityItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("priority_item_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset>("RaisedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("raised_at");
+
+                    b.Property<Guid>("RaisedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("raised_by_user_id");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<Guid?>("SeverityConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("severity_configuration_version_id");
+
+                    b.Property<Guid?>("SeverityItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("severity_item_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateOnly?>("TargetResolutionDate")
+                        .HasColumnType("date")
+                        .HasColumnName("target_resolution_date");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.ManagementConcern.ManagementConcern.Description#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("description_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("description");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Resolution", "PMPlatform.Domain.ManagementConcern.ManagementConcern.Resolution#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("resolution_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("resolution");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.ManagementConcern.ManagementConcern.Title#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("title_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("title");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_management_concern");
+
+                    b.HasIndex("CategoryItemId")
+                        .HasDatabaseName("ix_management_concern_category_item_id");
+
+                    b.HasIndex("OriginatingRiskId")
+                        .HasDatabaseName("ix_management_concern_originating_risk_id");
+
+                    b.HasIndex("PriorityItemId")
+                        .HasDatabaseName("ix_management_concern_priority_item_id");
+
+                    b.HasIndex("RaisedByUserId")
+                        .HasDatabaseName("ix_management_concern_raised_by_user_id");
+
+                    b.HasIndex("SeverityConfigurationVersionId")
+                        .HasDatabaseName("ix_management_concern_severity_configuration_version_id");
+
+                    b.HasIndex("SeverityItemId")
+                        .HasDatabaseName("ix_management_concern_severity_item_id");
+
+                    b.HasIndex("AssigneeUserId", "Status")
+                        .HasDatabaseName("ix_management_concern_assignee_user_id_status");
+
+                    b.HasIndex("ConcernType", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_management_concern_concern_type_updated_at_id");
+
+                    b.HasIndex("ConcernType", "Status", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_management_concern_concern_type_status_updated_at_id");
+
+                    b.HasIndex("ProjectId", "ConcernType", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_management_concern_project_id_concern_type_updated_at_id");
+
+                    b.ToTable("management_concern", "management_concern", t =>
+                        {
+                            t.HasCheckConstraint("ck_management_concern_assigned", "status = 'OPEN' OR assignee_user_id IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_management_concern_closed", "(status = 'CLOSED') = (closed_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_management_concern_concern_type", "\"concern_type\" IN ('ISSUE', 'CHALLENGE')");
+
+                            t.HasCheckConstraint("ck_management_concern_description_lang", "\"description_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_management_concern_overall_impact_level", "overall_impact_level BETWEEN 1 AND 5");
+
+                            t.HasCheckConstraint("ck_management_concern_resolution", "status IN ('OPEN', 'ASSIGNED', 'IN_PROGRESS') OR resolution IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_management_concern_resolution_lang", "\"resolution_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_management_concern_resolution_pair", "(\"resolution\" IS NULL) = (\"resolution_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_management_concern_resolved", "(status IN ('RESOLVED', 'CLOSED')) = (resolved_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_management_concern_revision_no", "revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_management_concern_severity", "(severity_item_id IS NULL) = (severity_configuration_version_id IS NULL) AND (severity_item_id IS NULL) = (overall_impact_level IS NULL)");
+
+                            t.HasCheckConstraint("ck_management_concern_status", "\"status\" IN ('OPEN', 'ASSIGNED', 'IN_PROGRESS', 'PENDING_VALIDATION', 'RESOLVED', 'CLOSED')");
+
+                            t.HasCheckConstraint("ck_management_concern_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ApprovalAuthorityRule", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8127,6 +8544,108 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ManagerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_user_user_manager_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ConcernEscalation", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("EscalatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_concern_escalation_user_escalated_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.Role", null)
+                        .WithMany()
+                        .HasForeignKey("EscalatedToRoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_concern_escalation_role_escalated_to_role_id");
+
+                    b.HasOne("PMPlatform.Domain.ManagementConcern.ManagementConcern", null)
+                        .WithMany()
+                        .HasForeignKey("ManagementConcernId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_concern_escalation_management_concern_management_concern_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ResolvedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_concern_escalation_user_resolved_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ConcernImpact", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("ImpactDimensionItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_concern_impact_master_data_item_impact_dimension_item_id");
+
+                    b.HasOne("PMPlatform.Domain.ManagementConcern.ManagementConcern", null)
+                        .WithMany()
+                        .HasForeignKey("ManagementConcernId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_concern_impact_management_concern_management_concern_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ManagementConcern", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("AssigneeUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_management_concern_user_assignee_user_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_management_concern_master_data_item_category_item_id");
+
+                    b.HasOne("PMPlatform.Domain.Risk.Risk", null)
+                        .WithMany()
+                        .HasForeignKey("OriginatingRiskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_management_concern_risk_originating_risk_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("PriorityItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_management_concern_master_data_item_priority_item_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_management_concern_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RaisedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_management_concern_user_raised_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("SeverityConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_management_concern_severity_configuration_version");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("SeverityItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_management_concern_master_data_item_severity_item_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ApprovalAuthorityRule", b =>

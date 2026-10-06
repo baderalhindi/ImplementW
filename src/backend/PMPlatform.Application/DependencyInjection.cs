@@ -30,6 +30,7 @@ using PMPlatform.Application.Features.Milestone.Contracts;
 using PMPlatform.Application.Features.Milestone.EventHandlers;
 using PMPlatform.Application.Features.ManagementConcern;
 using PMPlatform.Application.Features.ManagementConcern.Contracts;
+using PMPlatform.Application.Features.ManagementConcern.EventHandlers;
 using PMPlatform.Application.Features.ProjectTask;
 using PMPlatform.Application.Features.ProjectTask.Contracts;
 using PMPlatform.Application.Features.Risk;
@@ -196,7 +197,7 @@ public static class DependencyInjection
 
         // TASK-055: WF-06's risk register — risks, assessment versions pinned to the RISK_MATRIX version in force, treatment actions,
         // time-bound acceptances and their expiry, and the reminder condition source. Materialisation into an issue goes through
-        // WF-07's IRiskIssueMaterialisation (edge 15), unbuilt until TASK-057 registers its own. The repository is Infrastructure's.
+        // WF-07's IRiskIssueMaterialisation (edge 15). The repository is Infrastructure's.
         services.AddScoped<RiskAccess>();
         services.AddScoped<RiskReferences>();
         services.AddScoped<RiskViews>();
@@ -206,7 +207,21 @@ public static class DependencyInjection
         services.AddScoped<IRiskTreatmentService, RiskTreatmentService>();
         services.AddScoped<IRiskMaintenance, RiskMaintenance>();
         services.AddScoped<INotificationConditionSource, RiskConditionSource>();
-        services.TryAddScoped<IRiskIssueMaterialisation, UnbuiltIssueRegister>();
+
+        // TASK-057: WF-07's issues and challenges — severity computed from impacts on the shared scale and pinned, escalations published
+        // to WF-15 once each, resolutions validated through WF-11 (edges 24, 28), and the issue side of edge 15. The repository is
+        // Infrastructure's.
+        services.AddScoped<ConcernAccess>();
+        services.AddScoped<ConcernReferences>();
+        services.AddScoped<ConcernSeverity>();
+        services.AddScoped<ConcernViews>();
+        services.AddScoped<ConcernGate>();
+        services.AddScoped<ConcernIntake>();
+        services.AddScoped<IManagementConcernService, ManagementConcernService>();
+        services.AddScoped<IConcernLifecycleService, ConcernLifecycleService>();
+        services.AddScoped<IConcernEscalationService, ConcernEscalationService>();
+        services.AddScoped<IApprovalOutcomeHandler, ConcernValidationOutcomeHandler>();
+        services.AddScoped<IRiskIssueMaterialisation, RiskIssueRegister>();
 
         return services;
     }

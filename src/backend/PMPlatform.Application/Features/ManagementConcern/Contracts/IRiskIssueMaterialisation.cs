@@ -6,8 +6,7 @@ namespace PMPlatform.Application.Features.ManagementConcern.Contracts;
 /// <summary>
 /// ADR-003 §8.2 edge 15, Risk → ManagementConcern (command): WF-06 has WF-07 raise an issue from a risk that has occurred.
 /// The issue records <see cref="RiskIssueCommand.OriginatingRiskId"/> as <c>management_concern.originating_risk_id</c>, the
-/// one foreign key both sides query (ERD §5.10). WF-07 is not built (TASK-057), so the only implementation until then is
-/// <see cref="ManagementConcern.UnbuiltIssueRegister"/>, which refuses (risk-management.md F-1).
+/// one foreign key both sides query (ERD §5.10). WF-07 implements it as <see cref="ManagementConcern.RiskIssueRegister"/> (TASK-057).
 /// </summary>
 public interface IRiskIssueMaterialisation
 {
