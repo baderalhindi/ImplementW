@@ -170,6 +170,16 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Risk
 
+      # TASK-057: WF-07 Issue & Challenge Management — a client-supplied severity ignored and the computed one stored and pinned, an
+      # escalation retried that notifies exactly once, validation through WF-11, ADR-013's intake and visibility, ADR-015's review
+      # cadence, edge 15 against the real issue register, and the database guards. Same database and directory as above.
+      - name: ManagementConcern integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.ManagementConcern.
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest

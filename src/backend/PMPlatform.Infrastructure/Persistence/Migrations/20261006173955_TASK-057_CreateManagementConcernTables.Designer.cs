@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PMPlatform.Infrastructure.Persistence;
@@ -12,9 +13,11 @@ using PMPlatform.Infrastructure.Persistence;
 namespace PMPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PMPlatformDbContext))]
-    partial class PMPlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261006173955_TASK-057_CreateManagementConcernTables")]
+    partial class TASK057_CreateManagementConcernTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2924,9 +2927,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_concern_escalation_one_open")
                         .HasFilter("status = 'OPEN'");
 
-                    b.HasIndex("ResolvedByUserId")
-                        .HasDatabaseName("ix_concern_escalation_resolved_by_user_id");
-
                     b.HasIndex("EscalatedByUserId", "RequestKey")
                         .IsUnique()
                         .HasDatabaseName("ix_concern_escalation_escalated_by_user_id_request_key");
@@ -3007,9 +3007,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_concern_impact");
-
-                    b.HasIndex("ImpactDimensionItemId")
-                        .HasDatabaseName("ix_concern_impact_impact_dimension_item_id");
 
                     b.HasIndex("ManagementConcernId", "ImpactDimensionItemId")
                         .IsUnique()
@@ -3178,23 +3175,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_management_concern");
 
-                    b.HasIndex("CategoryItemId")
-                        .HasDatabaseName("ix_management_concern_category_item_id");
-
                     b.HasIndex("OriginatingRiskId")
                         .HasDatabaseName("ix_management_concern_originating_risk_id");
-
-                    b.HasIndex("PriorityItemId")
-                        .HasDatabaseName("ix_management_concern_priority_item_id");
-
-                    b.HasIndex("RaisedByUserId")
-                        .HasDatabaseName("ix_management_concern_raised_by_user_id");
-
-                    b.HasIndex("SeverityConfigurationVersionId")
-                        .HasDatabaseName("ix_management_concern_severity_configuration_version_id");
-
-                    b.HasIndex("SeverityItemId")
-                        .HasDatabaseName("ix_management_concern_severity_item_id");
 
                     b.HasIndex("AssigneeUserId", "Status")
                         .HasDatabaseName("ix_management_concern_assignee_user_id_status");
@@ -8548,104 +8530,22 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ConcernEscalation", b =>
                 {
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
-                        .WithMany()
-                        .HasForeignKey("EscalatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_concern_escalation_user_escalated_by_user_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.Role", null)
-                        .WithMany()
-                        .HasForeignKey("EscalatedToRoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_concern_escalation_role_escalated_to_role_id");
-
                     b.HasOne("PMPlatform.Domain.ManagementConcern.ManagementConcern", null)
                         .WithMany()
                         .HasForeignKey("ManagementConcernId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_concern_escalation_management_concern_management_concern_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
-                        .WithMany()
-                        .HasForeignKey("ResolvedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_concern_escalation_user_resolved_by_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ConcernImpact", b =>
                 {
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("ImpactDimensionItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_concern_impact_master_data_item_impact_dimension_item_id");
-
                     b.HasOne("PMPlatform.Domain.ManagementConcern.ManagementConcern", null)
                         .WithMany()
                         .HasForeignKey("ManagementConcernId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_concern_impact_management_concern_management_concern_id");
-                });
-
-            modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ManagementConcern", b =>
-                {
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
-                        .WithMany()
-                        .HasForeignKey("AssigneeUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_management_concern_user_assignee_user_id");
-
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("CategoryItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_management_concern_master_data_item_category_item_id");
-
-                    b.HasOne("PMPlatform.Domain.Risk.Risk", null)
-                        .WithMany()
-                        .HasForeignKey("OriginatingRiskId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_management_concern_risk_originating_risk_id");
-
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("PriorityItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_management_concern_master_data_item_priority_item_id");
-
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_management_concern_project_project_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
-                        .WithMany()
-                        .HasForeignKey("RaisedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_management_concern_user_raised_by_user_id");
-
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
-                        .WithMany()
-                        .HasForeignKey("SeverityConfigurationVersionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_management_concern_severity_configuration_version");
-
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("SeverityItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_management_concern_master_data_item_severity_item_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ApprovalAuthorityRule", b =>
