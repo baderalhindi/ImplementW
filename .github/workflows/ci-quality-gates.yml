@@ -66,6 +66,7 @@ jobs:
 
       # Analyzers and code style are on in Directory.Build.props; -warnaserror is the belt to that braces.
       - name: Build (analyzers, warnings as errors)
+        id: build
         run: dotnet build src/backend --no-restore --configuration Release -warnaserror
 
       # Unit tests only. PMPlatform.Tests.Integration needs the containerised stack and gets its own stage.
@@ -168,7 +169,7 @@ jobs:
           DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
         run: >-
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Risk
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Risk.
 
       # TASK-057: WF-07 Issue & Challenge Management — a client-supplied severity ignored and the computed one stored and pinned, an
       # escalation retried that notifies exactly once, validation through WF-11, ADR-013's intake and visibility, ADR-015's review
@@ -179,6 +180,19 @@ jobs:
         run: >-
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.ManagementConcern.
+
+      # TASK-059: the risk and issue domain's two hard invariants — a rating or severity pinned to the RISK_MATRIX version in force
+      # when assessed, on every read that serves one, and Severity (with rating, overall impact and pin) never taken from a client,
+      # in any documented request or any write that raises or changes a concern — and the WF-06/07 APIs against docs/api/openapi.v1.json
+      # (api-conventions R-10) and on the wire. The Risk step's filter ends in `.` so it does not run these too. It runs whenever the build
+      # passed, even after an earlier test step failed, so the invariants' verdict is always in the log. Same database and directory as above.
+      - name: Risk and issue domain contract and regression tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.RiskIssue
 
   frontend:
     name: frontend

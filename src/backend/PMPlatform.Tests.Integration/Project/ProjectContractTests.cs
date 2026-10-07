@@ -75,29 +75,17 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         OpenApiDocument document = await BuiltAsync();
         using HttpClient client = host.Api.CreateClient();
         Sessions sessions = await client.SignInAsync();
-        Dictionary<string, IReadOnlyList<string>> checkedOperations = [];
-
-        async Task<JsonObject?> CheckAsync(string method, string template, HttpResponseMessage response)
-        {
-            string name = $"{method} {template}";
-            string status = ((int)response.StatusCode).ToString(System.Globalization.CultureInfo.InvariantCulture);
-            JsonObject documented = Assert.IsType<JsonObject>(document.Operation(template, method)?["responses"]?[status]);
-            JsonObject? body = response.Content.Headers.ContentLength == 0 ? null : await response.ReadObjectAsync();
-            checkedOperations[name] = body is null
-                ? documented["content"] is null ? [] : [$"{name} {status}: no body, documented with one"]
-                : document.Violations(body, documented["content"]?["application/json"]?["schema"], $"{name} {status}");
-            return body;
-        }
+        DocumentedResponses responses = new(document);
 
         string item = $"{ProjectDriver.Projects}/{{projectId}}";
         using HttpResponseMessage created = await client.PostAsync(ProjectDriver.Projects, sessions.Entity, host.Registration());
-        Guid projectId = AdministrationApi.IdOf((await CheckAsync("POST", ProjectDriver.Projects, created))!);
+        Guid projectId = AdministrationApi.IdOf((await responses.CheckAsync("POST", ProjectDriver.Projects, created))!);
         string path = $"{ProjectDriver.Projects}/{projectId}";
 
         using HttpResponseMessage read = await client.GetAsync(path, sessions.Entity);
-        await CheckAsync("GET", item, read);
+        await responses.CheckAsync("GET", item, read);
         using HttpResponseMessage edited = await client.PutAsync(path, sessions.Entity, host.Registration(change: r => r["latitude"] = 24.7136), AdministrationApi.ETagOf(read));
-        await CheckAsync("PUT", item, edited);
+        await responses.CheckAsync("PUT", item, edited);
 
         foreach ((string command, string token, object? body) in new (string, string, object?)[]
                  {
@@ -109,24 +97,24 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         {
             using HttpResponseMessage response = await client.PostAsync($"{path}/{command}", token, body);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            await CheckAsync("POST", $"{item}/{command}", response);
+            await responses.CheckAsync("POST", $"{item}/{command}", response);
         }
 
         await host.DecideAndDeliverAsync(projectId, ApprovalTaskDecision.Approve);
         await ScheduleFixture.ActiveBaselineAsync(host.Database, projectId);
         using HttpResponseMessage activated = await client.PostAsync($"{path}/activate", sessions.Approver);
-        Assert.Equal("ACTIVE", (await CheckAsync("POST", $"{item}/activate", activated))!.Status());
+        Assert.Equal("ACTIVE", (await responses.CheckAsync("POST", $"{item}/activate", activated))!.Status());
 
         using HttpResponseMessage listed = await client.GetAsync($"{ProjectDriver.Projects}?q={(await host.RowAsync(projectId))["formal_project_id"]}", sessions.Approver);
-        Assert.Single((await CheckAsync("GET", ProjectDriver.Projects, listed))!["items"]!.AsArray());
+        Assert.Single((await responses.CheckAsync("GET", ProjectDriver.Projects, listed))!["items"]!.AsArray());
 
         Guid draft = AdministrationApi.IdOf(await client.CreateOrFailAsync(sessions.Entity, host.Registration()));
         using HttpResponseMessage deleted = await client.DeleteProjectAsync(draft, sessions.Entity);
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
-        await CheckAsync("DELETE", item, deleted);
+        await responses.CheckAsync("DELETE", item, deleted);
 
-        Assert.Equal(document.Operations(Tag).Select(o => o.Name).Order(), checkedOperations.Keys.Order());
-        Assert.Empty(checkedOperations.Values.SelectMany(v => v));
+        Assert.Equal(document.Operations(Tag).Select(o => o.Name).Order(), responses.Operations.Order());
+        Assert.Empty(responses.Violations);
     }
 
     private async Task<OpenApiDocument> BuiltAsync()

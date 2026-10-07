@@ -133,8 +133,20 @@ internal sealed class OpenApiDocument(JsonObject root)
             paths[name] = operation.DeepClone();
         }
 
+        JsonObject schemas = [];
+        foreach (string name in SchemasReachedBy([.. paths.Select(p => p.Value!)]))
+        {
+            schemas[name] = SchemaNamed(name)?.DeepClone();
+        }
+
+        return new JsonObject { ["paths"] = paths, ["schemas"] = schemas };
+    }
+
+    /// <summary>The names of every component schema <paramref name="nodes"/> reach, through <c>$ref</c>s followed to any depth.</summary>
+    public IReadOnlySet<string> SchemasReachedBy(params JsonNode[] nodes)
+    {
         SortedSet<string> reached = [];
-        Queue<JsonNode> pending = new(paths.Select(p => p.Value!));
+        Queue<JsonNode> pending = new(nodes);
         while (pending.TryDequeue(out JsonNode? node))
         {
             foreach (string name in References(node))
@@ -146,13 +158,49 @@ internal sealed class OpenApiDocument(JsonObject root)
             }
         }
 
-        JsonObject schemas = [];
-        foreach (string name in reached)
+        return reached;
+    }
+
+    /// <summary>
+    /// Every property name a client can send in <paramref name="operation"/>'s request body: those of its schema and of every
+    /// schema it reaches, at any depth. Empty when the operation takes no body.
+    /// </summary>
+    public IReadOnlySet<string> RequestPropertyNames(JsonObject operation)
+    {
+        if (operation["requestBody"] is not JsonObject body)
         {
-            schemas[name] = SchemaNamed(name)?.DeepClone();
+            return new SortedSet<string>();
         }
 
-        return new JsonObject { ["paths"] = paths, ["schemas"] = schemas };
+        SortedSet<string> names = [];
+        Queue<JsonNode> pending = new([body, .. SchemasReachedBy(body).Select(SchemaNamed).OfType<JsonObject>()]);
+        while (pending.TryDequeue(out JsonNode? node))
+        {
+            if (node is JsonObject o)
+            {
+                foreach ((string key, JsonNode? value) in o)
+                {
+                    if (key == "properties" && value is JsonObject properties)
+                    {
+                        names.UnionWith(properties.Select(p => p.Key));
+                    }
+
+                    if (value is not null && key != "$ref")
+                    {
+                        pending.Enqueue(value);
+                    }
+                }
+            }
+            else if (node is JsonArray a)
+            {
+                foreach (JsonNode? item in a.Where(item => item is not null))
+                {
+                    pending.Enqueue(item!);
+                }
+            }
+        }
+
+        return names;
     }
 
     /// <summary>
