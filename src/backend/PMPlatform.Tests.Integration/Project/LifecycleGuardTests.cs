@@ -17,11 +17,15 @@ public sealed class LifecycleGuardTests(ProjectTestHost host)
 {
     private static readonly string[] States = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "RETURNED", "APPROVED_PLANNED", "ACTIVE", "SUSPENDED", "COMPLETED", "CLOSED"];
 
-    /// <summary>TASK-041's seven edges, as the specification states them; every other pair of states is refused.</summary>
+    /// <summary>
+    /// TASK-041's seven edges, as the specification states them, and TASK-062's two; every other pair of states is refused. That a project
+    /// takes TASK-062's edges only with its active suspension is held too, and tested with WF-09 (SuspensionGuardTests).
+    /// </summary>
     private static readonly HashSet<(string From, string To)> Edges =
     [
         ("DRAFT", "SUBMITTED"), ("SUBMITTED", "DRAFT"), ("SUBMITTED", "UNDER_REVIEW"), ("UNDER_REVIEW", "RETURNED"),
         ("UNDER_REVIEW", "APPROVED_PLANNED"), ("RETURNED", "SUBMITTED"), ("APPROVED_PLANNED", "ACTIVE"),
+        ("ACTIVE", "SUSPENDED"), ("SUSPENDED", "ACTIVE"),
     ];
 
     public static TheoryData<string, string> ForbiddenChanges()
@@ -104,7 +108,7 @@ public sealed class LifecycleGuardTests(ProjectTestHost host)
         Assert.DoesNotContain("Project.ProjectActivated", await host.AuditEventsAsync(projectId));
     }
 
-    /// <summary>The database refuses every change of state that is not one of TASK-041's edges, whoever writes it.</summary>
+    /// <summary>The database refuses every change of state that is not one of TASK-041's or TASK-062's edges, whoever writes it.</summary>
     [Theory]
     [MemberData(nameof(ForbiddenChanges))]
     public async Task TheDatabaseRefusesAChangeOfStateThatIsNoEdge(string from, string to)

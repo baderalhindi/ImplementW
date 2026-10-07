@@ -33,6 +33,12 @@ public static class ProjectAuditEvents
     /// <summary>LIFECYCLE_TRANSITION: APPROVED_PLANNED → ACTIVE, by the activation command.</summary>
     public const string ProjectActivated = "Project.ProjectActivated";
 
+    /// <summary>LIFECYCLE_TRANSITION: ACTIVE → SUSPENDED, as WF-09 effects an approved suspension request (TASK-062, edge 7).</summary>
+    public const string ProjectSuspended = "Project.ProjectSuspended";
+
+    /// <summary>LIFECYCLE_TRANSITION: SUSPENDED → ACTIVE, as WF-09 effects an approved resumption request (TASK-062, edge 7). No baseline changes.</summary>
+    public const string ProjectResumed = "Project.ProjectResumed";
+
     /// <summary>LIFECYCLE_TRANSITION, FAILED: an approval outcome for a revision or state the project is no longer in (EV-5).</summary>
     public const string ApprovalOutcomeIgnored = "Project.ApprovalOutcomeIgnored";
 

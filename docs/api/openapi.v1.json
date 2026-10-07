@@ -176,6 +176,68 @@
         }
       }
     },
+    "/api/v1/active-suspensions": {
+      "get": {
+        "tags": [
+          "Suspension"
+        ],
+        "summary": "The project's suspension periods, most recently started first. `projectId` is required (R-3); `open` filters open or ended ones.",
+        "operationId": "Suspension_ListActiveSuspensions",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "open",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveSuspensionPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/activity-execution-progresses": {
       "get": {
         "tags": [
@@ -11027,6 +11089,346 @@
         }
       }
     },
+    "/api/v1/suspension-requests": {
+      "get": {
+        "tags": [
+          "Suspension"
+        ],
+        "summary": "The project's requests, most recently changed first. `projectId` is required (R-3). Filters: `requestType` and `status` (sets).",
+        "operationId": "Suspension_ListSuspensionRequests",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuspensionRequestPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Suspension"
+        ],
+        "summary": "Raises a request (SCR-109), DRAFT: SUSPEND for an ACTIVE project, RESUME for a SUSPENDED one. A project already suspended, or with a\nrequest of the type open, is refused 409. An entity Project Manager raises on their own project (ADR-013).",
+        "operationId": "Suspension_CreateSuspensionRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspensionRequestCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspensionRequestCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspensionRequestCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuspensionRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/suspension-requests/{suspensionRequestId}": {
+      "get": {
+        "tags": [
+          "Suspension"
+        ],
+        "operationId": "Suspension_GetSuspensionRequest",
+        "parameters": [
+          {
+            "name": "suspensionRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuspensionRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Suspension"
+        ],
+        "summary": "A DRAFT or RETURNED request's own fields, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "Suspension_UpdateSuspensionRequest",
+        "parameters": [
+          {
+            "name": "suspensionRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspensionRequestRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspensionRequestRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspensionRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuspensionRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Suspension"
+        ],
+        "summary": "HARD_DRAFT: a DRAFT never submitted. R-40: a request that is not there — deleted already, or never the caller's to see — is 204 as well.",
+        "operationId": "Suspension_DeleteSuspensionRequest",
+        "parameters": [
+          {
+            "name": "suspensionRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/suspension-requests/{suspensionRequestId}/submit": {
+      "post": {
+        "tags": [
+          "Suspension"
+        ],
+        "summary": "DRAFT or RETURNED → SUBMITTED, with an effective date not before today; a RETURNED request comes back as the next revision.",
+        "operationId": "Suspension_Submit",
+        "parameters": [
+          {
+            "name": "suspensionRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuspensionRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/suspension-requests/{suspensionRequestId}/withdraw": {
+      "post": {
+        "tags": [
+          "Suspension"
+        ],
+        "summary": "SUBMITTED or RETURNED → WITHDRAWN. Under review, the requester withdraws the WF-11 run instead, which withdraws the request.",
+        "operationId": "Suspension_Withdraw",
+        "parameters": [
+          {
+            "name": "suspensionRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuspensionRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/suspension-requests/{suspensionRequestId}/start-review": {
+      "post": {
+        "tags": [
+          "Suspension"
+        ],
+        "summary": "SUBMITTED → UNDER_REVIEW: starts the WF-11 run of the SUSPENSION or RESUMPTION route. Internal users only.",
+        "operationId": "Suspension_StartReview",
+        "parameters": [
+          {
+            "name": "suspensionRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuspensionRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/suspension-requests/{suspensionRequestId}/activate": {
+      "post": {
+        "tags": [
+          "Suspension"
+        ],
+        "summary": "APPROVED → EFFECTED on or after its effective date: the project's lifecycle transition, ACTIVE → SUSPENDED or SUSPENDED → ACTIVE,\nwith its active suspension opened or ended, in one transaction. No baseline changes. Safe to retry. Internal users only.",
+        "operationId": "Suspension_Activate",
+        "parameters": [
+          {
+            "name": "suspensionRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuspensionRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/task-dependencies": {
       "get": {
         "tags": [
@@ -11828,6 +12230,92 @@
           }
         },
         "description": "A row of ADM-010 Role Assignment: a user bound to a profile version with its scope anchors (ADR-018)."
+      },
+      "ActiveSuspensionDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "suspensionRequestId",
+          "startedAt",
+          "endedAt",
+          "resumptionRequestId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "suspensionRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "resumptionRequestId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "A period during which the project was or is SUSPENDED: open while DateTimeOffset? ActiveSuspensionDetail.EndedAt is null."
+      },
+      "ActiveSuspensionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActiveSuspensionDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's suspension periods, most recently started first: its suspension history across cycles (BR-SUS-039)."
       },
       "ActivityExecutionProgressDetail": {
         "required": [
@@ -13514,7 +14002,7 @@
             "format": "uuid"
           }
         },
-        "description": "A change request's own fields, as a whole (R-5): title, justification, the impacts it states and, for a governance-profile change,\nthe profile asked for. A cost impact is an R-16 SAR amount, negative for a reduction; a schedule impact is calendar days, negative to\nbring the finish forward. A draft may leave impacts out; what its change type needs is checked on submission. Its type, status and\nmateriality change only through the commands; a materiality sent here is an unknown property, and ignored."
+        "description": "A change request's own fields, as a whole (R-5): title, justification, the impacts it states and, for a governance-profile change,\nthe profile asked for. A cost impact is an R-16 SAR amount, negative for a reduction; a schedule impact is calendar days, negative to\nbring the finish forward; neither is zero — no impact is left out. A draft may leave impacts out; what its change type needs is\nchecked on submission. Its type, status and materiality change only through the commands; a materiality sent here is an unknown\nproperty, and ignored."
       },
       "ChangeRequestStatus": {
         "enum": [
@@ -25607,6 +26095,264 @@
           }
         }
       },
+      "SuspensionRequestCreateRequest": {
+        "required": [
+          "projectId",
+          "requestType",
+          "reason",
+          "requestedEffectiveDate",
+          "plannedResumptionDate"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "requestType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SuspensionRequestType"
+              }
+            ]
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "requestedEffectiveDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedResumptionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A new request of the project, DRAFT, of a type that never changes, with the fields SuspensionRequestRequest describes."
+      },
+      "SuspensionRequestDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "requestType",
+          "status",
+          "revisionNo",
+          "reason",
+          "requestedByUserId",
+          "submittedAt",
+          "requestedEffectiveDate",
+          "plannedResumptionDate",
+          "effectedAt",
+          "suspension",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestType": {
+            "$ref": "#/components/schemas/SuspensionRequestType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SuspensionRequestStatus"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "requestedEffectiveDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedResumptionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "effectedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "suspension": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActiveSuspensionDetail"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A suspension or resumption request with the suspension period its effect opened or ended. Approved and effected are different\nstates: an APPROVED request has changed no project yet, and ActiveSuspensionDetail? SuspensionRequestDetail.Suspension stays null until it is EFFECTED."
+      },
+      "SuspensionRequestPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SuspensionRequestDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's suspension and resumption requests, most recently changed first (R-29; indexing-strategy P-2, I-29)."
+      },
+      "SuspensionRequestRequest": {
+        "required": [
+          "reason",
+          "requestedEffectiveDate",
+          "plannedResumptionDate"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "requestedEffectiveDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedResumptionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A suspension or resumption request's own fields, as a whole (R-5): why, from when, and — for a suspension — when the project is\nexpected to resume, as planning information only. A draft may leave the dates out; submission requires the effective date. Its type,\nstatus and the project's state change only through the commands; a status sent here is an unknown property, and ignored."
+      },
+      "SuspensionRequestStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "APPROVED",
+          "REJECTED",
+          "WITHDRAWN",
+          "EFFECTED"
+        ],
+        "description": "ERD `suspension_request.status` (TASK-062): Draft → Submitted → Under Review → Returned / Approved / Rejected, Withdrawn, and\nApproved → Effected. APPROVED is WF-11's decision; EFFECTED is the project's lifecycle transition, a later and separate step\n(WF-09 APPROVED_PENDING_ACTIVATION and ACTIVATED). REJECTED, WITHDRAWN and EFFECTED are final."
+      },
+      "SuspensionRequestType": {
+        "enum": [
+          "SUSPEND",
+          "RESUME"
+        ],
+        "description": "ERD `suspension_request.request_type` (TASK-062): what an approved request, once effected, does to its ACTIVE or SUSPENDED project."
+      },
       "TaskBlockCommand": {
         "required": [
           "reason"
@@ -26188,6 +26934,9 @@
   "tags": [
     {
       "name": "IdentityAccess"
+    },
+    {
+      "name": "Suspension"
     },
     {
       "name": "ProjectTask"

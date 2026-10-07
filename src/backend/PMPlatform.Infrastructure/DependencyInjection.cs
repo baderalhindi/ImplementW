@@ -22,12 +22,14 @@ using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.ProjectTask;
 using PMPlatform.Application.Features.Risk;
 using PMPlatform.Application.Features.Schedule;
+using PMPlatform.Application.Features.Suspension;
 using PMPlatform.Infrastructure.Approval;
 using PMPlatform.Infrastructure.Audit;
 using PMPlatform.Infrastructure.DocumentManagement;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Notifications;
 using PMPlatform.Infrastructure.Risk;
+using PMPlatform.Infrastructure.Suspension;
 using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
@@ -41,6 +43,7 @@ using PMPlatform.Infrastructure.Persistence.Project;
 using PMPlatform.Infrastructure.Persistence.ProjectTask;
 using PMPlatform.Infrastructure.Persistence.Risk;
 using PMPlatform.Infrastructure.Persistence.Schedule;
+using PMPlatform.Infrastructure.Persistence.Suspension;
 using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using PMPlatform.Infrastructure.Persistence.MasterDataConfig;
@@ -130,6 +133,14 @@ public static class DependencyInjection
 
         // TASK-060: WF-08's change_request schema.
         services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
+
+        // TASK-062: WF-09's suspension schema, and the pass that activates approved requests on their effective date.
+        services.AddScoped<ISuspensionRepository, SuspensionRepository>();
+        services.AddOptions<SuspensionActivationOptions>()
+            .Bind(configuration.GetSection(SuspensionActivationOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{SuspensionActivationOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<SuspensionActivationWorker>();
 
         services.AddNotifications(configuration);
 
