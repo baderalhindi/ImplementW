@@ -25,7 +25,7 @@
 | **Out** | Contract and integration tests across the lifecycle (TASK-043) | TASK-043 |
 | **Out** | The legacy intake path, its Declared Baseline and `ProjectIntakeRecorded` (ADR-014) | TASK-104 (F-9) |
 | **Out** | Governance profile assignment by rule and its override (O-1) | TASK-105 (F-8) |
-| **Out** | ACTIVE ↔ SUSPENDED, COMPLETED → CLOSED | TASK-062, TASK-063 (§6) |
+| **Out** | ACTIVE ↔ SUSPENDED (built by TASK-062, `suspension.md`), COMPLETED → CLOSED | TASK-062, TASK-063 (§6) |
 | **Out** | A fast-track past UNDER_REVIEW | PTBC-002, Open (F-6) |
 
 ## 2. Decisions
@@ -94,7 +94,7 @@ Commands honour `If-Match` when sent (R-21). A project's review history is `GET 
 
 ## 6. How other modules build on it
 
-1. **A lifecycle command of another module** (TASK-062 suspension, TASK-063 closure; §8.2 edges 7, 8) adds its edge to `ProjectLifecycle`, a command to `IProjectService`, and a migration that replaces `project.guard_project()` with the new edge. Without the migration the database refuses the transition with "is not a lifecycle transition".
+1. **A lifecycle command of another module** (TASK-062 suspension, TASK-063 closure; §8.2 edges 7, 8) adds its edge to `ProjectLifecycle`, a command to `IProjectService`, and a migration that replaces `project.guard_project()` with the new edge. Without the migration the database refuses the transition with "is not a lifecycle transition". TASK-062 took this path with one difference: WF-09's two edges are authorised by its APPROVED request, not by a permission of a caller, so the command is `IProjectSuspensionCommands` in Project's contracts — staged in WF-09's unit of work, as `IMilestoneAchievementRecorder` is in WF-05's — rather than a method of `IProjectService` (`suspension.md` D-6); its migration is `TASK-062_AddProjectSuspensionEdges`.
 2. **Reading a project** (§8.2 edges 1–6, 18): no query contract is published beyond `IProjectService`, which authorizes a caller. A module that needs a project's identity and state for its own checks adds a query to `Contracts` (F-12).
 3. **A review route** is configured by AHDA in APPROVAL_AUTHORITY under `PROJECT_REGISTRATION` (F-2).
 
@@ -181,3 +181,4 @@ Each mutation was applied, the solution rebuilt, the Project tests run, and the 
 | 2026-10-03 | TASK-046 (`schedule-baseline.md` D-11): the Planned → Active command has a precondition, ADR-009's — the project needs an ACTIVE baseline (an APPROVED one, or ADR-014's Declared one for a legacy-intake project), else 422 `SCHEDULE_ACTIVE_BASELINE_REQUIRED`. `IProjectActivationPrecondition` in Project's contracts is implemented by Schedule, so the dependency stays Schedule → Project (§8.2 edge 2). `RegistrationLifecycleTests`, `ProjectLifecycleEndToEndTests` and `ProjectContractTests` give the project an ACTIVE baseline before they activate it. The check is the application's; the database's `guard_project` does not read another schema (M-13). |
 | 2026-10-03 | TASK-048 (`project-task.md` D-2): ProjectTask reads `IProjectFactsReader` under the new §8.2 edge 36, for the anchors a task is authorized on and the lifecycle state that gates its execution. No change to Project. |
 | 2026-10-03 | TASK-050 (`milestone-achievement.md` D-3): Milestone reads `IProjectFactsReader` under the new §8.2 edge 37, for the anchors an achievement claim is authorized on and the ACTIVE state it needs. |
+| 2026-10-07 | TASK-062 (`suspension.md` D-6): ACTIVE → SUSPENDED and SUSPENDED → ACTIVE added to `ProjectLifecycle` and to `project.guard_project()` (migration `TASK-062_AddProjectSuspensionEdges`), each taken only by `IProjectSuspensionCommands` as WF-09 activates an approved request and audited `Project.ProjectSuspended` / `Project.ProjectResumed`; `activated_at` keeps the first activation. WF-09's guard refuses either change at commit unless the project's active suspension opens or ends with it |
