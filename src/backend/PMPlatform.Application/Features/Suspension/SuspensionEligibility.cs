@@ -8,11 +8,12 @@ namespace PMPlatform.Application.Features.Suspension;
 
 /// <summary>
 /// When a project admits a request, and what a request needs (WF-09 §5.2). A suspension is of an ACTIVE project, a resumption of a
-/// SUSPENDED one (BR-SUS-001, BR-SUS-002); a project has at most one open request of each type (BR-SUS-004, BR-SUS-005) and at most one
-/// open suspension (BR-SUS-003). The project's state is read again by every command that moves a request, so a request raised while the
-/// project was eligible is refused once it is not (ELG-SUS-004, ELG-RES-004).
+/// SUSPENDED one (BR-SUS-001, BR-SUS-002). The project's state is read again by every command that moves a request, so a request raised
+/// while the project was eligible is refused once it is not (ELG-SUS-004, ELG-RES-004). That a project has at most one open request of
+/// each type (BR-SUS-004, BR-SUS-005) and at most one open suspension (BR-SUS-003) is held by two unique keys, whose violation the save
+/// answers with <see cref="DuplicateOf"/>: one rule, one place, for a concurrent request as for a sequential one.
 /// </summary>
-internal sealed class SuspensionEligibility(ISuspensionRepository repository)
+internal static class SuspensionEligibility
 {
     /// <summary>
     /// Null when the project's state admits a request of <paramref name="type"/>. Suspending a project that is suspended already is a
@@ -28,10 +29,6 @@ internal sealed class SuspensionEligibility(ISuspensionRepository repository)
             _ => AdministrationError.Rule(SuspensionErrorCodes.ProjectNotEligible),
         };
     }
-
-    /// <summary>Null when the project has no other request of <paramref name="type"/> that is not yet final.</summary>
-    public async Task<AdministrationError?> OpenRequestRefusedAsync(Guid projectId, SuspensionRequestType type, Guid? excludingId, CancellationToken cancellationToken) =>
-        await repository.HasOpenRequestAsync(projectId, type, excludingId, cancellationToken).ConfigureAwait(false) ? DuplicateOf(type) : null;
 
     /// <summary>The conflict a single-instance key answers with, for a request of <paramref name="type"/>.</summary>
     public static AdministrationError DuplicateOf(SuspensionRequestType type) =>

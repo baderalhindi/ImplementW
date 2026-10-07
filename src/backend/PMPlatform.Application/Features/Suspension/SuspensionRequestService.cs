@@ -10,11 +10,11 @@ namespace PMPlatform.Application.Features.Suspension;
 /// <summary>
 /// WF-09's register (TASK-062): suspension and resumption requests raised and edited by the project's people — an entity Project
 /// Manager included (ADR-013) — while they are with their requester, and the project's suspension periods. A second suspension request
-/// for a project that is suspended, or that has one open already, is refused (BR-SUS-003, BR-SUS-004), and a unique key holds the same
-/// rule against a concurrent raise. A request's state moves only through <see cref="SuspensionLifecycleService"/>.
+/// for a project that is suspended is refused by its state, and one for a project that has one open already by the open-request key,
+/// however close together the two arrive (BR-SUS-003, BR-SUS-004). A request's state moves only through <see cref="SuspensionLifecycleService"/>.
 /// </summary>
 internal sealed class SuspensionRequestService(
-    ISuspensionRepository repository, SuspensionGate gate, SuspensionEligibility eligibility, SuspensionViews views, IAuditTrail audit, TimeProvider timeProvider)
+    ISuspensionRepository repository, SuspensionGate gate, SuspensionViews views, IAuditTrail audit, TimeProvider timeProvider)
     : ISuspensionRequestService
 {
     public async Task<SuspensionRequestPage> ListAsync(Guid callerId, SuspensionRequestQuery query, PageRequest page, CancellationToken cancellationToken)
@@ -48,8 +48,7 @@ internal sealed class SuspensionRequestService(
         }
 
         AdministrationError? broken = SuspensionEligibility.ProjectRefused(draft.RequestType, project!)
-                                      ?? SuspensionEligibility.FieldsRefused(draft.RequestType, draft.Fields)
-                                      ?? await eligibility.OpenRequestRefusedAsync(project!.Id, draft.RequestType, null, cancellationToken).ConfigureAwait(false);
+                                      ?? SuspensionEligibility.FieldsRefused(draft.RequestType, draft.Fields);
         if (broken is not null)
         {
             return broken;

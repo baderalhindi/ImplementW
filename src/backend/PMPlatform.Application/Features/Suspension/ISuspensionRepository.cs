@@ -19,9 +19,6 @@ public interface ISuspensionRepository
     /// <summary>One page of the project's requests the query selects, most recently changed first, with the total. Not tracked.</summary>
     public Task<(IReadOnlyList<SuspensionRequest> Items, int TotalCount)> PageAsync(SuspensionRequestQuery query, PageRequest page, CancellationToken cancellationToken);
 
-    /// <summary>Whether the project has a request of <paramref name="type"/> that is not REJECTED, WITHDRAWN or EFFECTED, other than <paramref name="excludingId"/>.</summary>
-    public Task<bool> HasOpenRequestAsync(Guid projectId, SuspensionRequestType type, Guid? excludingId, CancellationToken cancellationToken);
-
     /// <summary>The project's open suspension, tracked; null when it has none.</summary>
     public Task<ActiveSuspension?> FindOpenSuspensionAsync(Guid projectId, CancellationToken cancellationToken);
 

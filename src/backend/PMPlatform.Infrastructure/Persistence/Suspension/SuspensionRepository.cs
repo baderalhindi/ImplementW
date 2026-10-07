@@ -12,13 +12,6 @@ namespace PMPlatform.Infrastructure.Persistence.Suspension;
 /// <summary>The <c>suspension</c> schema (TASK-062).</summary>
 internal sealed class SuspensionRepository(PMPlatformDbContext context) : ISuspensionRepository
 {
-    /// <summary>The states of a request that is not yet final: those the single-open key covers.</summary>
-    private static readonly SuspensionRequestStatus[] Open =
-    [
-        SuspensionRequestStatus.Draft, SuspensionRequestStatus.Submitted, SuspensionRequestStatus.UnderReview, SuspensionRequestStatus.Returned,
-        SuspensionRequestStatus.Approved,
-    ];
-
     public async Task<ISuspensionWork> BeginAsync(CancellationToken cancellationToken) =>
         context.Database.CurrentTransaction is null
             ? new SuspensionWork(await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false))
@@ -52,10 +45,6 @@ internal sealed class SuspensionRepository(PMPlatformDbContext context) : ISuspe
         // indexing-strategy.md P-2: updated_at DESC, id DESC, served by I-29.
         return PageAsync(rows.OrderByDescending(r => r.UpdatedAt).ThenByDescending(r => r.Id), page, cancellationToken);
     }
-
-    public Task<bool> HasOpenRequestAsync(Guid projectId, SuspensionRequestType type, Guid? excludingId, CancellationToken cancellationToken) =>
-        context.Set<SuspensionRequest>().AsNoTracking()
-            .AnyAsync(r => r.ProjectId == projectId && r.RequestType == type && r.Id != excludingId && Open.Contains(r.Status), cancellationToken);
 
     public Task<ActiveSuspension?> FindOpenSuspensionAsync(Guid projectId, CancellationToken cancellationToken) =>
         context.Set<ActiveSuspension>().SingleOrDefaultAsync(s => s.ProjectId == projectId && s.EndedAt == null, cancellationToken);

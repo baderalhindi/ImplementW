@@ -254,7 +254,6 @@ public static class DependencyInjection
         // the separate activation that moves the project ACTIVE <-> SUSPENDED through Project's command (edge 7) with the one open active
         // suspension, run by a person or, on the effective date, by WF-09's own pass. The repository is Infrastructure's.
         services.AddScoped<SuspensionAccess>();
-        services.AddScoped<SuspensionEligibility>();
         services.AddScoped<SuspensionViews>();
         services.AddScoped<SuspensionGate>();
         services.AddScoped<SuspensionActivation>();
