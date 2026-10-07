@@ -43,18 +43,20 @@ internal static class RiskDriver
 
     /// <summary>
     /// Publishes a RISK_MATRIX version as FG-04's author, reviewer and publisher do: a copy of the seeded scale with the ratings LOW
-    /// and HIGH, HIGH where probability × impact reaches <paramref name="highFrom"/>. It takes effect now. Returns its id.
+    /// and HIGH, HIGH where probability × impact reaches <paramref name="highFrom"/>, labelled in English "Low" and "High" unless
+    /// <paramref name="englishLabels"/> says otherwise. It takes effect now. Returns its id.
     /// </summary>
-    public static async Task<Guid> PublishMatrixAsync(this RiskTestHost host, HttpClient client, Crew crew, int highFrom)
+    public static async Task<Guid> PublishMatrixAsync(this RiskTestHost host, HttpClient client, Crew crew, int highFrom, (string Low, string High)? englishLabels = null)
     {
+        (string low, string high) = englishLabels ?? ("Low", "High");
         // db/seed's DRAFT version 1 of RISK_MATRIX, the generic scale (OQ-006).
         Guid seeded = Guid.Parse(Assert.Single(await host.Database.QueryAsync("SELECT md5('configuration_version:RISK_MATRIX:1')")));
         (Guid version, _) = await client.CreateVersionAsync(crew, "RISK_MATRIX", basedOnVersionId: seeded);
         using HttpResponseMessage read = await client.GetAsync($"{ConfigurationApi.Versions}/{version}", crew.Author);
         JsonObject content = (await read.ReadObjectAsync())["content"]!.AsObject();
         content["riskRatings"] = new JsonArray(
-            new JsonObject { ["code"] = "LOW", ["label"] = new JsonObject { ["ar"] = "منخفض", ["en"] = "Low" }, ["sortOrder"] = 1 },
-            new JsonObject { ["code"] = "HIGH", ["label"] = new JsonObject { ["ar"] = "مرتفع", ["en"] = "High" }, ["sortOrder"] = 2 });
+            new JsonObject { ["code"] = "LOW", ["label"] = new JsonObject { ["ar"] = "منخفض", ["en"] = low }, ["sortOrder"] = 1 },
+            new JsonObject { ["code"] = "HIGH", ["label"] = new JsonObject { ["ar"] = "مرتفع", ["en"] = high }, ["sortOrder"] = 2 });
         content["riskMatrixCells"] = new JsonArray([
             .. Enumerable.Range(1, 5).SelectMany(p => Enumerable.Range(1, 5).Select(i =>
                 (JsonNode)new JsonObject { ["probabilityLevel"] = p, ["impactLevel"] = i, ["ratingCode"] = p * i >= highFrom ? "HIGH" : "LOW" })),
