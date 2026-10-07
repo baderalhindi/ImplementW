@@ -39,14 +39,16 @@ const TAB_LABELS: Record<WorkspaceTabKey, TranslationKey> = {
   kpis: 'projects.workspace.tabs.kpis',
   risks: 'projects.workspace.tabs.risks',
   issuesChallenges: 'projects.workspace.tabs.issuesChallenges',
+  changeRequests: 'projects.workspace.tabs.changeRequests',
   reviews: 'projects.workspace.tabs.reviews',
   documents: 'projects.workspace.tabs.documents',
 };
 
-/** The notices SCR-033/034 hand over when they navigate here. */
+/** The notices SCR-033/034, and SCR-107 when it deletes a draft change request, hand over when they navigate here. */
 const ARRIVAL_NOTICES: Record<string, TranslationKey> = {
   created: 'projects.done.created',
   updated: 'projects.done.updated',
+  changeRequestDeleted: 'changeRequests.done.deleted',
 };
 
 type OpenDialog = 'delete' | 'submit' | 'status' | null;

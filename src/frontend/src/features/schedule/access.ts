@@ -1,6 +1,7 @@
 import { isInternal } from '@/features/projects/access.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
-import { type ApprovalInboxItem } from '@/features/approvals/api/types.ts';
+import { type ApprovalInboxItem, type ApprovalSubject } from '@/features/approvals/api/types.ts';
+import { decidesSubject } from '@/features/approvals/sourceReview.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 
 import { type ProjectBaselineDetail } from './api/types.ts';
@@ -47,13 +48,19 @@ export function decidesBaseline(
   item: ApprovalInboxItem,
   baseline: Pick<ProjectBaselineDetail, 'id' | 'revisionNo'>,
 ): boolean {
-  const { subject } = item.instance;
-  return (
-    subject.module === 'Schedule' &&
-    subject.type === 'ProjectBaseline' &&
-    subject.id === baseline.id &&
-    subject.revisionNo === baseline.revisionNo
-  );
+  return decidesSubject(item, baselineSubject(baseline));
+}
+
+/** The subject TASK-046 starts a baseline's WF-11 run with. */
+export function baselineSubject(
+  baseline: Pick<ProjectBaselineDetail, 'id' | 'revisionNo'>,
+): ApprovalSubject {
+  return {
+    module: 'Schedule',
+    type: 'ProjectBaseline',
+    id: baseline.id,
+    revisionNo: baseline.revisionNo,
+  };
 }
 
 /**

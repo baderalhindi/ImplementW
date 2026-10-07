@@ -1915,3 +1915,75 @@ textarea.field__input {
   margin: 0;
   padding-inline-start: var(--space-4);
 }
+
+/* ---------------------------------------------------------------------------------------------- change requests (TASK-061) */
+
+/*
+ * Approved and Implemented never look alike (acceptance criterion 2): Approved is outlined on a pale ground with a tick,
+ * Implemented solid with a double tick. Each differs in fill, edge and icon as well as in its words (WCAG 1.4.1); white on
+ * the positive colour is 8:1.
+ */
+.badge--approved,
+.badge--implemented {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 2px solid var(--color-positive);
+}
+
+.badge--approved {
+  background: var(--color-positive-surface);
+  color: var(--color-positive);
+}
+
+.badge--implemented {
+  background: var(--color-positive);
+  color: var(--color-on-primary);
+}
+
+.badge__icon {
+  flex: none;
+}
+
+.field__checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.field__checkbox input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin: 0;
+}
+
+.materiality,
+.materiality-step {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.materiality__result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-weight: 600;
+}
+
+.materiality__path {
+  margin: 0;
+}
+
+/* The form's classification step stands apart from the fields above it. */
+.change-request-form .materiality-step {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.change-request {
+  gap: var(--space-4);
+}

@@ -200,6 +200,48 @@ export function TextAreaField({
   );
 }
 
+interface CheckboxFieldProps extends FieldBaseProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+/** A yes/no a person states (a flag), its label beside the box and its hint and error under it. */
+export function CheckboxField({
+  label,
+  name,
+  checked,
+  onChange,
+  error,
+  hint,
+  required = false,
+  disabled = false,
+}: CheckboxFieldProps): ReactElement {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  return (
+    <div className="field">
+      <div className="field__checkbox">
+        <input
+          id={id}
+          name={name}
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => {
+            onChange(event.target.checked);
+          }}
+          required={required}
+          disabled={disabled}
+          aria-invalid={error === undefined ? undefined : true}
+          aria-describedby={describedBy(hintId, errorId, hint, error)}
+        />
+        <FieldLabel htmlFor={id} label={label} required={required} />
+      </div>
+      <FieldMessages hintId={hintId} errorId={errorId} hint={hint} error={error} />
+    </div>
+  );
+}
+
 interface FileFieldProps extends FieldBaseProps {
   /** The chosen file, or null when the choice is cleared. */
   onChange: (file: File | null) => void;

@@ -4,6 +4,7 @@ import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 
 import { CreateProjectPage, EditProjectPage } from './form/ProjectFormPages.tsx';
 import { MyProjectsPage, ProjectRegisterPage } from './register/ProjectListPages.tsx';
+import { ChangeRequestsTab } from './workspace/ChangeRequestsTab.tsx';
 import { DocumentsTab } from './workspace/DocumentsTab.tsx';
 import { FinancialHistoryTab, FinancialsTab } from './workspace/FinancialsTab.tsx';
 import { ChallengesTab, ConcernDetailTab, IssuesTab } from './workspace/IssuesChallengesTab.tsx';
@@ -162,6 +163,14 @@ export const projectRoutes: RouteObject[] = [
         element: (
           <WorkspaceTabGuard tab="issuesChallenges">
             <ConcernDetailTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'change-requests', // SCR-105 (TASK-061); SCR-106/107 are under /change-requests
+        element: (
+          <WorkspaceTabGuard tab="changeRequests">
+            <ChangeRequestsTab />
           </WorkspaceTabGuard>
         ),
       },
