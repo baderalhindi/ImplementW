@@ -27,4 +27,5 @@ public static class ProjectAuditAttributes
     public const string ActivatedAt = "activated_at";
     public const string Gate = "gate";
     public const string Reason = "reason";
+    public const string SuspensionRequestId = "suspension_request_id";
 }

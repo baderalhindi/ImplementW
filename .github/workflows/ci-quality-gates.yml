@@ -192,6 +192,18 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.ChangeRequest.
 
+      # TASK-062: WF-09 Suspension & Resumption — a second suspension request for a suspended project refused, in the API and the database;
+      # resumption leaving the ACTIVE Approved Baseline untouched to the row version, a rebaseline still WF-03's explicit action under a
+      # WF-08 authorisation; WF-11's approval and the lifecycle activation two transactions with two audit events; the activation on the
+      # effective date and its retry; ADR-013's raise-only participation; and the database guards that tie a project's SUSPENDED state to
+      # its one open active suspension. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
+      - name: Suspension integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Suspension.
+
       # TASK-059: the risk and issue domain's two hard invariants — a rating or severity pinned to the RISK_MATRIX version in force
       # when assessed, on every read that serves one, and Severity (with rating, overall impact and pin) never taken from a client,
       # in any documented request or any write that raises or changes a concern — and the WF-06/07 APIs against docs/api/openapi.v1.json

@@ -5,8 +5,9 @@ using PMPlatform.Domain.Project;
 namespace PMPlatform.Tests.Unit.Application.Project;
 
 /// <summary>
-/// TASK-041's state machine: exactly the seven edges it builds, so that no project skips UNDER_REVIEW (PTBC-002 is Open:
-/// no fast-track rule is authorised) and ACTIVE is reachable only from APPROVED_PLANNED, by the activation command.
+/// TASK-041's state machine with TASK-062's two edges: exactly the nine, so that no project skips UNDER_REVIEW (PTBC-002 is
+/// Open: no fast-track rule is authorised), ACTIVE is first reached only from APPROVED_PLANNED, by the activation command, and
+/// a project leaves ACTIVE only for SUSPENDED and comes back only from it.
 /// </summary>
 public sealed class ProjectLifecycleTests
 {
@@ -25,7 +26,7 @@ public sealed class ProjectLifecycleTests
     }
 
     [Fact]
-    public void TheMachineHasExactlyTheSevenEdgesOfTask041()
+    public void TheMachineHasExactlyTheSevenEdgesOfTask041AndTheTwoOfTask062()
     {
         Assert.Equal(
             [
@@ -36,6 +37,8 @@ public sealed class ProjectLifecycleTests
                 (ProjectLifecycleState.UnderReview, ProjectLifecycleState.ApprovedPlanned),
                 (ProjectLifecycleState.Returned, ProjectLifecycleState.Submitted),
                 (ProjectLifecycleState.ApprovedPlanned, ProjectLifecycleState.Active),
+                (ProjectLifecycleState.Active, ProjectLifecycleState.Suspended),
+                (ProjectLifecycleState.Suspended, ProjectLifecycleState.Active),
             ],
             ProjectLifecycle.Transitions.OrderBy(t => t.From).ThenBy(t => t.To));
     }
@@ -61,14 +64,20 @@ public sealed class ProjectLifecycleTests
         Assert.DoesNotContain(ProjectLifecycleState.Active, reachable);
     }
 
-    /// <summary>Acceptance criterion 2: ACTIVE has one way in, and TASK-041 builds no way out (TASK-062 and TASK-063 add theirs).</summary>
+    /// <summary>
+    /// Acceptance criterion 2, with TASK-062: ACTIVE is entered from APPROVED_PLANNED by the activation command or from SUSPENDED by a
+    /// resumption, and left only for SUSPENDED; SUSPENDED has no other way in or out (TASK-063 adds its own).
+    /// </summary>
     [Theory]
     [MemberData(nameof(EveryPair))]
-    public void ActiveIsEnteredOnlyFromApprovedPlannedAndLeftByNoEdgeYet(ProjectLifecycleState from, ProjectLifecycleState to)
+    public void ActiveIsEnteredFromApprovedPlannedOrSuspendedAndLeftOnlyForSuspended(ProjectLifecycleState from, ProjectLifecycleState to)
     {
-        if (to == ProjectLifecycleState.Active || from == ProjectLifecycleState.Active)
+        if (to is ProjectLifecycleState.Active or ProjectLifecycleState.Suspended || from is ProjectLifecycleState.Active or ProjectLifecycleState.Suspended)
         {
-            Assert.Equal(from == ProjectLifecycleState.ApprovedPlanned && to == ProjectLifecycleState.Active, ProjectLifecycle.Allows(from, to));
+            Assert.Equal(
+                (from, to) is (ProjectLifecycleState.ApprovedPlanned, ProjectLifecycleState.Active) or (ProjectLifecycleState.Active, ProjectLifecycleState.Suspended)
+                    or (ProjectLifecycleState.Suspended, ProjectLifecycleState.Active),
+                ProjectLifecycle.Allows(from, to));
         }
     }
 

@@ -434,6 +434,32 @@ public sealed class ShippedGrantTests
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ChangeRequestReview, Managed(ProjectId, EntityId, UserId))).IsAllowed);
     }
 
+    /// <summary>
+    /// WF-09 §3 and ADR-013 (TASK-062): the Project Manager raises suspension and resumption requests (R04 at OWN) and the Department
+    /// Manager reviews them (R03 at DEPT). Activation is WF-09's own service, so SUSPENSION_ACTIVATE ships to no role (suspension.md F-2).
+    /// </summary>
+    [Fact]
+    public void SuspensionsAreRaisedByTheProjectManagerReviewedByTheDepartmentManagerAndActivatedByNoRole() =>
+        Assert.Equal(
+            [
+                ("R04", PermissionCatalogue.SuspensionView, DataScope.Own), ("R04", PermissionCatalogue.SuspensionRaise, DataScope.Own),
+                ("R03", PermissionCatalogue.SuspensionView, DataScope.Dept), ("R03", PermissionCatalogue.SuspensionReview, DataScope.Dept),
+            ],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("SUSPENSION_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+
+    /// <summary>ADR-013: an entity Project Manager raises suspension requests on the project they manage, and on no other; review stays AHDA's.</summary>
+    [Fact]
+    public async Task OnlyTheProjectsOwnManagerRaisesItsSuspensionRequests()
+    {
+        AuthorizationScenario entityManager = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R04", PermissionCatalogue.SuspensionRaise, DataScope.Own, entityId: EntityId, projectId: ProjectId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityManager.AuthorizeAsync(PermissionCatalogue.SuspensionRaise, Managed(ProjectId, EntityId, UserId)));
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.SuspensionRaise, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.SuspensionReview, Managed(ProjectId, EntityId, UserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.SuspensionActivate, Managed(ProjectId, EntityId, UserId))).IsAllowed);
+    }
+
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>
     [Fact]
     public void NotificationTemplatesAndDeliveryOperationsGoToR01Only()

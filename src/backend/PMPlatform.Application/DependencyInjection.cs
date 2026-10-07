@@ -41,6 +41,9 @@ using PMPlatform.Application.Features.Risk.Contracts;
 using PMPlatform.Application.Features.Schedule;
 using PMPlatform.Application.Features.Schedule.Contracts;
 using PMPlatform.Application.Features.Schedule.EventHandlers;
+using PMPlatform.Application.Features.Suspension;
+using PMPlatform.Application.Features.Suspension.Contracts;
+using PMPlatform.Application.Features.Suspension.EventHandlers;
 
 namespace PMPlatform.Application;
 
@@ -124,12 +127,14 @@ public static class DependencyInjection
         services.AddScoped<INotificationOperations, NotificationOperations>();
 
         // TASK-041: WF-01 registration and activation. The repository is Infrastructure's; review outcomes arrive through
-        // the Project approval outcome handler (WF-11 edge 28).
+        // the Project approval outcome handler (WF-11 edge 28). TASK-062: WF-09 moves a project ACTIVE <-> SUSPENDED through
+        // IProjectSuspensionCommands (edge 7).
         services.AddScoped<ProjectAccess>();
         services.AddScoped<ProjectReferences>();
         services.AddScoped<ProjectManagerEligibility>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IApprovalOutcomeHandler, ProjectApprovalOutcomeHandler>();
+        services.AddScoped<IProjectSuspensionCommands, ProjectSuspensionCommands>();
         services.AddScoped<IProjectFactsReader, ProjectFactsReader>();
 
         // TASK-044: WF-02 progress reporting and Overall Project Health (ICD-03). The repository is Infrastructure's. The
@@ -244,6 +249,18 @@ public static class DependencyInjection
         services.AddScoped<IChangeAuthorizationService, ChangeAuthorizationService>();
         services.AddScoped<IChangeAuthorizations, ChangeAuthorizationLedger>();
         services.AddScoped<IApprovalOutcomeHandler, ChangeRequestApprovalOutcomeHandler>();
+
+        // TASK-062: WF-09's suspension and resumption requests — review through WF-11 (edges 23, 28), whose approval changes no project, and
+        // the separate activation that moves the project ACTIVE <-> SUSPENDED through Project's command (edge 7) with the one open active
+        // suspension, run by a person or, on the effective date, by WF-09's own pass. The repository is Infrastructure's.
+        services.AddScoped<SuspensionAccess>();
+        services.AddScoped<SuspensionViews>();
+        services.AddScoped<SuspensionGate>();
+        services.AddScoped<SuspensionActivation>();
+        services.AddScoped<ISuspensionRequestService, SuspensionRequestService>();
+        services.AddScoped<ISuspensionLifecycleService, SuspensionLifecycleService>();
+        services.AddScoped<ISuspensionMaintenance, SuspensionMaintenance>();
+        services.AddScoped<IApprovalOutcomeHandler, SuspensionApprovalOutcomeHandler>();
 
         return services;
     }

@@ -8342,6 +8342,206 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Suspension.ActiveSuspension", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid?>("ResumptionRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resumption_request_id");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<Guid>("SuspensionRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("suspension_request_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_active_suspension");
+
+                    b.HasIndex("ResumptionRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_active_suspension_resumption_request_id");
+
+                    b.HasIndex("SuspensionRequestId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_active_suspension_suspension_request_id");
+
+                    b.HasIndex("ProjectId", "StartedAt", "Id")
+                        .HasDatabaseName("ix_active_suspension_project_id_started_at_id");
+
+                    b.HasIndex(new[] { "ProjectId" }, "ix_active_suspension_open_project_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_active_suspension_open_project_id")
+                        .HasFilter("ended_at IS NULL");
+
+                    b.ToTable("active_suspension", "suspension", t =>
+                        {
+                            t.HasCheckConstraint("ck_active_suspension_ended", "(ended_at IS NULL) = (resumption_request_id IS NULL) AND (ended_at IS NULL OR ended_at >= started_at)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Suspension.SuspensionRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("EffectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("effected_at");
+
+                    b.Property<DateOnly?>("PlannedResumptionDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_resumption_date");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("RequestType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("request_type");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<DateOnly?>("RequestedEffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("requested_effective_date");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Reason", "PMPlatform.Domain.Suspension.SuspensionRequest.Reason#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_suspension_request");
+
+                    b.HasIndex("RequestedByUserId")
+                        .HasDatabaseName("ix_suspension_request_requested_by_user_id");
+
+                    b.HasIndex("UpdatedAt", "Id")
+                        .HasDatabaseName("ix_suspension_request_updated_at_id");
+
+                    b.HasIndex("ProjectId", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_suspension_request_project_id_updated_at_id");
+
+                    b.HasIndex("Status", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_suspension_request_status_updated_at_id");
+
+                    b.HasIndex(new[] { "ProjectId", "RequestType" }, "ix_suspension_request_open_project_id_request_type")
+                        .IsUnique()
+                        .HasDatabaseName("ix_suspension_request_open_project_id_request_type")
+                        .HasFilter("status IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'APPROVED')");
+
+                    b.ToTable("suspension_request", "suspension", t =>
+                        {
+                            t.HasCheckConstraint("ck_suspension_request_effected", "(status = 'EFFECTED') = (effected_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_suspension_request_effective_date", "status IN ('DRAFT', 'RETURNED') OR requested_effective_date IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_suspension_request_planned_resumption_date", "planned_resumption_date IS NULL OR (request_type = 'SUSPEND' AND (requested_effective_date IS NULL OR planned_resumption_date > requested_effective_date))");
+
+                            t.HasCheckConstraint("ck_suspension_request_reason_lang", "\"reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_suspension_request_request_type", "\"request_type\" IN ('SUSPEND', 'RESUME')");
+
+                            t.HasCheckConstraint("ck_suspension_request_revision_no", "revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_suspension_request_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'APPROVED', 'REJECTED', 'WITHDRAWN', 'EFFECTED')");
+
+                            t.HasCheckConstraint("ck_suspension_request_submitted", "(status = 'DRAFT') = (submitted_at IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Approval.ApprovalDelegation", b =>
                 {
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
@@ -10150,6 +10350,46 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_schedule_health_status_project_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Suspension.ActiveSuspension", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_active_suspension_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.Suspension.SuspensionRequest", null)
+                        .WithMany()
+                        .HasForeignKey("ResumptionRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_active_suspension_suspension_request_resumption_request_id");
+
+                    b.HasOne("PMPlatform.Domain.Suspension.SuspensionRequest", null)
+                        .WithMany()
+                        .HasForeignKey("SuspensionRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_active_suspension_suspension_request_suspension_request_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Suspension.SuspensionRequest", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_suspension_request_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_suspension_request_user_requested_by_user_id");
                 });
 #pragma warning restore 612, 618
         }

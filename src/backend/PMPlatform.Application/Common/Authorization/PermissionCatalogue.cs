@@ -203,6 +203,24 @@ public sealed class PermissionCatalogue
     /// </summary>
     public const string ChangeRequestImplement = "CHANGE_REQUEST_IMPLEMENT";
 
+    /// <summary>WF-09 (TASK-062): a project's suspension and resumption requests and its suspension periods, open and ended.</summary>
+    public const string SuspensionView = "SUSPENSION_VIEW";
+
+    /// <summary>
+    /// WF-09 (TASK-062): raise a suspension or resumption request, edit and delete its draft, submit it and withdraw it. ADR-013: an
+    /// entity Project Manager fills in the request on their own project; AHDA decides it.
+    /// </summary>
+    public const string SuspensionRaise = "SUSPENSION_RAISE";
+
+    /// <summary>WF-09 (TASK-062): start the review of a submitted request, which routes it through WF-11. Internal users only (ADR-013).</summary>
+    public const string SuspensionReview = "SUSPENSION_REVIEW";
+
+    /// <summary>
+    /// WF-09 (TASK-062): activate an approved request whose effective date has come — the project's lifecycle transition, apart from the
+    /// approval. Internal users only (ADR-013). WF-09's own pass activates due requests as its service principal without it.
+    /// </summary>
+    public const string SuspensionActivate = "SUSPENSION_ACTIVATE";
+
     /// <summary>
     /// WF-14 Financial Progress (TASK-052): a project's Approved Budget versions, financial updates, published financial
     /// snapshots, live position, source modes and portfolio totals. ADR-013: an entity sees budget and expenditure for its own
@@ -300,6 +318,10 @@ public sealed class PermissionCatalogue
             new(ChangeRequestRaise, "CHANGE_REQUEST", AccessMode.Write),
             new(ChangeRequestReview, "CHANGE_REQUEST", AccessMode.Write),
             new(ChangeRequestImplement, "CHANGE_REQUEST", AccessMode.Write),
+            new(SuspensionView, "SUSPENSION", AccessMode.Read),
+            new(SuspensionRaise, "SUSPENSION", AccessMode.Write),
+            new(SuspensionReview, "SUSPENSION", AccessMode.Write),
+            new(SuspensionActivate, "SUSPENSION", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
             new(FinancialSubmit, "FINANCIAL", AccessMode.Write),
             new(FinancialReview, "FINANCIAL", AccessMode.Write),
@@ -356,7 +378,11 @@ public sealed class PermissionCatalogue
     /// at OWN, the projects the holder manages, internal or entity. WF-08's specification §3 makes the Project Manager the coordinator of
     /// a change's implementation and the Department Manager its reviewer: R04 implements at OWN — the application refuses an external
     /// holder — and R03 views and starts reviews at DEPT. Approval is WF-11's APPROVAL_DECIDE; the other roles' grants wait for Appendix A
-    /// (change-request.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
+    /// (change-request.md F-2). WF-09's specification §3 makes the Project Manager the one who prepares and submits a suspension or
+    /// resumption request and the Department Manager its reviewer; ADR-013 has the entity fill in the information and AHDA approve: R04
+    /// views and raises requests at OWN, the projects the holder manages, internal or entity, and R03 views and starts reviews at DEPT.
+    /// Approval is WF-11's APPROVAL_DECIDE. Activation is WF-09's own service by default (§14), so SUSPENSION_ACTIVATE ships to no role;
+    /// it and the other roles' grants wait for Appendix A (suspension.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
     /// status for its own project, masked by audience per ADR-010: R08 and R04 view financials and KPIs at ENTITY, which reaches
     /// only a holder with an entity; entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
@@ -412,6 +438,10 @@ public sealed class PermissionCatalogue
         new("R04", ChangeRequestImplement, DataScope.Own),
         new("R03", ChangeRequestView, DataScope.Dept),
         new("R03", ChangeRequestReview, DataScope.Dept),
+        new("R04", SuspensionView, DataScope.Own),
+        new("R04", SuspensionRaise, DataScope.Own),
+        new("R03", SuspensionView, DataScope.Dept),
+        new("R03", SuspensionReview, DataScope.Dept),
         new("R04", FinancialView, DataScope.Entity),
         new("R08", FinancialView, DataScope.Entity),
         new("R04", KpiView, DataScope.Entity),

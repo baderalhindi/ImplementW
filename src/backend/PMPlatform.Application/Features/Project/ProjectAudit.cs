@@ -49,6 +49,18 @@ internal static class ProjectAudit
         Transition(ProjectAuditEvents.ProjectActivated, actorId, project, ProjectLifecycleState.ApprovedPlanned, project.RevisionNo,
             [AuditAttribute.Of(ProjectAuditAttributes.ActivatedAt, project.ActivatedAt)]);
 
+    /// <summary>
+    /// WF-09's ACTIVE → SUSPENDED or SUSPENDED → ACTIVE (edge 7), by whoever effected the request — a person, or WF-09's service
+    /// principal — naming the request effected.
+    /// </summary>
+    public static AuditEntry SuspensionTransition(ProjectSuspensionCommand command, ProjectEntity project, ProjectLifecycleState from)
+    {
+        AuditEntry entry = Transition(
+            project.LifecycleState == ProjectLifecycleState.Suspended ? ProjectAuditEvents.ProjectSuspended : ProjectAuditEvents.ProjectResumed,
+            command.ActorId, project, from, project.RevisionNo, [AuditAttribute.Of(ProjectAuditAttributes.SuspensionRequestId, command.SuspensionRequestId)]);
+        return entry with { ActorType = command.ActorType };
+    }
+
     /// <summary>EV-5: an outcome for a revision the project has moved past, or for a review it is no longer under, is not applied.</summary>
     public static AuditEntry OutcomeIgnored(ProjectEntity project, ApprovalOutcomeRecorded outcome) =>
         new(AuditEventClass.LifecycleTransition, ProjectAuditEvents.ApprovalOutcomeIgnored, AuditOutcome.Failed)

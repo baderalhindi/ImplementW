@@ -47,7 +47,9 @@
 -- (TASK-037), is PMPlatform.Application's DocumentServicePrincipal.Id; the notification-dispatch principal's, the author of
 -- every received intent, routing, delivery attempt and completion in the notifications schema (TASK-039), is
 -- PMPlatform.Application's NotificationServicePrincipal.Id; the risk-review principal's, which expires risk acceptances and
--- returns their risks for review (TASK-055), is PMPlatform.Application's RiskServicePrincipal.Id.
+-- returns their risks for review (TASK-055), is PMPlatform.Application's RiskServicePrincipal.Id; the suspension-activation
+-- principal's, which effects approved suspension and resumption requests on their effective date (TASK-062), is
+-- PMPlatform.Application's SuspensionServicePrincipal.Id.
 INSERT INTO identity_access."user" (id, user_type, username, display_name, email, preferred_language, status, created_at, created_by, updated_at, updated_by)
 VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 'Platform seed (service principal)', 'svc.platform-seed@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
@@ -64,6 +66,8 @@ VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 
        ('00000000-0000-4000-8000-0000000000f9', 'SERVICE', 'svc.notification-dispatch', 'Notification dispatch (service principal)', 'svc.notification-dispatch@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
        ('00000000-0000-4000-8000-0000000000f8', 'SERVICE', 'svc.risk-review', 'Risk acceptance review (service principal)', 'svc.risk-review@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000f7', 'SERVICE', 'svc.suspension-activation', 'Suspension activation (service principal)', 'svc.suspension-activation@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO NOTHING;
 
@@ -158,7 +162,13 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- or entity. Materiality, approval and implementation remain AHDA's: WF-08's specification §3 makes the Project Manager the
 -- coordinator of a change's implementation, so CHANGE_REQUEST_IMPLEMENT goes to R04 at OWN and the application refuses it to an
 -- external user whatever they hold; §3 makes the Department Manager the reviewer, so CHANGE_REQUEST_VIEW and CHANGE_REQUEST_REVIEW go
--- to R03 at DEPT. Approval is WF-11's APPROVAL_DECIDE. The rest wait for Appendix A (change-request.md F-2). The eight WF-14
+-- to R03 at DEPT. Approval is WF-11's APPROVAL_DECIDE. The rest wait for Appendix A (change-request.md F-2). The four WF-09
+-- permissions (TASK-062) — SUSPENSION_VIEW, SUSPENSION_RAISE, SUSPENSION_REVIEW, SUSPENSION_ACTIVATE — ship with SUSPENSION_VIEW and
+-- SUSPENSION_RAISE to R04 at OWN: WF-09's specification §3 makes the Project Manager the one who prepares and submits a suspension or
+-- resumption request, and ADR-013 has the entity fill in the information and AHDA approve; OWN reaches the projects the holder
+-- manages, internal or entity. §3 makes the Department Manager the reviewer, so SUSPENSION_VIEW and SUSPENSION_REVIEW go to R03 at
+-- DEPT. Approval is WF-11's APPROVAL_DECIDE. Activation is WF-09's own service by default (§14), so SUSPENSION_ACTIVATE ships to no
+-- role; it and the rest wait for Appendix A (suspension.md F-2). The eight WF-14
 -- permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
 -- FINANCIAL_REVIEW, FINANCIAL_SOURCE_MANAGE, KPI_VIEW, KPI_MANAGE, KPI_RECORD, KPI_REVIEW — ship with FINANCIAL_VIEW and KPI_VIEW
 -- to R04 and R08 at ENTITY: ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI status for its own
@@ -224,6 +234,10 @@ FROM (VALUES
     ('CHANGE_REQUEST_RAISE',        'رفع طلبات التغيير',    'Raise change requests',       'CHANGE_REQUEST',  false),
     ('CHANGE_REQUEST_REVIEW',       'مراجعة طلبات التغيير', 'Review change requests',      'CHANGE_REQUEST',  false),
     ('CHANGE_REQUEST_IMPLEMENT',    'تنفيذ طلبات التغيير',  'Implement change requests',   'CHANGE_REQUEST',  false),
+    ('SUSPENSION_VIEW',             'عرض طلبات التعليق والاستئناف', 'View suspension and resumption requests', 'SUSPENSION', false),
+    ('SUSPENSION_RAISE',            'رفع طلبات التعليق والاستئناف', 'Raise suspension and resumption requests', 'SUSPENSION', false),
+    ('SUSPENSION_REVIEW',           'مراجعة طلبات التعليق والاستئناف', 'Review suspension and resumption requests', 'SUSPENSION', false),
+    ('SUSPENSION_ACTIVATE',         'تفعيل التعليق والاستئناف المعتمد', 'Activate approved suspensions and resumptions', 'SUSPENSION', false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
     ('FINANCIAL_SUBMIT',            'تقديم البيانات المالية', 'Submit financial figures',  'FINANCIAL',       false),
     ('FINANCIAL_REVIEW',            'مراجعة البيانات المالية', 'Review financial figures', 'FINANCIAL',       false),
@@ -298,6 +312,10 @@ FROM (VALUES
     ('R04', 'CHANGE_REQUEST_IMPLEMENT',    'OWN'),
     ('R03', 'CHANGE_REQUEST_VIEW',         'DEPT'),
     ('R03', 'CHANGE_REQUEST_REVIEW',       'DEPT'),
+    ('R04', 'SUSPENSION_VIEW',             'OWN'),
+    ('R04', 'SUSPENSION_RAISE',            'OWN'),
+    ('R03', 'SUSPENSION_VIEW',             'DEPT'),
+    ('R03', 'SUSPENSION_REVIEW',           'DEPT'),
     ('R04', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R08', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R04', 'KPI_VIEW',                    'ENTITY'),

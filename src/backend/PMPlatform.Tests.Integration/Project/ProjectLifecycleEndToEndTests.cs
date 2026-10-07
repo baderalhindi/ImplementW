@@ -19,6 +19,7 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
 {
     private const string ApprovalInstances = "/api/v1/approval-instances";
     private const string ApprovalTasks = "/api/v1/approval-tasks";
+    private const string SuspensionRequests = "/api/v1/suspension-requests";
 
     /// <summary>Where a refused attempt's project is registered, relative to the people of <see cref="ProjectTestHost"/>.</summary>
     public enum Placement
@@ -35,8 +36,9 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
 
     /// <summary>
     /// The happy path, with a withdrawal and a returned review on the way so that every edge is taken: DRAFT → SUBMITTED →
-    /// DRAFT → SUBMITTED → UNDER_REVIEW → RETURNED → SUBMITTED (revision 2) → UNDER_REVIEW → APPROVED_PLANNED → ACTIVE.
-    /// Each step is checked in WF-01 (the project), WF-11 (its review runs) and FG-06 (its audit trail).
+    /// DRAFT → SUBMITTED → UNDER_REVIEW → RETURNED → SUBMITTED (revision 2) → UNDER_REVIEW → APPROVED_PLANNED → ACTIVE, then
+    /// WF-09's ACTIVE → SUSPENDED → ACTIVE, each by an approved request activated apart from its approval (TASK-062). Each step
+    /// is checked in WF-01 (the project), WF-11 (its review runs) and FG-06 (its audit trail).
     /// </summary>
     [Fact]
     public async Task ADraftReachesActiveThroughEveryTransitionAndEachIsAudited()
@@ -71,6 +73,15 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
         JsonObject active = await client.CommandOrFailAsync(sessions.Approver, projectId, "activate");
         Assert.Equal(("ACTIVE", approved.FormalProjectId()), (active.Status(), active.FormalProjectId()));
 
+        // WF-09 (edge 7): the Department Manager raises, AHDA's approver decides through WF-11, and only the activation moves the project.
+        // activated_at is compared as the database holds it (microseconds), not as the activation's response carried it.
+        string activatedAt = (await GetAsync(client, sessions.Entity, projectId))["activatedAt"]!.GetValue<string>();
+        await SuspendOrResumeAsync(client, sessions, projectId, "SUSPEND");
+        Assert.Equal("SUSPENDED", (await GetAsync(client, sessions.Entity, projectId)).Status());
+        await SuspendOrResumeAsync(client, sessions, projectId, "RESUME");
+        JsonObject resumed = await GetAsync(client, sessions.Entity, projectId);
+        Assert.Equal(("ACTIVE", activatedAt), (resumed.Status(), resumed["activatedAt"]!.GetValue<string>()));
+
         // WF-11: one run per revision, the second linked to the first, each ended by local.r02's decision.
         JsonObject first = await GetAsync(client, sessions.Approver, $"{ApprovalInstances}/{firstRun}");
         JsonObject second = await GetAsync(client, sessions.Approver, $"{ApprovalInstances}/{secondRun}");
@@ -96,6 +107,8 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
                 $"Project.ReviewStarted|LIFECYCLE_TRANSITION|SUCCESS|{reviewer}|SUBMITTED>UNDER_REVIEW",
                 $"Project.RegistrationApproved|LIFECYCLE_TRANSITION|SUCCESS|{approver}|UNDER_REVIEW>APPROVED_PLANNED",
                 $"Project.ProjectActivated|LIFECYCLE_TRANSITION|SUCCESS|{approver}|APPROVED_PLANNED>ACTIVE",
+                $"Project.ProjectSuspended|LIFECYCLE_TRANSITION|SUCCESS|{approver}|ACTIVE>SUSPENDED",
+                $"Project.ProjectResumed|LIFECYCLE_TRANSITION|SUCCESS|{approver}|SUSPENDED>ACTIVE",
             ],
             await TrailAsync(projectId));
         Assert.Empty(await host.Database.QueryAsync(AuditStore.BrokenChainLinks));
@@ -155,7 +168,7 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
         Sessions sessions = await client.SignInAsync();
         Guid projectId = await ProjectInAsync(client, sessions, "SUBMITTED", Placement.Own);
         await client.CommandOrFailAsync((await client.SignInOrFailAsync(startedBy)).AccessToken, projectId, "start-review");
-        (Guid runId, Guid taskId) = await PendingTaskAsync(client, sessions.Approver, projectId);
+        (Guid runId, Guid taskId) = await PendingTaskAsync(client, sessions.Approver, ("Project", "Project", projectId));
 
         Guid correlationId = Guid.NewGuid();
         using (HttpClient attempt = host.Api.CreateClient().WithCorrelationId(correlationId))
@@ -198,10 +211,42 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
         return projectId;
     }
 
-    /// <summary>Decides the review's open task through the approval API and delivers the outcome, as the outbox worker would; returns the run.</summary>
-    private async Task<Guid> DecideAsync(HttpClient client, string token, Guid projectId, string decision, object? body = null)
+    /// <summary>
+    /// WF-09: a request raised and put to review by the Department Manager, approved by local.r02 through WF-11 — which leaves the project
+    /// as it is — and then activated by local.r02, which moves it.
+    /// </summary>
+    private async Task SuspendOrResumeAsync(HttpClient client, Sessions sessions, Guid projectId, string requestType)
     {
-        (Guid runId, Guid taskId) = await PendingTaskAsync(client, token, projectId);
+        string effective = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        using HttpResponseMessage raised = await client.PostAsync(SuspensionRequests, sessions.Reviewer, new
+        {
+            projectId,
+            requestType,
+            reason = new { text = "The board has decided.", language = "en" },
+            requestedEffectiveDate = effective,
+        });
+        Assert.True(raised.StatusCode == HttpStatusCode.Created, $"raise: {(int)raised.StatusCode} {await raised.Content.ReadAsStringAsync()}");
+        Guid requestId = AdministrationApi.IdOf(await raised.ReadObjectAsync());
+        foreach (string command in new[] { "submit", "start-review" })
+        {
+            using HttpResponseMessage moved = await client.PostAsync($"{SuspensionRequests}/{requestId}/{command}", sessions.Reviewer);
+            Assert.True(moved.StatusCode == HttpStatusCode.OK, $"{command}: {(int)moved.StatusCode} {await moved.Content.ReadAsStringAsync()}");
+        }
+
+        string before = (await GetAsync(client, sessions.Entity, projectId)).Status();
+        await DecideAsync(client, sessions.Approver, ("Suspension", "SuspensionRequest", requestId), "approve");
+        Assert.Equal(before, (await GetAsync(client, sessions.Entity, projectId)).Status());
+        using HttpResponseMessage activated = await client.PostAsync($"{SuspensionRequests}/{requestId}/activate", sessions.Approver);
+        Assert.True(activated.StatusCode == HttpStatusCode.OK, $"activate: {(int)activated.StatusCode} {await activated.Content.ReadAsStringAsync()}");
+    }
+
+    /// <summary>Decides the review's open task through the approval API and delivers the outcome, as the outbox worker would; returns the run.</summary>
+    private Task<Guid> DecideAsync(HttpClient client, string token, Guid projectId, string decision, object? body = null) =>
+        DecideAsync(client, token, ("Project", "Project", projectId), decision, body);
+
+    private async Task<Guid> DecideAsync(HttpClient client, string token, (string Module, string Type, Guid Id) subject, string decision, object? body = null)
+    {
+        (Guid runId, Guid taskId) = await PendingTaskAsync(client, token, subject);
         using (HttpResponseMessage decided = await client.PostAsync($"{ApprovalTasks}/{taskId}/{decision}", token, body))
         {
             Assert.True(decided.StatusCode == HttpStatusCode.OK, $"{decision}: {(int)decided.StatusCode} {await decided.Content.ReadAsStringAsync()}");
@@ -211,10 +256,10 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
         return runId;
     }
 
-    /// <summary>The project's pending review run, and its open task, as SCR-115 shows them.</summary>
-    private static async Task<(Guid RunId, Guid TaskId)> PendingTaskAsync(HttpClient client, string token, Guid projectId)
+    /// <summary>The subject's pending review run, and its open task, as SCR-115 shows them.</summary>
+    private static async Task<(Guid RunId, Guid TaskId)> PendingTaskAsync(HttpClient client, string token, (string Module, string Type, Guid Id) subject)
     {
-        JsonObject runs = await GetAsync(client, token, $"{ApprovalInstances}?subjectModule=Project&subjectType=Project&subjectId={projectId}&status=PENDING");
+        JsonObject runs = await GetAsync(client, token, $"{ApprovalInstances}?subjectModule={subject.Module}&subjectType={subject.Type}&subjectId={subject.Id}&status=PENDING");
         Guid runId = AdministrationApi.IdOf(Assert.Single(runs["items"]!.AsArray())!.AsObject());
         JsonObject run = await GetAsync(client, token, $"{ApprovalInstances}/{runId}");
         return (runId, AdministrationApi.IdOf(Assert.Single(run["tasks"]!.AsArray(), t => t!["status"]!.GetValue<string>() == "PENDING")!.AsObject()));

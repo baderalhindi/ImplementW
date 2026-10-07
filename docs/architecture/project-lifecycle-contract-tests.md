@@ -21,7 +21,7 @@
 | **In** | Making the generated document state what the API sends (D-6): a contract test over a document that misstates the wire format checks nothing | This task |
 | **Out** | Emitting R-52 extensions, `default` responses, response headers and examples, which every module lacks | Platform (F-1) |
 | **Out** | Contract tests of the other modules (TASK-054, TASK-059, TASK-065) | Those tasks (F-4) |
-| **Out** | ACTIVE ↔ SUSPENDED, COMPLETED → CLOSED | TASK-062, TASK-063 |
+| **Out** | ACTIVE ↔ SUSPENDED (taken by the end-to-end run since TASK-062), COMPLETED → CLOSED | TASK-062, TASK-063 |
 
 ## 2. Decisions
 
@@ -116,3 +116,4 @@ Each mutation was applied to production code, the solution rebuilt, the Project 
 | 2026-10-02 | Created (TASK-043) |
 | 2026-10-05 | TASK-054 (`execution-domain-contract-tests.md`): F-4 resolved for the Progress, Schedule, ProjectTask, Milestone and FinancialKpi tags, which `ExecutionContractTests` now diffs, compares as built and lints. `BuiltAsync`, the lint run and `OpenPlatformFindings` moved from `ProjectContractTests` to `OpenApiDocument` (that record's D-7); the Project tests are unchanged in what they assert. F-4 stands for the tags not yet gated (TASK-059, TASK-065) |
 | 2026-10-07 | TASK-059 (`risk-issue-contract-tests.md`): F-4 resolved for the Risk and ManagementConcern tags, which `RiskIssueContractTests` diffs, compares as built and lints; their responses are replayed against the document as D-8 does for Project. The per-response check moved from `ProjectContractTests` to `DocumentedResponses` (that record's D-7); the Project tests are unchanged in what they assert. F-4 stands for the tags not yet gated (TASK-065) |
+| 2026-10-07 | TASK-062 (`suspension.md`): the end-to-end run of D-10 goes on past ACTIVE through WF-09 — a suspension request and a resumption request, each raised and put to review by the Department Manager, approved through WF-11 with the project unchanged, then activated — so ACTIVE → SUSPENDED and SUSPENDED → ACTIVE are taken and audited, as D-10's own check on `ProjectLifecycle` requires. `LifecycleGuardTests` admits the two edges; `ProjectTestHost` routes SUSPENSION and RESUMPTION |
