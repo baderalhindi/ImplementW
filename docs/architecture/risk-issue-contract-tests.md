@@ -5,7 +5,7 @@
 | Task | TASK-059 — Contract & Regression Tests for Risk/Issue Domain (WF-06/07) (P9 - Risk & Issue Management (WF-06/07)) |
 | Depends on | TASK-055 — WF-06 risk management (`risk-management.md`). TASK-057 — WF-07 issue and challenge management (`management-concern.md`). TASK-043 and TASK-054 — the contract-test machinery this extends (`project-lifecycle-contract-tests.md`, `execution-domain-contract-tests.md`) |
 | Record date | 2026-10-07 |
-| Status | **BUILT AND VERIFIED LOCALLY** against `AHDA-postgres` and `AHDA-ldap` (§5), and wired into the `backend` job of `ci-quality-gates` (D-9). Each invariant test, and each contract gate, fails when its rule is broken on purpose (§5.1) |
+| Status | **BUILT AND VERIFIED** locally against `AHDA-postgres` and `AHDA-ldap` (§5), and in CI, where it is wired into the `backend` job of `ci-quality-gates` (D-9). Each invariant test, and each contract gate, fails when its rule is broken on purpose (§5.1); the row's violation failed it in CI (§5.2) |
 | Branch | `test/task-059-wf06-07-risk-issue-tests` |
 | Deliverables | **Invariant regression tests** under `src/backend/PMPlatform.Tests.Integration/RiskIssue`: `RiskRatingPinningTests` (1) and `ConcernSeverityPinningTests` (1) for invariant 1; `SeverityInputTests` (2) for invariant 2. **Contract test suite**: `RiskIssueContractTests` (6), `RiskResponseContractTests` (1), `ConcernResponseContractTests` (1). **CI wiring**: step "Risk and issue domain contract and regression tests" in `.github/workflows/ci-quality-gates.yml`, and the Risk step's filter narrowed (D-9). Supporting: `RiskIssueApi`; `DocumentedResponses`, `OpenApiDocument.SchemasReachedBy` and `RequestPropertyNames` (D-7); `RiskDriver.PublishMatrixAsync`'s optional labels (D-6); `CONTRIBUTING.md`; this record |
 | Environment variables / secrets | None. `UPDATE_OPENAPI_SNAPSHOT=1` rewrites the snapshot, as for TASK-043 |
@@ -34,7 +34,7 @@
 | D-6 | **Each test runs on the host of the module it starts from**, as TASK-054 D-6: the gates, the WF-06 replay and rating pinning on `RiskTestHost`, which grants assessment, acceptance and reopen; the WF-07 replay, severity pinning and severity input on `ConcernTestHost`, which has the real WF-07 register, the severity mapping and the escalation routes. No new host. Tests that publish a matrix republish the host's own in a `finally`, as `ConcernSeverityTests` does, since a collection's tests share it. `RiskDriver.PublishMatrixAsync` takes optional English labels for the relabelling of D-2; its callers are unchanged | KISS: the module fixtures already seed what each test needs |
 | D-7 | **The contract machinery is shared, not copied.** `DocumentedResponses` (the per-response check `ProjectContractTests` held as a local function) is extracted; that test now uses it. `OpenApiDocument` gains `SchemasReachedBy`, which `Surface` now uses, and `RequestPropertyNames` | DRY. The Project contract tests pass unchanged (§5 row 4) |
 | D-8 | **The violations are proven, not assumed.** `artifacts/task-059/mutations.py` (local, not committed: `artifacts/` is ignored) applies each mutation of §5.1 to production code, builds, runs this suite beside the Risk and ManagementConcern suites, restores the source with a fresh mtime and rebuilds the clean source at the end | The row: each test must "fail if either invariant is violated" |
-| D-9 | **CI.** One step in the `backend` job of `ci-quality-gates.yml`, after the ManagementConcern step, `--filter FullyQualifiedName~PMPlatform.Tests.Integration.RiskIssue`, on the same PostgreSQL service and test directory; about 8 s locally. The Risk step's filter now ends in `.` (`…Integration.Risk.`): it matched `…Integration.RiskIssue` as well, and would have run this suite twice. The workflow runs on every pull request to `main`, `dev` and `stage` with no path filter, so every PR touching WF-06 or WF-07 runs it, and the `backend` job is a required check; `ci-cd-pipeline.yml` calls the same workflow | Acceptance criterion: "run in CI on every PR touching WF-06/WF-07" |
+| D-9 | **CI.** One step in the `backend` job of `ci-quality-gates.yml`, after the ManagementConcern step, `--filter FullyQualifiedName~PMPlatform.Tests.Integration.RiskIssue`, on the same PostgreSQL service and test directory; about 8 s locally. It runs whenever the build passed (`if: ${{ !cancelled() && steps.build.outcome == 'success' }}`, the build step given `id: build`), even after an earlier test step failed, so the invariants' verdict is always in the log: the first validation run showed it skipped behind the ManagementConcern step, which fails on the same violation (§5.2). The Risk step's filter now ends in `.` (`…Integration.Risk.`): it matched `…Integration.RiskIssue` as well, and would have run this suite twice. The workflow runs on every pull request to `main`, `dev` and `stage` with no path filter, so every PR touching WF-06 or WF-07 runs it, and the `backend` job is a required check; `ci-cd-pipeline.yml` calls the same workflow | Acceptance criterion: "run in CI on every PR touching WF-06/WF-07" |
 
 ## 3. The suite
 
@@ -85,6 +85,17 @@ Each mutation was applied to production code, the solution built, this suite run
 
 M-1 does not fail `EachRiskIssueApiKeepsEveryPromiseOfTheSnapshot`: an added optional request property is not an R-10 break. The as-built gate and the static half of invariant 2 are what catch it.
 
+### 5.2 Validation in CI
+
+The row's validation check was run in CI on 2026-10-07: draft PR #67 (never merged; closed and its branch deleted) committed M-1 — `POST /management-concerns` accepting a `severityItemId` and applying it over the computed severity — on top of this branch, then reverted it.
+
+| Run | Commit | Result |
+| --- | --- | --- |
+| 37651705511 | `950452c`, the violation on `43d6511` | `backend` **failed** in "ManagementConcern integration tests" (`ConcernSeverityTests.AClientSuppliedSeverityIsIgnoredAndTheComputedOneStored`, 1 of 16). The new step was **skipped** behind it, so this suite never ran. This led to D-9's `if:` (`5fee994`) |
+| 37652856562 | `c808a01`, the violation on `5fee994` | `backend` **failed** in both. ManagementConcern: 1 of 16. "Risk and issue domain contract and regression tests": 3 of 12 — `NoWf06OrWf07RequestCanCarryAComputedField` ("POST /api/v1/management-concerns: severityItemId"), `EveryWriteThatRaisesOrChangesAConcernComputesItsSeverity` ("After POST /api/v1/management-concerns claiming CRITICAL, the severity is not the computed …"), `EachRiskIssueSnapshotIsTheApiAsBuilt(ManagementConcern)`. Every earlier step passed |
+| 37653933064 | `dbbdb80`, the revert (tree identical to `5fee994`) | `backend` passed: Risk 17, ManagementConcern 16, this step 12 of 12. `frontend` failed on the first attempt in `documents/detail/detail.test.tsx` (an axe `document-title` violation, a known flake; no frontend code changes here) and passed on rerun; all checks pass |
+| 37652848213 | `5fee994`, this branch (PR #66) | All checks pass; Risk 17 (the narrowed filter), ManagementConcern 16, this step 12 |
+
 ## 6. Acceptance criteria and deliverables
 
 | Item | Result |
@@ -94,7 +105,7 @@ M-1 does not fail `EachRiskIssueApiKeepsEveryPromiseOfTheSnapshot`: an added opt
 | They fail if either invariant is violated | **MET.** §5.1 M-1 to M-4; M-1 is the row's validation check |
 | Contract tests catch a breaking schema change in either domain's API | **MET.** M-5 (Risk) and M-6 (ManagementConcern) by the R-10 gate; M-7, a drift the document does not show, by the replay |
 | Deliverables: contract test suite, invariant regression tests, CI wiring | **MET** (header row "Deliverables") |
-| Validation: run the suite in CI and confirm green; temporarily accept client-supplied Severity in a test branch and confirm the regression test fails, then revert | §5.2 |
+| Validation: run the suite in CI and confirm green; temporarily accept client-supplied Severity in a test branch and confirm the regression test fails, then revert | **MET** (§5.2): green on this branch; with the violation, 3 of the suite's 12 tests failed in CI; green again after the revert |
 
 ## 7. Findings
 
