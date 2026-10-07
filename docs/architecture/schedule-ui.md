@@ -135,3 +135,4 @@ Each mutation was applied to the source, `vitest run src/features/schedule` run 
 | --- | --- |
 | 2026-10-03 | Created (TASK-047) |
 | 2026-10-03 | TASK-049 (`task-boards-ui.md` D-11): `cyclePath` moved to `shared/graph`, the page reader to `shared/api/paging.ts` `readAllPages`, `useFieldErrors` to `shared/forms` (this module's file wraps it with `scheduleFieldMessage`); `ConfirmDialog` takes another feature's wording. `.table-container` is positioned, so a date range's hidden "to" no longer widens the page when SCR-060's table scrolls on a narrow screen. Behaviour unchanged: the 78 tests pass as they were |
+| 2026-10-07 | F-5: TASK-060 (`change-request.md` §6 item 2) built WF-08; the rebaseline dialog's id is now applied for real, and `GET /change-authorizations?projectId=&authorizationScope=REBASELINE&status=ISSUED` lists what a picker would offer. The picker itself is not built |

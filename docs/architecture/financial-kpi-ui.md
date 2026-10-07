@@ -152,3 +152,4 @@ Each mutation was applied to the source, `vitest run src/features/financial-kpi`
 | Date | Change |
 | --- | --- |
 | 2026-10-05 | Created (TASK-053) |
+| 2026-10-07 | TASK-060 (`change-request.md` F-11): a revision of an ACTIVE Approved Budget now needs a WF-08 change authorisation, which this screen does not send; its submission is refused 422 `FINANCIAL_CHANGE_AUTHORIZATION_REQUIRED` until a picker over `GET /change-authorizations?projectId=&authorizationScope=COMMITMENT_CHANGE&status=ISSUED` is added. The project's first budget is unaffected |

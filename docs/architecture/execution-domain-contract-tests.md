@@ -55,7 +55,7 @@
 | WF-14 → WF-02 periods (edge 13) | `progress.reporting_cycle` periods; financial publication over them |
 | WF-02 read side (edge 29) | `IProjectHealthReader` |
 | WF-05 → WF-03 shared milestone (edge 10) | `/project-milestones`, `/milestone-achievements`, WF-11 outcome → `IMilestoneAchievementRecorder` |
-| WF-03 → WF-11 baseline approval (edge 21), WF-08 authorisation (edge 11) | `/project-baselines` submit, WF-11 decision and outbox delivery; `FakeRebaselineAuthorization` (WF-08 not built) |
+| WF-03 → WF-11 baseline approval (edge 21), WF-08 authorisation (edge 11) | `/project-baselines` submit, WF-11 decision and outbox delivery; a real WF-08 authorisation, issued by `ChangeAuthorizationFixture` (TASK-060) |
 | WF-03 read side (edge 29) | `IScheduleHealthReader`, `/schedule-health-statuses` |
 | WF-14 → WF-11 budget and target approval (edge 26), → DocumentManagement (edge 38) | `/financial-commitments`, `/kpi-target-versions`; the budget letter scanned CLEAN |
 
@@ -121,3 +121,4 @@ M-1, the row's example, was also run in CI on 2026-10-05: draft PR #61 (never me
 | Date | Change |
 | --- | --- |
 | 2026-10-05 | Created (TASK-054) |
+| 2026-10-07 | TASK-060 (`change-request.md`): the rebaselines of `ApprovedBaselineReferenceTests` and `SharedMilestoneTests` apply a real WF-08 change authorisation, issued by `ChangeAuthorizationFixture`, in place of the deleted `FakeRebaselineAuthorization` |
