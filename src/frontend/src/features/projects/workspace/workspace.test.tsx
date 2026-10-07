@@ -73,6 +73,7 @@ const TAB = {
   kpis: en('projects.workspace.tabs.kpis'),
   risks: en('projects.workspace.tabs.risks'),
   issuesChallenges: en('projects.workspace.tabs.issuesChallenges'),
+  changeRequests: en('projects.workspace.tabs.changeRequests'),
   reviews: en('projects.workspace.tabs.reviews'),
   documents: en('projects.workspace.tabs.documents'),
 };
@@ -96,6 +97,7 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.kpis,
       TAB.risks,
       TAB.issuesChallenges,
+      TAB.changeRequests,
       TAB.reviews,
       TAB.documents,
     ]);
@@ -117,6 +119,7 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.kpis,
       TAB.risks,
       TAB.issuesChallenges,
+      TAB.changeRequests,
       TAB.documents,
     ]);
   });

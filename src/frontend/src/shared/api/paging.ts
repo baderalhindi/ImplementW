@@ -35,3 +35,19 @@ export async function readAllPages<T>(
     }
   }
 }
+
+/** Reads at once across a set of records (a project's list each): enough to be quick, few enough not to flood the API. */
+export const PARALLEL_READS = 6;
+
+/** `read` over every item, PARALLEL_READS at a time, the results flattened in the items' order. */
+export async function readInBatches<T, R>(
+  items: T[],
+  read: (item: T) => Promise<R[]>,
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let index = 0; index < items.length; index += PARALLEL_READS) {
+    const batch = await Promise.all(items.slice(index, index + PARALLEL_READS).map(read));
+    results.push(...batch.flat());
+  }
+  return results;
+}

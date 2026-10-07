@@ -57,6 +57,7 @@ export type WorkspaceTabKey =
   | 'kpis'
   | 'risks'
   | 'issuesChallenges'
+  | 'changeRequests'
   | 'reviews'
   | 'documents';
 
@@ -69,14 +70,15 @@ export interface WorkspaceTab {
 
 /**
  * SCR-040 Overview, SCR-041 Registration, SCR-035 Location, SCR-048 Progress, SCR-060 Schedule, SCR-047 Tasks,
- * SCR-046 Milestones, SCR-049 Financials, SCR-050 KPIs, SCR-080/082 Risks, SCR-083–086 Issues & challenges, SCR-042 Review History, SCR-043 Documents (D-4). Progress is for those an assignment reaches: PROGRESS_VIEW ships to
+ * SCR-046 Milestones, SCR-049 Financials, SCR-050 KPIs, SCR-080/082 Risks, SCR-083–086 Issues & challenges, SCR-105 Change requests, SCR-042 Review History, SCR-043 Documents (D-4). Progress is for those an assignment reaches: PROGRESS_VIEW ships to
  * the project's Project Manager and its delivering entity (TASK-044 D-10), and the API answers an empty page to anyone
  * it does not reach. Schedule likewise: SCHEDULE_VIEW ships to the project's Project Manager (TASK-046 D-12); and Tasks:
  * TASK_VIEW ships to the Project Manager, and a task's owner holds a role over the project (TASK-048 D-11, D-12); and
  * Milestones: SCHEDULE_VIEW and MILESTONE_VIEW ship to the Project Manager (TASK-050 D-10); and Financials and KPIs:
  * FINANCIAL_VIEW and KPI_VIEW ship to the delivering entity (TASK-052 D-10, ADR-013); and Risks: RISK_VIEW ships to the
  * Project Manager (TASK-055); and Issues & challenges: CONCERN_VIEW ships to the Project Manager, the delivering entity
- * and the department's manager (TASK-057 D-8).
+ * and the department's manager (TASK-057 D-8); and Change requests: CHANGE_REQUEST_VIEW ships to the Project Manager and
+ * the department's manager (TASK-060 D-11).
  * Review history is AHDA's: a review's requester is the AHDA reviewer (TASK-041 F-11) and a run carries no entity
  * anchor (TASK-035 F-8), so an external user can never read one.
  */
@@ -92,6 +94,7 @@ export const WORKSPACE_TABS: WorkspaceTab[] = [
   { key: 'kpis', path: 'kpis', audience: 'reached' },
   { key: 'risks', path: 'risks', audience: 'reached' },
   { key: 'issuesChallenges', path: 'issues-challenges', audience: 'reached' },
+  { key: 'changeRequests', path: 'change-requests', audience: 'reached' },
   { key: 'reviews', path: 'reviews', audience: 'internalReached' },
   { key: 'documents', path: 'documents', audience: 'reached' },
 ];

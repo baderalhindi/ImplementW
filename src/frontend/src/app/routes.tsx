@@ -1,6 +1,7 @@
 import { Navigate, Outlet, type RouteObject } from 'react-router';
 
 import { approvalRoutes } from '@/features/approvals/routes.tsx';
+import { changeRequestRoutes } from '@/features/change-requests/routes.tsx';
 import { documentRoutes } from '@/features/documents/routes.tsx';
 import { kpiRoutes } from '@/features/financial-kpi/routes.tsx';
 import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
@@ -89,6 +90,15 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: issuesChallengesRoutes,
+      },
+      {
+        path: 'change-requests',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: changeRequestRoutes,
       },
       {
         path: 'approvals',
