@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval;
+using PMPlatform.Application.Features.ChangeRequest;
 using PMPlatform.Application.Features.AuditActivity;
 using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
@@ -30,6 +31,7 @@ using PMPlatform.Infrastructure.Risk;
 using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
+using PMPlatform.Infrastructure.Persistence.ChangeRequest;
 using PMPlatform.Infrastructure.Persistence.DocumentManagement;
 using PMPlatform.Infrastructure.Persistence.FinancialKpi;
 using PMPlatform.Infrastructure.Persistence.ManagementConcern;
@@ -125,6 +127,9 @@ public static class DependencyInjection
 
         // TASK-057: WF-07's management_concern schema.
         services.AddScoped<IManagementConcernRepository, ManagementConcernRepository>();
+
+        // TASK-060: WF-08's change_request schema.
+        services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
 
         services.AddNotifications(configuration);
 

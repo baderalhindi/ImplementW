@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-using PMPlatform.Application.Features.Schedule;
 using PMPlatform.Tests.Integration.Identity;
 
 namespace PMPlatform.Tests.Integration.Schedule;
@@ -9,8 +7,8 @@ namespace PMPlatform.Tests.Integration.Schedule;
 /// AHDA's side beside the shipped R04 grants — Appendix A grants nothing there (schedule-baseline.md F-2); a published
 /// GOVERNANCE_PROFILE version in which STANDARD requires baseline approval and LIGHT does not (ADR-015); a published
 /// SCHEDULE_BASELINE route in APPROVAL_AUTHORITY, decided by R02; a WORKFLOW_POLICY with the approval settings and the
-/// Schedule Health thresholds, AMBER from 5 and RED from 20 working days late; and <see cref="Rebaselines"/> standing in for
-/// WF-08's change authorisations, which TASK-060 has not built (F-1). Projects are inserted, as fixtures may.
+/// Schedule Health thresholds, AMBER from 5 and RED from 20 working days late. A rebaseline applies a real WF-08 change authorisation,
+/// issued by <c>ChangeAuthorizationFixture</c>. Projects are inserted, as fixtures may.
 /// </summary>
 /// <remarks>
 /// People: local.r02 views and edits every schedule, decides baseline runs and activates projects (R02, ALL). local.r05 is an
@@ -82,9 +80,6 @@ public sealed class ScheduleTestHost : IAsyncLifetime
 
     public IdentityApiFactory Api { get; private set; } = null!;
 
-    /// <summary>The WF-08 change authorisations a test declares applicable; none until it says.</summary>
-    internal FakeRebaselineAuthorization Rebaselines { get; } = new();
-
     public Guid StandardProfileId { get; private set; }
 
     public Guid LightProfileId { get; private set; }
@@ -101,8 +96,7 @@ public sealed class ScheduleTestHost : IAsyncLifetime
                 ["Outbox:PollInterval"] = "01:00:00",
                 ["Approval:Maintenance:PollInterval"] = "01:00:00",
                 ["DocumentManagement:Scan:PollInterval"] = "01:00:00",
-            },
-            services => services.AddSingleton<IRebaselineAuthorization>(Rebaselines));
+            });
     }
 
     public async Task DisposeAsync()

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json.Nodes;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.Schedule.Contracts;
+using PMPlatform.Tests.Integration.ChangeRequest.Fixtures;
 using PMPlatform.Tests.Integration.Identity;
 using PMPlatform.Tests.Integration.Milestone;
 using PMPlatform.Tests.Integration.Schedule;
@@ -55,7 +56,7 @@ public sealed class SharedMilestoneTests(MilestoneTestHost host)
         }
 
         await AssertOneRowAsync(projectId, milestoneId, "reforecast");
-        Guid second = AdministrationApi.IdOf(await client.SubmittedBaselineAsync(sessions.ProjectManager, projectId, host.Rebaselines.Authorize(projectId)));
+        Guid second = AdministrationApi.IdOf(await client.SubmittedBaselineAsync(sessions.ProjectManager, projectId, await host.Database.IssueRebaselineAsync(projectId)));
         await host.DecideAndDeliverAsync(ScheduleApprovalRouting.SubjectModule, ScheduleApprovalRouting.SubjectType, second, ApprovalTaskDecision.Approve);
         await AssertOneRowAsync(projectId, milestoneId, "rebaselined");
         Assert.Equal([$"{first} {MilestoneDriver.Iso(planned)}", $"{second} {MilestoneDriver.Iso(reforecast)}"], await host.Database.QueryAsync($"""

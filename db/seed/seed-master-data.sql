@@ -152,7 +152,14 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- Project Manager the primary manager of a project's issues and challenges, who escalates them: CONCERN_MANAGE and CONCERN_ESCALATE
 -- go to R04 at OWN, and the application refuses both to an external user whatever they hold. §3 gives the Department Manager
 -- escalation handling: CONCERN_VIEW and CONCERN_ESCALATION_RESOLVE go to R03 at DEPT. The rest wait for Appendix A
--- (management-concern.md F-2). The eight WF-14 permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
+-- (management-concern.md F-2). The four WF-08 permissions (TASK-060) — CHANGE_REQUEST_VIEW, CHANGE_REQUEST_RAISE,
+-- CHANGE_REQUEST_REVIEW, CHANGE_REQUEST_IMPLEMENT — ship with CHANGE_REQUEST_VIEW and CHANGE_REQUEST_RAISE to R04 at OWN: ADR-013's
+-- amendment to TASK-060 lets entity Project Managers raise a change request, and OWN reaches the projects the holder manages, internal
+-- or entity. Materiality, approval and implementation remain AHDA's: WF-08's specification §3 makes the Project Manager the
+-- coordinator of a change's implementation, so CHANGE_REQUEST_IMPLEMENT goes to R04 at OWN and the application refuses it to an
+-- external user whatever they hold; §3 makes the Department Manager the reviewer, so CHANGE_REQUEST_VIEW and CHANGE_REQUEST_REVIEW go
+-- to R03 at DEPT. Approval is WF-11's APPROVAL_DECIDE. The rest wait for Appendix A (change-request.md F-2). The eight WF-14
+-- permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
 -- FINANCIAL_REVIEW, FINANCIAL_SOURCE_MANAGE, KPI_VIEW, KPI_MANAGE, KPI_RECORD, KPI_REVIEW — ship with FINANCIAL_VIEW and KPI_VIEW
 -- to R04 and R08 at ENTITY: ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI status for its own
 -- project, masked by audience (ADR-010); ENTITY reaches only a holder with an entity. Entering, reviewing and source
@@ -213,6 +220,10 @@ FROM (VALUES
     ('CONCERN_MANAGE',              'إدارة المشكلات والتحديات', 'Manage issues and challenges', 'MANAGEMENT_CONCERN', false),
     ('CONCERN_ESCALATE',            'تصعيد المشكلات والتحديات', 'Escalate issues and challenges', 'MANAGEMENT_CONCERN', false),
     ('CONCERN_ESCALATION_RESOLVE',  'معالجة التصعيدات',     'Resolve escalations',         'MANAGEMENT_CONCERN', false),
+    ('CHANGE_REQUEST_VIEW',         'عرض طلبات التغيير',    'View change requests',        'CHANGE_REQUEST',  false),
+    ('CHANGE_REQUEST_RAISE',        'رفع طلبات التغيير',    'Raise change requests',       'CHANGE_REQUEST',  false),
+    ('CHANGE_REQUEST_REVIEW',       'مراجعة طلبات التغيير', 'Review change requests',      'CHANGE_REQUEST',  false),
+    ('CHANGE_REQUEST_IMPLEMENT',    'تنفيذ طلبات التغيير',  'Implement change requests',   'CHANGE_REQUEST',  false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
     ('FINANCIAL_SUBMIT',            'تقديم البيانات المالية', 'Submit financial figures',  'FINANCIAL',       false),
     ('FINANCIAL_REVIEW',            'مراجعة البيانات المالية', 'Review financial figures', 'FINANCIAL',       false),
@@ -282,6 +293,11 @@ FROM (VALUES
     ('R08', 'CONCERN_RAISE',               'ENTITY'),
     ('R03', 'CONCERN_VIEW',                'DEPT'),
     ('R03', 'CONCERN_ESCALATION_RESOLVE',  'DEPT'),
+    ('R04', 'CHANGE_REQUEST_VIEW',         'OWN'),
+    ('R04', 'CHANGE_REQUEST_RAISE',        'OWN'),
+    ('R04', 'CHANGE_REQUEST_IMPLEMENT',    'OWN'),
+    ('R03', 'CHANGE_REQUEST_VIEW',         'DEPT'),
+    ('R03', 'CHANGE_REQUEST_REVIEW',       'DEPT'),
     ('R04', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R08', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R04', 'KPI_VIEW',                    'ENTITY'),

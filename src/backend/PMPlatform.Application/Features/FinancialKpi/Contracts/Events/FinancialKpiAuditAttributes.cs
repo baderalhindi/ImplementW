@@ -33,6 +33,7 @@ public static class FinancialKpiAuditAttributes
     public const string FinancialCommitmentId = "financial_commitment_id";
     public const string ThresholdConfigurationVersionId = "threshold_configuration_version_id";
     public const string Reason = "reason";
+    public const string ChangeAuthorizationId = "change_authorization_id";
     public const string KpiDefinitionId = "kpi_definition_id";
     public const string OwnerUserId = "owner_user_id";
     public const string MeasurementFrequencyItemId = "measurement_frequency_item_id";

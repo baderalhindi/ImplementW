@@ -181,6 +181,17 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.ManagementConcern.
 
+      # TASK-060: WF-08 Change Request & Authorization — a change authorisation applied by its target module exactly once however the
+      # request that applies it is retried, an approval that changes neither WF-03's schedule nor WF-14's budget until each module's own
+      # application step, materiality recorded and pinned at review and cumulative against the active baseline, ADR-013's raise-only
+      # participation, and the database guards. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
+      - name: ChangeRequest integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.ChangeRequest.
+
       # TASK-059: the risk and issue domain's two hard invariants — a rating or severity pinned to the RISK_MATRIX version in force
       # when assessed, on every read that serves one, and Severity (with rating, overall impact and pin) never taken from a client,
       # in any documented request or any write that raises or changes a concern — and the WF-06/07 APIs against docs/api/openapi.v1.json

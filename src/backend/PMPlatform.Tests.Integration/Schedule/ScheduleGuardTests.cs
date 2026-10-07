@@ -1,5 +1,6 @@
 using Npgsql;
 using PMPlatform.Application.Features.Approval.Contracts;
+using PMPlatform.Tests.Integration.ChangeRequest.Fixtures;
 using PMPlatform.Tests.Integration.Identity;
 
 namespace PMPlatform.Tests.Integration.Schedule;
@@ -18,7 +19,7 @@ public sealed class ScheduleGuardTests(ScheduleTestHost host)
         ScheduleSessions sessions = await client.SignInAsync();
         Guid projectId = await host.ScheduledProjectAsync(client, sessions.ProjectManager);
         (Guid activity, Guid superseded) = await host.ApprovedBaselineAsync(client, sessions.ProjectManager, projectId);
-        Guid active = AdministrationApi.IdOf(await client.SubmittedBaselineAsync(sessions.ProjectManager, projectId, host.Rebaselines.Authorize(projectId)));
+        Guid active = AdministrationApi.IdOf(await client.SubmittedBaselineAsync(sessions.ProjectManager, projectId, await host.Database.IssueRebaselineAsync(projectId)));
         await host.DecideAndDeliverAsync(active, ApprovalTaskDecision.Approve);
         Guid draft = AdministrationApi.IdOf(await client.CreatedOrFailAsync(sessions.ProjectManager, ScheduleDriver.Baselines, new { projectId }));
         string otherProject = (await host.ProjectAsync()).ToString();

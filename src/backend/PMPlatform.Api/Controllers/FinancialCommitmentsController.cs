@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Models.FinancialKpi;
 using PMPlatform.Api.Models.Progress;
@@ -83,15 +84,20 @@ public sealed class FinancialCommitmentsController(IFinancialCommitmentService c
         return error is null || error.Kind == AdministrationErrorKind.NotFound ? NoContent() : Failure(error);
     }
 
-    /// <summary>DRAFT or RETURNED → SUBMITTED to WF-11, once a referenced document is held (422 <c>FINANCIAL_BUDGET_DOCUMENT_REQUIRED</c>).</summary>
+    /// <summary>
+    /// DRAFT or RETURNED → SUBMITTED to WF-11, once a referenced document is held (422 <c>FINANCIAL_BUDGET_DOCUMENT_REQUIRED</c>). A change to
+    /// an ACTIVE Approved Budget names the WF-08 change authorisation it implements (422 <c>FINANCIAL_CHANGE_AUTHORIZATION_REQUIRED</c>),
+    /// which WF-11's approval applies as the version activates.
+    /// </summary>
     [HttpPost("{commitmentId:guid}/submit")]
     [RequirePermission(PermissionCatalogue.FinancialSubmit)]
     [SensitiveWrite]
     [ProducesResponseType<FinancialCommitmentDetail>(StatusCodes.Status200OK, "application/json")]
     [EndpointName("FinancialKpi_SubmitFinancialCommitment")]
-    public async Task<IActionResult> Submit(Guid commitmentId, CancellationToken cancellationToken) =>
+    public async Task<IActionResult> Submit(
+        Guid commitmentId, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] FinancialCommitmentSubmitCommand? command, CancellationToken cancellationToken) =>
         TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
-            ? Respond(await commitments.SubmitAsync(CallerId, commitmentId, version, cancellationToken))
+            ? Respond(await commitments.SubmitAsync(CallerId, commitmentId, new CommitmentSubmission(command?.ChangeAuthorizationId), version, cancellationToken))
             : problem!;
 
     /// <summary>The version's referenced documents and the evidence types it holds CLEAN evidence for.</summary>

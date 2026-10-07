@@ -19,7 +19,7 @@ internal sealed class BaselineService(
     IProjectFactsReader projects,
     ScheduleAccess access,
     SchedulePolicy policy,
-    IRebaselineAuthorization rebaselines,
+    RebaselineAuthorization rebaselines,
     BaselineActivation activation,
     IApprovalRequests approvals,
     IAuditTrail audit,
@@ -141,8 +141,12 @@ internal sealed class BaselineService(
             return AdministrationError.Rule(ScheduleErrorCodes.BaselineEmpty);
         }
 
-        // Every rebaseline after the first APPROVED baseline implements an approved WF-08 change (BR-SCH-034). Superseding a
-        // Declared Baseline (ADR-014) is the project's first approved plan, not a rebaseline.
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        bool approvalRequired = await policy.RequiresBaselineApprovalAsync(project.GovernanceProfileItemId, now, cancellationToken).ConfigureAwait(false);
+
+        // Every rebaseline after the first APPROVED baseline implements an approved WF-08 change (BR-SCH-034), applied as it takes
+        // effect: now, where no approval is required; on WF-11's approval otherwise, so only checked here. Superseding a Declared
+        // Baseline (ADR-014) is the project's first approved plan, not a rebaseline.
         ProjectBaseline? active = await repository.FindActiveBaselineAsync(project.Id, track: true, cancellationToken).ConfigureAwait(false);
         if (active is { BaselineType: BaselineType.Approved })
         {
@@ -151,16 +155,16 @@ internal sealed class BaselineService(
                 return AdministrationError.Rule(ScheduleErrorCodes.ChangeAuthorizationRequired, new FieldIssue("changeAuthorizationId", FieldIssue.Required));
             }
 
-            if (!await rebaselines.IsApplicableAsync(project.Id, authorizationId, cancellationToken).ConfigureAwait(false))
+            baseline.ChangeAuthorizationId = authorizationId;
+            bool authorized = approvalRequired
+                ? await rebaselines.IsApplicableAsync(project, active, authorizationId, cancellationToken).ConfigureAwait(false)
+                : await rebaselines.ApplyAsync(project, active, baseline, callerId, now, cancellationToken).ConfigureAwait(false);
+            if (!authorized)
             {
                 return AdministrationError.Rule(ScheduleErrorCodes.ChangeAuthorizationRequired, new FieldIssue("changeAuthorizationId", FieldIssue.NotAllowed));
             }
-
-            baseline.ChangeAuthorizationId = authorizationId;
         }
 
-        DateTimeOffset now = timeProvider.GetUtcNow();
-        bool approvalRequired = await policy.RequiresBaselineApprovalAsync(project.GovernanceProfileItemId, now, cancellationToken).ConfigureAwait(false);
         ProjectBaselineStatus from = baseline.Status;
 
         // A RETURNED candidate comes back as the next revision, which a new WF-11 run reviews (TASK-035 D-9).

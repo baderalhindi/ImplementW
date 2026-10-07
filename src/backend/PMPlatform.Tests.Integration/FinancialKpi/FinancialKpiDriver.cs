@@ -7,6 +7,7 @@ using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.FinancialKpi.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.Common;
+using PMPlatform.Tests.Integration.ChangeRequest.Fixtures;
 using PMPlatform.Tests.Integration.DocumentManagement;
 using PMPlatform.Tests.Integration.Identity;
 
@@ -141,11 +142,18 @@ internal static class FinancialKpiDriver
     }
 
     /// <summary>Opens an Approved Budget version as local.r08, attaches a CLEAN referenced document, submits it and has local.r02 approve it.</summary>
+    /// <summary>
+    /// An Approved Budget version of the project, approved and ACTIVE. A change to an ACTIVE budget implements a WF-08 change authorisation
+    /// (TASK-060), issued for it by <see cref="ChangeAuthorizationFixture"/>.
+    /// </summary>
     public static async Task<Guid> ActiveBudgetAsync(this FinancialKpiTestHost host, HttpClient client, Sessions sessions, Guid projectId, string amountSar)
     {
         Guid id = AdministrationApi.IdOf(await client.CreatedOrFailAsync(sessions.ProjectManager, Commitments, Budget(projectId, amountSar)));
         await host.AttachDocumentAsync(client, sessions.ProjectManager, projectId, id);
-        await client.CommandOrFailAsync(sessions.ProjectManager, $"{Commitments}/{id}/submit");
+        bool isChange = (await host.Database.QueryAsync(
+            $"SELECT id::text FROM financial_kpi.financial_commitment WHERE project_id = '{projectId}' AND status = 'ACTIVE' AND commitment_type = 'APPROVED_BUDGET'")).Count > 0;
+        Guid? authorization = isChange ? await host.Database.IssueCommitmentChangeAsync(projectId) : null;
+        await client.CommandOrFailAsync(sessions.ProjectManager, $"{Commitments}/{id}/submit", new { changeAuthorizationId = authorization });
         await host.DecideAndDeliverAsync(FinancialKpiApprovalRouting.CommitmentType, id, ApprovalTaskDecision.Approve);
         return id;
     }

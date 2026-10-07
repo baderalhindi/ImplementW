@@ -16,12 +16,15 @@ namespace PMPlatform.Application.Features.Schedule.EventHandlers;
 /// </summary>
 /// <remarks>
 /// Idempotent on its own as well (EV-4, EV-5): an outcome applies only to the revision under review while it is SUBMITTED,
-/// and applying it leaves that state, so the same outcome again, or one for an older revision, is audited as ignored. An
-/// approved candidate that is no rebaseline when submitted can meet an APPROVED baseline that activated in the meantime; it
-/// carries no change authorisation, so it is returned rather than activated (BR-SCH-034) and the ACTIVE baseline stays.
+/// and applying it leaves that state, so the same outcome again, or one for an older revision, is audited as ignored. A
+/// rebaseline applies its WF-08 change authorisation as it activates (edge 11), with the approver as the actor. An approved
+/// candidate whose authorisation WF-08 refuses now — the baseline moved, the change is no longer being implemented — or that
+/// carries none because it was no rebaseline when submitted and an APPROVED baseline activated meanwhile, is returned rather
+/// than activated (BR-SCH-034), and the ACTIVE baseline stays.
 /// </remarks>
 internal sealed class BaselineApprovalOutcomeHandler(
-    IScheduleRepository repository, IProjectFactsReader projects, BaselineActivation activation, IAuditTrail audit, TimeProvider timeProvider) : IApprovalOutcomeHandler
+    IScheduleRepository repository, IProjectFactsReader projects, BaselineActivation activation, RebaselineAuthorization rebaselines, IAuditTrail audit,
+    TimeProvider timeProvider) : IApprovalOutcomeHandler
 {
     public string SubjectModule => ScheduleApprovalRouting.SubjectModule;
 
@@ -66,8 +69,10 @@ internal sealed class BaselineApprovalOutcomeHandler(
     private async Task<ScheduleSaveOutcome> ApproveAsync(
         ProjectFacts project, ProjectSchedule schedule, ProjectBaseline baseline, ApprovalOutcomeRecorded outcome, CancellationToken cancellationToken)
     {
+        DateTimeOffset now = timeProvider.GetUtcNow();
         ProjectBaseline? active = await repository.FindActiveBaselineAsync(project.Id, track: true, cancellationToken).ConfigureAwait(false);
-        if (active is { BaselineType: BaselineType.Approved } && baseline.ChangeAuthorizationId is null)
+        if (active is { BaselineType: BaselineType.Approved }
+            && !await rebaselines.ApplyAsync(project, active, baseline, outcome.Data.DecidedByUserId, now, cancellationToken).ConfigureAwait(false))
         {
             End(project, baseline, outcome, ProjectBaselineStatus.Returned, ScheduleAuditEvents.BaselineReturned, ScheduleAudit.RebaselineNotAuthorized);
             return await repository.SaveAsync(cancellationToken).ConfigureAwait(false);
@@ -83,7 +88,7 @@ internal sealed class BaselineApprovalOutcomeHandler(
                 await repository.ListDependenciesAsync(schedule.Id, cancellationToken).ConfigureAwait(false),
                 await repository.ListMilestonesAsync(schedule.Id, cancellationToken).ConfigureAwait(false),
                 ApprovalRequired: true,
-                timeProvider.GetUtcNow()),
+                now),
             cancellationToken).ConfigureAwait(false);
     }
 

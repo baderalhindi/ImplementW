@@ -97,6 +97,9 @@ public sealed record FinancialCommitmentRequest(string? AmountSar, DateOnly? Eff
     }
 }
 
+/// <summary>Submitting an Approved Budget version. A change to an ACTIVE Approved Budget names the approved WF-08 change authorisation it implements (TASK-060).</summary>
+public sealed record FinancialCommitmentSubmitCommand(Guid? ChangeAuthorizationId);
+
 /// <summary>A new Approved Budget version of the project: <see cref="FinancialCommitmentRequest"/> and the project.</summary>
 public sealed record FinancialCommitmentCreateRequest(Guid? ProjectId, string? AmountSar, DateOnly? EffectiveFrom, string? SourceReference, DateOnly? AsOfDate)
 {

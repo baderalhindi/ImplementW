@@ -22,6 +22,9 @@ using PMPlatform.Application.Features.Progress.Contracts;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.EventHandlers;
+using PMPlatform.Application.Features.ChangeRequest;
+using PMPlatform.Application.Features.ChangeRequest.Contracts;
+using PMPlatform.Application.Features.ChangeRequest.EventHandlers;
 using PMPlatform.Application.Features.FinancialKpi;
 using PMPlatform.Application.Features.FinancialKpi.Contracts;
 using PMPlatform.Application.Features.FinancialKpi.EventHandlers;
@@ -142,13 +145,14 @@ public static class DependencyInjection
 
         // TASK-046: WF-03 schedule and baselines. The repository is Infrastructure's; baseline outcomes arrive through the
         // Schedule approval outcome handler (WF-11 edges 21, 28), and Project's activation command consults the baseline
-        // precondition (ADR-009). No change authorisation can be read until TASK-060 (schedule-baseline.md F-1), so
-        // NoRebaselineAuthorization stands in; a host may register its own first.
+        // precondition (ADR-009). A rebaseline presents and applies its WF-08 change authorisation through WF-08's typed adapter, and
+        // WF-03 serves WF-08 the ACTIVE Approved Baseline through WF-08's port (edge 11, TASK-060).
         services.AddScoped<ScheduleAccess>();
         services.AddScoped<SchedulePolicy>();
         services.AddScoped<ScheduleHealthProjection>();
         services.AddScoped<BaselineActivation>();
-        services.TryAddScoped<IRebaselineAuthorization, NoRebaselineAuthorization>();
+        services.AddScoped<RebaselineAuthorization>();
+        services.AddScoped<IApprovedBaselineSource, ApprovedBaselineSource>();
         services.AddScoped<IScheduleService, ScheduleService>();
         services.AddScoped<IBaselineService, BaselineService>();
         services.AddScoped<IApprovalOutcomeHandler, BaselineApprovalOutcomeHandler>();
@@ -183,8 +187,12 @@ public static class DependencyInjection
         // TASK-052: WF-14's two subdomains. Financial Progress — source modes, Approved Budget versions (WF-11, edge 26; documents,
         // edge 38), periodic updates aligned to WF-02's periods (edge 13) and their published snapshots; KPI Performance — assignments,
         // target versions (WF-11, edge 26) and pinned measurements. The repository is Infrastructure's.
+        // TASK-060: a change to the ACTIVE Approved Budget presents and applies its WF-08 change authorisation, and WF-14 serves WF-08
+        // the ACTIVE Approved Budget through WF-08's port (edge 12).
         services.AddScoped<FinancialKpiAccess>();
         services.AddScoped<FinancialPolicy>();
+        services.AddScoped<CommitmentChangeAuthorization>();
+        services.AddScoped<IApprovedBudgetSource, ApprovedBudgetSource>();
         services.AddScoped<KpiDefinitions>();
         services.AddScoped<KpiScope>();
         services.AddScoped<IFinancialSourceModeService, FinancialSourceModeService>();
@@ -222,6 +230,20 @@ public static class DependencyInjection
         services.AddScoped<IConcernEscalationService, ConcernEscalationService>();
         services.AddScoped<IApprovalOutcomeHandler, ConcernValidationOutcomeHandler>();
         services.AddScoped<IRiskIssueMaterialisation, RiskIssueRegister>();
+
+        // TASK-060: WF-08's change requests — materiality evaluated against the active baseline under the MATERIALITY_BAND version in
+        // force and pinned, review through WF-11 (edges 22, 28), and the change authorisations approval issues, which WF-03 and WF-14
+        // apply through IChangeAuthorizations (edges 11, 12). The repository is Infrastructure's.
+        services.AddScoped<ChangeRequestAccess>();
+        services.AddScoped<ChangeRequestReferences>();
+        services.AddScoped<ChangeRequestViews>();
+        services.AddScoped<ChangeRequestGate>();
+        services.AddScoped<MaterialityEvaluator>();
+        services.AddScoped<IChangeRequestService, ChangeRequestService>();
+        services.AddScoped<IChangeRequestLifecycleService, ChangeRequestLifecycleService>();
+        services.AddScoped<IChangeAuthorizationService, ChangeAuthorizationService>();
+        services.AddScoped<IChangeAuthorizations, ChangeAuthorizationLedger>();
+        services.AddScoped<IApprovalOutcomeHandler, ChangeRequestApprovalOutcomeHandler>();
 
         return services;
     }

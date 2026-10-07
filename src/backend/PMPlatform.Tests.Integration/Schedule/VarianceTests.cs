@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using PMPlatform.Application.Features.Approval.Contracts;
+using PMPlatform.Tests.Integration.ChangeRequest.Fixtures;
 using PMPlatform.Tests.Integration.Identity;
 
 namespace PMPlatform.Tests.Integration.Schedule;
@@ -75,7 +76,7 @@ public sealed class VarianceTests(ScheduleTestHost host)
         ScheduleSessions sessions = await client.SignInAsync();
         Guid projectId = await host.ScheduledProjectAsync(client, sessions.ProjectManager);
         (Guid works, _) = await host.ApprovedBaselineAsync(client, sessions.ProjectManager, projectId);
-        await client.SubmittedBaselineAsync(sessions.ProjectManager, projectId, host.Rebaselines.Authorize(projectId));
+        await client.SubmittedBaselineAsync(sessions.ProjectManager, projectId, await host.Database.IssueRebaselineAsync(projectId));
 
         JsonObject reforecast = await client.CommandOrFailAsync(sessions.ProjectManager, $"{ScheduleDriver.Activities}/{works}/reforecast", Forecast(1, 12));
 

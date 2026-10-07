@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PMPlatform.Domain.ChangeRequest;
 using PMPlatform.Domain.Project;
 using PMPlatform.Domain.Schedule;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
@@ -40,7 +41,7 @@ internal sealed class ProjectBaselineConfiguration : IEntityTypeConfiguration<Pr
         builder.HasOne<ProjectEntity>().WithMany().HasForeignKey(e => e.ProjectId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<ProjectIntake>().WithMany().HasForeignKey(e => e.ProjectIntakeId).OnDelete(DeleteBehavior.Restrict);
 
-        // change_authorization_id references change_request.change_authorization, which TASK-060 creates; TASK-060 adds the key
-        // (schedule-baseline.md F-1).
+        // The WF-08 change authorisation the row implements (TASK-060, edges 11 and 12): identifier only (M-4).
+        builder.HasOne<ChangeAuthorization>().WithMany().HasForeignKey(e => e.ChangeAuthorizationId).OnDelete(DeleteBehavior.Restrict);
     }
 }
