@@ -590,6 +590,424 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.ChangeRequest.ChangeAuthorization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AppliedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("applied_at");
+
+                    b.Property<Guid?>("AppliedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("applied_by_user_id");
+
+                    b.Property<string>("AppliedReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("applied_reference");
+
+                    b.Property<Guid>("ApprovalInstanceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approval_instance_id");
+
+                    b.Property<string>("AuthorizationScope")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("authorization_scope");
+
+                    b.Property<Guid>("ChangeRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("change_request_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<DateTimeOffset>("IssuedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<string>("TargetModule")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("target_module");
+
+                    b.Property<int>("TargetRevisionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_revision_no");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("target_type");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_change_authorization");
+
+                    b.HasIndex("AppliedByUserId")
+                        .HasDatabaseName("ix_change_authorization_applied_by_user_id");
+
+                    b.HasIndex("ApprovalInstanceId")
+                        .HasDatabaseName("ix_change_authorization_approval_instance_id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_change_authorization_idempotency_key");
+
+                    b.HasIndex("ChangeRequestId", "IssuedAt")
+                        .HasDatabaseName("ix_change_authorization_change_request_id_issued_at");
+
+                    b.ToTable("change_authorization", "change_request", t =>
+                        {
+                            t.HasCheckConstraint("ck_change_authorization_applied", "(status = 'APPLIED') = (applied_at IS NOT NULL) AND (status = 'APPLIED') = (applied_by_user_id IS NOT NULL) AND (status = 'APPLIED') = (applied_reference IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_change_authorization_authorization_scope", "\"authorization_scope\" IN ('REBASELINE', 'COMMITMENT_CHANGE', 'PROFILE_CHANGE', 'SCOPE_CHANGE')");
+
+                            t.HasCheckConstraint("ck_change_authorization_expires_at", "expires_at IS NULL OR expires_at > issued_at");
+
+                            t.HasCheckConstraint("ck_change_authorization_status", "\"status\" IN ('ISSUED', 'APPLIED', 'EXPIRED', 'REVOKED')");
+
+                            t.HasCheckConstraint("ck_change_authorization_target_revision_no", "target_revision_no >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ChangeRequest.ChangeRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ChangeType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("change_type");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<decimal?>("CostImpactSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("cost_impact_sar");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("ImplementedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("implemented_at");
+
+                    b.Property<bool>("IsContractualObligation")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_contractual_obligation");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<Guid?>("RequestedGovernanceProfileItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_governance_profile_item_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<int?>("ScheduleImpactDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("schedule_impact_days");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Justification", "PMPlatform.Domain.ChangeRequest.ChangeRequest.Justification#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("justification_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("justification");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ScopeImpact", "PMPlatform.Domain.ChangeRequest.ChangeRequest.ScopeImpact#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("scope_impact_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("scope_impact");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.ChangeRequest.ChangeRequest.Title#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("title_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("title");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_change_request");
+
+                    b.HasIndex("RequestedByUserId")
+                        .HasDatabaseName("ix_change_request_requested_by_user_id");
+
+                    b.HasIndex("RequestedGovernanceProfileItemId")
+                        .HasDatabaseName("ix_change_request_requested_governance_profile_item_id");
+
+                    b.HasIndex("UpdatedAt", "Id")
+                        .HasDatabaseName("ix_change_request_updated_at_id");
+
+                    b.HasIndex("ProjectId", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_change_request_project_id_updated_at_id");
+
+                    b.HasIndex("Status", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_change_request_status_updated_at_id");
+
+                    b.ToTable("change_request", "change_request", t =>
+                        {
+                            t.HasCheckConstraint("ck_change_request_change_type", "\"change_type\" IN ('SCOPE', 'COST', 'SCHEDULE', 'CONTRACTUAL_OBLIGATION', 'GOVERNANCE_PROFILE')");
+
+                            t.HasCheckConstraint("ck_change_request_closed", "(status = 'CLOSED') = (closed_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_change_request_contractual", "change_type <> 'CONTRACTUAL_OBLIGATION' OR is_contractual_obligation");
+
+                            t.HasCheckConstraint("ck_change_request_implemented", "(status IN ('IMPLEMENTED', 'CLOSED')) = (implemented_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_change_request_justification_lang", "\"justification_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_change_request_revision_no", "revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_change_request_scope_impact_lang", "\"scope_impact_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_change_request_scope_impact_pair", "(\"scope_impact\" IS NULL) = (\"scope_impact_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_change_request_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'APPROVED', 'REJECTED', 'IMPLEMENTATION', 'IMPLEMENTED', 'CLOSED', 'WITHDRAWN')");
+
+                            t.HasCheckConstraint("ck_change_request_submitted", "(status = 'DRAFT') = (submitted_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_change_request_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ChangeRequest.MaterialityEvaluation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("BaselineBudgetSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("baseline_budget_sar");
+
+                    b.Property<int?>("BaselineDurationDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("baseline_duration_days");
+
+                    b.Property<Guid>("ChangeRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("change_request_id");
+
+                    b.Property<short?>("CostBandNo")
+                        .HasColumnType("smallint")
+                        .HasColumnName("cost_band_no");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<decimal>("CumulativeCostImpactSar")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("cumulative_cost_impact_sar");
+
+                    b.Property<int>("CumulativeScheduleImpactDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("cumulative_schedule_impact_days");
+
+                    b.Property<DateTimeOffset>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("evaluated_at");
+
+                    b.Property<Guid?>("FinancialCommitmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("financial_commitment_id");
+
+                    b.Property<int?>("FinancialCommitmentVersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("financial_commitment_version_no");
+
+                    b.Property<Guid>("MaterialityConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("materiality_configuration_version_id");
+
+                    b.Property<Guid?>("ProjectBaselineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_baseline_id");
+
+                    b.Property<int?>("ProjectBaselineVersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("project_baseline_version_no");
+
+                    b.Property<short>("ResultingBandNo")
+                        .HasColumnType("smallint")
+                        .HasColumnName("resulting_band_no");
+
+                    b.Property<int>("RevisionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision_no");
+
+                    b.Property<short?>("ScheduleBandNo")
+                        .HasColumnType("smallint")
+                        .HasColumnName("schedule_band_no");
+
+                    b.Property<short?>("ScopeBandNo")
+                        .HasColumnType("smallint")
+                        .HasColumnName("scope_band_no");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_materiality_evaluation");
+
+                    b.HasIndex("FinancialCommitmentId")
+                        .HasDatabaseName("ix_materiality_evaluation_financial_commitment_id");
+
+                    b.HasIndex("MaterialityConfigurationVersionId")
+                        .HasDatabaseName("ix_materiality_evaluation_materiality_configuration_version_id");
+
+                    b.HasIndex("ProjectBaselineId")
+                        .HasDatabaseName("ix_materiality_evaluation_project_baseline_id");
+
+                    b.HasIndex("ChangeRequestId", "RevisionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_materiality_evaluation_change_request_id_revision_no");
+
+                    b.ToTable("materiality_evaluation", "change_request", t =>
+                        {
+                            t.HasCheckConstraint("ck_materiality_evaluation_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_materiality_evaluation_bands", "resulting_band_no BETWEEN 1 AND 3 AND (cost_band_no IS NULL OR cost_band_no BETWEEN 1 AND resulting_band_no) AND (schedule_band_no IS NULL OR schedule_band_no BETWEEN 1 AND resulting_band_no) AND (scope_band_no IS NULL OR scope_band_no BETWEEN 1 AND resulting_band_no)");
+
+                            t.HasCheckConstraint("ck_materiality_evaluation_baseline_pin", "(project_baseline_id IS NULL) = (project_baseline_version_no IS NULL) AND (project_baseline_id IS NULL) = (baseline_duration_days IS NULL) AND (schedule_band_no IS NULL OR project_baseline_id IS NOT NULL) AND (baseline_duration_days IS NULL OR baseline_duration_days >= 1)");
+
+                            t.HasCheckConstraint("ck_materiality_evaluation_budget_pin", "(financial_commitment_id IS NULL) = (financial_commitment_version_no IS NULL) AND (financial_commitment_id IS NULL) = (baseline_budget_sar IS NULL) AND (cost_band_no IS NULL) = (financial_commitment_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_materiality_evaluation_revision_no", "revision_no >= 1");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Common.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1178,6 +1596,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_financial_commitment");
+
+                    b.HasIndex("ChangeAuthorizationId")
+                        .HasDatabaseName("ix_financial_commitment_change_authorization_id");
 
                     b.HasIndex("EnteredByUserId")
                         .HasDatabaseName("ix_financial_commitment_entered_by_user_id");
@@ -7453,6 +7874,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_project_baseline");
 
+                    b.HasIndex("ChangeAuthorizationId")
+                        .HasDatabaseName("ix_project_baseline_change_authorization_id");
+
                     b.HasIndex("ProjectId")
                         .IsUnique()
                         .HasDatabaseName("ix_project_baseline_active_project_id")
@@ -8058,6 +8482,81 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_audit_forwarding_record_audit_event_audit_event_id");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.ChangeRequest.ChangeAuthorization", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("AppliedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_change_authorization_user_applied_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Approval.ApprovalInstance", null)
+                        .WithMany()
+                        .HasForeignKey("ApprovalInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_change_authorization_approval_instance_approval_instance_id");
+
+                    b.HasOne("PMPlatform.Domain.ChangeRequest.ChangeRequest", null)
+                        .WithMany()
+                        .HasForeignKey("ChangeRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_change_authorization_change_request_change_request_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ChangeRequest.ChangeRequest", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_change_request_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_change_request_user_requested_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedGovernanceProfileItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_change_request_master_data_item_requested_governance_profil");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ChangeRequest.MaterialityEvaluation", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.ChangeRequest.ChangeRequest", null)
+                        .WithMany()
+                        .HasForeignKey("ChangeRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_materiality_evaluation_change_request_change_request_id");
+
+                    b.HasOne("PMPlatform.Domain.FinancialKpi.FinancialCommitment", null)
+                        .WithMany()
+                        .HasForeignKey("FinancialCommitmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_materiality_evaluation_financial_commitment_financial_commi");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("MaterialityConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_materiality_evaluation_materiality_configuration_version");
+
+                    b.HasOne("PMPlatform.Domain.Schedule.ProjectBaseline", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectBaselineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_materiality_evaluation_project_baseline_project_baseline_id");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.BusinessLink", b =>
                 {
                     b.HasOne("PMPlatform.Domain.DocumentManagement.Document", null)
@@ -8161,6 +8660,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialCommitment", b =>
                 {
+                    b.HasOne("PMPlatform.Domain.ChangeRequest.ChangeAuthorization", null)
+                        .WithMany()
+                        .HasForeignKey("ChangeAuthorizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_financial_commitment_change_authorization_change_authorizat");
+
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
                         .WithMany()
                         .HasForeignKey("EnteredByUserId")
@@ -9520,6 +10025,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("PMPlatform.Domain.Schedule.ProjectBaseline", b =>
                 {
+                    b.HasOne("PMPlatform.Domain.ChangeRequest.ChangeAuthorization", null)
+                        .WithMany()
+                        .HasForeignKey("ChangeAuthorizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_baseline_change_authorization_change_authorization_");
+
                     b.HasOne("PMPlatform.Domain.Project.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectId")

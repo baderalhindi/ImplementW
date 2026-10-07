@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json.Nodes;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.FinancialKpi.Contracts;
+using PMPlatform.Tests.Integration.ChangeRequest.Fixtures;
 using PMPlatform.Tests.Integration.Identity;
 
 namespace PMPlatform.Tests.Integration.FinancialKpi;
@@ -42,21 +43,29 @@ public sealed class FinancialProgressTests(FinancialKpiTestHost host)
             Assert.Equal((HttpStatusCode.Conflict, FinancialKpiErrorCodes.CommitmentOpen), await third.RefusalAsync());
         }
 
-        // Returned by WF-11, it is corrected and resubmitted as revision 2 under a new run; the ACTIVE version stays the budget of record.
+        // A change to the ACTIVE budget implements an approved WF-08 change (TASK-060): without its authorisation it is not submitted.
         await host.AttachDocumentAsync(client, sessions.ProjectManager, projectId, second);
-        await client.CommandOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{second}/submit");
+        using (HttpResponseMessage unauthorized = await client.PostAsync($"{FinancialKpiDriver.Commitments}/{second}/submit", sessions.ProjectManager))
+        {
+            Assert.Equal((HttpStatusCode.UnprocessableEntity, FinancialKpiErrorCodes.ChangeAuthorizationRequired), await unauthorized.RefusalAsync());
+        }
+
+        // Returned by WF-11, it is corrected and resubmitted as revision 2 under a new run; the ACTIVE version stays the budget of record.
+        Guid authorization = await host.Database.IssueCommitmentChangeAsync(projectId);
+        await client.CommandOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{second}/submit", new { changeAuthorizationId = authorization });
         await host.DecideAndDeliverAsync(FinancialKpiApprovalRouting.CommitmentType, second, ApprovalTaskDecision.Return, "State the variation order");
         Assert.Equal("RETURNED", (await client.GetOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{second}")).Text("status"));
         Assert.True((await client.GetOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{first}"))["isCurrent"]!.GetValue<bool>());
         await client.PutOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{second}",
             new { amountSar = "1150000.00", sourceReference = "Variation order 7", asOfDate = FinancialKpiDriver.Iso(FinancialKpiDriver.Today) });
-        JsonObject resubmitted = await client.CommandOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{second}/submit");
+        JsonObject resubmitted = await client.CommandOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{second}/submit", new { changeAuthorizationId = authorization });
         Assert.Equal(("SUBMITTED", 2), (resubmitted.Text("status"), resubmitted["revisionNo"]!.GetValue<int>()));
         await host.DecideAndDeliverAsync(FinancialKpiApprovalRouting.CommitmentType, second, ApprovalTaskDecision.Approve);
 
         JsonObject active = await client.GetOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{second}");
         JsonObject superseded = await client.GetOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{first}");
-        Assert.Equal(("ACTIVE", true, "1150000.00"), (active.Text("status"), active["isCurrent"]!.GetValue<bool>(), active.Text("amountSar")));
+        Assert.Equal(("ACTIVE", true, "1150000.00", authorization.ToString()),
+            (active.Text("status"), active["isCurrent"]!.GetValue<bool>(), active.Text("amountSar"), active.Text("changeAuthorizationId")));
         Assert.Equal(("SUPERSEDED", false, second.ToString(), "1000000.00"),
             (superseded.Text("status"), superseded["isCurrent"]!.GetValue<bool>(), superseded.Text("supersededByCommitmentId"), superseded.Text("amountSar")));
         Assert.Equal(firstRow, await host.RowAsync("financial_commitment", first, "status", "superseded_by_commitment_id", "updated_at", "updated_by", "xmin"));

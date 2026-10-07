@@ -15,11 +15,18 @@ namespace PMPlatform.Application.Features.FinancialKpi.EventHandlers;
 /// </summary>
 /// <remarks>
 /// Idempotent on its own as well (EV-4, EV-5): an outcome applies only to the revision under review while it is SUBMITTED, and
-/// applying it leaves that state, so the same outcome again, or one for an older revision, is audited as ignored.
+/// applying it leaves that state, so the same outcome again, or one for an older revision, is audited as ignored. A change to an
+/// ACTIVE Approved Budget applies its WF-08 change authorisation as it activates (edge 12), with the approver as the actor; one whose
+/// authorisation WF-08 refuses now — the budget moved, the change is no longer being implemented — or that carries none because no
+/// budget was ACTIVE when it was submitted, is returned rather than activated, and the ACTIVE version stays.
 /// </remarks>
 internal sealed class FinancialKpiApprovalOutcomeHandler(
-    IFinancialKpiRepository repository, IProjectFactsReader projects, IAuditTrail audit, TimeProvider timeProvider) : IApprovalOutcomeHandler
+    IFinancialKpiRepository repository, IProjectFactsReader projects, CommitmentChangeAuthorization changes, IAuditTrail audit, TimeProvider timeProvider)
+    : IApprovalOutcomeHandler
 {
+    /// <summary>Why an approved version was returned instead of activated.</summary>
+    public const string ChangeNotAuthorized = "CHANGE_NOT_AUTHORIZED";
+
     public string SubjectModule => FinancialKpiApprovalRouting.SubjectModule;
 
     public async Task HandleAsync(ApprovalOutcomeRecorded outcome, CancellationToken cancellationToken)
@@ -63,6 +70,14 @@ internal sealed class FinancialKpiApprovalOutcomeHandler(
         if (to == ApprovedVersionStatus.Active)
         {
             prior = await subject.FindActiveAsync(cancellationToken).ConfigureAwait(false);
+            if (prior is not null && !await subject.AuthorizeAsync(prior, decidedBy, now, cancellationToken).ConfigureAwait(false))
+            {
+                version.Status = ApprovedVersionStatus.Returned;
+                Touch(version, decidedBy, now);
+                audit.Stage(FinancialKpiAudit.OutcomeApplied(subject.Project, subject.Facts(version), version.Status, outcome, null, ChangeNotAuthorized));
+                return await repository.SaveAsync(cancellationToken).ConfigureAwait(false);
+            }
+
             if (prior is not null)
             {
                 prior.Status = ApprovedVersionStatus.Superseded;
@@ -89,11 +104,13 @@ internal sealed class FinancialKpiApprovalOutcomeHandler(
     {
         FinancialCommitment commitment = await repository.FindCommitmentAsync(outcome.Subject.Id, null, cancellationToken).ConfigureAwait(false)
                                          ?? throw new InvalidOperationException($"Approval outcome {outcome.IdempotencyKey} names no commitment.");
+        ProjectFacts project = await ProjectAsync(commitment.ProjectId, cancellationToken).ConfigureAwait(false);
         return new Subject(
-            await ProjectAsync(commitment.ProjectId, cancellationToken).ConfigureAwait(false),
+            project,
             commitment,
             v => VersionFacts.Of((FinancialCommitment)v),
-            async ct => await repository.FindActiveCommitmentAsync(commitment.ProjectId, commitment.CommitmentType, track: true, ct).ConfigureAwait(false));
+            async ct => await repository.FindActiveCommitmentAsync(commitment.ProjectId, commitment.CommitmentType, track: true, ct).ConfigureAwait(false),
+            (active, by, at, ct) => changes.ApplyAsync(project, (FinancialCommitment)active, commitment, by, at, ct));
     }
 
     private async Task<Subject> TargetAsync(ApprovalOutcomeRecorded outcome, CancellationToken cancellationToken)
@@ -106,7 +123,8 @@ internal sealed class FinancialKpiApprovalOutcomeHandler(
             await ProjectAsync(assignment.ProjectId, cancellationToken).ConfigureAwait(false),
             target,
             v => VersionFacts.Of((KpiTargetVersion)v),
-            async ct => await repository.FindActiveTargetAsync(target.KpiAssignmentId, track: true, ct).ConfigureAwait(false));
+            async ct => await repository.FindActiveTargetAsync(target.KpiAssignmentId, track: true, ct).ConfigureAwait(false),
+            (_, _, _, _) => Task.FromResult(true));
     }
 
     private async Task<ProjectFacts> ProjectAsync(Guid projectId, CancellationToken cancellationToken) =>
@@ -118,7 +136,14 @@ internal sealed class FinancialKpiApprovalOutcomeHandler(
         version.UpdatedBy = by;
     }
 
-    /// <summary>The version an outcome names, its project, how its audit events state it, and how its ACTIVE predecessor is found.</summary>
+    /// <summary>
+    /// The version an outcome names, its project, how its audit events state it, how its ACTIVE predecessor is found, and whether it
+    /// may replace that predecessor: a commitment by applying its WF-08 change authorisation (edge 12), a KPI target always.
+    /// </summary>
     private sealed record Subject(
-        ProjectFacts Project, IApprovedVersion Version, Func<IApprovedVersion, VersionFacts> Facts, Func<CancellationToken, Task<IApprovedVersion?>> FindActiveAsync);
+        ProjectFacts Project,
+        IApprovedVersion Version,
+        Func<IApprovedVersion, VersionFacts> Facts,
+        Func<CancellationToken, Task<IApprovedVersion?>> FindActiveAsync,
+        Func<IApprovedVersion, Guid, DateTimeOffset, CancellationToken, Task<bool>> AuthorizeAsync);
 }

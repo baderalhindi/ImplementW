@@ -407,6 +407,33 @@ public sealed class ShippedGrantTests
             UserId, new AuthorizationRequest(PermissionCatalogue.ConcernEscalationResolve, concern) { RoleCode = "R02" }, CancellationToken.None)).IsAllowed);
     }
 
+    /// <summary>
+    /// TASK-060, ADR-013's amendment: entity Project Managers may raise a change request — R04 views and raises at OWN, the projects the
+    /// holder manages. WF-08 §3: the Project Manager coordinates implementation (R04 at OWN; the application refuses an external holder),
+    /// the Department Manager reviews (R03 at DEPT). Approval is WF-11's; the rest wait for Appendix A (change-request.md F-2).
+    /// </summary>
+    [Fact]
+    public void ChangeRequestsAreRaisedByTheProjectManagerAndReviewedByTheDepartmentManager() =>
+        Assert.Equal(
+            [
+                ("R04", PermissionCatalogue.ChangeRequestView, DataScope.Own), ("R04", PermissionCatalogue.ChangeRequestRaise, DataScope.Own),
+                ("R04", PermissionCatalogue.ChangeRequestImplement, DataScope.Own),
+                ("R03", PermissionCatalogue.ChangeRequestView, DataScope.Dept), ("R03", PermissionCatalogue.ChangeRequestReview, DataScope.Dept),
+            ],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("CHANGE_REQUEST_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+
+    /// <summary>ADR-013's amendment to TASK-060: an entity Project Manager raises change requests on the project they manage, and on no other.</summary>
+    [Fact]
+    public async Task OnlyTheProjectsOwnManagerRaisesItsChangeRequests()
+    {
+        AuthorizationScenario entityManager = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R04", PermissionCatalogue.ChangeRequestRaise, DataScope.Own, entityId: EntityId, projectId: ProjectId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityManager.AuthorizeAsync(PermissionCatalogue.ChangeRequestRaise, Managed(ProjectId, EntityId, UserId)));
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ChangeRequestRaise, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ChangeRequestReview, Managed(ProjectId, EntityId, UserId))).IsAllowed);
+    }
+
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>
     [Fact]
     public void NotificationTemplatesAndDeliveryOperationsGoToR01Only()

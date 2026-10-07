@@ -803,6 +803,550 @@
         }
       }
     },
+    "/api/v1/change-authorizations": {
+      "get": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "The project's change authorisations, most recently issued first. `projectId` is required (R-3). Filters: `changeRequestId`,\n`authorizationScope` and `status` (sets) — what a target module's screen offers, e.g. the ISSUED REBASELINE ones.",
+        "operationId": "ChangeRequest_ListChangeAuthorizations",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "changeRequestId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "authorizationScope",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeAuthorizationPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/change-authorizations/{changeAuthorizationId}": {
+      "get": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "operationId": "ChangeRequest_GetChangeAuthorization",
+        "parameters": [
+          {
+            "name": "changeAuthorizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeAuthorizationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests": {
+      "get": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "The project's change requests, most recently changed first. `projectId` is required (R-3). Filters: `status` and `changeType` (sets).",
+        "operationId": "ChangeRequest_ListChangeRequests",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "changeType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "Raises a change request (SCR-106), DRAFT. An entity Project Manager raises on their own project (ADR-013).",
+        "operationId": "ChangeRequest_CreateChangeRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests/{changeRequestId}": {
+      "get": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "operationId": "ChangeRequest_GetChangeRequest",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "A DRAFT or RETURNED request's own fields, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "ChangeRequest_UpdateChangeRequest",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "HARD_DRAFT: a DRAFT never submitted. R-40: a request that is not there — deleted already, or never the caller's to see — is 204 as well.",
+        "operationId": "ChangeRequest_DeleteChangeRequest",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests/{changeRequestId}/preview-materiality": {
+      "post": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "The materiality classification the request would get now (SCR-106), by the rule its review applies: advisory, recorded nowhere, so\nthe requester sees the approval path before submitting. Before the review only; after it, the recorded one is on the request.",
+        "operationId": "ChangeRequest_PreviewMateriality",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialityAssessment"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests/{changeRequestId}/submit": {
+      "post": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "DRAFT or RETURNED → SUBMITTED, complete for its change type; a RETURNED request comes back as the next revision.",
+        "operationId": "ChangeRequest_Submit",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests/{changeRequestId}/withdraw": {
+      "post": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "SUBMITTED or RETURNED → WITHDRAWN. Under review, the requester withdraws the WF-11 run instead, which withdraws the request.",
+        "operationId": "ChangeRequest_Withdraw",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests/{changeRequestId}/start-review": {
+      "post": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "SUBMITTED → UNDER_REVIEW: records the materiality evaluation, pinned, and starts the WF-11 run its band routes. Internal users only.",
+        "operationId": "ChangeRequest_StartReview",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests/{changeRequestId}/start-implementation": {
+      "post": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "APPROVED → IMPLEMENTATION: from now on its target modules may apply its authorisations. Internal users only.",
+        "operationId": "ChangeRequest_StartImplementation",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests/{changeRequestId}/mark-implemented": {
+      "post": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "IMPLEMENTATION → IMPLEMENTED, once every authorisation has been applied by its target module. Internal users only.",
+        "operationId": "ChangeRequest_MarkImplemented",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/change-requests/{changeRequestId}/close": {
+      "post": {
+        "tags": [
+          "ChangeRequest"
+        ],
+        "summary": "IMPLEMENTED → CLOSED. Internal users only.",
+        "operationId": "ChangeRequest_Close",
+        "parameters": [
+          {
+            "name": "changeRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/concern-escalations": {
       "get": {
         "tags": [
@@ -2615,7 +3159,7 @@
         "tags": [
           "FinancialKpi"
         ],
-        "summary": "DRAFT or RETURNED → SUBMITTED to WF-11, once a referenced document is held (422 `FINANCIAL_BUDGET_DOCUMENT_REQUIRED`).",
+        "summary": "DRAFT or RETURNED → SUBMITTED to WF-11, once a referenced document is held (422 `FINANCIAL_BUDGET_DOCUMENT_REQUIRED`). A change to\nan ACTIVE Approved Budget names the WF-08 change authorisation it implements (422 `FINANCIAL_CHANGE_AUTHORIZATION_REQUIRED`),\nwhich WF-11's approval applies as the version activates.",
         "operationId": "FinancialKpi_SubmitFinancialCommitment",
         "parameters": [
           {
@@ -2628,6 +3172,46 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/FinancialCommitmentSubmitCommand"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/FinancialCommitmentSubmitCommand"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/FinancialCommitmentSubmitCommand"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -12420,6 +13004,543 @@
         },
         "description": "A record of another module that a document is linked to, by identity only (M-4): the owning module's ADR-003 name,\nthe record type and its id. DocumentManagement never reads it."
       },
+      "ChangeAuthorizationDetail": {
+        "required": [
+          "id",
+          "changeRequestId",
+          "approvalInstanceId",
+          "authorizationScope",
+          "targetModule",
+          "targetType",
+          "targetId",
+          "targetRevisionNo",
+          "status",
+          "issuedAt",
+          "expiresAt",
+          "appliedAt",
+          "appliedByUserId",
+          "appliedReference"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "changeRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "approvalInstanceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorizationScope": {
+            "$ref": "#/components/schemas/ChangeAuthorizationScope"
+          },
+          "targetModule": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetRevisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChangeAuthorizationStatus"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "appliedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "appliedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "appliedReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "An authorisation to change one governed commitment, pinned to the version approved. string? ChangeAuthorizationDetail.AppliedReference names the\ntarget module's record that applied it."
+      },
+      "ChangeAuthorizationPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangeAuthorizationDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "Change authorisations, most recently issued first."
+      },
+      "ChangeAuthorizationScope": {
+        "enum": [
+          "REBASELINE",
+          "COMMITMENT_CHANGE",
+          "PROFILE_CHANGE",
+          "SCOPE_CHANGE"
+        ],
+        "description": "ERD `change_authorization.authorization_scope`: the one kind of change an authorisation permits."
+      },
+      "ChangeAuthorizationStatus": {
+        "enum": [
+          "ISSUED",
+          "APPLIED",
+          "EXPIRED",
+          "REVOKED"
+        ],
+        "description": "ERD `change_authorization.status`: ISSUED until its target module applies it, once. APPLIED, EXPIRED and REVOKED are final."
+      },
+      "ChangeRequestCreateRequest": {
+        "required": [
+          "projectId",
+          "changeType",
+          "title",
+          "justification",
+          "costImpactSar",
+          "scheduleImpactDays",
+          "scopeImpact",
+          "isContractualObligation",
+          "requestedGovernanceProfileItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "changeType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChangeType"
+              }
+            ]
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "justification": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "costImpactSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scheduleImpactDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "scopeImpact": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "isContractualObligation": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "requestedGovernanceProfileItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "A new change request of the project, DRAFT, of a change type that never changes, with the fields ChangeRequestRequest describes."
+      },
+      "ChangeRequestDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "title",
+          "justification",
+          "changeType",
+          "status",
+          "revisionNo",
+          "requestedByUserId",
+          "submittedAt",
+          "costImpactSar",
+          "scheduleImpactDays",
+          "scopeImpact",
+          "isContractualObligation",
+          "requestedGovernanceProfileItemId",
+          "materiality",
+          "authorizations",
+          "implementedAt",
+          "closedAt",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "justification": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "changeType": {
+            "$ref": "#/components/schemas/ChangeType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChangeRequestStatus"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "costImpactSar": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Money"
+              }
+            ]
+          },
+          "scheduleImpactDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "scopeImpact": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "isContractualObligation": {
+            "type": "boolean"
+          },
+          "requestedGovernanceProfileItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "materiality": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MaterialityAssessment"
+              }
+            ]
+          },
+          "authorizations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangeAuthorizationDetail"
+            }
+          },
+          "implementedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A change request with its latest recorded materiality evaluation and the authorisations its approval issued. Approved and\nimplemented are different states: an APPROVED request has issued authorisations its target modules have not applied."
+      },
+      "ChangeRequestPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChangeRequestDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's change requests, most recently changed first (R-29; indexing-strategy P-2, I-26)."
+      },
+      "ChangeRequestRequest": {
+        "required": [
+          "title",
+          "justification",
+          "costImpactSar",
+          "scheduleImpactDays",
+          "scopeImpact",
+          "isContractualObligation",
+          "requestedGovernanceProfileItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "justification": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "costImpactSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scheduleImpactDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "scopeImpact": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "isContractualObligation": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "requestedGovernanceProfileItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "A change request's own fields, as a whole (R-5): title, justification, the impacts it states and, for a governance-profile change,\nthe profile asked for. A cost impact is an R-16 SAR amount, negative for a reduction; a schedule impact is calendar days, negative to\nbring the finish forward. A draft may leave impacts out; what its change type needs is checked on submission. Its type, status and\nmateriality change only through the commands; a materiality sent here is an unknown property, and ignored."
+      },
+      "ChangeRequestStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "APPROVED",
+          "REJECTED",
+          "IMPLEMENTATION",
+          "IMPLEMENTED",
+          "CLOSED",
+          "WITHDRAWN"
+        ],
+        "description": "ERD `change_request.status` (TASK-060): Draft → Submitted → Under Review → Returned / Approved / Rejected → Implementation →\nImplemented → Closed, and Withdrawn. REJECTED, WITHDRAWN and CLOSED are final."
+      },
+      "ChangeType": {
+        "enum": [
+          "SCOPE",
+          "COST",
+          "SCHEDULE",
+          "CONTRACTUAL_OBLIGATION",
+          "GOVERNANCE_PROFILE"
+        ],
+        "description": "ERD `change_request.change_type`: what the request changes. Fixed when the request is raised."
+      },
       "CommitmentDocumentDetail": {
         "required": [
           "financialCommitmentId",
@@ -15128,6 +16249,22 @@
         },
         "description": "An Approved Budget version's figures, as a whole (R-5): the project total in SAR (R-16), when it applies from, and its manual\nprovenance — a document or system reference and the date the figure is true as of. Who entered it is the caller; the status,\nversion and revision are the workflow's."
       },
+      "FinancialCommitmentSubmitCommand": {
+        "required": [
+          "changeAuthorizationId"
+        ],
+        "type": "object",
+        "properties": {
+          "changeAuthorizationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "Submitting an Approved Budget version. A change to an ACTIVE Approved Budget names the approved WF-08 change authorisation it implements (TASK-060)."
+      },
       "FinancialField": {
         "enum": [
           "APPROVED_BUDGET",
@@ -17777,6 +18914,109 @@
           }
         },
         "description": "ADM-020–029: an item's editable representation in full; the catalogue and code are fixed."
+      },
+      "MaterialityAssessment": {
+        "required": [
+          "evaluationId",
+          "revisionNo",
+          "evaluatedAt",
+          "materialityConfigurationVersionId",
+          "projectBaselineId",
+          "financialCommitmentId",
+          "cumulativeCostImpactSar",
+          "cumulativeScheduleImpactDays",
+          "costBandNo",
+          "scheduleBandNo",
+          "scopeBandNo",
+          "resultingBandNo"
+        ],
+        "type": "object",
+        "properties": {
+          "evaluationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "evaluatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "materialityConfigurationVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectBaselineId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "financialCommitmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "cumulativeCostImpactSar": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "cumulativeScheduleImpactDays": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "costBandNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "scheduleBandNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "scopeBandNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "resultingBandNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          }
+        },
+        "description": "A materiality classification (ADR-016): the band each dimension triggers — null where the request has no impact on it — and the\nhighest of them, against the cumulative position since the active baseline, under the MATERIALITY_BAND version named.\nGuid? MaterialityAssessment.EvaluationId is null for a preview: computed by the same rule, recorded nowhere, and advisory until the review records one."
       },
       "MaterialityBandEntry": {
         "required": [
@@ -24954,6 +26194,9 @@
     },
     {
       "name": "Approval"
+    },
+    {
+      "name": "ChangeRequest"
     },
     {
       "name": "ManagementConcern"

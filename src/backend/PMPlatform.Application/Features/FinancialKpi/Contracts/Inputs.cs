@@ -15,6 +15,9 @@ public sealed record FinancialCommitmentDraft(Guid ProjectId, Money AmountSar, D
 /// <summary>A DRAFT or RETURNED version's figures, as a whole.</summary>
 public sealed record FinancialCommitmentChanges(Money AmountSar, DateOnly? EffectiveFrom, string? SourceReference, DateOnly AsOfDate);
 
+/// <summary>Submitting a version; a change to an ACTIVE Approved Budget names the approved WF-08 change authorisation it implements (TASK-060).</summary>
+public sealed record CommitmentSubmission(Guid? ChangeAuthorizationId);
+
 /// <summary>A document to attach to a commitment version as its reference, the version of it to pin, and its EVIDENCE_TYPE.</summary>
 public sealed record CommitmentDocumentAttachment(Guid DocumentId, Guid DocumentVersionId, Guid EvidenceTypeItemId);
 

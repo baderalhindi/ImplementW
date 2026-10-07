@@ -51,7 +51,9 @@ internal static class FinancialKpiAudit
         ]);
 
     /// <summary>WF-11's outcome applied: activated (with the version it superseded), returned, rejected or withdrawn.</summary>
-    public static AuditEntry OutcomeApplied(ProjectFacts project, VersionFacts version, ApprovedVersionStatus to, ApprovalOutcomeRecorded outcome, Guid? supersededId) =>
+    /// <remarks>With <paramref name="reason"/>, an approved version returned instead of activated, and why.</remarks>
+    public static AuditEntry OutcomeApplied(
+        ProjectFacts project, VersionFacts version, ApprovedVersionStatus to, ApprovalOutcomeRecorded outcome, Guid? supersededId, string? reason = null) =>
         Entry(AuditEventClass.LifecycleTransition, EventOf(to), outcome.Data.DecidedByUserId, project, version.Type, version.Id,
         [
             AuditAttribute.Change(A.Status, ApprovedVersionStatus.Submitted, to)!,
@@ -60,6 +62,7 @@ internal static class FinancialKpiAudit
             AuditAttribute.Of(A.ApprovalInstanceId, outcome.Data.ApprovalInstanceId),
             AuditAttribute.Of(A.Decision, outcome.Data.Decision),
             AuditAttribute.Of(A.SupersededId, supersededId),
+            .. reason is null ? Array.Empty<AuditAttribute>() : [AuditAttribute.Of(A.Reason, reason)],
         ]);
 
     public static AuditEntry VersionSuperseded(Guid actorId, ProjectFacts project, VersionFacts version, Guid supersededById) =>
@@ -246,6 +249,7 @@ internal sealed record VersionFacts(string Type, Guid Id, int VersionNo, int Rev
         AuditAttribute.Of(A.EffectiveFrom, c.EffectiveFrom),
         AuditAttribute.Of(A.SourceReference, c.SourceReference),
         AuditAttribute.Of(A.AsOfDate, c.AsOfDate),
+        .. c.ChangeAuthorizationId is null ? Array.Empty<AuditAttribute>() : [AuditAttribute.Of(A.ChangeAuthorizationId, c.ChangeAuthorizationId)],
     ]);
 
     public static VersionFacts Of(KpiTargetVersion t) => new(FinancialKpiApprovalRouting.TargetVersionType, t.Id, t.VersionNo, t.RevisionNo,

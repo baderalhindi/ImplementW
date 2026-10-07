@@ -182,6 +182,27 @@ public sealed class PermissionCatalogue
     /// <summary>WF-07 (TASK-057): resolve an escalation, held through the role it is addressed to. Internal users only.</summary>
     public const string ConcernEscalationResolve = "CONCERN_ESCALATION_RESOLVE";
 
+    /// <summary>WF-08 (TASK-060): a project's change requests, their materiality evaluations and the authorisations their approval issued.</summary>
+    public const string ChangeRequestView = "CHANGE_REQUEST_VIEW";
+
+    /// <summary>
+    /// WF-08 (TASK-060): raise a change request, edit and delete its draft, submit it and withdraw it. ADR-013: an entity Project
+    /// Manager may raise a change request on their own project.
+    /// </summary>
+    public const string ChangeRequestRaise = "CHANGE_REQUEST_RAISE";
+
+    /// <summary>
+    /// WF-08 (TASK-060): start the review of a submitted change request, which records its materiality and routes it through WF-11.
+    /// Internal users only: materiality and approval remain AHDA's (ADR-013).
+    /// </summary>
+    public const string ChangeRequestReview = "CHANGE_REQUEST_REVIEW";
+
+    /// <summary>
+    /// WF-08 (TASK-060): start the implementation of an approved change request, mark it implemented and close it. Internal users only:
+    /// implementation remains AHDA's (ADR-013).
+    /// </summary>
+    public const string ChangeRequestImplement = "CHANGE_REQUEST_IMPLEMENT";
+
     /// <summary>
     /// WF-14 Financial Progress (TASK-052): a project's Approved Budget versions, financial updates, published financial
     /// snapshots, live position, source modes and portfolio totals. ADR-013: an entity sees budget and expenditure for its own
@@ -275,6 +296,10 @@ public sealed class PermissionCatalogue
             new(ConcernManage, "MANAGEMENT_CONCERN", AccessMode.Write),
             new(ConcernEscalate, "MANAGEMENT_CONCERN", AccessMode.Write),
             new(ConcernEscalationResolve, "MANAGEMENT_CONCERN", AccessMode.Write),
+            new(ChangeRequestView, "CHANGE_REQUEST", AccessMode.Read),
+            new(ChangeRequestRaise, "CHANGE_REQUEST", AccessMode.Write),
+            new(ChangeRequestReview, "CHANGE_REQUEST", AccessMode.Write),
+            new(ChangeRequestImplement, "CHANGE_REQUEST", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
             new(FinancialSubmit, "FINANCIAL", AccessMode.Write),
             new(FinancialReview, "FINANCIAL", AccessMode.Write),
@@ -326,7 +351,12 @@ public sealed class PermissionCatalogue
     /// the primary manager of a project's issues and challenges, who assesses, assigns, plans resolution and escalates: R04 manages and
     /// escalates at OWN, and the application refuses both to an external user whatever they hold. §3 gives the Department Manager
     /// "escalation handling": R03 views concerns and resolves escalations at DEPT, through the role an escalation is addressed to. The
-    /// other roles' concern grants wait for Appendix A (management-concern.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
+    /// other roles' concern grants wait for Appendix A (management-concern.md F-2). ADR-013's amendment to TASK-060 lets entity Project
+    /// Managers raise a change request, and keeps materiality, approval and implementation AHDA's: R04 views and raises change requests
+    /// at OWN, the projects the holder manages, internal or entity. WF-08's specification §3 makes the Project Manager the coordinator of
+    /// a change's implementation and the Department Manager its reviewer: R04 implements at OWN — the application refuses an external
+    /// holder — and R03 views and starts reviews at DEPT. Approval is WF-11's APPROVAL_DECIDE; the other roles' grants wait for Appendix A
+    /// (change-request.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
     /// status for its own project, masked by audience per ADR-010: R08 and R04 view financials and KPIs at ENTITY, which reaches
     /// only a holder with an entity; entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
@@ -377,6 +407,11 @@ public sealed class PermissionCatalogue
         new("R08", ConcernRaise, DataScope.Entity),
         new("R03", ConcernView, DataScope.Dept),
         new("R03", ConcernEscalationResolve, DataScope.Dept),
+        new("R04", ChangeRequestView, DataScope.Own),
+        new("R04", ChangeRequestRaise, DataScope.Own),
+        new("R04", ChangeRequestImplement, DataScope.Own),
+        new("R03", ChangeRequestView, DataScope.Dept),
+        new("R03", ChangeRequestReview, DataScope.Dept),
         new("R04", FinancialView, DataScope.Entity),
         new("R08", FinancialView, DataScope.Entity),
         new("R04", KpiView, DataScope.Entity),

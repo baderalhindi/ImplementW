@@ -27,6 +27,12 @@ public static class FinancialKpiErrorCodes
     /// <summary>422: a change to the Approved Budget needs a referenced document: the version holds no CLEAN evidence (ADR-008 gate).</summary>
     public const string BudgetDocumentRequired = "FINANCIAL_BUDGET_DOCUMENT_REQUIRED";
 
+    /// <summary>
+    /// 422: a change to an ACTIVE Approved Budget implements an approved WF-08 change: name an ISSUED COMMITMENT_CHANGE authorisation of
+    /// this project, pinned to the ACTIVE version, whose change request is being implemented (TASK-060).
+    /// </summary>
+    public const string ChangeAuthorizationRequired = "FINANCIAL_CHANGE_AUTHORIZATION_REQUIRED";
+
     /// <summary>409: every reporting period that has begun has published financial figures, or WF-02 has generated none yet.</summary>
     public const string NothingToReport = "FINANCIAL_NOTHING_TO_REPORT";
 

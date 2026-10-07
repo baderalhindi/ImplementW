@@ -9,6 +9,7 @@ using PMPlatform.Application.Features.Approval.Contracts.Events;
 using PMPlatform.Application.Features.Schedule.Contracts;
 using PMPlatform.Domain.Common;
 using PMPlatform.Infrastructure.Persistence;
+using PMPlatform.Tests.Integration.ChangeRequest.Fixtures;
 using PMPlatform.Tests.Integration.Identity;
 
 namespace PMPlatform.Tests.Integration.Schedule;
@@ -122,7 +123,7 @@ public sealed class BaselineConcurrencyTests(ScheduleTestHost host)
             await client.SendAsync(HttpMethod.Delete, $"{ScheduleDriver.Baselines}/{candidate}", sessions.ProjectManager);
         }
 
-        Guid authorization = host.Rebaselines.Authorize(projectId);
+        Guid authorization = await host.Database.IssueRebaselineAsync(projectId);
         Guid rebaseline = AdministrationApi.IdOf(await client.SubmittedBaselineAsync(sessions.ProjectManager, projectId, authorization));
         // The deleted DRAFT left no history (HARD_DRAFT), so the rebaseline takes version 2.
         Assert.Equal(["1 ACTIVE", "2 SUBMITTED"], await host.BaselineStatesAsync(projectId));
@@ -151,7 +152,7 @@ public sealed class BaselineConcurrencyTests(ScheduleTestHost host)
         ScheduleSessions sessions = await client.SignInAsync();
         Guid projectId = await host.ScheduledProjectAsync(client, sessions.ProjectManager);
         (_, Guid prior) = await host.ApprovedBaselineAsync(client, sessions.ProjectManager, projectId);
-        Guid rebaseline = AdministrationApi.IdOf(await client.SubmittedBaselineAsync(sessions.ProjectManager, projectId, host.Rebaselines.Authorize(projectId)));
+        Guid rebaseline = AdministrationApi.IdOf(await client.SubmittedBaselineAsync(sessions.ProjectManager, projectId, await host.Database.IssueRebaselineAsync(projectId)));
         ApprovalInstanceDetail run = Assert.Single(await host.RunsAsync(rebaseline));
 
         string failActivation = $"fail_activation_{rebaseline:N}";

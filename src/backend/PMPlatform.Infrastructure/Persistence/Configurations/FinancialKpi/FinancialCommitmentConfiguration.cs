@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PMPlatform.Domain.ChangeRequest;
 using PMPlatform.Domain.FinancialKpi;
 using PMPlatform.Domain.IdentityAccess;
 using PMPlatform.Domain.Project;
@@ -45,7 +46,7 @@ internal sealed class FinancialCommitmentConfiguration : IEntityTypeConfiguratio
         builder.HasOne<ProjectIntake>().WithMany().HasForeignKey(e => e.ProjectIntakeId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.EnteredByUserId).OnDelete(DeleteBehavior.Restrict);
 
-        // change_authorization_id references change_request.change_authorization, which TASK-060 creates; TASK-060 adds the key
-        // (financial-kpi.md F-3).
+        // The WF-08 change authorisation the row implements (TASK-060, edges 11 and 12): identifier only (M-4).
+        builder.HasOne<ChangeAuthorization>().WithMany().HasForeignKey(e => e.ChangeAuthorizationId).OnDelete(DeleteBehavior.Restrict);
     }
 }

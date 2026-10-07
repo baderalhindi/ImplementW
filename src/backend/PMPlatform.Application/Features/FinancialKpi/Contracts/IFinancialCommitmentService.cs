@@ -25,8 +25,12 @@ public interface IFinancialCommitmentService
     /// <summary>HARD_DRAFT: deletes a DRAFT and ends its document links. One that is not there is not an error (R-40).</summary>
     public Task<AdministrationError?> DeleteAsync(Guid callerId, Guid commitmentId, uint? expectedVersion, CancellationToken cancellationToken);
 
-    /// <summary>DRAFT or RETURNED → SUBMITTED to WF-11, once a referenced document is held (ADR-008 gate).</summary>
-    public Task<AdministrationResult<Versioned<FinancialCommitmentDetail>>> SubmitAsync(Guid callerId, Guid commitmentId, uint? expectedVersion, CancellationToken cancellationToken);
+    /// <summary>
+    /// DRAFT or RETURNED → SUBMITTED to WF-11, once a referenced document is held (ADR-008 gate) and, for a change to an ACTIVE Approved
+    /// Budget, an applicable WF-08 change authorisation is named (TASK-060); WF-11's approval applies it as the version activates.
+    /// </summary>
+    public Task<AdministrationResult<Versioned<FinancialCommitmentDetail>>> SubmitAsync(
+        Guid callerId, Guid commitmentId, CommitmentSubmission submission, uint? expectedVersion, CancellationToken cancellationToken);
 
     public Task<AdministrationResult<CommitmentDocumentDetail>> GetDocumentsAsync(Guid callerId, Guid commitmentId, CancellationToken cancellationToken);
 

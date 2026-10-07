@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.Schedule.Contracts;
+using PMPlatform.Tests.Integration.ChangeRequest.Fixtures;
 using PMPlatform.Tests.Integration.Identity;
 using PMPlatform.Tests.Integration.Schedule;
 
@@ -34,7 +35,7 @@ public sealed class ApprovedBaselineReferenceTests(ScheduleTestHost host)
         await AssertReferenceAsync(client, sessions, projectId, first, "AMBER", 6, "with the rebaseline drafted");
 
         // With WF-11, and then returned by it, the candidate is still no reference, whatever the schedule does meanwhile.
-        Guid authorization = host.Rebaselines.Authorize(projectId);
+        Guid authorization = await host.Database.IssueRebaselineAsync(projectId);
         await client.CommandOrFailAsync(sessions.ProjectManager, $"{ScheduleDriver.Baselines}/{second}/submit", new { changeAuthorizationId = authorization });
         await client.CommandOrFailAsync(sessions.ProjectManager, $"{ScheduleDriver.Activities}/{works}/reforecast", Forecast(2, 15));
         await AssertReferenceAsync(client, sessions, projectId, first, "AMBER", 6, "with the rebaseline before WF-11");

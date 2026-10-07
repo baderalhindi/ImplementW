@@ -24,6 +24,7 @@ internal sealed class FinancialCommitmentService(
     FinancialKpiAccess access,
     IDocumentLinks documents,
     IApprovalRequests approvals,
+    CommitmentChangeAuthorization changes,
     IAuditTrail audit,
     TimeProvider timeProvider) : IFinancialCommitmentService
 {
@@ -167,8 +168,10 @@ internal sealed class FinancialCommitmentService(
         return null;
     }
 
-    public async Task<AdministrationResult<Versioned<FinancialCommitmentDetail>>> SubmitAsync(Guid callerId, Guid commitmentId, uint? expectedVersion, CancellationToken cancellationToken)
+    public async Task<AdministrationResult<Versioned<FinancialCommitmentDetail>>> SubmitAsync(
+        Guid callerId, Guid commitmentId, CommitmentSubmission submission, uint? expectedVersion, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(submission);
         Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.FinancialSubmit, commitmentId, expectedVersion, cancellationToken).ConfigureAwait(false);
         if (loaded.Error is { } refused)
         {
@@ -191,6 +194,23 @@ internal sealed class FinancialCommitmentService(
         if ((await documents.GetSatisfiedEvidenceTypesAsync(TargetOf(commitment), cancellationToken).ConfigureAwait(false)).Count == 0)
         {
             return AdministrationError.Rule(FinancialKpiErrorCodes.BudgetDocumentRequired, new FieldIssue("documents", FieldIssue.Required));
+        }
+
+        // A change to an ACTIVE Approved Budget implements an approved WF-08 change (edge 12), applied when WF-11's approval makes it
+        // take effect; the project's first Approved Budget is no change.
+        if (await repository.FindActiveCommitmentAsync(project.Id, CommitmentType.ApprovedBudget, track: false, cancellationToken).ConfigureAwait(false) is { } active)
+        {
+            if (submission.ChangeAuthorizationId is not { } authorizationId)
+            {
+                return AdministrationError.Rule(FinancialKpiErrorCodes.ChangeAuthorizationRequired, new FieldIssue("changeAuthorizationId", FieldIssue.Required));
+            }
+
+            if (!await changes.IsApplicableAsync(project, active, authorizationId, cancellationToken).ConfigureAwait(false))
+            {
+                return AdministrationError.Rule(FinancialKpiErrorCodes.ChangeAuthorizationRequired, new FieldIssue("changeAuthorizationId", FieldIssue.NotAllowed));
+            }
+
+            commitment.ChangeAuthorizationId = authorizationId;
         }
 
         // A RETURNED version comes back as the next revision, which a new WF-11 run reviews (TASK-035 D-9).
