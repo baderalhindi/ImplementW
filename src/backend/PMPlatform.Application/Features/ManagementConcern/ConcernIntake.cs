@@ -65,10 +65,6 @@ internal sealed class ConcernIntake(IManagementConcernRepository repository, Con
         if (computed is not null)
         {
             Apply(concern, computed, draft.Impacts, actorId, now);
-            if (draft.ClaimedSeverityItemId is { } claimed)
-            {
-                concern.SeverityItemId = claimed;
-            }
         }
 
         audit.Stage(ConcernAudit.Raised(actorId, project, concern));
