@@ -45,7 +45,8 @@ public sealed record ConcernCreateRequest(
     Guid? CategoryItemId,
     Guid? PriorityItemId,
     IReadOnlyList<ConcernImpactRequest>? Impacts,
-    DateOnly? TargetResolutionDate)
+    DateOnly? TargetResolutionDate,
+    Guid? SeverityItemId = null)
 {
     internal List<FieldError> Validate(out ConcernDraft? draft)
     {
@@ -65,7 +66,7 @@ public sealed record ConcernCreateRequest(
         (NarrativeText? title, NarrativeText? description) = new ConcernRequest(Title, Description, CategoryItemId, PriorityItemId, TargetResolutionDate).ValidateInputs(errors);
         IReadOnlyList<ConcernImpactInput> impacts = ConcernImpactRequest.Validate(Impacts, required: false, errors);
         draft = errors.Count == 0
-            ? new ConcernDraft(ProjectId!.Value, type!.Value, title!, description!, CategoryItemId!.Value, PriorityItemId!.Value, impacts, TargetResolutionDate)
+            ? new ConcernDraft(ProjectId!.Value, type!.Value, title!, description!, CategoryItemId!.Value, PriorityItemId!.Value, impacts, TargetResolutionDate) { ClaimedSeverityItemId = SeverityItemId }
             : null;
         return errors;
     }

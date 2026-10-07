@@ -15,7 +15,11 @@ public sealed record ConcernDraft(
     Guid CategoryItemId,
     Guid PriorityItemId,
     IReadOnlyList<ConcernImpactInput> Impacts,
-    DateOnly? TargetResolutionDate);
+    DateOnly? TargetResolutionDate)
+{
+    /// <summary>TASK-059 validation only: a severity the client claims, applied over the computed one.</summary>
+    public Guid? ClaimedSeverityItemId { get; init; }
+}
 
 /// <summary>A concern's own fields, as a whole (R-5). Its type, project, status and severity change only through the commands.</summary>
 public sealed record ConcernChanges(
