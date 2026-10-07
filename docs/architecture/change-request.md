@@ -106,7 +106,7 @@ Changed elsewhere: `POST /financial-commitments/{id}/submit` (`FinancialKpi_Subm
 
 ## 6. How other modules build on it
 
-1. **TASK-061** builds SCR-105–107 on these 14 operations: the classification before submission is `preview-materiality`'s (its acceptance criterion); Approved and Implemented are the statuses APPROVED and IMPLEMENTED, with the authorisations between them on the request; materiality is shown, never edited.
+1. **TASK-061** builds SCR-105–107 on these 14 operations (done: `change-request-ui.md`): the classification before submission is `preview-materiality`'s (its acceptance criterion); Approved and Implemented are the statuses APPROVED and IMPLEMENTED, with the authorisations between them on the request; materiality is shown, never edited.
 2. **WF-03 and WF-14 screens** (`schedule-ui.md` F-5, `financial-kpi-ui.md`) can offer the project's ISSUED authorisations of their kind from `GET /change-authorizations?projectId=&authorizationScope=REBASELINE|COMMITMENT_CHANGE&status=ISSUED` instead of an id typed by hand; until one does, a budget revision from the WF-14 screen is refused 422 (F-11).
 3. **TASK-065** guards D-7 and D-8 in CI as its "ChangeAuthorization idempotency" invariant; `ChangeAuthorizationTests` is the starting point.
 4. **TASK-105** (governance profile change) and any scope commitment record: issue PROFILE_CHANGE / SCOPE_CHANGE authorisations from `ChangeRequestApprovalOutcomeHandler.Issue` and apply them through `IChangeAuthorizations` (F-4).
@@ -202,3 +202,4 @@ Each mutation was applied, the solution rebuilt, the ChangeRequest unit tests wi
 | Date | Change |
 | --- | --- |
 | 2026-10-07 | Created (TASK-060) |
+| 2026-10-07 | §6 item 1 consumed by TASK-061 (`change-request-ui.md`) |
