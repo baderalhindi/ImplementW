@@ -74,11 +74,13 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
         Assert.Equal(("ACTIVE", approved.FormalProjectId()), (active.Status(), active.FormalProjectId()));
 
         // WF-09 (edge 7): the Department Manager raises, AHDA's approver decides through WF-11, and only the activation moves the project.
+        // activated_at is compared as the database holds it (microseconds), not as the activation's response carried it.
+        string activatedAt = (await GetAsync(client, sessions.Entity, projectId))["activatedAt"]!.GetValue<string>();
         await SuspendOrResumeAsync(client, sessions, projectId, "SUSPEND");
         Assert.Equal("SUSPENDED", (await GetAsync(client, sessions.Entity, projectId)).Status());
         await SuspendOrResumeAsync(client, sessions, projectId, "RESUME");
         JsonObject resumed = await GetAsync(client, sessions.Entity, projectId);
-        Assert.Equal(("ACTIVE", active["activatedAt"]!.GetValue<string>()), (resumed.Status(), resumed["activatedAt"]!.GetValue<string>()));
+        Assert.Equal(("ACTIVE", activatedAt), (resumed.Status(), resumed["activatedAt"]!.GetValue<string>()));
 
         // WF-11: one run per revision, the second linked to the first, each ended by local.r02's decision.
         JsonObject first = await GetAsync(client, sessions.Approver, $"{ApprovalInstances}/{firstRun}");
