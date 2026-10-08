@@ -1409,6 +1409,840 @@
         }
       }
     },
+    "/api/v1/closure-cases": {
+      "get": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "The project's closure cases, most recently changed first, each with its readiness. `projectId` is required (R-3); `status` filters (a set).",
+        "operationId": "Closure_ListClosureCases",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCasePage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "Raises a closure case (SCR-112), DRAFT: on the normal path for a COMPLETED project, following its effected completion; on the terminal\npath for a SUSPENDED one. A second open case is refused 409.",
+        "operationId": "Closure_CreateClosureCase",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureCaseCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureCaseCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureCaseCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/closure-cases/{caseId}": {
+      "get": {
+        "tags": [
+          "Closure"
+        ],
+        "operationId": "Closure_GetClosureCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "A DRAFT or RETURNED case's own fields, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "Closure_UpdateClosureCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureCaseRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureCaseRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClosureCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "HARD_DRAFT: a DRAFT never submitted, with no readiness records or obligations (otherwise 409 CLOSURE_CASE_IN_USE: withdraw it). R-40: a\ncase that is not there — deleted already, or never the caller's to see — is 204 as well.",
+        "operationId": "Closure_DeleteClosureCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/closure-cases/{caseId}/evaluate-readiness": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "Evaluates a DRAFT or RETURNED case's readiness against the source modules and records it; the answer carries the roll-up.",
+        "operationId": "Closure_EvaluateClosureReadiness",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/closure-cases/{caseId}/waive-check": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "Accepts a failed, waivable criterion of a DRAFT or RETURNED case as an exception, with why. Internal users only.",
+        "operationId": "Closure_WaiveClosureCheck",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseoutWaiveCheckCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseoutWaiveCheckCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseoutWaiveCheckCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/closure-cases/{caseId}/submit": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "DRAFT or RETURNED → SUBMITTED, its readiness evaluated afresh and frozen; refused when NOT_READY. A RETURNED case comes back as the next revision.",
+        "operationId": "Closure_SubmitClosureCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/closure-cases/{caseId}/withdraw": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "DRAFT, SUBMITTED or RETURNED → WITHDRAWN. Under review, the requester withdraws the WF-11 run instead, which withdraws the case.",
+        "operationId": "Closure_WithdrawClosureCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/closure-cases/{caseId}/start-review": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "SUBMITTED → UNDER_REVIEW: starts the WF-11 run of the CLOSURE route. Internal users only.",
+        "operationId": "Closure_StartClosureReview",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/closure-cases/{caseId}/activate": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "APPROVED → EFFECTED: the readiness revalidated, then in one transaction the project CLOSED, its open suspension ended on the terminal\npath, and its per-project access ended (ADR-013). A refusal leaves the case APPROVED. Safe to retry. Internal users only.",
+        "operationId": "Closure_ActivateClosureCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/completion-cases": {
+      "get": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "The project's completion cases, most recently changed first, each with its readiness. `projectId` is required (R-3); `status` filters (a set).",
+        "operationId": "Closure_ListCompletionCases",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCasePage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "Raises a completion case (SCR-112), DRAFT, for an ACTIVE project. A second open case is refused 409. An entity Project Manager raises\non their own project (ADR-013).",
+        "operationId": "Closure_CreateCompletionCase",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionCaseCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionCaseCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionCaseCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/completion-cases/{caseId}": {
+      "get": {
+        "tags": [
+          "Closure"
+        ],
+        "operationId": "Closure_GetCompletionCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "A DRAFT or RETURNED case's own fields, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "Closure_UpdateCompletionCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionCaseRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionCaseRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "HARD_DRAFT: a DRAFT never submitted, with no readiness records or obligations (otherwise 409 CLOSURE_CASE_IN_USE: withdraw it). R-40: a\ncase that is not there — deleted already, or never the caller's to see — is 204 as well.",
+        "operationId": "Closure_DeleteCompletionCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/completion-cases/{caseId}/evaluate-readiness": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "Evaluates a DRAFT or RETURNED case's readiness against the source modules and records it; the answer carries the roll-up.",
+        "operationId": "Closure_EvaluateCompletionReadiness",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/completion-cases/{caseId}/waive-check": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "Accepts a failed, waivable criterion of a DRAFT or RETURNED case as an exception, with why. Internal users only.",
+        "operationId": "Closure_WaiveCompletionCheck",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseoutWaiveCheckCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseoutWaiveCheckCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseoutWaiveCheckCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/completion-cases/{caseId}/submit": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "DRAFT or RETURNED → SUBMITTED, its readiness evaluated afresh and frozen; refused when NOT_READY. A RETURNED case comes back as the next revision.",
+        "operationId": "Closure_SubmitCompletionCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/completion-cases/{caseId}/withdraw": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "DRAFT, SUBMITTED or RETURNED → WITHDRAWN. Under review, the requester withdraws the WF-11 run instead, which withdraws the case.",
+        "operationId": "Closure_WithdrawCompletionCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/completion-cases/{caseId}/start-review": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "SUBMITTED → UNDER_REVIEW: starts the WF-11 run of the COMPLETION route. Internal users only.",
+        "operationId": "Closure_StartCompletionReview",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/completion-cases/{caseId}/activate": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "APPROVED → EFFECTED: the readiness revalidated, then the project's lifecycle transition ACTIVE → COMPLETED in one transaction, its\nactual completion date the case's. A refusal leaves the case APPROVED. Safe to retry. Internal users only.",
+        "operationId": "Closure_ActivateCompletionCase",
+        "parameters": [
+          {
+            "name": "caseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionCaseDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/concern-escalations": {
       "get": {
         "tags": [
@@ -7338,6 +8172,316 @@
         }
       }
     },
+    "/api/v1/post-project-obligations": {
+      "get": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "The project's obligations, most recently changed first. `projectId` is required (R-3); `status` filters (a set).",
+        "operationId": "Closure_ListPostProjectObligations",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostProjectObligationPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "Records an OPEN obligation against a completion case — open or effected — or an open terminal closure case.",
+        "operationId": "Closure_CreatePostProjectObligation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostProjectObligationCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostProjectObligationCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostProjectObligationCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostProjectObligationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/post-project-obligations/{obligationId}": {
+      "get": {
+        "tags": [
+          "Closure"
+        ],
+        "operationId": "Closure_GetPostProjectObligation",
+        "parameters": [
+          {
+            "name": "obligationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostProjectObligationDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "An open obligation's own fields, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "Closure_UpdatePostProjectObligation",
+        "parameters": [
+          {
+            "name": "obligationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostProjectObligationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostProjectObligationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostProjectObligationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostProjectObligationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/post-project-obligations/{obligationId}/start": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "OPEN → IN_PROGRESS.",
+        "operationId": "Closure_StartPostProjectObligation",
+        "parameters": [
+          {
+            "name": "obligationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostProjectObligationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/post-project-obligations/{obligationId}/satisfy": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "OPEN or IN_PROGRESS → SATISFIED.",
+        "operationId": "Closure_SatisfyPostProjectObligation",
+        "parameters": [
+          {
+            "name": "obligationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostProjectObligationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/post-project-obligations/{obligationId}/cancel": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "OPEN or IN_PROGRESS → CANCELLED: recorded in error, or no longer owed.",
+        "operationId": "Closure_CancelPostProjectObligation",
+        "parameters": [
+          {
+            "name": "obligationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostProjectObligationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/post-project-obligations/{obligationId}/waive": {
+      "post": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "OPEN or IN_PROGRESS → WAIVED: AHDA releases it. Internal users only.",
+        "operationId": "Closure_WaivePostProjectObligation",
+        "parameters": [
+          {
+            "name": "obligationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostProjectObligationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/progress-submissions": {
       "get": {
         "tags": [
@@ -9269,6 +10413,69 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PublishedProgressSnapshotPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/readiness-checks": {
+      "get": {
+        "tags": [
+          "Closure"
+        ],
+        "summary": "One case's records: exactly one of `completionCaseId` and `closureCaseId` is required (R-3).",
+        "operationId": "Closure_ListReadinessChecks",
+        "parameters": [
+          {
+            "name": "completionCaseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "closureCaseId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessRecordPage"
                 }
               }
             }
@@ -12238,6 +13445,7 @@
           "suspensionRequestId",
           "startedAt",
           "endedAt",
+          "endReason",
           "resumptionRequestId"
         ],
         "type": "object",
@@ -12265,6 +13473,16 @@
             ],
             "format": "date-time"
           },
+          "endReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SuspensionEndReason"
+              }
+            ]
+          },
           "resumptionRequestId": {
             "type": [
               "null",
@@ -12273,7 +13491,7 @@
             "format": "uuid"
           }
         },
-        "description": "A period during which the project was or is SUSPENDED: open while DateTimeOffset? ActiveSuspensionDetail.EndedAt is null."
+        "description": "A period during which the project was or is SUSPENDED: open while DateTimeOffset? ActiveSuspensionDetail.EndedAt is null. It ends when the project resumes, or\nwhen it is closed without resuming (SuspensionEndReason.ProjectClosed, TASK-063)."
       },
       "ActiveSuspensionPage": {
         "required": [
@@ -14029,6 +15247,236 @@
         ],
         "description": "ERD `change_request.change_type`: what the request changes. Fixed when the request is raised."
       },
+      "CloseoutCaseStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "APPROVED",
+          "REJECTED",
+          "WITHDRAWN",
+          "EFFECTED"
+        ],
+        "description": "ERD `completion_case.status` and `closure_case.status` (TASK-063): Draft → Submitted → Under Review → Returned / Approved /\nRejected, Withdrawn, and Approved → Effected. APPROVED is WF-11's decision; EFFECTED is the project's lifecycle transition, a later and\nseparate step (WF-10 APPROVED_PENDING_ACTIVATION and ACTIVATED). REJECTED, WITHDRAWN and EFFECTED are final."
+      },
+      "CloseoutWaiveCheckCommand": {
+        "required": [
+          "checkCode",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "checkCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReadinessCheckCode"
+              }
+            ]
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "An accepted exception to a failed, waivable readiness criterion, with why (READY_WITH_CONDITIONS)."
+      },
+      "ClosureCaseCreateRequest": {
+        "required": [
+          "projectId",
+          "closureNarrative"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "closureNarrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A new closure case, DRAFT: of a COMPLETED project, or of a SUSPENDED one on the terminal path, as the project's state decides."
+      },
+      "ClosureCaseDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "completionCaseId",
+          "outcome",
+          "status",
+          "revisionNo",
+          "requestedByUserId",
+          "submittedAt",
+          "closureNarrative",
+          "effectedAt",
+          "readiness",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "completionCaseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ProjectOutcome"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CloseoutCaseStatus"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "closureNarrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "effectedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/ReadinessDetail"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A closure case with its readiness. ProjectOutcome ClosureCaseDetail.Outcome is TERMINATED_WITHOUT_COMPLETION on the terminal path from SUSPENDED, where\nGuid? ClosureCaseDetail.CompletionCaseId is null: such a project has no actual completion date and is never reported as completed."
+      },
+      "ClosureCasePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClosureCaseDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's closure cases, most recently changed first (R-29)."
+      },
+      "ClosureCaseRequest": {
+        "required": [
+          "closureNarrative"
+        ],
+        "type": "object",
+        "properties": {
+          "closureNarrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A closure case's own field, as a whole (R-5): the final project summary — on the terminal path, why the project stops."
+      },
       "CommitmentDocumentDetail": {
         "required": [
           "financialCommitmentId",
@@ -14096,6 +15544,205 @@
           "OPEN_COMMITMENT"
         ],
         "description": "ERD `financial_commitment.commitment_type`."
+      },
+      "CompletionCaseCreateRequest": {
+        "required": [
+          "projectId",
+          "actualProjectCompletionDate",
+          "completionNarrative"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "actualProjectCompletionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "completionNarrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A new completion case of an ACTIVE project, DRAFT, with the fields CompletionCaseRequest describes."
+      },
+      "CompletionCaseDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "status",
+          "revisionNo",
+          "requestedByUserId",
+          "submittedAt",
+          "actualProjectCompletionDate",
+          "completionNarrative",
+          "effectedAt",
+          "readiness",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CloseoutCaseStatus"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requestedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "actualProjectCompletionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "completionNarrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "effectedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/ReadinessDetail"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A completion case with its readiness. Approved and effected are different states: an APPROVED case has changed no project yet; the\nproject is COMPLETED once the case is EFFECTED, and DateOnly? CompletionCaseDetail.ActualProjectCompletionDate is then its official completion date."
+      },
+      "CompletionCasePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompletionCaseDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's completion cases, most recently changed first (R-29)."
+      },
+      "CompletionCaseRequest": {
+        "required": [
+          "actualProjectCompletionDate",
+          "completionNarrative"
+        ],
+        "type": "object",
+        "properties": {
+          "actualProjectCompletionDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "completionNarrative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A completion case's own fields, as a whole (R-5): the proposed official completion date and the Project Manager's completion narrative.\nA draft may leave them out; submission requires both. Its status and the project's state change only through the commands."
       },
       "ConcernAssessCommand": {
         "required": [
@@ -21505,6 +23152,263 @@
         },
         "description": "An entry of the protected permission catalogue. Guid? PermissionSummary.DataClassificationItemId is its clearance (ADR-010)."
       },
+      "PostProjectObligationCreateRequest": {
+        "required": [
+          "completionCaseId",
+          "closureCaseId",
+          "title",
+          "description",
+          "ownerUserId",
+          "dueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "completionCaseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "closureCaseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A new obligation, OPEN, recorded against a completion case or a terminal closure case — exactly one of the two."
+      },
+      "PostProjectObligationDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "completionCaseId",
+          "closureCaseId",
+          "title",
+          "description",
+          "ownerUserId",
+          "dueDate",
+          "status",
+          "satisfiedAt",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "completionCaseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "closureCaseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PostProjectObligationStatus"
+          },
+          "satisfiedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A post-project obligation: open while OPEN or IN_PROGRESS; SATISFIED, WAIVED and CANCELLED are settled."
+      },
+      "PostProjectObligationPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostProjectObligationDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A project's post-project obligations, most recently changed first (R-29)."
+      },
+      "PostProjectObligationRequest": {
+        "required": [
+          "title",
+          "description",
+          "ownerUserId",
+          "dueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "ownerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A post-project obligation's own fields, as a whole (R-5): what is owed, by whom, by when. Its status changes only through the commands."
+      },
+      "PostProjectObligationStatus": {
+        "enum": [
+          "OPEN",
+          "IN_PROGRESS",
+          "SATISFIED",
+          "WAIVED",
+          "CANCELLED"
+        ],
+        "description": "ERD `post_project_obligation.status` (TASK-063): OPEN → IN_PROGRESS, and either to SATISFIED, WAIVED or CANCELLED, which are final."
+      },
       "ProbabilityLevelEntry": {
         "required": [
           "level",
@@ -22124,6 +24028,7 @@
           "longitude",
           "legacyIntakeDate",
           "activatedAt",
+          "closedAt",
           "createdAt",
           "createdBy",
           "updatedAt",
@@ -22264,6 +24169,13 @@
             ],
             "format": "date-time"
           },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -22281,7 +24193,7 @@
             "format": "uuid"
           }
         },
-        "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart."
+        "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart. DateTimeOffset? ProjectDetail.ClosedAt is when WF-10's\nclosure took effect (TASK-063); a closed project's completion date, or its having been terminated without one, is its closure cases'."
       },
       "ProjectHealthStatusDetail": {
         "required": [
@@ -22658,6 +24570,13 @@
           "CANCELLED"
         ],
         "description": "ERD `project_milestone.status`. WF-03 plans and cancels a milestone; ACHIEVED is set by WF-03 when WF-05 accepts an\nachievement of it (ICD-04, TASK-050). ACHIEVED and CANCELLED are final."
+      },
+      "ProjectOutcome": {
+        "enum": [
+          "COMPLETED",
+          "TERMINATED_WITHOUT_COMPLETION"
+        ],
+        "description": "How a closed project ended (WF-10 §8 ProjectOutcomeType, BR-CLO-038): through an effected completion, or closed from SUSPENDED without\none. A terminated project is never reported as completed (CLO-CC-27, BR-CLO-039)."
       },
       "ProjectPage": {
         "required": [
@@ -23700,6 +25619,232 @@
           }
         },
         "description": "One page of a project's published snapshots, latest first (R-29)."
+      },
+      "ReadinessCheckCode": {
+        "enum": [
+          "DECISIONS_SETTLED",
+          "TASKS_DISPOSITIONED",
+          "SCHEDULE_RECONCILED",
+          "MILESTONES_DISPOSITIONED",
+          "RISKS_DISPOSITIONED",
+          "ISSUES_DISPOSITIONED",
+          "CHANGES_DISPOSITIONED",
+          "SUSPENSION_REQUESTS_SETTLED",
+          "PROGRESS_REPORTED",
+          "FINANCIALS_SETTLED",
+          "OBLIGATIONS_OWNED",
+          "OBLIGATIONS_SATISFIED"
+        ],
+        "description": "ERD `readiness_check.check_code` (TASK-063): the criteria a completion or closure case is evaluated against (WF-10 §6.1, §6.2).\nEach source module answers for its own records (P4); WF-10 records the answer and never changes the records."
+      },
+      "ReadinessCheckDetail": {
+        "required": [
+          "checkCode",
+          "result",
+          "blockingCount",
+          "waivable",
+          "waivedByUserId",
+          "waiverReason"
+        ],
+        "type": "object",
+        "properties": {
+          "checkCode": {
+            "$ref": "#/components/schemas/ReadinessCheckCode"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ReadinessResult"
+          },
+          "blockingCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "waivable": {
+            "type": "boolean"
+          },
+          "waivedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "waiverReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          }
+        },
+        "description": "One criterion as last evaluated: int ReadinessCheckDetail.BlockingCount records kept it from passing; a failed waivable criterion is WAIVED by the\ncase's latest waiver of it, whose author and reason are given."
+      },
+      "ReadinessDetail": {
+        "required": [
+          "status",
+          "evaluatedAt",
+          "checks"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ReadinessStatus"
+          },
+          "evaluatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadinessCheckDetail"
+            }
+          }
+        },
+        "description": "The backend's readiness roll-up (WF-10 §6.3, CLO-CC-14) of the case's latest evaluation: READY when every criterion passed,\nREADY_WITH_CONDITIONS when the failed ones are all waived, NOT_READY when one failed and is not waived, INCOMPLETE before any\nevaluation. While the case is under review, the latest evaluation is the one its submission made: the frozen snapshot."
+      },
+      "ReadinessRecordDetail": {
+        "required": [
+          "id",
+          "completionCaseId",
+          "closureCaseId",
+          "checkCode",
+          "result",
+          "evaluatedAt",
+          "blockingCount",
+          "waivedByUserId",
+          "waiverReason",
+          "createdBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "completionCaseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "closureCaseId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "checkCode": {
+            "$ref": "#/components/schemas/ReadinessCheckCode"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ReadinessResult"
+          },
+          "evaluatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "blockingCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "waivedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "waiverReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "One readiness record as stored (APPEND_ONLY): an evaluated criterion (PASS or FAIL), or a waiver (WAIVED, with its author and reason).\nA case's history is its records, newest first; the evaluation a submission made is the revision's frozen snapshot."
+      },
+      "ReadinessRecordPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadinessRecordDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A case's readiness records, newest first: its evaluations and waivers."
+      },
+      "ReadinessResult": {
+        "enum": [
+          "PASS",
+          "FAIL",
+          "WAIVED"
+        ],
+        "description": "ERD `readiness_check.result`: an evaluation passes or fails; a waiver of a failed check is WAIVED."
+      },
+      "ReadinessStatus": {
+        "enum": [
+          "READY",
+          "READY_WITH_CONDITIONS",
+          "NOT_READY",
+          "INCOMPLETE"
+        ],
+        "description": "WF-10 §6.3's roll-up statuses."
       },
       "ReportFieldEntry": {
         "required": [
@@ -26095,6 +28240,13 @@
           }
         }
       },
+      "SuspensionEndReason": {
+        "enum": [
+          "RESUMED",
+          "PROJECT_CLOSED",
+          null
+        ]
+      },
       "SuspensionRequestCreateRequest": {
         "required": [
           "projectId",
@@ -26946,6 +29098,9 @@
     },
     {
       "name": "ChangeRequest"
+    },
+    {
+      "name": "Closure"
     },
     {
       "name": "ManagementConcern"

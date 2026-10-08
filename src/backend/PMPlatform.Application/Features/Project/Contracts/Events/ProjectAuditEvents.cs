@@ -39,6 +39,18 @@ public static class ProjectAuditEvents
     /// <summary>LIFECYCLE_TRANSITION: SUSPENDED → ACTIVE, as WF-09 effects an approved resumption request (TASK-062, edge 7). No baseline changes.</summary>
     public const string ProjectResumed = "Project.ProjectResumed";
 
+    /// <summary>
+    /// LIFECYCLE_TRANSITION: ACTIVE → COMPLETED, as WF-10 effects an approved completion case (TASK-063, edge 8). No task, milestone, risk,
+    /// change or baseline moves with it.
+    /// </summary>
+    public const string ProjectCompleted = "Project.ProjectCompleted";
+
+    /// <summary>
+    /// LIFECYCLE_TRANSITION: COMPLETED → CLOSED, or SUSPENDED → CLOSED on the terminal path, as WF-10 effects an approved closure case
+    /// (TASK-063, edge 8). CLOSED is terminal and read-only.
+    /// </summary>
+    public const string ProjectClosed = "Project.ProjectClosed";
+
     /// <summary>LIFECYCLE_TRANSITION, FAILED: an approval outcome for a revision or state the project is no longer in (EV-5).</summary>
     public const string ApprovalOutcomeIgnored = "Project.ApprovalOutcomeIgnored";
 

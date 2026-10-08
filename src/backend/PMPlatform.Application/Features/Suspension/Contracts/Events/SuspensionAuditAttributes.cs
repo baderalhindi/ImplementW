@@ -13,6 +13,8 @@ public static class SuspensionAuditAttributes
     public const string ApprovalDecision = "approval_decision";
     public const string ActiveSuspensionId = "active_suspension_id";
     public const string EffectedAt = "effected_at";
+    public const string EndReason = "end_reason";
+    public const string ClosureCaseId = "closure_case_id";
     public const string Permission = "permission";
     public const string RefusalReason = "refusal_reason";
 }

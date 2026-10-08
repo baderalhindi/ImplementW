@@ -26,4 +26,10 @@ public static class ProjectErrorCodes
 
     /// <summary>409: the draft is referenced by another record (a document, an access assignment) and cannot be deleted.</summary>
     public const string InUse = "PROJECT_IN_USE";
+
+    /// <summary>
+    /// 409: the project is CLOSED — terminal and read-only (WF-10 BR-CLO-020, TASK-063). Every module answers a write to a closed project's
+    /// records with it; the project's own commands answer TERMINAL_STATE.
+    /// </summary>
+    public const string Closed = "PROJECT_CLOSED";
 }

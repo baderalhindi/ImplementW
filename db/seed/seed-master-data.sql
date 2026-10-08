@@ -49,7 +49,8 @@
 -- PMPlatform.Application's NotificationServicePrincipal.Id; the risk-review principal's, which expires risk acceptances and
 -- returns their risks for review (TASK-055), is PMPlatform.Application's RiskServicePrincipal.Id; the suspension-activation
 -- principal's, which effects approved suspension and resumption requests on their effective date (TASK-062), is
--- PMPlatform.Application's SuspensionServicePrincipal.Id.
+-- PMPlatform.Application's SuspensionServicePrincipal.Id; the closeout-activation principal's, which effects approved
+-- completion and closure cases (TASK-063), is PMPlatform.Application's CloseoutServicePrincipal.Id.
 INSERT INTO identity_access."user" (id, user_type, username, display_name, email, preferred_language, status, created_at, created_by, updated_at, updated_by)
 VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 'Platform seed (service principal)', 'svc.platform-seed@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
@@ -68,6 +69,8 @@ VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 
        ('00000000-0000-4000-8000-0000000000f8', 'SERVICE', 'svc.risk-review', 'Risk acceptance review (service principal)', 'svc.risk-review@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
        ('00000000-0000-4000-8000-0000000000f7', 'SERVICE', 'svc.suspension-activation', 'Suspension activation (service principal)', 'svc.suspension-activation@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000f6', 'SERVICE', 'svc.closeout-activation', 'Completion and closure activation (service principal)', 'svc.closeout-activation@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO NOTHING;
 
@@ -168,7 +171,13 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- resumption request, and ADR-013 has the entity fill in the information and AHDA approve; OWN reaches the projects the holder
 -- manages, internal or entity. §3 makes the Department Manager the reviewer, so SUSPENSION_VIEW and SUSPENSION_REVIEW go to R03 at
 -- DEPT. Approval is WF-11's APPROVAL_DECIDE. Activation is WF-09's own service by default (§14), so SUSPENSION_ACTIVATE ships to no
--- role; it and the rest wait for Appendix A (suspension.md F-2). The eight WF-14
+-- role; it and the rest wait for Appendix A (suspension.md F-2). The five WF-10 permissions (TASK-063) — CLOSEOUT_VIEW,
+-- CLOSEOUT_RAISE, CLOSEOUT_REVIEW, CLOSEOUT_WAIVE, CLOSEOUT_ACTIVATE — ship with CLOSEOUT_VIEW and CLOSEOUT_RAISE to R04 at OWN: WF-10's
+-- specification makes the Project Manager the one who prepares completion and closure, and ADR-013 has the entity fill in the
+-- information and AHDA approve. The Department Manager reviews the immutable submission and its readiness exceptions (US-CLO-DM-002
+-- to -004), so CLOSEOUT_VIEW, CLOSEOUT_REVIEW and CLOSEOUT_WAIVE go to R03 at DEPT. Approval is WF-11's APPROVAL_DECIDE. Activation is
+-- WF-10's own service by default (§13: "System/service"), so CLOSEOUT_ACTIVATE ships to no role; it and the rest wait for Appendix A
+-- (closure.md F-2). The eight WF-14
 -- permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
 -- FINANCIAL_REVIEW, FINANCIAL_SOURCE_MANAGE, KPI_VIEW, KPI_MANAGE, KPI_RECORD, KPI_REVIEW — ship with FINANCIAL_VIEW and KPI_VIEW
 -- to R04 and R08 at ENTITY: ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI status for its own
@@ -238,6 +247,11 @@ FROM (VALUES
     ('SUSPENSION_RAISE',            'رفع طلبات التعليق والاستئناف', 'Raise suspension and resumption requests', 'SUSPENSION', false),
     ('SUSPENSION_REVIEW',           'مراجعة طلبات التعليق والاستئناف', 'Review suspension and resumption requests', 'SUSPENSION', false),
     ('SUSPENSION_ACTIVATE',         'تفعيل التعليق والاستئناف المعتمد', 'Activate approved suspensions and resumptions', 'SUSPENSION', false),
+    ('CLOSEOUT_VIEW',               'عرض طلبات الإنجاز والإغلاق', 'View completion and closure cases', 'CLOSEOUT', false),
+    ('CLOSEOUT_RAISE',              'رفع طلبات الإنجاز والإغلاق', 'Raise completion and closure cases', 'CLOSEOUT', false),
+    ('CLOSEOUT_REVIEW',             'مراجعة طلبات الإنجاز والإغلاق', 'Review completion and closure cases', 'CLOSEOUT', false),
+    ('CLOSEOUT_WAIVE',              'قبول استثناءات الجاهزية والالتزامات', 'Waive readiness criteria and obligations', 'CLOSEOUT', false),
+    ('CLOSEOUT_ACTIVATE',           'تفعيل الإنجاز والإغلاق المعتمد', 'Activate approved completions and closures', 'CLOSEOUT', false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
     ('FINANCIAL_SUBMIT',            'تقديم البيانات المالية', 'Submit financial figures',  'FINANCIAL',       false),
     ('FINANCIAL_REVIEW',            'مراجعة البيانات المالية', 'Review financial figures', 'FINANCIAL',       false),
@@ -316,6 +330,11 @@ FROM (VALUES
     ('R04', 'SUSPENSION_RAISE',            'OWN'),
     ('R03', 'SUSPENSION_VIEW',             'DEPT'),
     ('R03', 'SUSPENSION_REVIEW',           'DEPT'),
+    ('R04', 'CLOSEOUT_VIEW',               'OWN'),
+    ('R04', 'CLOSEOUT_RAISE',              'OWN'),
+    ('R03', 'CLOSEOUT_VIEW',               'DEPT'),
+    ('R03', 'CLOSEOUT_REVIEW',             'DEPT'),
+    ('R03', 'CLOSEOUT_WAIVE',              'DEPT'),
     ('R04', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R08', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R04', 'KPI_VIEW',                    'ENTITY'),

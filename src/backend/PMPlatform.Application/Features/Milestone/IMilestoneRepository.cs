@@ -22,6 +22,9 @@ public interface IMilestoneRepository
     /// <summary>The milestone's ACCEPTED revision, tracked; null before its first acceptance.</summary>
     public Task<MilestoneAchievement?> FindAcceptedAsync(Guid projectMilestoneId, CancellationToken cancellationToken);
 
+    /// <summary>How many of the project's achievements are in each status, for WF-10's readiness (TASK-063). Not tracked.</summary>
+    public Task<IReadOnlyDictionary<MilestoneAchievementStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken);
+
     /// <summary>The row version of a tracked row, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(MilestoneAchievement achievement);
 

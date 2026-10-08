@@ -74,6 +74,14 @@ internal static class ModuleRegistry
         ("Milestone", "Project"),                    // 35 event consumer
         ("ProjectTask", "Project"),                  // 36 query
         ("FinancialKpi", "DocumentManagement"),      // 38 command: an Approved Budget version's referenced document (TASK-052)
+        ("Closure", "ProjectTask"),                  // 39 query: WF-10's readiness, the tasks still to be dispositioned (TASK-063)
+        ("Closure", "Schedule"),                     // 40 query: open baseline candidates, unachieved milestones (TASK-063)
+        ("Closure", "Milestone"),                    // 41 query: achievement claims still on their way (TASK-063)
+        ("Closure", "Risk"),                         // 42 query: risks neither closed nor accepted (TASK-063)
+        ("Closure", "ManagementConcern"),            // 43 query: issues and challenges not resolved (TASK-063)
+        ("Closure", "ChangeRequest"),                // 44 query: change requests not carried through (TASK-063)
+        ("Closure", "Suspension"),                   // 45 query, command: open requests; the open suspension ended on terminal closure (TASK-063)
+        ("Closure", "Progress"),                     // 46 query: unpublished progress, and whether any is published (TASK-063)
     };
 
     public static bool Allows(string referrer, string referenced) =>

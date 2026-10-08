@@ -106,11 +106,14 @@ public sealed class RiskRegisterTests(RiskTestHost host)
             }
         }
 
-        foreach (string state in new[] { "SUBMITTED", "CLOSED" })
+        using (HttpResponseMessage submitted = await client.PostAsync(RiskDriver.Risks, sessions.Officer, RiskDriver.RiskBody(await host.ProjectAsync(state: "SUBMITTED"))))
         {
-            using HttpResponseMessage response = await client.PostAsync(RiskDriver.Risks, sessions.Officer, RiskDriver.RiskBody(await host.ProjectAsync(state: state)));
-            Assert.Equal((HttpStatusCode.UnprocessableEntity, "RISK_PROJECT_NOT_ELIGIBLE"), await response.RefusalAsync());
+            Assert.Equal((HttpStatusCode.UnprocessableEntity, "RISK_PROJECT_NOT_ELIGIBLE"), await submitted.RefusalAsync());
         }
+
+        // A CLOSED project is terminal and read-only (TASK-063): the refusal says so.
+        using HttpResponseMessage closed = await client.PostAsync(RiskDriver.Risks, sessions.Officer, RiskDriver.RiskBody(await host.ProjectAsync(state: "CLOSED")));
+        Assert.Equal((HttpStatusCode.Conflict, "PROJECT_CLOSED"), await closed.RefusalAsync());
     }
 
     /// <summary>

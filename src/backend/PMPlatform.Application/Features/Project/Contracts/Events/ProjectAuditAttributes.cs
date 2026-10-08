@@ -28,4 +28,7 @@ public static class ProjectAuditAttributes
     public const string Gate = "gate";
     public const string Reason = "reason";
     public const string SuspensionRequestId = "suspension_request_id";
+    public const string CompletionCaseId = "completion_case_id";
+    public const string ClosureCaseId = "closure_case_id";
+    public const string ClosedAt = "closed_at";
 }

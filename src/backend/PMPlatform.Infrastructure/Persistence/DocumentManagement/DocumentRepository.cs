@@ -5,6 +5,7 @@ using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Domain.DocumentManagement;
+using PMPlatform.Domain.Project;
 using PMPlatform.Infrastructure.Persistence.Configurations.DocumentManagement;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
@@ -16,12 +17,13 @@ internal sealed class DocumentRepository(PMPlatformDbContext context) : IDocumen
 {
     /// <summary>
     /// Reads <c>project.project</c>: DocumentManagement is a foundation module and the Project module publishes no contract
-    /// for its anchors yet (document-management.md F-6; the same read as identity-access-administration.md F-6).
+    /// for its anchors yet (document-management.md F-6; the same read as identity-access-administration.md F-6). Whether the project is
+    /// CLOSED is read with them, so a closed project's documents take no write (TASK-063; F-14).
     /// </summary>
     public Task<DocumentAnchors?> FindProjectAnchorsAsync(Guid projectId, CancellationToken cancellationToken) =>
         context.Set<ProjectEntity>().AsNoTracking()
             .Where(p => p.Id == projectId)
-            .Select(p => new DocumentAnchors(p.Id, p.DepartmentId, p.ExternalEntityId))
+            .Select(p => new DocumentAnchors(p.Id, p.DepartmentId, p.ExternalEntityId, p.LifecycleState == ProjectLifecycleState.Closed))
             .SingleOrDefaultAsync(cancellationToken);
 
     public async Task<Document?> FindDocumentAsync(Guid documentId, uint? expectedVersion, CancellationToken cancellationToken)

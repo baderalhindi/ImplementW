@@ -221,6 +221,31 @@ public sealed class PermissionCatalogue
     /// </summary>
     public const string SuspensionActivate = "SUSPENSION_ACTIVATE";
 
+    /// <summary>WF-10 (TASK-063): a project's completion and closure cases with their readiness, and its post-project obligations.</summary>
+    public const string CloseoutView = "CLOSEOUT_VIEW";
+
+    /// <summary>
+    /// WF-10 (TASK-063): raise a completion or closure case, edit and delete its draft, evaluate its readiness, submit and withdraw it, and
+    /// record and keep the project's post-project obligations. ADR-013: an entity Project Manager fills in the case on their own project;
+    /// AHDA decides it.
+    /// </summary>
+    public const string CloseoutRaise = "CLOSEOUT_RAISE";
+
+    /// <summary>WF-10 (TASK-063): start the review of a submitted case, which routes it through WF-11. Internal users only (ADR-013).</summary>
+    public const string CloseoutReview = "CLOSEOUT_REVIEW";
+
+    /// <summary>
+    /// WF-10 (TASK-063): accept a failed readiness criterion as an exception (READY_WITH_CONDITIONS), and waive a post-project obligation.
+    /// Internal users only (ADR-013).
+    /// </summary>
+    public const string CloseoutWaive = "CLOSEOUT_WAIVE";
+
+    /// <summary>
+    /// WF-10 (TASK-063): activate an approved case — the project's lifecycle transition, apart from the approval. Internal users only
+    /// (ADR-013). WF-10's own pass activates approved cases as its service principal without it.
+    /// </summary>
+    public const string CloseoutActivate = "CLOSEOUT_ACTIVATE";
+
     /// <summary>
     /// WF-14 Financial Progress (TASK-052): a project's Approved Budget versions, financial updates, published financial
     /// snapshots, live position, source modes and portfolio totals. ADR-013: an entity sees budget and expenditure for its own
@@ -322,6 +347,11 @@ public sealed class PermissionCatalogue
             new(SuspensionRaise, "SUSPENSION", AccessMode.Write),
             new(SuspensionReview, "SUSPENSION", AccessMode.Write),
             new(SuspensionActivate, "SUSPENSION", AccessMode.Write),
+            new(CloseoutView, "CLOSEOUT", AccessMode.Read),
+            new(CloseoutRaise, "CLOSEOUT", AccessMode.Write),
+            new(CloseoutReview, "CLOSEOUT", AccessMode.Write),
+            new(CloseoutWaive, "CLOSEOUT", AccessMode.Write),
+            new(CloseoutActivate, "CLOSEOUT", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
             new(FinancialSubmit, "FINANCIAL", AccessMode.Write),
             new(FinancialReview, "FINANCIAL", AccessMode.Write),
@@ -382,7 +412,12 @@ public sealed class PermissionCatalogue
     /// resumption request and the Department Manager its reviewer; ADR-013 has the entity fill in the information and AHDA approve: R04
     /// views and raises requests at OWN, the projects the holder manages, internal or entity, and R03 views and starts reviews at DEPT.
     /// Approval is WF-11's APPROVAL_DECIDE. Activation is WF-09's own service by default (§14), so SUSPENSION_ACTIVATE ships to no role;
-    /// it and the other roles' grants wait for Appendix A (suspension.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
+    /// it and the other roles' grants wait for Appendix A (suspension.md F-2). WF-10's specification §11 and §13 make the Project Manager
+    /// the one who prepares completion and closure, and the Department Manager the reviewer of the immutable submission and its readiness
+    /// exceptions (US-CLO-DM-002 to -004); ADR-013 has the entity fill in the information and AHDA approve: R04 views and raises cases at
+    /// OWN, internal or entity, and R03 views, starts reviews and waives criteria at DEPT. Approval is WF-11's APPROVAL_DECIDE.
+    /// Activation is WF-10's own service by default (§13 Completion.Activate: "System/service"), so CLOSEOUT_ACTIVATE ships to no role; it
+    /// and the other roles' grants wait for Appendix A (closure.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
     /// status for its own project, masked by audience per ADR-010: R08 and R04 view financials and KPIs at ENTITY, which reaches
     /// only a holder with an entity; entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
@@ -442,6 +477,11 @@ public sealed class PermissionCatalogue
         new("R04", SuspensionRaise, DataScope.Own),
         new("R03", SuspensionView, DataScope.Dept),
         new("R03", SuspensionReview, DataScope.Dept),
+        new("R04", CloseoutView, DataScope.Own),
+        new("R04", CloseoutRaise, DataScope.Own),
+        new("R03", CloseoutView, DataScope.Dept),
+        new("R03", CloseoutReview, DataScope.Dept),
+        new("R03", CloseoutWaive, DataScope.Dept),
         new("R04", FinancialView, DataScope.Entity),
         new("R08", FinancialView, DataScope.Entity),
         new("R04", KpiView, DataScope.Entity),

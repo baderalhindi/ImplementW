@@ -45,10 +45,11 @@ public interface IRiskRepository
     public Task<(IReadOnlyList<RiskAcceptance> Items, int TotalCount)> PageAcceptancesAsync(Guid riskId, PageRequest page, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Up to <paramref name="batchSize"/> ACTIVE acceptances whose expiry is on or before <paramref name="today"/>, earliest first.
-    /// Not tracked: each is handled in its own unit of work.
+    /// Up to <paramref name="batchSize"/> ACTIVE acceptances whose expiry is on or before <paramref name="today"/>, earliest first — after
+    /// <paramref name="after"/> in that order, when given, so a pass can step past the ones it leaves. Not tracked: each is handled in its
+    /// own unit of work.
     /// </summary>
-    public Task<IReadOnlyList<RiskAcceptance>> ListLapsedAcceptancesAsync(DateOnly today, int batchSize, CancellationToken cancellationToken);
+    public Task<IReadOnlyList<RiskAcceptance>> ListLapsedAcceptancesAsync(DateOnly today, RiskAcceptance? after, int batchSize, CancellationToken cancellationToken);
 
     /// <summary>Whether the risk has a PLANNED or IN_PROGRESS action.</summary>
     public Task<bool> HasOpenActionAsync(Guid riskId, CancellationToken cancellationToken);
@@ -58,6 +59,9 @@ public interface IRiskRepository
 
     /// <summary>Tracked. With <paramref name="expectedVersion"/>, the next save is conditional on it (R-21).</summary>
     public Task<RiskTreatmentAction?> FindActionAsync(Guid actionId, uint? expectedVersion, CancellationToken cancellationToken);
+
+    /// <summary>The project's risks that are not CLOSED and carry no ACTIVE acceptance, for WF-10's readiness (TASK-063).</summary>
+    public Task<int> CountOpenUnacceptedAsync(Guid projectId, CancellationToken cancellationToken);
 
     /// <summary>The row version of a tracked row, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(RiskEntity risk);

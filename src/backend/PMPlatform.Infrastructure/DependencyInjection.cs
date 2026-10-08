@@ -23,6 +23,7 @@ using PMPlatform.Application.Features.ProjectTask;
 using PMPlatform.Application.Features.Risk;
 using PMPlatform.Application.Features.Schedule;
 using PMPlatform.Application.Features.Suspension;
+using PMPlatform.Application.Features.Closure;
 using PMPlatform.Infrastructure.Approval;
 using PMPlatform.Infrastructure.Audit;
 using PMPlatform.Infrastructure.DocumentManagement;
@@ -30,6 +31,7 @@ using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Notifications;
 using PMPlatform.Infrastructure.Risk;
 using PMPlatform.Infrastructure.Suspension;
+using PMPlatform.Infrastructure.Closure;
 using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
@@ -44,6 +46,7 @@ using PMPlatform.Infrastructure.Persistence.ProjectTask;
 using PMPlatform.Infrastructure.Persistence.Risk;
 using PMPlatform.Infrastructure.Persistence.Schedule;
 using PMPlatform.Infrastructure.Persistence.Suspension;
+using PMPlatform.Infrastructure.Persistence.Closure;
 using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using PMPlatform.Infrastructure.Persistence.MasterDataConfig;
@@ -141,6 +144,14 @@ public static class DependencyInjection
             .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{SuspensionActivationOptions.Section}: PollInterval and BatchSize must be positive.")
             .ValidateOnStart();
         services.AddHostedService<SuspensionActivationWorker>();
+
+        // TASK-063: WF-10's closure schema, and the pass that activates approved completion and closure cases.
+        services.AddScoped<ICloseoutRepository, CloseoutRepository>();
+        services.AddOptions<CloseoutActivationOptions>()
+            .Bind(configuration.GetSection(CloseoutActivationOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{CloseoutActivationOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<CloseoutActivationWorker>();
 
         services.AddNotifications(configuration);
 

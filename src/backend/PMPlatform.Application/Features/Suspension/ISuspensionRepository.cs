@@ -31,6 +31,9 @@ public interface ISuspensionRepository
     /// <summary>The ids of up to <paramref name="limit"/> APPROVED requests whose effective date is on or before <paramref name="today"/>, earliest first.</summary>
     public Task<IReadOnlyList<Guid>> ListDueAsync(DateOnly today, int limit, CancellationToken cancellationToken);
 
+    /// <summary>How many of the project's suspension and resumption requests are in each status, for WF-10's readiness (TASK-063). Not tracked.</summary>
+    public Task<IReadOnlyDictionary<SuspensionRequestStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken);
+
     /// <summary>The row version of a tracked request, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(SuspensionRequest request);
 

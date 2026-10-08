@@ -5,14 +5,14 @@ namespace PMPlatform.Tests.Integration.Project;
 /// <summary>
 /// The identity test database and people (IdentityDatabase) with what WF-01 needs and no environment has yet: test grants
 /// for AHDA's side — Appendix A grants nothing there (project-registration.md F-1) — beside the shipped R04 and R08 ENTITY
-/// grants; published region, city and classification items; and published PROJECT_REGISTRATION, SUSPENSION and RESUMPTION
-/// routes in APPROVAL_AUTHORITY with their WORKFLOW_POLICY, so that WF-09 can take a project along TASK-062's edges. The API's outbox and maintenance workers stay idle, so each test
-/// dispatches when it chooses.
+/// grants; published region, city and classification items; and published PROJECT_REGISTRATION, SUSPENSION, RESUMPTION, COMPLETION and
+/// CLOSURE routes in APPROVAL_AUTHORITY with their WORKFLOW_POLICY, so that WF-09 and WF-10 can take a project along TASK-062's and
+/// TASK-063's edges. The API's outbox and maintenance workers stay idle, so each test dispatches and activates when it chooses.
 /// </summary>
 /// <remarks>
 /// People: local.r02 views, reviews and activates every project, decides the review and activates suspension and resumption
-/// requests (R02, ALL). local.r03 registers, views and reviews for their department, and raises suspension and resumption
-/// requests there (R03, DEPT anchor). local.r05 is an internal Project Manager (R04, no anchor).
+/// requests and completion and closure cases (R02, ALL). local.r03 registers, views and reviews for their department, raises suspension
+/// and resumption requests and completion and closure cases there, and reviews and waives the cases' criteria (R03, DEPT anchor). local.r05 is an internal Project Manager (R04, no anchor).
 /// local.r06 holds R06 only. local.r08 is ADR-013's entity user: external, R08 on the active entity, and R04 on that entity
 /// too — and the test R04 profile also holds review and activation, so the person check of ADR-013 is what refuses them.
 /// local.r07 is external, of a suspended entity.
@@ -60,7 +60,8 @@ public sealed class ProjectTestHost : IAsyncLifetime
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_ACTIVATE', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'APPROVAL_DECIDE', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'APPROVAL_VIEW', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'SUSPENSION_VIEW', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'SUSPENSION_ACTIVATE', 'ALL'),
-                     ('{IdentityDatabase.ProfileVersionId(3)}', 'SUSPENSION_RAISE', 'DEPT'),
+                     ('{IdentityDatabase.ProfileVersionId(2)}', 'CLOSEOUT_VIEW', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'CLOSEOUT_ACTIVATE', 'ALL'),
+                     ('{IdentityDatabase.ProfileVersionId(3)}', 'SUSPENSION_RAISE', 'DEPT'), ('{IdentityDatabase.ProfileVersionId(3)}', 'CLOSEOUT_RAISE', 'DEPT'),
                      ('{IdentityDatabase.ProfileVersionId(3)}', 'PROJECT_VIEW', 'DEPT'), ('{IdentityDatabase.ProfileVersionId(3)}', 'PROJECT_REGISTER', 'DEPT'),
                      ('{IdentityDatabase.ProfileVersionId(3)}', 'PROJECT_REVIEW', 'DEPT'), ('{IdentityDatabase.ProfileVersionId(3)}', 'APPROVAL_VIEW', 'DEPT'),
                      ('{IdentityDatabase.ProfileVersionId(4)}', 'PROJECT_REVIEW', 'ENTITY'), ('{IdentityDatabase.ProfileVersionId(4)}', 'PROJECT_ACTIVATE', 'ENTITY'))
@@ -81,7 +82,9 @@ public sealed class ProjectTestHost : IAsyncLifetime
         INSERT INTO master_data_config.approval_authority_rule (id, configuration_version_id, subject_type_code, sequence_no, approver_role_id, is_mandatory, created_at, created_by, updated_at, updated_by)
         VALUES (gen_random_uuid(), '00000000-0410-4000-8000-000000000101', 'PROJECT_REGISTRATION', 1, '{RoleId(2)}', true, now(), '{Seed}', now(), '{Seed}'),
                (gen_random_uuid(), '00000000-0410-4000-8000-000000000101', 'SUSPENSION', 1, '{RoleId(2)}', true, now(), '{Seed}', now(), '{Seed}'),
-               (gen_random_uuid(), '00000000-0410-4000-8000-000000000101', 'RESUMPTION', 1, '{RoleId(2)}', true, now(), '{Seed}', now(), '{Seed}');
+               (gen_random_uuid(), '00000000-0410-4000-8000-000000000101', 'RESUMPTION', 1, '{RoleId(2)}', true, now(), '{Seed}', now(), '{Seed}'),
+               (gen_random_uuid(), '00000000-0410-4000-8000-000000000101', 'COMPLETION', 1, '{RoleId(2)}', true, now(), '{Seed}', now(), '{Seed}'),
+               (gen_random_uuid(), '00000000-0410-4000-8000-000000000101', 'CLOSURE', 1, '{RoleId(2)}', true, now(), '{Seed}', now(), '{Seed}');
 
         INSERT INTO master_data_config.configuration_value (id, configuration_version_id, value_key, value_text, value_type, created_at, created_by, updated_at, updated_by)
         VALUES (gen_random_uuid(), '00000000-0410-4000-8000-000000000102', 'APPROVAL_TASK_DUE_DAYS', '{DueDays}', 'DURATION_DAYS', now(), '{Seed}', now(), '{Seed}'),
@@ -117,6 +120,7 @@ public sealed class ProjectTestHost : IAsyncLifetime
             ["Outbox:PollInterval"] = "01:00:00",
             ["Approval:Maintenance:PollInterval"] = "01:00:00",
             ["DocumentManagement:Scan:PollInterval"] = "01:00:00",
+            ["Closure:Activation:PollInterval"] = "01:00:00",
         });
     }
 

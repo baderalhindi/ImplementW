@@ -44,6 +44,9 @@ public interface IManagementConcernRepository
     /// <summary>One page of the concern's escalations, newest first, with the total. Not tracked.</summary>
     public Task<(IReadOnlyList<ConcernEscalation> Items, int TotalCount)> PageEscalationsAsync(Guid concernId, PageRequest page, CancellationToken cancellationToken);
 
+    /// <summary>How many of the project's concerns are in each status, for WF-10's readiness (TASK-063). Not tracked.</summary>
+    public Task<IReadOnlyDictionary<ConcernStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken);
+
     /// <summary>The row version of a tracked concern, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(ConcernEntity concern);
 

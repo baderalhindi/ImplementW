@@ -23,6 +23,18 @@ internal sealed class FinancialKpiRepository(PMPlatformDbContext context) : IFin
             ? new FinancialKpiWork(await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false))
             : new FinancialKpiWork(null);
 
+    public async Task<(int Unpublished, int OpenVersions)> CountUnsettledAsync(Guid projectId, CancellationToken cancellationToken)
+    {
+        ApprovedVersionStatus[] open = [ApprovedVersionStatus.Draft, ApprovedVersionStatus.Submitted, ApprovedVersionStatus.UnderReview, ApprovedVersionStatus.Returned];
+        IQueryable<Guid> assignments = context.Set<KpiAssignment>().Where(a => a.ProjectId == projectId).Select(a => a.Id);
+        int updates = await context.Set<FinancialProgressUpdate>().CountAsync(u => u.ProjectId == projectId && u.Status != FinancialUpdateStatus.Published, cancellationToken).ConfigureAwait(false);
+        int measurements = await context.Set<KpiMeasurement>().CountAsync(m => assignments.Contains(m.KpiAssignmentId) && m.Status != KpiMeasurementStatus.Published, cancellationToken)
+            .ConfigureAwait(false);
+        int commitments = await context.Set<FinancialCommitment>().CountAsync(c => c.ProjectId == projectId && open.Contains(c.Status), cancellationToken).ConfigureAwait(false);
+        int targets = await context.Set<KpiTargetVersion>().CountAsync(t => assignments.Contains(t.KpiAssignmentId) && open.Contains(t.Status), cancellationToken).ConfigureAwait(false);
+        return (updates + measurements, commitments + targets);
+    }
+
     public uint RowVersionOf(AuditedEntity entity) => context.Entry(entity).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
 
     public void Add(AuditedEntity entity) => context.Add(entity);

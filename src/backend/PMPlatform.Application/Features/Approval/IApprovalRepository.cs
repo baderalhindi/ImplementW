@@ -17,6 +17,9 @@ public interface IApprovalRepository
     /// <summary>Every run of the subject, oldest revision first, with its tasks. Not tracked.</summary>
     public Task<IReadOnlyList<ApprovalRun>> FindBySubjectAsync(string subjectModule, string subjectType, Guid subjectId, CancellationToken cancellationToken);
 
+    /// <summary>The runs scoped to the project that are PENDING, or decided and not yet delivered to their source (TASK-063).</summary>
+    public Task<int> CountUnsettledAsync(Guid scopeProjectId, CancellationToken cancellationToken);
+
     /// <summary>The runs <paramref name="userId"/> requested, newest first, one page, with the total count. Not tracked.</summary>
     public Task<(IReadOnlyList<ApprovalInstance> Items, int TotalCount)> ListRequestedByAsync(
         Guid userId, IReadOnlyCollection<ApprovalInstanceStatus> statuses, int skip, int take, CancellationToken cancellationToken);

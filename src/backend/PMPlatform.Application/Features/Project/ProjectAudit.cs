@@ -61,6 +61,23 @@ internal static class ProjectAudit
         return entry with { ActorType = command.ActorType };
     }
 
+    /// <summary>
+    /// WF-10's ACTIVE → COMPLETED, COMPLETED → CLOSED or SUSPENDED → CLOSED (edge 8), by whoever effected the case — a person, or WF-10's
+    /// service principal — naming the completion or closure case effected.
+    /// </summary>
+    public static AuditEntry CloseoutTransition(ProjectCloseoutCommand command, ProjectEntity project, ProjectLifecycleState from)
+    {
+        bool completed = project.LifecycleState == ProjectLifecycleState.Completed;
+        AuditEntry entry = Transition(
+            completed ? ProjectAuditEvents.ProjectCompleted : ProjectAuditEvents.ProjectClosed,
+            command.ActorId, project, from, project.RevisionNo,
+            [
+                AuditAttribute.Of(completed ? ProjectAuditAttributes.CompletionCaseId : ProjectAuditAttributes.ClosureCaseId, command.CaseId),
+                completed ? null : AuditAttribute.Of(ProjectAuditAttributes.ClosedAt, project.ClosedAt),
+            ]);
+        return entry with { ActorType = command.ActorType };
+    }
+
     /// <summary>EV-5: an outcome for a revision the project has moved past, or for a review it is no longer under, is not applied.</summary>
     public static AuditEntry OutcomeIgnored(ProjectEntity project, ApprovalOutcomeRecorded outcome) =>
         new(AuditEventClass.LifecycleTransition, ProjectAuditEvents.ApprovalOutcomeIgnored, AuditOutcome.Failed)

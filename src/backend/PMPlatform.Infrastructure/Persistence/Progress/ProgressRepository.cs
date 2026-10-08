@@ -30,6 +30,14 @@ internal sealed class ProgressRepository(PMPlatformDbContext context) : IProgres
         return submission;
     }
 
+    public async Task<IReadOnlyDictionary<ProgressSubmissionStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken) =>
+        await context.Set<ProgressSubmission>().AsNoTracking()
+            .Where(r => r.ProjectId == projectId)
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Status, g => g.Count, cancellationToken)
+            .ConfigureAwait(false);
+
     public uint RowVersionOf(ProgressSubmission submission) =>
         context.Entry(submission).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
 

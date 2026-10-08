@@ -1,4 +1,5 @@
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.DocumentManagement;
 
@@ -13,12 +14,26 @@ internal sealed class DocumentAccess(IAuthorizationEngine engine, IDocumentRepos
 {
     private readonly Dictionary<Guid, DocumentAnchors> _projects = [];
 
-    /// <summary>Null when allowed; otherwise NotFound (R-47) or Forbidden.</summary>
+    /// <summary>
+    /// Null when allowed; otherwise NotFound (R-47) or Forbidden, and for a write to a document of a CLOSED project 409
+    /// DOCUMENT_PROJECT_CLOSED (TASK-063).
+    /// </summary>
     public async Task<AdministrationError?> CheckAsync(Guid callerId, string permissionCode, Document document, CancellationToken cancellationToken)
     {
         AuthorizationSubject subject = await SubjectOfAsync(document.ProjectId, document.OwnerUserId, document.DataClassificationItemId, cancellationToken).ConfigureAwait(false);
-        return Refusal(await engine.AuthorizeAsync(callerId, new AuthorizationRequest(permissionCode, subject), cancellationToken).ConfigureAwait(false));
+        return Refusal(await engine.AuthorizeAsync(callerId, new AuthorizationRequest(permissionCode, subject), cancellationToken).ConfigureAwait(false))
+               ?? await ClosedRefusalAsync(permissionCode, document.ProjectId, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// A CLOSED project is terminal and read-only (WF-10 BR-CLO-020, TASK-063): a write to its documents — a new one, a new version,
+    /// an edit, an archive, a rescan — is 409 DOCUMENT_PROJECT_CLOSED. Reads go on. The records-management exception (BR-CLO-021) is not built.
+    /// </summary>
+    public async Task<AdministrationError?> ClosedRefusalAsync(string permissionCode, Guid? projectId, CancellationToken cancellationToken) =>
+        PermissionCatalogue.Platform.Get(permissionCode).Mode == AccessMode.Write
+        && (await AnchorsOfAsync(projectId, cancellationToken).ConfigureAwait(false)).ProjectClosed
+            ? AdministrationError.Conflict(DocumentErrorCodes.ProjectClosed)
+            : null;
 
     public Task<DocumentAnchors> AnchorsOfAsync(Document document, CancellationToken cancellationToken) =>
         AnchorsOfAsync(document.ProjectId, cancellationToken);

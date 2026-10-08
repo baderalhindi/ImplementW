@@ -18,14 +18,16 @@ public sealed class LifecycleGuardTests(ProjectTestHost host)
     private static readonly string[] States = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "RETURNED", "APPROVED_PLANNED", "ACTIVE", "SUSPENDED", "COMPLETED", "CLOSED"];
 
     /// <summary>
-    /// TASK-041's seven edges, as the specification states them, and TASK-062's two; every other pair of states is refused. That a project
-    /// takes TASK-062's edges only with its active suspension is held too, and tested with WF-09 (SuspensionGuardTests).
+    /// TASK-041's seven edges, as the specification states them, TASK-062's two and TASK-063's three; every other pair of states is refused.
+    /// That a project takes TASK-062's edges only with its active suspension, and TASK-063's only with its effected case, is held too, and
+    /// tested with WF-09 (SuspensionGuardTests) and WF-10 (ClosureGuardTests).
     /// </summary>
     private static readonly HashSet<(string From, string To)> Edges =
     [
         ("DRAFT", "SUBMITTED"), ("SUBMITTED", "DRAFT"), ("SUBMITTED", "UNDER_REVIEW"), ("UNDER_REVIEW", "RETURNED"),
         ("UNDER_REVIEW", "APPROVED_PLANNED"), ("RETURNED", "SUBMITTED"), ("APPROVED_PLANNED", "ACTIVE"),
         ("ACTIVE", "SUSPENDED"), ("SUSPENDED", "ACTIVE"),
+        ("ACTIVE", "COMPLETED"), ("COMPLETED", "CLOSED"), ("SUSPENDED", "CLOSED"),
     ];
 
     public static TheoryData<string, string> ForbiddenChanges()
@@ -108,7 +110,10 @@ public sealed class LifecycleGuardTests(ProjectTestHost host)
         Assert.DoesNotContain("Project.ProjectActivated", await host.AuditEventsAsync(projectId));
     }
 
-    /// <summary>The database refuses every change of state that is not one of TASK-041's or TASK-062's edges, whoever writes it.</summary>
+    /// <summary>
+    /// The database refuses every change of state that is not one of TASK-041's, TASK-062's or TASK-063's edges, whoever writes it; a CLOSED
+    /// project changes no more at all (TASK-063).
+    /// </summary>
     [Theory]
     [MemberData(nameof(ForbiddenChanges))]
     public async Task TheDatabaseRefusesAChangeOfStateThatIsNoEdge(string from, string to)
@@ -118,7 +123,8 @@ public sealed class LifecycleGuardTests(ProjectTestHost host)
         PostgresException refused = await Assert.ThrowsAsync<PostgresException>(() =>
             host.Database.ExecuteAsync($"UPDATE project.project SET lifecycle_state = '{to}' WHERE id = '{projectId}'"));
 
-        Assert.Equal((PostgresErrorCodes.RestrictViolation, true), (refused.SqlState, refused.MessageText.Contains("is not a lifecycle transition", StringComparison.Ordinal)));
+        string reason = from == "CLOSED" ? "is CLOSED: terminal and read-only" : "is not a lifecycle transition";
+        Assert.Equal((PostgresErrorCodes.RestrictViolation, true), (refused.SqlState, refused.MessageText.Contains(reason, StringComparison.Ordinal)));
     }
 
     /// <summary>

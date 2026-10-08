@@ -76,6 +76,14 @@ internal sealed class SuspensionRepository(PMPlatformDbContext context) : ISuspe
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyDictionary<SuspensionRequestStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken) =>
+        await context.Set<SuspensionRequest>().AsNoTracking()
+            .Where(r => r.ProjectId == projectId)
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Status, g => g.Count, cancellationToken)
+            .ConfigureAwait(false);
+
     public uint RowVersionOf(SuspensionRequest request) =>
         context.Entry(request).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
 

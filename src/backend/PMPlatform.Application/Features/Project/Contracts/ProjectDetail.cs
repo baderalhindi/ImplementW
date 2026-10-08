@@ -6,7 +6,8 @@ namespace PMPlatform.Application.Features.Project.Contracts;
 /// <summary>
 /// A project as SCR-026 shows it. <see cref="FormalProjectId"/> is null until AHDA approves the registration.
 /// <see cref="LegacyIntakeDate"/> is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its
-/// baseline is a Declared Baseline, never an Approved one, so every display can tell the two apart.
+/// baseline is a Declared Baseline, never an Approved one, so every display can tell the two apart. <see cref="ClosedAt"/> is when WF-10's
+/// closure took effect (TASK-063); a closed project's completion date, or its having been terminated without one, is its closure cases'.
 /// </summary>
 public sealed record ProjectDetail(
     Guid Id,
@@ -30,6 +31,7 @@ public sealed record ProjectDetail(
     decimal? Longitude,
     DateOnly? LegacyIntakeDate,
     DateTimeOffset? ActivatedAt,
+    DateTimeOffset? ClosedAt,
     DateTimeOffset CreatedAt,
     Guid CreatedBy,
     DateTimeOffset UpdatedAt,

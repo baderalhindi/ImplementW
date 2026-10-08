@@ -19,7 +19,7 @@ internal sealed class SuspensionViews(ISuspensionRepository repository)
     public static ActiveSuspensionDetail ToDetail(ActiveSuspension s)
     {
         ArgumentNullException.ThrowIfNull(s);
-        return new ActiveSuspensionDetail(s.Id, s.ProjectId, s.SuspensionRequestId, s.StartedAt, s.EndedAt, s.ResumptionRequestId);
+        return new ActiveSuspensionDetail(s.Id, s.ProjectId, s.SuspensionRequestId, s.StartedAt, s.EndedAt, s.EndReason, s.ResumptionRequestId);
     }
 
     private static SuspensionRequestDetail ToDetail(SuspensionRequest r, ActiveSuspension? suspension) =>

@@ -24,6 +24,12 @@ public interface IFinancialKpiRepository
     /// </summary>
     public Task<FinancialKpiSaveOutcome> SaveAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// For WF-10's readiness (TASK-063): the project's financial updates and KPI measurements not yet PUBLISHED, and its budget and KPI
+    /// target versions still on their way (<see cref="ApprovedVersionWorkflow.IsOpen"/>). Not tracked.
+    /// </summary>
+    public Task<(int Unpublished, int OpenVersions)> CountUnsettledAsync(Guid projectId, CancellationToken cancellationToken);
+
     // Financial Progress.
 
     /// <summary>The project's configured source modes. Not tracked.</summary>
