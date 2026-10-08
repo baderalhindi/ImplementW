@@ -80,6 +80,8 @@
     "risks": "Go to the risk register",
     "issuesChallenges": "Issues and challenges",
     "changeRequests": "Change requests",
+    "suspensions": "Suspension requests",
+    "closeouts": "Closure requests",
     "title": "Welcome, {name}",
     "approvals": "Go to your approval inbox",
     "documents": "Go to the document library",

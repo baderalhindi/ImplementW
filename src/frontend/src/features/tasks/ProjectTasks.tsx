@@ -95,7 +95,11 @@ export function ProjectTasks({
                 ? t('tasks.empty.project.manager')
                 : project.status === 'ACTIVE' || project.status === 'APPROVED_PLANNED'
                   ? t('tasks.empty.project.waiting')
-                  : t('tasks.empty.project.notPlanned')}
+                  : project.status === 'SUSPENDED' ||
+                      project.status === 'COMPLETED' ||
+                      project.status === 'CLOSED'
+                    ? t('tasks.empty.project.noLonger')
+                    : t('tasks.empty.project.notPlanned')}
             </p>
           </EmptyState>
         ) : (

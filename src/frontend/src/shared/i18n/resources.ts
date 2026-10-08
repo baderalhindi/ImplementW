@@ -22,6 +22,8 @@ import risksAr from '@/features/risks/i18n/ar.json';
 import risksEn from '@/features/risks/i18n/en.json';
 import scheduleAr from '@/features/schedule/i18n/ar.json';
 import scheduleEn from '@/features/schedule/i18n/en.json';
+import suspensionClosureAr from '@/features/suspension-closure/i18n/ar.json';
+import suspensionClosureEn from '@/features/suspension-closure/i18n/en.json';
 import tasksAr from '@/features/tasks/i18n/ar.json';
 import tasksEn from '@/features/tasks/i18n/en.json';
 
@@ -46,6 +48,7 @@ const en = {
   risks: risksEn,
   issuesChallenges: issuesChallengesEn,
   changeRequests: changeRequestsEn,
+  suspensionClosure: suspensionClosureEn,
 };
 
 // English is the reference shape; resources.test.ts fails if Arabic lacks or adds a key.
@@ -68,6 +71,7 @@ export const resources: Record<Language, Resources> = {
     risks: risksAr,
     issuesChallenges: issuesChallengesAr,
     changeRequests: changeRequestsAr,
+    suspensionClosure: suspensionClosureAr,
   },
 };
 

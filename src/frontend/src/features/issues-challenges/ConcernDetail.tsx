@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
+import { isClosed } from '@/features/projects/access.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { isForbidden } from '@/features/risks/problems.ts';
@@ -118,6 +119,8 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
 
   // The commands the concern's state and the person allow, in the order of its lifecycle.
   const commands: { label: string; dialog: ConcernDialog; primary?: boolean }[] = [];
+  // A closed project's escalations are history: neither resolved nor withdrawn (TASK-063 D-8).
+  const closed = isClosed(project.status);
   if (canEditConcern(user, project, concern)) {
     commands.push(
       {
@@ -347,25 +350,26 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
             personName={personName}
             actions={(escalation) => (
               <span className="figure-group">
-                {canResolveEscalation(
-                  user,
-                  escalation,
-                  roles.code(escalation.escalatedToRoleId),
-                ) && (
-                  <button
-                    type="button"
-                    className="button button--link"
-                    aria-label={t('issuesChallenges.resolveEscalation.named', {
-                      number: escalation.escalationNo,
-                    })}
-                    onClick={() => {
-                      setDialog({ kind: 'resolveEscalation', escalationId: escalation.id });
-                    }}
-                  >
-                    {t('issuesChallenges.resolveEscalation.confirm')}
-                  </button>
-                )}
-                {canWithdrawEscalation(user, escalation) && (
+                {!closed &&
+                  canResolveEscalation(
+                    user,
+                    escalation,
+                    roles.code(escalation.escalatedToRoleId),
+                  ) && (
+                    <button
+                      type="button"
+                      className="button button--link"
+                      aria-label={t('issuesChallenges.resolveEscalation.named', {
+                        number: escalation.escalationNo,
+                      })}
+                      onClick={() => {
+                        setDialog({ kind: 'resolveEscalation', escalationId: escalation.id });
+                      }}
+                    >
+                      {t('issuesChallenges.resolveEscalation.confirm')}
+                    </button>
+                  )}
+                {!closed && canWithdrawEscalation(user, escalation) && (
                   <button
                     type="button"
                     className="button button--link"

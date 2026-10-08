@@ -64,6 +64,8 @@ export interface ProjectDetail extends ProjectSummary {
   latitude: number | null;
   longitude: number | null;
   activatedAt: string | null;
+  /** Set when WF-10 closes the project (TASK-063 D-6); a CLOSED project is terminal and read-only. */
+  closedAt: string | null;
   createdAt: string;
   createdBy: string;
   updatedBy: string;

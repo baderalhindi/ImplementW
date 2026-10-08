@@ -80,7 +80,8 @@
       "title": "This project has no milestones yet",
       "planner": "Add the milestones the project will be measured against: each gets a forecast date, and its achievement is claimed here once it happens.",
       "waiting": "The Project Manager has not planned any milestone yet.",
-      "notPlanned": "Milestones are planned once the project is approved."
+      "notPlanned": "Milestones are planned once the project is approved.",
+      "noLonger": "No milestones were planned for this project, and none are added while it is suspended, completed or closed."
     },
     "register": {
       "title": "No milestones to show",

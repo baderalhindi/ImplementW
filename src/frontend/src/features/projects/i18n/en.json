@@ -134,6 +134,8 @@
       "risks": "Risks",
       "issuesChallenges": "Issues & challenges",
       "changeRequests": "Change requests",
+      "suspension": "Suspension",
+      "closeout": "Closeout",
       "reviews": "Review history",
       "documents": "Documents"
     }
@@ -148,9 +150,9 @@
       "RETURNED": "Returned by AHDA's review. Change the registration and submit it again as the next revision.",
       "APPROVED_PLANNED": "Approved and planned. AHDA activates the project when work starts.",
       "ACTIVE": "Active.",
-      "SUSPENDED": "Suspended.",
-      "COMPLETED": "Completed.",
-      "CLOSED": "Closed."
+      "SUSPENDED": "Suspended. Work is on hold until an approved resumption takes effect; the Project Manager requests it from the Suspension tab, or closes the project without completion from the Closeout tab.",
+      "COMPLETED": "Completed. Delivery has ended; Stage 2, Closure, follows once every post-project obligation is settled.",
+      "CLOSED": "Closed. The project is terminal and read-only: its records are kept as history and nothing can be changed."
     }
   },
   "location": {

@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { type ApprovalDecision } from '@/features/approvals/api/types.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
+import { isClosed } from '@/features/projects/access.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -102,7 +103,8 @@ export function BaselineView({
   const active = activeBaselineOf(data);
   const task = review.data?.task ?? null;
   const run = review.data?.run ?? null;
-  const decider = candidate !== null && canDecideBaseline(user, candidate, task);
+  const decider =
+    !isClosed(project.status) && candidate !== null && canDecideBaseline(user, candidate, task);
   const selectedId = params.get('baselineId') ?? active?.id ?? data.baselines[0]?.id ?? null;
   const selected = data.baselines.find((baseline) => baseline.id === selectedId) ?? null;
 

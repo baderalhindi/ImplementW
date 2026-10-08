@@ -88,7 +88,8 @@
       "title": "This project has no tasks yet",
       "manager": "Add the first task to plan the work against the schedule.",
       "waiting": "The Project Manager has not planned any task yet.",
-      "notPlanned": "Tasks are planned once the project is approved."
+      "notPlanned": "Tasks are planned once the project is approved.",
+      "noLonger": "No tasks were planned for this project, and none are added while it is suspended, completed or closed."
     },
     "filtered": {
       "title": "No task matches this choice",

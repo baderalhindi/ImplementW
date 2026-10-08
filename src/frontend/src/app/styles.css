@@ -1987,3 +1987,141 @@ textarea.field__input {
 .change-request {
   gap: var(--space-4);
 }
+
+/* ----------------------------------------------------------------------------------- suspension and closeout (TASK-064) */
+
+/* The closeout's two stages, one after the other: numbered markers joined by a line, each stage its own panel. */
+.closeout-stages {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 48rem) {
+  .closeout-stages {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.closeout-stage {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-background);
+}
+
+/* The stage whose turn it is, and the stage of the case being read, carry a heavier edge. */
+.closeout-stage[aria-current='step'] {
+  border-color: var(--color-info);
+  border-inline-start-width: 4px;
+}
+
+.closeout-stage--done {
+  background: var(--color-positive-surface);
+}
+
+.closeout-stage--locked,
+.closeout-stage--not-yet,
+.closeout-stage--skipped {
+  border-style: dashed;
+  background: var(--color-surface);
+}
+
+.closeout-stage--shown {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.closeout-stage__marker {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border: 2px solid currentcolor;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.closeout-stage--done .closeout-stage__marker {
+  border-color: var(--color-positive);
+  background: var(--color-positive);
+  color: var(--color-on-primary);
+}
+
+.closeout-stage__body {
+  display: grid;
+  flex: 1;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.closeout-stage__title {
+  margin: 0;
+}
+
+.closeout-stage__number {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.closeout-stage__state,
+.closeout-stage__case {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.closeout-stage__action {
+  margin-block-start: var(--space-2);
+}
+
+.closeout-stage-label {
+  font-weight: 600;
+}
+
+/* The workspace's lifecycle banner: shown on every tab while the project is suspended, completed or closed. */
+.lifecycle-banner {
+  margin-block: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-inline-start: 4px solid var(--color-info);
+  background: var(--color-info-surface);
+  color: var(--color-text);
+}
+
+.lifecycle-banner p {
+  margin: 0;
+}
+
+.lifecycle-banner__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+}
+
+.lifecycle-banner--suspended {
+  border-inline-start-color: var(--color-warning);
+  background: var(--color-warning-surface);
+}
+
+.lifecycle-banner--closed {
+  border: 2px solid var(--color-text-muted);
+  border-inline-start-width: 6px;
+  background: var(--color-neutral-surface);
+}
+
+/* A closed project's workspace reads as an archive: a muted frame around the tabs. */
+.workspace--read-only .tabs__panel {
+  padding-inline-start: var(--space-3);
+  border-inline-start: 4px solid var(--color-border-subtle);
+}
