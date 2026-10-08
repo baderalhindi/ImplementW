@@ -96,7 +96,7 @@ A request's review history is `GET /approval-instances?subjectModule=Suspension&
 
 ## 6. How other modules build on it
 
-1. **TASK-064** builds SCR-108–110 on these 10 operations: approved and effected are the statuses APPROVED and EFFECTED, the active suspension is `GET /active-suspensions?projectId=&open=true`, and a resumption is a request of type RESUME on the same register. Impact, readiness and review tabs have no API yet (F-1).
+1. **TASK-064** builds SCR-108–110 on these 10 operations: approved and effected are the statuses APPROVED and EFFECTED, the active suspension is `GET /active-suspensions?projectId=&open=true`, and a resumption is a request of type RESUME on the same register. Impact, readiness and review tabs have no API yet (F-1). Built 2026-10-08: `suspension-closure-ui.md`.
 2. **TASK-063** decides what completing or closing a suspended project does to its open requests and its open suspension (F-5) — built: `closure.md` D-6. The database ties SUSPENDED to an open active suspension only; ending the period as the project leaves SUSPENDED for a terminal state needs a WF-09 command, and its own end reason, which TASK-063 adds with its edges.
 3. **TASK-065** guards D-8 in CI as its "single-ActiveSuspension enforcement" invariant; `SuspensionLifecycleTests.ASecondSuspensionRequestForAnAlreadySuspendedProjectIsRefused` and `SuspensionGuardTests` are the starting point.
 4. **Other modules** read the project's state through `IProjectFactsReader` as before; each one's rule for a SUSPENDED project is its own (F-4). A module that needs to react to a suspension subscribes to nothing yet (F-6).
@@ -186,3 +186,4 @@ Each mutation was applied, the solution rebuilt, `SuspensionWorkflowTests`, `Sus
 | --- | --- |
 | 2026-10-07 | Created (TASK-062) |
 | 2026-10-08 | TASK-063 (`closure.md` D-6): `active_suspension.end_reason` (RESUMED \| PROJECT_CLOSED) added, existing ended periods backfilled RESUMED, returned as `ActiveSuspensionDetail.endReason`; `ISuspensionClosureCommands` ends a closed project's open period and audits `Suspension.SuspensionEnded`; `ISuspensionCloseoutReader` counts open requests for WF-10's readiness. Writes to a CLOSED project's requests are refused 409 `PROJECT_CLOSED` |
+| 2026-10-08 | TASK-064 (`suspension-closure-ui.md`): §6 item 1 consumed — SCR-108–110 built on the 10 operations |

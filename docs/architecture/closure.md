@@ -113,7 +113,7 @@ A case's review history is `GET /approval-instances?subjectModule=Closure&subjec
 1. **New readers** (edges 39–46, and 14, 27): each source module answers a count for its own records and changes none — `IProjectTaskCloseoutReader`, `IScheduleCloseoutReader`, `IMilestoneCloseoutReader`, `IRiskCloseoutReader`, `IConcernCloseoutReader`, `IChangeRequestCloseoutReader`, `ISuspensionCloseoutReader`, `IProgressCloseoutReader`, `IFinancialKpiCloseoutReader`, `IApprovalSettlementReader`. A module whose definition of "settled" changes changes its reader; WF-10 records the answer.
 2. **Every module with project records** applies `ClosedProjectGuard.Refusal` in its access check after authorization; a new module does the same (D-8). Background passes skip CLOSED projects as WF-06's does.
 3. **WF-09** gains `ISuspensionClosureCommands` and `active_suspension.end_reason`; `suspension.md` F-5's remaining part is §9 F-5 here.
-4. **TASK-064** builds the screens on the 31 operations; the case carries its roll-up and latest criteria, so a readiness panel needs no second call.
+4. **TASK-064** builds the screens on the 31 operations; the case carries its roll-up and latest criteria, so a readiness panel needs no second call. Built 2026-10-08: `suspension-closure-ui.md`.
 5. **TASK-065** guards D-4 and D-8 in CI; `ClosedProjectWriteTests` and `ClosureLifecycleTests.NoCompletedTaskOrFullProgressCompletesAProjectWithoutTheApprovedCase` are the starting point.
 6. **Configuration**: APPROVAL_AUTHORITY rows for `COMPLETION` and `CLOSURE` before a case can be reviewed (F-3).
 
@@ -208,3 +208,4 @@ Each mutation was applied, the solution rebuilt, `CloseoutWorkflowTests`, `Readi
 | Date | Change |
 | --- | --- |
 | 2026-10-08 | Created (TASK-063) |
+| 2026-10-08 | TASK-064 (`suspension-closure-ui.md`): §6 item 4 consumed — SCR-111–113 built as the two-stage closeout; a CLOSED project's workspace read-only |
