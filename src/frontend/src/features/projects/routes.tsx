@@ -5,6 +5,7 @@ import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 import { CreateProjectPage, EditProjectPage } from './form/ProjectFormPages.tsx';
 import { MyProjectsPage, ProjectRegisterPage } from './register/ProjectListPages.tsx';
 import { ChangeRequestsTab } from './workspace/ChangeRequestsTab.tsx';
+import { CloseoutTab } from './workspace/CloseoutTab.tsx';
 import { DocumentsTab } from './workspace/DocumentsTab.tsx';
 import { FinancialHistoryTab, FinancialsTab } from './workspace/FinancialsTab.tsx';
 import { ChallengesTab, ConcernDetailTab, IssuesTab } from './workspace/IssuesChallengesTab.tsx';
@@ -18,6 +19,7 @@ import { RegistrationTab } from './workspace/RegistrationTab.tsx';
 import { ReviewsTab } from './workspace/ReviewsTab.tsx';
 import { RiskDetailTab, RisksTab } from './workspace/RisksTab.tsx';
 import { BaselinesTab, GanttTab, ScheduleTab } from './workspace/ScheduleTab.tsx';
+import { SuspensionTab } from './workspace/SuspensionTab.tsx';
 import { TasksTab } from './workspace/TasksTab.tsx';
 
 /**
@@ -171,6 +173,22 @@ export const projectRoutes: RouteObject[] = [
         element: (
           <WorkspaceTabGuard tab="changeRequests">
             <ChangeRequestsTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'suspension', // SCR-108 (TASK-064); SCR-109/110 are under /suspension-requests
+        element: (
+          <WorkspaceTabGuard tab="suspension">
+            <SuspensionTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'closeout', // SCR-111 (TASK-064); SCR-112/113 are under /closure-requests
+        element: (
+          <WorkspaceTabGuard tab="closeout">
+            <CloseoutTab />
           </WorkspaceTabGuard>
         ),
       },

@@ -1,4 +1,4 @@
-import { assignmentsReaching, isInternal } from '@/features/projects/access.ts';
+import { assignmentsReaching, isClosed, isInternal } from '@/features/projects/access.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 
@@ -25,6 +25,7 @@ export function canReview(
   submission: ProgressSubmissionDetail,
 ): boolean {
   return (
+    !isClosed(project.status) &&
     (submission.status === 'SUBMITTED' || submission.status === 'UNDER_REVIEW') &&
     isInternal(user) &&
     assignmentsReaching(user, project).length > 0 &&

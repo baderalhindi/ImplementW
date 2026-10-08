@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
@@ -750,5 +750,29 @@ describe('SCR-088 Escalation Detail', () => {
     const row = escalationRow(table, UTILITY_WITHDRAWN_ESCALATION_ID);
     expect(row.className).toBe('row--muted');
     expect(within(row).getByText(en('issuesChallenges.escalationStatus.WITHDRAWN'))).toBeTruthy();
+  });
+
+  test("a CLOSED project's open escalation is history: neither withdrawn nor resolved from its issue (TASK-064)", async () => {
+    const withdraw = en('issuesChallenges.withdrawEscalation.named', { number: 2 });
+    open(CULVERT_PATH);
+    expect(await screen.findByRole('button', { name: withdraw })).toBeTruthy();
+    cleanup();
+
+    open(CULVERT_PATH, {}, { project: concernProject({ status: 'CLOSED' }) });
+    await screen.findByRole('region', { name: en('issuesChallenges.detail.escalationsCaption') });
+    expect(screen.queryByRole('button', { name: withdraw })).toBeNull();
+    cleanup();
+
+    open(
+      CULVERT_PATH,
+      {},
+      { session: reviewerSession(), project: concernProject({ status: 'CLOSED' }) },
+    );
+    await screen.findByRole('region', { name: en('issuesChallenges.detail.escalationsCaption') });
+    expect(
+      screen.queryByRole('button', {
+        name: en('issuesChallenges.resolveEscalation.named', { number: 2 }),
+      }),
+    ).toBeNull();
   });
 });

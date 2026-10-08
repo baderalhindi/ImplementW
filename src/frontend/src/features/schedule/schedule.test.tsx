@@ -736,6 +736,21 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
     ).toBeTruthy();
   });
 
+  test('no baseline decision is offered on a CLOSED project, even with the task in the inbox (TASK-064)', async () => {
+    const api = open(
+      reviewerSession(),
+      { baselines: [candidate({ status: 'SUBMITTED' }), baseline()], inbox: [scheduleTask()] },
+      { path: BASELINES_PATH, project: activeProject({ status: 'CLOSED' }) },
+    );
+    await screen.findByRole('region', { name: en('schedule.baselines.caption') });
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/approval-tasks$/)).toHaveLength(1);
+    });
+    expect(
+      screen.queryByRole('button', { name: en('schedule.actions.decideBaseline') }),
+    ).toBeNull();
+  });
+
   test('MOD-018: an AHDA reviewer decides on the task in their inbox', async () => {
     const run = scheduleRun();
     const api = open(

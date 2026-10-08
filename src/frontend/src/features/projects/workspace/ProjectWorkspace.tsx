@@ -2,6 +2,7 @@ import { type ReactElement, type ReactNode, useCallback, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 
 import { useSession } from '@/features/identity-access/session/useSession.ts';
+import { LifecycleBanner } from '@/features/suspension-closure/components/LifecycleBanner.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
@@ -10,6 +11,7 @@ import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import {
   canSeeTab,
+  isClosed,
   isEditable,
   projectAccess,
   statusCommands,
@@ -40,6 +42,8 @@ const TAB_LABELS: Record<WorkspaceTabKey, TranslationKey> = {
   risks: 'projects.workspace.tabs.risks',
   issuesChallenges: 'projects.workspace.tabs.issuesChallenges',
   changeRequests: 'projects.workspace.tabs.changeRequests',
+  suspension: 'projects.workspace.tabs.suspension',
+  closeout: 'projects.workspace.tabs.closeout',
   reviews: 'projects.workspace.tabs.reviews',
   documents: 'projects.workspace.tabs.documents',
 };
@@ -55,7 +59,8 @@ type OpenDialog = 'delete' | 'submit' | 'status' | null;
 
 /**
  * SCR-040 Project Workspace: the project's heading, the actions its state and the person allow, and the tabs the
- * person's scope reaches (acceptance criterion 3; access.ts). The project is read once here and lent to each tab.
+ * person's scope reaches (acceptance criterion 3; access.ts). The project is read once here and lent to each tab. A
+ * CLOSED project's workspace is read-only (TASK-064): its banner says so on every tab, and no tab offers a write.
  */
 export function ProjectWorkspace(): ReactElement | null {
   const { t } = useI18n();
@@ -107,8 +112,10 @@ export function ProjectWorkspace(): ReactElement | null {
     project.reload();
   };
 
+  const closed = isClosed(detail.status);
+
   return (
-    <>
+    <div className={closed ? 'workspace workspace--read-only' : 'workspace'}>
       <PageHeader
         title={detail.title.text}
         description={
@@ -161,6 +168,7 @@ export function ProjectWorkspace(): ReactElement | null {
           {t('projects.workspace.revision', { revision: detail.revisionNo })}
         </span>
       </p>
+      <LifecycleBanner project={detail} />
       <PageNotice notice={notice} />
 
       <nav className="tabs" aria-label={t('projects.workspace.tabs.label')}>
@@ -217,7 +225,7 @@ export function ProjectWorkspace(): ReactElement | null {
         }}
         onChanged={changed}
       />
-    </>
+    </div>
   );
 }
 

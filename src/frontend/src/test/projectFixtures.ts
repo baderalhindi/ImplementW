@@ -97,6 +97,7 @@ export function projectDetail(overrides: Partial<ProjectDetail> = {}): ProjectDe
     latitude: null,
     longitude: null,
     activatedAt: null,
+    closedAt: null,
     createdAt: '2026-09-30T09:00:00Z',
     createdBy: ENTITY_USER_ID,
     updatedBy: ENTITY_USER_ID,

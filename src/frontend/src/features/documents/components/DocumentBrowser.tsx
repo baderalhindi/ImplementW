@@ -24,6 +24,8 @@ interface DocumentBrowserProps {
   projectId: string | undefined;
   /** Inside another page (the project workspace's Documents tab): a section heading, not the page's h1. */
   embedded?: boolean;
+  /** False on a CLOSED project's tab: WF-12 refuses an upload to it (409 DOCUMENT_PROJECT_CLOSED, TASK-063 D-8). */
+  canUpload?: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export function DocumentBrowser({
   description,
   projectId,
   embedded = false,
+  canUpload = true,
 }: DocumentBrowserProps): ReactElement {
   const { t } = useI18n();
   const [params, setParams] = useSearchParams();
@@ -79,7 +82,7 @@ export function DocumentBrowser({
   };
 
   const filtered = q !== '' || status !== undefined;
-  const uploadButton = (
+  const uploadButton = canUpload && (
     <button
       type="button"
       className="button button--primary"

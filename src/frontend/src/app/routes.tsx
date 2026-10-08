@@ -14,6 +14,7 @@ import { SYSTEM_ADMINISTRATOR_ROLE } from '@/features/identity-access/session/us
 import { notificationRoutes } from '@/features/notifications/routes.tsx';
 import { projectRoutes } from '@/features/projects/routes.tsx';
 import { riskRoutes } from '@/features/risks/routes.tsx';
+import { closeoutRoutes, suspensionRoutes } from '@/features/suspension-closure/routes.tsx';
 import { taskRoutes } from '@/features/tasks/routes.tsx';
 
 import { AppLayout } from './AppLayout.tsx';
@@ -99,6 +100,24 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: changeRequestRoutes,
+      },
+      {
+        path: 'suspension-requests',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: suspensionRoutes,
+      },
+      {
+        path: 'closure-requests',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: closeoutRoutes,
       },
       {
         path: 'approvals',

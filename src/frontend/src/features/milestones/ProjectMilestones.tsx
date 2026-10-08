@@ -89,7 +89,11 @@ export function ProjectMilestones({
                 ? t('milestones.empty.project.planner')
                 : project.status === 'ACTIVE' || project.status === 'APPROVED_PLANNED'
                   ? t('milestones.empty.project.waiting')
-                  : t('milestones.empty.project.notPlanned')}
+                  : project.status === 'SUSPENDED' ||
+                      project.status === 'COMPLETED' ||
+                      project.status === 'CLOSED'
+                    ? t('milestones.empty.project.noLonger')
+                    : t('milestones.empty.project.notPlanned')}
             </p>
           </EmptyState>
         ) : (
