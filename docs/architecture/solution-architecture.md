@@ -257,6 +257,14 @@ flowchart LR
   FIN --> CHG
   FIN --> PRG
   CLO --> FIN
+  CLO -->|"readiness queries<br/>edges 39–46"| TSK
+  CLO --> SCH
+  CLO --> MIL
+  CLO --> RSK
+  CLO --> MCN
+  CLO --> CHG
+  CLO --> SUS
+  CLO --> PRG
   RSK --> MCN
   PRJ -.->|"intake event"| SCH
   PRJ -.->|"intake event"| PRG
@@ -319,13 +327,13 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 5 | FinancialKpi | Project | query | same | TASK-052 dep TASK-041 |
 | 6 | ChangeRequest | Project | query | same | TASK-060 dep TASK-041 |
 | 7 | Suspension | Project | command | Active↔Suspended lifecycle transition, distinct from the request record: `IProjectSuspensionCommands` in Project's contracts stages the transition in WF-09's unit of work as an APPROVED request is activated, Project checking its own edge and auditing it; and the project's facts through `IProjectFactsReader` (`suspension.md` D-6) | TASK-062 (set 2026-10-07) |
-| 8 | Closure | Project | command | Completed then Closed transitions; Closed is terminal | TASK-063 |
+| 8 | Closure | Project | command | Completed then Closed transitions; Closed is terminal: `IProjectCloseoutCommands` in Project's contracts stages ACTIVE → COMPLETED, COMPLETED → CLOSED or SUSPENDED → CLOSED in WF-10's unit of work as an APPROVED case is activated, Project checking its own edge and auditing it; `ClosedProjectGuard` in Project's contracts, which every module's access check applies, refuses writes to a CLOSED project's records; and the project's facts through `IProjectFactsReader` (`closure.md` D-6, D-8) | TASK-063 (set 2026-10-08) |
 | 9 | ProjectTask | Schedule | query | activity identity and dates the task executes against | TASK-048 dep TASK-046 |
 | 10 | Milestone | Schedule | split-authority contract | WF-03 owns schedule representation and dates; WF-05 owns achievement evidence and the accepted Actual Achievement Date. One direction: WF-05 queries the shared milestone (`IProjectMilestoneReader`) and, on acceptance, has WF-03 record it ACHIEVED in the same transaction (`IMilestoneAchievementRecorder`); WF-03 never calls WF-05 | ICD-04; TASK-050 (direction set 2026-10-03, `milestone-achievement.md` D-2) |
 | 11 | Schedule | ChangeRequest | query, command | a version-pinned ChangeAuthorization of a REBASELINE, checked before a rebaseline and applied once as it activates, in Schedule's unit of work (`IChangeAuthorizations`); and the ACTIVE Approved Baseline WF-08 evaluates materiality against and pins, served through `IApprovedBaselineSource`, a port in ChangeRequest's contracts that Schedule implements — so the code reference runs Schedule → ChangeRequest only (`change-request.md` D-7, D-10) | TASK-060 (set 2026-10-07) |
 | 12 | FinancialKpi | ChangeRequest | query, command | a version-pinned ChangeAuthorization of a COMMITMENT_CHANGE, checked before a change to the ACTIVE Approved Budget and applied once as it activates (`IChangeAuthorizations`); and the ACTIVE Approved Budget, served through `IApprovedBudgetSource`, a port in ChangeRequest's contracts that FinancialKpi implements (`change-request.md` D-7, D-10) | TASK-060 (set 2026-10-07) |
 | 13 | FinancialKpi | Progress | query | reporting-cycle and period alignment | TASK-052 dep TASK-044 |
-| 14 | Closure | FinancialKpi | query | closure readiness checks against financial state | TASK-063 dep TASK-052 |
+| 14 | Closure | FinancialKpi | query | closure readiness checks against financial state: `IFinancialKpiCloseoutReader`, the unpublished or undecided financial records (`closure.md` D-5) | TASK-063 dep TASK-052 |
 | 15 | Risk | ManagementConcern | command | materialisation of a risk into an issue (`IRiskIssueMaterialisation`, in ManagementConcern's contracts: raise the issue in the risk's transaction, and read the issues a risk originated). ManagementConcern calls Risk in no way: the issue holds `originating_risk_id`, the one foreign key both sides query | TASK-055 (contract set 2026-10-05, `risk-management.md` D-9) |
 | 16 | Milestone | DocumentManagement | command | achievement evidence attachment | TASK-051 |
 | 17 | ExternalParticipation | DocumentManagement | command | contribution attachments | TASK-066 dep TASK-037 |
@@ -338,7 +346,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 24 | ManagementConcern | Approval | command | a resolution's validation, PENDING_VALIDATION → RESOLVED (`IApprovalRequests`, routing key `MANAGEMENT_CONCERN_RESOLUTION`); a concern's escalation itself is WF-07's record and WF-15's intent, never an approval run (`management-concern.md` D-7) | TASK-057 (set 2026-10-06) |
 | 25 | Milestone | Approval | command | achievement acceptance. **Route inferred — S-4** | TASK-050 (WF-11 not named) |
 | 26 | FinancialKpi | Approval | command | approved commitment/budget versions and KPI target versions. **Route inferred — S-4** | TASK-052 (WF-11 not named) |
-| 27 | Closure | Approval | command | completion and closure approval. **Route inferred — S-4** | TASK-063 (WF-11 not named) |
+| 27 | Closure | Approval | command, query | completion and closure approval (`IApprovalRequests`, routing keys `COMPLETION` and `CLOSURE`); and `IApprovalSettlementReader`, the project's runs still pending or whose outcome has not reached its module (`closure.md` D-5). **Route inferred — S-4** | TASK-063 (WF-11 not named) |
 | 28 | Approval | source module | outcome event | idempotent decision outcome carrying the subject reference and version | TASK-035 |
 | 29 | Dashboards | Progress, Schedule, Risk, FinancialKpi | read projection | controlled source projections with semantic state, freshness and coverage; read-only | TASK-069 deps |
 | 30 | Reports | Dashboards | query | the same controlled projections, for report definitions and jobs | TASK-071 dep TASK-069 |
@@ -350,6 +358,14 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 36 | ProjectTask | Project | query | project identity, anchors and lifecycle state, as edges 1–6: a task is authorized on its project's anchors (M-7) and executed only while the project is ACTIVE | TASK-048 (added 2026-10-03, `project-task.md` D-2) |
 | 37 | Milestone | Project | query | project identity, anchors and lifecycle state, as edges 1–6: an achievement claim is authorized on its project's anchors (M-7) and made only while the project is ACTIVE | TASK-050 (added 2026-10-03, `milestone-achievement.md` D-3) |
 | 38 | FinancialKpi | DocumentManagement | command | an Approved Budget version's referenced document, linked and pinned as CLEAN evidence of that version (ADR-008 gate: "any change to Approved Budget requires a referenced document") | TASK-052 (added 2026-10-04, `financial-kpi.md` D-6) |
+| 39 | Closure | ProjectTask | query | readiness: the tasks not COMPLETED or CANCELLED (`IProjectTaskCloseoutReader`) | TASK-063 (added 2026-10-08, `closure.md` D-5) |
+| 40 | Closure | Schedule | query | readiness: open baseline candidates and unachieved milestones (`IScheduleCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 41 | Closure | Milestone | query | readiness: achievement claims still on their way (`IMilestoneCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 42 | Closure | Risk | query | readiness: risks neither CLOSED nor under an ACTIVE acceptance (`IRiskCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 43 | Closure | ManagementConcern | query | readiness: issues and challenges not RESOLVED or CLOSED (`IConcernCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 44 | Closure | ChangeRequest | query | readiness: change requests undecided or approved and not carried through (`IChangeRequestCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 45 | Closure | Suspension | query, command | readiness: open suspension and resumption requests (`ISuspensionCloseoutReader`); on the terminal path, the project's open suspension ended with reason PROJECT_CLOSED in WF-10's unit of work (`ISuspensionClosureCommands`) | TASK-063 (added 2026-10-08, `closure.md` D-6; `suspension.md` F-5) |
+| 46 | Closure | Progress | query | readiness: unpublished progress, and whether any is published (`IProgressCloseoutReader`) | TASK-063 (added 2026-10-08) |
 
 ### 8.3 Count
 
@@ -358,7 +374,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | Modules | **21** |
 | WF/FG domains mapped | **21** (WF-01–WF-15, FG-01–FG-06), 1:1 |
 | Universal edge rules | 4 |
-| Specific edges | 38 |
+| Specific edges | 46 |
 | Edges whose mechanism is direct cross-module repository or table access | **0** |
 | Edges flagged as inferred pending a rank-1 spec | 4 (nos. 19, 25, 26, 27) |
 | Cycles in the core-domain call graph | **0** (edge 35 is an event; edge 10, the declared split-authority contract, runs Milestone → Schedule only) |
@@ -530,3 +546,4 @@ On Q1 and Q2 being confirmed, the header status becomes **APPROVED**, the regist
 | 2026-10-06 | WF-07 built (TASK-057, `management-concern.md`). Edge 4 (`IProjectFactsReader`) implemented. Edge 15's other side implemented: `RiskIssueRegister` replaces `UnbuiltIssueRegister`, raising the issue in the risk's unit of work, with `management_concern.originating_risk_id` the one foreign key both sides query. Edge 24's crossing set to a resolution's validation through WF-11 (with edge 28 back): both WF-07's specification (ISS-GP-06) and WF-11's (APR-P-08) say escalation is never approval, so the row's "escalation routed through WF-11/WF-15" is read as the validation run and its own task escalation (WF-11 D-11) on the WF-11 side, and the escalation's NotificationIntent on E-U4 — ManagementConcern is E-U4's first producer. No new edge, no cycle. | Backend (TASK-057) |
 | 2026-10-07 | WF-08 built (TASK-060, `change-request.md`). Edges 6 (`IProjectFactsReader`), 22 and 28 (`IApprovalRequests`, routing key `CHANGE_REQUEST`) implemented. Edges 11 and 12 set: each target module checks and applies a WF-08 change authorisation through ChangeRequest's typed adapter `IChangeAuthorizations` — a command as well as a query — and serves the ACTIVE commitment WF-08 evaluates materiality against through a port in ChangeRequest's contracts (`IApprovedBaselineSource`, `IApprovedBudgetSource`) that it implements, so ChangeRequest references neither module and no cycle forms. No edge is added; A-1 to A-6 pass unchanged |
 | 2026-10-07 | WF-09 built (TASK-062, `suspension.md`). Edge 7 set: `IProjectSuspensionCommands`, a command in Project's contracts that stages ACTIVE → SUSPENDED or SUSPENDED → ACTIVE in the caller's unit of work, with the project's facts through `IProjectFactsReader`. Edges 23 and 28 implemented (`IApprovalRequests`, routing keys `SUSPENSION` and `RESUMPTION`). Suspension references no other module: in particular none of Schedule, so no resumption can reach a baseline (D-7). A-1 to A-6 pass unchanged |
+| 2026-10-08 | WF-10 built (TASK-063, `closure.md`). Edge 8 set: `IProjectCloseoutCommands` stages ACTIVE → COMPLETED, COMPLETED → CLOSED and SUSPENDED → CLOSED in the caller's unit of work, and `ClosedProjectGuard` makes every module refuse writes to a CLOSED project. Edges 14 and 27 set (`IFinancialKpiCloseoutReader`; `IApprovalRequests` with routing keys `COMPLETION` and `CLOSURE`, and `IApprovalSettlementReader`). Edges 39–46 added, Closure → ProjectTask, Schedule, Milestone, Risk, ManagementConcern, ChangeRequest, Suspension, Progress: each source module answers WF-10's readiness criterion for its own records through a read-only contract, and edge 45 also carries the command that ends a suspended project's open period on terminal closure. All point away from Closure, which no module calls, so the core-domain graph stays acyclic. Count 38 → 46. A-1 to A-6 pass with the registry's eight new entries |
