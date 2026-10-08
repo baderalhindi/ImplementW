@@ -11,8 +11,9 @@ namespace PMPlatform.Tests.Integration.Project;
 /// <summary>
 /// TASK-043: the Project lifecycle end to end across WF-01, WF-11 and FG-06, through the API as the SPA and the approver
 /// reach it. Only the outbox dispatch is driven in process, as its worker would. One run takes a draft through every
-/// edge of <see cref="ProjectLifecycle"/> to ACTIVE; each attempt at a transition by someone not entitled to it is
-/// refused, changes nothing, and is audited.
+/// edge of <see cref="ProjectLifecycle"/> — to ACTIVE, through a suspension, and on to COMPLETED and CLOSED, with a second project closed
+/// from SUSPENDED on WF-10's terminal path; each attempt at a transition by someone not entitled to it is refused, changes nothing, and
+/// is audited.
 /// </summary>
 [Collection(ProjectSuite.Name)]
 public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
@@ -20,6 +21,8 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
     private const string ApprovalInstances = "/api/v1/approval-instances";
     private const string ApprovalTasks = "/api/v1/approval-tasks";
     private const string SuspensionRequests = "/api/v1/suspension-requests";
+    private const string CompletionCases = "/api/v1/completion-cases";
+    private const string ClosureCases = "/api/v1/closure-cases";
 
     /// <summary>Where a refused attempt's project is registered, relative to the people of <see cref="ProjectTestHost"/>.</summary>
     public enum Placement
@@ -37,8 +40,9 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
     /// <summary>
     /// The happy path, with a withdrawal and a returned review on the way so that every edge is taken: DRAFT → SUBMITTED →
     /// DRAFT → SUBMITTED → UNDER_REVIEW → RETURNED → SUBMITTED (revision 2) → UNDER_REVIEW → APPROVED_PLANNED → ACTIVE, then
-    /// WF-09's ACTIVE → SUSPENDED → ACTIVE, each by an approved request activated apart from its approval (TASK-062). Each step
-    /// is checked in WF-01 (the project), WF-11 (its review runs) and FG-06 (its audit trail).
+    /// WF-09's ACTIVE → SUSPENDED → ACTIVE, each by an approved request activated apart from its approval (TASK-062), then WF-10's
+    /// ACTIVE → COMPLETED → CLOSED by two approved cases, each activated apart from its approval (TASK-063). A second project takes WF-10's
+    /// SUSPENDED → CLOSED. Each step is checked in WF-01 (the project), WF-11 (its review runs) and FG-06 (its audit trail).
     /// </summary>
     [Fact]
     public async Task ADraftReachesActiveThroughEveryTransitionAndEachIsAudited()
@@ -82,6 +86,15 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
         JsonObject resumed = await GetAsync(client, sessions.Entity, projectId);
         Assert.Equal(("ACTIVE", activatedAt), (resumed.Status(), resumed["activatedAt"]!.GetValue<string>()));
 
+        // WF-10 (edge 8): completion and then closure, each a case the Department Manager raises, AHDA's approver decides through WF-11 and
+        // then activates; only the activation moves the project.
+        await CloseOutAsync(client, sessions, projectId, CompletionCases, new { projectId, actualProjectCompletionDate = Today, completionNarrative = Narrative("Works handed over.") });
+        Assert.Equal("COMPLETED", (await GetAsync(client, sessions.Approver, projectId)).Status());
+        await CloseOutAsync(client, sessions, projectId, ClosureCases, new { projectId, closureNarrative = Narrative("Closeout complete.") });
+        JsonObject closed = await GetAsync(client, sessions.Approver, projectId);
+        Assert.Equal("CLOSED", closed.Status());
+        Assert.NotNull(closed["closedAt"]);
+
         // WF-11: one run per revision, the second linked to the first, each ended by local.r02's decision.
         JsonObject first = await GetAsync(client, sessions.Approver, $"{ApprovalInstances}/{firstRun}");
         JsonObject second = await GetAsync(client, sessions.Approver, $"{ApprovalInstances}/{secondRun}");
@@ -109,14 +122,27 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
                 $"Project.ProjectActivated|LIFECYCLE_TRANSITION|SUCCESS|{approver}|APPROVED_PLANNED>ACTIVE",
                 $"Project.ProjectSuspended|LIFECYCLE_TRANSITION|SUCCESS|{approver}|ACTIVE>SUSPENDED",
                 $"Project.ProjectResumed|LIFECYCLE_TRANSITION|SUCCESS|{approver}|SUSPENDED>ACTIVE",
+                $"Project.ProjectCompleted|LIFECYCLE_TRANSITION|SUCCESS|{approver}|ACTIVE>COMPLETED",
+                $"Project.ProjectClosed|LIFECYCLE_TRANSITION|SUCCESS|{approver}|COMPLETED>CLOSED",
             ],
             await TrailAsync(projectId));
         Assert.Empty(await host.Database.QueryAsync(AuditStore.BrokenChainLinks));
 
-        // The acceptance criterion, read from the machine itself: an edge added to ProjectLifecycle fails here until this run takes it.
+        // WF-10's terminal path: a second project, suspended, is closed without being completed — CLOSED being terminal, one project
+        // cannot take both of its ways in.
+        Guid terminated = await ProjectInAsync(client, sessions, "APPROVED_PLANNED", Placement.Own);
+        await ScheduleFixture.ActiveBaselineAsync(host.Database, terminated);
+        await client.CommandOrFailAsync(sessions.Approver, terminated, "activate");
+        await SuspendOrResumeAsync(client, sessions, terminated, "SUSPEND");
+        await CloseOutAsync(client, sessions, terminated, ClosureCases, new { projectId = terminated, closureNarrative = Narrative("Stopped: funding withdrawn.") });
+        Assert.Equal("CLOSED", (await GetAsync(client, sessions.Approver, terminated)).Status());
+        Assert.Equal($"Project.ProjectClosed|LIFECYCLE_TRANSITION|SUCCESS|{approver}|SUSPENDED>CLOSED", (await TrailAsync(terminated))[^1]);
+
+        // The acceptance criterion, read from the machine itself: an edge added to ProjectLifecycle fails here until these runs take it.
         Assert.Equal(
             ProjectLifecycle.Transitions.Select(t => $"{AuditValue.Format(t.From)}>{AuditValue.Format(t.To)}").Order(),
-            (await TrailAsync(projectId)).Where(e => e.Contains("|LIFECYCLE_TRANSITION|", StringComparison.Ordinal)).Select(e => e[(e.LastIndexOf('|') + 1)..]).Distinct().Order());
+            (await TrailAsync(projectId)).Concat(await TrailAsync(terminated))
+                .Where(e => e.Contains("|LIFECYCLE_TRANSITION|", StringComparison.Ordinal)).Select(e => e[(e.LastIndexOf('|') + 1)..]).Distinct().Order());
     }
 
     /// <summary>
@@ -239,6 +265,44 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
         using HttpResponseMessage activated = await client.PostAsync($"{SuspensionRequests}/{requestId}/activate", sessions.Approver);
         Assert.True(activated.StatusCode == HttpStatusCode.OK, $"activate: {(int)activated.StatusCode} {await activated.Content.ReadAsStringAsync()}");
     }
+
+    /// <summary>
+    /// WF-10: a completion or closure case raised by the Department Manager, its readiness evaluated and — progress having never been
+    /// published here — that criterion waived by them as an accepted exception; submitted and put to review, approved by local.r02 through
+    /// WF-11 — which leaves the project as it is — and then activated by local.r02, which moves it.
+    /// </summary>
+    private async Task CloseOutAsync(HttpClient client, Sessions sessions, Guid projectId, string collection, object body)
+    {
+        using HttpResponseMessage raised = await client.PostAsync(collection, sessions.Reviewer, body);
+        Assert.True(raised.StatusCode == HttpStatusCode.Created, $"raise: {(int)raised.StatusCode} {await raised.Content.ReadAsStringAsync()}");
+        JsonObject raisedCase = await raised.ReadObjectAsync();
+        Guid caseId = AdministrationApi.IdOf(raisedCase);
+        string path = $"{collection}/{caseId}";
+
+        JsonObject evaluated = await PostOrFailAsync(client, sessions.Reviewer, $"{path}/evaluate-readiness");
+        foreach (JsonNode? failed in evaluated["readiness"]!["checks"]!.AsArray().Where(c => c!["result"]!.GetValue<string>() == "FAIL"))
+        {
+            await PostOrFailAsync(client, sessions.Reviewer, $"{path}/waive-check", new { checkCode = failed!["checkCode"]!.GetValue<string>(), reason = Narrative("Accepted for this closeout.") });
+        }
+
+        await PostOrFailAsync(client, sessions.Reviewer, $"{path}/submit");
+        await PostOrFailAsync(client, sessions.Reviewer, $"{path}/start-review");
+        string before = (await GetAsync(client, sessions.Entity, projectId)).Status();
+        await DecideAsync(client, sessions.Approver, ("Closure", collection == CompletionCases ? "CompletionCase" : "ClosureCase", caseId), "approve");
+        Assert.Equal(before, (await GetAsync(client, sessions.Entity, projectId)).Status());
+        Assert.Equal("EFFECTED", (await PostOrFailAsync(client, sessions.Approver, $"{path}/activate"))["status"]!.GetValue<string>());
+    }
+
+    private static async Task<JsonObject> PostOrFailAsync(HttpClient client, string token, string path, object? body = null)
+    {
+        using HttpResponseMessage response = await client.PostAsync(path, token, body);
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"{path}: {(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}");
+        return await response.ReadObjectAsync();
+    }
+
+    private static object Narrative(string text) => new { text, language = "en" };
+
+    private static string Today => DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>Decides the review's open task through the approval API and delivers the outcome, as the outbox worker would; returns the run.</summary>
     private Task<Guid> DecideAsync(HttpClient client, string token, Guid projectId, string decision, object? body = null) =>

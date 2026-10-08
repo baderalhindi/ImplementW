@@ -67,6 +67,30 @@ internal static class SuspensionAudit
         };
     }
 
+    /// <summary>
+    /// The project's open suspension ended as PROJECT_CLOSED by WF-10's terminal closure (TASK-063), by whoever effected the closure case,
+    /// with the suspension request that opened the period as subject.
+    /// </summary>
+    public static AuditEntry EndedByClosure(SuspensionClosureCommand command, ProjectFacts project, ActiveSuspension suspension)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(suspension);
+        return new AuditEntry(AuditEventClass.LifecycleTransition, SuspensionAuditEvents.SuspensionEnded, AuditOutcome.Success)
+        {
+            ActorUserId = command.ActorId,
+            ActorType = command.ActorType,
+            Subject = new AuditSubject(SuspensionApprovalRouting.SubjectModule, SuspensionApprovalRouting.SubjectType, suspension.SuspensionRequestId),
+            ScopeProjectId = project.Id,
+            ScopeExternalEntityId = project.ExternalEntityId,
+            Attributes =
+            [
+                AuditAttribute.Of(A.ActiveSuspensionId, suspension.Id),
+                AuditAttribute.Of(A.EndReason, suspension.EndReason),
+                AuditAttribute.Of(A.ClosureCaseId, command.ClosureCaseId),
+            ],
+        };
+    }
+
     /// <summary>EV-5: an outcome for a revision no longer under review, recorded and not applied.</summary>
     public static AuditEntry OutcomeIgnored(ProjectFacts project, SuspensionRequest request, ApprovalOutcomeRecorded outcome)
     {

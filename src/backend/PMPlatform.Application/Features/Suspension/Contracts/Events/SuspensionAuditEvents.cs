@@ -41,6 +41,12 @@ public static class SuspensionAuditEvents
     /// </summary>
     public const string RequestEffected = "Suspension.RequestEffected";
 
+    /// <summary>
+    /// LIFECYCLE_TRANSITION: the project's open suspension ended as PROJECT_CLOSED, because WF-10 closed the SUSPENDED project without
+    /// resuming it (TASK-063). Its subject is the suspension request that opened the period.
+    /// </summary>
+    public const string SuspensionEnded = "Suspension.SuspensionEnded";
+
     /// <summary>AUTHORIZATION_DENIAL: review or activation refused to an external user (ADR-013: AHDA's).</summary>
     public const string AuthorityRefused = "Suspension.AuthorityRefused";
 

@@ -460,6 +460,34 @@ public sealed class ShippedGrantTests
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.SuspensionActivate, Managed(ProjectId, EntityId, UserId))).IsAllowed);
     }
 
+    /// <summary>
+    /// WF-10 and ADR-013 (TASK-063): the Project Manager raises completion and closure cases (R04 at OWN) and the Department Manager reviews
+    /// them and accepts readiness exceptions (R03 at DEPT). Activation is WF-10's own service, so CLOSEOUT_ACTIVATE ships to no role (closure.md F-2).
+    /// </summary>
+    [Fact]
+    public void CloseoutIsRaisedByTheProjectManagerReviewedByTheDepartmentManagerAndActivatedByNoRole() =>
+        Assert.Equal(
+            [
+                ("R04", PermissionCatalogue.CloseoutView, DataScope.Own), ("R04", PermissionCatalogue.CloseoutRaise, DataScope.Own),
+                ("R03", PermissionCatalogue.CloseoutView, DataScope.Dept), ("R03", PermissionCatalogue.CloseoutReview, DataScope.Dept),
+                ("R03", PermissionCatalogue.CloseoutWaive, DataScope.Dept),
+            ],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("CLOSEOUT_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+
+    /// <summary>ADR-013: an entity Project Manager raises completion and closure cases on the project they manage, and on no other; review stays AHDA's.</summary>
+    [Fact]
+    public async Task OnlyTheProjectsOwnManagerRaisesItsCloseoutCases()
+    {
+        AuthorizationScenario entityManager = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R04", PermissionCatalogue.CloseoutRaise, DataScope.Own, entityId: EntityId, projectId: ProjectId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityManager.AuthorizeAsync(PermissionCatalogue.CloseoutRaise, Managed(ProjectId, EntityId, UserId)));
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.CloseoutRaise, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.CloseoutReview, Managed(ProjectId, EntityId, UserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.CloseoutWaive, Managed(ProjectId, EntityId, UserId))).IsAllowed);
+        Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.CloseoutActivate, Managed(ProjectId, EntityId, UserId))).IsAllowed);
+    }
+
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>
     [Fact]
     public void NotificationTemplatesAndDeliveryOperationsGoToR01Only()

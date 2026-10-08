@@ -1008,6 +1008,455 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Closure.ClosureCase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("CompletionCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completion_case_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("EffectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("effected_at");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ClosureNarrative", "PMPlatform.Domain.Closure.ClosureCase.ClosureNarrative#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("closure_narrative_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("closure_narrative");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_closure_case");
+
+                    b.HasIndex("CompletionCaseId")
+                        .HasDatabaseName("ix_closure_case_completion_case_id");
+
+                    b.HasIndex("RequestedByUserId")
+                        .HasDatabaseName("ix_closure_case_requested_by_user_id");
+
+                    b.HasIndex("ProjectId", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_closure_case_project_id_updated_at_id");
+
+                    b.HasIndex("Status", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_closure_case_status_updated_at_id");
+
+                    b.HasIndex(new[] { "ProjectId" }, "ix_closure_case_effected_project_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_closure_case_effected_project_id")
+                        .HasFilter("status = 'EFFECTED'");
+
+                    b.HasIndex(new[] { "ProjectId" }, "ix_closure_case_open_project_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_closure_case_open_project_id")
+                        .HasFilter("status IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'APPROVED')");
+
+                    b.ToTable("closure_case", "closure", t =>
+                        {
+                            t.HasCheckConstraint("ck_closure_case_closure_narrative_lang", "\"closure_narrative_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_closure_case_closure_narrative_pair", "(\"closure_narrative\" IS NULL) = (\"closure_narrative_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_closure_case_effected", "(status = 'EFFECTED') = (effected_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_closure_case_revision_no", "revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_closure_case_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'APPROVED', 'REJECTED', 'WITHDRAWN', 'EFFECTED')");
+
+                            t.HasCheckConstraint("ck_closure_case_submission", "status IN ('DRAFT', 'RETURNED', 'WITHDRAWN') OR closure_narrative IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_closure_case_submitted", "status = 'WITHDRAWN' OR (status = 'DRAFT') = (submitted_at IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Closure.CompletionCase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("ActualProjectCompletionDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_project_completion_date");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("EffectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("effected_at");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "CompletionNarrative", "PMPlatform.Domain.Closure.CompletionCase.CompletionNarrative#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("completion_narrative_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("completion_narrative");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_completion_case");
+
+                    b.HasIndex("RequestedByUserId")
+                        .HasDatabaseName("ix_completion_case_requested_by_user_id");
+
+                    b.HasIndex("ProjectId", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_completion_case_project_id_updated_at_id");
+
+                    b.HasIndex("Status", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_completion_case_status_updated_at_id");
+
+                    b.HasIndex(new[] { "ProjectId" }, "ix_completion_case_effected_project_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_completion_case_effected_project_id")
+                        .HasFilter("status = 'EFFECTED'");
+
+                    b.HasIndex(new[] { "ProjectId" }, "ix_completion_case_open_project_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_completion_case_open_project_id")
+                        .HasFilter("status IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'APPROVED')");
+
+                    b.ToTable("completion_case", "closure", t =>
+                        {
+                            t.HasCheckConstraint("ck_completion_case_completion_narrative_lang", "\"completion_narrative_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_completion_case_completion_narrative_pair", "(\"completion_narrative\" IS NULL) = (\"completion_narrative_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_completion_case_effected", "(status = 'EFFECTED') = (effected_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_completion_case_revision_no", "revision_no >= 1");
+
+                            t.HasCheckConstraint("ck_completion_case_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'APPROVED', 'REJECTED', 'WITHDRAWN', 'EFFECTED')");
+
+                            t.HasCheckConstraint("ck_completion_case_submission", "status IN ('DRAFT', 'RETURNED', 'WITHDRAWN') OR (actual_project_completion_date IS NOT NULL AND completion_narrative IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_completion_case_submitted", "status = 'WITHDRAWN' OR (status = 'DRAFT') = (submitted_at IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Closure.PostProjectObligation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ClosureCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closure_case_id");
+
+                    b.Property<Guid?>("CompletionCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completion_case_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset?>("SatisfiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("satisfied_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.Closure.PostProjectObligation.Description#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("description_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("description");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.Closure.PostProjectObligation.Title#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("title_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("title");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_post_project_obligation");
+
+                    b.HasIndex("ClosureCaseId")
+                        .HasDatabaseName("ix_post_project_obligation_closure_case_id");
+
+                    b.HasIndex("CompletionCaseId")
+                        .HasDatabaseName("ix_post_project_obligation_completion_case_id");
+
+                    b.HasIndex("OwnerUserId")
+                        .HasDatabaseName("ix_post_project_obligation_owner_user_id");
+
+                    b.HasIndex("ProjectId", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_post_project_obligation_project_id_updated_at_id");
+
+                    b.ToTable("post_project_obligation", "closure", t =>
+                        {
+                            t.HasCheckConstraint("ck_post_project_obligation_case", "(completion_case_id IS NULL) <> (closure_case_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_post_project_obligation_description_lang", "\"description_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_post_project_obligation_description_pair", "(\"description\" IS NULL) = (\"description_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_post_project_obligation_satisfied", "(status = 'SATISFIED') = (satisfied_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_post_project_obligation_status", "\"status\" IN ('OPEN', 'IN_PROGRESS', 'SATISFIED', 'WAIVED', 'CANCELLED')");
+
+                            t.HasCheckConstraint("ck_post_project_obligation_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Closure.ReadinessCheck", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("BlockingCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("blocking_count");
+
+                    b.Property<string>("CheckCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("check_code");
+
+                    b.Property<Guid?>("ClosureCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closure_case_id");
+
+                    b.Property<Guid?>("CompletionCaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completion_case_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("evaluated_at");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("result");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid?>("WaivedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("waived_by_user_id");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Detail", "PMPlatform.Domain.Closure.ReadinessCheck.Detail#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("detail_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("detail");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_readiness_check");
+
+                    b.HasIndex("WaivedByUserId")
+                        .HasDatabaseName("ix_readiness_check_waived_by_user_id");
+
+                    b.HasIndex("ClosureCaseId", "EvaluatedAt")
+                        .HasDatabaseName("ix_readiness_check_closure_case_id_evaluated_at");
+
+                    b.HasIndex("CompletionCaseId", "EvaluatedAt")
+                        .HasDatabaseName("ix_readiness_check_completion_case_id_evaluated_at");
+
+                    b.ToTable("readiness_check", "closure", t =>
+                        {
+                            t.HasCheckConstraint("ck_readiness_check_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_readiness_check_blocking_count", "blocking_count >= 0 AND (result <> 'PASS' OR blocking_count = 0) AND (result <> 'FAIL' OR blocking_count > 0)");
+
+                            t.HasCheckConstraint("ck_readiness_check_case", "(completion_case_id IS NULL) <> (closure_case_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_readiness_check_check_code", "\"check_code\" IN ('DECISIONS_SETTLED', 'TASKS_DISPOSITIONED', 'SCHEDULE_RECONCILED', 'MILESTONES_DISPOSITIONED', 'RISKS_DISPOSITIONED', 'ISSUES_DISPOSITIONED', 'CHANGES_DISPOSITIONED', 'SUSPENSION_REQUESTS_SETTLED', 'PROGRESS_REPORTED', 'FINANCIALS_SETTLED', 'OBLIGATIONS_OWNED', 'OBLIGATIONS_SATISFIED')");
+
+                            t.HasCheckConstraint("ck_readiness_check_detail_lang", "\"detail_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_readiness_check_detail_pair", "(\"detail\" IS NULL) = (\"detail_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_readiness_check_result", "\"result\" IN ('PASS', 'FAIL', 'WAIVED')");
+
+                            t.HasCheckConstraint("ck_readiness_check_waiver", "(result = 'WAIVED') = (waived_by_user_id IS NOT NULL) AND (result = 'WAIVED') = (detail IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Common.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8357,6 +8806,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("EndReason")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("end_reason");
+
                     b.Property<DateTimeOffset?>("EndedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ended_at");
@@ -8412,7 +8866,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("active_suspension", "suspension", t =>
                         {
-                            t.HasCheckConstraint("ck_active_suspension_ended", "(ended_at IS NULL) = (resumption_request_id IS NULL) AND (ended_at IS NULL OR ended_at >= started_at)");
+                            t.HasCheckConstraint("ck_active_suspension_end_reason", "\"end_reason\" IN ('RESUMED', 'PROJECT_CLOSED')");
+
+                            t.HasCheckConstraint("ck_active_suspension_end_reason_request", "end_reason IS NULL OR (end_reason = 'RESUMED') = (resumption_request_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_active_suspension_ended", "(ended_at IS NULL OR ended_at >= started_at) AND (ended_at IS NULL) = (resumption_request_id IS NULL AND end_reason IS NULL)");
                         });
                 });
 
@@ -8755,6 +9213,95 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ProjectBaselineId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_materiality_evaluation_project_baseline_project_baseline_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Closure.ClosureCase", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Closure.CompletionCase", null)
+                        .WithMany()
+                        .HasForeignKey("CompletionCaseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_closure_case_completion_case_completion_case_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_closure_case_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_closure_case_user_requested_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Closure.CompletionCase", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_completion_case_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_completion_case_user_requested_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Closure.PostProjectObligation", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Closure.ClosureCase", null)
+                        .WithMany()
+                        .HasForeignKey("ClosureCaseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_post_project_obligation_closure_case_closure_case_id");
+
+                    b.HasOne("PMPlatform.Domain.Closure.CompletionCase", null)
+                        .WithMany()
+                        .HasForeignKey("CompletionCaseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_post_project_obligation_completion_case_completion_case_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_post_project_obligation_user_owner_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_post_project_obligation_project_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Closure.ReadinessCheck", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Closure.ClosureCase", null)
+                        .WithMany()
+                        .HasForeignKey("ClosureCaseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_readiness_check_closure_case_closure_case_id");
+
+                    b.HasOne("PMPlatform.Domain.Closure.CompletionCase", null)
+                        .WithMany()
+                        .HasForeignKey("CompletionCaseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_readiness_check_completion_case_completion_case_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("WaivedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_readiness_check_user_waived_by_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.BusinessLink", b =>

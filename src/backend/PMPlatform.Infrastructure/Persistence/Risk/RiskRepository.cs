@@ -89,13 +89,17 @@ internal sealed class RiskRepository(PMPlatformDbContext context) : IRiskReposit
     public Task<(IReadOnlyList<RiskAcceptance> Items, int TotalCount)> PageAcceptancesAsync(Guid riskId, PageRequest page, CancellationToken cancellationToken) =>
         PageAsync(context.Set<RiskAcceptance>().AsNoTracking().Where(a => a.RiskId == riskId).OrderByDescending(a => a.AcceptedAt).ThenByDescending(a => a.Id), page, cancellationToken);
 
-    public async Task<IReadOnlyList<RiskAcceptance>> ListLapsedAcceptancesAsync(DateOnly today, int batchSize, CancellationToken cancellationToken) =>
-        await context.Set<RiskAcceptance>().AsNoTracking()
-            .Where(a => a.Status == RiskAcceptanceStatus.Active && a.ExpiresOn <= today)
-            .OrderBy(a => a.ExpiresOn).ThenBy(a => a.Id)
-            .Take(batchSize)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+    public async Task<IReadOnlyList<RiskAcceptance>> ListLapsedAcceptancesAsync(DateOnly today, RiskAcceptance? after, int batchSize, CancellationToken cancellationToken)
+    {
+        IQueryable<RiskAcceptance> lapsed = context.Set<RiskAcceptance>().AsNoTracking().Where(a => a.Status == RiskAcceptanceStatus.Active && a.ExpiresOn <= today);
+        if (after is not null)
+        {
+            (DateOnly expiresOn, Guid id) = (after.ExpiresOn, after.Id);
+            lapsed = lapsed.Where(a => EF.Functions.GreaterThan(ValueTuple.Create(a.ExpiresOn, a.Id), ValueTuple.Create(expiresOn, id)));
+        }
+
+        return await lapsed.OrderBy(a => a.ExpiresOn).ThenBy(a => a.Id).Take(batchSize).ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
 
     public Task<bool> HasOpenActionAsync(Guid riskId, CancellationToken cancellationToken) =>
         context.Set<RiskTreatmentAction>().AnyAsync(
@@ -114,6 +118,12 @@ internal sealed class RiskRepository(PMPlatformDbContext context) : IRiskReposit
 
         return action;
     }
+
+    public Task<int> CountOpenUnacceptedAsync(Guid projectId, CancellationToken cancellationToken) =>
+        context.Set<RiskEntity>().AsNoTracking().CountAsync(
+            r => r.ProjectId == projectId && r.Status != RiskStatus.Closed
+                 && !context.Set<RiskAcceptance>().Any(a => a.RiskId == r.Id && a.Status == RiskAcceptanceStatus.Active),
+            cancellationToken);
 
     public uint RowVersionOf(RiskEntity risk) => RowVersion(risk);
 

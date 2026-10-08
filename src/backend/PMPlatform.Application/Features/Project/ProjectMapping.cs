@@ -8,7 +8,7 @@ internal static class ProjectMapping
     public static ProjectDetail ToDetail(ProjectEntity p) => new(
         p.Id, p.FormalProjectId, p.Title, p.Description, p.ClassificationItemId, p.DepartmentId, p.ExternalEntityId, p.ProjectManagerUserId,
         p.LifecycleState, p.RevisionNo, p.GovernanceProfileItemId, p.ParticipationMode, p.RegistrationBudgetSar, p.PlannedStartDate, p.PlannedEndDate,
-        p.RegionItemId, p.CityItemId, p.Latitude, p.Longitude, p.LegacyIntakeDate, p.ActivatedAt, p.CreatedAt, p.CreatedBy, p.UpdatedAt, p.UpdatedBy);
+        p.RegionItemId, p.CityItemId, p.Latitude, p.Longitude, p.LegacyIntakeDate, p.ActivatedAt, p.ClosedAt, p.CreatedAt, p.CreatedBy, p.UpdatedAt, p.UpdatedBy);
 
     public static ProjectSummary ToSummary(ProjectEntity p) => new(
         p.Id, p.FormalProjectId, p.Title, p.ClassificationItemId, p.DepartmentId, p.ExternalEntityId, p.ProjectManagerUserId, p.LifecycleState,

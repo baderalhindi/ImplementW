@@ -83,6 +83,14 @@ internal sealed class ManagementConcernRepository(PMPlatformDbContext context) :
     public Task<(IReadOnlyList<ConcernEscalation> Items, int TotalCount)> PageEscalationsAsync(Guid concernId, PageRequest page, CancellationToken cancellationToken) =>
         PageAsync(context.Set<ConcernEscalation>().AsNoTracking().Where(e => e.ManagementConcernId == concernId).OrderByDescending(e => e.EscalationNo), page, cancellationToken);
 
+    public async Task<IReadOnlyDictionary<ConcernStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken) =>
+        await context.Set<ConcernEntity>().AsNoTracking()
+            .Where(r => r.ProjectId == projectId)
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Status, g => g.Count, cancellationToken)
+            .ConfigureAwait(false);
+
     public uint RowVersionOf(ConcernEntity concern) => context.Entry(concern).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
 
     public void Add(ConcernEntity concern) => context.Add(concern);

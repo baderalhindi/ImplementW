@@ -22,6 +22,10 @@ internal sealed class ApprovalRepository(PMPlatformDbContext context) : IApprova
     public Task<ApprovalTask?> FindTaskAsync(Guid taskId, CancellationToken cancellationToken) =>
         context.Set<ApprovalTask>().SingleOrDefaultAsync(t => t.Id == taskId, cancellationToken);
 
+    public Task<int> CountUnsettledAsync(Guid scopeProjectId, CancellationToken cancellationToken) =>
+        context.Set<ApprovalInstance>().AsNoTracking()
+            .CountAsync(i => i.ScopeProjectId == scopeProjectId && (i.Status == ApprovalInstanceStatus.Pending || i.OutcomeDeliveredAt == null), cancellationToken);
+
     public async Task<IReadOnlyList<ApprovalRun>> FindBySubjectAsync(string subjectModule, string subjectType, Guid subjectId, CancellationToken cancellationToken)
     {
         List<ApprovalInstance> instances = await context.Set<ApprovalInstance>().AsNoTracking()

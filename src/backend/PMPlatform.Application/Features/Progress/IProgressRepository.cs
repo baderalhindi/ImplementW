@@ -18,6 +18,9 @@ public interface IProgressRepository
     /// <summary>Tracked. With <paramref name="expectedVersion"/>, the next save is conditional on it (R-21).</summary>
     public Task<ProgressSubmission?> FindSubmissionAsync(Guid submissionId, uint? expectedVersion, CancellationToken cancellationToken);
 
+    /// <summary>How many of the project's progress submissions are in each status, for WF-10's readiness (TASK-063). Not tracked.</summary>
+    public Task<IReadOnlyDictionary<ProgressSubmissionStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken);
+
     /// <summary>The row version of a tracked submission, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(ProgressSubmission submission);
 

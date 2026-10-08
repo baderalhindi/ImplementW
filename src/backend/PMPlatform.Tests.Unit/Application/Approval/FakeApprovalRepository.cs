@@ -22,6 +22,9 @@ internal sealed class FakeApprovalRepository : IApprovalRepository
     public Task<IReadOnlyList<ApprovalRun>> FindBySubjectAsync(string subjectModule, string subjectType, Guid subjectId, CancellationToken cancellationToken) =>
         throw new NotSupportedException();
 
+    public Task<int> CountUnsettledAsync(Guid scopeProjectId, CancellationToken cancellationToken) =>
+        throw new NotSupportedException();
+
     public Task<(IReadOnlyList<ApprovalInstance> Items, int TotalCount)> ListRequestedByAsync(
         Guid userId, IReadOnlyCollection<ApprovalInstanceStatus> statuses, int skip, int take, CancellationToken cancellationToken) =>
         throw new NotSupportedException();

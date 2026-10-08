@@ -14,11 +14,14 @@ internal sealed class SuspensionAccess(IAuthorizationEngine engine, IAuditTrail 
 {
     public const string ExternalUser = "EXTERNAL_USER";
 
-    /// <summary>Null when allowed; otherwise NotFound (R-47) or Forbidden.</summary>
+    /// <summary>
+    /// Null when allowed; otherwise NotFound (R-47) or Forbidden, and for a write to a CLOSED project 409 PROJECT_CLOSED (WF-10, TASK-063):
+    /// a closed project is read-only.
+    /// </summary>
     public async Task<AdministrationError?> CheckAsync(Guid callerId, string permissionCode, ProjectFacts project, CancellationToken cancellationToken) =>
         (await engine.AuthorizeAsync(callerId, new AuthorizationRequest(permissionCode, SubjectOf(project)), cancellationToken).ConfigureAwait(false)).Outcome switch
         {
-            AuthorizationOutcome.Allowed => null,
+            AuthorizationOutcome.Allowed => ClosedProjectGuard.Refusal(project, permissionCode),
             AuthorizationOutcome.NotFound => AdministrationError.NotFound,
             AuthorizationOutcome.Forbidden => AdministrationError.Forbidden,
             var outcome => throw new ArgumentOutOfRangeException(nameof(permissionCode), outcome, "Unknown authorization outcome."),

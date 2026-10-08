@@ -5,9 +5,10 @@ using PMPlatform.Domain.Project;
 namespace PMPlatform.Tests.Unit.Application.Project;
 
 /// <summary>
-/// TASK-041's state machine with TASK-062's two edges: exactly the nine, so that no project skips UNDER_REVIEW (PTBC-002 is
-/// Open: no fast-track rule is authorised), ACTIVE is first reached only from APPROVED_PLANNED, by the activation command, and
-/// a project leaves ACTIVE only for SUSPENDED and comes back only from it.
+/// TASK-041's state machine with TASK-062's two edges and TASK-063's three: exactly the twelve, so that no project skips UNDER_REVIEW
+/// (PTBC-002 is Open: no fast-track rule is authorised), ACTIVE is first reached only from APPROVED_PLANNED, by the activation command, a
+/// project leaves ACTIVE only for SUSPENDED or COMPLETED, COMPLETED is reached only from ACTIVE, and CLOSED — from COMPLETED, or from
+/// SUSPENDED on WF-10's terminal path — is terminal.
 /// </summary>
 public sealed class ProjectLifecycleTests
 {
@@ -26,7 +27,7 @@ public sealed class ProjectLifecycleTests
     }
 
     [Fact]
-    public void TheMachineHasExactlyTheSevenEdgesOfTask041AndTheTwoOfTask062()
+    public void TheMachineHasExactlyTheSevenEdgesOfTask041TheTwoOfTask062AndTheThreeOfTask063()
     {
         Assert.Equal(
             [
@@ -38,7 +39,10 @@ public sealed class ProjectLifecycleTests
                 (ProjectLifecycleState.Returned, ProjectLifecycleState.Submitted),
                 (ProjectLifecycleState.ApprovedPlanned, ProjectLifecycleState.Active),
                 (ProjectLifecycleState.Active, ProjectLifecycleState.Suspended),
+                (ProjectLifecycleState.Active, ProjectLifecycleState.Completed),
                 (ProjectLifecycleState.Suspended, ProjectLifecycleState.Active),
+                (ProjectLifecycleState.Suspended, ProjectLifecycleState.Closed),
+                (ProjectLifecycleState.Completed, ProjectLifecycleState.Closed),
             ],
             ProjectLifecycle.Transitions.OrderBy(t => t.From).ThenBy(t => t.To));
     }
@@ -65,18 +69,37 @@ public sealed class ProjectLifecycleTests
     }
 
     /// <summary>
-    /// Acceptance criterion 2, with TASK-062: ACTIVE is entered from APPROVED_PLANNED by the activation command or from SUSPENDED by a
-    /// resumption, and left only for SUSPENDED; SUSPENDED has no other way in or out (TASK-063 adds its own).
+    /// Acceptance criterion 2, with TASK-062 and TASK-063: ACTIVE is entered from APPROVED_PLANNED by the activation command or from
+    /// SUSPENDED by a resumption, and left for SUSPENDED or — by an effected completion case — COMPLETED; SUSPENDED is left for ACTIVE or,
+    /// on WF-10's terminal path, CLOSED.
     /// </summary>
     [Theory]
     [MemberData(nameof(EveryPair))]
-    public void ActiveIsEnteredFromApprovedPlannedOrSuspendedAndLeftOnlyForSuspended(ProjectLifecycleState from, ProjectLifecycleState to)
+    public void ActiveIsEnteredFromApprovedPlannedOrSuspendedAndLeftOnlyForSuspendedOrCompleted(ProjectLifecycleState from, ProjectLifecycleState to)
     {
         if (to is ProjectLifecycleState.Active or ProjectLifecycleState.Suspended || from is ProjectLifecycleState.Active or ProjectLifecycleState.Suspended)
         {
             Assert.Equal(
                 (from, to) is (ProjectLifecycleState.ApprovedPlanned, ProjectLifecycleState.Active) or (ProjectLifecycleState.Active, ProjectLifecycleState.Suspended)
-                    or (ProjectLifecycleState.Suspended, ProjectLifecycleState.Active),
+                    or (ProjectLifecycleState.Suspended, ProjectLifecycleState.Active) or (ProjectLifecycleState.Active, ProjectLifecycleState.Completed)
+                    or (ProjectLifecycleState.Suspended, ProjectLifecycleState.Closed),
+                ProjectLifecycle.Allows(from, to));
+        }
+    }
+
+    /// <summary>
+    /// WF-10 BR-CLO-001 to BR-CLO-003, BR-CLO-020 (TASK-063): COMPLETED is entered only from ACTIVE and left only for CLOSED; CLOSED is entered
+    /// from COMPLETED or SUSPENDED and left for nothing — it is terminal.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryPair))]
+    public void CompletedIsReachedOnlyFromActiveAndClosedIsTerminal(ProjectLifecycleState from, ProjectLifecycleState to)
+    {
+        if (to is ProjectLifecycleState.Completed or ProjectLifecycleState.Closed || from is ProjectLifecycleState.Completed or ProjectLifecycleState.Closed)
+        {
+            Assert.Equal(
+                (from, to) is (ProjectLifecycleState.Active, ProjectLifecycleState.Completed) or (ProjectLifecycleState.Completed, ProjectLifecycleState.Closed)
+                    or (ProjectLifecycleState.Suspended, ProjectLifecycleState.Closed),
                 ProjectLifecycle.Allows(from, to));
         }
     }

@@ -71,6 +71,11 @@ internal sealed class DocumentService(
             return AdministrationError.Forbidden;
         }
 
+        if (await access.ClosedRefusalAsync(PermissionCatalogue.DocumentUpload, draft.ProjectId, cancellationToken).ConfigureAwait(false) is { } closed)
+        {
+            return closed;
+        }
+
         DateTimeOffset now = timeProvider.GetUtcNow();
         Document document = new()
         {

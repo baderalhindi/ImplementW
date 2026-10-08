@@ -25,11 +25,15 @@ public sealed record SuspensionRequestDetail(
     DateTimeOffset UpdatedAt,
     Guid UpdatedBy);
 
-/// <summary>A period during which the project was or is SUSPENDED: open while <see cref="EndedAt"/> is null.</summary>
+/// <summary>
+/// A period during which the project was or is SUSPENDED: open while <see cref="EndedAt"/> is null. It ends when the project resumes, or
+/// when it is closed without resuming (<see cref="SuspensionEndReason.ProjectClosed"/>, TASK-063).
+/// </summary>
 public sealed record ActiveSuspensionDetail(
     Guid Id,
     Guid ProjectId,
     Guid SuspensionRequestId,
     DateTimeOffset StartedAt,
     DateTimeOffset? EndedAt,
+    SuspensionEndReason? EndReason,
     Guid? ResumptionRequestId);

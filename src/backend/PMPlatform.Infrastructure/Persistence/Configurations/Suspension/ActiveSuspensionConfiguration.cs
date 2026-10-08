@@ -23,8 +23,10 @@ internal sealed class ActiveSuspensionConfiguration : IEntityTypeConfiguration<A
         // A project's suspension history, most recently started first (BR-SUS-039).
         builder.HasIndex(e => new { e.ProjectId, e.StartedAt, e.Id });
 
-        // Ended exactly when a resumption ended it, and never before it started.
-        builder.HasCheck("ended", "(ended_at IS NULL) = (resumption_request_id IS NULL) AND (ended_at IS NULL OR ended_at >= started_at)");
+        // Ended never before it started, and exactly when a resumption or a closure (TASK-063) ended it: a resumption names its request, a
+        // closure none. A period ended before TASK-063 has no reason recorded beside its resumption, so a missing reason is a resumption's.
+        builder.HasCheck("ended", "(ended_at IS NULL OR ended_at >= started_at) AND (ended_at IS NULL) = (resumption_request_id IS NULL AND end_reason IS NULL)");
+        builder.HasCheck("end_reason_request", "end_reason IS NULL OR (end_reason = 'RESUMED') = (resumption_request_id IS NOT NULL)");
 
         builder.HasOne<ProjectEntity>().WithMany().HasForeignKey(e => e.ProjectId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<SuspensionRequest>().WithMany().HasForeignKey(e => e.SuspensionRequestId).OnDelete(DeleteBehavior.Restrict);

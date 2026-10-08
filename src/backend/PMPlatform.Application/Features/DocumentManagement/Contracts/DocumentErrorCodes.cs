@@ -26,4 +26,10 @@ public static class DocumentErrorCodes
 
     /// <summary>422: this version was withdrawn as this evidence type on this link; the withdrawal stays as history (F-7).</summary>
     public const string EvidenceWithdrawn = "DOCUMENT_EVIDENCE_WITHDRAWN";
+
+    /// <summary>
+    /// 409: the document's project is CLOSED — terminal and read-only (WF-10 BR-CLO-020, TASK-063): no document is uploaded to it, and
+    /// none of its documents is edited, archived, given a version or rescanned.
+    /// </summary>
+    public const string ProjectClosed = "DOCUMENT_PROJECT_CLOSED";
 }

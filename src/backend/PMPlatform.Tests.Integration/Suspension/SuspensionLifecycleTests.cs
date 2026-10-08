@@ -137,7 +137,7 @@ public sealed class SuspensionLifecycleTests(SuspensionTestHost host)
         JsonObject resumed = await client.CommandOrFailAsync(sessions.Officer, resumption, "activate");
 
         Assert.Equal("EFFECTED", resumed.Text("status"));
-        Assert.Equal(resumption, Guid.Parse(resumed["suspension"]!.Text("resumptionRequestId")));
+        Assert.Equal((resumption, "RESUMED"), (Guid.Parse(resumed["suspension"]!.Text("resumptionRequestId")), resumed["suspension"]!.Text("endReason")));
         Assert.Equal("ACTIVE", await host.LifecycleOfAsync(projectId));
         Assert.Equal(["ended"], await host.SuspensionPeriodsAsync(projectId));
         Assert.Equal(baselineBefore, await host.RowAsync("schedule.project_baseline", baselineId));

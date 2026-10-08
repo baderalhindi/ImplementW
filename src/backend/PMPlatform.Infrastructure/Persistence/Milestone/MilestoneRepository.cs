@@ -50,6 +50,14 @@ internal sealed class MilestoneRepository(PMPlatformDbContext context) : IMilest
         context.Set<MilestoneAchievement>()
             .SingleOrDefaultAsync(a => a.ProjectMilestoneId == projectMilestoneId && a.Status == MilestoneAchievementStatus.Accepted, cancellationToken);
 
+    public async Task<IReadOnlyDictionary<MilestoneAchievementStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken) =>
+        await context.Set<MilestoneAchievement>().AsNoTracking()
+            .Where(r => r.ProjectId == projectId)
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Status, g => g.Count, cancellationToken)
+            .ConfigureAwait(false);
+
     public uint RowVersionOf(MilestoneAchievement achievement) =>
         context.Entry(achievement).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
 

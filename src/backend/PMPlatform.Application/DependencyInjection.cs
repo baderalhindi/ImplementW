@@ -6,6 +6,9 @@ using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.AuditActivity;
+using PMPlatform.Application.Features.Closure;
+using PMPlatform.Application.Features.Closure.Contracts;
+using PMPlatform.Application.Features.Closure.EventHandlers;
 using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
@@ -100,6 +103,7 @@ public static class DependencyInjection
         services.AddScoped<ApprovalEscalation>();
         services.AddScoped<ApprovalOutcomes>();
         services.AddScoped<IApprovalRunReader, ApprovalRunReader>();
+        services.AddScoped<IApprovalSettlementReader, ApprovalSettlementReader>();
         services.AddScoped<IApprovalRequests, ApprovalRequestService>();
         services.AddScoped<IApprovalWorkflowService, ApprovalWorkflowService>();
         services.AddScoped<IApprovalDelegationService, ApprovalDelegationService>();
@@ -128,13 +132,14 @@ public static class DependencyInjection
 
         // TASK-041: WF-01 registration and activation. The repository is Infrastructure's; review outcomes arrive through
         // the Project approval outcome handler (WF-11 edge 28). TASK-062: WF-09 moves a project ACTIVE <-> SUSPENDED through
-        // IProjectSuspensionCommands (edge 7).
+        // IProjectSuspensionCommands (edge 7). TASK-063: WF-10 completes and closes it through IProjectCloseoutCommands (edge 8).
         services.AddScoped<ProjectAccess>();
         services.AddScoped<ProjectReferences>();
         services.AddScoped<ProjectManagerEligibility>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IApprovalOutcomeHandler, ProjectApprovalOutcomeHandler>();
         services.AddScoped<IProjectSuspensionCommands, ProjectSuspensionCommands>();
+        services.AddScoped<IProjectCloseoutCommands, ProjectCloseoutCommands>();
         services.AddScoped<IProjectFactsReader, ProjectFactsReader>();
 
         // TASK-044: WF-02 progress reporting and Overall Project Health (ICD-03). The repository is Infrastructure's. The
@@ -147,6 +152,7 @@ public static class DependencyInjection
         services.AddScoped<ProgressOpeningPosition>();
         services.AddScoped<IProjectHealthReader, ProjectHealthReader>();
         services.AddScoped<IReportingCycleReader, ReportingCycleReader>();
+        services.AddScoped<IProgressCloseoutReader, ProgressCloseoutReader>();
 
         // TASK-046: WF-03 schedule and baselines. The repository is Infrastructure's; baseline outcomes arrive through the
         // Schedule approval outcome handler (WF-11 edges 21, 28), and Project's activation command consults the baseline
@@ -165,6 +171,7 @@ public static class DependencyInjection
         services.AddScoped<ScheduleDeclaredBaseline>();
         services.AddScoped<IScheduleHealthReader, ScheduleHealthReader>();
         services.AddScoped<IScheduleActivityReader, ScheduleActivityReader>();
+        services.AddScoped<IScheduleCloseoutReader, ScheduleCloseoutReader>();
 
         // TASK-050: WF-03's side of the shared milestone (ICD-04) — the milestones of the schedule, and the contract WF-05 reads
         // and records an acceptance through (edge 10).
@@ -181,6 +188,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectTaskService, ProjectTaskService>();
         services.AddScoped<ITaskExecutionService, TaskExecutionService>();
         services.AddScoped<ITaskDependencyService, TaskDependencyService>();
+        services.AddScoped<IProjectTaskCloseoutReader, ProjectTaskCloseoutReader>();
 
         // TASK-050: WF-05 achievement claims and their revisions. The repository is Infrastructure's; the milestone is WF-03's,
         // read through Schedule's reader (edge 10); acceptance comes from WF-11 through the outcome handler (edges 25, 28).
@@ -188,6 +196,7 @@ public static class DependencyInjection
         services.AddScoped<MilestoneEvidencePolicy>();
         services.AddScoped<IMilestoneAchievementService, MilestoneAchievementService>();
         services.AddScoped<IApprovalOutcomeHandler, MilestoneAchievementOutcomeHandler>();
+        services.AddScoped<IMilestoneCloseoutReader, MilestoneCloseoutReader>();
 
         // TASK-052: WF-14's two subdomains. Financial Progress — source modes, Approved Budget versions (WF-11, edge 26; documents,
         // edge 38), periodic updates aligned to WF-02's periods (edge 13) and their published snapshots; KPI Performance — assignments,
@@ -207,6 +216,7 @@ public static class DependencyInjection
         services.AddScoped<IKpiTargetVersionService, KpiTargetVersionService>();
         services.AddScoped<IKpiMeasurementService, KpiMeasurementService>();
         services.AddScoped<IApprovalOutcomeHandler, FinancialKpiApprovalOutcomeHandler>();
+        services.AddScoped<IFinancialKpiCloseoutReader, FinancialKpiCloseoutReader>();
 
         // TASK-055: WF-06's risk register — risks, assessment versions pinned to the RISK_MATRIX version in force, treatment actions,
         // time-bound acceptances and their expiry, and the reminder condition source. Materialisation into an issue goes through
@@ -220,6 +230,7 @@ public static class DependencyInjection
         services.AddScoped<IRiskTreatmentService, RiskTreatmentService>();
         services.AddScoped<IRiskMaintenance, RiskMaintenance>();
         services.AddScoped<INotificationConditionSource, RiskConditionSource>();
+        services.AddScoped<IRiskCloseoutReader, RiskCloseoutReader>();
 
         // TASK-057: WF-07's issues and challenges — severity computed from impacts on the shared scale and pinned, escalations published
         // to WF-15 once each, resolutions validated through WF-11 (edges 24, 28), and the issue side of edge 15. The repository is
@@ -235,6 +246,7 @@ public static class DependencyInjection
         services.AddScoped<IConcernEscalationService, ConcernEscalationService>();
         services.AddScoped<IApprovalOutcomeHandler, ConcernValidationOutcomeHandler>();
         services.AddScoped<IRiskIssueMaterialisation, RiskIssueRegister>();
+        services.AddScoped<IConcernCloseoutReader, ConcernCloseoutReader>();
 
         // TASK-060: WF-08's change requests — materiality evaluated against the active baseline under the MATERIALITY_BAND version in
         // force and pinned, review through WF-11 (edges 22, 28), and the change authorisations approval issues, which WF-03 and WF-14
@@ -249,6 +261,7 @@ public static class DependencyInjection
         services.AddScoped<IChangeAuthorizationService, ChangeAuthorizationService>();
         services.AddScoped<IChangeAuthorizations, ChangeAuthorizationLedger>();
         services.AddScoped<IApprovalOutcomeHandler, ChangeRequestApprovalOutcomeHandler>();
+        services.AddScoped<IChangeRequestCloseoutReader, ChangeRequestCloseoutReader>();
 
         // TASK-062: WF-09's suspension and resumption requests — review through WF-11 (edges 23, 28), whose approval changes no project, and
         // the separate activation that moves the project ACTIVE <-> SUSPENDED through Project's command (edge 7) with the one open active
@@ -261,6 +274,25 @@ public static class DependencyInjection
         services.AddScoped<ISuspensionLifecycleService, SuspensionLifecycleService>();
         services.AddScoped<ISuspensionMaintenance, SuspensionMaintenance>();
         services.AddScoped<IApprovalOutcomeHandler, SuspensionApprovalOutcomeHandler>();
+        services.AddScoped<ISuspensionCloseoutReader, SuspensionCloseoutReader>();
+        services.AddScoped<ISuspensionClosureCommands, SuspensionClosureCommands>();
+
+        // TASK-063: WF-10's completion and closure — two readiness-gated cases reviewed through WF-11 (edges 27, 28), whose approval changes
+        // no project, and the separate activation that completes or closes it through Project's command (edge 8), ending a suspended
+        // project's suspension through WF-09's (edge 45) and its per-project access through IdentityAccess's. Readiness asks each source
+        // module's read contract (edges 14, 27, 39-46). Post-project obligations. The repository is Infrastructure's.
+        services.AddScoped<CloseoutAccess>();
+        services.AddScoped<CloseoutViews>();
+        services.AddScoped<CloseoutGate>();
+        services.AddScoped<CloseoutReadiness>();
+        services.AddScoped<CloseoutActivation>();
+        services.AddScoped<CloseoutCommands>();
+        services.AddScoped<ICompletionCaseService, CompletionCaseService>();
+        services.AddScoped<IClosureCaseService, ClosureCaseService>();
+        services.AddScoped<IPostProjectObligationService, PostProjectObligationService>();
+        services.AddScoped<IReadinessRecordService, ReadinessRecordService>();
+        services.AddScoped<ICloseoutMaintenance, CloseoutMaintenance>();
+        services.AddScoped<IApprovalOutcomeHandler, CloseoutApprovalOutcomeHandler>();
 
         return services;
     }

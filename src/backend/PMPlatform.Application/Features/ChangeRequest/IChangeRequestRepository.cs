@@ -42,6 +42,9 @@ public interface IChangeRequestRepository
     public Task<(IReadOnlyList<ChangeAuthorization> Items, int TotalCount)> PageAuthorizationsAsync(
         ChangeAuthorizationQuery query, PageRequest page, CancellationToken cancellationToken);
 
+    /// <summary>How many of the project's change requests are in each status, for WF-10's readiness (TASK-063). Not tracked.</summary>
+    public Task<IReadOnlyDictionary<ChangeRequestStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken);
+
     /// <summary>The row version of a tracked request, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(ChangeRequestEntity changeRequest);
 

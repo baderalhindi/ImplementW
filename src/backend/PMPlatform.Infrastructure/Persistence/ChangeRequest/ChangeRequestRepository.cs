@@ -110,6 +110,14 @@ internal sealed class ChangeRequestRepository(PMPlatformDbContext context) : ICh
         return PageAsync(rows.OrderByDescending(a => a.IssuedAt).ThenByDescending(a => a.Id), page, cancellationToken);
     }
 
+    public async Task<IReadOnlyDictionary<ChangeRequestStatus, int>> CountByStatusAsync(Guid projectId, CancellationToken cancellationToken) =>
+        await context.Set<ChangeRequestEntity>().AsNoTracking()
+            .Where(r => r.ProjectId == projectId)
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Status, g => g.Count, cancellationToken)
+            .ConfigureAwait(false);
+
     public uint RowVersionOf(ChangeRequestEntity changeRequest) =>
         context.Entry(changeRequest).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
 

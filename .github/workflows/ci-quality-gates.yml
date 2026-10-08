@@ -204,6 +204,19 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Suspension.
 
+      # TASK-063: WF-10 Completion & Closure — no completed task or full progress completes a project, only a readiness-gated case
+      # approved through WF-11 and then activated, two transactions with two audit events; the actual completion date captured and
+      # checked; post-project obligations open after Completion until the closure policy is met; the terminal path from SUSPENDED; and
+      # the attempted-write sweep: every documented write to a CLOSED project's records refused with an explicit terminal-state error,
+      # nothing changed. With the database guards that tie COMPLETED and CLOSED to their effected cases. The filter ends in `.`, so it
+      # runs this namespace alone. Same database and directory as above.
+      - name: Closure integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Closure.
+
       # TASK-059: the risk and issue domain's two hard invariants — a rating or severity pinned to the RISK_MATRIX version in force
       # when assessed, on every read that serves one, and Severity (with rating, overall impact and pin) never taken from a client,
       # in any documented request or any write that raises or changes a concern — and the WF-06/07 APIs against docs/api/openapi.v1.json

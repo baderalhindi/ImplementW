@@ -70,6 +70,7 @@ internal sealed class SuspensionActivation(ISuspensionRepository repository, IPr
 
             suspension = open;
             suspension.EndedAt = now;
+            suspension.EndReason = SuspensionEndReason.Resumed;
             suspension.ResumptionRequestId = request.Id;
             SuspensionGate.Touch(suspension, actorId, now);
         }

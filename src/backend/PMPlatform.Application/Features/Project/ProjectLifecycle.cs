@@ -3,12 +3,14 @@ using PMPlatform.Domain.Project;
 namespace PMPlatform.Application.Features.Project;
 
 /// <summary>
-/// The WF-01 state machine as TASK-041 builds it (Blueprint Sections 5, 9; ICD-02), with WF-09's two edges (TASK-062). Each edge
-/// has exactly one cause: a command of <see cref="ProjectService"/>, the review's WF-11 outcome, or WF-09 effecting an approved
-/// suspension or resumption request through <see cref="ProjectSuspensionCommands"/> (ADR-003 §8.2 edge 7). There is no edge into
-/// APPROVED_PLANNED but from UNDER_REVIEW, so no project skips review: no fast-track rule is authorised (PTBC-002, Open). ACTIVE is
-/// entered by the activation command, or from SUSPENDED by a resumption, and left only for SUSPENDED; TASK-063 adds its own edges.
-/// Migration <c>TASK-062_AddProjectSuspensionEdges</c> refuses every other change in the database too.
+/// The WF-01 state machine as TASK-041 builds it (Blueprint Sections 5, 9; ICD-02), with WF-09's two edges (TASK-062) and WF-10's three
+/// (TASK-063). Each edge has exactly one cause: a command of <see cref="ProjectService"/>, the review's WF-11 outcome, WF-09 effecting an
+/// approved suspension or resumption request through <see cref="ProjectSuspensionCommands"/> (ADR-003 §8.2 edge 7), or WF-10 effecting an
+/// approved completion or closure case through <see cref="ProjectCloseoutCommands"/> (edge 8). There is no edge into APPROVED_PLANNED but
+/// from UNDER_REVIEW, so no project skips review: no fast-track rule is authorised (PTBC-002, Open). COMPLETED is entered only from ACTIVE
+/// by an effected completion case — never by progress, tasks or dates (WF-10 BR-CLO-009) — and CLOSED only from COMPLETED, or from
+/// SUSPENDED on WF-10's terminal path, by an effected closure case. CLOSED is terminal: no edge leaves it. Migration
+/// <c>TASK-063_AddProjectCloseoutEdges</c> refuses every other change in the database too.
 /// </summary>
 internal static class ProjectLifecycle
 {
@@ -23,6 +25,9 @@ internal static class ProjectLifecycle
         (ProjectLifecycleState.ApprovedPlanned, ProjectLifecycleState.Active),     // activate
         (ProjectLifecycleState.Active, ProjectLifecycleState.Suspended),           // WF-09 effects an approved suspension request
         (ProjectLifecycleState.Suspended, ProjectLifecycleState.Active),           // WF-09 effects an approved resumption request
+        (ProjectLifecycleState.Active, ProjectLifecycleState.Completed),           // WF-10 effects an approved completion case
+        (ProjectLifecycleState.Completed, ProjectLifecycleState.Closed),           // WF-10 effects an approved closure case
+        (ProjectLifecycleState.Suspended, ProjectLifecycleState.Closed),           // WF-10 effects a terminal closure case: closed, never completed
     };
 
     public static bool Allows(ProjectLifecycleState from, ProjectLifecycleState to) => Transitions.Contains((from, to));
