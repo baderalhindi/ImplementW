@@ -22,7 +22,7 @@ internal sealed class CloseoutAccess(IAuthorizationEngine engine, IAuditTrail au
     public async Task<AdministrationError?> CheckAsync(Guid callerId, string permissionCode, ProjectFacts project, CancellationToken cancellationToken) =>
         (await engine.AuthorizeAsync(callerId, new AuthorizationRequest(permissionCode, SubjectOf(project)), cancellationToken).ConfigureAwait(false)).Outcome switch
         {
-            AuthorizationOutcome.Allowed => ClosedProjectGuard.Refusal(project, permissionCode),
+            AuthorizationOutcome.Allowed => null,
             AuthorizationOutcome.NotFound => AdministrationError.NotFound,
             AuthorizationOutcome.Forbidden => AdministrationError.Forbidden,
             var outcome => throw new ArgumentOutOfRangeException(nameof(permissionCode), outcome, "Unknown authorization outcome."),
