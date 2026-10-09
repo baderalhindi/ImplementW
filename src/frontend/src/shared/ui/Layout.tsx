@@ -1,4 +1,4 @@
-import { type ReactElement, type ReactNode, useEffect, useId } from 'react';
+import { type ReactElement, type ReactNode, useId, useLayoutEffect } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
@@ -8,10 +8,13 @@ interface PageHeaderProps {
   actions?: ReactNode;
 }
 
-/** The page's single h1, mirrored into the document title so each route is announced by name. */
+/**
+ * The page's single h1, mirrored into the document title so each route is announced by name. A layout effect sets the
+ * title in the same commit as the h1: a passive effect can run a task later, leaving the page briefly untitled.
+ */
 export function PageHeader({ title, description, actions }: PageHeaderProps): ReactElement {
   const { t } = useI18n();
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.title = `${title} · ${t('common.appName')}`;
   }, [title, t]);
   return (
