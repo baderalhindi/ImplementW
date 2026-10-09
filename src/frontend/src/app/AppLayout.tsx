@@ -4,6 +4,7 @@ import { Link, NavLink, Outlet } from 'react-router';
 import { approvalNavigation } from '@/features/approvals/routes.tsx';
 import { changeRequestNavigation } from '@/features/change-requests/routes.tsx';
 import { documentNavigation } from '@/features/documents/routes.tsx';
+import { externalParticipationNavigation } from '@/features/external-participation/routes.tsx';
 import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
 import {
   identityAccessNavigation,
@@ -69,7 +70,7 @@ function Navigation({
 /**
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
  * (projects, tasks, milestones, KPIs, risks, issues and challenges, change requests, suspensions and closeouts, approvals, documents and notifications for
- * everyone signed in, administration for R01),
+ * everyone signed in; WF-13's register and monitors for AHDA, or an entity user's requests and contributions; administration for R01),
  * and the page.
  */
 export function AppLayout(): ReactElement {
@@ -116,6 +117,10 @@ export function AppLayout(): ReactElement {
             <Navigation label="issuesChallenges.nav.label" items={issuesChallengesNavigation} />
             <Navigation label="changeRequests.nav.label" items={changeRequestNavigation} />
             <Navigation label="suspensionClosure.nav.label" items={suspensionClosureNavigation} />
+            <Navigation
+              label="externalParticipation.nav.label"
+              items={externalParticipationNavigation(session.user)}
+            />
             <Navigation label="approvals.nav.label" items={approvalNavigation} />
             <Navigation label="documents.nav.label" items={documentNavigation} />
             <Navigation label="notifications.nav.label" items={notificationNavigation} />

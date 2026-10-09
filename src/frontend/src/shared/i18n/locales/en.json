@@ -82,6 +82,8 @@
     "changeRequests": "Change requests",
     "suspensions": "Suspension requests",
     "closeouts": "Closure requests",
+    "externalRequests": "External update requests",
+    "myExternalRequests": "Your update requests from AHDA",
     "title": "Welcome, {name}",
     "approvals": "Go to your approval inbox",
     "documents": "Go to the document library",

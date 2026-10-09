@@ -8,6 +8,7 @@ import { type ProjectStatus } from '@/features/projects/api/types.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import { withChangeRequests } from '@/test/changeRequestFixtures.ts';
 import { concernProject, managerSession, withConcerns } from '@/test/concernFixtures.ts';
+import { withExternalParticipation } from '@/test/externalParticipationFixtures.ts';
 import { withFinancials, withKpis } from '@/test/financialKpiFixtures.ts';
 import { withMilestones } from '@/test/milestoneFixtures.ts';
 import { mockApi, page } from '@/test/mockApi.ts';
@@ -59,6 +60,7 @@ function openWorkspace(path: string, session: Session, status: ProjectStatus): v
     closures: closed ? [closureCase({ status: 'EFFECTED', effectedAt: CLOSED_AT })] : [],
     obligations: [obligation(closed ? { status: 'SATISFIED', satisfiedAt: CLOSED_AT } : {})],
   });
+  withExternalParticipation(api, { contributionTypes: false });
   api.on('GET', /^\/documents$/, { body: page([]) });
   // Registered last, so every module's read of the project answers this one.
   withProject(api, concernProject({ status, closedAt: closed ? CLOSED_AT : null }));
@@ -159,10 +161,15 @@ const SESSIONS: [string, () => Session, WorkspaceTabKey[]][] = [
       'issuesChallenges',
       'changeRequests',
       'closeout',
+      'externalRequests',
       'documents',
     ],
   ],
-  ["the department's manager", reviewerSession, ['progress', 'kpis', 'documents']],
+  [
+    "the department's manager",
+    reviewerSession,
+    ['progress', 'kpis', 'externalRequests', 'documents'],
+  ],
 ];
 
 afterEach(() => {

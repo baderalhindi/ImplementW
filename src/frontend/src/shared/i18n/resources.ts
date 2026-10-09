@@ -4,6 +4,8 @@ import changeRequestsAr from '@/features/change-requests/i18n/ar.json';
 import changeRequestsEn from '@/features/change-requests/i18n/en.json';
 import documentsAr from '@/features/documents/i18n/ar.json';
 import documentsEn from '@/features/documents/i18n/en.json';
+import externalParticipationAr from '@/features/external-participation/i18n/ar.json';
+import externalParticipationEn from '@/features/external-participation/i18n/en.json';
 import financialKpiAr from '@/features/financial-kpi/i18n/ar.json';
 import financialKpiEn from '@/features/financial-kpi/i18n/en.json';
 import identityAccessAr from '@/features/identity-access/i18n/ar.json';
@@ -49,6 +51,7 @@ const en = {
   issuesChallenges: issuesChallengesEn,
   changeRequests: changeRequestsEn,
   suspensionClosure: suspensionClosureEn,
+  externalParticipation: externalParticipationEn,
 };
 
 // English is the reference shape; resources.test.ts fails if Arabic lacks or adds a key.
@@ -72,6 +75,7 @@ export const resources: Record<Language, Resources> = {
     issuesChallenges: issuesChallengesAr,
     changeRequests: changeRequestsAr,
     suspensionClosure: suspensionClosureAr,
+    externalParticipation: externalParticipationAr,
   },
 };
 

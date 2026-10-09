@@ -60,6 +60,7 @@ export type WorkspaceTabKey =
   | 'changeRequests'
   | 'suspension'
   | 'closeout'
+  | 'externalRequests'
   | 'reviews'
   | 'documents';
 
@@ -81,7 +82,9 @@ export interface WorkspaceTab {
  * Project Manager (TASK-055); and Issues & challenges: CONCERN_VIEW ships to the Project Manager, the delivering entity
  * and the department's manager (TASK-057 D-8); and Change requests: CHANGE_REQUEST_VIEW ships to the Project Manager and
  * the department's manager (TASK-060 D-11); and Suspension and Closeout: SUSPENSION_VIEW and CLOSEOUT_VIEW ship to the
- * Project Manager and the department's manager (TASK-062 D-9, TASK-063 D-10).
+ * Project Manager and the department's manager (TASK-062 D-9, TASK-063 D-10); and External requests: EXTERNAL_REQUEST_VIEW
+ * ships to the Project Manager, the department's manager and the entity's users (TASK-066 D-9), each answered only what
+ * their scope reaches.
  * Review history is AHDA's: a review's requester is the AHDA reviewer (TASK-041 F-11) and a run carries no entity
  * anchor (TASK-035 F-8), so an external user can never read one.
  */
@@ -100,6 +103,7 @@ export const WORKSPACE_TABS: WorkspaceTab[] = [
   { key: 'changeRequests', path: 'change-requests', audience: 'reached' },
   { key: 'suspension', path: 'suspension', audience: 'reached' },
   { key: 'closeout', path: 'closeout', audience: 'reached' },
+  { key: 'externalRequests', path: 'external-requests', audience: 'reached' },
   { key: 'reviews', path: 'reviews', audience: 'internalReached' },
   { key: 'documents', path: 'documents', audience: 'reached' },
 ];

@@ -76,6 +76,7 @@ const TAB = {
   changeRequests: en('projects.workspace.tabs.changeRequests'),
   suspension: en('projects.workspace.tabs.suspension'),
   closeout: en('projects.workspace.tabs.closeout'),
+  externalRequests: en('projects.workspace.tabs.externalRequests'),
   reviews: en('projects.workspace.tabs.reviews'),
   documents: en('projects.workspace.tabs.documents'),
 };
@@ -102,6 +103,7 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.changeRequests,
       TAB.suspension,
       TAB.closeout,
+      TAB.externalRequests,
       TAB.reviews,
       TAB.documents,
     ]);
@@ -126,6 +128,7 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.changeRequests,
       TAB.suspension,
       TAB.closeout,
+      TAB.externalRequests,
       TAB.documents,
     ]);
   });

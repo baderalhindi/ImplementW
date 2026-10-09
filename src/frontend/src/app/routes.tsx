@@ -3,6 +3,11 @@ import { Navigate, Outlet, type RouteObject } from 'react-router';
 import { approvalRoutes } from '@/features/approvals/routes.tsx';
 import { changeRequestRoutes } from '@/features/change-requests/routes.tsx';
 import { documentRoutes } from '@/features/documents/routes.tsx';
+import {
+  externalContributionRoutes,
+  externalRequestRoutes,
+  myParticipationRoutes,
+} from '@/features/external-participation/routes.tsx';
 import { kpiRoutes } from '@/features/financial-kpi/routes.tsx';
 import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
 import { issuesChallengesRoutes } from '@/features/issues-challenges/routes.tsx';
@@ -118,6 +123,32 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: closeoutRoutes,
+      },
+      {
+        path: 'external-requests',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: externalRequestRoutes,
+      },
+      {
+        path: 'external-contributions',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: externalContributionRoutes,
+      },
+      {
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: myParticipationRoutes,
       },
       {
         path: 'approvals',
