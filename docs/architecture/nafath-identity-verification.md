@@ -91,6 +91,7 @@ Run 2026-10-09 on macOS, Docker Desktop, PostgreSQL 17 (`AHDA-postgres`) and `AH
 | 6 | `UPDATE_OPENAPI_SNAPSHOT=1 … TheSnapshotIsTheApiAsBuilt`, then a JSON diff of `docs/api/openapi.v1.json` against `dev` | +2 paths, +3 schemas; `IdentityIntegrationStatus` and `IdentityIntegrationTestResult` gain `identityVerification`; nothing removed or otherwise changed |
 | 7 | `python3 docs/architecture/contract-check.py docs/api/openapi.v1.json` | 343 operations, 1497 findings (1489 on `dev`). The 8 new ones are on the two new operations, in the platform-wide open classes (C-4, C-5, C-7, C-12; `OpenApiDocument.OpenPlatformFindings`) |
 | 8 | The nine `docs/architecture/*-check.py` gates | All OK. `secret-management-check.py` K-1 accepts the two new optional keys; `env-template-check.py`: 43 sheet variables, 43 in the template |
+| 10 | Live validation (`artifacts/task-068/live`, not committed): `reset.sh` migrates and seeds a fresh `task068_live` with this branch's `ahda-migrate` image and runs this branch's `ahda-api` as `AHDA-api-068` (`ASPNETCORE_ENVIRONMENT=Development`, non-PROD) with Nafath on, pointed at a Nafath stand-in on the host (an OIDC provider with an outage switch whose ID tokens carry a synthetic national id, two names and a birth date). `check.py` drives it over HTTP | **25/25 passed** (§6.2) |
 | 9 | `gitleaks dir . --config .gitleaks.toml` | No finding in a tracked file or in the branch's commits; the 102 findings of a whole-tree scan are all in git-ignored `artifacts/` logs of earlier tasks |
 
 The tests, by criterion:
@@ -124,6 +125,18 @@ The tests, by criterion:
 
 Every mutation was reverted, the solution rebuilt, and the suites re-run green (§6 rows 3–5). No unit test failed under any mutation: the protections are exercised end to end.
 
+### 6.2 Live validation: the workbook's checks against a running API
+
+Run 2026-10-09 against `AHDA-api-068` on `task068_live`, the stand-in switched down and up by the check:
+
+| Check | Result |
+| --- | --- |
+| Nafath down from the outset | local.r08's sign-in still answers 200 with a verification token and no session. Starting the verification answers 503 `IDENTITY_VERIFICATION_UNAVAILABLE`, `Retry-After: 30`, with no token in the body. The verification token is refused (401) by `GET /sessions/current`. The account stays `ACTIVE` and unverified, and a new sign-in is again shown the verification |
+| Nafath down after the person approved | Completing answers 503 `IDENTITY_VERIFICATION_UNAVAILABLE`, `Retry-After: 30`, no session; nothing recorded |
+| Nafath back | The **same** token and code complete: 201, a working EXTERNAL session |
+| Afterwards | local.r08's next sign-in is 201 at once; internal local.r02, r03, r04 and r06 sign in with 201. The stand-in received no request for any of these |
+| Stored fields vs `nafath-data-minimisation.md` | The user row changed in `nafath_verification_reference` (a UUID), `nafath_verified_at`, `updated_at` and `updated_by` only. None of the four identity values the stand-in sent appears in `pg_dump --data-only` of the database (130 KB) or in the API container's log (70 KB). Nor do the client secret, code, transaction or token. Audit: two `IdentityVerificationFailed` with `failure_reason=PROVIDER_UNAVAILABLE`, then `IdentityVerified` with the reference only |
+
 ## 7. Acceptance criteria, validation and gate
 
 | # | Criterion | Result | Evidence |
@@ -131,8 +144,8 @@ Every mutation was reverted, the solution rebuilt, and the suites re-run green (
 | 1 | Nafath verification is called only for the confirmed use case(s) in PTBC-031's resolution | **MET.** External users, at onboarding, once; never internal users; never as a sign-in | D-1, D-2; §6 criterion 1; M-1 to M-5 |
 | 2 | Only the minimum required identity attributes are stored, and this minimisation decision is documented | **MET at the narrowest boundary; the boundary itself awaits AHDA Cybersecurity (OQ-007, F-1)** | `nafath-data-minimisation.md`; M-10 |
 | 3 | A tested fallback/error path when Nafath is unavailable that does not silently grant or deny access | **MET** | D-6; §6 criterion 3; M-7 to M-9 |
-| — | Validation: simulate a Nafath outage in a non-PROD environment; the fallback surfaces an explicit retry/error state | **MET against the in-process Nafath** (an unreachable authority, and the provider answering 503 mid-verification). Not run in an AHDA environment: none exists, and the flag is off until F-2 and F-4 close | `ANafathOutageIs…` |
-| — | Validation: review stored fields against the documented minimisation decision | **MET** | `NafathDataMinimisationTests.OnlyAReferenceAndATimeAreKeptOfAVerification` |
+| — | Validation: simulate a Nafath outage in a non-PROD environment; the fallback surfaces an explicit retry/error state | **MET on the local DEV stack** against a running API built from this branch, the outage simulated at a Nafath stand-in both before the verification starts and after the person approved (§6.2), and in the test suite. Not run in an AHDA SIT/UAT environment against Nafath's sandbox: none exists (F-5) | §6.2; `ANafathOutageIs…` |
+| — | Validation: review stored fields against the documented minimisation decision | **MET**, live and in the suite | §6.2; `NafathDataMinimisationTests.OnlyAReferenceAndATimeAreKeptOfAVerification` |
 | — | Gate ADR-007: external entity identity verification only; never internal sign-in | **MET** | D-1; `NafathIsNeverCalledForAnInternalUser`; `ANafathVerificationIsNeverASignIn` |
 | — | Amendment ADR-013: verification at onboarding; a persistent session follows; verification alone is insufficient | **MET** | D-2; the second sign-in in `AnExternalUserGetsNoSession…` |
 | — | Sheet verification, `NAFATH_*`: a sandbox round-trip; callback without a redirect-mismatch error; request accepted by the sandbox | **NOT RUN against Nafath** (F-5). The round trip runs against the in-process Nafath, which checks client id, secret, redirect URI, PKCE and single use of the code | `AnExternalUserGetsNoSession…`; `TheConnectionTestReachesNafath…` |
