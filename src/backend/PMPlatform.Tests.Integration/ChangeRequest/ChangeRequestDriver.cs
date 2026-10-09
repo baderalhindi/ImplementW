@@ -226,7 +226,11 @@ internal static class ChangeRequestDriver
     /// Decides every stage of the subject's latest run in turn — local.r02 for its tasks, local.r03 for the Department Manager's — then
     /// delivers the outcome, as the approvers and the outbox do.
     /// </summary>
-    public static async Task DecideAndDeliverAsync(this ChangeRequestTestHost host, string subjectModule, string subjectType, Guid subjectId, ApprovalTaskDecision decision)
+    public static async Task DecideAndDeliverAsync(this ChangeRequestTestHost host, string subjectModule, string subjectType, Guid subjectId, ApprovalTaskDecision decision) =>
+        Assert.True(await host.DeliverAsync((await host.DecideAsync(subjectModule, subjectType, subjectId, decision)).Id));
+
+    /// <summary>As <see cref="DecideAndDeliverAsync"/> without the delivery: the outcome waits in the outbox. Returns the run decided.</summary>
+    public static async Task<ApprovalInstanceDetail> DecideAsync(this ChangeRequestTestHost host, string subjectModule, string subjectType, Guid subjectId, ApprovalTaskDecision decision)
     {
         ApprovalInstanceDetail run = (await host.RunsAsync(subjectModule, subjectType, subjectId))[^1];
         foreach (short stage in run.Tasks.Select(t => t.SequenceNo).Distinct().Order())
@@ -245,16 +249,17 @@ internal static class ChangeRequestDriver
             }
         }
 
-        Assert.True(await host.DeliverAsync(run.Id));
+        return run;
     }
 
     /// <summary>Dispatches the run's outcome message now; false when the consumer threw and the message waits for a retry.</summary>
-    public static async Task<bool> DeliverAsync(this ChangeRequestTestHost host, Guid runId)
-    {
-        Guid message = Guid.Parse(Assert.Single(await host.Database.QueryAsync(
+    public static async Task<bool> DeliverAsync(this ChangeRequestTestHost host, Guid runId) =>
+        await host.Api.Services.GetRequiredService<IOutboxDispatcher>().DispatchAsync(await host.OutcomeMessageAsync(runId), CancellationToken.None);
+
+    /// <summary>The outbox message that carries the run's outcome to its subject's module.</summary>
+    public static async Task<Guid> OutcomeMessageAsync(this ChangeRequestTestHost host, Guid runId) =>
+        Guid.Parse(Assert.Single(await host.Database.QueryAsync(
             $"SELECT id::text FROM common.outbox_message WHERE message_key = 'Approval.ApprovalOutcomeRecorded:apr-{runId}-outcome'")));
-        return await host.Api.Services.GetRequiredService<IOutboxDispatcher>().DispatchAsync(message, CancellationToken.None);
-    }
 
     /// <summary>The subject's WF-11 runs, oldest revision first.</summary>
     public static Task<IReadOnlyList<ApprovalInstanceDetail>> RunsAsync(this ChangeRequestTestHost host, string subjectModule, string subjectType, Guid subjectId) =>
