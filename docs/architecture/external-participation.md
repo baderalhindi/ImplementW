@@ -141,7 +141,7 @@ Path A is WF-04's existing API (`project-task.md` §4): `GET /project-tasks?proj
 
 ## 6. How other modules build on it
 
-1. **TASK-067** builds SCR-160 to SCR-167 on these 22 operations. The same `GET` serves both views: an external caller's payload lacks the internal-only fields and names them in `maskedFields` — TASK-067's criterion compares the two payloads. A CONFLICT is an attempt's status with the version found, not an error, and `revalidate` is its resolution; `responseFields` on a request is the form to render. SCR-167 (monitor), evidence, comments and reminders have no API yet (F-1).
+1. **TASK-067** builds SCR-160 to SCR-167 on these 22 operations (`external-participation-ui.md`). The same `GET` serves both views: an external caller's payload lacks the internal-only fields and names them in `maskedFields` — TASK-067's criterion compares the two payloads. A CONFLICT is an attempt's status with the version found, not an error, and `revalidate` is its resolution; `responseFields` on a request is the form to render. SCR-167 (monitor), evidence, comments and reminders have no API yet (F-1).
 2. **TASK-068** (Nafath) gives external users their sign-in; WF-13 needs nothing more of it: a user's access is their FG-03 assignment, checked on every request.
 3. **A new source adapter** is a command in its module's contracts in the shape of `ITaskProgressContributions` — read with a version token; stage under the module's own lock and rules in the caller's unit of work; audit with the lineage — an `IExternalContributionTarget` here, a schema in `ContributionSchemas`, a row in ADR-003 §8.2 edge 19 and `ModuleRegistry`, and a CONTRIBUTION_TYPE item AHDA publishes (F-4).
 4. **FG-03**: per-project R08 assignments of the entity's contributors, possibly of entities other than the project's delivering one (§8.3), are what makes them eligible responders. **FG-04**: the CONTRIBUTION_TYPE items and a PARTICIPATION version (F-3).
@@ -240,3 +240,4 @@ The tests, by criterion:
 | Date | Change |
 | --- | --- |
 | 2026-10-09 | Created (TASK-066) |
+| 2026-10-09 | §6 item 1 points to the screens' record, `external-participation-ui.md` (TASK-067) |
