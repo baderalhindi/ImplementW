@@ -114,7 +114,7 @@ A case's review history is `GET /approval-instances?subjectModule=Closure&subjec
 2. **Every module with project records** applies `ClosedProjectGuard.Refusal` in its access check after authorization; a new module does the same (D-8). Background passes skip CLOSED projects as WF-06's does.
 3. **WF-09** gains `ISuspensionClosureCommands` and `active_suspension.end_reason`; `suspension.md` F-5's remaining part is §9 F-5 here.
 4. **TASK-064** builds the screens on the 31 operations; the case carries its roll-up and latest criteria, so a readiness panel needs no second call. Built 2026-10-08: `suspension-closure-ui.md`.
-5. **TASK-065** guards D-4 and D-8 in CI; `ClosedProjectWriteTests` and `ClosureLifecycleTests.NoCompletedTaskOrFullProgressCompletesAProjectWithoutTheApprovedCase` are the starting point.
+5. **TASK-065** guards D-8 in CI as its "Closed-Project write immutability" invariant (done: `governance-contract-tests.md` D-4) — on a project closed through WF-10, every governance write refused 409 `PROJECT_CLOSED`, and the lifecycle commands and the database refusing too. D-4 stays with `ClosureLifecycleTests`, and the sweep of the other modules' writes with `ClosedProjectWriteTests`.
 6. **Configuration**: APPROVAL_AUTHORITY rows for `COMPLETION` and `CLOSURE` before a case can be reviewed (F-3).
 
 ## 7. Verification
@@ -209,3 +209,4 @@ Each mutation was applied, the solution rebuilt, `CloseoutWorkflowTests`, `Readi
 | --- | --- |
 | 2026-10-08 | Created (TASK-063) |
 | 2026-10-08 | TASK-064 (`suspension-closure-ui.md`): §6 item 4 consumed — SCR-111–113 built as the two-stage closeout; a CLOSED project's workspace read-only |
+| 2026-10-09 | TASK-065 (`governance-contract-tests.md`): §6 item 5 consumed — `ClosedProjectImmutabilityTests` and the Closure contract gates and replay run in CI's "Governance domain contract and regression tests" step. That record's F-2: beyond the project row, a closed project's records are held by the application, not the database |

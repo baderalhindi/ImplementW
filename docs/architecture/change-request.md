@@ -108,7 +108,7 @@ Changed elsewhere: `POST /financial-commitments/{id}/submit` (`FinancialKpi_Subm
 
 1. **TASK-061** builds SCR-105–107 on these 14 operations (done: `change-request-ui.md`): the classification before submission is `preview-materiality`'s (its acceptance criterion); Approved and Implemented are the statuses APPROVED and IMPLEMENTED, with the authorisations between them on the request; materiality is shown, never edited.
 2. **WF-03 and WF-14 screens** (`schedule-ui.md` F-5, `financial-kpi-ui.md`) can offer the project's ISSUED authorisations of their kind from `GET /change-authorizations?projectId=&authorizationScope=REBASELINE|COMMITMENT_CHANGE&status=ISSUED` instead of an id typed by hand; until one does, a budget revision from the WF-14 screen is refused 422 (F-11).
-3. **TASK-065** guards D-7 and D-8 in CI as its "ChangeAuthorization idempotency" invariant; `ChangeAuthorizationTests` is the starting point.
+3. **TASK-065** guards D-6's issuance and D-7 in CI as its "ChangeAuthorization idempotency" invariant (done: `governance-contract-tests.md` D-2) — for WF-03 and WF-14, under redelivery and racing retries. D-8 stays with `ChangeAuthorizationTests`.
 4. **TASK-105** (governance profile change) and any scope commitment record: issue PROFILE_CHANGE / SCOPE_CHANGE authorisations from `ChangeRequestApprovalOutcomeHandler.Issue` and apply them through `IChangeAuthorizations` (F-4).
 5. **Configuration**: an environment needs, before WF-08 works end to end, a published MATERIALITY_BAND version with the three bands of every governance profile in use (OQ-013) and an APPROVAL_AUTHORITY `CHANGE_REQUEST` route, by band where the matrix differs (F-3).
 
@@ -203,3 +203,4 @@ Each mutation was applied, the solution rebuilt, the ChangeRequest unit tests wi
 | --- | --- |
 | 2026-10-07 | Created (TASK-060) |
 | 2026-10-07 | §6 item 1 consumed by TASK-061 (`change-request-ui.md`) |
+| 2026-10-09 | §6 item 3 consumed by TASK-065 (`governance-contract-tests.md`): `ChangeAuthorizationIdempotencyTests` and the ChangeRequest contract gates and replay run in CI's "Governance domain contract and regression tests" step. A racing retry of the request that applies an authorisation answers 412 (that record's F-1, beside F-7 here) |

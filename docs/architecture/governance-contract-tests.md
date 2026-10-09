@@ -1,0 +1,122 @@
+# Governance Domain Contract and Regression Tests (WF-08/09/10)
+
+| Field | Value |
+| --- | --- |
+| Task | TASK-065 — Contract & Regression Tests for Governance Domain (WF-08/09/10) (P10 - Governance & Change Control (WF-08/09/10)) |
+| Depends on | TASK-060 — WF-08 change request and authorisation (`change-request.md`). TASK-062 — WF-09 suspension and resumption (`suspension.md`). TASK-063 — WF-10 completion and closure (`closure.md`). TASK-043, TASK-054 and TASK-059 — the contract-test machinery this extends (`project-lifecycle-contract-tests.md`, `execution-domain-contract-tests.md`, `risk-issue-contract-tests.md`) |
+| Record date | 2026-10-09 |
+| Status | **BUILT AND VERIFIED** locally against `AHDA-postgres` and `AHDA-ldap` (§5), and in CI, where it is wired into the `backend` job of `ci-quality-gates` (D-9). Each invariant test, and each contract gate, fails when its rule is broken on purpose (§5.1); the row's violation failed it in CI (§5.2) |
+| Branch | `test/task-065-wf08-09-10-governance-tests` |
+| Deliverables | **Invariant regression tests** under `src/backend/PMPlatform.Tests.Integration/Governance`: `ChangeAuthorizationIdempotencyTests` (1) for invariant 1, `SingleActiveSuspensionTests` (1) for invariant 2, `ClosedProjectImmutabilityTests` (1) for invariant 3. **Contract test suite**: `GovernanceContractTests` (9), `ChangeRequestResponseContractTests` (1), `SuspensionResponseContractTests` (1), `ClosureResponseContractTests` (1). **CI wiring**: step "Governance domain contract and regression tests" in `.github/workflows/ci-quality-gates.yml` (D-9). Supporting: `GovernanceApi`; `ChangeRequestDriver.DecideAsync` and `OutcomeMessageAsync` (D-7); `CONTRIBUTING.md`; this record |
+| Environment variables / secrets | None. `UPDATE_OPENAPI_SNAPSHOT=1` rewrites the snapshot, as for TASK-043 |
+| Sources read | The TASK-065 row of the workbook's Implementation Plan (description, acceptance criteria, directory, deliverables, branch, validation checks); the three dependency records above, in particular `change-request.md` D-6, D-7, D-13, F-7, `suspension.md` D-6, D-8, D-11, F-9 and `closure.md` D-6, D-8, D-11, F-14; the TASK-059 record and its tests; `ChangeAuthorizationTests`, `SuspensionLifecycleTests`, `SuspensionGuardTests`, `ClosedProjectWriteTests`; `docs/api/openapi.v1.json` (the ChangeRequest, Suspension and Closure surfaces). The WF-08, WF-09 and WF-10 functional specifications were not re-read: the three invariants are the row's, as the dependency records built them |
+
+## 1. Scope
+
+| | Subject | Owner |
+| --- | --- | --- |
+| **In** | Invariant 1: a ChangeAuthorization is issued once and applied exactly once by its target module, however its delivery or application is repeated | This task |
+| **In** | Invariant 2: a project holds at most one active suspension, however its requests and activations race | This task |
+| **In** | Invariant 3: a CLOSED project takes no write — every governance write the API documents is refused with the closed-project error, and no other path changes it | This task |
+| **In** | The WF-08, WF-09 and WF-10 APIs against the committed snapshot (R-10), the TASK-009 lint, and every operation's answer against its documented schema | This task |
+| **In** | Running all of it in CI on every pull request | This task |
+| **Out** | The modules' other rules (materiality, eligibility, readiness, ADR-013, the database guards) | Their own suites, `ChangeRequest`, `Suspension` and `Closure`, unchanged |
+| **Out** | The closed-project sweep of every other module's writes | `ClosedProjectWriteTests` (TASK-063), unchanged |
+| **Out** | Refusal answers (4xx) against the document: the document declares none (F-4) | TASK-009 owner |
+
+## 2. Decisions
+
+| # | Decision | Why |
+| --- | --- | --- |
+| D-1 | **Each invariant is one test that drives the real flows, on the host of the module it starts from**, as TASK-059 D-6: invariant 1 on `ChangeRequestTestHost`, which routes CHANGE_REQUEST, SCHEDULE_BASELINE and COMMITMENT and publishes MATERIALITY_BAND; invariant 2 on `SuspensionTestHost`; invariant 3 on `ClosureTestHost`, whose officer holds every permission, so that what refuses a write is never its authorization. No new host and no production code change | KISS: the module fixtures already seed what each test needs |
+| D-2 | **Invariant 1 is held for both target modules and for every way an application can be repeated.** One change request states schedule, cost and scope impacts. Its WF-11 approval is dispatched by four dispatchers at once (one delivers) and then handed to WF-08's handler again (EV-5): two authorisations, each issued once, one `ChangeRequestApproved`, two `ChangeAuthorizationIssued`. The issued scopes are asserted exactly (REBASELINE, COMMITMENT_CHANGE). The request states every dimension, so a scope WF-08 starts to issue (`change-request.md` F-4) fails here until its application is added. **WF-03**: the LIGHT-profile rebaseline that applies the authorisation is submitted four times at once under one `Idempotency-Key`, then retried. **WF-14**: the new Approved Budget version is submitted four times at once under one key and retried; WF-11's approval, which applies it, is dispatched by four dispatchers at once and then handed to WF-14's handler again. Each time exactly one copy succeeds and the rest are refused 409 or 412, never an error. The typed adapter then answers the same application `Replayed` and any other `Consumed`. The baselines, budget versions and authorisations are unchanged by every repeat, to the row version. Each authorisation is APPLIED once, by the person and through the record that made the change; there are two `ChangeAuthorizationApplied` events | `ChangeAuthorizationTests` (TASK-060) covers WF-03 in sequence. WF-14's retry and redelivery, issuance under redelivery, and every concurrent repeat were not covered, and a racing retry is what "even under network retry" means |
+| D-3 | **Invariant 2 is held under races, across two cycles.** Six suspension requests are raised at once (one 201, five 409 `SUSPENSION_ALREADY_EXISTS`). The approved request is activated by three commands and three passes of WF-09's worker at once: EFFECTED once, one `RequestEffected`, one Project event, one open period. While suspended, six more raised at once are all refused, and a direct insert of a second open period is refused by the ERD's key. A resumption is raised and activated the same way, ending the one period. The project is then suspended again: two periods, only the newest open. After each step a query over **every project in the collection's database** finds none with more than one open period, none SUSPENDED without exactly one, and none with an open period that is not SUSPENDED. The racing raises come from the Project Manager, as a client's retries or several of its tabs would: WF-11 keeps AHDA's officer, who decides the request here, from deciding one they raised | TASK-062's tests are sequential. The rule's only places are the project's state, two partial unique keys and a commit-time guard (`suspension.md` D-8), so concurrency is where it would break first, and a race must answer 409, not an error |
+| D-4 | **Invariant 3 holds the governance modules to the closed-project error itself, on a project their own flows closed.** WF-08 leaves a change request (submitted, withdrawn) and WF-09 a suspension request (submitted, withdrawn). WF-10 completes the project, with an obligation owned, dated and then satisfied, and closes it: both cases readiness-gated, decided through WF-11 and activated by WF-10's pass. Every governance write the document lists — 40 of the three tags (`preview-materiality` is a read sent as POST), is then sent by the officer at the project's record of that kind, with a valid body and the record's current ETag. A request DTO is validated before the access check, so an invalid body would answer 400 and prove nothing. Each answer must be **409 `PROJECT_CLOSED`** — not any terminal-state error, as `ClosedProjectWriteTests` accepts, because these records are in final states and a module that lost the guard would still refuse through its own state machine. The set of writes comes from the document, so a new governance write fails until its body is added. WF-09's and WF-10's commands into Project's lifecycle (edges 7 and 8: suspend, resume, complete, close) are each refused and stage nothing (the save writes 0 rows). A direct `UPDATE` of the project row is refused. A digest of every governance row of the project — requests, evaluations, authorisations, periods, cases, readiness records, obligations — and of the project row is unchanged, and no successful DATA_CHANGE or LIFECYCLE_TRANSITION event is written | Acceptance criterion: "all 3 invariant tests"; validation check: "allow a write against a Closed Project … confirm the regression test fails" |
+| D-5 | **Contract gates for the three tags** (`GovernanceContractTests`), as TASK-054 D-5 and TASK-059 D-4. Per tag: the R-10 diff against `docs/api/openapi.v1.json`; the snapshot equal to the API as built, with its operation count (ChangeRequest 14, Suspension 10, Closure 31); and the TASK-009 lint, accepting only the platform's open finding classes. None of the three surfaces carries a finding of its own (`change-request.md` §7 row 6, `suspension.md` §7 row 6, `closure.md` §7 row 6), so none is recorded | Acceptance criterion: "contract tests catch a breaking schema change in any of the three modules' APIs" |
+| D-6 | **Every one of the 55 operations is called and its answer checked against its documented schema**, as TASK-059 D-5. ChangeRequest: one request raised, edited, previewed, reviewed, approved, its authorisation read and applied by WF-03, implemented and closed; one deleted as a draft; one withdrawn. Suspension: one deleted as a draft, one withdrawn, one approved and activated, and the period it opened read. Closure: one project completed with its obligation read, edited, started and satisfied, a second cancelled and a third waived; a suspended project closed on the terminal path. For each kind of case, one is deleted as a draft, one withdrawn, and one taken through evaluation, waivers, its readiness records, submission, review, WF-11 and activation. Each test asserts that the operations it checked are exactly those the tag carries | A drift between the wire and the document, with the document unchanged, is invisible to the snapshot gates (M-13) |
+| D-7 | **Shared helpers without extension clashes.** `GovernanceApi` (tags, the document's writes, `AtOnceAsync`, which releases N calls behind one gate, and the single-ActiveSuspension query) imports no module's driver. Each test file imports the one driver of its host, and takes `OpenApiDocument` and `DocumentedResponses` through type aliases, since importing their namespace brings in `ProjectDriver`'s extension methods. `ChangeRequestDriver.DecideAndDeliverAsync` is split into `DecideAsync` and the delivery, so a test can deliver an outcome under race; its callers are unchanged | DRY; the module drivers' extension methods share names (CS0121) |
+| D-8 | **The violations are proven, not assumed.** `artifacts/task-065/mutations/run.py` (local, not committed: `artifacts/` is ignored) applies each mutation of §5.1 to production code, builds, runs the unit tests, this suite, and the ChangeRequest, Suspension, Closure, Schedule, FinancialKpi, Project, RiskIssue and Execution suites. It restores the source with a fresh mtime and rebuilds the clean source at the end | The row: each test must fail when its invariant is broken |
+| D-9 | **CI.** One step in the `backend` job of `ci-quality-gates.yml`, after the TASK-059 step, `--filter FullyQualifiedName~PMPlatform.Tests.Integration.Governance.`, on the same PostgreSQL service and test directory; about 5 s of tests locally. It runs whenever the build passed (`if: ${{ !cancelled() && steps.build.outcome == 'success' }}`, as TASK-059 D-9 found it must), so the invariants' verdict is in the log even after an earlier step failed on the same violation. The workflow runs on every pull request to `main`, `dev` and `stage` with no path filter, so every PR touching WF-08, WF-09 or WF-10 runs it, and the `backend` job is a required check; `ci-cd-pipeline.yml` calls the same workflow | Acceptance criterion: "run in CI on every PR touching WF-08/09/10" |
+
+## 3. The suite
+
+| Test | Guards | Fails when |
+| --- | --- | --- |
+| `ChangeAuthorizationIdempotencyTests.EachAuthorizationIsIssuedOnceAndAppliedOnceHoweverItsDeliveryOrApplicationIsRepeated` | Invariant 1 | An approval redelivered issues again, or issues a scope no module applies yet; a racing or retried rebaseline or budget submission takes effect twice or fails as an error; a redelivered budget approval re-applies; the typed adapter does not recognise the same application or accepts another; a baseline, budget version or authorisation row changes after the first application; an authorisation is not APPLIED once by the person and record that made the change (D-2) |
+| `SingleActiveSuspensionTests.AProjectHoldsAtMostOneActiveSuspensionHoweverItsRequestsAndActivationsRace` | Invariant 2 | More than one of six racing raises is taken, or one fails as an error; a racing activation takes effect twice, or fails as an error; a suspended project takes a suspension request or a second open period; any project in the database breaks the rule at any step; the second cycle does not keep both periods (D-3) |
+| `ClosedProjectImmutabilityTests.AProjectClosedThroughWf10TakesNoGovernanceWriteByAnyPath` | Invariant 3 | A governance write to the closed project answers anything but 409 `PROJECT_CLOSED`; a write the document lists has no body here; a lifecycle command into Project is not refused, or stages something; the database accepts a direct update; any governance row of the project or the project row changes; a successful change is audited (D-4) |
+| `GovernanceContractTests` × 9 | Contract | Per tag: an R-10 break, a surface not equal to the snapshot or an operation count changed, or a lint finding beyond the platform's (D-5) |
+| `ChangeRequestResponseContractTests`, `SuspensionResponseContractTests`, `ClosureResponseContractTests` | Contract | An answer has a property, JSON type, enum value or null its schema does not document, lacks a required property, or comes with an undocumented status; an operation of the tag is not called (D-6) |
+
+## 4. Interfaces exercised
+
+| Interaction | Through |
+| --- | --- |
+| WF-08 → WF-11 (edges 22, 28) and the outbox | `start-review`; the run's outcome dispatched by `IOutboxDispatcher` concurrently, then handed to `ChangeRequestApprovalOutcomeHandler` |
+| WF-03, WF-14 → WF-08 (edges 11, 12) | The rebaseline's `submit`; the budget version's `submit` and WF-11's approval through `FinancialKpiApprovalOutcomeHandler`; `IChangeAuthorizations.ApplyAsync` |
+| WF-09 → Project (edge 7) | `activate`, `ISuspensionMaintenance.RunAsync` (the worker's pass) and `IProjectSuspensionCommands` |
+| WF-10 → Project (edge 8), WF-10 → WF-09 (terminal path) | `ICloseoutMaintenance.RunAsync`, `activate` and `IProjectCloseoutCommands` |
+| The API's own description | `/openapi/v1.json`, against `docs/api/openapi.v1.json` and `contract-check.py` |
+
+## 5. Verification
+
+Run 2026-10-09 on macOS, Docker Desktop, PostgreSQL 17 (`AHDA-postgres`) and `AHDA-ldap`, with `NUGET_PACKAGES` set to `/Volumes/SanDisk/Bader/Development/Caches/nuget`. The branch is `dev` at cde6f53 plus this change. On `dev`, before any change, the ChangeRequest, Suspension, Closure and RiskIssue subsets passed 13, 11, 16 and 12.
+
+| # | Command | Result |
+| --- | --- | --- |
+| 1 | `dotnet build src/backend/PMPlatform.slnx -warnaserror`, and `--configuration Release -warnaserror` | 0 warnings, 0 errors, both |
+| 2 | `dotnet test src/backend/PMPlatform.Tests.Unit --configuration Release` | 1512 passed (unchanged; no unit test is added) |
+| 3 | The CI workflow's integration steps, each `--configuration Release --filter FullyQualifiedName~PMPlatform.Tests.Integration.<X>` | Identity 110, Project. 112, Progress 19, Schedule 25, ProjectTask 19, Milestone 20, FinancialKpi 15, Execution 21, Risk. 17, ManagementConcern. 16, ChangeRequest. 13 (unchanged by D-7's split), Suspension. 11, Closure. 16, RiskIssue 12, **Governance. 15 (new step, about 5 s)** — all passed. Persistence was not run locally: it fails on Npgsql timeouts on this machine on `dev` as well (`closure.md` §7 row 3), and this change touches no migration; CI runs it |
+| 4 | The Governance subset 8 more times in a row | 8 of 8 passed: the races (D-2, D-3) are stable |
+| 5 | The races observed: each racing request's answer logged once (a temporary probe, removed; `artifacts/task-065/probe/race-observed.log`) | Raises: one 201 and the rest 409 `SUSPENSION_ALREADY_EXISTS` or `SUSPENSION_RESUMPTION_ALREADY_EXISTS`. Activations: the pass or one command took effect, and the other commands got 409 `SUSPENSION_ALREADY_EXISTS` or 412. The rebaseline and the budget submission: one 200 and three 412 (F-1). No 5xx anywhere |
+| 6 | `python3 docs/architecture/contract-check.py --self-test` and the eight other `docs/architecture/*-check.py` gates | 29 mutations, 0 missed; all OK. The snapshot is unchanged: no API changes |
+
+### 5.1 Mutation tests
+
+Each mutation was applied to production code, the solution built, and the unit tests, this suite, and the ChangeRequest, Suspension, Closure, Schedule, FinancialKpi, Project, RiskIssue and Execution suites run. The source was then restored (D-8), the clean solution rebuilt, and the tree compared with the commit. Thirteen mutations: this suite killed all 13. "Also failed" names the existing tests that caught the same mutation, so the table shows where this suite is the only guard: **6 of 13**.
+
+| # | Violation introduced | This suite failed | Also failed |
+| --- | --- | --- | --- |
+| M-1 | **The row's check: a write allowed against a Closed Project** — WF-10's access check skips `ClosedProjectGuard` | `AProjectClosedThroughWf10TakesNoGovernanceWriteByAnyPath` | `ClosedProjectWriteTests.AClosedProjectTakesNoWriteThroughAnyEndpoint`, `ObligationsStayOpenAfterCompletionUntilTheClosurePolicyIsMet` |
+| M-2 | WF-09's access check skips the guard | `AProjectClosedThroughWf10TakesNoGovernanceWriteByAnyPath` | `AClosedProjectTakesNoWriteThroughAnyEndpoint` |
+| M-3 | WF-08's access check skips the guard | `AProjectClosedThroughWf10TakesNoGovernanceWriteByAnyPath` | `AClosedProjectTakesNoWriteThroughAnyEndpoint` |
+| M-4 | Project's lifecycle lets a CLOSED project be suspended | `AProjectClosedThroughWf10TakesNoGovernanceWriteByAnyPath` | 3 `ProjectLifecycleTests` (unit), `ProjectLifecycleEndToEndTests` |
+| M-5 | Any use of an applied authorisation is replayed, none consumed | `EachAuthorizationIsIssuedOnceAndAppliedOnceHoweverItsDeliveryOrApplicationIsRepeated` | `ChangeAuthorizationRulesTests` (unit), `AnAuthorizationIsAppliedExactlyOnceEvenWhenItsApplicationIsRetried` |
+| M-6 | WF-14 applies a repeated approval outcome | `EachAuthorizationIsIssuedOnce…` | **None** |
+| M-7 | WF-08 applies a repeated approval outcome | `EachAuthorizationIsIssuedOnce…` | **None** |
+| M-8 | WF-09's open-request key is not unique (migration) | `AProjectHoldsAtMostOneActiveSuspensionHoweverItsRequestsAndActivationsRace` | 3 Suspension tests |
+| M-9 | WF-09's save lets a racing write's row-version conflict escape as an error | `AProjectHoldsAtMostOneActiveSuspension…` | **None** |
+| M-10 | WF-03's save lets a racing write's row-version conflict escape as an error | `EachAuthorizationIsIssuedOnce…` | **None** |
+| M-11 | A ChangeRequest response property removed: `ChangeAuthorizationDetail.appliedReference` hidden with `[JsonIgnore]` | `EachGovernanceApiKeepsEveryPromiseOfTheSnapshot(ChangeRequest)`, `EachGovernanceSnapshotIsTheApiAsBuilt(ChangeRequest)` | **None** |
+| M-12 | A Suspension response property renamed: `endReason` served as `endedReason` | `EachGovernanceApiKeepsEveryPromiseOfTheSnapshot(Suspension)`, `EachGovernanceSnapshotIsTheApiAsBuilt(Suspension)` | `ResumingAProjectChangesNoBaselineWithoutASeparateExplicitAction` |
+| M-13 | Wire drift, document unchanged: an obligation's `title` sent as `null` | `EveryClosureResponseIsWhatItsOperationDocuments` | **None** |
+
+### 5.2 Validation in CI
+
+<!-- CI -->
+
+
+## 6. Acceptance criteria and deliverables
+
+| Item | Result |
+| --- | --- |
+| All 3 invariant tests exist | **MET.** Invariant 1: `ChangeAuthorizationIdempotencyTests` (D-2). Invariant 2: `SingleActiveSuspensionTests` (D-3). Invariant 3: `ClosedProjectImmutabilityTests` (D-4) |
+| They run in CI on every PR touching WF-08/09/10 | **MET** (D-9) |
+| Contract tests catch a breaking schema change in any of the three modules' APIs | **MET.** M-11 (ChangeRequest) and M-12 (Suspension) by the R-10 gate; M-13, a drift the document does not show, by the Closure replay |
+| Deliverables: contract test suite, invariant regression tests, CI wiring | **MET** (header row "Deliverables") |
+
+## 7. Findings
+
+| # | Finding | Owner | Consequence if unresolved |
+| --- | --- | --- | --- |
+| F-1 | **A request raced by its own retry answers 412 `PRECONDITION_FAILED`, though it sent no `If-Match`.** Seen for WF-03's rebaseline submission, WF-14's budget submission and WF-09's activation (D-2, D-3): the copy that loses the row-version race is answered as if its precondition were stale. The state changes once, which is the invariant. But R-37's stored-response replay is not built (`change-request.md` F-7, `suspension.md` F-9), so the client gets neither the winner's answer nor a 409 | Engineering Architect | A client following R-21 reads 412 as "someone else changed it" and shows its own retry as a conflict; it must re-read to learn its change was made |
+| F-2 | **For a closed project's records other than the project row, "nothing writes" is held by the application.** The database refuses any change of a CLOSED project row (`closure.md` D-11), but not of its change requests, suspension requests, cases or obligations. Those are guarded by `ClosedProjectGuard` in each module's access check. The outcome handlers and the typed adapter do not check CLOSED themselves: a late WF-11 outcome cannot reach a closed project only because WF-10's `DECISIONS_SETTLED` criterion blocks closure while a run is pending or decided-but-undelivered, and activation revalidates it (`closure.md` D-5, TASK-063 M-5) | Engineering Architect | A direct database write, or a weakened `DECISIONS_SETTLED`, could change a closed project's governance records unnoticed by the database |
+| F-3 | **112 of the snapshot's 319 operations are under no contract gate**: the IdentityAccess (42), MasterDataConfig (26), Notifications (20), DocumentManagement (13) and Approval (11) tags. TASK-043, TASK-054, TASK-059 and this task cover the eleven domain tags (`project-lifecycle-contract-tests.md` F-4). No workbook row names a contract task for the platform modules | TASK-009 owner; PMO | A breaking change to the platform APIs ships without failing a gate |
+| F-4 | **The replay checks success answers only**, as TASK-059 F-3: the document declares no 4xx answer and no `default`, so a refusal's R-23 envelope cannot be checked against it | TASK-009 owner | A refusal that departs from the envelope is caught only by the modules' own tests |
+| F-5 | **The `backend` job is near its 10-minute budget.** On `dev` (run 37838052479) it took 7 min 50 s before this step | Maintainer | The next domain's step may push the job over `timeout-minutes: 10`; a split into parallel jobs, or a raised budget, will be needed |
+
+## 8. Change log
+
+| Date | Change |
+| --- | --- |
+| 2026-10-09 | Created (TASK-065) |
