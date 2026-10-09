@@ -93,7 +93,14 @@ Each mutation was applied to production code, the solution built, and the unit t
 
 ### 5.2 Validation in CI
 
-<!-- CI -->
+The row's validation check was run in CI on 2026-10-09. Draft PR #73 (never merged; closed and its branch deleted) committed M-1 — WF-10's access check skipping `ClosedProjectGuard`, so a write against a Closed Project is allowed — on top of this branch.
+
+| Run | Commit | Result |
+| --- | --- | --- |
+| 37921810584 | `703bac2`, the violation on `1259a81` (one `backend` job) | `backend` **failed** in "Closure integration tests" and was **cancelled at its ten-minute cap** (10 min 12 s) during the new step, never reaching a verdict: a slower runner had spent 9 min 43 s before it. This led to D-9's split (`19cc93e`) |
+| 37923105899 | `0f8459f`, the violation on `19cc93e` | `backend-risk-governance` **failed** in both steps. "Closure integration tests": 2 of 16 (`ClosedProjectWriteTests.AClosedProjectTakesNoWriteThroughAnyEndpoint`, `ObligationsStayOpenAfterCompletionUntilTheClosurePolicyIsMet`). "Governance domain contract and regression tests": 1 of 15, `AProjectClosedThroughWf10TakesNoGovernanceWriteByAnyPath`. `backend` passed (7 min 06 s), as did every other job |
+| 37923152505 | `19cc93e`, this branch without the violation (PR #74) | `backend-risk-governance` **failed** in the new step on `SingleActiveSuspensionTests`: the losing activations, arriving after WF-09's pass had resumed the project, were answered 422 `SUSPENSION_PROJECT_NOT_ELIGIBLE`, which the test did not admit. The invariant held (one effect, one period). The test now admits any 4xx refusal and still forbids a 5xx (`0bd18bb`; F-1); M-9 re-run, still killed by this suite alone |
+| 37924345997 | `0bd18bb`, this branch (PR #74); the revert's tree, since the violation was never on it | All checks pass. `backend` 6 min 43 s: unit 1512, migration rollback 123, Identity 110, Project 112, Progress 19, Schedule 25, ProjectTask 19, Milestone 20, FinancialKpi 15, Execution 21. `backend-risk-governance` 5 min 22 s: Risk 17, ManagementConcern 16, ChangeRequest 13, Suspension 11, Closure 16, RiskIssue 12, **Governance 15** |
 
 
 ## 6. Acceptance criteria and deliverables
@@ -104,6 +111,7 @@ Each mutation was applied to production code, the solution built, and the unit t
 | They run in CI on every PR touching WF-08/09/10 | **MET** (D-9) |
 | Contract tests catch a breaking schema change in any of the three modules' APIs | **MET.** M-11 (ChangeRequest) and M-12 (Suspension) by the R-10 gate; M-13, a drift the document does not show, by the Closure replay |
 | Deliverables: contract test suite, invariant regression tests, CI wiring | **MET** (header row "Deliverables") |
+| Validation: run the suite in CI and confirm green; temporarily allow a write against a Closed Project in a test branch and confirm the regression test fails, then revert | **MET** (§5.2): green on this branch (run 37924345997); with the violation, `AProjectClosedThroughWf10TakesNoGovernanceWriteByAnyPath` failed in CI (run 37923105899); the branch never carried it |
 
 ## 7. Findings
 
