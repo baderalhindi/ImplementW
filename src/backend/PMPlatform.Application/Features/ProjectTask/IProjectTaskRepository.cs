@@ -32,6 +32,9 @@ public interface IProjectTaskRepository
     /// <summary>Tracked. With <paramref name="expectedVersion"/>, the next save is conditional on it (R-21).</summary>
     public Task<ProjectTaskEntity?> FindTaskAsync(Guid taskId, uint? expectedVersion, CancellationToken cancellationToken);
 
+    /// <summary>The task as stored now, with its row version, read past anything this unit of work tracks. Not tracked.</summary>
+    public Task<(ProjectTaskEntity Task, uint Version)?> ReadTaskAsync(Guid taskId, CancellationToken cancellationToken);
+
     /// <summary>Every dependency between the project's tasks. Not tracked.</summary>
     public Task<IReadOnlyList<TaskDependency>> ListDependenciesAsync(Guid projectId, CancellationToken cancellationToken);
 

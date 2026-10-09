@@ -25,7 +25,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
         await database.RunCommandAsync(DatabaseScripts.SeedCommand);
 
         IReadOnlyList<string> after = await database.QueryAsync(SeededDatabase.TableFingerprints);
-        Assert.Contains(before, line => line.StartsWith("master_data_config.master_data_catalogue|21|", StringComparison.Ordinal));
+        Assert.Contains(before, line => line.StartsWith("master_data_config.master_data_catalogue|20|", StringComparison.Ordinal));
         Assert.Equal(before, after);
     }
 
@@ -89,7 +89,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             WHERE ar !~ '[؀-ۿ]' OR en ~ '[؀-ۿ]' OR btrim(en) = ''
             """);
 
-        Assert.Equal("153", count[0]);
+        Assert.Equal("157", count[0]);
         Assert.Empty(notBilingual);
     }
 
@@ -182,7 +182,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             .ToDictionary(m => $"{m.Groups["schema"].Value}.{m.Groups["table"].Value}.{m.Groups["column"].Value}", m => m.Groups["catalogue"].Value);
         IReadOnlyList<string> seeded = await database.QueryAsync("SELECT code FROM master_data_config.master_data_catalogue WHERE is_system");
 
-        Assert.Equal(37, erdReferences.Length);
+        Assert.Equal(36, erdReferences.Length);
         Assert.Equal(erdReferences.Order(StringComparer.Ordinal), map.Keys.Order(StringComparer.Ordinal));
         Assert.Empty(map.Values.Distinct().Except(seeded));
         Assert.Empty(seeded.Except(map.Values));

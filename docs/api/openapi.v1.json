@@ -3568,6 +3568,401 @@
         }
       }
     },
+    "/api/v1/external-contributions": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "A request's revisions, newest first. `externalUpdateRequestId` is required (R-3).",
+        "operationId": "ExternalParticipation_ListExternalContributions",
+        "parameters": [
+          {
+            "name": "externalUpdateRequestId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalContributionPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "Drafts revision 1 of the answer to an ISSUED request, as its named responder. Values outside the request's typed schema are refused.",
+        "operationId": "ExternalParticipation_CreateExternalContribution",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalContributionCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalContributionCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalContributionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalContributionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-contributions/{externalContributionId}": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "operationId": "ExternalParticipation_GetExternalContribution",
+        "parameters": [
+          {
+            "name": "externalContributionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalContributionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "A DRAFT revision's values, as a whole, by the responder. Requires `If-Match` (R-21). A submitted revision is never edited (409).",
+        "operationId": "ExternalParticipation_UpdateExternalContribution",
+        "parameters": [
+          {
+            "name": "externalContributionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalContributionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalContributionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalContributionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalContributionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-contributions/{externalContributionId}/submit": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "DRAFT → SUBMITTED, complete; from here its values and the source version it was answered against never change.",
+        "operationId": "ExternalParticipation_Submit",
+        "parameters": [
+          {
+            "name": "externalContributionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalContributionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-contributions/{externalContributionId}/start-review": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "SUBMITTED → UNDER_REVIEW, by the request's assigned reviewer. AHDA only.",
+        "operationId": "ExternalParticipation_StartReview",
+        "parameters": [
+          {
+            "name": "externalContributionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalContributionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-contributions/{externalContributionId}/accept": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "UNDER_REVIEW → ACCEPTED_PENDING_APPLICATION, or APPLIED for a reference-only answer: fit to apply, not an approval (BR-EXT-014) and not\nan application (BR-EXT-015). The assigned reviewer, with an internal note if any.",
+        "operationId": "ExternalParticipation_Accept",
+        "parameters": [
+          {
+            "name": "externalContributionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionAcceptCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionAcceptCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionAcceptCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalContributionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-contributions/{externalContributionId}/return": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "UNDER_REVIEW → RETURNED, with the reason the entity reads; opens the next revision as a DRAFT holding the same values to correct.",
+        "operationId": "ExternalParticipation_Return",
+        "parameters": [
+          {
+            "name": "externalContributionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionDecisionCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionDecisionCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionDecisionCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalContributionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-contributions/{externalContributionId}/reject": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "UNDER_REVIEW → REJECTED, with the reason the entity reads; the request closes.",
+        "operationId": "ExternalParticipation_Reject",
+        "parameters": [
+          {
+            "name": "externalContributionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionDecisionCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionDecisionCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionDecisionCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalContributionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/external-entities": {
       "get": {
         "tags": [
@@ -3845,6 +4240,423 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExternalEntityDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-update-requests": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "The requests the caller's data scope reaches, most recently changed first: AHDA's within its scope; an external caller's own entity's,\nissued ones only. Filters: `projectId`, `externalEntityId`, `status` (a set), `responsibleUserId`, `reviewerUserId`.",
+        "operationId": "ExternalParticipation_ListExternalUpdateRequests",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "externalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "responsibleUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "reviewerUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalUpdateRequestPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "Drafts a request (SCR-161), invisible to the entity until it is issued. AHDA only.",
+        "operationId": "ExternalParticipation_CreateExternalUpdateRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalUpdateRequestCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalUpdateRequestCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalUpdateRequestCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalUpdateRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-update-requests/{externalUpdateRequestId}": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "operationId": "ExternalParticipation_GetExternalUpdateRequest",
+        "parameters": [
+          {
+            "name": "externalUpdateRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalUpdateRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "A DRAFT request's own fields, as a whole. Requires `If-Match` (R-21).",
+        "operationId": "ExternalParticipation_UpdateExternalUpdateRequest",
+        "parameters": [
+          {
+            "name": "externalUpdateRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalUpdateRequestRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalUpdateRequestRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalUpdateRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalUpdateRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "HARD_DRAFT: a DRAFT never issued. R-40: a request that is not there — deleted already, or never the caller's to see — is 204 as well.",
+        "operationId": "ExternalParticipation_DeleteExternalUpdateRequest",
+        "parameters": [
+          {
+            "name": "externalUpdateRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/external-update-requests/{externalUpdateRequestId}/issue": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "DRAFT → ISSUED: the project admits it, the entity is active, the contribution type has its typed schema and is enabled for the project's\nparticipation mode, the source record is the project's, the responder and reviewer are eligible, the due date is not past.",
+        "operationId": "ExternalParticipation_Issue",
+        "parameters": [
+          {
+            "name": "externalUpdateRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalUpdateRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-update-requests/{externalUpdateRequestId}/cancel": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "ISSUED or IN_PROGRESS → CANCELLED, with why. A request whose answer is with AHDA's reviewer is decided instead.",
+        "operationId": "ExternalParticipation_Cancel",
+        "parameters": [
+          {
+            "name": "externalUpdateRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalUpdateRequestCancelCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalUpdateRequestCancelCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalUpdateRequestCancelCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalUpdateRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-update-requests/{externalUpdateRequestId}/assign-responder": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "Names another responder of the entity on an issued request (WF-13 §9.4); earlier revisions keep their contributor.",
+        "operationId": "ExternalParticipation_AssignResponder",
+        "parameters": [
+          {
+            "name": "externalUpdateRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponderAssignCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponderAssignCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponderAssignCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalUpdateRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-update-requests/{externalUpdateRequestId}/assign-reviewer": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "Names another AHDA reviewer on an issued request.",
+        "operationId": "ExternalParticipation_AssignReviewer",
+        "parameters": [
+          {
+            "name": "externalUpdateRequestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewerAssignCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewerAssignCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewerAssignCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalUpdateRequestDetail"
                 }
               }
             }
@@ -12296,6 +13108,163 @@
         }
       }
     },
+    "/api/v1/source-applications": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "A revision's attempts, newest first. `externalContributionId` is required (R-3). Empty for an external caller.",
+        "operationId": "ExternalParticipation_ListSourceApplications",
+        "parameters": [
+          {
+            "name": "externalContributionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceApplicationPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "Attempts to apply an ACCEPTED_PENDING_APPLICATION revision to its source record: 201 with the attempt, whatever its outcome. After a\nCONFLICT the next attempt waits for a revalidation (409). A retry with the same key and body answers 201 with the same attempt and\n`Idempotent-Replayed: true`.",
+        "operationId": "ExternalParticipation_ApplyExternalContribution",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceApplicationCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceApplicationCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceApplicationCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceApplicationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/source-applications/{sourceApplicationId}": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "operationId": "ExternalParticipation_GetSourceApplication",
+        "parameters": [
+          {
+            "name": "sourceApplicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceApplicationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/source-applications/{sourceApplicationId}/revalidate": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "Confirms, on the revision's latest CONFLICT attempt, that the accepted values apply to the source record as it now is; the next attempt\nexpects that version (WF-13 US-EXT-REV-017). Not an edit of the values.",
+        "operationId": "ExternalParticipation_Revalidate",
+        "parameters": [
+          {
+            "name": "sourceApplicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceApplicationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/suspension-requests": {
       "get": {
         "tags": [
@@ -17061,6 +18030,166 @@
         },
         "description": "One connection test. string? ConnectionTestResult.FailureCode is a fixed code, never the provider's own message."
       },
+      "ContributionAcceptCommand": {
+        "required": [
+          "internalNote"
+        ],
+        "type": "object",
+        "properties": {
+          "internalNote": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "An acceptance, with AHDA's internal note if any. Nothing in it changes a submitted value."
+      },
+      "ContributionApplicationMode": {
+        "enum": [
+          "REFERENCE_ONLY",
+          "UPDATE_ALLOWED_SOURCE_FIELDS"
+        ],
+        "description": "WF-13 §7.1: what an accepted answer does to its source. REFERENCE_ONLY keeps it as information and changes no source; UPDATE_ALLOWED_SOURCE_FIELDS\nsets narrowly allowlisted fields of one source record through the owning module's typed command, after revalidation."
+      },
+      "ContributionDecisionCommand": {
+        "required": [
+          "reason",
+          "internalNote"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "internalNote": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A return or a rejection: the reason the entity reads, required, and AHDA's internal note if any. Nothing in it changes a submitted value."
+      },
+      "ContributionFieldDefinition": {
+        "required": [
+          "fieldCode",
+          "fieldType",
+          "required",
+          "minimum",
+          "maximum"
+        ],
+        "type": "object",
+        "properties": {
+          "fieldCode": {
+            "type": "string"
+          },
+          "fieldType": {
+            "$ref": "#/components/schemas/ContributionFieldType"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "minimum": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maximum": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "One field of a contribution type's typed schema: what the entity may answer, never more (WF-13 BR-EXT-008)."
+      },
+      "ContributionFieldRequest": {
+        "required": [
+          "fieldCode",
+          "value",
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "fieldCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "language": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "One answered field: its code in the request's schema, its value as text — a number in invariant notation, a date as `yyyy-MM-dd` —\nand, for a narrative only, its entry language. Whether the code and value fit the schema is the server's rule."
+      },
+      "ContributionFieldType": {
+        "enum": [
+          "NARRATIVE",
+          "NUMBER",
+          "DATE"
+        ],
+        "description": "WF-13 §5.2's item types the platform's schemas use: free text with its language, a number in a range, a date."
+      },
+      "ContributionFieldValue": {
+        "required": [
+          "fieldCode",
+          "value",
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "fieldCode": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "language": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Language"
+              }
+            ]
+          }
+        },
+        "description": "A value of a revision, in its field's canonical text form; Language? ContributionFieldValue.Language is set exactly for a narrative."
+      },
       "DataScope": {
         "enum": [
           "ALL",
@@ -17783,6 +18912,274 @@
           }
         }
       },
+      "ExternalContributionCreateRequest": {
+        "required": [
+          "externalUpdateRequestId",
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "externalUpdateRequestId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "fields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ContributionFieldRequest"
+            }
+          }
+        },
+        "description": "The first revision of the answer to an issued request, a DRAFT, with the values given so far."
+      },
+      "ExternalContributionDetail": {
+        "required": [
+          "id",
+          "externalUpdateRequestId",
+          "projectId",
+          "externalEntityId",
+          "revisionNo",
+          "previousRevisionId",
+          "status",
+          "contributorUserId",
+          "fields",
+          "submittedAt",
+          "targetVersion",
+          "targetState",
+          "reviewedByUserId",
+          "reviewStartedAt",
+          "reviewedAt",
+          "reviewReason",
+          "reviewInternalNote",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy",
+          "projection",
+          "maskedFields"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalUpdateRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalEntityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "previousRevisionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExternalContributionStatus"
+          },
+          "contributorUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContributionFieldValue"
+            }
+          },
+          "submittedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "targetVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "targetState": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reviewedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reviewStartedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reviewedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reviewReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "reviewInternalNote": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/ParticipationAudience"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "One revision of an entity's answer, with its values. Its review reason is the entity's to read; the reviewer, the internal note and the\nsource version it was answered against are AHDA's, null and named in IReadOnlyList&lt;string&gt; ExternalContributionDetail.MaskedFields in the external projection."
+      },
+      "ExternalContributionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalContributionDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A request's revisions, newest first."
+      },
+      "ExternalContributionRequest": {
+        "required": [
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ContributionFieldRequest"
+            }
+          }
+        },
+        "description": "A DRAFT revision's values, as a whole (R-5)."
+      },
+      "ExternalContributionStatus": {
+        "enum": [
+          "DRAFT",
+          "SUBMITTED",
+          "UNDER_REVIEW",
+          "RETURNED",
+          "REJECTED",
+          "ACCEPTED_PENDING_APPLICATION",
+          "APPLIED",
+          "APPLICATION_FAILED"
+        ],
+        "description": "ERD `external_contribution.status` (TASK-066): DRAFT → SUBMITTED → UNDER_REVIEW → RETURNED, REJECTED or\nACCEPTED_PENDING_APPLICATION, which ends APPLIED or APPLICATION_FAILED. A reference-only answer is APPLIED on its acceptance, as\nnothing is applied to a source (WF-13 §4.5 step 8). RETURNED, REJECTED, APPLIED and APPLICATION_FAILED are final for the revision.\nThe specification's Conditional WITHDRAWN is not entered."
+      },
       "ExternalEntityCreateRequest": {
         "required": [
           "code",
@@ -18004,6 +19401,429 @@
           }
         },
         "description": "ADM-013: the entity's editable representation in full; the code is fixed."
+      },
+      "ExternalRequestOrigin": {
+        "enum": [
+          "AHDA_ISSUED"
+        ],
+        "description": "ERD `external_update_request.origin`. Participation is request-driven (TASK-066 gate decision): every request is issued by AHDA.\nThe ERD's ENTITY_INITIATED, the specification's Conditional unsolicited intake (WF-13 §5.4), is not entered."
+      },
+      "ExternalUpdateRequestCancelCommand": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "Why AHDA cancels the request: required."
+      },
+      "ExternalUpdateRequestCreateRequest": {
+        "required": [
+          "projectId",
+          "externalEntityId",
+          "contributionTypeItemId",
+          "targetId",
+          "instructions",
+          "responsibleUserId",
+          "reviewerUserId",
+          "dueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "externalEntityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "contributionTypeItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "targetId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "instructions": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "responsibleUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reviewerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A new request, DRAFT, of one project to one entity, with the fields ExternalUpdateRequestRequest describes."
+      },
+      "ExternalUpdateRequestDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "formalProjectId",
+          "externalEntityId",
+          "origin",
+          "contributionTypeItemId",
+          "contributionSchemaCode",
+          "applicationMode",
+          "targetModule",
+          "targetType",
+          "targetId",
+          "targetLabel",
+          "responseFields",
+          "instructions",
+          "responsibleUserId",
+          "reviewerUserId",
+          "dueDate",
+          "dueCondition",
+          "status",
+          "participationConfigurationVersionId",
+          "issuedByUserId",
+          "issuedAt",
+          "cancelledAt",
+          "cancellationReason",
+          "closedAt",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy",
+          "projection",
+          "maskedFields"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formalProjectId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "externalEntityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/ExternalRequestOrigin"
+          },
+          "contributionTypeItemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contributionSchemaCode": {
+            "type": "string"
+          },
+          "applicationMode": {
+            "$ref": "#/components/schemas/ContributionApplicationMode"
+          },
+          "targetModule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "targetLabel": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "responseFields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContributionFieldDefinition"
+            }
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "responsibleUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reviewerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueCondition": {
+            "$ref": "#/components/schemas/ResponseDueCondition"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExternalUpdateRequestStatus"
+          },
+          "participationConfigurationVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "issuedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "issuedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "cancelledAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "cancellationReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "closedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/ParticipationAudience"
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "An update request as its caller may see it (WF-13 §8.2). AHDA's people get the ParticipationAudience.Internal view; an\nexternal user always gets the ParticipationAudience.External projection, in which every internal-only field is null and\nnamed in IReadOnlyList&lt;string&gt; ExternalUpdateRequestDetail.MaskedFields, and the API omits it (R-20): who reviews, who issued, who changed the row. The project is named by\nits Formal Project ID, and the source record by its label."
+      },
+      "ExternalUpdateRequestPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalUpdateRequestDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "The requests the caller's data scope reaches, most recently changed first (R-29; indexing-strategy P-2)."
+      },
+      "ExternalUpdateRequestRequest": {
+        "required": [
+          "contributionTypeItemId",
+          "targetId",
+          "instructions",
+          "responsibleUserId",
+          "reviewerUserId",
+          "dueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "contributionTypeItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "targetId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "instructions": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "responsibleUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reviewerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A DRAFT request's own fields, as a whole (R-5): the contribution type, the source record its schema applies to (none for a reference-only\ntype), the instructions, the responder and reviewer, and the due date. Its project and entity are fixed when it is drafted."
+      },
+      "ExternalUpdateRequestStatus": {
+        "enum": [
+          "DRAFT",
+          "ISSUED",
+          "IN_PROGRESS",
+          "RESPONDED",
+          "CLOSED",
+          "CANCELLED"
+        ],
+        "description": "ERD `external_update_request.status` (TASK-066). DRAFT is AHDA's and invisible to the entity; ISSUED awaits a first answer;\nIN_PROGRESS has an answer being drafted, the first or the correction of a returned one; RESPONDED has the current revision with AHDA,\nsubmitted, under review or accepted and awaiting application; CLOSED ended with that revision applied, rejected or found impossible\nto apply; CANCELLED was withdrawn by AHDA before an answer reached it. CLOSED and CANCELLED are final. The ERD's EXPIRED is not\nentered: lateness is the derived due condition (WF-13 §4.1), and no policy closes a request on its date."
       },
       "FieldClassificationEntry": {
         "required": [
@@ -22869,6 +24689,13 @@
         },
         "description": "A DRAFT's full text."
       },
+      "ParticipationAudience": {
+        "enum": [
+          "INTERNAL",
+          "EXTERNAL"
+        ],
+        "description": "Which representation a caller gets (WF-13 §8.2): AHDA's full view, or the external least-disclosure projection."
+      },
       "ParticipationMode": {
         "enum": [
           "ENTITY_MANAGED",
@@ -26064,6 +27891,45 @@
         },
         "description": "The content of the version that resolution chose, with the id a record pins (ERD D-13). Each `Require…`\nreturns the entry or throws ConfigurationMissingException: there is no default to fall back on."
       },
+      "ResponderAssignCommand": {
+        "required": [
+          "responsibleUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "responsibleUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ResponseDueCondition": {
+        "enum": [
+          "NOT_APPLICABLE",
+          "NOT_DUE",
+          "DUE",
+          "OVERDUE"
+        ],
+        "description": "WF-13 EXT-F-020, derived on read and never stored: whether the entity's answer is due. NOT_APPLICABLE without a due date or once the\nrequest awaits no answer from the entity. The specification's DUE_SOON waits on a policy threshold (TBC-EXT-014). It says nothing of the\nproject's, a task's or an approval's own timing (BR-EXT-035)."
+      },
+      "ReviewerAssignCommand": {
+        "required": [
+          "reviewerUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "reviewerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "RiskAcceptanceDetail": {
         "required": [
           "id",
@@ -28119,6 +29985,207 @@
         },
         "description": "The OIDC client settings. Authority, client id and callback URL are Public in the Environment and Secrets sheet; the client secret is reduced to whether it is set."
       },
+      "SourceApplicationCreateRequest": {
+        "required": [
+          "externalContributionId"
+        ],
+        "type": "object",
+        "properties": {
+          "externalContributionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "An attempt to apply an accepted revision to its source record."
+      },
+      "SourceApplicationDetail": {
+        "required": [
+          "id",
+          "externalContributionId",
+          "externalUpdateRequestId",
+          "attemptNo",
+          "status",
+          "applicationMode",
+          "targetModule",
+          "targetType",
+          "targetId",
+          "expectedTargetRevisionNo",
+          "actualTargetRevisionNo",
+          "failureCode",
+          "attemptedByUserId",
+          "attemptedAt",
+          "completedAt",
+          "revalidatedAt",
+          "revalidatedByUserId",
+          "revalidatedTargetRevisionNo",
+          "correlationId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalContributionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalUpdateRequestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attemptNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SourceApplicationStatus"
+          },
+          "applicationMode": {
+            "$ref": "#/components/schemas/ContributionApplicationMode"
+          },
+          "targetModule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "expectedTargetRevisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "actualTargetRevisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "attemptedByUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "attemptedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revalidatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "revalidatedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "revalidatedTargetRevisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "An attempt to apply an accepted revision to its source record (SCR-166). AHDA's only: an external caller never reads one."
+      },
+      "SourceApplicationPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceApplicationDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A revision's application attempts, newest first."
+      },
+      "SourceApplicationStatus": {
+        "enum": [
+          "APPLIED",
+          "CONFLICT",
+          "FAILED"
+        ],
+        "description": "ERD `source_application.status`, as an attempt ends (TASK-066). An attempt is made and decided in one request, so the ERD's\nPENDING, REVALIDATING and RETRY_SCHEDULED — states of an attempt still on its way — are not entered; a revalidated CONFLICT stays\nCONFLICT with DateTimeOffset? SourceApplication.RevalidatedAt set."
+      },
       "SourceMode": {
         "enum": [
           "MANUAL",
@@ -29110,6 +31177,9 @@
     },
     {
       "name": "DocumentManagement"
+    },
+    {
+      "name": "ExternalParticipation"
     },
     {
       "name": "FinancialKpi"

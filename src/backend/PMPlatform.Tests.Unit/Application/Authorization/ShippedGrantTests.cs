@@ -44,6 +44,7 @@ public sealed class ShippedGrantTests
 
         // The entity Project Manager owns the project their assignment covers: the one they manage (ADR-013).
         AuthorizationSubject inScope = scope == DataScope.Entity ? new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId, OwnerUserId = OtherUserId }
+            : scope == DataScope.Assigned ? new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId, OwnerUserId = OtherUserId, AssignedUserIds = [UserId] }
             : scope == DataScope.Dept ? new AuthorizationSubject { ProjectId = ProjectId, DepartmentId = DepartmentId, OwnerUserId = OtherUserId }
             : IsEntityProjectManager(role) ? new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId, OwnerUserId = UserId }
             : new AuthorizationSubject { OwnerUserId = UserId };
@@ -90,8 +91,17 @@ public sealed class ShippedGrantTests
                 Assert.Equal(outOfScope, await scenario.AuthorizeAsync(permission, new AuthorizationSubject { ProjectId = ProjectId, DepartmentId = OtherDepartmentId, OwnerUserId = OtherUserId }));
                 break;
 
+            // TASK-066: a record of the holder's own entity and project assigned to someone else is out of scope — 403 where another
+            // grant lets them see it (R-47), else 404 — and one assigned to them but of another entity is out of reach (ADR-013).
+            case DataScope.Assigned:
+                Assert.Equal(AuthorizationDenial.OutOfScope, (await scenario.AuthorizeAsync(permission,
+                    new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId, OwnerUserId = OtherUserId, AssignedUserIds = [OtherUserId] })).Denial);
+                Assert.Equal(outOfScope, await scenario.AuthorizeAsync(permission,
+                    new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = OtherEntityId, OwnerUserId = OtherUserId, AssignedUserIds = [UserId] }));
+                break;
+
             // No shipped grant has another scope yet; the one that first does adds its deny case here.
-            case DataScope.Assigned or DataScope.ReadOnly:
+            case DataScope.ReadOnly:
             default:
                 throw new InvalidOperationException($"No deny case for {scope}.");
         }
@@ -220,15 +230,18 @@ public sealed class ShippedGrantTests
 
     /// <summary>
     /// TASK-048: the Project Manager plans the tasks, may edit a task's actual percentage (ADR-009) and holds the controlled
-    /// reopen, at OWN — the projects they manage. The task owners' ASSIGNED grants wait for Appendix A (project-task.md F-2).
+    /// reopen, at OWN — the projects they manage. TASK-066's gate decision limits an external contributor's direct source action to
+    /// assigned tasks (WF-13 Path A): R08 views and updates the tasks it owns, at ASSIGNED, and neither plans nor reopens. The other
+    /// owners' ASSIGNED grants wait for Appendix A (project-task.md F-2).
     /// </summary>
     [Fact]
-    public void TasksGoToTheProjectManagerOnly()
+    public void TasksGoToTheProjectManagerAndToEntityUsersOnTheTasksTheyOwn()
     {
         Assert.Equal(
             [
                 ("R04", PermissionCatalogue.TaskView, DataScope.Own), ("R04", PermissionCatalogue.TaskUpdate, DataScope.Own),
                 ("R04", PermissionCatalogue.TaskManage, DataScope.Own), ("R04", PermissionCatalogue.TaskReopen, DataScope.Own),
+                ("R08", PermissionCatalogue.TaskView, DataScope.Assigned), ("R08", PermissionCatalogue.TaskUpdate, DataScope.Assigned),
             ],
             PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("TASK_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
     }
@@ -486,6 +499,71 @@ public sealed class ShippedGrantTests
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.CloseoutReview, Managed(ProjectId, EntityId, UserId))).IsAllowed);
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.CloseoutWaive, Managed(ProjectId, EntityId, UserId))).IsAllowed);
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.CloseoutActivate, Managed(ProjectId, EntityId, UserId))).IsAllowed);
+    }
+
+    /// <summary>
+    /// WF-13 Path A (TASK-066 gate decision: "direct source action limited to assigned tasks"): an entity user starts, blocks, completes
+    /// and reports progress on the WF-04 tasks it owns on its entity's project, and on no other task — not one of its own project owned
+    /// by someone else, not one it owns on another entity's project — and never plans, cancels or reopens one.
+    /// </summary>
+    [Fact]
+    public async Task AnEntityUserActsDirectlyOnlyOnTheTasksItOwns()
+    {
+        AuthorizationScenario entityUser = Scenario("R08");
+        AuthorizationSubject ownTask = Managed(ProjectId, EntityId, OtherUserId) with { AssignedUserIds = [UserId] };
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityUser.AuthorizeAsync(PermissionCatalogue.TaskUpdate, ownTask));
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.TaskUpdate, ownTask with { AssignedUserIds = [OtherUserId] })).IsAllowed);
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.TaskUpdate, ownTask with { ExternalEntityId = OtherEntityId })).IsAllowed);
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.TaskManage, ownTask)).IsAllowed);
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.TaskReopen, ownTask)).IsAllowed);
+    }
+
+    /// <summary>
+    /// WF-13 §13 (TASK-066): the Project Manager requests, reviews when assigned and applies (R04 at OWN); the Department Manager requests and
+    /// reviews when assigned (R03 at DEPT); the external entity user sees its entity's requests (R08 at ENTITY) and answers those it is named
+    /// on (R08 at ASSIGNED). The application refuses requesting, reviewing and applying to an external holder (external-participation.md F-2).
+    /// </summary>
+    [Fact]
+    public void ExternalUpdateRequestsAreRaisedByAhdaAndAnsweredByTheNamedEntityUser() =>
+        Assert.Equal(
+            [
+                ("R04", PermissionCatalogue.ExternalRequestView, DataScope.Own), ("R04", PermissionCatalogue.ExternalRequestManage, DataScope.Own),
+                ("R04", PermissionCatalogue.ExternalContributionReview, DataScope.Own), ("R04", PermissionCatalogue.ExternalContributionApply, DataScope.Own),
+                ("R03", PermissionCatalogue.ExternalRequestView, DataScope.Dept), ("R03", PermissionCatalogue.ExternalRequestManage, DataScope.Dept),
+                ("R03", PermissionCatalogue.ExternalContributionReview, DataScope.Dept),
+                ("R08", PermissionCatalogue.ExternalRequestView, DataScope.Entity), ("R08", PermissionCatalogue.ExternalContributionRespond, DataScope.Assigned),
+            ],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("EXTERNAL_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+
+    /// <summary>
+    /// TASK-066 acceptance criterion 1, at the engine: an entity user whose assignment covers one project reaches its own entity's requests on
+    /// that project and nothing else — not another entity's request on the same project, not its entity's request on another project — as a
+    /// single record (404, R-47) and as a collection's scope alike, and answers only a request it is named on.
+    /// </summary>
+    [Fact]
+    public async Task AnEntityUserReachesOnlyItsOwnEntitysRequestsOnTheProjectItIsAssignedTo()
+    {
+        AuthorizationScenario entityUser = Scenario("R08");
+        AuthorizationSubject own = Managed(ProjectId, EntityId, OtherUserId) with { AssignedUserIds = [UserId] };
+        AuthorizationSubject otherEntitysOnTheSameProject = own with { ExternalEntityId = OtherEntityId, AssignedUserIds = [] };
+        AuthorizationSubject ownEntitysOnAnotherProject = own with { ProjectId = OtherProjectId, AssignedUserIds = [] };
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityUser.AuthorizeAsync(PermissionCatalogue.ExternalRequestView, own));
+        Assert.Equal(AuthorizationOutcome.NotFound, (await entityUser.AuthorizeAsync(PermissionCatalogue.ExternalRequestView, otherEntitysOnTheSameProject)).Outcome);
+        Assert.Equal(AuthorizationOutcome.NotFound, (await entityUser.AuthorizeAsync(PermissionCatalogue.ExternalRequestView, ownEntitysOnAnotherProject)).Outcome);
+
+        RecordScope scope = await entityUser.Engine.GetRecordScopeAsync(UserId, PermissionCatalogue.ExternalRequestView, CancellationToken.None);
+        Assert.True(scope.Matches(own));
+        Assert.False(scope.Matches(otherEntitysOnTheSameProject));
+        Assert.False(scope.Matches(ownEntitysOnAnotherProject));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityUser.AuthorizeAsync(PermissionCatalogue.ExternalContributionRespond, own));
+        Assert.Equal(AuthorizationOutcome.Forbidden, (await entityUser.AuthorizeAsync(PermissionCatalogue.ExternalContributionRespond, own with { AssignedUserIds = [OtherUserId] })).Outcome);
+        foreach (string ahdaOnly in new[] { PermissionCatalogue.ExternalRequestManage, PermissionCatalogue.ExternalContributionReview, PermissionCatalogue.ExternalContributionApply })
+        {
+            Assert.Equal(AuthorizationDenial.NotGranted, (await entityUser.AuthorizeAsync(ahdaOnly, own)).Denial);
+        }
     }
 
     /// <summary>The delivery team's decision of 2026-09-30 (notification-runtime.md F-1): WF-15 administration is R01's, at ALL, as FG-04's is.</summary>

@@ -14,6 +14,7 @@ using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.FinancialKpi;
 using PMPlatform.Application.Features.MasterDataConfig;
+using PMPlatform.Application.Features.ExternalParticipation;
 using PMPlatform.Application.Features.ManagementConcern;
 using PMPlatform.Application.Features.Milestone;
 using PMPlatform.Application.Features.Notifications;
@@ -38,6 +39,7 @@ using PMPlatform.Infrastructure.Persistence.AuditActivity;
 using PMPlatform.Infrastructure.Persistence.ChangeRequest;
 using PMPlatform.Infrastructure.Persistence.DocumentManagement;
 using PMPlatform.Infrastructure.Persistence.FinancialKpi;
+using PMPlatform.Infrastructure.Persistence.ExternalParticipation;
 using PMPlatform.Infrastructure.Persistence.ManagementConcern;
 using PMPlatform.Infrastructure.Persistence.Milestone;
 using PMPlatform.Infrastructure.Persistence.Progress;
@@ -133,6 +135,7 @@ public static class DependencyInjection
 
         // TASK-057: WF-07's management_concern schema.
         services.AddScoped<IManagementConcernRepository, ManagementConcernRepository>();
+        services.AddScoped<IExternalParticipationRepository, ExternalParticipationRepository>();
 
         // TASK-060: WF-08's change_request schema.
         services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();

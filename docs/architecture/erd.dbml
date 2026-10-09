@@ -1518,7 +1518,7 @@ Table external_participation.external_update_request {
   project_id uuid [not null, ref: > project.project.id]
   external_entity_id uuid [not null, ref: > identity_access.external_entity.id, note: 'ENTITY scope isolation']
   origin varchar(50) [not null, note: 'AHDA_ISSUED | ENTITY_INITIATED']
-  request_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
+  contribution_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Catalogue CONTRIBUTION_TYPE, enabled per participation mode (ParticipationContributionRule); its code names the typed schema the request is answered in (TASK-066)']
   issued_by_user_id uuid [not null, ref: > identity_access.user.id]
   issued_at timestamptz [not null]
   due_date date
@@ -1538,7 +1538,6 @@ Table external_participation.external_contribution {
   project_id uuid [not null, ref: > project.project.id]
   external_entity_id uuid [not null, ref: > identity_access.external_entity.id]
   contributor_user_id uuid [not null, ref: > identity_access.user.id]
-  contribution_type_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Enabled per participation mode (ParticipationContributionRule)']
   revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
   status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | REJECTED | ACCEPTED_PENDING_APPLICATION | APPLIED | APPLICATION_FAILED']
   target_module varchar(50) [note: 'Owning core module of the proposed change (target set unconfirmed — S-5)']

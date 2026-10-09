@@ -983,7 +983,7 @@ erDiagram
         uuid id PK
         uuid project_id FK
         uuid external_entity_id FK
-        uuid request_type_item_id FK
+        uuid contribution_type_item_id FK
         uuid issued_by_user_id FK
         varchar status
     }
@@ -993,7 +993,6 @@ erDiagram
         uuid project_id FK
         uuid external_entity_id FK
         uuid contributor_user_id FK
-        uuid contribution_type_item_id FK
         int revision_no
         varchar status
         uuid reviewed_by_user_id FK
@@ -1747,3 +1746,4 @@ On Q1 and Q6, the E-1 reconciliation is run, the crosswalk's Appendix D columns 
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-20 | Initial record. 121 tables across 21 module schemas and `common`; seventeen conventions (D-1 to D-17) carrying ADR-008/009/011/012 and the provenance, language-tag and Declared-Baseline amendments; WF-02 aggregates added (TASK-007 S-2); 53 lifecycle columns reviewed against the workbook restatement; 29 derived/duplicated columns justified; delete-policy census; 109-row Appendix D crosswalk with row numbers pending (E-1); six workbook consequences; seven residual items. | Architecture (TASK-008) |
+| 2026-10-09 | §5.16, `erd.dbml`: `external_update_request.request_type_item_id` (an `UPDATE_REQUEST_TYPE` no source defines) becomes `contribution_type_item_id` (`CONTRIBUTION_TYPE`), and `external_contribution.contribution_type_item_id` is removed: WF-13's specification puts the contribution type on the request (EXT-F-011) — one purpose per request (BR-EXT-004) — and every revision answers in that type's schema. The columns TASK-066 adds beyond the ERD are listed in `external-participation.md` D-2 and F-8 | TASK-066 |

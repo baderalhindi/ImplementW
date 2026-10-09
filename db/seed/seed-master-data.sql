@@ -177,7 +177,16 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- information and AHDA approve. The Department Manager reviews the immutable submission and its readiness exceptions (US-CLO-DM-002
 -- to -004), so CLOSEOUT_VIEW, CLOSEOUT_REVIEW and CLOSEOUT_WAIVE go to R03 at DEPT. Approval is WF-11's APPROVAL_DECIDE. Activation is
 -- WF-10's own service by default (§13: "System/service"), so CLOSEOUT_ACTIVATE ships to no role; it and the rest wait for Appendix A
--- (closure.md F-2). The eight WF-14
+-- (closure.md F-2). The five WF-13 permissions (TASK-066) — EXTERNAL_REQUEST_VIEW, EXTERNAL_REQUEST_MANAGE,
+-- EXTERNAL_CONTRIBUTION_RESPOND, EXTERNAL_CONTRIBUTION_REVIEW, EXTERNAL_CONTRIBUTION_APPLY — follow WF-13's specification §13: the
+-- Project Manager requests, reviews when assigned and, as the source owner, applies accepted answers (US-EXT-PM-001, -012 to -017), at
+-- OWN; the Department Manager requests and reviews when assigned (US-EXT-DM-003, -006, -009), at DEPT; the external entity user sees
+-- its own entity's requests at ENTITY — the per-project assignment narrows it to that project — and answers only the requests it is
+-- named on, at ASSIGNED (EXT-CC-03, EXT-CC-04). The application refuses requesting, reviewing and applying to an external user whatever
+-- they hold: "AHDA issues update requests" and reviews them (TASK-066 gate decision; ADR-013). The same gate decision limits an
+-- external contributor's direct source action to assigned tasks (WF-13 Path A): TASK_VIEW and TASK_UPDATE go to R08 at ASSIGNED, which
+-- reaches the WF-04 tasks the holder owns and nothing else. The rest, with R05's liaison grants, wait for Appendix A
+-- (external-participation.md F-2). The eight WF-14
 -- permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
 -- FINANCIAL_REVIEW, FINANCIAL_SOURCE_MANAGE, KPI_VIEW, KPI_MANAGE, KPI_RECORD, KPI_REVIEW — ship with FINANCIAL_VIEW and KPI_VIEW
 -- to R04 and R08 at ENTITY: ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI status for its own
@@ -252,6 +261,11 @@ FROM (VALUES
     ('CLOSEOUT_REVIEW',             'مراجعة طلبات الإنجاز والإغلاق', 'Review completion and closure cases', 'CLOSEOUT', false),
     ('CLOSEOUT_WAIVE',              'قبول استثناءات الجاهزية والالتزامات', 'Waive readiness criteria and obligations', 'CLOSEOUT', false),
     ('CLOSEOUT_ACTIVATE',           'تفعيل الإنجاز والإغلاق المعتمد', 'Activate approved completions and closures', 'CLOSEOUT', false),
+    ('EXTERNAL_REQUEST_VIEW',       'عرض طلبات تحديث الجهات الخارجية', 'View external update requests', 'EXTERNAL_PARTICIPATION', false),
+    ('EXTERNAL_REQUEST_MANAGE',     'إدارة طلبات تحديث الجهات الخارجية', 'Manage external update requests', 'EXTERNAL_PARTICIPATION', false),
+    ('EXTERNAL_CONTRIBUTION_RESPOND', 'الرد على طلبات التحديث', 'Respond to external update requests', 'EXTERNAL_PARTICIPATION', false),
+    ('EXTERNAL_CONTRIBUTION_REVIEW', 'مراجعة مساهمات الجهات الخارجية', 'Review external contributions', 'EXTERNAL_PARTICIPATION', false),
+    ('EXTERNAL_CONTRIBUTION_APPLY', 'تطبيق المساهمات المقبولة', 'Apply accepted contributions', 'EXTERNAL_PARTICIPATION', false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
     ('FINANCIAL_SUBMIT',            'تقديم البيانات المالية', 'Submit financial figures',  'FINANCIAL',       false),
     ('FINANCIAL_REVIEW',            'مراجعة البيانات المالية', 'Review financial figures', 'FINANCIAL',       false),
@@ -335,6 +349,17 @@ FROM (VALUES
     ('R03', 'CLOSEOUT_VIEW',               'DEPT'),
     ('R03', 'CLOSEOUT_REVIEW',             'DEPT'),
     ('R03', 'CLOSEOUT_WAIVE',              'DEPT'),
+    ('R08', 'TASK_VIEW',                   'ASSIGNED'),
+    ('R08', 'TASK_UPDATE',                 'ASSIGNED'),
+    ('R04', 'EXTERNAL_REQUEST_VIEW',       'OWN'),
+    ('R04', 'EXTERNAL_REQUEST_MANAGE',     'OWN'),
+    ('R04', 'EXTERNAL_CONTRIBUTION_REVIEW', 'OWN'),
+    ('R04', 'EXTERNAL_CONTRIBUTION_APPLY', 'OWN'),
+    ('R03', 'EXTERNAL_REQUEST_VIEW',       'DEPT'),
+    ('R03', 'EXTERNAL_REQUEST_MANAGE',     'DEPT'),
+    ('R03', 'EXTERNAL_CONTRIBUTION_REVIEW', 'DEPT'),
+    ('R08', 'EXTERNAL_REQUEST_VIEW',       'ENTITY'),
+    ('R08', 'EXTERNAL_CONTRIBUTION_RESPOND', 'ASSIGNED'),
     ('R04', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R08', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R04', 'KPI_VIEW',                    'ENTITY'),
@@ -373,7 +398,6 @@ FROM (VALUES
     ('CONCERN_CATEGORY',       'فئة المشكلة أو التحدي',   'Issue and challenge category'),
     ('CONCERN_SEVERITY',       'خطورة المشكلة أو التحدي', 'Issue and challenge severity'),
     ('CONTRIBUTION_TYPE',      'نوع المساهمة',            'Contribution type'),
-    ('UPDATE_REQUEST_TYPE',    'نوع طلب التحديث',         'Update request type'),
     ('ETIMAD_COST_CATEGORY',   'فئة التكلفة في اعتماد',   'Etimad cost category'),
     ('KPI_UNIT',               'وحدة قياس المؤشر',        'KPI unit'),
     ('MEASUREMENT_FREQUENCY',  'دورية القياس',            'Measurement frequency')

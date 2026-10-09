@@ -1,5 +1,6 @@
 using PMPlatform.Application.Features.Progress;
 using PMPlatform.Application.Features.Project.Contracts;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.Project;
 
 namespace PMPlatform.Tests.Unit.Application.Progress;
@@ -43,5 +44,5 @@ public sealed class ReportingCalendarTests
     }
 
     private static ProjectFacts Project(DateTimeOffset? activatedAt, DateOnly? intake) =>
-        new(Guid.NewGuid(), "PRJ-000001", Guid.NewGuid(), null, Guid.NewGuid(), ProjectLifecycleState.Active, Guid.NewGuid(), intake, activatedAt);
+        new(Guid.NewGuid(), "PRJ-000001", Guid.NewGuid(), null, Guid.NewGuid(), ProjectLifecycleState.Active, Guid.NewGuid(), intake, activatedAt, ParticipationMode.AhdaManaged);
 }
