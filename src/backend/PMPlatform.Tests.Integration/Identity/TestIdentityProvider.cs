@@ -18,7 +18,9 @@ namespace PMPlatform.Tests.Integration.Identity;
 /// An OpenID Connect identity provider hosted in the test process on a loopback port: discovery, keys, an authorization
 /// endpoint that authenticates <see cref="NextSubject"/> without a login page, and a token endpoint that checks the
 /// client secret, the redirect URI, the single use of the code and the PKCE verifier before issuing an RS256 ID token.
-/// It stands in for AHDA's identity provider; the API talks to it over HTTP exactly as it would to the real one.
+/// It stands in for AHDA's identity provider, and with its own client registration for Nafath (<see cref="TestNafath"/>,
+/// TASK-068); the API talks to it over HTTP exactly as it would to the real one. It counts the requests it is sent, and
+/// <see cref="Unavailable"/> turns it into an outage.
 /// </summary>
 public sealed class TestIdentityProvider : IAsyncDisposable
 {
@@ -37,10 +39,17 @@ public sealed class TestIdentityProvider : IAsyncDisposable
     private readonly WebApplication _app;
     private readonly RsaSecurityKey _signingKey = new(RSA.Create(2048)) { KeyId = "test-key-1" };
     private readonly ConcurrentDictionary<string, PendingCode> _codes = new();
+    private readonly string _clientId;
+    private readonly string _clientSecret;
+    private readonly string _callbackUrl;
+    private int _requestCount;
 
-    private TestIdentityProvider(WebApplication app)
+    private TestIdentityProvider(WebApplication app, string clientId, string clientSecret, string callbackUrl)
     {
         _app = app;
+        _clientId = clientId;
+        _clientSecret = clientSecret;
+        _callbackUrl = callbackUrl;
     }
 
     public Uri Authority { get; private set; } = null!;
@@ -57,14 +66,36 @@ public sealed class TestIdentityProvider : IAsyncDisposable
     /// <summary>When set, ID tokens carry this <c>auth_time</c>.</summary>
     public DateTimeOffset? AuthenticatedAt { get; set; }
 
-    public static async Task<TestIdentityProvider> StartAsync()
+    /// <summary>Further claims every ID token carries, as an identity provider that says more than it was asked would.</summary>
+    public IReadOnlyDictionary<string, object> ExtraClaims { get; set; } = new Dictionary<string, object>();
+
+    /// <summary>While true, every endpoint answers 503: the provider is down.</summary>
+    public bool Unavailable { get; set; }
+
+    /// <summary>How many requests the provider has been sent, from the API or from a browser.</summary>
+    public int RequestCount => Volatile.Read(ref _requestCount);
+
+    public static Task<TestIdentityProvider> StartAsync() => StartAsync(ClientId, ClientSecret, CallbackUrl);
+
+    public static async Task<TestIdentityProvider> StartAsync(string clientId, string clientSecret, string callbackUrl)
     {
         WebApplicationBuilder builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Logging.ClearProviders();
         WebApplication app = builder.Build();
 
-        TestIdentityProvider provider = new(app);
+        TestIdentityProvider provider = new(app, clientId, clientSecret, callbackUrl);
+        app.Use(async (context, next) =>
+        {
+            Interlocked.Increment(ref provider._requestCount);
+            if (provider.Unavailable)
+            {
+                context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                return;
+            }
+
+            await next(context);
+        });
         app.MapGet("/.well-known/openid-configuration", provider.Discovery);
         app.MapGet("/jwks", provider.Keys);
         app.MapGet("/authorize", provider.Authorize);
@@ -114,7 +145,7 @@ public sealed class TestIdentityProvider : IAsyncDisposable
     private IResult Authorize(HttpRequest request)
     {
         string? redirectUri = request.Query["redirect_uri"];
-        if (request.Query["client_id"] != ClientId || redirectUri != CallbackUrl || request.Query["response_type"] != "code"
+        if (request.Query["client_id"] != _clientId || redirectUri != _callbackUrl || request.Query["response_type"] != "code"
             || request.Query["code_challenge_method"] != "S256")
         {
             return Results.BadRequest();
@@ -127,7 +158,7 @@ public sealed class TestIdentityProvider : IAsyncDisposable
 
     private async Task<IResult> TokenAsync(HttpRequest request)
     {
-        string expected = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{ClientId}:{ClientSecret}"));
+        string expected = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_clientId}:{_clientSecret}"));
         if (request.Headers.Authorization != $"Basic {expected}")
         {
             return Results.Json(new { error = "invalid_client" }, statusCode: StatusCodes.Status401Unauthorized);
@@ -152,7 +183,7 @@ public sealed class TestIdentityProvider : IAsyncDisposable
         return new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
         {
             Issuer = Issuer,
-            Audience = ClientId,
+            Audience = _clientId,
             IssuedAt = now,
             NotBefore = now,
             Expires = now.AddMinutes(5),
@@ -163,7 +194,7 @@ public sealed class TestIdentityProvider : IAsyncDisposable
 
     private Dictionary<string, object> IdTokenClaims(PendingCode pending)
     {
-        Dictionary<string, object> claims = new() { ["sub"] = pending.Subject, ["nonce"] = NonceOverride ?? pending.Nonce };
+        Dictionary<string, object> claims = new(ExtraClaims) { ["sub"] = pending.Subject, ["nonce"] = NonceOverride ?? pending.Nonce };
         if (AuthenticationMethods is { } methods)
         {
             claims["amr"] = methods;

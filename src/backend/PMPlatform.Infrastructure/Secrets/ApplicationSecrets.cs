@@ -47,6 +47,12 @@ public static class ApplicationSecrets
     /// <summary>TASK-039: that service account's password.</summary>
     public const string ExchangeSmtpPassword = "EXCHANGE_SMTP_PASSWORD";
 
+    /// <summary>TASK-068: the platform's client id at Nafath. An identifier, but classified Secret by the sheet, so stored as one.</summary>
+    public const string NafathClientId = "NAFATH_CLIENT_ID";
+
+    /// <summary>TASK-068: the platform's client secret at Nafath.</summary>
+    public const string NafathClientSecret = "NAFATH_CLIENT_SECRET";
+
     /// <summary>The configuration keys loaded from the secret store and required at start-up, in the order they are read.</summary>
     public static readonly IReadOnlyList<string> Keys = [DatabaseConnectionString, JwtSigningKey];
 
@@ -59,10 +65,12 @@ public static class ApplicationSecrets
     /// The SIEM token is scoped to SIT/UAT/PROD; without it, audit events are stored and wait to be forwarded. Without the
     /// document store, uploads and downloads answer 503 and the API still starts. The Exchange relay's account is scoped to
     /// SIT/UAT/PROD; without it, a relay that needs no authentication is used as it is, and without a relay no e-mail is sent.
+    /// The Nafath client is scoped to SIT/UAT/PROD; without it, an external user who must be verified is told verification
+    /// is unavailable and gets no session, never one without the verification (TASK-068).
     /// </summary>
     public static readonly IReadOnlyList<string> OptionalKeys =
     [
         DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey, SiemApiToken, DocumentStorageConnectionString,
-        ExchangeSmtpUser, ExchangeSmtpPassword,
+        ExchangeSmtpUser, ExchangeSmtpPassword, NafathClientId, NafathClientSecret,
     ];
 }

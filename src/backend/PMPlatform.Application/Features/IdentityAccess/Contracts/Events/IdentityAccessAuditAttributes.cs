@@ -27,4 +27,7 @@ public static class IdentityAccessAuditAttributes
     public const string EndsAt = "ends_at";
     public const string EndReason = "end_reason";
     public const string Status = "status";
+
+    /// <summary>TASK-068: the platform's reference of a Nafath verification, the one thing kept of it (OQ-007).</summary>
+    public const string VerificationReference = "verification_reference";
 }

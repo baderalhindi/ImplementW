@@ -23,4 +23,13 @@ internal static class ErrorCodes
     /// <summary>422: required configuration is absent or ambiguous; the operation fails closed (TASK-034, Blueprint Section 12).</summary>
     public const string ConfigurationMissing = "CONFIGURATION_MISSING";
     public const string InternalError = "INTERNAL_ERROR";
+
+    /// <summary>422: Nafath answered and did not verify the person; they may start the verification again (TASK-068).</summary>
+    public const string IdentityVerificationFailed = "IDENTITY_VERIFICATION_FAILED";
+
+    /// <summary>
+    /// 503 with <c>Retry-After</c>: Nafath cannot be reached, refuses the platform's client, or is not configured. Nothing is
+    /// granted and nothing is held against the person; the same verification token retries (TASK-068).
+    /// </summary>
+    public const string IdentityVerificationUnavailable = "IDENTITY_VERIFICATION_UNAVAILABLE";
 }

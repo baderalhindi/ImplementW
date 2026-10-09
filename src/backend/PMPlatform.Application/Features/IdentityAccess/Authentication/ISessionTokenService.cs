@@ -16,4 +16,10 @@ public interface ISessionTokenService
 
     /// <summary>The sign-in an MFA token belongs to, or null if the token is not a valid, unexpired MFA token.</summary>
     public Task<PendingSignIn?> ReadMultiFactorTokenAsync(string mfaToken);
+
+    /// <summary>A short-lived token that proves every factor passed and admits the person to the Nafath identity verification only (TASK-068).</summary>
+    public IdentityVerificationPending IssueIdentityVerificationToken(PendingIdentityVerification pending);
+
+    /// <summary>The sign-in a verification token belongs to, or null if the token is not a valid, unexpired verification token.</summary>
+    public Task<PendingIdentityVerification?> ReadIdentityVerificationTokenAsync(string verificationToken);
 }

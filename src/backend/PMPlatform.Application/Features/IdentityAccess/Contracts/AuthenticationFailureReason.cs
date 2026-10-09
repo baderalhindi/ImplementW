@@ -15,7 +15,7 @@ public enum AuthenticationFailureReason
     /// <summary>The user is disabled, or their external entity is not active.</summary>
     AccountInactive = 3,
 
-    /// <summary>The MFA, refresh or access token is malformed, forged, expired or used after its session ended.</summary>
+    /// <summary>The MFA, identity verification, refresh or access token is malformed, forged, expired or used after its session ended.</summary>
     TokenInvalid = 4,
 
     /// <summary>The access token is outside its lifetime: expired, or (with a clock out of step) not yet valid.</summary>
@@ -30,9 +30,21 @@ public enum AuthenticationFailureReason
     /// <summary>The user requires MFA, has no factor, and enrolment at sign-in is not allowed.</summary>
     EnrolmentNotAllowed = 8,
 
-    /// <summary>The directory, identity provider or MFA provider could not be reached.</summary>
+    /// <summary>The directory, identity provider, MFA provider or identity verification provider could not be reached.</summary>
     ProviderUnavailable = 9,
 
-    /// <summary>The sign-in method or MFA provider is not configured in this environment.</summary>
+    /// <summary>The sign-in method, MFA provider or identity verification provider is not configured in this environment.</summary>
     NotConfigured = 10,
+
+    /// <summary>The user must have their identity verified by Nafath and the session never had it (TASK-068).</summary>
+    IdentityVerificationMissing = 11,
+
+    /// <summary>Nafath did not verify the person: see <see cref="AuthenticationFailure.IdentityNotVerified"/>.</summary>
+    IdentityNotVerified = 12,
+
+    /// <summary>
+    /// A verification token for a user who needs no verification: internal, already verified, or the feature turned off
+    /// since the token was issued. Nafath is not called (TASK-068).
+    /// </summary>
+    IdentityVerificationNotRequired = 13,
 }

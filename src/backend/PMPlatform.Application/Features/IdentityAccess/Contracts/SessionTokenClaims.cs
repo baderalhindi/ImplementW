@@ -15,6 +15,9 @@ public static class SessionTokenClaims
     /// <summary>The MFA token between the first and the second factor (TASK-029). It grants nothing but the second factor.</summary>
     public const string MultiFactorAudience = "pmplatform-session-mfa";
 
+    /// <summary>The identity verification token between the last factor and Nafath (TASK-068). It grants nothing but the verification.</summary>
+    public const string IdentityVerificationAudience = "pmplatform-session-identity-verification";
+
     public const string Subject = "sub";
     public const string SessionId = "sid";
     public const string UserType = "user_type";

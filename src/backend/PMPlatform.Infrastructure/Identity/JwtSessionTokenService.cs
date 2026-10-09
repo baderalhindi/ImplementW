@@ -13,7 +13,8 @@ namespace PMPlatform.Infrastructure.Identity;
 /// Signs the platform's access and refresh tokens with <c>JWT_SIGNING_KEY</c> (HS256). Both are stateless: the ERD holds
 /// no session table ("session state is held by the identity provider", erd.md), so a refresh re-reads the user and
 /// their assignments instead, and a refresh never outlives the session's absolute expiry. The MFA token (TASK-029) is a
-/// third audience: it admits its holder to the second factor and is refused everywhere else.
+/// third audience: it admits its holder to the second factor and is refused everywhere else. The identity verification
+/// token (TASK-068) is a fourth: it admits its holder to Nafath's verification only.
 /// </summary>
 internal sealed class JwtSessionTokenService(IConfiguration configuration, IOptions<SessionTokenOptions> options, TimeProvider timeProvider) : ISessionTokenService
 {
@@ -100,6 +101,37 @@ internal sealed class JwtSessionTokenService(IConfiguration configuration, IOpti
                && Guid.TryParse(identity.FindFirst(SessionTokenClaims.Subject)?.Value, out Guid userId)
                && SessionTokenClaims.ParseMethod(identity.FindFirst(SessionTokenClaims.AuthenticationMethod)?.Value) is { } method
             ? new PendingSignIn(userId, method)
+            : null;
+    }
+
+    public IdentityVerificationPending IssueIdentityVerificationToken(PendingIdentityVerification pending)
+    {
+        ArgumentNullException.ThrowIfNull(pending);
+
+        DateTimeOffset now = DateTimeOffset.FromUnixTimeSeconds(timeProvider.GetUtcNow().ToUnixTimeSeconds());
+        DateTimeOffset expiresAt = now + options.Value.IdentityVerificationTokenLifetime;
+
+        // The authentication context rides along, so the session issued after the verification says how and when the
+        // person authenticated, and whether they passed MFA, exactly as it would have without the verification.
+        Dictionary<string, object> claims = new(StringComparer.Ordinal)
+        {
+            [SessionTokenClaims.Subject] = pending.UserId.ToString(),
+            [SessionTokenClaims.AuthenticationMethod] = SessionTokenClaims.MethodValues(pending.Authentication),
+            [SessionTokenClaims.AuthenticatedAt] = pending.Authentication.AuthenticatedAt.ToUnixTimeSeconds(),
+        };
+
+        return new IdentityVerificationPending(Create(SessionTokenClaims.IdentityVerificationAudience, claims, now, expiresAt, Credentials()), expiresAt);
+    }
+
+    public async Task<PendingIdentityVerification?> ReadIdentityVerificationTokenAsync(string verificationToken)
+    {
+        ClaimsIdentity? identity = await ValidateAsync(verificationToken, SessionTokenClaims.IdentityVerificationAudience).ConfigureAwait(false);
+        return identity is not null
+               && Guid.TryParse(identity.FindFirst(SessionTokenClaims.Subject)?.Value, out Guid userId)
+               && SessionTokenClaims.ReadAuthentication(
+                   identity.FindAll(SessionTokenClaims.AuthenticationMethod).Select(c => c.Value),
+                   identity.FindFirst(SessionTokenClaims.AuthenticatedAt)?.Value) is { } authentication
+            ? new PendingIdentityVerification(userId, authentication)
             : null;
     }
 

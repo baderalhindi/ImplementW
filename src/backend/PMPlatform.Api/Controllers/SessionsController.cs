@@ -11,15 +11,18 @@ using PMPlatform.Domain.IdentityAccess;
 namespace PMPlatform.Api.Controllers;
 
 /// <summary>
-/// Sign-in, SSO and session refresh (TASK-028); the second factor and step-up (TASK-029). Every failed sign-in, second
-/// factor, refresh or step-up answers the same 401 <c>AUTHENTICATION_REQUIRED</c>, whatever the cause; only a
-/// platform-side failure (directory, identity provider or MFA provider unreachable, method not configured) is a 503.
-/// A sign-in by a person who requires MFA answers 200 with an MFA token instead of 201 with a session.
+/// Sign-in, SSO and session refresh (TASK-028); the second factor and step-up (TASK-029); Nafath identity verification
+/// (TASK-068). Every failed sign-in, second factor, refresh or step-up answers the same 401 <c>AUTHENTICATION_REQUIRED</c>,
+/// whatever the cause; only a platform-side failure (directory, identity provider or MFA provider unreachable, method not
+/// configured) is a 503. A sign-in by a person who requires MFA answers 200 with an MFA token instead of 201 with a
+/// session; one by an external user Nafath has not verified answers 200 with an identity verification token. A
+/// verification Nafath declined is a 422, and one Nafath could not complete a 503 with <c>Retry-After</c>: never a
+/// session, and never a refusal that blames the person.
 /// </summary>
 [ApiController]
 [Route("api/v1/sessions")]
 [Tags("IdentityAccess")]
-public sealed class SessionsController(IAuthenticationService authentication) : ControllerBase
+public sealed class SessionsController(IAuthenticationService authentication, IdentityVerificationPolicy identityVerificationPolicy) : ControllerBase
 {
     private const string CurrentSessionPath = "/api/v1/sessions/current";
 
@@ -97,6 +100,51 @@ public sealed class SessionsController(IAuthenticationService authentication) : 
         }
 
         AuthenticationResult result = await authentication.CompleteMultiFactorSignInAsync(request.MfaToken!, request.ChallengeId!, request.Code!, cancellationToken);
+        return SessionResponse(result, StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    /// Starts the Nafath identity verification a sign-in is waiting on (TASK-068). Anonymous: the identity verification
+    /// token is the credential. Nothing is stored server-side; the transaction travels with the client.
+    /// </summary>
+    [HttpPost("identity-verification-authorization")]
+    [AllowAnonymous]
+    [EndpointName("IdentityAccess_CreateIdentityVerificationAuthorization")]
+    public async Task<IActionResult> CreateIdentityVerificationAuthorization(IdentityVerificationAuthorizationCreateRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Validate() is { Count: > 0 } errors)
+        {
+            return ValidationFailed(errors);
+        }
+
+        IdentityVerificationAuthorization result = await authentication.BeginIdentityVerificationAsync(request.IdentityVerificationToken!, cancellationToken);
+        NoStore();
+        return result is { AuthorizationUrl: { } url, Transaction: { } transaction }
+            ? Ok(new IdentityVerificationAuthorizationDetail(url, transaction))
+            : IdentityVerificationFailure(result.Failure);
+    }
+
+    /// <summary>Completes the Nafath identity verification with the code Nafath redirected back with. The session is issued only here, once Nafath has verified the person.</summary>
+    [HttpPost("identity-verification")]
+    [AllowAnonymous]
+    [EndpointName("IdentityAccess_CreateIdentityVerificationSession")]
+    public async Task<IActionResult> CreateIdentityVerificationSession(IdentityVerificationSessionCreateRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Validate() is { Count: > 0 } errors)
+        {
+            return ValidationFailed(errors);
+        }
+
+        AuthenticationResult result = await authentication.CompleteIdentityVerificationAsync(
+            request.IdentityVerificationToken!, request.Code!, request.State!, request.Transaction!, cancellationToken);
+        if (result.Session is null)
+        {
+            NoStore();
+            return IdentityVerificationFailure(result.Failure);
+        }
+
         return SessionResponse(result, StatusCodes.Status201Created);
     }
 
@@ -181,6 +229,11 @@ public sealed class SessionsController(IAuthenticationService authentication) : 
             return Ok(new MfaPendingDetail(pending.MfaToken, pending.MfaTokenExpiresAt, pending.EnrolmentRequired));
         }
 
+        if (result.IdentityVerificationPending is { } verification)
+        {
+            return Ok(new IdentityVerificationPendingDetail(verification.VerificationToken, verification.ExpiresAt));
+        }
+
         if (result.Session is null)
         {
             return Failure(result.Failure);
@@ -202,6 +255,28 @@ public sealed class SessionsController(IAuthenticationService authentication) : 
         failure == AuthenticationFailure.Rejected
             ? ApiProblem.Result(HttpContext, StatusCodes.Status401Unauthorized, ErrorCodes.AuthenticationRequired, "Authentication required.")
             : Unavailable();
+
+    /// <summary>
+    /// The verification's own outcomes: the person's verification token not accepted (401, sign in again), Nafath declining
+    /// to verify (422, start the verification again), Nafath out of reach (503 with <c>Retry-After</c>, same token).
+    /// </summary>
+    private ObjectResult IdentityVerificationFailure(AuthenticationFailure? failure)
+    {
+        if (failure == AuthenticationFailure.IdentityNotVerified)
+        {
+            return ApiProblem.Result(
+                HttpContext, StatusCodes.Status422UnprocessableEntity, ErrorCodes.IdentityVerificationFailed, "Nafath did not verify the identity.");
+        }
+
+        if (failure is AuthenticationFailure.ProviderUnavailable or AuthenticationFailure.NotConfigured)
+        {
+            Response.Headers.RetryAfter = ((int)Math.Ceiling(identityVerificationPolicy.RetryAfter.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
+            return ApiProblem.Result(
+                HttpContext, StatusCodes.Status503ServiceUnavailable, ErrorCodes.IdentityVerificationUnavailable, "Identity verification is unavailable; retry.");
+        }
+
+        return Failure(failure);
+    }
 
     private ObjectResult Unavailable() =>
         ApiProblem.Result(HttpContext, StatusCodes.Status503ServiceUnavailable, ErrorCodes.Unavailable, "Sign-in is unavailable.");

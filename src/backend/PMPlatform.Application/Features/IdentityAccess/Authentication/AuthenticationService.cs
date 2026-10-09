@@ -15,14 +15,19 @@ namespace PMPlatform.Application.Features.IdentityAccess.Authentication;
 /// person who requires MFA passes <see cref="VerifySecondFactorAsync"/> first, or carries a verified factor forward.
 /// TASK-033. Every attempt ends in <see cref="SucceedAsync"/> or <see cref="FailAsync"/>, which record its audit event
 /// (CTL-25) before the caller is answered; the event says why an attempt failed, the caller never learns it.
+/// TASK-068. The last gate before a new session is <see cref="AdmitAsync"/>: an external user whose identity Nafath has
+/// not verified gets a verification token instead (ADR-007, ADR-013). Nafath is called only from
+/// <see cref="BeginIdentityVerificationAsync"/> and <see cref="CompleteIdentityVerificationAsync"/>, for such a user.
 /// </summary>
 internal sealed partial class AuthenticationService(
     IDirectoryService directory,
     ISingleSignOnProvider singleSignOn,
     IMultiFactorProvider multiFactor,
+    IIdentityVerificationProvider identityVerification,
     IUserAccessRepository users,
     ISessionTokenService tokens,
     MultiFactorPolicy multiFactorPolicy,
+    IdentityVerificationPolicy identityVerificationPolicy,
     IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<AuthenticationService> logger) : IAuthenticationService
@@ -95,6 +100,13 @@ internal sealed partial class AuthenticationService(
             return await FailAsync(attempt, AuthenticationFailureReason.MultiFactorMissing, access.UserId).ConfigureAwait(false);
         }
 
+        // Nor does a session that began before the verification applied to this user: they sign in again and are verified.
+        if (RequiresIdentityVerification(access))
+        {
+            LogRefreshWithoutIdentityVerification(logger, access.UserId);
+            return await FailAsync(attempt, AuthenticationFailureReason.IdentityVerificationMissing, access.UserId).ConfigureAwait(false);
+        }
+
         return await SucceedAsync(attempt, access, continuation.Authentication, continuation).ConfigureAwait(false);
     }
 
@@ -120,7 +132,7 @@ internal sealed partial class AuthenticationService(
                 UserAccess? access = await users.FindByIdAsync(pending.UserId, cancellationToken).ConfigureAwait(false);
                 return await VerifySecondFactorAsync(access, challengeId, code, cancellationToken).ConfigureAwait(false) is { } reason
                     ? await FailAsync(attempt, reason, pending.UserId).ConfigureAwait(false)
-                    : await SucceedAsync(attempt, access!, new SessionAuthentication(pending.Method, MultiFactor: true, Now()), continuation: null).ConfigureAwait(false);
+                    : await AdmitAsync(attempt, access!, new SessionAuthentication(pending.Method, MultiFactor: true, Now())).ConfigureAwait(false);
             },
             cancellationToken);
 
@@ -144,13 +156,63 @@ internal sealed partial class AuthenticationService(
 
                 Attempt attempt = Attempt.StepUp(continuation.Authentication.Method);
                 UserAccess? access = await users.FindByIdAsync(continuation.UserId, cancellationToken).ConfigureAwait(false);
-                return await VerifySecondFactorAsync(access, challengeId, code, cancellationToken).ConfigureAwait(false) is { } reason
+                // As the refresh: a session that skipped a verification that now applies is not continued.
+                AuthenticationFailureReason? refusal = access is not null && RequiresIdentityVerification(access)
+                    ? AuthenticationFailureReason.IdentityVerificationMissing
+                    : await VerifySecondFactorAsync(access, challengeId, code, cancellationToken).ConfigureAwait(false);
+                return refusal is { } reason
                     ? await FailAsync(attempt, reason, continuation.UserId).ConfigureAwait(false)
                     : await SucceedAsync(
                             attempt, access!, new SessionAuthentication(continuation.Authentication.Method, MultiFactor: true, Now()), continuation)
                         .ConfigureAwait(false);
             },
             cancellationToken);
+
+    public async Task<IdentityVerificationAuthorization> BeginIdentityVerificationAsync(string verificationToken, CancellationToken cancellationToken)
+    {
+        PendingIdentityVerification? pending = await tokens.ReadIdentityVerificationTokenAsync(verificationToken).ConfigureAwait(false);
+        Attempt attempt = Attempt.IdentityVerification(pending?.Authentication.Method);
+        (UserAccess? access, AuthenticationFailureReason? refusal) = await VerificationCandidateAsync(pending, cancellationToken).ConfigureAwait(false);
+        if (refusal is { } reason)
+        {
+            await audit.RecordAsync(FailureEntry(attempt, reason, pending?.UserId)).ConfigureAwait(false);
+            return IdentityVerificationAuthorization.Failed(FailureOf(reason));
+        }
+
+        IdentityVerificationAuthorization started = await identityVerification.BeginAsync(access!.UserId, cancellationToken).ConfigureAwait(false);
+        if (started.Failure is { } failure)
+        {
+            await audit.RecordAsync(FailureEntry(attempt, ReasonOf(failure, AuthenticationFailureReason.IdentityNotVerified), access.UserId)).ConfigureAwait(false);
+            return IdentityVerificationAuthorization.Failed(failure);
+        }
+
+        return started;
+    }
+
+    public async Task<AuthenticationResult> CompleteIdentityVerificationAsync(
+        string verificationToken, string code, string state, string transaction, CancellationToken cancellationToken)
+    {
+        PendingIdentityVerification? pending = await tokens.ReadIdentityVerificationTokenAsync(verificationToken).ConfigureAwait(false);
+        Attempt attempt = Attempt.IdentityVerification(pending?.Authentication.Method);
+        (UserAccess? access, AuthenticationFailureReason? refusal) = await VerificationCandidateAsync(pending, cancellationToken).ConfigureAwait(false);
+        if (refusal is { } reason)
+        {
+            return await FailAsync(attempt, reason, pending?.UserId).ConfigureAwait(false);
+        }
+
+        IdentityVerificationResult result = await identityVerification.CompleteAsync(access!.UserId, code, state, transaction, cancellationToken).ConfigureAwait(false);
+        if (result.Reference is not { } reference)
+        {
+            LogIdentityNotVerified(logger, access.UserId, result.Failure);
+            return await FailAsync(attempt, ReasonOf(result.Failure, AuthenticationFailureReason.IdentityNotVerified), access.UserId).ConfigureAwait(false);
+        }
+
+        // Staged, so the verification and its audit event are committed together. The reference is all that is kept (OQ-007).
+        AuditEntry verified = Entry(attempt, IdentityAccessAuditEvents.IdentityVerified, AuditOutcome.Success, access.UserId, access.UserId);
+        audit.Stage(verified with { Attributes = [.. verified.Attributes, AuditAttribute.Of(IdentityAccessAuditAttributes.VerificationReference, reference)] });
+        await users.RecordIdentityVerificationAsync(access.UserId, reference, cancellationToken).ConfigureAwait(false);
+        return await SucceedAsync(Attempt.SignIn(pending!.Authentication.Method), access, pending.Authentication, continuation: null).ConfigureAwait(false);
+    }
 
     private async Task<AuthenticationResult> AuthenticateWithDirectoryAsync(Attempt attempt, string username, string password, CancellationToken cancellationToken)
     {
@@ -185,12 +247,12 @@ internal sealed partial class AuthenticationService(
 
         if (verifiedByIdentityProvider is not null)
         {
-            return await SucceedAsync(attempt, access, verifiedByIdentityProvider, continuation: null).ConfigureAwait(false);
+            return await AdmitAsync(attempt, access, verifiedByIdentityProvider).ConfigureAwait(false);
         }
 
         if (!RequiresMultiFactor(access))
         {
-            return await SucceedAsync(attempt, access, new SessionAuthentication(method, MultiFactor: false, Now()), continuation: null).ConfigureAwait(false);
+            return await AdmitAsync(attempt, access, new SessionAuthentication(method, MultiFactor: false, Now())).ConfigureAwait(false);
         }
 
         // CTL-07: no session yet. The MFA token admits the person to the second factor and to nothing else.
@@ -212,6 +274,51 @@ internal sealed partial class AuthenticationService(
         return AuthenticationResult.MultiFactorRequired(
             tokens.IssueMultiFactorToken(new PendingSignIn(access.UserId, method), enrolmentRequired: !access.MultiFactorEnrolled));
     }
+
+    /// <summary>
+    /// The last gate before a new session. An external user whose identity Nafath has not verified gets a verification
+    /// token instead, which admits them to the verification and to nothing else (TASK-068); everyone else gets the session.
+    /// </summary>
+    private async Task<AuthenticationResult> AdmitAsync(Attempt attempt, UserAccess access, SessionAuthentication authentication)
+    {
+        if (!RequiresIdentityVerification(access))
+        {
+            return await SucceedAsync(attempt, access, authentication, continuation: null).ConfigureAwait(false);
+        }
+
+        await audit.RecordAsync(Entry(attempt with { Method = authentication.Method }, IdentityAccessAuditEvents.IdentityVerificationRequired, AuditOutcome.Success,
+                access.UserId, access.UserId))
+            .ConfigureAwait(false);
+        return AuthenticationResult.IdentityVerificationRequired(tokens.IssueIdentityVerificationToken(new PendingIdentityVerification(access.UserId, authentication)));
+    }
+
+    /// <summary>
+    /// The user a verification token admits, re-read: one disabled, or whose entity was suspended, since signing in is
+    /// refused, and so is one who needs no verification — internal, verified already, or the feature since turned off.
+    /// Nafath is never called for any of them.
+    /// </summary>
+    private async Task<(UserAccess? Access, AuthenticationFailureReason? Refusal)> VerificationCandidateAsync(
+        PendingIdentityVerification? pending, CancellationToken cancellationToken)
+    {
+        if (pending is null)
+        {
+            return (null, AuthenticationFailureReason.TokenInvalid);
+        }
+
+        UserAccess? access = await users.FindByIdAsync(pending.UserId, cancellationToken).ConfigureAwait(false);
+        AuthenticationFailureReason? refusal = access is null || !access.MaySignIn ? AuthenticationFailureReason.AccountInactive
+            : !RequiresIdentityVerification(access) ? AuthenticationFailureReason.IdentityVerificationNotRequired
+            : !identityVerification.IsConfigured ? AuthenticationFailureReason.NotConfigured
+            : null;
+        if (refusal == AuthenticationFailureReason.NotConfigured)
+        {
+            LogIdentityVerificationNotConfigured(logger, pending.UserId);
+        }
+
+        return (access, refusal);
+    }
+
+    private bool RequiresIdentityVerification(UserAccess access) => identityVerificationPolicy.Requires(access.UserType, access.IdentityVerified);
 
     /// <summary>
     /// ADR-007: the directory is authoritative for department, manager and job title, so each sign-in copies them. An
@@ -401,6 +508,7 @@ internal sealed partial class AuthenticationService(
     private static AuthenticationFailure FailureOf(AuthenticationFailureReason reason) =>
         reason == AuthenticationFailureReason.ProviderUnavailable ? AuthenticationFailure.ProviderUnavailable
         : reason == AuthenticationFailureReason.NotConfigured ? AuthenticationFailure.NotConfigured
+        : reason == AuthenticationFailureReason.IdentityNotVerified ? AuthenticationFailure.IdentityNotVerified
         : AuthenticationFailure.Rejected;
 
     /// <summary>The audit reason of a provider's failure; <paramref name="whenRejected"/> when it concerned the person.</summary>
@@ -452,6 +560,9 @@ internal sealed partial class AuthenticationService(
 
         public static Attempt StepUp(AuthenticationMethod? method) =>
             new(IdentityAccessAuditEvents.StepUpSucceeded, IdentityAccessAuditEvents.StepUpFailed, method);
+
+        public static Attempt IdentityVerification(AuthenticationMethod? method) =>
+            new(IdentityAccessAuditEvents.IdentityVerified, IdentityAccessAuditEvents.IdentityVerificationFailed, method);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Sign-in by {Method} rejected: the directory subject has no platform user who may sign in (user {UserId}).")]
@@ -474,4 +585,13 @@ internal sealed partial class AuthenticationService(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Second factor ({Purpose}) rejected for user {UserId}.")]
     private static partial void LogSecondFactorRejected(ILogger logger, Guid userId, MultiFactorPurpose purpose);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Session refresh rejected for user {UserId}: the user's identity must be verified by Nafath and the session never was.")]
+    private static partial void LogRefreshWithoutIdentityVerification(ILogger logger, Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "User {UserId} must have their identity verified by Nafath and Nafath is not configured; no session is issued.")]
+    private static partial void LogIdentityVerificationNotConfigured(ILogger logger, Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Nafath did not verify user {UserId}: {Failure}. No session is issued; the verification may be retried.")]
+    private static partial void LogIdentityNotVerified(ILogger logger, Guid userId, AuthenticationFailure? failure);
 }

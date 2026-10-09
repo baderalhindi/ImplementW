@@ -17,6 +17,8 @@ internal static class SessionApi
     public const string MfaSessions = "/api/v1/sessions/mfa";
     public const string StepUpChallenge = "/api/v1/sessions/current/step-up-challenge";
     public const string StepUp = "/api/v1/sessions/current/step-up";
+    public const string IdentityVerificationAuthorization = "/api/v1/sessions/identity-verification-authorization";
+    public const string IdentityVerificationSessions = "/api/v1/sessions/identity-verification";
     public const string IdentityIntegration = "/api/v1/identity-integration";
     public const string IdentityIntegrationTest = "/api/v1/identity-integration/test";
 
@@ -136,5 +138,7 @@ internal sealed record CurrentSession(
 internal sealed record MfaPending(string MfaToken, DateTimeOffset MfaTokenExpiresAt, bool EnrolmentRequired);
 
 internal sealed record MfaChallenge(string ChallengeId, DateTimeOffset? ExpiresAt, string? ProvisioningUri);
+
+internal sealed record IdentityVerificationPending(string IdentityVerificationToken, DateTimeOffset IdentityVerificationTokenExpiresAt);
 
 internal sealed record Problem(string Type, string Title, int Status, string Instance, string Code, Guid CorrelationId, Guid? IdempotencyKey, DateTimeOffset Timestamp);

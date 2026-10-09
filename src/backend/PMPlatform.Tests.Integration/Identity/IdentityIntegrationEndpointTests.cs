@@ -65,6 +65,45 @@ public sealed class IdentityIntegrationEndpointTests(IdentityTestHost host)
         Assert.Equal("BIND_REJECTED", directory.GetProperty("failureCode").GetString());
     }
 
+    /// <summary>
+    /// TASK-068: Nafath's settings beside the others. The sheet classifies NAFATH_CLIENT_ID and NAFATH_CLIENT_SECRET as
+    /// Secret, so both are reduced to "configured"; the callback URL and the application id are Public.
+    /// </summary>
+    [Fact]
+    public async Task TheStatusShowsNafathsSettingsAndNeitherOfItsSecrets()
+    {
+        await using IdentityApiFactory api = host.CreateApi(TestNafath.Settings(host.Nafath));
+        using HttpClient client = api.CreateClient();
+
+        using HttpResponseMessage response = await client.GetWithTokenAsync(SessionApi.IdentityIntegration, await SystemAdministratorTokenAsync());
+
+        string body = await response.Content.ReadAsStringAsync();
+        using JsonDocument status = JsonDocument.Parse(body);
+        JsonElement nafath = status.RootElement.GetProperty("identityVerification");
+        Assert.True(nafath.GetProperty("isEnabled").GetBoolean());
+        Assert.True(nafath.GetProperty("isConfigured").GetBoolean());
+        Assert.True(nafath.GetProperty("clientIdConfigured").GetBoolean());
+        Assert.True(nafath.GetProperty("clientSecretConfigured").GetBoolean());
+        Assert.Equal(TestNafath.CallbackUrl, nafath.GetProperty("callbackUrl").GetString());
+        Assert.Equal(TestNafath.ApplicationId, nafath.GetProperty("applicationId").GetString());
+        Assert.Equal(["openid"], nafath.GetProperty("scopes").EnumerateArray().Select(s => s.GetString()));
+        Assert.DoesNotContain(TestNafath.ClientId, body, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestNafath.ClientSecret, body, StringComparison.Ordinal);
+    }
+
+    /// <summary>The sheet's verification for NAFATH_*, as far as an environment without Nafath can go: discovery resolves and its issuer matches.</summary>
+    [Fact]
+    public async Task TheConnectionTestReachesNafathOrSaysWhyNot()
+    {
+        string token = await SystemAdministratorTokenAsync();
+        Dictionary<string, string?> unreachable = TestNafath.Settings(host.Nafath);
+        unreachable["Identity:Nafath:Authority"] = "http://127.0.0.1:1/";
+
+        Assert.Equal(("SUCCEEDED", null), await NafathTestAsync(TestNafath.Settings(host.Nafath), token));
+        Assert.Equal(("FAILED", "UNREACHABLE"), await NafathTestAsync(unreachable, token));
+        Assert.Equal(("NOT_CONFIGURED", null), await NafathTestAsync([], token));
+    }
+
     [Fact]
     public async Task OnlyASystemAdministratorMayUseIt()
     {
@@ -79,6 +118,16 @@ public sealed class IdentityIntegrationEndpointTests(IdentityTestHost host)
         Assert.Equal("PERMISSION_DENIED", (await forbidden.ReadAsync<Problem>()).Code);
         Assert.Equal(HttpStatusCode.Forbidden, forbiddenTest.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+    }
+
+    private async Task<(string? Outcome, string? FailureCode)> NafathTestAsync(Dictionary<string, string?> settings, string token)
+    {
+        await using IdentityApiFactory api = host.CreateApi(settings);
+        using HttpClient client = api.CreateClient();
+        using HttpResponseMessage response = await client.PostWithTokenAsync(SessionApi.IdentityIntegrationTest, token);
+        using JsonDocument result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        JsonElement nafath = result.RootElement.GetProperty("identityVerification");
+        return (nafath.GetProperty("outcome").GetString(), nafath.GetProperty("failureCode").GetString());
     }
 
     /// <summary>Signed in on the shared API: every factory shares the signing key, so the token is valid on any of them.</summary>

@@ -16,6 +16,9 @@ public static class IdentityAccessAuditEvents
     public const string StepUpSucceeded = "IdentityAccess.StepUpSucceeded";
     public const string StepUpFailed = "IdentityAccess.StepUpFailed";
     public const string AccessTokenRejected = "IdentityAccess.AccessTokenRejected";
+    public const string IdentityVerificationRequired = "IdentityAccess.IdentityVerificationRequired";
+    public const string IdentityVerified = "IdentityAccess.IdentityVerified";
+    public const string IdentityVerificationFailed = "IdentityAccess.IdentityVerificationFailed";
 
     // AUTHORIZATION_DENIAL
     public const string AccessDenied = "IdentityAccess.AccessDenied";
