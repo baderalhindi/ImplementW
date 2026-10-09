@@ -98,7 +98,8 @@ public sealed class SingleActiveSuspensionTests(SuspensionTestHost host)
     /// <summary>
     /// The approved request activated by <see cref="Commands"/> commands of AHDA's officer and the rest of <see cref="Racers"/> passes of
     /// WF-09's worker, all at once. It is EFFECTED once: one RequestEffected, the project moved once; no command took effect twice or failed
-    /// as an error.
+    /// as an error. A command that loses is refused 409 or 412 while the others are still running, and 422 SUSPENSION_PROJECT_NOT_ELIGIBLE
+    /// once they have finished: activation checks the project before the request (governance-contract-tests.md F-1).
     /// </summary>
     private async Task ActivateAtOnceAsync(HttpClient client, SuspensionSessions sessions, Guid requestId)
     {
@@ -115,7 +116,7 @@ public sealed class SingleActiveSuspensionTests(SuspensionTestHost host)
         });
 
         Answer[] commands = [.. answers.OfType<Answer>()];
-        Assert.True(commands.Count(a => a.Succeeded) <= 1 && commands.All(a => a.Succeeded || a.Status is HttpStatusCode.Conflict or HttpStatusCode.PreconditionFailed),
+        Assert.True(commands.Count(a => a.Succeeded) <= 1 && commands.All(a => a.Succeeded || (int)a.Status is >= 400 and < 500),
             $"{Commands} activations sent at once answered: {string.Join(", ", commands.Select(a => a.ToString()))}");
         Assert.Equal(["EFFECTED"], await host.Database.QueryAsync($"SELECT status FROM suspension.suspension_request WHERE id = '{requestId}'"));
         Assert.Single(await host.AuditTrailAsync("Suspension", requestId), e => e.StartsWith("Suspension.RequestEffected ", StringComparison.Ordinal));
