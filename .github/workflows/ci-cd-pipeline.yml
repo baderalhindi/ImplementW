@@ -265,9 +265,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [release-metadata, quality-gates]
+    # Docker Hub images are pulled through Google's public mirror: GitHub's shared runner addresses exhaust Docker Hub's
+    # anonymous pull limit ("toomanyrequests"), which failed PR #78 three times before any test ran. Same image, same digest.
     services:
       postgres:
-        image: postgres:17
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_PASSWORD: scratch
           POSTGRES_DB: scratch
