@@ -111,14 +111,14 @@ DB_CONNECTION_STRING="Host=localhost;Port=5432;Database=postgres;Username=pmplat
 The contract tests compare the API's generated OpenAPI document with the committed snapshot `docs/api/openapi.v1.json`
 and fail on a breaking change (api-conventions R-10) or on any change the snapshot does not yet describe:
 `ProjectContractTests` (TASK-043) for the Project API, `ExecutionContractTests` (TASK-054) for the Progress, Schedule,
-ProjectTask, Milestone and FinancialKpi APIs, `RiskIssueContractTests` (TASK-059) for the Risk and ManagementConcern APIs.
-A PR that changes one of these APIs rewrites the snapshot and commits it with the change; a break is also called out in
+ProjectTask, Milestone and FinancialKpi APIs, `RiskIssueContractTests` (TASK-059) for the Risk and ManagementConcern APIs,
+`GovernanceContractTests` (TASK-065) for the ChangeRequest, Suspension and Closure APIs. A PR that changes one of these APIs rewrites the snapshot and commits it with the change; a break is also called out in
 the PR description (R-11):
 
 ```sh
 UPDATE_OPENAPI_SNAPSHOT=1 DB_CONNECTION_STRING="…" \
   dotnet test src/backend/PMPlatform.Tests.Integration \
-  --filter "FullyQualifiedName~ProjectContractTests|FullyQualifiedName~ExecutionContractTests|FullyQualifiedName~RiskIssueContractTests"
+  --filter "FullyQualifiedName~ProjectContractTests|FullyQualifiedName~ExecutionContractTests|FullyQualifiedName~RiskIssueContractTests|FullyQualifiedName~GovernanceContractTests"
 ```
 
 Frontend:
