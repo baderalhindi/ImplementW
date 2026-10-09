@@ -161,6 +161,51 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Execution
 
+  # TASK-065: the WF-06 to WF-10 integration steps and the two domain invariant suites, apart from `backend` so that each job
+  # stays inside its ten-minute budget (ci-quality-gates.md F-4: split rather than raise the cap). It builds the same commit on its own
+  # runner, in parallel with `backend`, against the same PostgreSQL service and test directory.
+  backend-risk-governance:
+    name: backend-risk-governance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: scratch
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/backend/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet restore src/backend
+
+      - name: Build
+        id: build
+        run: dotnet build src/backend --no-restore --configuration Release
+
+      - name: Start the test directory
+        run: docker compose -f infra/docker/docker-compose.yml up --detach --wait ldap
+
       # TASK-055: WF-06 Risk Management — a rating pinned to the RISK_MATRIX version in force at assessment and unchanged by a
       # re-publication, the reopen that only RISK_REOPEN allows and its audit, acceptance expiry, ADR-013's authority and ADR-015's
       # Light profile, materialisation into an issue, and the database guards. Same database and directory as above.

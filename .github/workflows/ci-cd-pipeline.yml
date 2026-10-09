@@ -88,8 +88,8 @@ jobs:
 
   # ── Stage 2: the gates ────────────────────────────────────────────────────────────────────────
   # TASK-015's gate, called rather than restated, so the pipeline cannot drift from the checks that
-  # guard the pull request. Its jobs report here as `quality-gates / backend`, `… / frontend`,
-  # `… / repo-checks` and `… / terraform`.
+  # guard the pull request. Its jobs report here as `quality-gates / backend`, `… / backend-risk-governance`,
+  # `… / frontend`, `… / repo-checks` and `… / terraform`.
   quality-gates:
     name: quality-gates
     uses: ./.github/workflows/ci-quality-gates.yml
