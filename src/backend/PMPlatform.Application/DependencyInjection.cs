@@ -28,6 +28,8 @@ using PMPlatform.Application.Features.Project.EventHandlers;
 using PMPlatform.Application.Features.ChangeRequest;
 using PMPlatform.Application.Features.ChangeRequest.Contracts;
 using PMPlatform.Application.Features.ChangeRequest.EventHandlers;
+using PMPlatform.Application.Features.ExternalParticipation;
+using PMPlatform.Application.Features.ExternalParticipation.Contracts;
 using PMPlatform.Application.Features.FinancialKpi;
 using PMPlatform.Application.Features.FinancialKpi.Contracts;
 using PMPlatform.Application.Features.FinancialKpi.EventHandlers;
@@ -189,6 +191,7 @@ public static class DependencyInjection
         services.AddScoped<ITaskExecutionService, TaskExecutionService>();
         services.AddScoped<ITaskDependencyService, TaskDependencyService>();
         services.AddScoped<IProjectTaskCloseoutReader, ProjectTaskCloseoutReader>();
+        services.AddScoped<ITaskProgressContributions, TaskProgressContributions>();
 
         // TASK-050: WF-05 achievement claims and their revisions. The repository is Infrastructure's; the milestone is WF-03's,
         // read through Schedule's reader (edge 10); acceptance comes from WF-11 through the outcome handler (edges 25, 28).
@@ -293,6 +296,20 @@ public static class DependencyInjection
         services.AddScoped<IReadinessRecordService, ReadinessRecordService>();
         services.AddScoped<ICloseoutMaintenance, CloseoutMaintenance>();
         services.AddScoped<IApprovalOutcomeHandler, CloseoutApprovalOutcomeHandler>();
+
+        // TASK-066: WF-13's external participation. Path B: AHDA's update requests to an entity, answered as immutable revisions by a named
+        // responder, decided by an assigned AHDA reviewer, and applied to their source record only through an allowlisted typed adapter —
+        // the one built applies a task's percentage through WF-04's own command (edge 19). Path A is WF-04's, through R08's ASSIGNED grants.
+        // The repository is Infrastructure's.
+        services.AddScoped<ExternalParticipationAccess>();
+        services.AddScoped<ExternalParticipationGate>();
+        services.AddScoped<ExternalParticipationReferences>();
+        services.AddScoped<ExternalParticipationViews>();
+        services.AddScoped<IExternalContributionTarget, TaskProgressTarget>();
+        services.AddScoped<ContributionTargets>();
+        services.AddScoped<IExternalUpdateRequestService, ExternalUpdateRequestService>();
+        services.AddScoped<IExternalContributionService, ExternalContributionService>();
+        services.AddScoped<ISourceApplicationService, SourceApplicationService>();
 
         return services;
     }

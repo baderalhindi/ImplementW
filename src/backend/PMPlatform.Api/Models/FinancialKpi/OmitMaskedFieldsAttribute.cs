@@ -10,7 +10,8 @@ namespace PMPlatform.Api.Models.FinancialKpi;
 /// api-conventions R-20(b) on the wire: a field withheld from this caller by ADR-010 classification is omitted from the
 /// representation, not sent as null — null means Unknown (TASK-052). The application names each such field in the object's
 /// <c>maskedFields</c>; this filter removes those properties from every object of a successful JSON response, the items of a
-/// page included, so the SPA renders <i>restricted</i> rather than <i>empty</i>.
+/// page included, so the SPA renders <i>restricted</i> rather than <i>empty</i>. WF-13 withholds its internal-only fields from an
+/// external caller the same way (TASK-066, external-participation.md D-6).
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 internal sealed class OmitMaskedFieldsAttribute : Attribute, IAsyncResultFilter

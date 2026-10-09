@@ -262,6 +262,19 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Closure.
 
+      # TASK-066: WF-13 External Entity Update & Review — the authorization boundary (an R08 user reaches nothing outside their explicit
+      # ENTITY/Project grant, by any direct call, list or filter), the review that only accepts, returns or rejects a submitted revision
+      # and never edits it, the typed adapter's conflict and idempotency protection on a WF-04 task, Path A on owned tasks, the database
+      # guards, and the API against docs/api/openapi.v1.json. Like the invariant steps below it runs whenever the build passed, so the
+      # boundary's verdict is always in the log. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
+      - name: ExternalParticipation integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.ExternalParticipation.
+
       # TASK-059: the risk and issue domain's two hard invariants — a rating or severity pinned to the RISK_MATRIX version in force
       # when assessed, on every read that serves one, and Severity (with rating, overall impact and pin) never taken from a client,
       # in any documented request or any write that raises or changes a concern — and the WF-06/07 APIs against docs/api/openapi.v1.json

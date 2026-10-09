@@ -52,8 +52,9 @@ internal static class ModuleRegistry
         ("Milestone", "DocumentManagement"),         // 16 command
         ("ExternalParticipation", "DocumentManagement"), // 17 command
         ("ExternalParticipation", "Project"),        // 18
-        // 19 ExternalParticipation → owning core module via IExternalContributionTarget: target set
-        //    unconfirmed (ADR-003 S-5); added when confirmed.
+        ("ExternalParticipation", "ProjectTask"),    // 19 command: an accepted external report of a task's percentage, applied
+                                                     //    through WF-04's ITaskProgressContributions (TASK-066). The target set is
+                                                     //    what TASK-066 built; another target is another row here (S-5).
         ("Project", "Approval"),                     // 20 command; 28 outcome-event consumer
         ("Schedule", "Approval"),                    // 21; 28
         ("ChangeRequest", "Approval"),               // 22; 28

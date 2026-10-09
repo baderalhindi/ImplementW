@@ -1,5 +1,6 @@
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Features.Project.Contracts;
+using PMPlatform.Application.Features.ProjectTask.Contracts;
 using PMPlatform.Application.Features.ProjectTask.Contracts.Events;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.ProjectTask;
@@ -48,6 +49,28 @@ internal static class ProjectTaskAudit
                 ?? AuditAttribute.Of(ProjectTaskAuditAttributes.ActualPercentComplete, task.ActualPercentComplete),
             AuditAttribute.Of(ProjectTaskAuditAttributes.AssigneeUserId, task.AssigneeUserId),
         ]);
+
+    /// <summary>
+    /// WF-13 (TASK-066): a percentage entered from an entity's accepted contribution, by whoever applied it, with its external lineage
+    /// (BR-EXT-025): the task's own event, so its history reads the same whatever the origin.
+    /// </summary>
+    public static AuditEntry ProgressContributed(Guid actorId, ProjectFacts project, decimal? before, ProjectTaskEntity task, ExternalContributionLineage lineage)
+    {
+        ArgumentNullException.ThrowIfNull(lineage);
+        AuditEntry entry = ProgressReported(actorId, project, before, task);
+        return entry with
+        {
+            Attributes =
+            [
+                .. entry.Attributes,
+                AuditAttribute.Of(ProjectTaskAuditAttributes.Source, "EXTERNAL_ENTITY"),
+                AuditAttribute.Of(ProjectTaskAuditAttributes.ExternalEntityId, lineage.ExternalEntityId),
+                AuditAttribute.Of(ProjectTaskAuditAttributes.ExternalContributionId, lineage.ExternalContributionId),
+                AuditAttribute.Of(ProjectTaskAuditAttributes.ContributionRevisionNo, lineage.RevisionNo),
+                AuditAttribute.Of(ProjectTaskAuditAttributes.SourceApplicationId, lineage.SourceApplicationId),
+            ],
+        };
+    }
 
     /// <summary>A move along <see cref="ProjectTaskWorkflow"/>, with the dates and counters it set.</summary>
     public static AuditEntry Transition(string eventType, Guid actorId, ProjectFacts project, ProjectTaskStatus from, ProjectTaskEntity task) =>

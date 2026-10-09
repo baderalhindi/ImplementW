@@ -83,6 +83,16 @@ internal sealed class ProjectTaskRepository(PMPlatformDbContext context) : IProj
             context.Set<ActivityExecutionProgress>().AsNoTracking().Where(p => p.ProjectId == projectId).OrderBy(p => p.ScheduleActivityId),
             page, cancellationToken);
 
+    public async Task<(ProjectTaskEntity Task, uint Version)?> ReadTaskAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        var row = await context.Set<ProjectTaskEntity>().AsNoTracking()
+            .Where(t => t.Id == taskId)
+            .Select(t => new { Task = t, Version = EF.Property<uint>(t, EntityTypeBuilderExtensions.RowVersion) })
+            .SingleOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return row is null ? null : (row.Task, row.Version);
+    }
+
     public uint RowVersionOf(ProjectTaskEntity task) => RowVersion(task);
 
     public uint RowVersionOf(TaskDependency dependency) => RowVersion(dependency);

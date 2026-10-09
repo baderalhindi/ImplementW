@@ -1944,6 +1944,537 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.ExternalContribution", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ContributorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("contributor_user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ExternalEntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("external_entity_id");
+
+                    b.Property<Guid>("ExternalUpdateRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("external_update_request_id");
+
+                    b.Property<Guid?>("PreviousRevisionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("previous_revision_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset?>("ReviewStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("review_started_at");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewed_by_user_id");
+
+                    b.Property<int>("RevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("revision_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<string>("TargetState")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("target_state");
+
+                    b.Property<long?>("TargetVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("target_version");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ReviewInternalNote", "PMPlatform.Domain.ExternalParticipation.ExternalContribution.ReviewInternalNote#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("review_internal_note_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("review_internal_note");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ReviewReason", "PMPlatform.Domain.ExternalParticipation.ExternalContribution.ReviewReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("review_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("review_reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_external_contribution");
+
+                    b.HasIndex("ExternalEntityId")
+                        .HasDatabaseName("ix_external_contribution_external_entity_id");
+
+                    b.HasIndex("PreviousRevisionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_external_contribution_previous_revision_id");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("ix_external_contribution_project_id");
+
+                    b.HasIndex("ReviewedByUserId")
+                        .HasDatabaseName("ix_external_contribution_reviewed_by_user_id");
+
+                    b.HasIndex("ExternalUpdateRequestId", "RevisionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_external_contribution_external_update_request_id_revision_no");
+
+                    b.HasIndex("ContributorUserId", "SubmittedAt", "Id")
+                        .HasDatabaseName("ix_external_contribution_contributor_user_id_submitted_at_id");
+
+                    b.HasIndex("Status", "SubmittedAt", "Id")
+                        .HasDatabaseName("ix_external_contribution_status_submitted_at_id");
+
+                    b.ToTable("external_contribution", "external_participation", t =>
+                        {
+                            t.HasCheckConstraint("ck_external_contribution_review_internal_note_lang", "\"review_internal_note_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_external_contribution_review_internal_note_pair", "(\"review_internal_note\" IS NULL) = (\"review_internal_note_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_external_contribution_review_reason", "status NOT IN ('RETURNED', 'REJECTED') OR review_reason IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_external_contribution_review_reason_lang", "\"review_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_external_contribution_review_reason_pair", "(\"review_reason\" IS NULL) = (\"review_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_external_contribution_review_started", "(status IN ('DRAFT', 'SUBMITTED')) = (review_started_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_external_contribution_reviewed", "(status IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW')) = (reviewed_at IS NULL) AND (reviewed_at IS NULL) = (reviewed_by_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_external_contribution_revision_no", "revision_no >= 1 AND (revision_no = 1) = (previous_revision_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_external_contribution_status", "\"status\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'REJECTED', 'ACCEPTED_PENDING_APPLICATION', 'APPLIED', 'APPLICATION_FAILED')");
+
+                            t.HasCheckConstraint("ck_external_contribution_submitted", "(status = 'DRAFT') = (submitted_at IS NULL) AND (target_version IS NULL) = (target_state IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.ExternalContributionField", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ExternalContributionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("external_contribution_id");
+
+                    b.Property<string>("FieldCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("field_code");
+
+                    b.Property<string>("ProposedValue")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("proposed_value");
+
+                    b.Property<string>("ProposedValueLanguage")
+                        .HasColumnType("char(2)")
+                        .HasColumnName("proposed_value_lang");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_external_contribution_field");
+
+                    b.HasIndex("ExternalContributionId", "FieldCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_external_contribution_field_external_contribution_id_field_");
+
+                    b.ToTable("external_contribution_field", "external_participation", t =>
+                        {
+                            t.HasCheckConstraint("ck_external_contribution_field_proposed_value_lang", "\"proposed_value_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.ExternalUpdateRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<string>("ContributionSchemaCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("contribution_schema_code");
+
+                    b.Property<Guid>("ContributionTypeItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("contribution_type_item_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<Guid>("ExternalEntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("external_entity_id");
+
+                    b.Property<DateTimeOffset?>("IssuedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("issued_by_user_id");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("origin");
+
+                    b.Property<Guid?>("ParticipationConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("participation_configuration_version_id");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid?>("ResponsibleUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("responsible_user_id");
+
+                    b.Property<Guid?>("ReviewerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewer_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid?>("TargetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_id");
+
+                    b.Property<string>("TargetModule")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("target_module");
+
+                    b.Property<string>("TargetType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("target_type");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "CancellationReason", "PMPlatform.Domain.ExternalParticipation.ExternalUpdateRequest.CancellationReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("cancellation_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("cancellation_reason");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Instructions", "PMPlatform.Domain.ExternalParticipation.ExternalUpdateRequest.Instructions#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("instructions_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("instructions");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_external_update_request");
+
+                    b.HasIndex("ContributionTypeItemId")
+                        .HasDatabaseName("ix_external_update_request_contribution_type_item_id");
+
+                    b.HasIndex("IssuedByUserId")
+                        .HasDatabaseName("ix_external_update_request_issued_by_user_id");
+
+                    b.HasIndex("ParticipationConfigurationVersionId")
+                        .HasDatabaseName("ix_external_update_request_participation_configuration_version");
+
+                    b.HasIndex("ResponsibleUserId")
+                        .HasDatabaseName("ix_external_update_request_responsible_user_id");
+
+                    b.HasIndex("ReviewerUserId")
+                        .HasDatabaseName("ix_external_update_request_reviewer_user_id");
+
+                    b.HasIndex("UpdatedAt", "Id")
+                        .HasDatabaseName("ix_external_update_request_updated_at_id");
+
+                    b.HasIndex("ExternalEntityId", "Status", "DueDate")
+                        .HasDatabaseName("ix_external_update_request_external_entity_id_status_due_date");
+
+                    b.HasIndex("ProjectId", "IssuedAt", "Id")
+                        .HasDatabaseName("ix_external_update_request_project_id_issued_at_id");
+
+                    b.HasIndex("ProjectId", "UpdatedAt", "Id")
+                        .HasDatabaseName("ix_external_update_request_project_id_updated_at_id");
+
+                    b.ToTable("external_update_request", "external_participation", t =>
+                        {
+                            t.HasCheckConstraint("ck_external_update_request_cancellation_reason_lang", "\"cancellation_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_external_update_request_cancellation_reason_pair", "(\"cancellation_reason\" IS NULL) = (\"cancellation_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_external_update_request_cancelled", "(status = 'CANCELLED') = (cancelled_at IS NOT NULL) AND (cancelled_at IS NULL) = (cancellation_reason IS NULL)");
+
+                            t.HasCheckConstraint("ck_external_update_request_closed", "(status = 'CLOSED') = (closed_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_external_update_request_instructions_lang", "\"instructions_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_external_update_request_issued", "(status = 'DRAFT') = (issued_at IS NULL) AND (issued_at IS NULL) = (issued_by_user_id IS NULL) AND (status = 'DRAFT') = (participation_configuration_version_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_external_update_request_origin", "\"origin\" IN ('AHDA_ISSUED')");
+
+                            t.HasCheckConstraint("ck_external_update_request_people", "status = 'DRAFT' OR (responsible_user_id IS NOT NULL AND reviewer_user_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_external_update_request_status", "\"status\" IN ('DRAFT', 'ISSUED', 'IN_PROGRESS', 'RESPONDED', 'CLOSED', 'CANCELLED')");
+
+                            t.HasCheckConstraint("ck_external_update_request_target", "(target_id IS NULL) = (target_type IS NULL) AND (target_id IS NULL) = (target_module IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.SourceApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long?>("ActualTargetRevisionNo")
+                        .HasColumnType("bigint")
+                        .HasColumnName("actual_target_revision_no");
+
+                    b.Property<int>("AttemptNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_no");
+
+                    b.Property<DateTimeOffset>("AttemptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("attempted_at");
+
+                    b.Property<Guid>("AttemptedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("attempted_by_user_id");
+
+                    b.Property<DateTimeOffset>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<long?>("ExpectedTargetRevisionNo")
+                        .HasColumnType("bigint")
+                        .HasColumnName("expected_target_revision_no");
+
+                    b.Property<Guid>("ExternalContributionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("external_contribution_id");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<DateTimeOffset?>("RevalidatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revalidated_at");
+
+                    b.Property<Guid?>("RevalidatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("revalidated_by_user_id");
+
+                    b.Property<long?>("RevalidatedTargetRevisionNo")
+                        .HasColumnType("bigint")
+                        .HasColumnName("revalidated_target_revision_no");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_source_application");
+
+                    b.HasIndex("AttemptedByUserId")
+                        .HasDatabaseName("ix_source_application_attempted_by_user_id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_source_application_idempotency_key");
+
+                    b.HasIndex("RevalidatedByUserId")
+                        .HasDatabaseName("ix_source_application_revalidated_by_user_id");
+
+                    b.HasIndex("ExternalContributionId", "AttemptNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_source_application_external_contribution_id_attempt_no");
+
+                    b.HasIndex("Status", "AttemptedAt")
+                        .HasDatabaseName("ix_source_application_status_attempted_at");
+
+                    b.HasIndex(new[] { "ExternalContributionId" }, "ix_source_application_applied_external_contribution_id")
+                        .IsUnique()
+                        .HasDatabaseName("ix_source_application_applied_external_contribution_id")
+                        .HasFilter("status = 'APPLIED'");
+
+                    b.ToTable("source_application", "external_participation", t =>
+                        {
+                            t.HasCheckConstraint("ck_source_application_attempt_no", "attempt_no >= 1 AND completed_at >= attempted_at");
+
+                            t.HasCheckConstraint("ck_source_application_outcome", "(status = 'CONFLICT') = (actual_target_revision_no IS NOT NULL) AND (status = 'FAILED') = (failure_code IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_source_application_revalidated", "(revalidated_at IS NULL OR status = 'CONFLICT') AND (revalidated_at IS NULL) = (revalidated_by_user_id IS NULL) AND (revalidated_at IS NULL) = (revalidated_target_revision_no IS NULL)");
+
+                            t.HasCheckConstraint("ck_source_application_status", "\"status\" IN ('APPLIED', 'CONFLICT', 'FAILED')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialCommitment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -9403,6 +9934,130 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_evidence_reference_master_data_item_evidence_type_item_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.ExternalContribution", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ContributorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_external_contribution_user_contributor_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.ExternalEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ExternalEntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_external_contribution_external_entity_external_entity_id");
+
+                    b.HasOne("PMPlatform.Domain.ExternalParticipation.ExternalUpdateRequest", null)
+                        .WithMany()
+                        .HasForeignKey("ExternalUpdateRequestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_external_contribution_external_update_request_external_upda");
+
+                    b.HasOne("PMPlatform.Domain.ExternalParticipation.ExternalContribution", null)
+                        .WithMany()
+                        .HasForeignKey("PreviousRevisionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_external_contribution_external_contribution_previous_revisi");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_external_contribution_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_external_contribution_user_reviewed_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.ExternalContributionField", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.ExternalParticipation.ExternalContribution", null)
+                        .WithMany()
+                        .HasForeignKey("ExternalContributionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_external_contribution_field_external_contribution_external_");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.ExternalUpdateRequest", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("ContributionTypeItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_external_update_request_master_data_item_contribution_type_");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.ExternalEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ExternalEntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_external_update_request_external_entity_external_entity_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("IssuedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_external_update_request_user_issued_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ParticipationConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_external_update_request_configuration_version_participation");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_external_update_request_project_project_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ResponsibleUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_external_update_request_user_responsible_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_external_update_request_user_reviewer_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.SourceApplication", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("AttemptedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_source_application_user_attempted_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.ExternalParticipation.ExternalContribution", null)
+                        .WithMany()
+                        .HasForeignKey("ExternalContributionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_source_application_external_contribution_external_contribut");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RevalidatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_source_application_user_revalidated_by_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialCommitment", b =>

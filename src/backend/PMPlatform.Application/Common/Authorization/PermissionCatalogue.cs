@@ -247,6 +247,30 @@ public sealed class PermissionCatalogue
     public const string CloseoutActivate = "CLOSEOUT_ACTIVATE";
 
     /// <summary>
+    /// WF-13 (TASK-066): external update requests and their contribution revisions — AHDA's full view internally, and an external caller's
+    /// least-disclosure projection of its own entity's issued requests (WF-13 §8.2).
+    /// </summary>
+    public const string ExternalRequestView = "EXTERNAL_REQUEST_VIEW";
+
+    /// <summary>
+    /// WF-13 (TASK-066): draft, edit, delete, issue and cancel an update request, and name its responder and reviewer. Internal users only:
+    /// AHDA issues update requests (TASK-066 gate decision).
+    /// </summary>
+    public const string ExternalRequestManage = "EXTERNAL_REQUEST_MANAGE";
+
+    /// <summary>WF-13 (TASK-066): draft and submit the answer to a request the holder is the named responder of (EXT-CC-04).</summary>
+    public const string ExternalContributionRespond = "EXTERNAL_CONTRIBUTION_RESPOND";
+
+    /// <summary>
+    /// WF-13 (TASK-066): start the review of a submitted contribution revision and accept, return or reject it, as the request's assigned
+    /// reviewer. Internal users only; never an edit of the submitted values (EXT-P-10).
+    /// </summary>
+    public const string ExternalContributionReview = "EXTERNAL_CONTRIBUTION_REVIEW";
+
+    /// <summary>WF-13 (TASK-066): apply an accepted contribution to its source record through its typed adapter, and revalidate a conflict. Internal users only.</summary>
+    public const string ExternalContributionApply = "EXTERNAL_CONTRIBUTION_APPLY";
+
+    /// <summary>
     /// WF-14 Financial Progress (TASK-052): a project's Approved Budget versions, financial updates, published financial
     /// snapshots, live position, source modes and portfolio totals. ADR-013: an entity sees budget and expenditure for its own
     /// project, masked by audience (ADR-010).
@@ -352,6 +376,11 @@ public sealed class PermissionCatalogue
             new(CloseoutReview, "CLOSEOUT", AccessMode.Write),
             new(CloseoutWaive, "CLOSEOUT", AccessMode.Write),
             new(CloseoutActivate, "CLOSEOUT", AccessMode.Write),
+            new(ExternalRequestView, "EXTERNAL_PARTICIPATION", AccessMode.Read),
+            new(ExternalRequestManage, "EXTERNAL_PARTICIPATION", AccessMode.Write),
+            new(ExternalContributionRespond, "EXTERNAL_PARTICIPATION", AccessMode.Write),
+            new(ExternalContributionReview, "EXTERNAL_PARTICIPATION", AccessMode.Write),
+            new(ExternalContributionApply, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
             new(FinancialSubmit, "FINANCIAL", AccessMode.Write),
             new(FinancialReview, "FINANCIAL", AccessMode.Write),
@@ -417,7 +446,16 @@ public sealed class PermissionCatalogue
     /// exceptions (US-CLO-DM-002 to -004); ADR-013 has the entity fill in the information and AHDA approve: R04 views and raises cases at
     /// OWN, internal or entity, and R03 views, starts reviews and waives criteria at DEPT. Approval is WF-11's APPROVAL_DECIDE.
     /// Activation is WF-10's own service by default (§13 Completion.Activate: "System/service"), so CLOSEOUT_ACTIVATE ships to no role; it
-    /// and the other roles' grants wait for Appendix A (closure.md F-2). ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI
+    /// and the other roles' grants wait for Appendix A (closure.md F-2). WF-13's specification §13 (TASK-066) makes the
+    /// Project Manager the one who requests information from an entity, reviews the answer when assigned and, as the source owner, applies it
+    /// (US-EXT-PM-001, -012 to -017): R04 views, manages, reviews and applies external update requests at OWN. The Department Manager requests
+    /// and reviews when assigned (US-EXT-DM-003, -006, -009): R03 views, manages and reviews at DEPT. The external entity user sees its own
+    /// entity's requests at ENTITY — a per-project assignment narrows it to that project — and answers only those it is named on, at ASSIGNED
+    /// (EXT-CC-03, EXT-CC-04). Requesting, reviewing and applying are refused to an external user whatever they hold: AHDA issues update
+    /// requests and reviews them (TASK-066 gate decision; ADR-013). The same gate decision limits an external contributor's direct source
+    /// action to assigned tasks (WF-13 Path A): R08 views and updates WF-04 tasks at ASSIGNED, which reaches the tasks the holder owns and
+    /// nothing else. The rest, R05's liaison grants among them, wait for Appendix A (external-participation.md F-2). ADR-013's amendment to
+    /// TASK-052 lets an entity see budget, expenditure and KPI
     /// status for its own project, masked by audience per ADR-010: R08 and R04 view financials and KPIs at ENTITY, which reaches
     /// only a holder with an entity; entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
@@ -482,6 +520,17 @@ public sealed class PermissionCatalogue
         new("R03", CloseoutView, DataScope.Dept),
         new("R03", CloseoutReview, DataScope.Dept),
         new("R03", CloseoutWaive, DataScope.Dept),
+        new("R08", TaskView, DataScope.Assigned),
+        new("R08", TaskUpdate, DataScope.Assigned),
+        new("R04", ExternalRequestView, DataScope.Own),
+        new("R04", ExternalRequestManage, DataScope.Own),
+        new("R04", ExternalContributionReview, DataScope.Own),
+        new("R04", ExternalContributionApply, DataScope.Own),
+        new("R03", ExternalRequestView, DataScope.Dept),
+        new("R03", ExternalRequestManage, DataScope.Dept),
+        new("R03", ExternalContributionReview, DataScope.Dept),
+        new("R08", ExternalRequestView, DataScope.Entity),
+        new("R08", ExternalContributionRespond, DataScope.Assigned),
         new("R04", FinancialView, DataScope.Entity),
         new("R08", FinancialView, DataScope.Entity),
         new("R04", KpiView, DataScope.Entity),

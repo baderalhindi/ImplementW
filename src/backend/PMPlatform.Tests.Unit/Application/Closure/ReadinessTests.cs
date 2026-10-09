@@ -162,7 +162,7 @@ public sealed class ReadinessTests
     }
 
     private static ProjectFacts Project(ProjectLifecycleState state) =>
-        new(Guid.NewGuid(), "PRJ-000001", Guid.NewGuid(), null, Guid.NewGuid(), state, Guid.NewGuid(), null, new DateTimeOffset(Today.AddDays(-30).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
+        new(Guid.NewGuid(), "PRJ-000001", Guid.NewGuid(), null, Guid.NewGuid(), state, Guid.NewGuid(), null, new DateTimeOffset(Today.AddDays(-30).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero), ParticipationMode.AhdaManaged);
 
     private static ReadinessCheck Row(ReadinessCheckCode code, ReadinessResult result, int blocking, DateTimeOffset at) =>
         new() { Id = Guid.NewGuid(), CompletionCaseId = Guid.Empty, CheckCode = code, Result = result, BlockingCount = blocking, EvaluatedAt = at };
