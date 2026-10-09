@@ -230,6 +230,20 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.RiskIssue
 
+      # TASK-065: the governance domain's three hard invariants — a ChangeAuthorization issued once and applied once by WF-03 and WF-14
+      # however its WF-11 outcome is redelivered or the request that applies it is retried, in sequence or racing under one key; at most one
+      # active suspension per project however its requests and activations race; and a project closed through WF-10 taking no governance
+      # write by any path — and the WF-08, WF-09 and WF-10 APIs against docs/api/openapi.v1.json (api-conventions R-10) and on the wire. It
+      # runs whenever the build passed, as the TASK-059 step does, so the invariants' verdict is always in the log. The filter ends in `.`,
+      # so it runs this namespace alone. Same database and directory as above.
+      - name: Governance domain contract and regression tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Governance.
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest
