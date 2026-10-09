@@ -4,7 +4,8 @@ namespace PMPlatform.Application.Features.IdentityAccess.Contracts;
 /// Signs a person in against AHDA's directory or identity provider and issues the platform session (TASK-028,
 /// ADR-007). The platform roles in the session come from the person's platform assignments, never from directory
 /// groups. A person who requires MFA gets no session until their second factor is verified (TASK-029, CTL-07): every
-/// sign-in path ends in the same gate.
+/// sign-in path ends in the same gate. An external user whose identity Nafath has not verified gets no session until it
+/// does (TASK-068): that gate comes last, after every factor.
 /// </summary>
 public interface IAuthenticationService
 {
@@ -37,4 +38,18 @@ public interface IAuthenticationService
     /// The session id and absolute expiry are unchanged.
     /// </summary>
     public Task<AuthenticationResult> CompleteStepUpAsync(string refreshToken, string challengeId, string code, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Starts the Nafath identity verification a sign-in is waiting on (ADR-007: external users, at onboarding, once).
+    /// Nafath is called only here and in <see cref="CompleteIdentityVerificationAsync"/>, and only for such a user.
+    /// </summary>
+    public Task<IdentityVerificationAuthorization> BeginIdentityVerificationAsync(string verificationToken, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Completes the verification with what Nafath redirected back with, records it, and only then issues the session.
+    /// If Nafath cannot be reached the verification token stays valid: nothing is granted and nothing is held against the
+    /// person, who retries.
+    /// </summary>
+    public Task<AuthenticationResult> CompleteIdentityVerificationAsync(
+        string verificationToken, string code, string state, string transaction, CancellationToken cancellationToken);
 }

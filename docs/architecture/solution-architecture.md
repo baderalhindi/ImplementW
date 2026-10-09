@@ -352,7 +352,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 30 | Reports | Dashboards | query | the same controlled projections, for report definitions and jobs | TASK-071 dep TASK-069 |
 | 31 | IdentityAccess | IntegrationMonitoring | event | AD/LDAP/SSO invocation and sync-run telemetry | TASK-075 dep TASK-028 |
 | 32 | Notifications | IntegrationMonitoring | event | email/SMS channel invocation telemetry | TASK-075 dep TASK-039; TASK-103 |
-| 33 | ExternalParticipation | IntegrationMonitoring | event | Nafath invocation telemetry, if in scope | TASK-068; TASK-075 |
+| 33 | IdentityAccess | IntegrationMonitoring | event | Nafath invocation telemetry. Nafath is in scope (ADR-007) and its adapter is IdentityAccess's, not ExternalParticipation's: it gates the session, not a contribution (changed 2026-10-09, `nafath-identity-verification.md` F-6) | TASK-068; TASK-075 |
 | 34 | IntegrationMonitoring | AuditActivity | query | integration audit log view (ADM-053) | TASK-075 dep TASK-073 |
 | 35 | Project | Schedule, Progress, Milestone, FinancialKpi | event (`ProjectIntakeRecorded`) | legacy-intake Declared Baseline and opening position, each written by its owning module (§11.1) | TASK-104 |
 | 36 | ProjectTask | Project | query | project identity, anchors and lifecycle state, as edges 1–6: a task is authorized on its project's anchors (M-7) and executed only while the project is ACTIVE | TASK-048 (added 2026-10-03, `project-task.md` D-2) |

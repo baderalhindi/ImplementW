@@ -36,9 +36,11 @@ jobs:
       DOTNET_CLI_TELEMETRY_OPTOUT: true
     # TASK-024: the migration rollback tests need a PostgreSQL server of the environments' major version. Each
     # test creates and drops its own database on it; nothing else uses it.
+    # Docker Hub images are pulled through Google's public mirror: GitHub's shared runner addresses exhaust Docker Hub's
+    # anonymous pull limit ("toomanyrequests"), which failed PR #78 three times before any test ran. Same image, same digest.
     services:
       postgres:
-        image: postgres:17
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_PASSWORD: scratch
         options: >-
@@ -171,9 +173,11 @@ jobs:
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
+    # Docker Hub images are pulled through Google's public mirror: GitHub's shared runner addresses exhaust Docker Hub's
+    # anonymous pull limit ("toomanyrequests"), which failed PR #78 three times before any test ran. Same image, same digest.
     services:
       postgres:
-        image: postgres:17
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_PASSWORD: scratch
         options: >-

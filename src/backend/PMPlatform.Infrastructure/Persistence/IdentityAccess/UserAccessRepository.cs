@@ -7,7 +7,7 @@ using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Infrastructure.Persistence.IdentityAccess;
 
-/// <summary>The IdentityAccess tables as sign-in reads and writes them (TASK-028, TASK-029).</summary>
+/// <summary>The IdentityAccess tables as sign-in reads and writes them (TASK-028, TASK-029, TASK-068).</summary>
 internal sealed partial class UserAccessRepository(PMPlatformDbContext context, TimeProvider timeProvider, ILogger<UserAccessRepository> logger)
     : IUserAccessRepository
 {
@@ -95,11 +95,29 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task RecordIdentityVerificationAsync(Guid userId, string reference, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(reference);
+
+        User? user = await context.Set<User>().SingleOrDefaultAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false);
+        if (user is null || user.NafathVerifiedAt is not null)
+        {
+            return;
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        user.NafathVerificationReference = reference;
+        user.NafathVerifiedAt = now;
+        user.UpdatedAt = now;
+        user.UpdatedBy = userId;
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     private async Task<UserAccess?> FindAsync(Expression<Func<User, bool>> predicate, CancellationToken cancellationToken)
     {
         var user = await context.Set<User>().AsNoTracking()
             .Where(predicate)
-            .Select(u => new { u.Id, u.UserType, u.Status, u.ExternalEntityId, u.Username, u.DisplayName, u.PreferredLanguage, u.MfaEnrolledAt })
+            .Select(u => new { u.Id, u.UserType, u.Status, u.ExternalEntityId, u.Username, u.DisplayName, u.PreferredLanguage, u.MfaEnrolledAt, u.NafathVerifiedAt })
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
@@ -132,7 +150,8 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
         return new UserAccess(
-            user.Id, user.UserType, user.Status, entityStatus, user.Username, user.DisplayName, user.PreferredLanguage, user.MfaEnrolledAt is not null, assignments);
+            user.Id, user.UserType, user.Status, entityStatus, user.Username, user.DisplayName, user.PreferredLanguage, user.MfaEnrolledAt is not null,
+            user.NafathVerifiedAt is not null, assignments);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Directory {Attribute} of user {UserId} not applied: {Reason}. The stored value stands.")]

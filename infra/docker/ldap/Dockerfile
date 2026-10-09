@@ -7,7 +7,8 @@
 #
 # Nothing here is valid outside a developer's machine or a CI runner: plain LDAP on a private port, and passwords that are
 # labelled local defaults. The data is loaded at build time, so every container starts from the same directory.
-FROM alpine:3.22
+# Docker Hub's alpine through Google's public mirror: CI runners hit Docker Hub's anonymous pull limit (PR #78).
+FROM mirror.gcr.io/library/alpine:3.22
 RUN apk add --no-cache openldap openldap-back-mdb openldap-clients
 COPY slapd.conf /etc/openldap/slapd.conf
 COPY directory.ldif /tmp/directory.ldif

@@ -4,9 +4,10 @@ using PMPlatform.Tests.Integration.AuditActivity;
 namespace PMPlatform.Tests.Integration.Identity;
 
 /// <summary>
-/// One database, one identity provider, one MFA provider, one SIEM and one API for the whole identity suite. The API does
-/// not forward to the SIEM; a test that needs forwarding creates an API with <see cref="TestSiem.Settings"/>. Tests that move the clock or change a
-/// row put it back, so the order they run in does not matter.
+/// One database, one identity provider, one MFA provider, one Nafath, one SIEM and one API for the whole identity suite. The API does
+/// not forward to the SIEM; a test that needs forwarding creates an API with <see cref="TestSiem.Settings"/>. The shared API has no Nafath
+/// (the feature is off by default); a test that needs it creates an API with <see cref="TestNafath.Settings"/>. Tests that move the clock or
+/// change a row put it back, so the order they run in does not matter.
 /// </summary>
 public sealed class IdentityTestHost : IAsyncLifetime
 {
@@ -20,6 +21,8 @@ public sealed class IdentityTestHost : IAsyncLifetime
 
     public TestMultiFactorProvider MultiFactorProvider { get; private set; } = null!;
 
+    public TestIdentityProvider Nafath { get; private set; } = null!;
+
     public TestSiem Siem { get; private set; } = null!;
 
     public IdentityApiFactory Api { get; private set; } = null!;
@@ -29,6 +32,7 @@ public sealed class IdentityTestHost : IAsyncLifetime
         await Database.InitializeAsync();
         IdentityProvider = await TestIdentityProvider.StartAsync();
         MultiFactorProvider = await TestMultiFactorProvider.StartAsync();
+        Nafath = await TestNafath.StartAsync();
         Siem = await TestSiem.StartAsync();
         Api = CreateApi();
     }
@@ -52,6 +56,7 @@ public sealed class IdentityTestHost : IAsyncLifetime
         await Api.DisposeAsync();
         await IdentityProvider.DisposeAsync();
         await MultiFactorProvider.DisposeAsync();
+        await Nafath.DisposeAsync();
         await Siem.DisposeAsync();
         await Database.DisposeAsync();
     }

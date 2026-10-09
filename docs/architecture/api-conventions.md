@@ -145,10 +145,12 @@ Each rule states what it is and, where it is not obvious, why. §8 says which ru
 | 422 | `BUSINESS_RULE_VIOLATED` or a module code | Well-formed request rejected by a domain rule: end date before start, severity supplied by the client (TASK-057), out-of-allowlist report field (TASK-071) | T-3 |
 | 422 | `CONFIGURATION_MISSING` | Required configuration absent — the fail-closed rule; the operation does not default | TASK-034, Blueprint Section 12 |
 | 422 | `IDEMPOTENCY_KEY_REUSED` | Same key, different request fingerprint | R-37 |
+| 422 | `IDENTITY_VERIFICATION_FAILED` | Nafath answered and did not verify the signed-in external user (code spent or expired, state, transaction or ID token not this verification's); the same identity verification token starts it again | TASK-068 |
 | 428 | `PRECONDITION_REQUIRED` | `PUT` without `If-Match` | R-21 |
 | 429 | `RATE_LIMITED` | Throttled; `Retry-After` header present | TASK-078 |
 | 500 | `INTERNAL_ERROR` | Unhandled; minimal body (R-26) | TASK-090 |
 | 503 | `UNAVAILABLE` | Readiness failing (database unreachable) | TASK-091 |
+| 503 | `IDENTITY_VERIFICATION_UNAVAILABLE` | Nafath unreachable, refusing the platform's client, or not configured; `Retry-After` header present. No session is issued and nothing is held against the person: the same identity verification token retries | TASK-068 |
 
 ### 4.5 Pagination, filtering and sorting
 

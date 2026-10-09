@@ -19,4 +19,11 @@ internal sealed class SessionTokenOptions
 
     /// <summary>How long a person has, after the first factor, to pass the second (TASK-029). Provisional, like the others.</summary>
     public TimeSpan MultiFactorTokenLifetime { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// How long a person has, after every factor, to complete Nafath's identity verification (TASK-068). Longer than a
+    /// Nafath transaction (<c>Identity:Nafath:TransactionLifetime</c>, 10 min), so a verification Nafath could not complete
+    /// can be started again without signing in again. Provisional, like the others.
+    /// </summary>
+    public TimeSpan IdentityVerificationTokenLifetime { get; set; } = TimeSpan.FromMinutes(20);
 }

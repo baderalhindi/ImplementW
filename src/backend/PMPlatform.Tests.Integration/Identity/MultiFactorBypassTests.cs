@@ -38,6 +38,7 @@ public sealed class MultiFactorBypassTests(IdentityTestHost host) : IDisposable
             password = TestDirectory.PersonPassword,
             mfaToken,
             refreshToken = mfaToken,
+            identityVerificationToken = mfaToken,
             challengeId = challenge.ChallengeId,
             code = TestMultiFactorProvider.WrongCodeFor(challenge.ChallengeId),
             state = "state",

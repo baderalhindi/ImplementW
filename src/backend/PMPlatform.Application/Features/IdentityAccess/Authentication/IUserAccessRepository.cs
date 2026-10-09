@@ -15,4 +15,10 @@ public interface IUserAccessRepository
 
     /// <summary>Records that the user has enrolled a second factor (TASK-029). The change is the user's own.</summary>
     public Task RecordMultiFactorEnrolmentAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Records that Nafath verified the user's identity (TASK-068): the verification's reference and time, nothing else
+    /// (OQ-007). The first verification stands; a later one changes nothing. The change is the user's own.
+    /// </summary>
+    public Task RecordIdentityVerificationAsync(Guid userId, string reference, CancellationToken cancellationToken);
 }

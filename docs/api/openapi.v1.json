@@ -12992,6 +12992,74 @@
         }
       }
     },
+    "/api/v1/sessions/identity-verification-authorization": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Starts the Nafath identity verification a sign-in is waiting on (TASK-068). Anonymous: the identity verification\ntoken is the credential. Nothing is stored server-side; the transaction travels with the client.",
+        "operationId": "IdentityAccess_CreateIdentityVerificationAuthorization",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityVerificationAuthorizationCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityVerificationAuthorizationCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityVerificationAuthorizationCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/identity-verification": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Completes the Nafath identity verification with the code Nafath redirected back with. The session is issued only here, once Nafath has verified the person.",
+        "operationId": "IdentityAccess_CreateIdentityVerificationSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityVerificationSessionCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityVerificationSessionCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityVerificationSessionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/v1/sessions/current": {
       "get": {
         "tags": [
@@ -21182,7 +21250,8 @@
       "IdentityIntegrationStatus": {
         "required": [
           "directory",
-          "singleSignOn"
+          "singleSignOn",
+          "identityVerification"
         ],
         "type": "object",
         "properties": {
@@ -21191,13 +21260,17 @@
           },
           "singleSignOn": {
             "$ref": "#/components/schemas/SingleSignOnIntegrationStatus"
+          },
+          "identityVerification": {
+            "$ref": "#/components/schemas/IdentityVerificationIntegrationStatus"
           }
         }
       },
       "IdentityIntegrationTestResult": {
         "required": [
           "directory",
-          "singleSignOn"
+          "singleSignOn",
+          "identityVerification"
         ],
         "type": "object",
         "properties": {
@@ -21206,8 +21279,116 @@
           },
           "singleSignOn": {
             "$ref": "#/components/schemas/ConnectionTestResult"
+          },
+          "identityVerification": {
+            "$ref": "#/components/schemas/ConnectionTestResult"
           }
         }
+      },
+      "IdentityVerificationAuthorizationCreateRequest": {
+        "required": [
+          "identityVerificationToken"
+        ],
+        "type": "object",
+        "properties": {
+          "identityVerificationToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Starts the Nafath identity verification with the token the sign-in returned."
+      },
+      "IdentityVerificationIntegrationStatus": {
+        "required": [
+          "isEnabled",
+          "isConfigured",
+          "authority",
+          "clientIdConfigured",
+          "clientSecretConfigured",
+          "callbackUrl",
+          "applicationId",
+          "scopes"
+        ],
+        "type": "object",
+        "properties": {
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "isConfigured": {
+            "type": "boolean"
+          },
+          "authority": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uri"
+          },
+          "clientIdConfigured": {
+            "type": "boolean"
+          },
+          "clientSecretConfigured": {
+            "type": "boolean"
+          },
+          "callbackUrl": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uri"
+          },
+          "applicationId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "The Nafath client settings (TASK-068). The Environment and Secrets sheet classifies `NAFATH_CLIENT_ID` and\n`NAFATH_CLIENT_SECRET` as Secret, so both are reduced to whether they are set; the callback URL and application\nid are Public. bool IdentityVerificationIntegrationStatus.IsEnabled is the feature flag, bool IdentityVerificationIntegrationStatus.IsConfigured whether the client is complete."
+      },
+      "IdentityVerificationSessionCreateRequest": {
+        "required": [
+          "identityVerificationToken",
+          "code",
+          "state",
+          "transaction"
+        ],
+        "type": "object",
+        "properties": {
+          "identityVerificationToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "state": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "transaction": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Completes the Nafath identity verification: the sign-in's `identityVerificationToken`, the `code` and\n`state` Nafath redirected to `NAFATH_CALLBACK_URL` with, and the `transaction` from\nIdentityVerificationAuthorizationDetail."
       },
       "ImpactLevelEntry": {
         "required": [
