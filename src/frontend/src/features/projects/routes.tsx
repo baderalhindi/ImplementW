@@ -7,6 +7,7 @@ import { MyProjectsPage, ProjectRegisterPage } from './register/ProjectListPages
 import { ChangeRequestsTab } from './workspace/ChangeRequestsTab.tsx';
 import { CloseoutTab } from './workspace/CloseoutTab.tsx';
 import { DocumentsTab } from './workspace/DocumentsTab.tsx';
+import { ExternalRequestsTab } from './workspace/ExternalRequestsTab.tsx';
 import { FinancialHistoryTab, FinancialsTab } from './workspace/FinancialsTab.tsx';
 import { ChallengesTab, ConcernDetailTab, IssuesTab } from './workspace/IssuesChallengesTab.tsx';
 import { KpiHistoryTab, KpisTab } from './workspace/KpisTab.tsx';
@@ -189,6 +190,14 @@ export const projectRoutes: RouteObject[] = [
         element: (
           <WorkspaceTabGuard tab="closeout">
             <CloseoutTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'external-requests', // SCR-160 for the project (TASK-067); SCR-161/162 are under /external-requests
+        element: (
+          <WorkspaceTabGuard tab="externalRequests">
+            <ExternalRequestsTab />
           </WorkspaceTabGuard>
         ),
       },

@@ -44,6 +44,7 @@ const TAB_LABELS: Record<WorkspaceTabKey, TranslationKey> = {
   changeRequests: 'projects.workspace.tabs.changeRequests',
   suspension: 'projects.workspace.tabs.suspension',
   closeout: 'projects.workspace.tabs.closeout',
+  externalRequests: 'projects.workspace.tabs.externalRequests',
   reviews: 'projects.workspace.tabs.reviews',
   documents: 'projects.workspace.tabs.documents',
 };

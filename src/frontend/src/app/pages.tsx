@@ -6,12 +6,13 @@ import {
   useHasRole,
   useSession,
 } from '@/features/identity-access/session/useSession.ts';
+import { isInternal } from '@/features/projects/access.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 
 /**
  * The landing page: the screens the session can reach. Projects, tasks, milestones, KPIs, risks, issues and challenges, change requests, suspensions, closeouts, approvals, documents and
- * notifications are for everyone; administration for R01.
+ * notifications are for everyone; WF-13's register for AHDA, or the entity user's own update requests; administration for R01.
  */
 export function HomePage(): ReactElement {
   const { t } = useI18n();
@@ -51,6 +52,15 @@ export function HomePage(): ReactElement {
         <li>
           <Link to="/closure-requests">{t('common.home.closeouts')}</Link>
         </li>
+        {isInternal(session.user) ? (
+          <li>
+            <Link to="/external-requests">{t('common.home.externalRequests')}</Link>
+          </li>
+        ) : (
+          <li>
+            <Link to="/my-external-requests">{t('common.home.myExternalRequests')}</Link>
+          </li>
+        )}
         <li>
           <Link to="/approvals/inbox">{t('common.home.approvals')}</Link>
         </li>
