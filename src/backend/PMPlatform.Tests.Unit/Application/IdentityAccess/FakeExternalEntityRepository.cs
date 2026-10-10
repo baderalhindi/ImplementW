@@ -1,5 +1,6 @@
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Tests.Unit.Application.IdentityAccess;
@@ -25,4 +26,7 @@ internal sealed class FakeExternalEntityRepository : FakeStore<ExternalEntity>, 
         Task.FromResult(Track(entityId, expectedVersion));
 
     public Task<bool> IsEntityTypeAsync(Guid itemId, CancellationToken cancellationToken) => Task.FromResult(EntityTypes.Contains(itemId));
+
+    public Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyDictionary<Guid, BilingualLabel>>(Rows.Values.Where(r => ids.Contains(r.Id)).ToDictionary(r => r.Id, r => r.Name));
 }

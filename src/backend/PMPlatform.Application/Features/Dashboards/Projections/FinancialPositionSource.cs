@@ -22,12 +22,25 @@ internal sealed class FinancialPositionSource(IFinancialProgressService financia
             return FinancialReadings.Of(await financials.AggregateAsync(request.CallerId, request.ProjectIds, SemanticState.CurrentLive, cancellationToken).ConfigureAwait(false));
         }
 
-        Guid projectId = request.ProjectIds.Single();
-        FinancialPositionPage page = await financials.ListPositionsAsync(request.CallerId, projectId, One, cancellationToken).ConfigureAwait(false);
-        return page.Items.SingleOrDefault() is { } p
-            ? ProjectionReadings.Of(FinancialReadings.Of(
-                projectId, p.ApprovedBudgetSar, p.ActualExpenditureToDateSar, p.ForecastAtCompletionSar, p.ValueStatus, p.FinancialStatus,
-                FinancialReadings.AsOf(p.AsOfDate) ?? p.ComputedAt, p.MaskedFields))
-            : ProjectionReading.Unknown(WidgetUnknownReason.Restricted);
+        Observation observation = (await ObserveAsync(request, cancellationToken).ConfigureAwait(false)).Single();
+        return observation.Kind == ObservationKind.Masked ? ProjectionReading.Unknown(WidgetUnknownReason.Restricted) : ProjectionReadings.Of(observation);
+    }
+
+    /// <summary>One read of WF-14 per project: WF-14 decides each one's visibility and masking itself. A project it does not show is withheld.</summary>
+    public async Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        List<Observation> observations = [];
+        foreach (Guid projectId in request.ProjectIds)
+        {
+            FinancialPositionPage page = await financials.ListPositionsAsync(request.CallerId, projectId, One, cancellationToken).ConfigureAwait(false);
+            observations.Add(page.Items.SingleOrDefault() is { } p
+                ? FinancialReadings.Of(
+                    projectId, p.ApprovedBudgetSar, p.ActualExpenditureToDateSar, p.ForecastAtCompletionSar, p.ValueStatus, p.FinancialStatus,
+                    FinancialReadings.AsOf(p.AsOfDate) ?? p.ComputedAt, p.MaskedFields)
+                : new Observation(projectId, ObservationKind.Masked, null, null));
+        }
+
+        return observations;
     }
 }

@@ -3,13 +3,14 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Errors;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
+using PMPlatform.Application.Features.Reports.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
 namespace PMPlatform.Api.Controllers;
 
 /// <summary>
-/// What the FG-03 (TASK-031), FG-04 (TASK-034), WF-11 (TASK-035), WF-12 (TASK-037) and WF-01 (TASK-041) controllers share: the caller's id, the api-conventions
+/// What the FG-03 (TASK-031), FG-04 (TASK-034), WF-11 (TASK-035), WF-12 (TASK-037), WF-01 (TASK-041) and FG-02 (TASK-071) controllers share: the caller's id, the api-conventions
 /// §4.4 answer to each refusal, and R-21 concurrency — an <c>ETag</c> on every single mutable resource, <c>If-Match</c> required on
 /// <c>PUT</c> and honoured on a command when sent.
 /// </summary>
@@ -86,16 +87,18 @@ public abstract class AdministrationControllerBase : ControllerBase
     /// R-8: a version's bytes as an attachment, never rendered by the browser, never cached (the content is classified).
     /// The response disposes the stream.
     /// </summary>
-    private protected IActionResult Attachment(AdministrationResult<DocumentContent> result)
-    {
-        if (!result.Succeeded)
-        {
-            return Failure(result.Error);
-        }
+    private protected IActionResult Attachment(AdministrationResult<DocumentContent> result) =>
+        result.Succeeded ? Attachment(result.Value.Content, result.Value.FileName) : Failure(result.Error);
 
+    /// <summary>R-8 for a report job's output (TASK-071): authorised at download time by the module, then sent as a document's bytes are.</summary>
+    private protected IActionResult Attachment(AdministrationResult<ReportOutputDownload> result) =>
+        result.Succeeded ? Attachment(result.Value.Content, result.Value.FileName) : Failure(result.Error);
+
+    private FileStreamResult Attachment(Stream content, string fileName)
+    {
         Response.Headers.XContentTypeOptions = "nosniff";
         Response.Headers.CacheControl = "no-store";
-        return File(result.Value.Content, "application/octet-stream", result.Value.FileName);
+        return File(content, "application/octet-stream", fileName);
     }
 
     private protected IActionResult Failure(AdministrationError error)

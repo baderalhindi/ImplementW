@@ -192,3 +192,4 @@ Each mutation was applied, the solution rebuilt, the 20 Milestone integration te
 | --- | --- |
 | 2026-10-03 | Created (TASK-050) |
 | 2026-10-04 | §6 item 1 consumed by TASK-051 (`milestone-ui.md`): `evidencePolicyVersionId: null` labelled optional pending policy, the returned reason shown on the row and in MOD-019; the validation check run against this API (`milestone-ui.md` §4 rows 9, 10) |
+| 2026-10-10 | TASK-071 (`reports.md` D-4): ADR-003 §8.2 edge 49, Dashboards → this module (read projection). `IMilestoneCloseoutReader` — unchanged — is also read by FG-01's register as the projection `MILESTONE.OPEN_ACHIEVEMENT_CLAIMS`, the per-project count FG-02's reports present; this module calls Dashboards in no way. |

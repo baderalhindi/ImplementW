@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Infrastructure.Persistence.IdentityAccess;
@@ -79,6 +80,11 @@ internal sealed class DepartmentRepository(PMPlatformDbContext context) : IDepar
             .AnyAsync(d => d.DirectoryReference == directoryReference && d.IsActive && d.Id != exceptDepartmentId, cancellationToken);
 
     public void Add(Department department) => context.Set<Department>().Add(department);
+
+    public async Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
+        ids.Count == 0
+            ? []
+            : await context.Set<Department>().AsNoTracking().Where(e => ids.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.Name, cancellationToken).ConfigureAwait(false);
 
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken) => AdministrationPersistence.SaveAsync(context, cancellationToken);
 }

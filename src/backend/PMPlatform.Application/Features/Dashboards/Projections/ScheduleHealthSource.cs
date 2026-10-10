@@ -13,14 +13,16 @@ internal sealed class ScheduleHealthSource(IScheduleHealthReader schedules) : ID
 
     public string ProjectionCode => DashboardProjections.ScheduleHealthStatus;
 
-    public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken)
+    public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken) =>
+        request.Read(await ObserveAsync(request, cancellationToken).ConfigureAwait(false), counted => ProjectionReadings.Distribution(counted, Order));
+
+    public async Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         Dictionary<Guid, ScheduleHealthStatusDetail> stored = (await schedules.ListAsync(request.ProjectIds, cancellationToken).ConfigureAwait(false)).ToDictionary(h => h.ProjectId);
-        List<Observation> observations = [.. request.ProjectIds.Select(id => stored.TryGetValue(id, out ScheduleHealthStatusDetail? h)
+        return [.. request.ProjectIds.Select(id => stored.TryGetValue(id, out ScheduleHealthStatusDetail? h)
             ? new Observation(id, ObservationKind.Current, h.ComputedAt,
                 ProjectionReadings.State(ProjectionReadings.Name(h.ScheduleHealth), ProjectionReadings.Days("FINISH_VARIANCE_DAYS", h.FinishVarianceDays)))
             : new Observation(id, ObservationKind.Missing, null, null))];
-        return request.Read(observations, counted => ProjectionReadings.Distribution(counted, Order));
     }
 }

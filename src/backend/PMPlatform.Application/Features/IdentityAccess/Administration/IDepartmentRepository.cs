@@ -1,4 +1,5 @@
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Application.Features.IdentityAccess.Administration;
@@ -19,6 +20,9 @@ public interface IDepartmentRepository
     public Task<bool> IsDirectoryReferenceInUseAsync(string directoryReference, Guid? exceptDepartmentId, CancellationToken cancellationToken);
 
     public void Add(Department department);
+
+    /// <summary>The names of the departments named, by id; an id that names nothing is left out.</summary>
+    public Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken);
 }

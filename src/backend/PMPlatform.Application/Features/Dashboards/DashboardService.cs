@@ -28,9 +28,7 @@ internal sealed partial class DashboardService(
     TimeProvider timeProvider,
     ILogger<DashboardService> logger) : IDashboardService
 {
-    /// <summary>One adapter per projection; a later registration replaces an earlier one, as a service registration does.</summary>
-    private readonly Dictionary<string, IDashboardProjectionSource> _sources =
-        sources.GroupBy(s => s.ProjectionCode, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Last(), StringComparer.Ordinal);
+    private readonly Dictionary<string, IDashboardProjectionSource> _sources = ProjectionSources.ByCode(sources);
 
     public async Task<DashboardCataloguePage> ListAsync(Guid callerId, PageRequest page, CancellationToken cancellationToken)
     {
@@ -283,7 +281,7 @@ internal sealed partial class DashboardService(
         List<ProjectFacts> reached = [];
         if (projection.Eligibility != ProjectionEligibility.NoProject)
         {
-            reached = [.. candidates.Where(p => scope.Matches(SubjectOf(p, widget.DataClassificationItemId)))];
+            reached = [.. candidates.Where(p => scope.Matches(ProjectSubjects.Of(p, widget.DataClassificationItemId)))];
             if (kind == DashboardContextKind.Project && reached.Count == 0)
             {
                 return ProjectionReading.Unknown(WidgetUnknownReason.Restricted);
@@ -309,18 +307,8 @@ internal sealed partial class DashboardService(
 
     private static bool Reaches(Dictionary<string, RecordScope> scopes, DashboardWidget widget, ProjectFacts project) =>
         DashboardProjections.Find(widget.SourceProjectionCode) is { Eligibility: not ProjectionEligibility.NoProject } projection
-        && scopes[projection.PermissionCode].Matches(SubjectOf(project, widget.DataClassificationItemId));
+        && scopes[projection.PermissionCode].Matches(ProjectSubjects.Of(project, widget.DataClassificationItemId));
 
-    /// <summary>The project's anchors as the engine decides on them (M-7), with the widget's classification (ADR-010).</summary>
-    private static AuthorizationSubject SubjectOf(ProjectFacts project, Guid? classificationId) =>
-        new()
-        {
-            ProjectId = project.Id,
-            DepartmentId = project.DepartmentId,
-            ExternalEntityId = project.ExternalEntityId,
-            OwnerUserId = project.ProjectManagerUserId,
-            DataClassificationItemId = classificationId,
-        };
 
     /// <summary>DSH-CC-18: the Project Dashboard is bound to a project and takes no department; the others take no project.</summary>
     private static AdministrationError? ContextRefused(DashboardContextKind kind, DashboardContext context) =>

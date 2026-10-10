@@ -11793,6 +11793,436 @@
         }
       }
     },
+    "/api/v1/report-definitions": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_ListReportDefinitions",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ReportCode"
+            }
+          },
+          {
+            "name": "lifecycleState",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/GovernedLifecycleState"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinitionPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Opens the report's next version as a DRAFT copy of its PUBLISHED version; one version is on its way at a time (409 `REPORT_VERSION_OPEN`).",
+        "operationId": "Reports_CreateReportDefinition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportDefinitionCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportDefinitionCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportDefinitionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-definitions/{definitionId}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetReportDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "A DRAFT's content, as a whole, by its author. Requires `If-Match` (R-21).",
+        "operationId": "Reports_UpdateReportDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportDefinitionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportDefinitionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportDefinitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-definitions/{definitionId}/validate": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "DRAFT → VALIDATED by a reviewer who is not the author, once FG-02 §11.2's validation passes (422 `REPORT_DEFINITION_INVALID` names each refusal).",
+        "operationId": "Reports_ValidateReportDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-definitions/{definitionId}/publish": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "VALIDATED → PUBLISHED by a third person, validated again; the version it replaces is retired in the same save.",
+        "operationId": "Reports_PublishReportDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-definitions/{definitionId}/retire": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "An abandoned DRAFT or VALIDATED version → RETIRED. A PUBLISHED one is 409 `REPORT_RETIREMENT_NOT_PERMITTED`: it is replaced, not removed.",
+        "operationId": "Reports_RetireReportDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-explorer/run": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "A composition run now: one page of the caller's authorised rows. A read that stores nothing.",
+        "operationId": "Reports_RunExplorer",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplorerRunRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplorerRunRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplorerRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResultPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-explorer/export": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "A composition as a PDF, XLSX or CSV: 202 with the job's `Location`.",
+        "operationId": "Reports_ExportExplorer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplorerExportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplorerExportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplorerExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportJobDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-allowlist-entries": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_ListReportAllowlistEntries",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportAllowlistEntryPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reporting-cycles": {
       "get": {
         "tags": [
@@ -11841,6 +12271,351 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReportingCyclePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-jobs": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_ListReportJobs",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportJobPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-jobs/{jobId}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetReportJob",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportJobDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-jobs/{jobId}/cancel": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "A job not yet finished → CANCELLED; nothing it may have rendered is kept. 409 `REPORT_JOB_NOT_CANCELLABLE` once it has finished.",
+        "operationId": "Reports_CancelReportJob",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportJobDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-jobs/{jobId}/content": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "The output's bytes (R-8), authorised now; never cached.",
+        "operationId": "Reports_DownloadReportOutput",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "SCR-130's catalogue: the PUBLISHED reports the caller may run.",
+        "operationId": "Reports_ListReports",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportCataloguePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{reportCode}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "The report as the caller may run it: its columns, its parameters with the options the caller may choose, its formats and what the caller may do.",
+        "operationId": "Reports_GetReport",
+        "parameters": [
+          {
+            "name": "reportCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{reportCode}/run": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "One page of the report run now (RPT-API-005): a read that stores nothing.",
+        "operationId": "Reports_RunReport",
+        "parameters": [
+          {
+            "name": "reportCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRunRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRunRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResultPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{reportCode}/export": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "MOD-060: the report as a PDF, XLSX or CSV (ADR-005). 202 with the job's `Location`; the same `Idempotency-Key` answers with the same job.",
+        "operationId": "Reports_ExportReport",
+        "parameters": [
+          {
+            "name": "reportCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportExportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportExportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportJobDetail"
                 }
               }
             }
@@ -12900,6 +13675,250 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RoleDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/saved-views": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_ListSavedViews",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViewPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_CreateSavedView",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViewDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/saved-views/{savedViewId}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetSavedView",
+        "parameters": [
+          {
+            "name": "savedViewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViewDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "The view, whole, by its owner. Requires `If-Match` (R-21).",
+        "operationId": "Reports_UpdateSavedView",
+        "parameters": [
+          {
+            "name": "savedViewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViewDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "HARD_OWNER: the owner's view is deleted; a view that is not theirs, or no longer exists, is 204 all the same (R-40).",
+        "operationId": "Reports_DeleteSavedView",
+        "parameters": [
+          {
+            "name": "savedViewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/saved-views/{savedViewId}/run": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "The view run now, as its owner may see now (RPT-API-023); 422 `REPORT_SAVED_VIEW_INCOMPATIBLE` names what no longer fits.",
+        "operationId": "Reports_RunSavedView",
+        "parameters": [
+          {
+            "name": "savedViewId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResultPage"
                 }
               }
             }
@@ -19281,7 +20300,10 @@
           "permissionCode",
           "isSensitive",
           "businessMeaning",
-          "drillTargetScreenId"
+          "drillTargetScreenId",
+          "entityCode",
+          "grain",
+          "fields"
         ],
         "type": "object",
         "properties": {
@@ -19323,9 +20345,28 @@
               "null",
               "string"
             ]
+          },
+          "entityCode": {
+            "type": "string"
+          },
+          "grain": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectionGrain"
+              }
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectionFieldDescriptor"
+            }
           }
         },
-        "description": "A registered source projection (FG-01 §4.1, PRJ-001–024): the only thing a widget may bind to. It is owned by its source domain;\nFG-01 reads it through that domain's contracts and never its tables (CFA-DSH-006). string DashboardProjectionDetail.PermissionCode is the source's\nown view permission, decided on each project; bool DashboardProjectionDetail.IsSensitive marks figures masked by audience (ADR-010)."
+        "description": "A registered source projection (FG-01 §4.1, PRJ-001–024): the only thing a widget may bind to. It is owned by its source domain;\nFG-01 reads it through that domain's contracts and never its tables (CFA-DSH-006). string DashboardProjectionDetail.PermissionCode is the source's\nown view permission, decided on each project; bool DashboardProjectionDetail.IsSensitive marks figures masked by audience (ADR-010). A projection about projects\nalso states its report ProjectionGrain? DashboardProjectionDetail.Grain and IReadOnlyList&lt;ProjectionFieldDescriptor&gt; DashboardProjectionDetail.Fields, under string DashboardProjectionDetail.EntityCode, the name REPORT_RULES and a report column\nuse for it (TASK-071); one that is not about projects has neither."
       },
       "DashboardProjectionPage": {
         "required": [
@@ -20468,6 +21509,100 @@
             ]
           }
         }
+      },
+      "ExplorerExportRequest": {
+        "required": [
+          "columns",
+          "filters",
+          "sort",
+          "format",
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportFieldRequest"
+            }
+          },
+          "filters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportFilterRequest"
+            }
+          },
+          "sort": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportSortRequest"
+            }
+          },
+          "format": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportExportFormat"
+              }
+            ]
+          },
+          "language": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "An SCR-138 composition as a PDF, XLSX or CSV."
+      },
+      "ExplorerRunRequest": {
+        "required": [
+          "columns",
+          "filters",
+          "sort"
+        ],
+        "type": "object",
+        "properties": {
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportFieldRequest"
+            }
+          },
+          "filters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportFilterRequest"
+            }
+          },
+          "sort": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportSortRequest"
+            }
+          }
+        },
+        "description": "An SCR-138 composition: allowlisted columns, filters and sorts only."
       },
       "ExternalContributionCreateRequest": {
         "required": [
@@ -22484,6 +23619,73 @@
           "PUBLISHED",
           null
         ]
+      },
+      "GeneratedOutputDetail": {
+        "required": [
+          "fileName",
+          "contentType",
+          "sizeBytes",
+          "checksumSha256",
+          "sensitivity",
+          "rowCount",
+          "sourceAsOf",
+          "expiresAt",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "checksumSha256": {
+            "type": "string"
+          },
+          "sensitivity": {
+            "$ref": "#/components/schemas/OutputSensitivity"
+          },
+          "rowCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "sourceAsOf": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GeneratedOutputStatus"
+          }
+        },
+        "description": "A job's output: its file, integrity hash, classification, the least current as-of of what it holds, and its expiry (GEN-005 to -013)."
+      },
+      "GeneratedOutputStatus": {
+        "enum": [
+          "AVAILABLE",
+          "EXPIRED",
+          "PURGED"
+        ],
+        "description": "A generated output's lifecycle (ERD §6): AVAILABLE until it expires; PURGED once its file is deleted, the record kept."
       },
       "GovernanceProfileEntry": {
         "required": [
@@ -26367,6 +27569,13 @@
         },
         "description": "A DRAFT's full text."
       },
+      "OutputSensitivity": {
+        "enum": [
+          "STANDARD",
+          "SENSITIVE"
+        ],
+        "description": "An output's classification as its content makes it (FG-02 §9.3, GEN-009): SENSITIVE when it reveals a financial amount or a classified\ncolumn, whatever the report's baseline; STANDARD otherwise. ADR-010's taxonomy, when AHDA supplies it, refines it."
+      },
       "ParticipationAudience": {
         "enum": [
           "INTERNAL",
@@ -27802,6 +29011,33 @@
         ],
         "description": "R-20(c) `coverage`: all of the eligible population, some of it, or none of it."
       },
+      "ProjectionFieldDescriptor": {
+        "required": [
+          "code",
+          "type",
+          "isSensitive",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProjectionValueType"
+          },
+          "isSensitive": {
+            "type": "boolean"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A field of a registered projection (FG-02 §4.1 Measures and Dimensions). IReadOnlyList&lt;string&gt; ProjectionFieldDescriptor.Values is the closed set of a\nProjectionValueType.Code field, in the source's order; empty otherwise. bool ProjectionFieldDescriptor.IsSensitive marks a financial amount\n(ADR-010)."
+      },
       "ProjectionFreshness": {
         "enum": [
           "FRESH",
@@ -27809,6 +29045,13 @@
           "UNKNOWN"
         ],
         "description": "R-20(c) `freshness`. UNKNOWN is a value of its own: a missing, restricted or unavailable source is never FRESH and never 0."
+      },
+      "ProjectionGrain": {
+        "enum": [
+          "PROJECT",
+          "SNAPSHOT",
+          null
+        ]
       },
       "ProjectionMeta": {
         "required": [
@@ -27849,6 +29092,19 @@
           "HISTORICAL_SNAPSHOT"
         ],
         "description": "R-20(c) `semanticState`: the three views FG-01 §7.1 keeps apart (CURRENT_OPERATIONAL, CURRENT_PUBLISHED, HISTORICAL_SNAPSHOT)."
+      },
+      "ProjectionValueType": {
+        "enum": [
+          "CODE",
+          "COUNT",
+          "PERCENT",
+          "DAYS",
+          "SAR",
+          "BOOLEAN",
+          "DATE",
+          "DATE_TIME"
+        ],
+        "description": "What a report cell holds, as its projection states it (FG-02 §6.2 data type)."
       },
       "ProjectLifecycleState": {
         "enum": [
@@ -29407,6 +30663,885 @@
         ],
         "description": "WF-10 §6.3's roll-up statuses."
       },
+      "ReportAllowlistEntryPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "configurationVersionId",
+          "configurationVersionNo"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportAllowlistEntryView"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "configurationVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "configurationVersionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "The allowlist in force: the REPORT_RULES version it comes from, and its entries."
+      },
+      "ReportAllowlistEntryView": {
+        "required": [
+          "id",
+          "sourceEntityCode",
+          "fieldCode",
+          "label",
+          "valueType",
+          "isFilterable",
+          "isSortable",
+          "operators",
+          "values",
+          "projectionCode",
+          "semanticState",
+          "isSensitive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sourceEntityCode": {
+            "type": "string"
+          },
+          "fieldCode": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "valueType": {
+            "$ref": "#/components/schemas/ReportValueType"
+          },
+          "isFilterable": {
+            "type": "boolean"
+          },
+          "isSortable": {
+            "type": "boolean"
+          },
+          "operators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportFilterOperator"
+            }
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "projectionCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "semanticState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectionSemanticState"
+              }
+            ]
+          },
+          "isSensitive": {
+            "type": "boolean"
+          }
+        },
+        "description": "A field the SCR-138 explorer offers (MOD-061): an entry of the REPORT_RULES version in force, as the register describes the field it names —\nits type, the operators it takes when filterable, its closed set of values, and its projection's semantic state. Nothing else is offered\nand nothing else is accepted (BR-RPT-045)."
+      },
+      "ReportAudienceFamily": {
+        "enum": [
+          "EXECUTIVE",
+          "PORTFOLIO",
+          "DEPARTMENT",
+          "PROJECT",
+          "FINANCIAL",
+          "PROGRESS",
+          "RISK_ISSUE"
+        ],
+        "description": "Which of the standard report experiences presents a report (FG-02 §5.2, SCR-131 to SCR-137; ERD `audience_family`)."
+      },
+      "ReportCatalogueEntry": {
+        "required": [
+          "code",
+          "reportDefinitionId",
+          "versionNo",
+          "name",
+          "description",
+          "audienceFamily",
+          "allowsSavedViews"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ReportCode"
+          },
+          "reportDefinitionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "audienceFamily": {
+            "$ref": "#/components/schemas/ReportAudienceFamily"
+          },
+          "allowsSavedViews": {
+            "type": "boolean"
+          }
+        },
+        "description": "A report the caller may run (SCR-130's catalogue)."
+      },
+      "ReportCataloguePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportCatalogueEntry"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ReportCell": {
+        "required": [
+          "value",
+          "label",
+          "freshness",
+          "asOf",
+          "unknownReason",
+          "isMasked"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "freshness": {
+            "$ref": "#/components/schemas/ProjectionFreshness"
+          },
+          "asOf": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "unknownReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportUnknownReason"
+              }
+            ]
+          },
+          "isMasked": {
+            "type": "boolean"
+          }
+        },
+        "description": "One value. string? ReportCell.Value is the source's own (a code, an exact decimal string, an ISO date or an id); BilingualLabel? ReportCell.Label names a\ndepartment or an entity. A cell with no value has ReportUnknownReason? ReportCell.UnknownReason; bool ReportCell.IsMasked marks one withheld by ADR-010."
+      },
+      "ReportCode": {
+        "enum": [
+          "PORTFOLIO_SUMMARY",
+          "PROJECT_REGISTER",
+          "PROJECT_REPORT",
+          "PROGRESS_REPORTING",
+          "PROGRESS_HISTORY",
+          "SCHEDULE_DELIVERY",
+          "RISK_ISSUE",
+          "FINANCIAL_PERFORMANCE",
+          "KPI_PERFORMANCE",
+          "GOVERNANCE_CHANGE"
+        ],
+        "description": "The ten reports the platform delivers (ADR-006: \"3 dashboards and 10 reports\"; a report counts once whatever its formats, ADR-005). FG-02's\ntwenty-six catalogue entries are absorbed into them as parameters, options and audiences (ADR-006 MAPPED; reports.md D-2). Stored as its\nname, so the database refuses an eleventh."
+      },
+      "ReportColumnInput": {
+        "required": [
+          "sourceEntityCode",
+          "fieldCode",
+          "label",
+          "isDefaultVisible",
+          "dataClassificationItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceEntityCode": {
+            "type": "string"
+          },
+          "fieldCode": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "isDefaultVisible": {
+            "type": "boolean"
+          },
+          "dataClassificationItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ReportColumnRequest": {
+        "required": [
+          "sourceEntityCode",
+          "fieldCode",
+          "label",
+          "isDefaultVisible",
+          "dataClassificationItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceEntityCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fieldCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "isDefaultVisible": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "dataClassificationItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ReportColumnView": {
+        "required": [
+          "sourceEntityCode",
+          "fieldCode",
+          "label",
+          "valueType",
+          "projectionCode",
+          "semanticState",
+          "isDefaultVisible",
+          "isSensitive"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceEntityCode": {
+            "type": "string"
+          },
+          "fieldCode": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "valueType": {
+            "$ref": "#/components/schemas/ReportValueType"
+          },
+          "projectionCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "semanticState": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectionSemanticState"
+              }
+            ]
+          },
+          "isDefaultVisible": {
+            "type": "boolean"
+          },
+          "isSensitive": {
+            "type": "boolean"
+          }
+        },
+        "description": "A column: string ReportColumnView.SourceEntityCode and string ReportColumnView.FieldCode name it as configuration does; string? ReportColumnView.ProjectionCode and\nProjectionSemanticState? ReportColumnView.SemanticState are its registered projection's (null for the project's own identity)."
+      },
+      "ReportCoverage": {
+        "required": [
+          "eligibleCount",
+          "includedCount",
+          "excludedCount",
+          "staleCount"
+        ],
+        "type": "object",
+        "properties": {
+          "eligibleCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "includedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "excludedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "staleCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "FG-02 §7.2: the projects a projection expected a value from, those shown, those left out and those whose value is stale."
+      },
+      "ReportDefinitionCreateRequest": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportCode"
+              }
+            ]
+          }
+        },
+        "description": "A new version of one of the ten reports; it opens as a DRAFT copy of the PUBLISHED version."
+      },
+      "ReportDefinitionDetail": {
+        "required": [
+          "id",
+          "code",
+          "versionNo",
+          "name",
+          "description",
+          "audienceFamily",
+          "primaryProjectionCode",
+          "allowsSavedViews",
+          "lifecycleState",
+          "validatedByUserId",
+          "validatedAt",
+          "publishedByUserId",
+          "publishedAt",
+          "retiredAt",
+          "audienceRoleCodes",
+          "parameters",
+          "columns",
+          "catalogueEntries",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ReportCode"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "audienceFamily": {
+            "$ref": "#/components/schemas/ReportAudienceFamily"
+          },
+          "primaryProjectionCode": {
+            "type": "string"
+          },
+          "allowsSavedViews": {
+            "type": "boolean"
+          },
+          "lifecycleState": {
+            "$ref": "#/components/schemas/GovernedLifecycleState"
+          },
+          "validatedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "validatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "publishedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "publishedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "retiredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "audienceRoleCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterDefinitionInput"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportColumnInput"
+            }
+          },
+          "catalogueEntries": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "One version of a governed report, whole (ADM-037)."
+      },
+      "ReportDefinitionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportDefinitionSummary"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ReportDefinitionRequest": {
+        "required": [
+          "name",
+          "description",
+          "audienceFamily",
+          "primaryProjectionCode",
+          "allowsSavedViews",
+          "audienceRoleCodes",
+          "parameters",
+          "columns"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "audienceFamily": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportAudienceFamily"
+              }
+            ]
+          },
+          "primaryProjectionCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "allowsSavedViews": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "audienceRoleCodes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "parameters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterDefinitionRequest"
+            }
+          },
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportColumnRequest"
+            }
+          }
+        },
+        "description": "A DRAFT version's content, as a whole (R-5): bilingual labels (ADR-012), audience family, the projection that decides its rows, saved views, the\nroles that may run it, its parameters and columns. Every one names a registered projection or field by code (BR-RPT-046); whether it is\nregistered, of the row's grain and offered to the right roles is the module's validation."
+      },
+      "ReportDefinitionSummary": {
+        "required": [
+          "id",
+          "code",
+          "versionNo",
+          "name",
+          "lifecycleState",
+          "publishedAt",
+          "retiredAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ReportCode"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "lifecycleState": {
+            "$ref": "#/components/schemas/GovernedLifecycleState"
+          },
+          "publishedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "retiredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReportExportFormat": {
+        "enum": [
+          "PDF",
+          "XLSX",
+          "CSV"
+        ],
+        "description": "The export baseline (ADR-005, ICD-17): PDF, XLSX and CSV only. A format never multiplies the report count (ADR-006)."
+      },
+      "ReportExportRequest": {
+        "required": [
+          "parameters",
+          "columns",
+          "sort",
+          "format",
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "parameters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterRequest"
+            }
+          },
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportFieldRequest"
+            }
+          },
+          "sort": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportSortRequest"
+            }
+          },
+          "format": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportExportFormat"
+              }
+            ]
+          },
+          "language": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "MOD-060: a report run as a PDF, XLSX or CSV (ADR-005), in Arabic or English."
+      },
       "ReportFieldEntry": {
         "required": [
           "sourceEntityCode",
@@ -29497,6 +31632,84 @@
           }
         }
       },
+      "ReportFilterInput": {
+        "required": [
+          "sourceEntityCode",
+          "fieldCode",
+          "operator",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceEntityCode": {
+            "type": "string"
+          },
+          "fieldCode": {
+            "type": "string"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/ReportFilterOperator"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "description": "A filter: a field, an operator of the closed set and a value — for IN several, for BETWEEN two, separated by commas. Never an expression."
+      },
+      "ReportFilterOperator": {
+        "enum": [
+          "EQ",
+          "NEQ",
+          "IN",
+          "GT",
+          "GTE",
+          "LT",
+          "LTE",
+          "BETWEEN",
+          "CONTAINS",
+          null
+        ]
+      },
+      "ReportFilterRequest": {
+        "required": [
+          "sourceEntityCode",
+          "fieldCode",
+          "operator",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceEntityCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fieldCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operator": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportFilterOperator"
+              }
+            ]
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A filter: a field, an operator of the closed set and a value (for IN several, for BETWEEN two, separated by commas). Never an expression."
+      },
       "ReportingCyclePage": {
         "required": [
           "items",
@@ -29581,6 +31794,829 @@
             "$ref": "#/components/schemas/ReportingCycleStatus"
           }
         }
+      },
+      "ReportJobDetail": {
+        "required": [
+          "id",
+          "kind",
+          "reportCode",
+          "reportDefinitionId",
+          "exportFormat",
+          "reportLanguage",
+          "status",
+          "requestedAt",
+          "startedAt",
+          "completedAt",
+          "failureCode",
+          "correlationId",
+          "output"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReportJobKind"
+          },
+          "reportCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportCode"
+              }
+            ]
+          },
+          "reportDefinitionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "exportFormat": {
+            "$ref": "#/components/schemas/ReportExportFormat"
+          },
+          "reportLanguage": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReportJobStatus"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "startedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "output": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GeneratedOutputDetail"
+              }
+            ]
+          }
+        },
+        "description": "A report job (SCR-140, RPT-API-010): what was asked, by whom and when, how far it has come, and its output once there is one.\nstring? ReportJobDetail.FailureCode is a code from the error catalogue, never a message (FG-02 REP-011)."
+      },
+      "ReportJobKind": {
+        "enum": [
+          "REPORT",
+          "EXPLORER"
+        ],
+        "description": "What a report job generates: a published report, or an SCR-138 composition of allowlisted fields."
+      },
+      "ReportJobPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportJobSummary"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ReportJobStatus": {
+        "enum": [
+          "REQUESTED",
+          "VALIDATING",
+          "QUEUED",
+          "RUNNING",
+          "COMPLETED",
+          "FAILED",
+          "CANCELLED",
+          "EXPIRED"
+        ],
+        "description": "A report job's lifecycle (ERD §6; api-conventions R-7): REQUESTED → VALIDATING → QUEUED → RUNNING → COMPLETED, FAILED or CANCELLED; a\nCOMPLETED job's output expires (EXPIRED). FAILED, CANCELLED and EXPIRED are terminal."
+      },
+      "ReportJobSummary": {
+        "required": [
+          "id",
+          "kind",
+          "reportCode",
+          "exportFormat",
+          "status",
+          "requestedAt",
+          "completedAt",
+          "sensitivity",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReportJobKind"
+          },
+          "reportCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportCode"
+              }
+            ]
+          },
+          "exportFormat": {
+            "$ref": "#/components/schemas/ReportExportFormat"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReportJobStatus"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "sensitivity": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OutputSensitivity"
+              }
+            ]
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "A job in the caller's Export History (SCR-140)."
+      },
+      "ReportParameterDataType": {
+        "enum": [
+          "PROJECT",
+          "DEPARTMENT",
+          "OPTION"
+        ],
+        "description": "What a report parameter takes (FG-02 §6.1). Each narrows the authorised rows and never widens them (BR-RPT-007)."
+      },
+      "ReportParameterDefinitionInput": {
+        "required": [
+          "code",
+          "label",
+          "dataType",
+          "isRequired",
+          "sourceEntityCode",
+          "fieldCode",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "dataType": {
+            "$ref": "#/components/schemas/ReportParameterDataType"
+          },
+          "isRequired": {
+            "type": "boolean"
+          },
+          "sourceEntityCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fieldCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterOptionInput"
+            }
+          }
+        }
+      },
+      "ReportParameterDefinitionRequest": {
+        "required": [
+          "code",
+          "label",
+          "dataType",
+          "isRequired",
+          "sourceEntityCode",
+          "fieldCode",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "dataType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportParameterDataType"
+              }
+            ]
+          },
+          "isRequired": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "sourceEntityCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fieldCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "options": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterOptionRequest"
+            }
+          }
+        }
+      },
+      "ReportParameterInput": {
+        "required": [
+          "code",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "description": "A parameter's value, as text: a project or department id, or an option's value."
+      },
+      "ReportParameterOptionInput": {
+        "required": [
+          "valueCode",
+          "label",
+          "catalogueEntryReference"
+        ],
+        "type": "object",
+        "properties": {
+          "valueCode": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "catalogueEntryReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ReportParameterOptionRequest": {
+        "required": [
+          "valueCode",
+          "label",
+          "catalogueEntryReference"
+        ],
+        "type": "object",
+        "properties": {
+          "valueCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "catalogueEntryReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ReportParameterOptionView": {
+        "required": [
+          "value",
+          "label",
+          "catalogueEntryReference"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "catalogueEntryReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "An option: a value the parameter takes and its label; string? ReportParameterOptionView.CatalogueEntryReference names the FG-02 catalogue entry it absorbs."
+      },
+      "ReportParameterRequest": {
+        "required": [
+          "code",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ReportParameterView": {
+        "required": [
+          "code",
+          "label",
+          "dataType",
+          "isRequired",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "dataType": {
+            "$ref": "#/components/schemas/ReportParameterDataType"
+          },
+          "isRequired": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterOptionView"
+            }
+          }
+        },
+        "description": "A parameter and the values the caller may give it: never a value they may not know (BR-RPT-010)."
+      },
+      "ReportResultPage": {
+        "required": [
+          "reportCode",
+          "versionNo",
+          "columns",
+          "sections",
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "departmentOptions",
+          "generatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "reportCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportCode"
+              }
+            ]
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportColumnView"
+            }
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportSection"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportRow"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "departmentOptions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "One page of a report's rows, run now over the caller's authorised population (FG-02 §4.3). Every cell is a projection's value with its own\nfreshness and as-of, or UNKNOWN with its reason; IReadOnlyList&lt;ReportSection&gt; ReportResultPage.Sections carry each projection's semantic state, freshness and coverage\n(RPT-CC-08 to -12). DateTimeOffset ReportResultPage.GeneratedAt is when the report was run and is never a source's as-of (BR-RPT-030)."
+      },
+      "ReportRow": {
+        "required": [
+          "projectId",
+          "snapshotIndex",
+          "cells"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "snapshotIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportCell"
+            }
+          }
+        },
+        "description": "A row: the project it is about, the snapshot's place for a historical report, and one cell per column in the columns' order."
+      },
+      "ReportRunRequest": {
+        "required": [
+          "parameters",
+          "columns",
+          "sort"
+        ],
+        "type": "object",
+        "properties": {
+          "parameters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterRequest"
+            }
+          },
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportFieldRequest"
+            }
+          },
+          "sort": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportSortRequest"
+            }
+          }
+        },
+        "description": "A run of a published report: its parameters, a choice among its columns (its default columns when absent), and an order."
+      },
+      "ReportSection": {
+        "required": [
+          "projectionCode",
+          "sourceDomain",
+          "projectionVersion",
+          "projection",
+          "unknownReason",
+          "coverage"
+        ],
+        "type": "object",
+        "properties": {
+          "projectionCode": {
+            "type": "string"
+          },
+          "sourceDomain": {
+            "type": "string"
+          },
+          "projectionVersion": {
+            "type": "string"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/ProjectionMeta"
+          },
+          "unknownReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportUnknownReason"
+              }
+            ]
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/ReportCoverage"
+          }
+        },
+        "description": "A projection's Coverage/Freshness banner over the rows (FG-02 §7): the R-20(c) metadata and the populations behind it."
+      },
+      "ReportSortDirection": {
+        "enum": [
+          "ASC",
+          "DESC",
+          null
+        ]
+      },
+      "ReportSortRequest": {
+        "required": [
+          "sourceEntityCode",
+          "fieldCode",
+          "direction"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceEntityCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fieldCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "direction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportSortDirection"
+              }
+            ]
+          }
+        }
+      },
+      "ReportUnknownReason": {
+        "enum": [
+          "MISSING",
+          "NOT_APPLICABLE",
+          "RESTRICTED",
+          "SOURCE_UNAVAILABLE",
+          null
+        ]
+      },
+      "ReportValueType": {
+        "enum": [
+          "CODE",
+          "TEXT",
+          "REFERENCE",
+          "COUNT",
+          "PERCENT",
+          "DAYS",
+          "SAR",
+          "BOOLEAN",
+          "DATE",
+          "DATE_TIME"
+        ],
+        "description": "What a report cell holds (FG-02 §6.2): a projection field's type, or a project's own identity (text, or a department or entity)."
+      },
+      "ReportView": {
+        "required": [
+          "code",
+          "reportDefinitionId",
+          "versionNo",
+          "name",
+          "description",
+          "audienceFamily",
+          "allowsSavedViews",
+          "columns",
+          "parameters",
+          "exportFormats",
+          "mayExport",
+          "maySaveView"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ReportCode"
+          },
+          "reportDefinitionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "audienceFamily": {
+            "$ref": "#/components/schemas/ReportAudienceFamily"
+          },
+          "allowsSavedViews": {
+            "type": "boolean"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportColumnView"
+            }
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterView"
+            }
+          },
+          "exportFormats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportExportFormat"
+            }
+          },
+          "mayExport": {
+            "type": "boolean"
+          },
+          "maySaveView": {
+            "type": "boolean"
+          }
+        },
+        "description": "A report's PUBLISHED version as the caller may run it (RPT-API-002, -003, -054): its columns, its parameters with the options the caller\nmay choose, the export formats (ADR-005), and what the caller may do with it now."
       },
       "ResolvedConfiguration": {
         "required": [
@@ -30971,6 +34007,334 @@
           }
         },
         "description": "ADM-008: a canonical role's editable representation, its bilingual name."
+      },
+      "SavedViewColumnInput": {
+        "required": [
+          "sourceEntityCode",
+          "fieldCode",
+          "sortDirection"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceEntityCode": {
+            "type": "string"
+          },
+          "fieldCode": {
+            "type": "string"
+          },
+          "sortDirection": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportSortDirection"
+              }
+            ]
+          }
+        }
+      },
+      "SavedViewColumnRequest": {
+        "required": [
+          "sourceEntityCode",
+          "fieldCode",
+          "sortDirection"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceEntityCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fieldCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortDirection": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportSortDirection"
+              }
+            ]
+          }
+        }
+      },
+      "SavedViewCompatibility": {
+        "enum": [
+          "VALID",
+          "INCOMPATIBLE"
+        ],
+        "description": "Whether a saved view still fits the report version and the allowlist in force (SAV-012); checked at every read and run."
+      },
+      "SavedViewDetail": {
+        "required": [
+          "id",
+          "viewType",
+          "name",
+          "reportCode",
+          "reportDefinitionId",
+          "reportVersionNo",
+          "parameters",
+          "columns",
+          "filters",
+          "compatibility",
+          "issues",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "viewType": {
+            "$ref": "#/components/schemas/SavedViewType"
+          },
+          "name": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "reportCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportCode"
+              }
+            ]
+          },
+          "reportDefinitionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reportVersionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterInput"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedViewColumnInput"
+            }
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportFilterInput"
+            }
+          },
+          "compatibility": {
+            "$ref": "#/components/schemas/SavedViewCompatibility"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedViewIssue"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A saved view (RPT-API-020): what it holds, the report version it was saved against, and whether it fits what is in force now — with each\nthing that no longer fits, never silently reinterpreted (SCR-139)."
+      },
+      "SavedViewIssue": {
+        "required": [
+          "field",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "description": "What no longer fits: the field of the view, and why."
+      },
+      "SavedViewPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SavedViewSummary"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "SavedViewRequest": {
+        "required": [
+          "name",
+          "viewType",
+          "reportCode",
+          "parameters",
+          "columns",
+          "filters"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "viewType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SavedViewType"
+              }
+            ]
+          },
+          "reportCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportCode"
+              }
+            ]
+          },
+          "parameters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportParameterRequest"
+            }
+          },
+          "columns": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SavedViewColumnRequest"
+            }
+          },
+          "filters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ReportFilterRequest"
+            }
+          }
+        },
+        "description": "MOD-062: a private saved view, whole — a report's parameter values (REPORT_PARAMETERS), or an SCR-138 composition of allowlisted columns, with\ntheir sorts, and filters (EXPLORER_COMPOSITION). Configuration only."
+      },
+      "SavedViewSummary": {
+        "required": [
+          "id",
+          "viewType",
+          "name",
+          "reportCode",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "viewType": {
+            "$ref": "#/components/schemas/SavedViewType"
+          },
+          "name": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "reportCode": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportCode"
+              }
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SavedViewType": {
+        "enum": [
+          "REPORT_PARAMETERS",
+          "EXPLORER_COMPOSITION"
+        ],
+        "description": "What a saved view holds (ERD `view_type`)."
       },
       "ScanState": {
         "enum": [
@@ -33189,6 +36553,9 @@
     },
     {
       "name": "Project"
+    },
+    {
+      "name": "Reports"
     },
     {
       "name": "Risk"

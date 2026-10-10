@@ -9,11 +9,13 @@ internal sealed class ProjectLifecycleSource : IDashboardProjectionSource
 
     public string ProjectionCode => DashboardProjections.ProjectLifecycleState;
 
-    public Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken)
+    public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken) =>
+        request.Read(await ObserveAsync(request, cancellationToken).ConfigureAwait(false), counted => ProjectionReadings.Distribution(counted, Order));
+
+    public Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        List<Observation> observations =
-            [.. request.Projects.Select(p => new Observation(p.Id, ObservationKind.Current, request.Now, ProjectionReadings.State(ProjectionReadings.Name(p.Status))))];
-        return Task.FromResult(request.Read(observations, counted => ProjectionReadings.Distribution(counted, Order)));
+        return Task.FromResult<IReadOnlyList<Observation>>(
+            [.. request.Projects.Select(p => new Observation(p.Id, ObservationKind.Current, request.Now, ProjectionReadings.State(ProjectionReadings.Name(p.Status))))]);
     }
 }

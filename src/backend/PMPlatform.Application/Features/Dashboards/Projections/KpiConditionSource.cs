@@ -19,12 +19,17 @@ internal sealed class KpiConditionSource(IKpiConditionReader conditions) : IDash
 
     public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(request);
-        ILookup<Guid, KpiCondition> byProject = (await conditions.ListAsync(request.ProjectIds, cancellationToken).ConfigureAwait(false)).ToLookup(c => c.ProjectId);
-        List<Observation> observations = [.. request.ProjectIds.Select(id => Observe(id, [.. byProject[id]]))];
+        IReadOnlyList<Observation> observations = await ObserveAsync(request, cancellationToken).ConfigureAwait(false);
         return request.Context == DashboardContextKind.Project
             ? ProjectionReadings.Of(observations.Single() is { IsCounted: true } single ? single with { Data = ProjectionReadings.SumBuckets(observations, Order) } : observations.Single())
             : ProjectionReadings.Aggregate(observations, counted => ProjectionReadings.SumBuckets(counted, Order));
+    }
+
+    public async Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ILookup<Guid, KpiCondition> byProject = (await conditions.ListAsync(request.ProjectIds, cancellationToken).ConfigureAwait(false)).ToLookup(c => c.ProjectId);
+        return [.. request.ProjectIds.Select(id => Observe(id, [.. byProject[id]]))];
     }
 
     private static Observation Observe(Guid projectId, IReadOnlyList<KpiCondition> assignments)

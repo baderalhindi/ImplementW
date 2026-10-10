@@ -13,16 +13,18 @@ internal sealed class ProjectHealthSource(IProjectHealthReader health) : IDashbo
 
     public string ProjectionCode => DashboardProjections.ProjectHealthStatus;
 
-    public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken)
+    public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken) =>
+        request.Read(await ObserveAsync(request, cancellationToken).ConfigureAwait(false), counted => ProjectionReadings.Distribution(counted, Order));
+
+    public async Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         IReadOnlyDictionary<Guid, ProjectHealthView> views = await health.ListAsync(request.ProjectIds, cancellationToken).ConfigureAwait(false);
-        List<Observation> observations = [.. request.ProjectIds.Select(id => views[id].Current is { } current
+        return [.. request.ProjectIds.Select(id => views[id].Current is { } current
             ? new Observation(id, ObservationKind.Current, current.ComputedAt, ProjectionReadings.State(
                 ProjectionReadings.Name(current.OverallHealth),
                 ProjectionReadings.Percent("ACTUAL_PERCENT", current.ActualPercent),
                 ProjectionReadings.Percent("PLANNED_PERCENT", current.PlannedPercent)))
             : new Observation(id, ObservationKind.Missing, null, null))];
-        return request.Read(observations, counted => ProjectionReadings.Distribution(counted, Order));
     }
 }

@@ -17,17 +17,26 @@ internal sealed class PublishedFinancialSource(IFinancialProgressService financi
     public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (request.Context == DashboardContextKind.Portfolio)
+        return request.Context == DashboardContextKind.Portfolio
+            ? FinancialReadings.Of(await financials.AggregateAsync(request.CallerId, request.ProjectIds, SemanticState.PublishedOfficial, cancellationToken).ConfigureAwait(false))
+            : ProjectionReadings.Of((await ObserveAsync(request, cancellationToken).ConfigureAwait(false)).Single());
+    }
+
+    /// <summary>The latest snapshot of each project, one read of WF-14 per project; a project with none published is MISSING.</summary>
+    public async Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        List<Observation> observations = [];
+        foreach (Guid projectId in request.ProjectIds)
         {
-            return FinancialReadings.Of(await financials.AggregateAsync(request.CallerId, request.ProjectIds, SemanticState.PublishedOfficial, cancellationToken).ConfigureAwait(false));
+            PublishedFinancialSnapshotPage page = await financials.ListSnapshotsAsync(request.CallerId, projectId, Latest, cancellationToken).ConfigureAwait(false);
+            observations.Add(page.Items.SingleOrDefault() is { } s
+                ? FinancialReadings.Of(
+                    projectId, s.ApprovedBudgetSar, s.ActualExpenditureToDateSar, s.ForecastAtCompletionSar, s.ValueStatus, s.FinancialStatus,
+                    FinancialReadings.AsOf(s.AsOfDate), s.MaskedFields)
+                : new Observation(projectId, ObservationKind.Missing, null, null));
         }
 
-        Guid projectId = request.ProjectIds.Single();
-        PublishedFinancialSnapshotPage page = await financials.ListSnapshotsAsync(request.CallerId, projectId, Latest, cancellationToken).ConfigureAwait(false);
-        return page.Items.SingleOrDefault() is { } s
-            ? ProjectionReadings.Of(FinancialReadings.Of(
-                projectId, s.ApprovedBudgetSar, s.ActualExpenditureToDateSar, s.ForecastAtCompletionSar, s.ValueStatus, s.FinancialStatus,
-                FinancialReadings.AsOf(s.AsOfDate), s.MaskedFields))
-            : ProjectionReading.Unknown(WidgetUnknownReason.Missing);
+        return observations;
     }
 }

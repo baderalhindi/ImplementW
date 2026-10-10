@@ -160,6 +160,7 @@ BEGIN
             ('financial_kpi',          'financial_progress_update_line', 'etimad_category_item_id',              'ETIMAD_COST_CATEGORY'),
             ('financial_kpi',          'kpi_assignment',                 'measurement_frequency_item_id',        'MEASUREMENT_FREQUENCY'),
             ('dashboards',             'dashboard_widget',               'data_classification_item_id',          'DATA_CLASSIFICATION'),
+            ('reports',                'report_column',                  'data_classification_item_id',          'DATA_CLASSIFICATION'),
             ('audit_activity',         'audit_event',                    'data_classification_item_id',          'DATA_CLASSIFICATION'))
             SELECT n.nspname AS schema_name, c.relname AS table_name, a.attname AS column_name, r.catalogue_code
             FROM pg_constraint x

@@ -76,6 +76,13 @@ stateDiagram-v2
 | `FINANCIAL_KPI.PUBLISHED_FINANCIAL_SNAPSHOT` | WF-14 | PUBLISHED_OFFICIAL | Project, Portfolio | `FINANCIAL_VIEW` (sensitive) | activated | the latest published snapshot; WF-14's published totals |
 | `FINANCIAL_KPI.KPI_CONDITION` | WF-14 | PUBLISHED_OFFICIAL | Project, Portfolio | `KPI_VIEW` | activated | ACTIVE assignments by RAG; NOT_PUBLISHED for one with no published measurement |
 | `DASHBOARDS.DEFINITION_BACKLOG` | FG-01 | CURRENT_LIVE | Portfolio | `CONFIGURATION_VIEW` | — | dashboard versions DRAFT, VALIDATED and PUBLISHED |
+| `PROJECT_TASK.OPEN_TASKS` | WF-04 | CURRENT_LIVE | Project, Portfolio | `TASK_VIEW` | activated | tasks and subtasks neither COMPLETED nor CANCELLED (TASK-071, edge 48) |
+| `MILESTONE.OPEN_ACHIEVEMENT_CLAIMS` | WF-05 | CURRENT_LIVE | Project, Portfolio | `MILESTONE_VIEW` | activated | achievement claims neither accepted nor superseded (TASK-071, edge 49) |
+| `MANAGEMENT_CONCERN.OPEN_CONCERNS` | WF-07 | CURRENT_LIVE | Project, Portfolio | `CONCERN_VIEW` | activated | issues and challenges neither RESOLVED nor CLOSED (TASK-071, edge 50) |
+| `CHANGE_REQUEST.CHANGE_POSITION` | WF-08 | CURRENT_LIVE | Project, Portfolio | `CHANGE_REQUEST_VIEW` | activated | change requests UNDECIDED, APPROVED_NOT_STARTED and IN_IMPLEMENTATION, kept apart (TASK-071, edge 51) |
+| `SUSPENSION.OPEN_REQUESTS` | WF-09 | CURRENT_LIVE | Project, Portfolio | `SUSPENSION_VIEW` | activated | suspension and resumption requests on their way (TASK-071, edge 52) |
+
+The last five are registered by TASK-071 for FG-02's reports (`reports.md` D-4); no seeded dashboard binds them yet, and a dashboard version on ADM-036 may. Each projection also lists its fields — code, value type, sensitivity — which is what a report column names.
 
 ## 5. Endpoints
 
@@ -111,7 +118,7 @@ stateDiagram-v2
 ## 7. How other modules build on it
 
 1. **TASK-070** renders these payloads. Every widget has `projection`; a widget with `unknownReason` has no `data` and is drawn as its reason (Missing, Not applicable, Restricted, Source unavailable), never as 0 or a colour; a STALE one keeps its value with its as-of; `isMasked` figures read Restricted. DSH-009 is `GET /dashboards/PROJECT?projectId=` composed into SCR-040, with no route of its own. The landing is the catalogue entry with `isDefaultLanding`; an entity user's is PROJECT, opened for one of its projects. Built: `dashboards-ui.md`.
-2. **TASK-071** (edge 30) reads the same register and contracts for its reports; `ProjectionMeta` is shared (M-10).
+2. **TASK-071** (edge 30) reads the same register for its reports through `IProjectionRowReader` (`ProjectionRowReader`): one row per project — or per published snapshot — the caller's scope reaches, every cell authorised, masked and dated exactly as a widget is, with each projection's `ProjectionMeta` beside the rows. Built: `reports.md` D-3.
 3. **A new projection** is a contract in its owning module (a bulk read that authorises no one), an ADR-003 §8.2 edge if its module is not yet in edge 29, an `IDashboardProjectionSource`, and a row in `DashboardProjections`; a widget binds it through a new version on ADM-036.
 4. **Blueprint Appendix A** turns RESTRICTED widgets into data for AHDA's roles by granting their source view permissions (F-3); nothing here changes.
 
@@ -207,3 +214,4 @@ M-13 and M-15 are killed by the database guard behind the application rule: each
 | --- | --- |
 | 2026-10-10 | Initial record (TASK-069). |
 | 2026-10-10 | §7 item 1 points to the UI that renders these payloads (TASK-070, `dashboards-ui.md`). |
+| 2026-10-10 | §4 gains the five projections TASK-071 registers (edges 48–52) and each projection's fields; §7 item 2 points to the row reader FG-02 reads through (`reports.md`). |

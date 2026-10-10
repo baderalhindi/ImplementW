@@ -204,3 +204,4 @@ Each mutation was applied, the solution rebuilt, the ChangeRequest unit tests wi
 | 2026-10-07 | Created (TASK-060) |
 | 2026-10-07 | §6 item 1 consumed by TASK-061 (`change-request-ui.md`) |
 | 2026-10-09 | §6 item 3 consumed by TASK-065 (`governance-contract-tests.md`): `ChangeAuthorizationIdempotencyTests` and the ChangeRequest contract gates and replay run in CI's "Governance domain contract and regression tests" step. A racing retry of the request that applies an authorisation answers 412 (that record's F-1, beside F-7 here) |
+| 2026-10-10 | TASK-071 (`reports.md` D-4): ADR-003 §8.2 edge 51, Dashboards → this module (read projection). `IChangeRequestCloseoutReader` — unchanged — is also read by FG-01's register as the projection `CHANGE_REQUEST.CHANGE_POSITION`, the per-project count FG-02's reports present; this module calls Dashboards in no way. |

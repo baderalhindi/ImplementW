@@ -44,5 +44,5 @@ public sealed class ReportingCalendarTests
     }
 
     private static ProjectFacts Project(DateTimeOffset? activatedAt, DateOnly? intake) =>
-        new(Guid.NewGuid(), "PRJ-000001", Guid.NewGuid(), null, Guid.NewGuid(), ProjectLifecycleState.Active, Guid.NewGuid(), intake, activatedAt, ParticipationMode.AhdaManaged);
+        new(Guid.NewGuid(), "PRJ-000001", Guid.NewGuid(), null, Guid.NewGuid(), ProjectLifecycleState.Active, Guid.NewGuid(), intake, activatedAt, ParticipationMode.AhdaManaged, new NarrativeText("Project", Language.En));
 }

@@ -7,6 +7,7 @@ using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.ChangeRequest;
 using PMPlatform.Application.Features.Dashboards;
+using PMPlatform.Application.Features.Reports;
 using PMPlatform.Application.Features.AuditActivity;
 using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
@@ -40,6 +41,9 @@ using PMPlatform.Infrastructure.Persistence.AuditActivity;
 using PMPlatform.Infrastructure.Persistence.ChangeRequest;
 using PMPlatform.Infrastructure.Persistence.DocumentManagement;
 using PMPlatform.Infrastructure.Persistence.Dashboards;
+using PMPlatform.Infrastructure.Persistence.Reports;
+using PMPlatform.Infrastructure.Reports;
+using PMPlatform.Infrastructure.Reports.Rendering;
 using PMPlatform.Infrastructure.Persistence.FinancialKpi;
 using PMPlatform.Infrastructure.Persistence.ExternalParticipation;
 using PMPlatform.Infrastructure.Persistence.ManagementConcern;
@@ -144,6 +148,20 @@ public static class DependencyInjection
 
         // TASK-060: WF-08's change_request schema.
         services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
+
+        // TASK-071: FG-02's reports schema; the PDF, XLSX and CSV renderers; and the pass that validates, generates and expires report jobs.
+        services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddSingleton<IReportRenderer, PdfReportRenderer>();
+        services.AddSingleton<IReportRenderer, XlsxReportRenderer>();
+        services.AddSingleton<IReportRenderer, CsvReportRenderer>();
+        services.AddOptions<ReportJobOptions>()
+            .Bind(configuration.GetSection(ReportJobOptions.Section))
+            .Validate(
+                options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0 && options.OutputLifetime > TimeSpan.Zero && options.MaxExportRows > 0
+                           && options.AbandonAfter > TimeSpan.Zero,
+                $"{ReportJobOptions.Section}: every interval, size and limit must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<ReportJobWorker>();
 
         // TASK-062: WF-09's suspension schema, and the pass that activates approved requests on their effective date.
         services.AddScoped<ISuspensionRepository, SuspensionRepository>();

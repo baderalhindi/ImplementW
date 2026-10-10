@@ -32,6 +32,10 @@ internal sealed class OpenApiDocument(JsonObject root)
         KnownFinding(@"C-8: PUT .*: PUT without a required If-Match header \(R-21\)"),
         KnownFinding(@"C-12: .*: X-Correlation-Id response header not declared \(R-41\)"),
         KnownFinding(@"C-12: .*: Location header not declared \(R-5\)"),
+
+        // R-8's binary download, GET .../content (WF-12's versions, FG-02's outputs): the checker reads it as a sub-collection of its resource.
+        KnownFinding(@"C-2: /api/v1/[a-z-]+/\{[A-Za-z]+\}(/[a-z-]+/\{[A-Za-z]+\})?/content: a segment after \{id\} must be a POST-only command or a child collection \(R-4\)"),
+        KnownFinding(@"C-9: GET /api/v1/[a-z-]+/\{[A-Za-z]+\}(/[a-z-]+/\{[A-Za-z]+\})?/content: (collection GET without page/pageSize or cursor/pageSize \(R-28\)|200 schema is not a page envelope .*)"),
     ];
 
     private static readonly string[] Methods = ["get", "put", "post", "delete", "patch", "head", "options"];

@@ -8412,6 +8412,984 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Reports.GeneratedOutput", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AuthorizationFootprint")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("authorization_footprint");
+
+                    b.Property<string>("ChecksumSha256")
+                        .IsRequired()
+                        .HasColumnType("char(64)")
+                        .HasColumnName("checksum_sha256");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("file_name");
+
+                    b.Property<DateTimeOffset?>("PurgedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("purged_at");
+
+                    b.Property<Guid>("ReportJobId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_job_id");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_count");
+
+                    b.Property<string>("Sensitivity")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("sensitivity");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<DateTimeOffset?>("SourceAsOf")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("source_as_of");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("StorageObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("storage_object_key");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_generated_output");
+
+                    b.HasAlternateKey("StorageObjectKey")
+                        .HasName("ak_generated_output_storage_object_key");
+
+                    b.HasIndex("ReportJobId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_generated_output_report_job_id");
+
+                    b.HasIndex("Status", "ExpiresAt")
+                        .HasDatabaseName("ix_generated_output_status_expires_at");
+
+                    b.ToTable("generated_output", "reports", t =>
+                        {
+                            t.HasCheckConstraint("ck_generated_output_checksum_sha256", "checksum_sha256 ~ '^[0-9a-f]{64}$'");
+
+                            t.HasCheckConstraint("ck_generated_output_file_name", "file_name ~ '^[A-Za-z0-9_-]+\\.(pdf|xlsx|csv)$'");
+
+                            t.HasCheckConstraint("ck_generated_output_purged", "(status = 'PURGED') = (purged_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_generated_output_sensitivity", "\"sensitivity\" IN ('STANDARD', 'SENSITIVE')");
+
+                            t.HasCheckConstraint("ck_generated_output_size_bytes", "size_bytes >= 0 AND row_count >= 0");
+
+                            t.HasCheckConstraint("ck_generated_output_status", "\"status\" IN ('AVAILABLE', 'EXPIRED', 'PURGED')");
+
+                            t.HasCheckConstraint("ck_generated_output_storage_object_key", "storage_object_key ~ '^[0-9a-f]{32}$'");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportAudienceRole", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ReportDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_definition_id");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_audience_role");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_report_audience_role_role_id");
+
+                    b.HasIndex("ReportDefinitionId", "RoleId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_audience_role_report_definition_id_role_id");
+
+                    b.ToTable("report_audience_role", "reports");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportColumn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid?>("DataClassificationItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("data_classification_item_id");
+
+                    b.Property<string>("FieldCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("field_code");
+
+                    b.Property<bool>("IsDefaultVisible")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default_visible");
+
+                    b.Property<Guid>("ReportDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_definition_id");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("SourceEntityCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("source_entity_code");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Label", "PMPlatform.Domain.Reports.ReportColumn.Label#BilingualLabel", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("label_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("label_en");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_column");
+
+                    b.HasIndex("DataClassificationItemId")
+                        .HasDatabaseName("ix_report_column_data_classification_item_id");
+
+                    b.HasIndex("ReportDefinitionId", "SortOrder")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_column_report_definition_id_sort_order");
+
+                    b.HasIndex("ReportDefinitionId", "SourceEntityCode", "FieldCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_column_report_definition_id_source_entity_code_field");
+
+                    b.ToTable("report_column", "reports", t =>
+                        {
+                            t.HasCheckConstraint("ck_report_column_field_code", "field_code ~ '^[A-Z][A-Z0-9_]*$'");
+
+                            t.HasCheckConstraint("ck_report_column_sort_order", "sort_order >= 1");
+
+                            t.HasCheckConstraint("ck_report_column_source_entity_code", "source_entity_code ~ '^[A-Z][A-Z0-9_]*$'");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AllowsSavedViews")
+                        .HasColumnType("boolean")
+                        .HasColumnName("allows_saved_views");
+
+                    b.Property<string>("AudienceFamily")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("audience_family");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("LifecycleState")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("lifecycle_state");
+
+                    b.Property<string>("PrimaryProjectionCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("primary_projection_code");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<Guid?>("PublishedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("published_by_user_id");
+
+                    b.Property<DateTimeOffset?>("RetiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("retired_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset?>("ValidatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("validated_at");
+
+                    b.Property<Guid?>("ValidatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("validated_by_user_id");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_no");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.Reports.ReportDefinition.Description#BilingualLabel", b1 =>
+                        {
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("description_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("description_en");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Name", "PMPlatform.Domain.Reports.ReportDefinition.Name#BilingualLabel", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_en");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_definition");
+
+                    b.HasIndex("PublishedByUserId")
+                        .HasDatabaseName("ix_report_definition_published_by_user_id");
+
+                    b.HasIndex("ValidatedByUserId")
+                        .HasDatabaseName("ix_report_definition_validated_by_user_id");
+
+                    b.HasIndex("Code", "VersionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_definition_code_version_no");
+
+                    b.HasIndex(new[] { "Code" }, "ix_report_definition_open_code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_definition_open_code")
+                        .HasFilter("lifecycle_state IN ('DRAFT', 'VALIDATED')");
+
+                    b.HasIndex(new[] { "Code" }, "ix_report_definition_published")
+                        .HasDatabaseName("ix_report_definition_published")
+                        .HasFilter("lifecycle_state = 'PUBLISHED'");
+
+                    b.ToTable("report_definition", "reports", t =>
+                        {
+                            t.HasCheckConstraint("ck_report_definition_audience_family", "\"audience_family\" IN ('EXECUTIVE', 'PORTFOLIO', 'DEPARTMENT', 'PROJECT', 'FINANCIAL', 'PROGRESS', 'RISK_ISSUE')");
+
+                            t.HasCheckConstraint("ck_report_definition_code", "\"code\" IN ('PORTFOLIO_SUMMARY', 'PROJECT_REGISTER', 'PROJECT_REPORT', 'PROGRESS_REPORTING', 'PROGRESS_HISTORY', 'SCHEDULE_DELIVERY', 'RISK_ISSUE', 'FINANCIAL_PERFORMANCE', 'KPI_PERFORMANCE', 'GOVERNANCE_CHANGE')");
+
+                            t.HasCheckConstraint("ck_report_definition_description", "(\"description_ar\" IS NULL) = (\"description_en\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_report_definition_lifecycle_state", "\"lifecycle_state\" IN ('DRAFT', 'VALIDATED', 'PUBLISHED', 'RETIRED')");
+
+                            t.HasCheckConstraint("ck_report_definition_primary_projection_code", "primary_projection_code ~ '^[A-Z][A-Z_]*\\.[A-Z][A-Z_]*$'");
+
+                            t.HasCheckConstraint("ck_report_definition_version_no", "version_no >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("ExportFormat")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("export_format");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<Guid>("IdempotencyKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid?>("ReportDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_definition_id");
+
+                    b.Property<string>("ReportLanguage")
+                        .IsRequired()
+                        .HasColumnType("char(2)")
+                        .HasColumnName("report_language");
+
+                    b.Property<string>("RequestSnapshot")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("request_snapshot");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<DateTimeOffset?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_job");
+
+                    b.HasIndex("ReportDefinitionId")
+                        .HasDatabaseName("ix_report_job_report_definition_id");
+
+                    b.HasIndex("RequestedByUserId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_job_requested_by_user_id_idempotency_key");
+
+                    b.HasIndex("RequestedByUserId", "RequestedAt", "Id")
+                        .HasDatabaseName("ix_report_job_requested_by_user_id_requested_at_id");
+
+                    b.HasIndex("Status", "RequestedAt")
+                        .HasDatabaseName("ix_report_job_status_requested_at");
+
+                    b.ToTable("report_job", "reports", t =>
+                        {
+                            t.HasCheckConstraint("ck_report_job_export_format", "\"export_format\" IN ('PDF', 'XLSX', 'CSV')");
+
+                            t.HasCheckConstraint("ck_report_job_failure_code", "(status = 'FAILED') = (failure_code IS NOT NULL) AND (failure_code IS NULL OR failure_code ~ '^[A-Z][A-Z0-9_]*$')");
+
+                            t.HasCheckConstraint("ck_report_job_kind", "(kind = 'REPORT') = (report_definition_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_report_job_report_language", "\"report_language\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_report_job_status", "\"status\" IN ('REQUESTED', 'VALIDATING', 'QUEUED', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportOutputContent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("StorageObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("storage_object_key");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_output_content");
+
+                    b.HasIndex("StorageObjectKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_output_content_storage_object_key");
+
+                    b.ToTable("report_output_content", "reports");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportParameter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DataType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("data_type");
+
+                    b.Property<string>("FieldCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("field_code");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_required");
+
+                    b.Property<Guid>("ReportDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_definition_id");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("SourceEntityCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("source_entity_code");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Label", "PMPlatform.Domain.Reports.ReportParameter.Label#BilingualLabel", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("label_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("label_en");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_parameter");
+
+                    b.HasIndex("ReportDefinitionId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_parameter_report_definition_id_code");
+
+                    b.ToTable("report_parameter", "reports", t =>
+                        {
+                            t.HasCheckConstraint("ck_report_parameter_binding", "(data_type = 'OPTION') = (source_entity_code IS NOT NULL AND field_code IS NOT NULL) AND (source_entity_code IS NULL) = (field_code IS NULL)");
+
+                            t.HasCheckConstraint("ck_report_parameter_code", "code ~ '^[A-Z][A-Z0-9_]*$'");
+
+                            t.HasCheckConstraint("ck_report_parameter_data_type", "\"data_type\" IN ('PROJECT', 'DEPARTMENT', 'OPTION')");
+
+                            t.HasCheckConstraint("ck_report_parameter_sort_order", "sort_order >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportParameterOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CatalogueEntryReference")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("catalogue_entry_reference");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ReportParameterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_parameter_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("ValueCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("value_code");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Label", "PMPlatform.Domain.Reports.ReportParameterOption.Label#BilingualLabel", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("label_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("label_en");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_parameter_option");
+
+                    b.HasIndex("ReportParameterId", "ValueCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_parameter_option_report_parameter_id_value_code");
+
+                    b.ToTable("report_parameter_option", "reports", t =>
+                        {
+                            t.HasCheckConstraint("ck_report_parameter_option_catalogue_entry_reference", "catalogue_entry_reference ~ '^RPT-[A-Z]{3}-[0-9]{3}$'");
+
+                            t.HasCheckConstraint("ck_report_parameter_option_value_code", "value_code ~ '^[A-Z][A-Z0-9_]*$'");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportParameterValue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("ParameterCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("parameter_code");
+
+                    b.Property<Guid>("SavedViewId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("saved_view_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("ValueText")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("value_text");
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_parameter_value");
+
+                    b.HasIndex("SavedViewId", "ParameterCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_parameter_value_saved_view_id_parameter_code");
+
+                    b.ToTable("report_parameter_value", "reports");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.SavedView", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_user_id");
+
+                    b.Property<Guid?>("ReportDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_definition_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("ViewType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("view_type");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Name", "PMPlatform.Domain.Reports.SavedView.Name#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("name_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("name");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_saved_view");
+
+                    b.HasIndex("ReportDefinitionId")
+                        .HasDatabaseName("ix_saved_view_report_definition_id");
+
+                    b.HasIndex("OwnerUserId", "ViewType")
+                        .HasDatabaseName("ix_saved_view_owner_user_id_view_type");
+
+                    b.ToTable("saved_view", "reports", t =>
+                        {
+                            t.HasCheckConstraint("ck_saved_view_name_lang", "\"name_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_saved_view_report", "(view_type = 'REPORT_PARAMETERS') = (report_definition_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_saved_view_view_type", "\"view_type\" IN ('REPORT_PARAMETERS', 'EXPLORER_COMPOSITION')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.SavedViewColumn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ReportAllowlistEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_allowlist_entry_id");
+
+                    b.Property<Guid>("SavedViewId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("saved_view_id");
+
+                    b.Property<string>("SortDirection")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("sort_direction");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_saved_view_column");
+
+                    b.HasIndex("ReportAllowlistEntryId")
+                        .HasDatabaseName("ix_saved_view_column_report_allowlist_entry_id");
+
+                    b.HasIndex("SavedViewId", "ReportAllowlistEntryId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_saved_view_column_saved_view_id_report_allowlist_entry_id");
+
+                    b.HasIndex("SavedViewId", "SortOrder")
+                        .IsUnique()
+                        .HasDatabaseName("ix_saved_view_column_saved_view_id_sort_order");
+
+                    b.ToTable("saved_view_column", "reports", t =>
+                        {
+                            t.HasCheckConstraint("ck_saved_view_column_sort_direction", "\"sort_direction\" IN ('ASC', 'DESC')");
+
+                            t.HasCheckConstraint("ck_saved_view_column_sort_order", "sort_order >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.SavedViewFilter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Operator")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("operator");
+
+                    b.Property<Guid>("ReportAllowlistEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("report_allowlist_entry_id");
+
+                    b.Property<Guid>("SavedViewId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("saved_view_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("ValueText")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("value_text");
+
+                    b.HasKey("Id")
+                        .HasName("pk_saved_view_filter");
+
+                    b.HasIndex("ReportAllowlistEntryId")
+                        .HasDatabaseName("ix_saved_view_filter_report_allowlist_entry_id");
+
+                    b.HasIndex("SavedViewId")
+                        .HasDatabaseName("ix_saved_view_filter_saved_view_id");
+
+                    b.ToTable("saved_view_filter", "reports", t =>
+                        {
+                            t.HasCheckConstraint("ck_saved_view_filter_operator", "\"operator\" IN ('EQ', 'NEQ', 'IN', 'GT', 'GTE', 'LT', 'LTE', 'BETWEEN', 'CONTAINS')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Risk.Risk", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11719,6 +12697,171 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_task_dependency_project_task_successor_task_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.GeneratedOutput", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Reports.ReportJob", null)
+                        .WithOne()
+                        .HasForeignKey("PMPlatform.Domain.Reports.GeneratedOutput", "ReportJobId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_generated_output_report_job_report_job_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportAudienceRole", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Reports.ReportDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("ReportDefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_audience_role_report_definition_report_definition_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_audience_role_role_role_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportColumn", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("DataClassificationItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_report_column_master_data_item_data_classification_item_id");
+
+                    b.HasOne("PMPlatform.Domain.Reports.ReportDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("ReportDefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_column_report_definition_report_definition_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportDefinition", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_report_definition_user_published_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ValidatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_report_definition_user_validated_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportJob", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Reports.ReportDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("ReportDefinitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_report_job_report_definition_report_definition_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_job_user_requested_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportOutputContent", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Reports.GeneratedOutput", null)
+                        .WithOne()
+                        .HasForeignKey("PMPlatform.Domain.Reports.ReportOutputContent", "StorageObjectKey")
+                        .HasPrincipalKey("PMPlatform.Domain.Reports.GeneratedOutput", "StorageObjectKey")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_output_content_generated_output_storage_object_key");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportParameter", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Reports.ReportDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("ReportDefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_parameter_report_definition_report_definition_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportParameterOption", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Reports.ReportParameter", null)
+                        .WithMany()
+                        .HasForeignKey("ReportParameterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_parameter_option_report_parameter_report_parameter_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.ReportParameterValue", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Reports.SavedView", null)
+                        .WithMany()
+                        .HasForeignKey("SavedViewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_parameter_value_saved_view_saved_view_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.SavedView", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_saved_view_user_owner_user_id");
+
+                    b.HasOne("PMPlatform.Domain.Reports.ReportDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("ReportDefinitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_saved_view_report_definition_report_definition_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.SavedViewColumn", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ReportAllowlistEntry", null)
+                        .WithMany()
+                        .HasForeignKey("ReportAllowlistEntryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_saved_view_column_report_allowlist_entry_report_allowlist_e");
+
+                    b.HasOne("PMPlatform.Domain.Reports.SavedView", null)
+                        .WithMany()
+                        .HasForeignKey("SavedViewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_saved_view_column_saved_view_saved_view_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.SavedViewFilter", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ReportAllowlistEntry", null)
+                        .WithMany()
+                        .HasForeignKey("ReportAllowlistEntryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_saved_view_filter_report_allowlist_entry_report_allowlist_e");
+
+                    b.HasOne("PMPlatform.Domain.Reports.SavedView", null)
+                        .WithMany()
+                        .HasForeignKey("SavedViewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_saved_view_filter_saved_view_saved_view_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Risk.Risk", b =>

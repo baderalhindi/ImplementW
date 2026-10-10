@@ -39,5 +39,8 @@
     <!-- TASK-027: the seed and data-integrity scripts ship inside the release image and run as its `seed` and
          `validate-data-integrity` commands (Persistence/DatabaseScripts.cs). db/seed stays their only source. -->
     <EmbeddedResource Include="../../../db/seed/*.sql" LogicalName="PMPlatform.Seed.%(Filename)%(Extension)" />
+    <!-- TASK-071: the font the FG-02 PDF renderer embeds, so Arabic and English draw the same in every reader (Reports/Rendering/PdfReportRenderer.cs).
+         Bitstream Vera licence, reproduced beside it. -->
+    <EmbeddedResource Include="Reports/Rendering/Fonts/DejaVuSans.ttf" LogicalName="PMPlatform.Infrastructure.Reports.Rendering.Fonts.DejaVuSans.ttf" />
   </ItemGroup>
 </Project>

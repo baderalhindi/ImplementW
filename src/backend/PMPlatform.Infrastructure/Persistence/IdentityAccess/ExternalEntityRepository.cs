@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 using PMPlatform.Domain.MasterDataConfig;
 
@@ -81,6 +82,11 @@ internal sealed class ExternalEntityRepository(PMPlatformDbContext context) : IE
         .AnyAsync(cancellationToken);
 
     public void Add(ExternalEntity entity) => context.Set<ExternalEntity>().Add(entity);
+
+    public async Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
+        ids.Count == 0
+            ? []
+            : await context.Set<ExternalEntity>().AsNoTracking().Where(e => ids.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.Name, cancellationToken).ConfigureAwait(false);
 
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken) => AdministrationPersistence.SaveAsync(context, cancellationToken);
 }

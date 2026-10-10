@@ -114,7 +114,16 @@ public sealed class ShippedGrantTests
         AuthorizationScenario scenario = Scenario(role);
 
         Assert.Equal(AuthorizationDecision.Forbidden(AuthorizationDenial.NotGranted), await scenario.AuthorizeAsync(permission));
-        Assert.Equal(AuthorizationOutcome.NotFound, (await scenario.AuthorizeAsync(permission, new AuthorizationSubject { OwnerUserId = UserId })).Outcome);
+
+        // R-47: 404, unless another permission of the same group lets the role see the record (the subject is the holder's own and names no
+        // project, so only an unbound OWN or wider grant reaches it): then 403 — R02, R03 and R07 see their own under REPORT_COMPOSE, so a
+        // REPORT_EXPORT they lack on it is 403 (TASK-071). The entity Project Manager's grants are bound to its project and reach nothing here.
+        string group = PermissionCatalogue.Platform.Get(permission).Group;
+        bool visible = !IsEntityProjectManager(role) && PermissionCatalogue.ShippedDefaultGrants.Any(g =>
+            g.RoleCode == role && PermissionCatalogue.Platform.Get(g.PermissionCode).Group == group && g.Scope is DataScope.All or DataScope.Own or DataScope.ReadOnly);
+        Assert.Equal(
+            visible ? AuthorizationOutcome.Forbidden : AuthorizationOutcome.NotFound,
+            (await scenario.AuthorizeAsync(permission, new AuthorizationSubject { OwnerUserId = UserId })).Outcome);
     }
 
     /// <summary>ADR-019, verbatim: granted to R02, R03 and R07 and withheld from R04, R05, R06 and R08.</summary>

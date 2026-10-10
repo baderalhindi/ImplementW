@@ -16,11 +16,14 @@ internal sealed class ReportingCompletenessSource(IReportingCycleReader cycles) 
 
     public string ProjectionCode => DashboardProjections.ReportingCompleteness;
 
-    public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken)
+    public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken) =>
+        request.Read(await ObserveAsync(request, cancellationToken).ConfigureAwait(false), counted => ProjectionReadings.Distribution(counted, Order));
+
+    public async Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ILookup<Guid, ReportingCycleSummary> periods = ReportingStaleness.ByProject(await cycles.ListAsync(request.ProjectIds, cancellationToken).ConfigureAwait(false));
-        List<Observation> observations = [.. request.ProjectIds.Select(id =>
+        return [.. request.ProjectIds.Select(id =>
         {
             if (!periods[id].Any())
             {
@@ -31,6 +34,5 @@ internal sealed class ReportingCompletenessSource(IReportingCycleReader cycles) 
             return new Observation(id, ObservationKind.Current, request.Now,
                 ProjectionReadings.State(overdue > 0 ? Overdue : UpToDate, ProjectionReadings.Count("OVERDUE_PERIODS", overdue)));
         })];
-        return request.Read(observations, counted => ProjectionReadings.Distribution(counted, Order));
     }
 }

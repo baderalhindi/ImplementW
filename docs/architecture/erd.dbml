@@ -1998,13 +1998,15 @@ Table dashboards.user_dashboard_widget_preference {
 // ===== Reports (FG-02) — schema reports
 Table reports.report_definition {
   id uuid [pk, not null, note: 'Primary key (D-1)']
-  code varchar(50) [not null, note: 'RPT-…']
+  code varchar(50) [not null, note: 'One of the ten (ADR-006): PORTFOLIO_SUMMARY | PROJECT_REGISTER | PROJECT_REPORT | PROGRESS_REPORTING | PROGRESS_HISTORY | SCHEDULE_DELIVERY | RISK_ISSUE | FINANCIAL_PERFORMANCE | KPI_PERFORMANCE | GOVERNANCE_CHANGE; CHECK']
   version_no integer [not null]
   name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
   name_en varchar(200) [not null, note: 'English label (ADR-012)']
   description_ar varchar(200) [note: 'Arabic label (ADR-012)']
   description_en varchar(200) [note: 'English label (ADR-012)']
   audience_family varchar(50) [not null, note: 'EXECUTIVE | PORTFOLIO | DEPARTMENT | PROJECT | FINANCIAL | PROGRESS | RISK_ISSUE']
+  primary_projection_code varchar(100) [not null, note: 'The FG-01 registered projection whose permission and eligibility decide the rows (TASK-071); a code, never an expression']
+  allows_saved_views boolean [not null]
   lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']
   validated_by_user_id uuid [ref: > identity_access.user.id, note: 'Reviewer; must differ from author (TASK-110)']
   validated_at timestamptz
@@ -2018,7 +2020,7 @@ Table reports.report_definition {
   indexes {
     (code, version_no) [unique]
   }
-  Note: 'Governed parameterised report definition; ten at launch (ADR-006), modes and scopes carried as parameters. Delete policy: RETAIN.'
+  Note: 'Governed parameterised report definition; ten at launch (ADR-006), modes and scopes carried as parameters. Partial unique index: (code) WHERE lifecycle_state IN (DRAFT, VALIDATED) — one version on its way; at commit, one PUBLISHED version per code (TASK-071). Delete policy: RETAIN.'
 }
 
 Table reports.report_audience_role {
@@ -2035,15 +2037,38 @@ Table reports.report_audience_role {
   Note: 'Roles that may run a definition; R08 limited to the entity report set (ADR-013). Delete policy: CASCADE.'
 }
 
+Table reports.report_column {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  report_definition_id uuid [not null, ref: > reports.report_definition.id]
+  source_entity_code varchar(100) [not null, note: 'A registered FG-01 projection, as its entity code, or PROJECT for the identity columns']
+  field_code varchar(100) [not null, note: 'A field that projection registers']
+  sort_order smallint [not null]
+  is_default_visible boolean [not null]
+  data_classification_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'A clearance the reader must hold for the column (ADR-010)']
+  label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  label_en varchar(200) [not null, note: 'English label (ADR-012)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (report_definition_id, source_entity_code, field_code) [unique]
+    (report_definition_id, sort_order) [unique]
+  }
+  Note: 'A column a definition presents, bound to a registered projection field (TASK-071). Delete policy: CASCADE.'
+}
+
 Table reports.report_parameter {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   report_definition_id uuid [not null, ref: > reports.report_definition.id]
   code varchar(50) [not null]
   label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
   label_en varchar(200) [not null, note: 'English label (ADR-012)']
-  data_type varchar(50) [not null, note: 'TEXT | DATE | DATE_RANGE | MASTER_DATA_ITEM | PROJECT | DEPARTMENT | ENTITY | OPTION']
+  data_type varchar(50) [not null, note: 'PROJECT | DEPARTMENT | OPTION (TASK-071); TEXT, DATE, DATE_RANGE, MASTER_DATA_ITEM and ENTITY when a report needs them']
   is_required boolean [not null]
-  option_catalogue_id uuid [ref: > master_data_config.master_data_catalogue.id, note: 'For MASTER_DATA_ITEM parameters']
+  sort_order smallint [not null]
+  source_entity_code varchar(100) [note: 'For OPTION parameters: the column whose source-owned value the option selects']
+  field_code varchar(100)
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -2060,7 +2085,7 @@ Table reports.report_parameter_option {
   value_code varchar(50) [not null]
   label_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
   label_en varchar(200) [not null, note: 'English label (ADR-012)']
-  catalogue_entry_reference varchar(50) [note: 'FG-02 catalogue entry this option absorbs']
+  catalogue_entry_reference varchar(50) [note: 'FG-02 catalogue entry this option absorbs (RPT-XXX-nnn)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -2078,7 +2103,7 @@ Table reports.saved_view {
   report_definition_id uuid [ref: > reports.report_definition.id, note: 'Required for REPORT_PARAMETERS']
   name text [not null, note: 'Narrative, stored as entered (ADR-012)']
   name_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
-  is_shared boolean [not null, default: false]
+  is_shared boolean [not null, default: false, note: 'TASK-112 (sharing); not built by TASK-071']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -2096,7 +2121,7 @@ Table reports.saved_view_share {
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Who a view is shared with. CHECK: exactly one of the three shared_with columns is not null. Delete policy: CASCADE.'
+  Note: 'Who a view is shared with (TASK-112; not built by TASK-071). CHECK: exactly one of the three shared_with columns is not null. Delete policy: CASCADE.'
 }
 
 Table reports.saved_view_column {
@@ -2111,6 +2136,7 @@ Table reports.saved_view_column {
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   indexes {
     (saved_view_id, report_allowlist_entry_id) [unique]
+    (saved_view_id, sort_order) [unique]
   }
   Note: 'An allowlisted column selected in an explorer composition (MOD-061). Delete policy: CASCADE.'
 }
@@ -2130,45 +2156,58 @@ Table reports.saved_view_filter {
 
 Table reports.report_parameter_value {
   id uuid [pk, not null, note: 'Primary key (D-1)']
-  saved_view_id uuid [ref: > reports.saved_view.id]
-  report_job_id uuid [ref: > reports.report_job.id]
+  saved_view_id uuid [not null, ref: > reports.saved_view.id]
   parameter_code varchar(50) [not null]
   value_text varchar(500) [not null]
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Pinned parameter value of a saved view or a job. CHECK: exactly one of saved_view_id, report_job_id is not null. Delete policy: CASCADE.'
+  indexes {
+    (saved_view_id, parameter_code) [unique]
+  }
+  Note: 'Pinned parameter value of a saved view. A job pins its whole request in report_job.request_snapshot (TASK-071). Delete policy: CASCADE.'
 }
 
 Table reports.report_job {
   id uuid [pk, not null, note: 'Primary key (D-1)']
-  report_definition_id uuid [ref: > reports.report_definition.id]
-  saved_view_id uuid [ref: > reports.saved_view.id]
+  kind varchar(50) [not null, note: 'REPORT | EXPLORER']
+  report_definition_id uuid [ref: > reports.report_definition.id, note: 'The version run; required for REPORT, null for EXPLORER']
   requested_by_user_id uuid [not null, ref: > identity_access.user.id]
   requested_at timestamptz [not null]
   export_format varchar(50) [not null, note: 'PDF | XLSX | CSV (ADR-005)']
   report_language char(2) [not null]
   correlation_id uuid [not null]
+  idempotency_key uuid [not null, note: 'The Idempotency-Key of the request (api-conventions R-6)']
   status varchar(50) [not null, note: 'REQUESTED | VALIDATING | QUEUED | RUNNING | COMPLETED | FAILED | CANCELLED | EXPIRED']
+  request_snapshot jsonb [not null, note: 'The request as validated: parameters, columns, filters, sorts, allowlist version — pinned, never re-read']
   started_at timestamptz
   completed_at timestamptz
-  failure_reason text
+  failure_code varchar(100) [note: 'A REPORT_* code, set exactly when FAILED; never a message or a stack trace']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'A generation run (REQUESTED→VALIDATING→QUEUED→RUNNING→COMPLETED/FAILED/CANCELLED/EXPIRED) for a definition or an explorer view (TASK-071). CHECK: at least one of report_definition_id, saved_view_id is not null. Delete policy: RETAIN.'
+  indexes {
+    (requested_by_user_id, idempotency_key) [unique]
+    (requested_by_user_id, requested_at, id)
+    (status, requested_at)
+  }
+  Note: 'A generation run (REQUESTED→VALIDATING→QUEUED→RUNNING→COMPLETED/FAILED/CANCELLED/EXPIRED) of a definition or an explorer composition (TASK-071). CHECK: report_definition_id is not null exactly when kind = REPORT. Delete policy: RETAIN.'
 }
 
 Table reports.generated_output {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   report_job_id uuid [not null, unique, ref: > reports.report_job.id]
-  storage_object_key varchar(500) [not null, unique]
+  storage_object_key varchar(500) [not null, unique, note: 'Opaque: 32 hex characters, never a path or a name']
   file_name varchar(500) [not null]
   content_type varchar(200) [not null]
   size_bytes bigint [not null]
   checksum_sha256 char(64) [not null]
+  sensitivity varchar(50) [not null, note: 'STANDARD | SENSITIVE: SENSITIVE when the output reveals a financial amount (ADR-010)']
+  row_count integer [not null]
+  source_as_of timestamptz [note: 'The least current as-of of the values the output presents']
+  authorization_footprint jsonb [not null, note: 'What the output revealed — projects, and per column whether a value was shown — checked again at download']
   expires_at timestamptz [not null]
   status varchar(50) [not null, note: 'AVAILABLE | EXPIRED | PURGED']
   purged_at timestamptz
@@ -2176,7 +2215,21 @@ Table reports.generated_output {
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (status, expires_at)
+  }
   Note: 'The secured output of a completed job; downloads are authorised at download time (TASK-071). The file is purged at expiry; the row is kept. Delete policy: RETAIN.'
+}
+
+Table reports.report_output_content {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  storage_object_key varchar(500) [not null, unique, ref: > reports.generated_output.storage_object_key]
+  content bytea [not null, note: 'The file bytes; deleted when the output is purged']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  Note: 'The bytes of a generated output, apart from its record (TASK-071): deleted at expiry while generated_output is kept; never updated. Delete policy: HARD_WORKING.'
 }
 
 // ===== IntegrationMonitoring (FG-05) — schema integration_monitoring
@@ -2513,6 +2566,7 @@ TableGroup dashboards {
 TableGroup reports {
   reports.report_definition
   reports.report_audience_role
+  reports.report_column
   reports.report_parameter
   reports.report_parameter_option
   reports.saved_view
@@ -2522,6 +2576,7 @@ TableGroup reports {
   reports.report_parameter_value
   reports.report_job
   reports.generated_output
+  reports.report_output_content
 }
 
 TableGroup integration_monitoring {

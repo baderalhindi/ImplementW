@@ -85,6 +85,11 @@ internal static class ModuleRegistry
         ("Closure", "Progress"),                     // 46 query: unpublished progress, and whether any is published (TASK-063)
         ("Dashboards", "Project"),                   // 47 query: the projects a caller's record scope reaches, the population an FG-01
                                                      //    aggregate is counted over, and the one project of the Project Dashboard (TASK-069)
+        ("Dashboards", "ProjectTask"),               // 48 read projection: open tasks per project, for FG-01 and FG-02's rows (TASK-071)
+        ("Dashboards", "Milestone"),                 // 49 read projection: open achievement claims per project (TASK-071)
+        ("Dashboards", "ManagementConcern"),         // 50 read projection: open issues and challenges per project (TASK-071)
+        ("Dashboards", "ChangeRequest"),             // 51 read projection: change requests undecided, approved, in implementation (TASK-071)
+        ("Dashboards", "Suspension"),                // 52 read projection: open suspension and resumption requests (TASK-071)
     };
 
     public static bool Allows(string referrer, string referenced) =>

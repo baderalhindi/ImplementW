@@ -47,7 +47,9 @@ public sealed record DashboardDefinitionPage(IReadOnlyList<DashboardDefinitionSu
 /// <summary>
 /// A registered source projection (FG-01 §4.1, PRJ-001–024): the only thing a widget may bind to. It is owned by its source domain;
 /// FG-01 reads it through that domain's contracts and never its tables (CFA-DSH-006). <see cref="PermissionCode"/> is the source's
-/// own view permission, decided on each project; <see cref="IsSensitive"/> marks figures masked by audience (ADR-010).
+/// own view permission, decided on each project; <see cref="IsSensitive"/> marks figures masked by audience (ADR-010). A projection about projects
+/// also states its report <see cref="Grain"/> and <see cref="Fields"/>, under <see cref="EntityCode"/>, the name REPORT_RULES and a report column
+/// use for it (TASK-071); one that is not about projects has neither.
 /// </summary>
 public sealed record DashboardProjectionDetail(
     string Code,
@@ -59,6 +61,9 @@ public sealed record DashboardProjectionDetail(
     string PermissionCode,
     bool IsSensitive,
     string BusinessMeaning,
-    string? DrillTargetScreenId);
+    string? DrillTargetScreenId,
+    string EntityCode,
+    ProjectionGrain? Grain,
+    IReadOnlyList<ProjectionFieldDescriptor> Fields);
 
 public sealed record DashboardProjectionPage(IReadOnlyList<DashboardProjectionDetail> Items, int Page, int PageSize, int TotalCount);

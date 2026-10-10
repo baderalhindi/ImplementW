@@ -73,10 +73,10 @@ F-071,,,"Suppression, dead-letter and recipient preferences",Notifications,Notif
 F-072,,,"Bilingual, mandatory notification templates",Notifications,NotificationTemplate,TASK-039; ADR-012,COVERED
 F-073,,,"DashboardDefinition — governed, bound to controlled projections",Dashboards,DashboardDefinition; DashboardWidget; DashboardAudienceRole,TASK-069; ADR-006,COVERED
 F-074,,,UserDashboardPreference — presentation-only personalisation,Dashboards,UserDashboardPreference; UserDashboardWidgetPreference,TASK-111; ADR-019,COVERED
-F-075,,,"ReportDefinition — parameterised, ten at launch",Reports,ReportDefinition; ReportParameter; ReportParameterOption; ReportAudienceRole,TASK-071; ADR-006,COVERED
+F-075,,,"ReportDefinition — parameterised, ten at launch",Reports,ReportDefinition; ReportColumn; ReportParameter; ReportParameterOption; ReportAudienceRole,TASK-071; ADR-006,COVERED
 F-076,,,SavedView including shared controlled-explorer compositions,Reports,SavedView; SavedViewShare; SavedViewColumn; SavedViewFilter,TASK-071; TASK-112; ADR-019,COVERED
-F-077,,,ReportJob lifecycle with pinned parameters,Reports,ReportJob; ReportParameterValue,TASK-071,COVERED
-F-078,,,"Secure generated output, authorised at download time",Reports,GeneratedOutput,TASK-071,COVERED
+F-077,,,ReportJob lifecycle with pinned parameters,Reports,ReportJob; ReportJob.request_snapshot,TASK-071,COVERED
+F-078,,,"Secure generated output, authorised at download time",Reports,GeneratedOutput; GeneratedOutput.authorization_footprint; ReportOutputContent,TASK-071,COVERED
 F-079,,,"User — internal, external and service principals; deactivation preserves attribution",IdentityAccess,User,TASK-031; ADR-013; Appendix A.1,COVERED
 F-080,,,Role R01–R08 — undeletable shipped defaults,IdentityAccess,Role,TASK-028; TASK-110,COVERED
 F-081,,,Protected permission catalogue,IdentityAccess,Permission,TASK-110; ADR-019,COVERED
@@ -107,4 +107,4 @@ F-105,,,SIEM forwarding of a defined subset,AuditActivity,AuditForwardingRecord,
 F-106,,,"Business Activity projection — derived, rebuildable",AuditActivity,BusinessActivityEntry,TASK-073; TASK-074,COVERED
 F-107,,,"Transactional outbox for audit, notification and domain events",Common,OutboxMessage,M-5; M-6; TASK-073,COVERED
 F-108,,,Entry-language attribute on every narrative field,Common,Project.title_lang; Risk.description_lang; ProgressSubmission.narrative_lang,TASK-109; ADR-012 extension — 51 columns platform-wide,COVERED
-F-109,,,Audit columns on every table,Common,Project.id,"TASK-008; TASK-025 — created_at/by, updated_at/by on all 121 tables",COVERED
+F-109,,,Audit columns on every table,Common,Project.id,"TASK-008; TASK-025 — created_at/by, updated_at/by on all 123 tables",COVERED
