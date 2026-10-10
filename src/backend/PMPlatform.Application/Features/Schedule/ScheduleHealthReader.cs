@@ -7,4 +7,7 @@ internal sealed class ScheduleHealthReader(IScheduleRepository repository) : ISc
 {
     public async Task<ScheduleHealthStatusDetail?> GetAsync(Guid projectId, CancellationToken cancellationToken) =>
         await repository.FindHealthStatusAsync(projectId, track: false, cancellationToken).ConfigureAwait(false) is { } health ? ScheduleMapping.ToDetail(health) : null;
+
+    public async Task<IReadOnlyList<ScheduleHealthStatusDetail>> ListAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        [.. (await repository.ListHealthStatusesAsync(projectIds, cancellationToken).ConfigureAwait(false)).Select(ScheduleMapping.ToDetail)];
 }

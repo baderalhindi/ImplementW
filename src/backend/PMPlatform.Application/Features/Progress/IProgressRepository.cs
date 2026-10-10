@@ -44,6 +44,15 @@ public interface IProgressRepository
     /// <summary>The project's live health row; tracked when <paramref name="track"/>.</summary>
     public Task<ProjectHealthStatus?> FindHealthStatusAsync(Guid projectId, bool track, CancellationToken cancellationToken);
 
+    /// <summary>The reporting periods of the projects, each project's earliest first (FG-01, TASK-069). Not tracked.</summary>
+    public Task<IReadOnlyList<ReportingCycle>> ListCyclesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
+    /// <summary>The latest published snapshot of each of the projects that has one (FG-01, TASK-069). Not tracked.</summary>
+    public Task<IReadOnlyList<PublishedProgressSnapshot>> ListLatestSnapshotsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
+    /// <summary>The live health row of each of the projects that has one (FG-01, TASK-069). Not tracked.</summary>
+    public Task<IReadOnlyList<ProjectHealthStatus>> ListHealthStatusesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
     public void Add(ReportingCycle cycle);
 
     public void Add(ProgressSubmission submission);

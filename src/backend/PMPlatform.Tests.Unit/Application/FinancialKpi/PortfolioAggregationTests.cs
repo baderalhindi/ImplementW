@@ -41,10 +41,24 @@ public sealed class PortfolioAggregationTests
         Assert.Equal([new AggregateExclusion(B, null, AggregateExclusionReason.CurrencyUnverified)], aggregate.Exclusions);
     }
 
+    /// <summary>ADR-008 and TASK-069: a total is as current as its least current counted figure; a figure left out does not date it.</summary>
+    [Fact]
+    public void TheTotalIsDatedByItsOldestCountedFigure()
+    {
+        FinancialPortfolioAggregate aggregate = FinancialAggregation.Aggregate(
+            SemanticState.PublishedOfficial, 3,
+            [Measured(A, 100, 40, 110, new DateOnly(2026, 9, 30)), Measured(B, 200, 50, 190, new DateOnly(2026, 8, 31)),
+             Measured(Guid.NewGuid(), 1, 1, 1, new DateOnly(2026, 1, 31)) with { CurrencyCode = "USD" }],
+            []);
+
+        Assert.Equal(new DateOnly(2026, 8, 31), aggregate.OldestAsOfDate);
+        Assert.Null(FinancialAggregation.Aggregate(SemanticState.PublishedOfficial, 1, [Measured(A, 1, 1, 1) with { ValueStatus = ValueStatus.Missing }], []).OldestAsOfDate);
+    }
+
     [Fact]
     public void AMissingFigureIsLeftOutNotAddedAsZero()
     {
-        FinancialFigures missing = new(B, Money.CurrencyCode, new Money(200m), null, null, ValueStatus.Missing, false);
+        FinancialFigures missing = new(B, Money.CurrencyCode, new Money(200m), null, null, ValueStatus.Missing, false, null);
         FinancialPortfolioAggregate aggregate = FinancialAggregation.Aggregate(SemanticState.CurrentLive, 3, [Measured(A, 100, 40, 110), missing],
             [new AggregateExclusion(C, null, AggregateExclusionReason.NotAvailable)]);
 
@@ -59,7 +73,7 @@ public sealed class PortfolioAggregationTests
     public void WithNothingCountedEveryTotalIsNullNeverZero()
     {
         FinancialPortfolioAggregate aggregate = FinancialAggregation.Aggregate(
-            SemanticState.PublishedOfficial, 1, [new FinancialFigures(A, Money.CurrencyCode, null, null, null, ValueStatus.NotApplicable, false)], []);
+            SemanticState.PublishedOfficial, 1, [new FinancialFigures(A, Money.CurrencyCode, null, null, null, ValueStatus.NotApplicable, false, null)], []);
 
         Assert.Equal(AggregateCoverage.None, aggregate.Coverage);
         Assert.Null(aggregate.TotalApprovedBudgetSar);
@@ -108,8 +122,8 @@ public sealed class PortfolioAggregationTests
         Assert.Equal(new KpiRagCounts(0, 1, 0, 1, 0), aggregate.RagCounts);
     }
 
-    private static FinancialFigures Measured(Guid project, decimal budget, decimal actual, decimal forecast) =>
-        new(project, Money.CurrencyCode, new Money(budget), new Money(actual), new Money(forecast), ValueStatus.Measured, false);
+    private static FinancialFigures Measured(Guid project, decimal budget, decimal actual, decimal forecast, DateOnly? asOf = null) =>
+        new(project, Money.CurrencyCode, new Money(budget), new Money(actual), new Money(forecast), ValueStatus.Measured, false, asOf ?? new DateOnly(2026, 9, 30));
 
     private static KpiFigure Kpi(Guid project, Guid kpi, Guid unit, decimal value, KpiRagStatus rag) => new(project, kpi, unit, value, ValueStatus.Measured, rag, false);
 }

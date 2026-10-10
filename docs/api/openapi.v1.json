@@ -2832,6 +2832,504 @@
         }
       }
     },
+    "/api/v1/dashboard-definitions": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "operationId": "Dashboards_ListDashboardDefinitions",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/DashboardCode"
+            }
+          },
+          {
+            "name": "lifecycleState",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/GovernedLifecycleState"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDefinitionPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Opens the dashboard's next version as a DRAFT copy of its PUBLISHED version; one version is on its way at a time (409 `DASHBOARD_VERSION_OPEN`).",
+        "operationId": "Dashboards_CreateDashboardDefinition",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardDefinitionCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardDefinitionCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardDefinitionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard-definitions/{definitionId}": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "operationId": "Dashboards_GetDashboardDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "A DRAFT's content, as a whole, by its author. Requires `If-Match` (R-21).",
+        "operationId": "Dashboards_UpdateDashboardDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardDefinitionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardDefinitionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardDefinitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard-definitions/{definitionId}/validate": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "DRAFT → VALIDATED by a reviewer who is not the author, once FG-01 §13.4's validation passes (422 `DASHBOARD_DEFINITION_INVALID` names each refusal).",
+        "operationId": "Dashboards_ValidateDashboardDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard-definitions/{definitionId}/publish": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "VALIDATED → PUBLISHED by a third person, validated again; the version it replaces is retired in the same save.",
+        "operationId": "Dashboards_PublishDashboardDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard-definitions/{definitionId}/retire": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "An abandoned DRAFT or VALIDATED version → RETIRED. A PUBLISHED one is 409 `DASHBOARD_RETIREMENT_NOT_PERMITTED`: it is replaced, not removed.",
+        "operationId": "Dashboards_RetireDashboardDefinition",
+        "parameters": [
+          {
+            "name": "definitionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardDefinitionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard-projections": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "operationId": "Dashboards_ListDashboardProjections",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardProjectionPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboards": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "The role-aware Home (FG-01 §5.1): the dashboards the caller may open, the one they land on marked `isDefaultLanding`.",
+        "operationId": "Dashboards_ListDashboards",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardCataloguePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboards/{dashboardCode}": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "The dashboard's PUBLISHED version and each widget's result. `PROJECT` is bound to `projectId` (DSH-009 in SCR-040, DSH-008 for\nan entity's own project); the others are read over every project the caller may see, optionally of one `departmentId` among\nthe view's `departmentOptions`.",
+        "operationId": "Dashboards_GetDashboard",
+        "parameters": [
+          {
+            "name": "dashboardCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "departmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboards/{dashboardCode}/personalize": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "ADR-019: hide and order the optional widgets of a personalisable dashboard, as a whole. R02, R03 and R07 hold the permission.",
+        "operationId": "Dashboards_PersonalizeDashboard",
+        "parameters": [
+          {
+            "name": "dashboardCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardPersonalizationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardPersonalizationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardPersonalizationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardPersonalizationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboards/{dashboardCode}/reset-personalization": {
+      "post": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Back to the governed layout.",
+        "operationId": "Dashboards_ResetDashboardPersonalization",
+        "parameters": [
+          {
+            "name": "dashboardCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardPersonalizationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/departments": {
       "get": {
         "tags": [
@@ -18258,6 +18756,997 @@
         },
         "description": "A value of a revision, in its field's canonical text form; Language? ContributionFieldValue.Language is set exactly for a narrative."
       },
+      "CoverageExclusion": {
+        "required": [
+          "reason",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/CoverageExclusionReason"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CoverageExclusionReason": {
+        "enum": [
+          "MISSING",
+          "MASKED",
+          "INCOMPATIBLE"
+        ],
+        "description": "Why an eligible project is left out of an aggregate (FG-01 §7.4 ExclusionReasonSummary)."
+      },
+      "DashboardAudienceDetail": {
+        "required": [
+          "roleId",
+          "roleCode",
+          "isDefaultLanding"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roleCode": {
+            "type": "string"
+          },
+          "isDefaultLanding": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DashboardAudienceRequest": {
+        "required": [
+          "roleCode",
+          "isDefaultLanding"
+        ],
+        "type": "object",
+        "properties": {
+          "roleCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isDefaultLanding": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "DashboardCatalogueEntry": {
+        "required": [
+          "code",
+          "dashboardDefinitionId",
+          "versionNo",
+          "name",
+          "description",
+          "contextKind",
+          "allowsPersonalization",
+          "isDefaultLanding"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/DashboardCode"
+          },
+          "dashboardDefinitionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "contextKind": {
+            "$ref": "#/components/schemas/DashboardContextKind"
+          },
+          "allowsPersonalization": {
+            "type": "boolean"
+          },
+          "isDefaultLanding": {
+            "type": "boolean"
+          }
+        },
+        "description": "A PUBLISHED dashboard the caller's roles may open, and whether it is where they land (Blueprint §20.2; the role-aware Home of FG-01 §5.1)."
+      },
+      "DashboardCataloguePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardCatalogueEntry"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "DashboardCode": {
+        "enum": [
+          "PORTFOLIO",
+          "PROJECT",
+          "GOVERNANCE"
+        ],
+        "description": "ERD `dashboard_definition.code`: the three delivered dashboards (ADR-006, \"FIXED at 3 dashboards\"). FG-01's twelve DSH\ndefinitions are absorbed into them as audience, scope and permission renderings, not separate deliverables, so a fourth code\nis a contract change and the column's CHECK refuses it."
+      },
+      "DashboardContextKind": {
+        "enum": [
+          "PROJECT",
+          "PORTFOLIO"
+        ],
+        "description": "Whether a dashboard is read for one project (DSH-009 in SCR-040, DSH-008) or over the population of projects the caller may see."
+      },
+      "DashboardDefinitionCreateRequest": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardCode"
+              }
+            ]
+          }
+        },
+        "description": "A new version of one of the three dashboards; it opens as a DRAFT copy of the PUBLISHED version."
+      },
+      "DashboardDefinitionDetail": {
+        "required": [
+          "id",
+          "code",
+          "versionNo",
+          "name",
+          "description",
+          "allowsPersonalization",
+          "lifecycleState",
+          "validatedByUserId",
+          "validatedAt",
+          "publishedByUserId",
+          "publishedAt",
+          "retiredAt",
+          "audience",
+          "widgets",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "updatedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "$ref": "#/components/schemas/DashboardCode"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "allowsPersonalization": {
+            "type": "boolean"
+          },
+          "lifecycleState": {
+            "$ref": "#/components/schemas/GovernedLifecycleState"
+          },
+          "validatedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "validatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "publishedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "publishedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "retiredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "audience": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardAudienceDetail"
+            }
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardWidgetDetail"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "One version of a governed dashboard, whole (ADM-036): its lifecycle, audience and widgets."
+      },
+      "DashboardDefinitionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardDefinitionSummary"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "DashboardDefinitionRequest": {
+        "required": [
+          "name",
+          "description",
+          "allowsPersonalization",
+          "audience",
+          "widgets"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "allowsPersonalization": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "audience": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DashboardAudienceRequest"
+            }
+          },
+          "widgets": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DashboardWidgetRequest"
+            }
+          }
+        },
+        "description": "A DRAFT version's content, as a whole (R-5): bilingual labels (ADR-012), personalisation, audience and widgets. A widget names a\nregistered projection by its code — nothing else: no query, formula or script is accepted anywhere (BR-DSH-030). Whether the codes\nare registered, supported and laid out without overlap is the module's validation."
+      },
+      "DashboardDefinitionSummary": {
+        "required": [
+          "id",
+          "code",
+          "versionNo",
+          "name",
+          "lifecycleState",
+          "publishedAt",
+          "retiredAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "$ref": "#/components/schemas/DashboardCode"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "lifecycleState": {
+            "$ref": "#/components/schemas/GovernedLifecycleState"
+          },
+          "publishedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "retiredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DashboardPersonalizationDetail": {
+        "required": [
+          "code",
+          "dashboardDefinitionId",
+          "widgets"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/DashboardCode"
+          },
+          "dashboardDefinitionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetPersonalizationDetail"
+            }
+          }
+        },
+        "description": "ADR-019: the caller's presentation choices on a personalisable dashboard."
+      },
+      "DashboardPersonalizationRequest": {
+        "required": [
+          "widgets"
+        ],
+        "type": "object",
+        "properties": {
+          "widgets": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/WidgetPersonalizationRequest"
+            }
+          }
+        },
+        "description": "ADR-019: the caller's choices for the optional widgets, as a whole; a widget not named keeps the governed layout."
+      },
+      "DashboardProjectionDetail": {
+        "required": [
+          "code",
+          "sourceDomain",
+          "version",
+          "semanticState",
+          "contexts",
+          "widgetTypes",
+          "permissionCode",
+          "isSensitive",
+          "businessMeaning",
+          "drillTargetScreenId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "sourceDomain": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "semanticState": {
+            "$ref": "#/components/schemas/ProjectionSemanticState"
+          },
+          "contexts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardContextKind"
+            }
+          },
+          "widgetTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardWidgetType"
+            }
+          },
+          "permissionCode": {
+            "type": "string"
+          },
+          "isSensitive": {
+            "type": "boolean"
+          },
+          "businessMeaning": {
+            "type": "string"
+          },
+          "drillTargetScreenId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A registered source projection (FG-01 §4.1, PRJ-001–024): the only thing a widget may bind to. It is owned by its source domain;\nFG-01 reads it through that domain's contracts and never its tables (CFA-DSH-006). string DashboardProjectionDetail.PermissionCode is the source's\nown view permission, decided on each project; bool DashboardProjectionDetail.IsSensitive marks figures masked by audience (ADR-010)."
+      },
+      "DashboardProjectionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardProjectionDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "DashboardView": {
+        "required": [
+          "code",
+          "dashboardDefinitionId",
+          "versionNo",
+          "name",
+          "description",
+          "contextKind",
+          "allowsPersonalization",
+          "projectId",
+          "departmentId",
+          "departmentOptions",
+          "refreshedAt",
+          "widgets"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/DashboardCode"
+          },
+          "dashboardDefinitionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "contextKind": {
+            "$ref": "#/components/schemas/DashboardContextKind"
+          },
+          "allowsPersonalization": {
+            "type": "boolean"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "departmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "departmentOptions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "refreshedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardWidgetResult"
+            }
+          }
+        },
+        "description": "A dashboard as the caller reads it now: the PUBLISHED version's composition with the caller's personalisation applied, and each\nwidget's result. DateTimeOffset DashboardView.RefreshedAt is when FG-01 assembled it and is never a source's as-of (BR-DSH-042).\nIReadOnlyList&lt;Guid&gt; DashboardView.DepartmentOptions are the departments of the projects the caller may see here, the only values the department\nfilter takes (DSH-CC-17)."
+      },
+      "DashboardWidgetDetail": {
+        "required": [
+          "id",
+          "code",
+          "title",
+          "widgetType",
+          "sourceProjectionCode",
+          "dataClassificationItemId",
+          "isOptionalVisibility",
+          "layoutRow",
+          "layoutColumn",
+          "layoutSpan"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "widgetType": {
+            "$ref": "#/components/schemas/DashboardWidgetType"
+          },
+          "sourceProjectionCode": {
+            "type": "string"
+          },
+          "dataClassificationItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "isOptionalVisibility": {
+            "type": "boolean"
+          },
+          "layoutRow": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutColumn": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutSpan": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          }
+        }
+      },
+      "DashboardWidgetRequest": {
+        "required": [
+          "code",
+          "title",
+          "widgetType",
+          "sourceProjectionCode",
+          "dataClassificationItemId",
+          "isOptionalVisibility",
+          "layoutRow",
+          "layoutColumn",
+          "layoutSpan"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "widgetType": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardWidgetType"
+              }
+            ]
+          },
+          "sourceProjectionCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataClassificationItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "isOptionalVisibility": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "layoutRow": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutColumn": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutSpan": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          }
+        }
+      },
+      "DashboardWidgetResult": {
+        "required": [
+          "code",
+          "title",
+          "widgetType",
+          "projectionCode",
+          "projectionVersion",
+          "sourceDomain",
+          "layoutRow",
+          "layoutColumn",
+          "layoutSpan",
+          "isOptionalVisibility",
+          "isHidden",
+          "personalSortOrder",
+          "projection",
+          "unknownReason",
+          "data",
+          "coverageDetail",
+          "maskedFields",
+          "drillTargetScreenId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "widgetType": {
+            "$ref": "#/components/schemas/DashboardWidgetType"
+          },
+          "projectionCode": {
+            "type": "string"
+          },
+          "projectionVersion": {
+            "type": "string"
+          },
+          "sourceDomain": {
+            "type": "string"
+          },
+          "layoutRow": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutColumn": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "layoutSpan": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "isOptionalVisibility": {
+            "type": "boolean"
+          },
+          "isHidden": {
+            "type": "boolean"
+          },
+          "personalSortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/ProjectionMeta"
+          },
+          "unknownReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WidgetUnknownReason"
+              }
+            ]
+          },
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WidgetData"
+              }
+            ]
+          },
+          "coverageDetail": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WidgetCoverage"
+              }
+            ]
+          },
+          "maskedFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "drillTargetScreenId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "One widget's result (FG-01 §10.1, RUN-001–022): what it presents, from which projection and version, in which semantic state, as\nof when, how fresh and how complete (ProjectionMeta DashboardWidgetResult.Projection, the R-20(c) contract). When the source cannot say —\nProjectionFreshness.Unknown — WidgetUnknownReason? DashboardWidgetResult.UnknownReason says why and WidgetData? DashboardWidgetResult.Data is null: missing is never\n0, unknown never a colour (BR-DSH-013 to -015). A STALE value keeps its data and its original as-of (BR-DSH-041)."
+      },
+      "DashboardWidgetType": {
+        "enum": [
+          "METRIC_CARD",
+          "STATUS_DISTRIBUTION",
+          "BAR_COLUMN",
+          "LINE_TREND",
+          "DONUT_PIE",
+          "PROGRESS_INDICATOR"
+        ],
+        "description": "ERD `dashboard_widget.widget_type`: the allowlisted visualisations of FG-01 §10. A widget is a presentation of a registered\nprojection, never code: no type here runs a query, a formula or a script (BR-DSH-030). MAP is Conditional (§10) and not offered."
+      },
       "DataScope": {
         "enum": [
           "ALL",
@@ -20308,7 +21797,8 @@
           "totalApprovedBudgetSar",
           "totalActualExpenditureToDateSar",
           "totalForecastAtCompletionSar",
-          "exclusions"
+          "exclusions",
+          "oldestAsOfDate"
         ],
         "type": "object",
         "properties": {
@@ -20375,9 +21865,16 @@
             "items": {
               "$ref": "#/components/schemas/AggregateExclusion"
             }
+          },
+          "oldestAsOfDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           }
         },
-        "description": "Financial totals over a portfolio of projects, in SAR. A project counts only when its figures are measured, visible to the\ncaller and verified as SAR; otherwise it is listed in IReadOnlyList&lt;AggregateExclusion&gt; FinancialPortfolioAggregate.Exclusions and bool FinancialPortfolioAggregate.IsPartial is true. With no\nproject counted, every total is null — never 0."
+        "description": "Financial totals over a portfolio of projects, in SAR. A project counts only when its figures are measured, visible to the\ncaller and verified as SAR; otherwise it is listed in IReadOnlyList&lt;AggregateExclusion&gt; FinancialPortfolioAggregate.Exclusions and bool FinancialPortfolioAggregate.IsPartial is true. With no\nproject counted, every total is null — never 0. DateOnly? FinancialPortfolioAggregate.OldestAsOfDate is the as-of of the oldest figure counted, so a total\nis never shown as more current than its least current part (ADR-008: source and as-of on every financial figure; TASK-069)."
       },
       "FinancialPositionDetail": {
         "required": [
@@ -26297,6 +27794,62 @@
         },
         "description": "A project's live health: one item once it has been computed, none before (R-29)."
       },
+      "ProjectionCoverage": {
+        "enum": [
+          "COMPLETE",
+          "PARTIAL",
+          "NONE"
+        ],
+        "description": "R-20(c) `coverage`: all of the eligible population, some of it, or none of it."
+      },
+      "ProjectionFreshness": {
+        "enum": [
+          "FRESH",
+          "STALE",
+          "UNKNOWN"
+        ],
+        "description": "R-20(c) `freshness`. UNKNOWN is a value of its own: a missing, restricted or unavailable source is never FRESH and never 0."
+      },
+      "ProjectionMeta": {
+        "required": [
+          "semanticState",
+          "freshness",
+          "asOf",
+          "coverage"
+        ],
+        "type": "object",
+        "properties": {
+          "semanticState": {
+            "description": "Which of the source's views the value is: live, published, or a historical snapshot.",
+            "$ref": "#/components/schemas/ProjectionSemanticState"
+          },
+          "freshness": {
+            "description": "Whether the source says the value is current, out of date, or cannot say.",
+            "$ref": "#/components/schemas/ProjectionFreshness"
+          },
+          "asOf": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the source data represented was current; null when there is no value to date.",
+            "format": "date-time"
+          },
+          "coverage": {
+            "description": "How much of the eligible population the value covers.",
+            "$ref": "#/components/schemas/ProjectionCoverage"
+          }
+        },
+        "description": "The projection metadata contract (api-conventions R-20(c), TASK-069): what every value a dashboard or report presents says\nabout itself. It is never merged with another semantic state, a freshness it cannot establish is ProjectionFreshness.Unknown\nrather than assumed, and an absent value stays absent: \"explicitly Unknown/Stale in the payload, never coerced to zero or a\ndefault\". Defined once, here (M-10), for FG-01 and FG-02 alike."
+      },
+      "ProjectionSemanticState": {
+        "enum": [
+          "CURRENT_LIVE",
+          "PUBLISHED_OFFICIAL",
+          "HISTORICAL_SNAPSHOT"
+        ],
+        "description": "R-20(c) `semanticState`: the three views FG-01 §7.1 keeps apart (CURRENT_OPERATIONAL, CURRENT_PUBLISHED, HISTORICAL_SNAPSHOT)."
+      },
       "ProjectLifecycleState": {
         "enum": [
           "DRAFT",
@@ -31328,6 +32881,260 @@
           "NOT_APPLICABLE"
         ],
         "description": "ERD `value_status` on financial updates and KPI measurements: whether there is a figure, and if not, why. A figure is\npresent exactly when MEASURED; MISSING, STALE and NOT_APPLICABLE carry none and are never read as zero (TASK-052)."
+      },
+      "WidgetBucket": {
+        "required": [
+          "key",
+          "label",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A count by a source-owned value: a health, a rating, a lifecycle state. BilingualLabel? WidgetBucket.Label is the source's own when it has one (a risk rating)."
+      },
+      "WidgetCoverage": {
+        "required": [
+          "eligibleCount",
+          "includedCount",
+          "excludedCount",
+          "staleCount",
+          "exclusions"
+        ],
+        "type": "object",
+        "properties": {
+          "eligibleCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "includedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "excludedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "staleCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "exclusions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoverageExclusion"
+            }
+          }
+        },
+        "description": "FG-01 §7.4: the projects an aggregate expected, those it counted and those it left out, and why. int WidgetCoverage.StaleCount are\ncounted projects whose source value is out of date; any makes the aggregate STALE."
+      },
+      "WidgetData": {
+        "required": [
+          "state",
+          "figures",
+          "distribution",
+          "series"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "figures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetFigure"
+            }
+          },
+          "distribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetBucket"
+            }
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetSeriesPoint"
+            }
+          }
+        },
+        "description": "The value a widget presents, as the source owns it: a categorical string? WidgetData.State (e.g. Overall Project Health), measured\nIReadOnlyList&lt;WidgetFigure&gt; WidgetData.Figures, a IReadOnlyList&lt;WidgetBucket&gt; WidgetData.Distribution counted by a source-owned dimension, or a source-provided IReadOnlyList&lt;WidgetSeriesPoint&gt; WidgetData.Series."
+      },
+      "WidgetFigure": {
+        "required": [
+          "measure",
+          "value",
+          "unit",
+          "isMasked"
+        ],
+        "type": "object",
+        "properties": {
+          "measure": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "isMasked": {
+            "type": "boolean"
+          }
+        },
+        "description": "One measure: its value as an exact decimal string (R-16: never a binary float), its unit, and whether the caller's audience may\nsee it. A masked figure has no value (ADR-010, R-20(b)); an absent one is null."
+      },
+      "WidgetPersonalizationDetail": {
+        "required": [
+          "widgetCode",
+          "isHidden",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "widgetCode": {
+            "type": "string"
+          },
+          "isHidden": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          }
+        }
+      },
+      "WidgetPersonalizationRequest": {
+        "required": [
+          "widgetCode",
+          "isHidden",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "widgetCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isHidden": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          }
+        }
+      },
+      "WidgetSeriesPoint": {
+        "required": [
+          "asOf",
+          "periodStart",
+          "periodEnd",
+          "state",
+          "figures"
+        ],
+        "type": "object",
+        "properties": {
+          "asOf": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodStart": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "state": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "figures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetFigure"
+            }
+          }
+        },
+        "description": "A point of a source-provided history: the period it covers, when it was current, and its value then (BR-DSH-018)."
+      },
+      "WidgetUnknownReason": {
+        "enum": [
+          "MISSING",
+          "NOT_APPLICABLE",
+          "RESTRICTED",
+          "SOURCE_UNAVAILABLE",
+          null
+        ]
       }
     }
   },
@@ -31355,6 +33162,9 @@
     },
     {
       "name": "MasterDataConfig"
+    },
+    {
+      "name": "Dashboards"
     },
     {
       "name": "DocumentManagement"

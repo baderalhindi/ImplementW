@@ -125,6 +125,10 @@ internal sealed class RiskRepository(PMPlatformDbContext context) : IRiskReposit
                  && !context.Set<RiskAcceptance>().Any(a => a.RiskId == r.Id && a.Status == RiskAcceptanceStatus.Active),
             cancellationToken);
 
+    public async Task<IReadOnlyList<RiskEntity>> ListOpenRisksAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        await context.Set<RiskEntity>().AsNoTracking().Where(r => projectIds.Contains(r.ProjectId) && r.Status != RiskStatus.Closed)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public uint RowVersionOf(RiskEntity risk) => RowVersion(risk);
 
     public uint RowVersionOf(RiskTreatmentAction action) => RowVersion(action);

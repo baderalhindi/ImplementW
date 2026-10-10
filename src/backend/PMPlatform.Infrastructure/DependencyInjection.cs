@@ -6,6 +6,7 @@ using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.ChangeRequest;
+using PMPlatform.Application.Features.Dashboards;
 using PMPlatform.Application.Features.AuditActivity;
 using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
@@ -38,6 +39,7 @@ using PMPlatform.Infrastructure.Persistence.Approval;
 using PMPlatform.Infrastructure.Persistence.AuditActivity;
 using PMPlatform.Infrastructure.Persistence.ChangeRequest;
 using PMPlatform.Infrastructure.Persistence.DocumentManagement;
+using PMPlatform.Infrastructure.Persistence.Dashboards;
 using PMPlatform.Infrastructure.Persistence.FinancialKpi;
 using PMPlatform.Infrastructure.Persistence.ExternalParticipation;
 using PMPlatform.Infrastructure.Persistence.ManagementConcern;
@@ -136,6 +138,9 @@ public static class DependencyInjection
         // TASK-057: WF-07's management_concern schema.
         services.AddScoped<IManagementConcernRepository, ManagementConcernRepository>();
         services.AddScoped<IExternalParticipationRepository, ExternalParticipationRepository>();
+
+        // TASK-069: FG-01's dashboards schema.
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
 
         // TASK-060: WF-08's change_request schema.
         services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();

@@ -7,7 +7,8 @@ namespace PMPlatform.Tests.Integration.Persistence;
 
 /// <summary>
 /// TASK-027 acceptance for <c>db/seed/seed-master-data.sql</c>, loaded through the release image's <c>seed</c> command:
-/// a repeated run adds and changes nothing, the eight canonical roles are there, every label is bilingual (ADR-012),
+/// a repeated run adds and changes nothing, the eight canonical roles are there, every label is bilingual (ADR-012) — the three
+/// dashboards' (TASK-069) among them —
 /// the three governance profiles are seeded (ADR-015), the risk and issue scale is generic and unpublished (OQ-006),
 /// no materiality band is invented (OQ-013), and AHDA's wording survives a re-seed. TASK-030: the permission catalogue
 /// and the shipped-default grants are PermissionCatalogue's.
@@ -81,6 +82,9 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             UNION ALL SELECT 'configuration_family ' || code, name_ar, name_en FROM master_data_config.configuration_family
             UNION ALL SELECT 'probability_level_definition ' || level, label_ar, label_en FROM master_data_config.probability_level_definition
             UNION ALL SELECT 'impact_level_definition ' || level, label_ar, label_en FROM master_data_config.impact_level_definition
+            UNION ALL SELECT 'dashboard_definition ' || code, name_ar, name_en FROM dashboards.dashboard_definition
+            UNION ALL SELECT 'dashboard_definition description ' || code, description_ar, description_en FROM dashboards.dashboard_definition
+            UNION ALL SELECT 'dashboard_widget ' || code, title_ar, title_en FROM dashboards.dashboard_widget
             """;
 
         IReadOnlyList<string> count = await database.QueryAsync($"SELECT count(*)::text FROM ({labels}) l");
@@ -89,7 +93,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             WHERE ar !~ '[؀-ۿ]' OR en ~ '[؀-ۿ]' OR btrim(en) = ''
             """);
 
-        Assert.Equal("157", count[0]);
+        Assert.Equal("189", count[0]);
         Assert.Empty(notBilingual);
     }
 

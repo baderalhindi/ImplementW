@@ -83,6 +83,8 @@ internal static class ModuleRegistry
         ("Closure", "ChangeRequest"),                // 44 query: change requests not carried through (TASK-063)
         ("Closure", "Suspension"),                   // 45 query, command: open requests; the open suspension ended on terminal closure (TASK-063)
         ("Closure", "Progress"),                     // 46 query: unpublished progress, and whether any is published (TASK-063)
+        ("Dashboards", "Project"),                   // 47 query: the projects a caller's record scope reaches, the population an FG-01
+                                                     //    aggregate is counted over, and the one project of the Project Dashboard (TASK-069)
     };
 
     public static bool Allows(string referrer, string referenced) =>
