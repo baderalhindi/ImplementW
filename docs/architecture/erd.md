@@ -8,7 +8,7 @@
 | Status | **PROPOSED — PENDING APPENDIX D/C RECONCILIATION AND ADR-003 APPROVAL.** The model is complete against every business fact the workbook states; the Blueprint appendices it must be checked against cannot be read (§3). |
 | Decision owner | Engagement Architect (proposer) → AHDA IT with ADR-002/ADR-003 (§14) |
 | Branch | `chore/task-008-task-008-canonical-erd` |
-| Deliverables | This record; `erd.dbml` (column-level source, 121 tables); `erd-appendix-crosswalk.csv` (109 business-fact rows); `erd-check.py` (consistency check) |
+| Deliverables | This record; `erd.dbml` (column-level source, 123 tables); `erd-appendix-crosswalk.csv` (109 business-fact rows); `erd-check.py` (consistency check) |
 | Workbook read | Google Sheet "Implementation work" (ID `1JQdbw-S9wAS247cP3PpSCme_D2NAPVnWzhXhvvxrtl0`), sheets Implementation Plan (112 rows), Architecture Decisions (ADR-001–ADR-013), Open Questions, as exported 2026-09-20 |
 | Controlled sources and authority order | per TASK-001 |
 
@@ -19,7 +19,7 @@ TASK-007 fixed *which* module owns *which* fact and forbade any module from touc
 This record is the data model that makes those rules physical. It has four parts:
 
 1. **Conventions** (§4) — seventeen rules, D-1 to D-17, that every table follows. They carry the four gate decisions (ADR-008, ADR-009, ADR-011, ADR-012) and the three participation amendments (financial provenance, narrative language tag, Declared Baseline and intake marker) as *types and columns*, not as guidance. A reviewer can check a table against them mechanically, and `erd-check.py` does.
-2. **The model by module** (§5) — 121 tables in 21 module schemas plus one infrastructure schema, each with a purpose, its lifecycle column and states, its delete policy and whether other modules may hold its identity. The diagrams show keys and relationships; `erd.dbml` is the column-level source and governs where the two differ. The two files are maintained together, and `erd-check.py` fails when they diverge.
+2. **The model by module** (§5) — 123 tables in 21 module schemas plus one infrastructure schema, each with a purpose, its lifecycle column and states, its delete policy and whether other modules may hold its identity. The diagrams show keys and relationships; `erd.dbml` is the column-level source and governs where the two differ. The two files are maintained together, and `erd-check.py` fails when they diverge.
 3. **Three registers the acceptance criteria ask for** — the lifecycle-state matrix for the Appendix C review (§6), the derived and duplicated field register with a justification per column (§7), and the delete-policy census (§8).
 4. **The Appendix D crosswalk** (§9) — 109 business facts as the workbook restates them, each mapped to a table or column, with the Appendix D row number left blank because Appendix D cannot be read (§3). The completeness check the task defines is specified and ready to run; it has not been run.
 
@@ -1242,7 +1242,7 @@ Built by TASK-069 as listed (`dashboards.md` D-9), with what the table above lea
 
 ### 5.20 Reports — FG-02
 
-`SavedView` serves both a saved parameter set for a published definition and an SCR-138 explorer composition (`view_type`). A composition can reference only `ReportAllowlistEntry` rows — the FK is the allowlist enforcement (TASK-071, TASK-112). A share carries configuration; authorisation is evaluated per viewer at `ReportJob` time.
+`SavedView` serves both a saved parameter set for a published definition and an SCR-138 explorer composition (`view_type`). A composition can reference only `ReportAllowlistEntry` rows — the FK is the allowlist enforcement (TASK-071, TASK-112). A share carries configuration; authorisation is evaluated per viewer at `ReportJob` time. As built by TASK-071 (`reports.md` D-13): a definition's columns are `ReportColumn` rows bound to FG-01's projection register, and its rows are decided by `primary_projection_code`; a job pins its whole request in `request_snapshot`, so `ReportParameterValue` belongs to saved views only; a generated file's bytes are `ReportOutputContent`, deleted at expiry while `GeneratedOutput` is kept. `SavedViewShare` and `saved_view.is_shared` are TASK-112's and not yet built.
 
 ```mermaid
 erDiagram
@@ -1250,6 +1250,7 @@ erDiagram
         uuid id PK
         varchar code
         int version_no
+        varchar primary_projection_code
         varchar lifecycle_state
         uuid validated_by_user_id FK
         uuid published_by_user_id FK
@@ -1259,11 +1260,18 @@ erDiagram
         uuid report_definition_id FK
         uuid role_id FK
     }
+    ReportColumn {
+        uuid id PK
+        uuid report_definition_id FK
+        varchar source_entity_code
+        varchar field_code
+        uuid data_classification_item_id FK
+    }
     ReportParameter {
         uuid id PK
         uuid report_definition_id FK
         varchar code
-        uuid option_catalogue_id FK
+        varchar data_type
     }
     ReportParameterOption {
         uuid id PK
@@ -1295,12 +1303,11 @@ erDiagram
     ReportParameterValue {
         uuid id PK
         uuid saved_view_id FK
-        uuid report_job_id FK
     }
     ReportJob {
         uuid id PK
+        varchar kind
         uuid report_definition_id FK
-        uuid saved_view_id FK
         uuid requested_by_user_id FK
         varchar status
     }
@@ -1310,9 +1317,14 @@ erDiagram
         varchar storage_object_key UK
         varchar status
     }
+    ReportOutputContent {
+        uuid id PK
+        varchar storage_object_key FK, UK
+    }
     ReportDefinition ||--o{ ReportAudienceRole : "report_definition_id"
+    ReportDefinition ||--o{ ReportColumn : "report_definition_id"
+    MasterDataItem |o..o{ ReportColumn : "data_classification_item_id"
     ReportDefinition ||--o{ ReportParameter : "report_definition_id"
-    MasterDataCatalogue |o..o{ ReportParameter : "option_catalogue_id"
     ReportParameter ||--o{ ReportParameterOption : "report_parameter_id"
     ReportDefinition |o--o{ SavedView : "report_definition_id"
     SavedView ||--o{ SavedViewShare : "saved_view_id"
@@ -1320,26 +1332,27 @@ erDiagram
     ReportAllowlistEntry ||..o{ SavedViewColumn : "report_allowlist_entry_id"
     SavedView ||--o{ SavedViewFilter : "saved_view_id"
     ReportAllowlistEntry ||..o{ SavedViewFilter : "report_allowlist_entry_id"
-    SavedView |o--o{ ReportParameterValue : "saved_view_id"
-    ReportJob |o--o{ ReportParameterValue : "report_job_id"
+    SavedView ||--o{ ReportParameterValue : "saved_view_id"
     ReportDefinition |o--o{ ReportJob : "report_definition_id"
-    SavedView |o--o{ ReportJob : "saved_view_id"
     ReportJob ||--o| GeneratedOutput : "report_job_id"
+    GeneratedOutput ||--o| ReportOutputContent : "storage_object_key"
 ```
 
 | Entity | Table | Purpose | Lifecycle column → states | Delete policy | Identity |
 | --- | --- | --- | --- | --- | --- |
-| **ReportDefinition** | `reports.report_definition` | Governed parameterised report definition; ten at launch (ADR-006), modes and scopes carried as parameters. | `lifecycle_state` → DRAFT · VALIDATED · PUBLISHED · RETIRED | RETAIN | referenceable |
+| **ReportDefinition** | `reports.report_definition` | Governed parameterised report definition; ten at launch (ADR-006), modes and scopes carried as parameters. Its rows are those its primary projection's permission reaches (TASK-071). | `lifecycle_state` → DRAFT · VALIDATED · PUBLISHED · RETIRED | RETAIN | referenceable |
 | **ReportAudienceRole** | `reports.report_audience_role` | Roles that may run a definition; R08 limited to the entity report set (ADR-013). | — | CASCADE | — |
+| **ReportColumn** | `reports.report_column` | A column a definition presents, bound by code to a field of a registered FG-01 projection (TASK-071); never an expression. | — | CASCADE | — |
 | **ReportParameter** | `reports.report_parameter` | A parameter (including mode and scope) of a definition. | — | CASCADE | — |
 | **ReportParameterOption** | `reports.report_parameter_option` | Fixed option of an OPTION parameter (report mode / scope variants absorbed per ADR-006). | — | CASCADE | — |
 | **SavedView** | `reports.saved_view` | Saved parameter set for a definition, or an SCR-138 explorer composition (ADR-019). A shared view carries configuration only; authorisation is per viewer at execution (TASK-112). | — | HARD_OWNER | referenceable |
-| **SavedViewShare** | `reports.saved_view_share` | Who a view is shared with. CHECK: exactly one of the three shared_with columns is not null. | — | CASCADE | — |
+| **SavedViewShare** | `reports.saved_view_share` | Who a view is shared with (TASK-112; not yet built). CHECK: exactly one of the three shared_with columns is not null. | — | CASCADE | — |
 | **SavedViewColumn** | `reports.saved_view_column` | An allowlisted column selected in an explorer composition (MOD-061). | — | CASCADE | — |
 | **SavedViewFilter** | `reports.saved_view_filter` | An allowlisted filter in a composition; operators from a closed set — no free-text SQL, formulas or joins. | — | CASCADE | — |
-| **ReportParameterValue** | `reports.report_parameter_value` | Pinned parameter value of a saved view or a job. CHECK: exactly one of saved_view_id, report_job_id is not null. | — | CASCADE | — |
-| **ReportJob** | `reports.report_job` | A generation run (REQUESTED→VALIDATING→QUEUED→RUNNING→COMPLETED/FAILED/CANCELLED/EXPIRED) for a definition or an explorer view (TASK-071). CHECK: at least one of report_definition_id, saved_view_id is not null. | `status` → REQUESTED · VALIDATING · QUEUED · RUNNING · COMPLETED · FAILED · CANCELLED · EXPIRED | RETAIN | referenceable |
-| **GeneratedOutput** | `reports.generated_output` | The secured output of a completed job; downloads are authorised at download time (TASK-071). The file is purged at expiry; the row is kept. | `status` → AVAILABLE · EXPIRED · PURGED | RETAIN | — |
+| **ReportParameterValue** | `reports.report_parameter_value` | Pinned parameter value of a saved view; a job pins its whole request in `report_job.request_snapshot` (TASK-071). | — | CASCADE | — |
+| **ReportJob** | `reports.report_job` | A generation run (REQUESTED→VALIDATING→QUEUED→RUNNING→COMPLETED/FAILED/CANCELLED/EXPIRED) of a definition or an explorer composition (TASK-071). CHECK: report_definition_id is not null exactly when kind = REPORT. | `status` → REQUESTED · VALIDATING · QUEUED · RUNNING · COMPLETED · FAILED · CANCELLED · EXPIRED | RETAIN | referenceable |
+| **GeneratedOutput** | `reports.generated_output` | The secured output of a completed job; downloads are authorised at download time against its authorisation footprint (TASK-071). The file is purged at expiry; the row is kept. | `status` → AVAILABLE · EXPIRED · PURGED | RETAIN | — |
+| **ReportOutputContent** | `reports.report_output_content` | The bytes of a generated output (TASK-071), never updated; deleted when the output is purged. | — | HARD_WORKING | — |
 
 ### 5.21 IntegrationMonitoring — FG-05
 
@@ -1552,10 +1565,10 @@ Two lifecycle facts are deliberately not columns:
 | `RETAIN` | Never physically deleted. A terminal lifecycle state or an end timestamp ends its active life; retention period per PTBC-048-class decision. | 55 |
 | `HARD_DRAFT` | Physical delete permitted only while the row is in its DRAFT (unsubmitted) state, by its owner, with an audit event; forbidden once submitted. | 14 |
 | `HARD_OWNER` | User-owned convenience rows deletable by the owner at any time (preferences, saved views); audited. | 3 |
-| `HARD_WORKING` | Planning edits on the working schedule (dependencies) may be deleted; the approved baseline copies them, so history is unaffected; audited via the attribute diff. | 2 |
-| `CASCADE` | Follows its parent's policy. | 34 |
+| `HARD_WORKING` | Working rows the platform's own rule deletes: planning edits on the working schedule (dependencies), which the approved baseline copies, so history is unaffected, audited via the attribute diff; and the stored bytes of a generated output, deleted at its expiry while its `GeneratedOutput` record is kept (TASK-071). | 3 |
+| `CASCADE` | Follows its parent's policy. | 35 |
 
-Sum 121. `HARD_DRAFT` applies to business aggregates a person submits; governed configuration drafts (D-12) are `RETAIN` because author, reviewer and publisher separation makes every authored version audit-relevant (TASK-110) — an abandoned draft is RETIRED, not deleted. The physical `GeneratedOutput` file is purged at expiry while its row is retained as PURGED; `DocumentVersion` files are never purged.
+Sum 123. `HARD_DRAFT` applies to business aggregates a person submits; governed configuration drafts (D-12) are `RETAIN` because author, reviewer and publisher separation makes every authored version audit-relevant (TASK-110) — an abandoned draft is RETIRED, not deleted. The physical `GeneratedOutput` file (`ReportOutputContent`) is purged at expiry while its row is retained as PURGED; `DocumentVersion` files are never purged.
 
 ## 9. Appendix D crosswalk
 
@@ -1639,10 +1652,10 @@ Completeness check as the task defines it, restated for the day Appendix D is av
 | F-072 | Bilingual, mandatory notification templates | Notifications | `NotificationTemplate` | TASK-039; ADR-012 |
 | F-073 | DashboardDefinition — governed, bound to controlled projections | Dashboards | `DashboardDefinition`, `DashboardWidget`, `DashboardAudienceRole` | TASK-069; ADR-006 |
 | F-074 | UserDashboardPreference — presentation-only personalisation | Dashboards | `UserDashboardPreference`, `UserDashboardWidgetPreference` | TASK-111; ADR-019 |
-| F-075 | ReportDefinition — parameterised, ten at launch | Reports | `ReportDefinition`, `ReportParameter`, `ReportParameterOption`, `ReportAudienceRole` | TASK-071; ADR-006 |
+| F-075 | ReportDefinition — parameterised, ten at launch | Reports | `ReportDefinition`, `ReportColumn`, `ReportParameter`, `ReportParameterOption`, `ReportAudienceRole` | TASK-071; ADR-006 |
 | F-076 | SavedView including shared controlled-explorer compositions | Reports | `SavedView`, `SavedViewShare`, `SavedViewColumn`, `SavedViewFilter` | TASK-071; TASK-112; ADR-019 |
-| F-077 | ReportJob lifecycle with pinned parameters | Reports | `ReportJob`, `ReportParameterValue` | TASK-071 |
-| F-078 | Secure generated output, authorised at download time | Reports | `GeneratedOutput` | TASK-071 |
+| F-077 | ReportJob lifecycle with pinned parameters | Reports | `ReportJob`, `ReportJob.request_snapshot` | TASK-071 |
+| F-078 | Secure generated output, authorised at download time | Reports | `GeneratedOutput`, `GeneratedOutput.authorization_footprint`, `ReportOutputContent` | TASK-071 |
 | F-079 | User — internal, external and service principals; deactivation preserves attribution | IdentityAccess | `User` | TASK-031; ADR-013; Appendix A.1 |
 | F-080 | Role R01–R08 — undeletable shipped defaults | IdentityAccess | `Role` | TASK-028; TASK-110 |
 | F-081 | Protected permission catalogue | IdentityAccess | `Permission` | TASK-110; ADR-019 |
@@ -1673,7 +1686,7 @@ Completeness check as the task defines it, restated for the day Appendix D is av
 | F-106 | Business Activity projection — derived, rebuildable | AuditActivity | `BusinessActivityEntry` | TASK-073; TASK-074 |
 | F-107 | Transactional outbox for audit, notification and domain events | Common | `OutboxMessage` | M-5; M-6; TASK-073 |
 | F-108 | Entry-language attribute on every narrative field | Common | `Project.title_lang`, `Risk.description_lang`, `ProgressSubmission.narrative_lang` | TASK-109; ADR-012 extension — 51 columns platform-wide |
-| F-109 | Audit columns on every table | Common | `Project.id` | TASK-008; TASK-025 — created_at/by, updated_at/by on all 121 tables |
+| F-109 | Audit columns on every table | Common | `Project.id` | TASK-008; TASK-025 — created_at/by, updated_at/by on all 123 tables |
 
 ## 10. Normalisation
 
@@ -1715,7 +1728,7 @@ Specified, not applied — per TASK-001 §4. Authorisation is Q5 (§14).
 | # | Criterion | Result |
 | --- | --- | --- |
 | 1 | ERD covers 100% of the Appendix D ownership register rows | **MET against the workbook restatement; NOT VERIFIED against Appendix D.** 109 of 109 business facts the workbook states (TASK-008 aggregate list, TASK-007 §9 register, 112 task rows) have a table or column (§9). 0 of 33 Appendix D rows are matched by number because Appendix D cannot be read (E-1). The check is defined and the CSV is ready to receive it. |
-| 2 | Every entity has a primary key, audit fields (CreatedAt, CreatedBy, UpdatedAt, UpdatedBy) and a documented soft-delete or hard-delete policy | **MET.** 121 of 121 tables: `id uuid` primary key (D-1), the four audit columns (D-2), one of six delete-policy classes in the DBML note and the §5 registers (D-3, §8). `erd-check.py` verifies the first two on every run. |
+| 2 | Every entity has a primary key, audit fields (CreatedAt, CreatedBy, UpdatedAt, UpdatedBy) and a documented soft-delete or hard-delete policy | **MET.** 123 of 123 tables: `id uuid` primary key (D-1), the four audit columns (D-2), one of six delete-policy classes in the DBML note and the §5 registers (D-3, §8). `erd-check.py` verifies the first two on every run. |
 | 3 | No duplicated/derived field exists without a documented performance justification | **MET.** §7 lists 29 entries covering every stored derived or copied column; each has a justification. The justifications are pinning and snapshot immutability more often than performance — they are stated as what they are. |
 | 4 | ERD is reviewed against Blueprint Appendix C for lifecycle-state columns | **NOT RUN — Appendix C not obtainable (E-1).** §6 is the review that could be run: 53 lifecycle columns with states and the workbook row that states them, inferred sets marked. |
 
@@ -1750,3 +1763,4 @@ On Q1 and Q6, the E-1 reconciliation is run, the crosswalk's Appendix D columns 
 | 2026-09-20 | Initial record. 121 tables across 21 module schemas and `common`; seventeen conventions (D-1 to D-17) carrying ADR-008/009/011/012 and the provenance, language-tag and Declared-Baseline amendments; WF-02 aggregates added (TASK-007 S-2); 53 lifecycle columns reviewed against the workbook restatement; 29 derived/duplicated columns justified; delete-policy census; 109-row Appendix D crosswalk with row numbers pending (E-1); six workbook consequences; seven residual items. | Architecture (TASK-008) |
 | 2026-10-09 | §5.16, `erd.dbml`: `external_update_request.request_type_item_id` (an `UPDATE_REQUEST_TYPE` no source defines) becomes `contribution_type_item_id` (`CONTRIBUTION_TYPE`), and `external_contribution.contribution_type_item_id` is removed: WF-13's specification puts the contribution type on the request (EXT-F-011) — one purpose per request (BR-EXT-004) — and every revision answers in that type's schema. The columns TASK-066 adds beyond the ERD are listed in `external-participation.md` D-2 and F-8 | TASK-066 |
 | 2026-10-10 | §5.19: the `dashboards` schema built as the ERD lists it (TASK-069, `dashboards.md` D-9); the CHECKs, the partial unique key and the guard it adds are noted under the table. No column added or changed. | Backend (TASK-069) |
+| 2026-10-10 | §5.20, `erd.dbml`, §8: the `reports` schema as TASK-071 builds it (`reports.md` D-13). Added: `ReportColumn` (a definition's columns, bound to FG-01's projection register) and `ReportOutputContent` (a file's bytes, `HARD_WORKING`: deleted at expiry while `GeneratedOutput` is kept), so 123 tables; `report_definition.primary_projection_code` and `.allows_saved_views`; `report_parameter.sort_order`, `.source_entity_code`, `.field_code`; `report_job.kind`, `.idempotency_key`, `.request_snapshot`, and `.failure_code` in place of `failure_reason`; `generated_output.sensitivity`, `.row_count`, `.source_as_of`, `.authorization_footprint`. Removed: `report_parameter.option_catalogue_id` (no MASTER_DATA_ITEM parameter is defined), `report_job.saved_view_id` and `report_parameter_value.report_job_id` (a job pins its whole request in `request_snapshot`). `SavedViewShare` and `saved_view.is_shared` stay as TASK-112's, not yet built. | Backend (TASK-071) |
