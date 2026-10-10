@@ -72,24 +72,6 @@
     "unexpected": "Something went wrong. Try again.",
     "unexpectedWithReference": "Something went wrong. Try again. If it happens again, quote reference {reference}."
   },
-  "home": {
-    "projects": "Go to the project register",
-    "tasks": "Go to your tasks",
-    "milestones": "Go to the milestone register",
-    "kpis": "Go to the KPI register",
-    "risks": "Go to the risk register",
-    "issuesChallenges": "Issues and challenges",
-    "changeRequests": "Change requests",
-    "suspensions": "Suspension requests",
-    "closeouts": "Closure requests",
-    "externalRequests": "External update requests",
-    "myExternalRequests": "Your update requests from AHDA",
-    "title": "Welcome, {name}",
-    "approvals": "Go to your approval inbox",
-    "documents": "Go to the document library",
-    "notifications": "Go to your notifications",
-    "administration": "Go to users, roles and permissions administration"
-  },
   "forbidden": {
     "title": "Access denied",
     "description": "This page is available to system administrators only."

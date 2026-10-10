@@ -1,0 +1,162 @@
+{
+  "nav": {
+    "label": "Dashboards",
+    "home": "My dashboard"
+  },
+  "home": {
+    "title": "Dashboard",
+    "none": "No dashboard is published for your roles",
+    "noneHint": "Your roles open no dashboard yet. Use the menu to reach the registers you can see.",
+    "rendering": "{dashboardId} · shown by the {dashboard}, version {version}",
+    "switch": "Your dashboards",
+    "landingMarker": " (your landing page)"
+  },
+  "landing": {
+    "R01": "Administration Dashboard",
+    "R02": "Portfolio Dashboard",
+    "R03": "Department Dashboard",
+    "R04": "My Work / Project Manager Dashboard",
+    "R05": "My Actions Dashboard",
+    "R06": "Read-Only Dashboard",
+    "R07": "Executive Dashboard",
+    "R08": "External Contributor Dashboard"
+  },
+  "project": {
+    "title": "Project dashboard",
+    "unavailable": "The project dashboard is not available to you for this project.",
+    "entityRendering": "Shown for your entity: read only, within your entity's scope"
+  },
+  "projectLanding": {
+    "intro": "Open a project to see its dashboard in its overview.",
+    "caption": "Your projects",
+    "empty": "No project is shared with you yet",
+    "project": "Project",
+    "formalId": "Project ID",
+    "status": "Status"
+  },
+  "refreshedAt": "Assembled {date}",
+  "actions": {
+    "refresh": "Refresh"
+  },
+  "filter": {
+    "department": "Department",
+    "allDepartments": "All your departments"
+  },
+  "semanticState": {
+    "CURRENT_LIVE": "Current · live",
+    "PUBLISHED_OFFICIAL": "Published · official",
+    "HISTORICAL_SNAPSHOT": "Historical · snapshot"
+  },
+  "freshness": {
+    "STALE": "Stale",
+    "staleValue": "The source says this value is out of date: a later reporting obligation is still outstanding. It is shown as it stood on its as-of date.",
+    "staleAggregate": "Some of the values counted here are out of date. The total is dated by the oldest of them."
+  },
+  "asOf": {
+    "at": "As of {date}",
+    "none": "No as-of date: there is no value to date"
+  },
+  "source": "Source {source} · projection version {version}",
+  "coverage": {
+    "counted": "{included} of {eligible} projects counted",
+    "leftOut": "left out: {reasons}",
+    "excluded": {
+      "MISSING": "{count} with no data",
+      "MASKED": "{count} restricted",
+      "INCOMPATIBLE": "{count} that cannot be combined"
+    },
+    "stale": "{count} counted with out-of-date values"
+  },
+  "unknown": {
+    "MISSING": {
+      "label": "No data",
+      "explanation": "The source holds no value for this yet. It is not zero."
+    },
+    "NOT_APPLICABLE": {
+      "label": "Not applicable",
+      "explanation": "This does not apply here, for example to a project that is not reporting yet."
+    },
+    "RESTRICTED": {
+      "label": "Restricted",
+      "explanation": "You may not see this data here."
+    },
+    "SOURCE_UNAVAILABLE": {
+      "label": "Source unavailable",
+      "explanation": "The source did not answer. The other widgets are not affected; refresh to try again."
+    }
+  },
+  "figure": {
+    "restricted": "Restricted",
+    "none": "No data"
+  },
+  "distribution": {
+    "value": "Value",
+    "empty": "Nothing was counted."
+  },
+  "counted": {
+    "projects": "Projects",
+    "risks": "Open risks",
+    "kpiAssignments": "KPI assignments",
+    "versions": "Dashboard versions",
+    "items": "Count"
+  },
+  "values": {
+    "UP_TO_DATE": "Up to date",
+    "OVERDUE": "Overdue",
+    "NOT_ASSESSED": "Not assessed",
+    "NOT_PUBLISHED": "Nothing published",
+    "definition": {
+      "DRAFT": "Draft",
+      "VALIDATED": "Validated",
+      "PUBLISHED": "Published"
+    }
+  },
+  "measures": {
+    "ACTUAL_PERCENT": "Actual progress",
+    "PLANNED_PERCENT": "Planned progress",
+    "ACTUAL_PERCENT_OVERRIDDEN": "Actual progress overridden",
+    "OVERDUE_PERIODS": "Overdue reporting periods",
+    "FINISH_VARIANCE_DAYS": "Finish variance",
+    "OPEN_RISKS": "Open risks",
+    "NOT_ASSESSED": "Not yet assessed",
+    "REVIEW_OVERDUE": "Past their review date",
+    "ACTIVE_ASSIGNMENTS": "Active KPI assignments",
+    "NOT_PUBLISHED": "With nothing published",
+    "APPROVED_BUDGET": "Approved budget",
+    "ACTUAL_EXPENDITURE_TO_DATE": "Actual expenditure to date",
+    "FORECAST_AT_COMPLETION": "Forecast at completion"
+  },
+  "units": {
+    "days": "{value} days",
+    "sar": "SAR {amount}"
+  },
+  "trend": {
+    "range": "{start} to {end}",
+    "chartLabel": "{title}: actual and planned progress over {count} published periods. The table below lists the same values.",
+    "period": "Period",
+    "health": "Overall health",
+    "publishedAt": "Published",
+    "table": "{title}: the values by period"
+  },
+  "widget": {
+    "open": "Open"
+  },
+  "personalize": {
+    "open": "Customise layout",
+    "title": "Customise your dashboard",
+    "intro": "Show, hide or reorder the optional widgets. This changes only how your dashboard looks: it never changes what a widget shows or who may see it.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "save": "Save layout",
+    "reset": "Restore the standard layout",
+    "saved": "Your layout was saved.",
+    "wasReset": "The standard layout was restored."
+  },
+  "problems": {
+    "notFound": "This dashboard is not available to you.",
+    "filterValueUnauthorized": "That department is not one you may filter by. Show all your departments instead.",
+    "contextInvalid": "This dashboard cannot be opened here.",
+    "personalizationInvalid": "Only the optional widgets of this dashboard can be customised.",
+    "permissionDenied": "Your role cannot customise this dashboard."
+  }
+}

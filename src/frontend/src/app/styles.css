@@ -2227,3 +2227,310 @@ textarea.field__input {
   margin-block: var(--space-2);
   font-weight: 600;
 }
+
+/* ---------------------------------------------------------------------------------------------- dashboards (FG-01) */
+
+/* The two series of a progress trend: categorical slots 1 and 2 of the validated reference palette, told apart by
+   line style too (planned is dashed), so identity never rests on colour alone. */
+:root {
+  --series-actual: #2a78d6;
+  --series-planned: #eb6834;
+}
+
+.dashboard {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dashboard--project {
+  margin-block-start: var(--space-8);
+  padding-block-start: var(--space-6);
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.dashboard__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.dashboard__toolbar .filters {
+  margin: 0;
+}
+
+.dashboard__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* The governed twelve-column grid. Widgets flow in governed order with their own span, which fills the same places
+   and mirrors in Arabic; on a narrow screen each takes the full width. */
+.dashboard__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+@media (min-width: 64rem) {
+  .dashboard__grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .widget {
+    grid-column: span var(--widget-span, 12);
+  }
+}
+
+.widget {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-background);
+}
+
+/* A stale value is framed in the warning colour along its inline-start edge; the "Stale" flag says so in words. */
+.widget--stale {
+  border-inline-start: 6px solid var(--color-warning);
+}
+
+.widget__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.widget__title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.widget__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.widget__coverage,
+.widget__explanation {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.widget__unknown {
+  display: grid;
+  gap: var(--space-1);
+  padding-block: var(--space-2);
+}
+
+.widget__body {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.widget__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.widget__figures {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.widget__figure {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.widget__figure dt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.widget__figure dd {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.widget__distribution {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.widget__distribution th,
+.widget__distribution td {
+  padding: var(--space-1) var(--space-2);
+  border-block-end: 1px solid var(--color-border-subtle);
+  text-align: start;
+}
+
+.widget__distribution thead th {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.widget__distribution td {
+  display: grid;
+  grid-template-columns: 3ch minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* A bar only repeats the number beside it. */
+.widget__bar-track {
+  display: block;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-neutral-surface);
+}
+
+.widget__bar {
+  display: block;
+  block-size: 100%;
+  min-inline-size: 2px;
+  border-radius: 999px;
+  background: var(--color-text-muted);
+}
+
+.widget__bar--positive {
+  background: var(--color-positive);
+}
+
+.widget__bar--warning {
+  background: var(--color-warning);
+}
+
+.widget__bar--negative {
+  background: var(--color-danger);
+}
+
+.widget__bar--info {
+  background: var(--color-info);
+}
+
+.widget__bar--actual {
+  background: var(--series-actual);
+}
+
+.widget__bar--planned {
+  background: var(--series-planned);
+}
+
+/* HISTORICAL/SNAPSHOT: dotted, beside published (solid) and live (dashed). */
+.badge--historical {
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 2px dotted var(--color-text-muted);
+}
+
+.trend__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.trend__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.trend__chart {
+  /* Time runs left to right in both languages. */
+  direction: ltr;
+  inline-size: 100%;
+  block-size: auto;
+  max-inline-size: 48rem;
+  font-size: 11px;
+}
+
+.trend__chart text {
+  fill: var(--color-text-muted);
+}
+
+.trend__tick line {
+  stroke: var(--color-border-subtle);
+}
+
+.trend__line {
+  fill: none;
+  stroke-width: 2;
+}
+
+.trend__line--ACTUAL_PERCENT {
+  stroke: var(--series-actual);
+}
+
+.trend__line--PLANNED_PERCENT {
+  stroke: var(--series-planned);
+  stroke-dasharray: 6 4;
+}
+
+.trend__point {
+  stroke: var(--color-background);
+  stroke-width: 2;
+}
+
+.trend__point--ACTUAL_PERCENT {
+  fill: var(--series-actual);
+}
+
+.trend__point--PLANNED_PERCENT {
+  /* A ring, so an actual point at the same value stays visible inside it. */
+  fill: none;
+  stroke: var(--series-planned);
+}
+
+.trend__chart .trend__end-label {
+  fill: var(--color-text);
+  font-weight: 600;
+}
+
+.personalize__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline-start: var(--space-6);
+}
+
+.personalize__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.personalize__moves {
+  display: inline-flex;
+  gap: var(--space-1);
+}

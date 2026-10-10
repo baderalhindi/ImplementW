@@ -11,6 +11,7 @@ import {
   readNotification,
   withInbox,
 } from '@/test/notificationFixtures.ts';
+import { withDashboards } from '@/test/dashboardFixtures.ts';
 import { mockApi, problem } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
 
@@ -109,8 +110,8 @@ describe('SCR-150 All Notifications', () => {
     expect(screen.queryByRole('combobox', { name: en('notifications.filters.family') })).toBeNull();
   });
 
-  test('is reached from the shell navigation and the home page', async () => {
-    withInbox(mockApi());
+  test('is reached from the shell navigation, on the home page too', async () => {
+    withDashboards(withInbox(mockApi()));
     renderApp({ path: '/', session: notificationSession() });
     const navigation = await screen.findByRole('navigation', {
       name: en('notifications.nav.label'),
@@ -126,7 +127,6 @@ describe('SCR-150 All Notifications', () => {
       '/notifications/history',
       '/notifications/preferences',
     ]);
-    expect(screen.getByRole('link', { name: en('common.home.notifications') })).toBeTruthy();
   });
 });
 

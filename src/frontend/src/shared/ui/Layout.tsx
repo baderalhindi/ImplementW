@@ -4,7 +4,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 
 interface PageHeaderProps {
   title: string;
-  description?: string;
+  description?: string | undefined;
   actions?: ReactNode;
 }
 

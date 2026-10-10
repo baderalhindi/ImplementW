@@ -1,0 +1,162 @@
+{
+  "nav": {
+    "label": "لوحات المعلومات",
+    "home": "لوحتي"
+  },
+  "home": {
+    "title": "لوحة المعلومات",
+    "none": "لا توجد لوحة معلومات منشورة لأدوارك",
+    "noneHint": "لا تفتح أدوارك أي لوحة معلومات بعد. استخدم القائمة للوصول إلى السجلات المتاحة لك.",
+    "rendering": "{dashboardId} · تعرضها {dashboard}، الإصدار {version}",
+    "switch": "لوحاتك",
+    "landingMarker": " (صفحتك الافتراضية)"
+  },
+  "landing": {
+    "R01": "لوحة إدارة النظام",
+    "R02": "لوحة المحفظة",
+    "R03": "لوحة الإدارة",
+    "R04": "أعمالي / لوحة مدير المشروع",
+    "R05": "لوحة إجراءاتي",
+    "R06": "لوحة الاطلاع فقط",
+    "R07": "اللوحة التنفيذية",
+    "R08": "لوحة المساهم الخارجي"
+  },
+  "project": {
+    "title": "لوحة المشروع",
+    "unavailable": "لوحة المشروع غير متاحة لك في هذا المشروع.",
+    "entityRendering": "معروضة لجهتك: للاطلاع فقط، ضمن نطاق جهتك"
+  },
+  "projectLanding": {
+    "intro": "افتح مشروعًا لعرض لوحته في نظرته العامة.",
+    "caption": "مشاريعك",
+    "empty": "لا يوجد مشروع متاح لك بعد",
+    "project": "المشروع",
+    "formalId": "رقم المشروع",
+    "status": "الحالة"
+  },
+  "refreshedAt": "جُمعت في {date}",
+  "actions": {
+    "refresh": "تحديث"
+  },
+  "filter": {
+    "department": "الإدارة",
+    "allDepartments": "جميع إداراتك"
+  },
+  "semanticState": {
+    "CURRENT_LIVE": "حالي · مباشر",
+    "PUBLISHED_OFFICIAL": "منشور · رسمي",
+    "HISTORICAL_SNAPSHOT": "تاريخي · لقطة"
+  },
+  "freshness": {
+    "STALE": "قديمة",
+    "staleValue": "يفيد المصدر بأن هذه القيمة قديمة: ما زال التزام تقرير لاحق قائمًا. تُعرض كما كانت في تاريخ سريانها.",
+    "staleAggregate": "بعض القيم المحتسبة هنا قديمة. يُؤرَّخ الإجمالي بأقدمها."
+  },
+  "asOf": {
+    "at": "بتاريخ {date}",
+    "none": "لا تاريخ سريان: لا توجد قيمة لتأريخها"
+  },
+  "source": "المصدر {source} · إصدار الإسقاط {version}",
+  "coverage": {
+    "counted": "احتُسب {included} من {eligible} مشروعًا",
+    "leftOut": "المستبعد: {reasons}",
+    "excluded": {
+      "MISSING": "{count} بلا بيانات",
+      "MASKED": "{count} مقيّد",
+      "INCOMPATIBLE": "{count} لا يمكن جمعه"
+    },
+    "stale": "{count} احتُسب بقيم قديمة"
+  },
+  "unknown": {
+    "MISSING": {
+      "label": "لا توجد بيانات",
+      "explanation": "لا يحتفظ المصدر بقيمة لهذا بعد. وهي ليست صفرًا."
+    },
+    "NOT_APPLICABLE": {
+      "label": "غير منطبق",
+      "explanation": "لا ينطبق هذا هنا، كمشروع لم يبدأ التقارير بعد."
+    },
+    "RESTRICTED": {
+      "label": "مقيّد",
+      "explanation": "لا يحق لك الاطلاع على هذه البيانات هنا."
+    },
+    "SOURCE_UNAVAILABLE": {
+      "label": "المصدر غير متاح",
+      "explanation": "لم يستجب المصدر. لا يتأثر باقي العناصر؛ حدّث الصفحة للمحاولة مرة أخرى."
+    }
+  },
+  "figure": {
+    "restricted": "مقيّد",
+    "none": "لا توجد بيانات"
+  },
+  "distribution": {
+    "value": "القيمة",
+    "empty": "لم يُحتسب أي شيء."
+  },
+  "counted": {
+    "projects": "المشاريع",
+    "risks": "المخاطر المفتوحة",
+    "kpiAssignments": "تعيينات مؤشرات الأداء",
+    "versions": "إصدارات اللوحات",
+    "items": "العدد"
+  },
+  "values": {
+    "UP_TO_DATE": "محدّث",
+    "OVERDUE": "متأخر",
+    "NOT_ASSESSED": "غير مقيّم",
+    "NOT_PUBLISHED": "لم يُنشر شيء",
+    "definition": {
+      "DRAFT": "مسودة",
+      "VALIDATED": "مُتحقق منه",
+      "PUBLISHED": "منشور"
+    }
+  },
+  "measures": {
+    "ACTUAL_PERCENT": "التقدم الفعلي",
+    "PLANNED_PERCENT": "التقدم المخطط",
+    "ACTUAL_PERCENT_OVERRIDDEN": "تجاوز التقدم الفعلي",
+    "OVERDUE_PERIODS": "فترات التقارير المتأخرة",
+    "FINISH_VARIANCE_DAYS": "انحراف تاريخ الانتهاء",
+    "OPEN_RISKS": "المخاطر المفتوحة",
+    "NOT_ASSESSED": "لم تُقيَّم بعد",
+    "REVIEW_OVERDUE": "تجاوزت موعد مراجعتها",
+    "ACTIVE_ASSIGNMENTS": "تعيينات المؤشرات النشطة",
+    "NOT_PUBLISHED": "بلا قيمة منشورة",
+    "APPROVED_BUDGET": "الميزانية المعتمدة",
+    "ACTUAL_EXPENDITURE_TO_DATE": "المصروف الفعلي حتى تاريخه",
+    "FORECAST_AT_COMPLETION": "التقدير عند الإنجاز"
+  },
+  "units": {
+    "days": "{value} يومًا",
+    "sar": "{amount} ريال سعودي"
+  },
+  "trend": {
+    "range": "من {start} إلى {end}",
+    "chartLabel": "{title}: التقدم الفعلي والمخطط عبر {count} فترة منشورة. يسرد الجدول أدناه القيم نفسها.",
+    "period": "الفترة",
+    "health": "الصحة العامة",
+    "publishedAt": "تاريخ النشر",
+    "table": "{title}: القيم حسب الفترة"
+  },
+  "widget": {
+    "open": "فتح"
+  },
+  "personalize": {
+    "open": "تخصيص التخطيط",
+    "title": "تخصيص لوحتك",
+    "intro": "أظهر العناصر الاختيارية أو أخفها أو أعد ترتيبها. يغيّر هذا شكل لوحتك فقط: لا يغيّر ما يعرضه أي عنصر ولا من يحق له رؤيته.",
+    "moveUp": "نقل لأعلى",
+    "moveDown": "نقل لأسفل",
+    "save": "حفظ التخطيط",
+    "reset": "استعادة التخطيط القياسي",
+    "saved": "حُفظ تخطيطك.",
+    "wasReset": "استُعيد التخطيط القياسي."
+  },
+  "problems": {
+    "notFound": "لوحة المعلومات هذه غير متاحة لك.",
+    "filterValueUnauthorized": "لا يحق لك التصفية بهذه الإدارة. اعرض جميع إداراتك بدلًا من ذلك.",
+    "contextInvalid": "لا يمكن فتح لوحة المعلومات هذه هنا.",
+    "personalizationInvalid": "لا يمكن تخصيص سوى العناصر الاختيارية في هذه اللوحة.",
+    "permissionDenied": "لا يتيح دورك تخصيص لوحة المعلومات هذه."
+  }
+}

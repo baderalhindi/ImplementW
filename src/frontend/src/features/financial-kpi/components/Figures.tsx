@@ -1,6 +1,7 @@
 import { type ReactElement, type ReactNode } from 'react';
 
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
+import { ValueStateFlag as Flag, type ValueStateIcon } from '@/shared/ui/ValueState.tsx';
 
 import { type Provenance } from '../api/types.ts';
 import { type FigureState, type UnknownStatus } from '../financialKpiRules.ts';
@@ -16,59 +17,7 @@ const UNKNOWN_LABELS: Record<UnknownStatus, TranslationKey> = {
   NOT_APPLICABLE: 'financialKpi.value.NOT_APPLICABLE',
 };
 
-function StateIcon({ kind }: { kind: 'missing' | 'stale' | 'notApplicable' | 'restricted' }) {
-  return (
-    <svg
-      className="value-state__icon"
-      viewBox="0 0 16 16"
-      width="16"
-      height="16"
-      aria-hidden="true"
-      focusable="false"
-    >
-      {kind === 'missing' && (
-        <>
-          <circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M3.6 12.4 12.4 3.6" stroke="currentColor" strokeWidth="1.6" />
-        </>
-      )}
-      {kind === 'stale' && (
-        <>
-          <circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M8 4.2V8l2.6 1.8" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        </>
-      )}
-      {kind === 'notApplicable' && (
-        <>
-          <circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M4.8 8h6.4" stroke="currentColor" strokeWidth="1.6" />
-        </>
-      )}
-      {kind === 'restricted' && (
-        <>
-          <rect
-            x="3"
-            y="7"
-            width="10"
-            height="7"
-            rx="1"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-          <path
-            d="M5.4 7V5a2.6 2.6 0 0 1 5.2 0v2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-        </>
-      )}
-    </svg>
-  );
-}
-
-const ICONS: Record<UnknownStatus, 'missing' | 'stale' | 'notApplicable'> = {
+const ICONS: Record<UnknownStatus, ValueStateIcon> = {
   MISSING: 'missing',
   STALE: 'stale',
   NOT_APPLICABLE: 'notApplicable',
@@ -77,24 +26,20 @@ const ICONS: Record<UnknownStatus, 'missing' | 'stale' | 'notApplicable'> = {
 /** "No data", "Stale", "Not applicable": a bordered flag with its icon. Stale is a warning; the others neutral. */
 export function ValueStateFlag({ status }: { status: UnknownStatus }): ReactElement {
   const { t } = useI18n();
-  const tone = status === 'STALE' ? 'warning' : 'neutral';
   return (
-    <span className={`value-state value-state--${tone}`} data-value-state={status}>
-      <StateIcon kind={ICONS[status]} />
-      {t(UNKNOWN_LABELS[status])}
-    </span>
+    <Flag
+      icon={ICONS[status]}
+      label={t(UNKNOWN_LABELS[status])}
+      state={status}
+      tone={status === 'STALE' ? 'warning' : 'neutral'}
+    />
   );
 }
 
 /** A figure withheld from the caller's audience: shown as such, never as missing or as 0. */
 export function RestrictedFlag(): ReactElement {
   const { t } = useI18n();
-  return (
-    <span className="value-state value-state--neutral" data-value-state="RESTRICTED">
-      <StateIcon kind="restricted" />
-      {t('financialKpi.value.restricted')}
-    </span>
-  );
+  return <Flag icon="restricted" label={t('financialKpi.value.restricted')} state="RESTRICTED" />;
 }
 
 /**
@@ -102,12 +47,7 @@ export function RestrictedFlag(): ReactElement {
  * own words.
  */
 export function AbsentFlag({ label }: { label: string }): ReactElement {
-  return (
-    <span className="value-state value-state--neutral" data-value-state="ABSENT">
-      <StateIcon kind="missing" />
-      {label}
-    </span>
-  );
+  return <Flag icon="missing" label={label} state="ABSENT" />;
 }
 
 interface FigureProps {
