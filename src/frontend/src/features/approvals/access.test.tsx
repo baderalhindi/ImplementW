@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
 import { APPROVER_ID, sessionAs, withApprovalNames } from '@/test/approvalFixtures.ts';
+import { catalogueFor, withDashboards } from '@/test/dashboardFixtures.ts';
 import { mockApi, page } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
 
@@ -43,12 +44,13 @@ describe('approval routes', () => {
     expect(screen.queryByRole('navigation', { name: en('identityAccess.nav.label') })).toBeNull();
   });
 
-  test('the home page links to the inbox for everyone', async () => {
-    mockApi();
+  test('from the home page, the shell links to the inbox for everyone', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R05']) });
     renderApp({ path: '/', session: sessionAs(APPROVER_ID, ['R05']) });
 
-    const link = await screen.findByRole('link', { name: en('common.home.approvals') });
+    const navigation = await screen.findByRole('navigation', { name: en('approvals.nav.label') });
+    const link = within(navigation).getByRole('link', { name: en('approvals.nav.inbox') });
     expect(link.getAttribute('href')).toBe('/approvals/inbox');
-    expect(screen.queryByRole('link', { name: en('common.home.administration') })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: en('identityAccess.nav.label') })).toBeNull();
   });
 });

@@ -8,6 +8,7 @@ import {
   externalRequestRoutes,
   myParticipationRoutes,
 } from '@/features/external-participation/routes.tsx';
+import { HomeDashboardPage } from '@/features/dashboards/HomeDashboardPage.tsx';
 import { kpiRoutes } from '@/features/financial-kpi/routes.tsx';
 import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
 import { issuesChallengesRoutes } from '@/features/issues-challenges/routes.tsx';
@@ -23,13 +24,13 @@ import { closeoutRoutes, suspensionRoutes } from '@/features/suspension-closure/
 import { taskRoutes } from '@/features/tasks/routes.tsx';
 
 import { AppLayout } from './AppLayout.tsx';
-import { HomePage, NotFoundPage } from './pages.tsx';
+import { NotFoundPage } from './pages.tsx';
 
 export const appRoutes: RouteObject[] = [
   {
     element: <AppLayout />,
     children: [
-      { index: true, element: <HomePage /> },
+      { index: true, element: <HomeDashboardPage /> }, // the role-aware Home: DSH-001–008, DSH-010–012
       { path: 'sign-in', element: <SignInPage /> },
       {
         path: 'admin',

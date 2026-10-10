@@ -7,6 +7,7 @@ import { WORKSPACE_TABS, type WorkspaceTabKey } from '@/features/projects/access
 import { type ProjectStatus } from '@/features/projects/api/types.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import { withChangeRequests } from '@/test/changeRequestFixtures.ts';
+import { withDashboards } from '@/test/dashboardFixtures.ts';
 import { concernProject, managerSession, withConcerns } from '@/test/concernFixtures.ts';
 import { withExternalParticipation } from '@/test/externalParticipationFixtures.ts';
 import { withFinancials, withKpis } from '@/test/financialKpiFixtures.ts';
@@ -62,6 +63,7 @@ function openWorkspace(path: string, session: Session, status: ProjectStatus): v
   });
   withExternalParticipation(api, { contributionTypes: false });
   api.on('GET', /^\/documents$/, { body: page([]) });
+  withDashboards(api);
   // Registered last, so every module's read of the project answers this one.
   withProject(api, concernProject({ status, closedAt: closed ? CLOSED_AT : null }));
   renderApp({ path, session });
@@ -101,6 +103,9 @@ function rowOpeners(container: HTMLElement): HTMLButtonElement[] {
   return [...container.querySelectorAll<HTMLButtonElement>(OPENERS)];
 }
 
+/** Reading again changes nothing: the Project Dashboard's refresh (DSH-009 in the overview, TASK-070). */
+const READS = new Set([en('dashboards.actions.refresh')]);
+
 const DISMISS = new Set([
   en('common.actions.cancel'),
   en('tasks.actions.close'),
@@ -122,6 +127,7 @@ function writeControls(container: HTMLElement): string[] {
         !openers.has(element) &&
         element.closest('.filters, .pagination, nav') === null &&
         !DISMISS.has(element.textContent.trim()) &&
+        !READS.has(element.textContent.trim()) &&
         !(element instanceof HTMLButtonElement && element.disabled),
     )
     .map((element) => `${element.tagName.toLowerCase()} "${element.textContent.trim()}"`);

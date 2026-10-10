@@ -127,3 +127,4 @@ The live runs found two defects, both fixed and covered: *Submit response* did n
 | Date | Change |
 | --- | --- |
 | 2026-10-09 | Created (TASK-067) |
+| 2026-10-10 | F-5: the Project Dashboard for entity users (DSH-008) is built by TASK-070 (`dashboards-ui.md` D-7) |

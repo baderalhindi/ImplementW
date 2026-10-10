@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router';
 
 import { approvalNavigation } from '@/features/approvals/routes.tsx';
 import { changeRequestNavigation } from '@/features/change-requests/routes.tsx';
+import { dashboardNavigation } from '@/features/dashboards/routes.tsx';
 import { documentNavigation } from '@/features/documents/routes.tsx';
 import { externalParticipationNavigation } from '@/features/external-participation/routes.tsx';
 import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
@@ -69,7 +70,7 @@ function Navigation({
 
 /**
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
- * (projects, tasks, milestones, KPIs, risks, issues and challenges, change requests, suspensions and closeouts, approvals, documents and notifications for
+ * (the role-aware Home with its dashboards, projects, tasks, milestones, KPIs, risks, issues and challenges, change requests, suspensions and closeouts, approvals, documents and notifications for
  * everyone signed in; WF-13's register and monitors for AHDA, or an entity user's requests and contributions; administration for R01),
  * and the page.
  */
@@ -109,6 +110,7 @@ export function AppLayout(): ReactElement {
       <div className="shell__body">
         {session !== null && (
           <div className="shell__sidebar">
+            <Navigation label="dashboards.nav.label" items={dashboardNavigation} />
             <Navigation label="projects.nav.label" items={projectNavigation} />
             <Navigation label="tasks.nav.label" items={taskNavigation} />
             <Navigation label="milestones.nav.label" items={milestoneNavigation} />

@@ -1,5 +1,6 @@
 import { type ReactElement } from 'react';
 
+import { ProjectDashboard } from '@/features/dashboards/ProjectDashboard.tsx';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 
@@ -31,11 +32,12 @@ const NEXT_STEPS: Record<ProjectStatus, TranslationKey> = {
 
 /**
  * SCR-040 Overview: where the project stands, what comes next, and — while the registrant holds it — what is still
- * missing before it can be submitted. The project dashboard (DSH-009) composes into this tab later (TASK-070).
+ * missing before it can be submitted. Below them, the Project Dashboard (DSH-009; DSH-008 for an entity's person) is
+ * composed into this tab, its only place (TASK-070).
  */
 export function OverviewTab(): ReactElement {
   const { t, formatDateTime } = useI18n();
-  const { project, lookups, access } = useWorkspace();
+  const { project, lookups, access, user } = useWorkspace();
   const managerName = usePersonNames([project.projectManagerUserId]);
   const missing =
     access.reached && (project.status === 'DRAFT' || project.status === 'RETURNED')
@@ -107,6 +109,7 @@ export function OverviewTab(): ReactElement {
           </Detail>
         )}
       </dl>
+      <ProjectDashboard key={project.id} projectId={project.id} user={user} />
     </>
   );
 }
