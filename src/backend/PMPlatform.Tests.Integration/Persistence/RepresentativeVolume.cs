@@ -333,6 +333,8 @@ public sealed class RepresentativeVolume : IAsyncLifetime
         "date" => $"date '2024-10-01' + {Hash(9)} % 730",
         "integer" or "smallint" or "bigint" => "1",
         "boolean" => "false",
+        "jsonb" => "'{}'::jsonb",
+        "bytea" => "'\\x00'::bytea",
         _ when column.Type.StartsWith("character varying", StringComparison.Ordinal) => column.Unique ? "'key-' || n" : "'x'",
         _ when column.Type.StartsWith("character(", StringComparison.Ordinal) => "'en'",
         _ when column.Type.StartsWith("numeric", StringComparison.Ordinal) => "0",

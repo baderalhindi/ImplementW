@@ -145,7 +145,8 @@ public sealed class DashboardDefinitionTests(DashboardTestHost host)
         using HttpClient client = host.Api.CreateClient();
         using HttpResponseMessage listed = await client.GetAsync($"{DashboardDriver.Projections}?pageSize=50", (await client.SignInOrFailAsync(1)).AccessToken);
         JsonObject page = await listed.ReadObjectAsync();
-        Assert.Equal(12, page["totalCount"]!.GetValue<int>());
+        // Twelve of TASK-069 and the five counts over WF-04, WF-05, WF-07, WF-08 and WF-09 TASK-071 adds for its reports (edges 48 to 52).
+        Assert.Equal(17, page["totalCount"]!.GetValue<int>());
         Assert.Contains(page["items"]!.AsArray(), p => p!["code"]!.GetValue<string>() == "PROGRESS.PUBLISHED_PROGRESS_SNAPSHOT" && p["semanticState"]!.GetValue<string>() == "PUBLISHED_OFFICIAL");
 
         using HttpResponseMessage refused = await client.GetAsync(DashboardDriver.Projections, (await client.SignInOrFailAsync(6)).AccessToken);

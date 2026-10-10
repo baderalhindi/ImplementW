@@ -3,5 +3,6 @@
 *.jpg binary
 *.ico binary
 *.woff2 binary
+*.ttf binary
 *.xlsx binary
 package-lock.json -diff linguist-generated=true

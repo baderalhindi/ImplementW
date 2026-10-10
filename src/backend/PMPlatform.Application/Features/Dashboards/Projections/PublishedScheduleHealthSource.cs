@@ -14,18 +14,20 @@ internal sealed class PublishedScheduleHealthSource(IProjectHealthReader health,
 
     public string ProjectionCode => DashboardProjections.PublishedScheduleHealth;
 
-    public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken)
+    public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken) =>
+        request.Read(await ObserveAsync(request, cancellationToken).ConfigureAwait(false), counted => ProjectionReadings.Distribution(counted, Order));
+
+    public async Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         IReadOnlyDictionary<Guid, ProjectHealthView> views = await health.ListAsync(request.ProjectIds, cancellationToken).ConfigureAwait(false);
         ILookup<Guid, ReportingCycleSummary> periods = ReportingStaleness.ByProject(await cycles.ListAsync(request.ProjectIds, cancellationToken).ConfigureAwait(false));
-        List<Observation> observations = [.. request.ProjectIds.Select(id => views[id].Published is { ScheduleHealth: { } scheduleHealth } published
+        return [.. request.ProjectIds.Select(id => views[id].Published is { ScheduleHealth: { } scheduleHealth } published
             ? new Observation(
                 id,
                 ReportingStaleness.OverduePeriods(periods[id], request.Today) > 0 ? ObservationKind.Stale : ObservationKind.Current,
                 published.PublishedAt,
                 ProjectionReadings.State(ProjectionReadings.Name(scheduleHealth)))
             : new Observation(id, ObservationKind.Missing, null, null))];
-        return request.Read(observations, counted => ProjectionReadings.Distribution(counted, Order));
     }
 }

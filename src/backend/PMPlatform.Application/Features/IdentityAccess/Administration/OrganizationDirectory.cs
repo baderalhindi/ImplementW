@@ -11,4 +11,8 @@ internal sealed class OrganizationDirectory(IDepartmentRepository departments, I
 
     public async Task<bool> IsActiveExternalEntityAsync(Guid externalEntityId, CancellationToken cancellationToken) =>
         (await entities.FindDetailAsync(externalEntityId, cancellationToken).ConfigureAwait(false))?.Value.Status == ExternalEntityStatus.Active;
+
+    public async Task<OrganizationNames> ListNamesAsync(IReadOnlyCollection<Guid> departmentIds, IReadOnlyCollection<Guid> externalEntityIds, CancellationToken cancellationToken) =>
+        new(await departments.ListNamesAsync(departmentIds, cancellationToken).ConfigureAwait(false),
+            await entities.ListNamesAsync(externalEntityIds, cancellationToken).ConfigureAwait(false));
 }

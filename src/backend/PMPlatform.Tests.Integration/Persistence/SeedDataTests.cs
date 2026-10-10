@@ -85,6 +85,12 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             UNION ALL SELECT 'dashboard_definition ' || code, name_ar, name_en FROM dashboards.dashboard_definition
             UNION ALL SELECT 'dashboard_definition description ' || code, description_ar, description_en FROM dashboards.dashboard_definition
             UNION ALL SELECT 'dashboard_widget ' || code, title_ar, title_en FROM dashboards.dashboard_widget
+            UNION ALL SELECT 'report_definition ' || code, name_ar, name_en FROM reports.report_definition
+            UNION ALL SELECT 'report_definition description ' || code, description_ar, description_en FROM reports.report_definition
+            UNION ALL SELECT 'report_column ' || source_entity_code || '.' || field_code, label_ar, label_en FROM reports.report_column
+            UNION ALL SELECT 'report_parameter ' || code, label_ar, label_en FROM reports.report_parameter
+            UNION ALL SELECT 'report_parameter_option ' || value_code, label_ar, label_en FROM reports.report_parameter_option
+            UNION ALL SELECT 'report_allowlist_entry ' || source_entity_code || '.' || field_code, label_ar, label_en FROM master_data_config.report_allowlist_entry
             """;
 
         IReadOnlyList<string> count = await database.QueryAsync($"SELECT count(*)::text FROM ({labels}) l");
@@ -93,7 +99,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             WHERE ar !~ '[؀-ۿ]' OR en ~ '[؀-ۿ]' OR btrim(en) = ''
             """);
 
-        Assert.Equal("189", count[0]);
+        Assert.Equal("395", count[0]);
         Assert.Empty(notBilingual);
     }
 
@@ -186,7 +192,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             .ToDictionary(m => $"{m.Groups["schema"].Value}.{m.Groups["table"].Value}.{m.Groups["column"].Value}", m => m.Groups["catalogue"].Value);
         IReadOnlyList<string> seeded = await database.QueryAsync("SELECT code FROM master_data_config.master_data_catalogue WHERE is_system");
 
-        Assert.Equal(36, erdReferences.Length);
+        Assert.Equal(37, erdReferences.Length);
         Assert.Equal(erdReferences.Order(StringComparer.Ordinal), map.Keys.Order(StringComparer.Ordinal));
         Assert.Empty(map.Values.Distinct().Except(seeded));
         Assert.Empty(seeded.Except(map.Values));

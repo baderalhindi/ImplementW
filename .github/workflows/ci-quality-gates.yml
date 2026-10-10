@@ -318,6 +318,19 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Dashboards.
 
+      # TASK-071: FG-02's reports — a field outside the SCR-138 allowlist refused by a direct call, an output authorised again at download on
+      # the rules of its data, an entity's report set on its own projects with financials masked, the catalogue fixed at ADR-006's ten,
+      # missing never 0 and stale never current, parameters that only narrow, PDF/XLSX/CSV without a formula a spreadsheet could run, the job
+      # lifecycle and its expiry, private saved views, ADM-037's governed lifecycle and its database guard, and the API against
+      # docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
+      - name: Reports integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Reports.
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest

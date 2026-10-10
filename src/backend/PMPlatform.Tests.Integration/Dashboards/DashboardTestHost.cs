@@ -93,6 +93,9 @@ internal sealed class FailableSource(IDashboardProjectionSource inner, SourceFai
 
     public Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken) =>
         failure.IsOn ? throw new InvalidOperationException("The source is down.") : inner.ReadAsync(request, cancellationToken);
+
+    public Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken) =>
+        failure.IsOn ? throw new InvalidOperationException("The source is down.") : inner.ObserveAsync(request, cancellationToken);
 }
 
 [CollectionDefinition(Name)]

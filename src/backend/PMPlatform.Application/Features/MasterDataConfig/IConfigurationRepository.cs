@@ -34,6 +34,9 @@ public interface IConfigurationRepository
     /// <summary>The rating rows of a RISK_MATRIX version, with their ids.</summary>
     public Task<IReadOnlyList<RiskRatingDefinition>> ListRiskRatingsAsync(Guid versionId, CancellationToken cancellationToken);
 
+    /// <summary>REPORT_RULES allowlist rows with their ids: those of the versions named, or the rows named (TASK-071).</summary>
+    public Task<IReadOnlyList<ReportAllowlistEntry>> ListReportAllowlistAsync(IReadOnlyCollection<Guid>? versionIds, IReadOnlyCollection<Guid>? entryIds, CancellationToken cancellationToken);
+
     public void AddVersion(ConfigurationVersion version);
 
     /// <summary>

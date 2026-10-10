@@ -24,4 +24,7 @@ internal sealed class DefinitionBacklogSource(IDashboardRepository repository) :
             ProjectionReadings.NoSeries);
         return ProjectionReadings.Of(new Observation(Guid.Empty, ObservationKind.Current, request.Now, data));
     }
+
+    /// <summary>Not about projects: it has no rows to give a report.</summary>
+    public Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Observation>>([]);
 }

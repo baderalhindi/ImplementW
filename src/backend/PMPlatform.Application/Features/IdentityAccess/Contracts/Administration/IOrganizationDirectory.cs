@@ -1,3 +1,5 @@
+using PMPlatform.Domain.Common;
+
 namespace PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
 /// <summary>
@@ -11,4 +13,15 @@ public interface IOrganizationDirectory
 
     /// <summary>True only for an existing entity that is ACTIVE.</summary>
     public Task<bool> IsActiveExternalEntityAsync(Guid externalEntityId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The names of the departments and entities named, in Arabic and English, whatever their state: a report names the department and the
+    /// delivering entity of each project it lists (TASK-071). An id that names nothing is left out.
+    /// </summary>
+    public Task<OrganizationNames> ListNamesAsync(IReadOnlyCollection<Guid> departmentIds, IReadOnlyCollection<Guid> externalEntityIds, CancellationToken cancellationToken);
+}
+
+public sealed record OrganizationNames(IReadOnlyDictionary<Guid, BilingualLabel> Departments, IReadOnlyDictionary<Guid, BilingualLabel> ExternalEntities)
+{
+    public static OrganizationNames None { get; } = new(new Dictionary<Guid, BilingualLabel>(), new Dictionary<Guid, BilingualLabel>());
 }

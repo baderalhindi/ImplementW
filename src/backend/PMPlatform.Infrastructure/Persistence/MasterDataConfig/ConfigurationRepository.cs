@@ -96,6 +96,12 @@ internal sealed class ConfigurationRepository(PMPlatformDbContext context) : ICo
     public async Task<IReadOnlyList<RiskRatingDefinition>> ListRiskRatingsAsync(Guid versionId, CancellationToken cancellationToken) =>
         await Rows<RiskRatingDefinition>(versionId).ToListAsync(cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<ReportAllowlistEntry>> ListReportAllowlistAsync(
+        IReadOnlyCollection<Guid>? versionIds, IReadOnlyCollection<Guid>? entryIds, CancellationToken cancellationToken) =>
+        await context.Set<ReportAllowlistEntry>().AsNoTracking()
+            .Where(e => (versionIds == null || versionIds.Contains(e.ConfigurationVersionId)) && (entryIds == null || entryIds.Contains(e.Id)))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public async Task<ConfigurationContent> ReadContentAsync(Guid versionId, CancellationToken cancellationToken)
     {
         List<GovernanceProfileSetting> settings = await Rows<GovernanceProfileSetting>(versionId).ToListAsync(cancellationToken).ConfigureAwait(false);

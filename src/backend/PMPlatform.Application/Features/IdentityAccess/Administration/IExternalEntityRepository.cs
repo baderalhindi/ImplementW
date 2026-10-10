@@ -1,4 +1,5 @@
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Application.Features.IdentityAccess.Administration;
@@ -16,6 +17,9 @@ public interface IExternalEntityRepository
     public Task<bool> IsEntityTypeAsync(Guid itemId, CancellationToken cancellationToken);
 
     public void Add(ExternalEntity entity);
+
+    /// <summary>The names of the entitys named, by id; an id that names nothing is left out.</summary>
+    public Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken);
 }

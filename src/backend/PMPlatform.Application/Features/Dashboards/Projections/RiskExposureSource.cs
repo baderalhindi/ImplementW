@@ -16,8 +16,8 @@ internal sealed class RiskExposureSource(IRiskExposureReader risks) : IDashboard
 
     public async Task<ProjectionReading> ReadAsync(ProjectionRequest request, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(request);
-        IReadOnlyList<RiskExposure> exposures = await risks.ListAsync(request.ProjectIds, request.Today, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<RiskExposure> exposures = await ListAsync(request, cancellationToken).ConfigureAwait(false);
+        List<Observation> observations = [.. exposures.Select(e => Observe(e, request.Now))];
 
         // The ratings in their matrices' order, then the unassessed: the source's own order of its values.
         IReadOnlyList<string> order =
@@ -26,13 +26,23 @@ internal sealed class RiskExposureSource(IRiskExposureReader risks) : IDashboard
                 .OrderBy(g => g.Min(r => r.SortOrder)).ThenBy(g => g.Key, StringComparer.Ordinal).Select(g => g.Key),
             NotAssessed,
         ];
-        List<Observation> observations = [.. exposures.Select(e => new Observation(e.ProjectId, ObservationKind.Current, request.Now, new WidgetData(
-            null,
-            [ProjectionReadings.Count("OPEN_RISKS", e.OpenCount), ProjectionReadings.Count("NOT_ASSESSED", e.NotAssessedCount), ProjectionReadings.Count("REVIEW_OVERDUE", e.ReviewOverdueCount)],
-            [.. e.ByRating.Select(r => new WidgetBucket(r.RatingCode, r.Label, r.Count)), .. e.NotAssessedCount > 0 ? [new WidgetBucket(NotAssessed, null, e.NotAssessedCount)] : Array.Empty<WidgetBucket>()],
-            ProjectionReadings.NoSeries)))];
         return request.Context == DashboardContextKind.Project
             ? ProjectionReadings.Of(observations.Single() with { Data = ProjectionReadings.SumBuckets(observations, order) })
             : ProjectionReadings.Aggregate(observations, counted => ProjectionReadings.SumBuckets(counted, order));
     }
+
+    public async Task<IReadOnlyList<Observation>> ObserveAsync(ProjectionRequest request, CancellationToken cancellationToken) =>
+        [.. (await ListAsync(request, cancellationToken).ConfigureAwait(false)).Select(e => Observe(e, request.Now))];
+
+    private Task<IReadOnlyList<RiskExposure>> ListAsync(ProjectionRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return risks.ListAsync(request.ProjectIds, request.Today, cancellationToken);
+    }
+
+    private static Observation Observe(RiskExposure e, DateTimeOffset now) => new(e.ProjectId, ObservationKind.Current, now, new WidgetData(
+        null,
+        [ProjectionReadings.Count("OPEN_RISKS", e.OpenCount), ProjectionReadings.Count("NOT_ASSESSED", e.NotAssessedCount), ProjectionReadings.Count("REVIEW_OVERDUE", e.ReviewOverdueCount)],
+        [.. e.ByRating.Select(r => new WidgetBucket(r.RatingCode, r.Label, r.Count)), .. e.NotAssessedCount > 0 ? [new WidgetBucket(NotAssessed, null, e.NotAssessedCount)] : Array.Empty<WidgetBucket>()],
+        ProjectionReadings.NoSeries));
 }

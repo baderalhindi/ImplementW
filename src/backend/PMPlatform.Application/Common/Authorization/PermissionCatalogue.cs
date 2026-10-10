@@ -319,6 +319,12 @@ public sealed class PermissionCatalogue
     /// <summary>ADR-019: compose a report in the controlled report explorer (TASK-112).</summary>
     public const string ReportCompose = "REPORT_COMPOSE";
 
+    /// <summary>
+    /// FG-02 (TASK-071): generate a report's PDF, XLSX or CSV and download it. View never implies export (BR-RPT-013): a report job's rows are the
+    /// projects the holder reaches under this permission as well as under each projection's own.
+    /// </summary>
+    public const string ReportExport = "REPORT_EXPORT";
+
     public static PermissionCatalogue Platform { get; } = new(
         [
             new(IdentityIntegrationManage, "IDENTITY_ACCESS", AccessMode.Write),
@@ -395,6 +401,7 @@ public sealed class PermissionCatalogue
             new(NotificationDeliveryManage, "NOTIFICATIONS", AccessMode.Write),
             new(LayoutPersonalize, "DASHBOARDS", AccessMode.Write),
             new(ReportCompose, "REPORTS", AccessMode.Write),
+            new(ReportExport, "REPORTS", AccessMode.Read),
         ]);
 
     /// <summary>
@@ -459,7 +466,10 @@ public sealed class PermissionCatalogue
     /// status for its own project, masked by audience per ADR-010: R08 and R04 view financials and KPIs at ENTITY, which reaches
     /// only a holder with an entity; entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2). WF-15's
     /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
-    /// (notification-runtime.md F-1): they are platform-wide.
+    /// (notification-runtime.md F-1): they are platform-wide. ADR-013's amendment to TASK-071 lets an entity run and export a
+    /// defined report set on its own projects, financial fields masked: R08 and R04 export reports at ENTITY, which reaches only
+    /// a holder with an entity. FG-02 §18 makes export Conditional for every internal role: those grants wait for Appendix A
+    /// (reports.md F-3).
     /// </summary>
     public static IReadOnlyList<ShippedGrant> ShippedDefaultGrants { get; } =
     [
@@ -541,6 +551,8 @@ public sealed class PermissionCatalogue
         new("R03", ReportCompose, DataScope.Own),
         new("R07", LayoutPersonalize, DataScope.Own),
         new("R07", ReportCompose, DataScope.Own),
+        new("R04", ReportExport, DataScope.Entity),
+        new("R08", ReportExport, DataScope.Entity),
     ];
 
     private readonly Dictionary<string, PermissionDefinition> _definitions;

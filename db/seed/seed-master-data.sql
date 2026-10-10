@@ -15,7 +15,10 @@
 --      five probability levels and five impact levels per dimension, labelled "Level n", with no descriptions and
 --      no boundaries;
 --   6. the three dashboards of ADR-006 — PORTFOLIO, PROJECT, GOVERNANCE — each a PUBLISHED version 1 with its audience, default
---      landings (Blueprint §20.2) and widgets bound to registered source projections (TASK-069).
+--      landings (Blueprint §20.2) and widgets bound to registered source projections (TASK-069);
+--   7. the ten reports of ADR-006, each a PUBLISHED version 1 with its audience, parameters, options and columns, every column a field of a
+--      registered source projection, FG-02's catalogue entries absorbed as reports.md D-2 maps them (TASK-071);
+--   8. the SCR-138 explorer's allowlist as a DRAFT version 1 of REPORT_RULES, for AHDA to review and publish (TASK-071).
 -- Every label is bilingual (ADR-012).
 --
 -- What it does not hold, and why (record §4):
@@ -52,7 +55,9 @@
 -- returns their risks for review (TASK-055), is PMPlatform.Application's RiskServicePrincipal.Id; the suspension-activation
 -- principal's, which effects approved suspension and resumption requests on their effective date (TASK-062), is
 -- PMPlatform.Application's SuspensionServicePrincipal.Id; the closeout-activation principal's, which effects approved
--- completion and closure cases (TASK-063), is PMPlatform.Application's CloseoutServicePrincipal.Id.
+-- completion and closure cases (TASK-063), is PMPlatform.Application's CloseoutServicePrincipal.Id; the report-generation principal's,
+-- which validates, generates and expires FG-02's report jobs and their outputs (TASK-071), is PMPlatform.Application's
+-- ReportServicePrincipal.Id.
 INSERT INTO identity_access."user" (id, user_type, username, display_name, email, preferred_language, status, created_at, created_by, updated_at, updated_by)
 VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 'Platform seed (service principal)', 'svc.platform-seed@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
@@ -73,6 +78,8 @@ VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 
        ('00000000-0000-4000-8000-0000000000f7', 'SERVICE', 'svc.suspension-activation', 'Suspension activation (service principal)', 'svc.suspension-activation@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
        ('00000000-0000-4000-8000-0000000000f6', 'SERVICE', 'svc.closeout-activation', 'Completion and closure activation (service principal)', 'svc.closeout-activation@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000f5', 'SERVICE', 'svc.report-generation', 'Report generation (service principal)', 'svc.report-generation@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO NOTHING;
 
@@ -220,6 +227,7 @@ FROM (VALUES
     ('CONFIGURATION_MANAGE',        'إدارة الإعدادات',      'Manage configuration',        'MASTER_DATA_CONFIG', true),
     ('LAYOUT_PERSONALIZE',          'تخصيص التخطيط',      'Personalize layout',          'DASHBOARDS',      false),
     ('REPORT_COMPOSE',              'إعداد التقارير',      'Compose report',              'REPORTS',         false),
+    ('REPORT_EXPORT',               'تصدير التقارير',      'Export report',               'REPORTS',         false),
     ('APPROVAL_VIEW',               'عرض الموافقات',       'View approvals',              'APPROVAL',        false),
     ('APPROVAL_DECIDE',             'البت في الموافقات',    'Decide approvals',            'APPROVAL',        false),
     ('DOCUMENT_VIEW',               'عرض الوثائق',         'View documents',              'DOCUMENT_MANAGEMENT', false),
@@ -366,6 +374,8 @@ FROM (VALUES
     ('R08', 'FINANCIAL_VIEW',              'ENTITY'),
     ('R04', 'KPI_VIEW',                    'ENTITY'),
     ('R08', 'KPI_VIEW',                    'ENTITY'),
+    ('R04', 'REPORT_EXPORT',               'ENTITY'),
+    ('R08', 'REPORT_EXPORT',               'ENTITY'),
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R03', 'REPORT_COMPOSE',              'OWN'),
     ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),
@@ -569,3 +579,319 @@ FROM (VALUES
 JOIN dashboards.dashboard_definition d ON d.code = v.code AND d.version_no = 1 AND d.created_by = '00000000-0000-4000-8000-0000000000ff'
 WHERE NOT EXISTS (SELECT 1 FROM dashboards.dashboard_widget w WHERE w.dashboard_definition_id = d.id)
 ON CONFLICT (dashboard_definition_id, code) DO NOTHING;
+
+-- 7. The ten reports of ADR-006 (TASK-071), each a PUBLISHED version 1 with its audience, parameters, options and columns, every column a field of
+-- FG-01's register (PMPlatform.Application's DashboardProjections; ReportRuntimeTests.TheCatalogueIsTheTenReportsOfAdr006 checks every one). FG-02's twenty-three delivered catalogue
+-- entries are absorbed as reports.md D-2 maps them: whole, as an audience, or as an option (whose catalogue_entry_reference names it). R08 is in
+-- the audience of ADR-013's entity report set only; R01 of none (BR-RPT-011). Inserted once with their version, as the dashboards are: a change is
+-- a new version on ADM-037, never a re-seed. Generated by artifacts/task-071/seed/gen.py.
+INSERT INTO reports.report_definition (id, code, version_no, name_ar, name_en, description_ar, description_en, audience_family, primary_projection_code,
+                                       allows_saved_views, lifecycle_state, published_at, created_at, created_by, updated_at, updated_by)
+SELECT md5('report_definition:' || v.code || ':1')::uuid, v.code, 1, v.name_ar, v.name_en, v.description_ar, v.description_en, v.audience_family,
+       v.primary_projection_code, v.allows_saved_views, 'PUBLISHED', now(), now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('PORTFOLIO_SUMMARY', 'ملخص المحفظة', 'Portfolio Summary',
+     'المشاريع ضمن نطاقك: دورة الحياة والصحة المنشورة والحالية والجدول الزمني والتقارير والمخاطر ومؤشرات الأداء والحالة المالية المنشورة.',
+     'The projects in your scope: lifecycle, published and current health, schedule, reporting, risk, KPI and published financial condition.',
+     'PORTFOLIO', 'PROJECT.LIFECYCLE_STATE', true),
+    ('PROJECT_REGISTER', 'سجل المشاريع', 'Project Register',
+     'المشاريع المصرح لك بها مع الإدارة والجهة المنفذة وحالة دورة الحياة؛ وتصفيتها حسب الحالة تعطي المشاريع المعلقة أو المكتملة أو المغلقة.',
+     'The projects you may see, with department, delivering entity and lifecycle state; filtered by state, the suspended, completed or closed projects.',
+     'DEPARTMENT', 'PROJECT.LIFECYCLE_STATE', true),
+    ('PROJECT_REPORT', 'تقرير المشروع', 'Project Report',
+     'التقرير الرسمي لمشروع واحد: الهوية ودورة الحياة والصحة والتقدم والجدول الزمني والتقارير والمخاطر والقضايا والوضع المالي ومؤشرات الأداء.',
+     'The formal report of one project: identity, lifecycle, health, progress, schedule, reporting, risks, issues, financial position and KPIs.',
+     'PROJECT', 'PROJECT.LIFECYCLE_STATE', true),
+    ('PROGRESS_REPORTING', 'حالة تقارير التقدم', 'Progress Reporting Status',
+     'هل تقارير التقدم للمشاريع النشطة محدثة أم متأخرة، مع آخر صحة وتقدم منشورين. التأخر في التقارير ليس تأخراً في المشروع.',
+     'Whether ACTIVE projects'' progress reporting is up to date or overdue, with the last published health and progress. Late reporting is not project delay.',
+     'PROGRESS', 'PROGRESS.REPORTING_COMPLETENESS', true),
+    ('PROGRESS_HISTORY', 'سجل التقدم المنشور', 'Published Progress History',
+     'لقطات التقدم المنشورة لمشروع، الأقدم أولاً: سجل المصدر نفسه، لا يعاد بناؤه من البيانات الحالية.',
+     'A project''s published progress snapshots, oldest first: the source''s own history, never rebuilt from current data.',
+     'PROGRESS', 'PROGRESS.PUBLISHED_PROGRESS_HISTORY', true),
+    ('SCHEDULE_DELIVERY', 'الجدول الزمني والتسليم', 'Schedule and Delivery',
+     'صحة الجدول الزمني الحالية والمنشورة وانحراف تاريخ الانتهاء، مع المهام المفتوحة ومطالبات إنجاز المعالم المفتوحة.',
+     'Current and published schedule health and finish variance, with open tasks and open milestone achievement claims.',
+     'PROJECT', 'SCHEDULE.SCHEDULE_HEALTH_STATUS', true),
+    ('RISK_ISSUE', 'المخاطر والقضايا', 'Risks and Issues',
+     'المخاطر المفتوحة وغير المقيمة والمتأخرة المراجعة كما سجلها نظام المخاطر، مع القضايا والتحديات المفتوحة؛ دون إعادة تقييم.',
+     'Open, unassessed and review-overdue risks as WF-06 recorded them, with open issues and challenges; never rescored.',
+     'RISK_ISSUE', 'RISK.RISK_EXPOSURE', true),
+    ('FINANCIAL_PERFORMANCE', 'الأداء المالي', 'Financial Performance',
+     'الوضع المالي المنشور والحالي بالريال: الميزانية المعتمدة والصرف الفعلي والتكلفة المتوقعة والحالة المالية. بيانات حساسة تحجب حسب الفئة.',
+     'The published and current financial position in SAR: approved budget, actual expenditure, forecast at completion and financial condition. Sensitive; masked by audience.',
+     'FINANCIAL', 'FINANCIAL_KPI.PUBLISHED_FINANCIAL_SNAPSHOT', true),
+    ('KPI_PERFORMANCE', 'أداء مؤشرات الأداء', 'KPI Performance',
+     'مؤشرات الأداء النشطة حسب حالة آخر قياس منشور، واكتمال القياس والتقارير المالية وتقارير التقدم. لا تجمع مؤشرات مختلفة.',
+     'Active KPIs by the condition of their latest published measurement, with measurement, financial and progress reporting completeness. Unlike KPIs are never combined.',
+     'FINANCIAL', 'FINANCIAL_KPI.KPI_CONDITION', true),
+    ('GOVERNANCE_CHANGE', 'الحوكمة والتغيير', 'Governance and Change',
+     'طلبات التغيير قيد البت والمعتمدة وقيد التنفيذ، وطلبات التعليق والاستئناف المفتوحة؛ المعتمد ليس منفذاً، والطلب ليس تعليقاً.',
+     'Change requests undecided, approved and in implementation, and open suspension or resumption requests; approved is not implemented, a request is not a suspension.',
+     'EXECUTIVE', 'CHANGE_REQUEST.CHANGE_POSITION', true)
+) AS v (code, name_ar, name_en, description_ar, description_en, audience_family, primary_projection_code, allows_saved_views)
+ON CONFLICT (code, version_no) DO NOTHING;
+
+-- The audience of version 1, written with it and never after.
+INSERT INTO reports.report_audience_role (id, report_definition_id, role_id, created_at, created_by, updated_at, updated_by)
+SELECT md5('report_audience_role:' || v.code || ':1:' || v.role_code)::uuid, d.id, r.id, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('PORTFOLIO_SUMMARY', 'R02'), ('PORTFOLIO_SUMMARY', 'R03'), ('PORTFOLIO_SUMMARY', 'R04'), ('PORTFOLIO_SUMMARY', 'R05'), ('PORTFOLIO_SUMMARY', 'R06'), ('PORTFOLIO_SUMMARY', 'R07'),
+    ('PROJECT_REGISTER', 'R02'), ('PROJECT_REGISTER', 'R03'), ('PROJECT_REGISTER', 'R04'), ('PROJECT_REGISTER', 'R05'), ('PROJECT_REGISTER', 'R06'), ('PROJECT_REGISTER', 'R07'), ('PROJECT_REGISTER', 'R08'),
+    ('PROJECT_REPORT', 'R02'), ('PROJECT_REPORT', 'R03'), ('PROJECT_REPORT', 'R04'), ('PROJECT_REPORT', 'R05'), ('PROJECT_REPORT', 'R06'), ('PROJECT_REPORT', 'R07'), ('PROJECT_REPORT', 'R08'),
+    ('PROGRESS_REPORTING', 'R02'), ('PROGRESS_REPORTING', 'R03'), ('PROGRESS_REPORTING', 'R04'), ('PROGRESS_REPORTING', 'R05'), ('PROGRESS_REPORTING', 'R06'), ('PROGRESS_REPORTING', 'R07'), ('PROGRESS_REPORTING', 'R08'),
+    ('PROGRESS_HISTORY', 'R02'), ('PROGRESS_HISTORY', 'R03'), ('PROGRESS_HISTORY', 'R04'), ('PROGRESS_HISTORY', 'R05'), ('PROGRESS_HISTORY', 'R06'), ('PROGRESS_HISTORY', 'R07'), ('PROGRESS_HISTORY', 'R08'),
+    ('SCHEDULE_DELIVERY', 'R02'), ('SCHEDULE_DELIVERY', 'R03'), ('SCHEDULE_DELIVERY', 'R04'), ('SCHEDULE_DELIVERY', 'R05'), ('SCHEDULE_DELIVERY', 'R06'), ('SCHEDULE_DELIVERY', 'R07'),
+    ('RISK_ISSUE', 'R02'), ('RISK_ISSUE', 'R03'), ('RISK_ISSUE', 'R04'), ('RISK_ISSUE', 'R05'), ('RISK_ISSUE', 'R06'), ('RISK_ISSUE', 'R07'),
+    ('FINANCIAL_PERFORMANCE', 'R02'), ('FINANCIAL_PERFORMANCE', 'R03'), ('FINANCIAL_PERFORMANCE', 'R04'), ('FINANCIAL_PERFORMANCE', 'R05'), ('FINANCIAL_PERFORMANCE', 'R06'), ('FINANCIAL_PERFORMANCE', 'R07'), ('FINANCIAL_PERFORMANCE', 'R08'),
+    ('KPI_PERFORMANCE', 'R02'), ('KPI_PERFORMANCE', 'R03'), ('KPI_PERFORMANCE', 'R04'), ('KPI_PERFORMANCE', 'R05'), ('KPI_PERFORMANCE', 'R06'), ('KPI_PERFORMANCE', 'R07'), ('KPI_PERFORMANCE', 'R08'),
+    ('GOVERNANCE_CHANGE', 'R02'), ('GOVERNANCE_CHANGE', 'R03'), ('GOVERNANCE_CHANGE', 'R04'), ('GOVERNANCE_CHANGE', 'R05'), ('GOVERNANCE_CHANGE', 'R06'), ('GOVERNANCE_CHANGE', 'R07')
+) AS v (code, role_code)
+JOIN reports.report_definition d ON d.code = v.code AND d.version_no = 1 AND d.created_by = '00000000-0000-4000-8000-0000000000ff'
+JOIN identity_access.role r ON r.code = v.role_code
+WHERE NOT EXISTS (SELECT 1 FROM reports.report_audience_role a WHERE a.report_definition_id = d.id)
+ON CONFLICT (report_definition_id, role_id) DO NOTHING;
+
+-- The columns of version 1, in order; the default columns are those shown when no choice is made.
+INSERT INTO reports.report_column (id, report_definition_id, source_entity_code, field_code, label_ar, label_en, sort_order, is_default_visible,
+                                   created_at, created_by, updated_at, updated_by)
+SELECT md5('report_column:' || v.code || ':1:' || v.source_entity_code || '.' || v.field_code)::uuid, d.id, v.source_entity_code, v.field_code,
+       v.label_ar, v.label_en, v.sort_order, v.is_default_visible, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('PORTFOLIO_SUMMARY', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('PORTFOLIO_SUMMARY', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('PORTFOLIO_SUMMARY', 'PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', 3, true),
+    ('PORTFOLIO_SUMMARY', 'PROJECT_LIFECYCLE_STATE', 'LIFECYCLE_STATE', 'حالة دورة الحياة', 'Lifecycle state', 4, true),
+    ('PORTFOLIO_SUMMARY', 'PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'OVERALL_HEALTH', 'الصحة العامة المنشورة', 'Published Overall Project Health', 5, true),
+    ('PORTFOLIO_SUMMARY', 'PROGRESS_PROJECT_HEALTH_STATUS', 'OVERALL_HEALTH', 'الصحة العامة الحالية', 'Current Overall Project Health', 6, false),
+    ('PORTFOLIO_SUMMARY', 'PROGRESS_PUBLISHED_SCHEDULE_HEALTH', 'SCHEDULE_HEALTH', 'صحة الجدول الزمني المنشورة', 'Published schedule health', 7, true),
+    ('PORTFOLIO_SUMMARY', 'PROGRESS_REPORTING_COMPLETENESS', 'REPORTING_STATUS', 'حالة تقارير التقدم', 'Progress reporting status', 8, true),
+    ('PORTFOLIO_SUMMARY', 'RISK_RISK_EXPOSURE', 'OPEN_RISKS', 'المخاطر المفتوحة', 'Open risks', 9, true),
+    ('PORTFOLIO_SUMMARY', 'FINANCIAL_KPI_KPI_CONDITION', 'RAG_RED', 'مؤشرات حمراء', 'KPIs red', 10, false),
+    ('PORTFOLIO_SUMMARY', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'FINANCIAL_CONDITION', 'الحالة المالية المنشورة', 'Published financial condition', 11, false),
+    ('PROJECT_REGISTER', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('PROJECT_REGISTER', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('PROJECT_REGISTER', 'PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', 3, true),
+    ('PROJECT_REGISTER', 'PROJECT', 'EXTERNAL_ENTITY', 'الجهة المنفذة', 'Delivering entity', 4, true),
+    ('PROJECT_REGISTER', 'PROJECT_LIFECYCLE_STATE', 'LIFECYCLE_STATE', 'حالة دورة الحياة', 'Lifecycle state', 5, true),
+    ('PROJECT_REGISTER', 'PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'OVERALL_HEALTH', 'الصحة العامة المنشورة', 'Published Overall Project Health', 6, false),
+    ('PROJECT_REGISTER', 'PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'ACTUAL_PERCENT', 'نسبة الإنجاز الفعلية المنشورة', 'Published actual progress %', 7, false),
+    ('PROJECT_REPORT', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('PROJECT_REPORT', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('PROJECT_REPORT', 'PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', 3, true),
+    ('PROJECT_REPORT', 'PROJECT', 'EXTERNAL_ENTITY', 'الجهة المنفذة', 'Delivering entity', 4, true),
+    ('PROJECT_REPORT', 'PROJECT_LIFECYCLE_STATE', 'LIFECYCLE_STATE', 'حالة دورة الحياة', 'Lifecycle state', 5, true),
+    ('PROJECT_REPORT', 'PROGRESS_PROJECT_HEALTH_STATUS', 'OVERALL_HEALTH', 'الصحة العامة الحالية', 'Current Overall Project Health', 6, true),
+    ('PROJECT_REPORT', 'PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'OVERALL_HEALTH', 'الصحة العامة المنشورة', 'Published Overall Project Health', 7, true),
+    ('PROJECT_REPORT', 'PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'ACTUAL_PERCENT', 'نسبة الإنجاز الفعلية المنشورة', 'Published actual progress %', 8, true),
+    ('PROJECT_REPORT', 'PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'PLANNED_PERCENT', 'نسبة الإنجاز المخططة المنشورة', 'Published planned progress %', 9, true),
+    ('PROJECT_REPORT', 'PROGRESS_PUBLISHED_SCHEDULE_HEALTH', 'SCHEDULE_HEALTH', 'صحة الجدول الزمني المنشورة', 'Published schedule health', 10, true),
+    ('PROJECT_REPORT', 'SCHEDULE_SCHEDULE_HEALTH_STATUS', 'SCHEDULE_HEALTH', 'صحة الجدول الزمني الحالية', 'Current schedule health', 11, true),
+    ('PROJECT_REPORT', 'SCHEDULE_SCHEDULE_HEALTH_STATUS', 'FINISH_VARIANCE_DAYS', 'انحراف تاريخ الانتهاء بالأيام', 'Finish variance (days)', 12, true),
+    ('PROJECT_REPORT', 'PROGRESS_REPORTING_COMPLETENESS', 'REPORTING_STATUS', 'حالة تقارير التقدم', 'Progress reporting status', 13, true),
+    ('PROJECT_REPORT', 'PROGRESS_REPORTING_COMPLETENESS', 'OVERDUE_PERIODS', 'الفترات المتأخرة', 'Overdue reporting periods', 14, true),
+    ('PROJECT_REPORT', 'RISK_RISK_EXPOSURE', 'OPEN_RISKS', 'المخاطر المفتوحة', 'Open risks', 15, true),
+    ('PROJECT_REPORT', 'MANAGEMENT_CONCERN_OPEN_CONCERNS', 'OPEN_CONCERNS', 'القضايا والتحديات المفتوحة', 'Open issues and challenges', 16, true),
+    ('PROJECT_REPORT', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'FINANCIAL_CONDITION', 'الحالة المالية المنشورة', 'Published financial condition', 17, true),
+    ('PROJECT_REPORT', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'APPROVED_BUDGET', 'الميزانية المعتمدة (منشور)', 'Approved budget (published)', 18, true),
+    ('PROJECT_REPORT', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'ACTUAL_EXPENDITURE_TO_DATE', 'الصرف الفعلي حتى تاريخه (منشور)', 'Actual expenditure to date (published)', 19, true),
+    ('PROJECT_REPORT', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'FORECAST_AT_COMPLETION', 'التكلفة المتوقعة عند الإنجاز (منشور)', 'Forecast at completion (published)', 20, true),
+    ('PROJECT_REPORT', 'FINANCIAL_KPI_KPI_CONDITION', 'ACTIVE_ASSIGNMENTS', 'مؤشرات الأداء النشطة', 'Active KPIs', 21, true),
+    ('PROJECT_REPORT', 'FINANCIAL_KPI_KPI_CONDITION', 'RAG_GREEN', 'مؤشرات خضراء', 'KPIs green', 22, true),
+    ('PROJECT_REPORT', 'FINANCIAL_KPI_KPI_CONDITION', 'RAG_AMBER', 'مؤشرات كهرمانية', 'KPIs amber', 23, true),
+    ('PROJECT_REPORT', 'FINANCIAL_KPI_KPI_CONDITION', 'RAG_RED', 'مؤشرات حمراء', 'KPIs red', 24, true),
+    ('PROJECT_REPORT', 'FINANCIAL_KPI_KPI_CONDITION', 'NOT_PUBLISHED', 'مؤشرات بلا قياس منشور', 'KPIs with no published measurement', 25, true),
+    ('PROGRESS_REPORTING', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('PROGRESS_REPORTING', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('PROGRESS_REPORTING', 'PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', 3, true),
+    ('PROGRESS_REPORTING', 'PROJECT', 'EXTERNAL_ENTITY', 'الجهة المنفذة', 'Delivering entity', 4, false),
+    ('PROGRESS_REPORTING', 'PROGRESS_REPORTING_COMPLETENESS', 'REPORTING_STATUS', 'حالة تقارير التقدم', 'Progress reporting status', 5, true),
+    ('PROGRESS_REPORTING', 'PROGRESS_REPORTING_COMPLETENESS', 'OVERDUE_PERIODS', 'الفترات المتأخرة', 'Overdue reporting periods', 6, true),
+    ('PROGRESS_REPORTING', 'PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'OVERALL_HEALTH', 'الصحة العامة المنشورة', 'Published Overall Project Health', 7, true),
+    ('PROGRESS_REPORTING', 'PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'ACTUAL_PERCENT', 'نسبة الإنجاز الفعلية المنشورة', 'Published actual progress %', 8, true),
+    ('PROGRESS_HISTORY', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('PROGRESS_HISTORY', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('PROGRESS_HISTORY', 'PROGRESS_PUBLISHED_PROGRESS_HISTORY', 'PUBLISHED_AT', 'تاريخ النشر', 'Published at', 3, true),
+    ('PROGRESS_HISTORY', 'PROGRESS_PUBLISHED_PROGRESS_HISTORY', 'PERIOD_START', 'بداية الفترة', 'Period start', 4, true),
+    ('PROGRESS_HISTORY', 'PROGRESS_PUBLISHED_PROGRESS_HISTORY', 'PERIOD_END', 'نهاية الفترة', 'Period end', 5, true),
+    ('PROGRESS_HISTORY', 'PROGRESS_PUBLISHED_PROGRESS_HISTORY', 'OVERALL_HEALTH', 'الصحة العامة المنشورة', 'Published Overall Project Health', 6, true),
+    ('PROGRESS_HISTORY', 'PROGRESS_PUBLISHED_PROGRESS_HISTORY', 'ACTUAL_PERCENT', 'نسبة الإنجاز الفعلية المنشورة', 'Published actual progress %', 7, true),
+    ('PROGRESS_HISTORY', 'PROGRESS_PUBLISHED_PROGRESS_HISTORY', 'PLANNED_PERCENT', 'نسبة الإنجاز المخططة المنشورة', 'Published planned progress %', 8, true),
+    ('SCHEDULE_DELIVERY', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('SCHEDULE_DELIVERY', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('SCHEDULE_DELIVERY', 'PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', 3, true),
+    ('SCHEDULE_DELIVERY', 'SCHEDULE_SCHEDULE_HEALTH_STATUS', 'SCHEDULE_HEALTH', 'صحة الجدول الزمني الحالية', 'Current schedule health', 4, true),
+    ('SCHEDULE_DELIVERY', 'SCHEDULE_SCHEDULE_HEALTH_STATUS', 'FINISH_VARIANCE_DAYS', 'انحراف تاريخ الانتهاء بالأيام', 'Finish variance (days)', 5, true),
+    ('SCHEDULE_DELIVERY', 'PROGRESS_PUBLISHED_SCHEDULE_HEALTH', 'SCHEDULE_HEALTH', 'صحة الجدول الزمني المنشورة', 'Published schedule health', 6, true),
+    ('SCHEDULE_DELIVERY', 'PROJECT_TASK_OPEN_TASKS', 'OPEN_TASKS', 'المهام المفتوحة', 'Open tasks', 7, true),
+    ('SCHEDULE_DELIVERY', 'MILESTONE_OPEN_ACHIEVEMENT_CLAIMS', 'OPEN_ACHIEVEMENT_CLAIMS', 'مطالبات إنجاز معالم مفتوحة', 'Open milestone achievement claims', 8, true),
+    ('RISK_ISSUE', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('RISK_ISSUE', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('RISK_ISSUE', 'PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', 3, true),
+    ('RISK_ISSUE', 'RISK_RISK_EXPOSURE', 'OPEN_RISKS', 'المخاطر المفتوحة', 'Open risks', 4, true),
+    ('RISK_ISSUE', 'RISK_RISK_EXPOSURE', 'NOT_ASSESSED', 'مخاطر غير مقيمة', 'Risks not assessed', 5, true),
+    ('RISK_ISSUE', 'RISK_RISK_EXPOSURE', 'REVIEW_OVERDUE', 'مراجعات مخاطر متأخرة', 'Risk reviews overdue', 6, true),
+    ('RISK_ISSUE', 'MANAGEMENT_CONCERN_OPEN_CONCERNS', 'OPEN_CONCERNS', 'القضايا والتحديات المفتوحة', 'Open issues and challenges', 7, true),
+    ('FINANCIAL_PERFORMANCE', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('FINANCIAL_PERFORMANCE', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('FINANCIAL_PERFORMANCE', 'PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', 3, true),
+    ('FINANCIAL_PERFORMANCE', 'PROJECT', 'EXTERNAL_ENTITY', 'الجهة المنفذة', 'Delivering entity', 4, false),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'FINANCIAL_CONDITION', 'الحالة المالية المنشورة', 'Published financial condition', 5, true),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'APPROVED_BUDGET', 'الميزانية المعتمدة (منشور)', 'Approved budget (published)', 6, true),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'ACTUAL_EXPENDITURE_TO_DATE', 'الصرف الفعلي حتى تاريخه (منشور)', 'Actual expenditure to date (published)', 7, true),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'FORECAST_AT_COMPLETION', 'التكلفة المتوقعة عند الإنجاز (منشور)', 'Forecast at completion (published)', 8, true),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_KPI_FINANCIAL_POSITION', 'FINANCIAL_CONDITION', 'الحالة المالية الحالية', 'Current financial condition', 9, false),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_KPI_FINANCIAL_POSITION', 'APPROVED_BUDGET', 'الميزانية المعتمدة (حالي)', 'Approved budget (current)', 10, false),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_KPI_FINANCIAL_POSITION', 'ACTUAL_EXPENDITURE_TO_DATE', 'الصرف الفعلي حتى تاريخه (حالي)', 'Actual expenditure to date (current)', 11, false),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_KPI_FINANCIAL_POSITION', 'FORECAST_AT_COMPLETION', 'التكلفة المتوقعة عند الإنجاز (حالي)', 'Forecast at completion (current)', 12, false),
+    ('KPI_PERFORMANCE', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('KPI_PERFORMANCE', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('KPI_PERFORMANCE', 'PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', 3, true),
+    ('KPI_PERFORMANCE', 'FINANCIAL_KPI_KPI_CONDITION', 'ACTIVE_ASSIGNMENTS', 'مؤشرات الأداء النشطة', 'Active KPIs', 4, true),
+    ('KPI_PERFORMANCE', 'FINANCIAL_KPI_KPI_CONDITION', 'RAG_GREEN', 'مؤشرات خضراء', 'KPIs green', 5, true),
+    ('KPI_PERFORMANCE', 'FINANCIAL_KPI_KPI_CONDITION', 'RAG_AMBER', 'مؤشرات كهرمانية', 'KPIs amber', 6, true),
+    ('KPI_PERFORMANCE', 'FINANCIAL_KPI_KPI_CONDITION', 'RAG_RED', 'مؤشرات حمراء', 'KPIs red', 7, true),
+    ('KPI_PERFORMANCE', 'FINANCIAL_KPI_KPI_CONDITION', 'RAG_UNKNOWN', 'مؤشرات غير معروفة الحالة', 'KPIs unknown', 8, false),
+    ('KPI_PERFORMANCE', 'FINANCIAL_KPI_KPI_CONDITION', 'NOT_PUBLISHED', 'مؤشرات بلا قياس منشور', 'KPIs with no published measurement', 9, true),
+    ('KPI_PERFORMANCE', 'PROGRESS_REPORTING_COMPLETENESS', 'REPORTING_STATUS', 'حالة تقارير التقدم', 'Progress reporting status', 10, true),
+    ('KPI_PERFORMANCE', 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'FINANCIAL_CONDITION', 'الحالة المالية المنشورة', 'Published financial condition', 11, true),
+    ('GOVERNANCE_CHANGE', 'PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', 1, true),
+    ('GOVERNANCE_CHANGE', 'PROJECT', 'TITLE', 'اسم المشروع', 'Project', 2, true),
+    ('GOVERNANCE_CHANGE', 'PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', 3, true),
+    ('GOVERNANCE_CHANGE', 'PROJECT_LIFECYCLE_STATE', 'LIFECYCLE_STATE', 'حالة دورة الحياة', 'Lifecycle state', 4, true),
+    ('GOVERNANCE_CHANGE', 'CHANGE_REQUEST_CHANGE_POSITION', 'UNDECIDED', 'طلبات تغيير قيد البت', 'Change requests undecided', 5, true),
+    ('GOVERNANCE_CHANGE', 'CHANGE_REQUEST_CHANGE_POSITION', 'APPROVED_NOT_STARTED', 'طلبات تغيير معتمدة لم يبدأ تنفيذها', 'Change requests approved, not started', 6, true),
+    ('GOVERNANCE_CHANGE', 'CHANGE_REQUEST_CHANGE_POSITION', 'IN_IMPLEMENTATION', 'طلبات تغيير قيد التنفيذ', 'Change requests in implementation', 7, true),
+    ('GOVERNANCE_CHANGE', 'SUSPENSION_OPEN_REQUESTS', 'OPEN_REQUESTS', 'طلبات تعليق أو استئناف مفتوحة', 'Open suspension or resumption requests', 8, true)
+) AS v (code, source_entity_code, field_code, label_ar, label_en, sort_order, is_default_visible)
+JOIN reports.report_definition d ON d.code = v.code AND d.version_no = 1 AND d.created_by = '00000000-0000-4000-8000-0000000000ff'
+WHERE NOT EXISTS (SELECT 1 FROM reports.report_column c WHERE c.report_definition_id = d.id)
+ON CONFLICT (report_definition_id, source_entity_code, field_code) DO NOTHING;
+
+-- The parameters of version 1: a department or a project narrows the rows; an OPTION filters the column it is bound to.
+INSERT INTO reports.report_parameter (id, report_definition_id, code, label_ar, label_en, data_type, is_required, sort_order, source_entity_code, field_code,
+                                      created_at, created_by, updated_at, updated_by)
+SELECT md5('report_parameter:' || v.code || ':1:' || v.parameter_code)::uuid, d.id, v.parameter_code, v.label_ar, v.label_en, v.data_type, v.is_required,
+       v.sort_order, v.source_entity_code, v.field_code, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('PORTFOLIO_SUMMARY', 'DEPARTMENT', 'الإدارة', 'Department', 'DEPARTMENT', false, 1, NULL, NULL),
+    ('PORTFOLIO_SUMMARY', 'PUBLISHED_HEALTH', 'الصحة العامة المنشورة', 'Published Overall Project Health', 'OPTION', false, 2, 'PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'OVERALL_HEALTH'),
+    ('PROJECT_REGISTER', 'DEPARTMENT', 'الإدارة', 'Department', 'DEPARTMENT', false, 1, NULL, NULL),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'حالة دورة الحياة', 'Lifecycle state', 'OPTION', false, 2, 'PROJECT_LIFECYCLE_STATE', 'LIFECYCLE_STATE'),
+    ('PROJECT_REPORT', 'PROJECT', 'المشروع', 'Project', 'PROJECT', true, 1, NULL, NULL),
+    ('PROGRESS_REPORTING', 'DEPARTMENT', 'الإدارة', 'Department', 'DEPARTMENT', false, 1, NULL, NULL),
+    ('PROGRESS_REPORTING', 'REPORTING_STATUS', 'حالة تقارير التقدم', 'Progress reporting status', 'OPTION', false, 2, 'PROGRESS_REPORTING_COMPLETENESS', 'REPORTING_STATUS'),
+    ('PROGRESS_HISTORY', 'PROJECT', 'المشروع', 'Project', 'PROJECT', true, 1, NULL, NULL),
+    ('SCHEDULE_DELIVERY', 'DEPARTMENT', 'الإدارة', 'Department', 'DEPARTMENT', false, 1, NULL, NULL),
+    ('SCHEDULE_DELIVERY', 'SCHEDULE_HEALTH', 'صحة الجدول الزمني الحالية', 'Current schedule health', 'OPTION', false, 2, 'SCHEDULE_SCHEDULE_HEALTH_STATUS', 'SCHEDULE_HEALTH'),
+    ('RISK_ISSUE', 'DEPARTMENT', 'الإدارة', 'Department', 'DEPARTMENT', false, 1, NULL, NULL),
+    ('FINANCIAL_PERFORMANCE', 'DEPARTMENT', 'الإدارة', 'Department', 'DEPARTMENT', false, 1, NULL, NULL),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_CONDITION', 'الحالة المالية المنشورة', 'Published financial condition', 'OPTION', false, 2, 'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'FINANCIAL_CONDITION'),
+    ('KPI_PERFORMANCE', 'DEPARTMENT', 'الإدارة', 'Department', 'DEPARTMENT', false, 1, NULL, NULL),
+    ('GOVERNANCE_CHANGE', 'DEPARTMENT', 'الإدارة', 'Department', 'DEPARTMENT', false, 1, NULL, NULL)
+) AS v (code, parameter_code, label_ar, label_en, data_type, is_required, sort_order, source_entity_code, field_code)
+JOIN reports.report_definition d ON d.code = v.code AND d.version_no = 1 AND d.created_by = '00000000-0000-4000-8000-0000000000ff'
+WHERE NOT EXISTS (SELECT 1 FROM reports.report_parameter p WHERE p.report_definition_id = d.id)
+ON CONFLICT (report_definition_id, code) DO NOTHING;
+
+-- The options of the OPTION parameters, each naming the catalogue entry it absorbs where it is one (ADR-006 MAPPED).
+INSERT INTO reports.report_parameter_option (id, report_parameter_id, value_code, label_ar, label_en, catalogue_entry_reference,
+                                             created_at, created_by, updated_at, updated_by)
+SELECT md5('report_parameter_option:' || v.code || ':1:' || v.parameter_code || ':' || v.value_code)::uuid, p.id, v.value_code, v.label_ar, v.label_en,
+       v.catalogue_entry_reference, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('PORTFOLIO_SUMMARY', 'PUBLISHED_HEALTH', 'GREEN', 'أخضر', 'Green', NULL),
+    ('PORTFOLIO_SUMMARY', 'PUBLISHED_HEALTH', 'AMBER', 'كهرماني', 'Amber', 'RPT-PRJ-004'),
+    ('PORTFOLIO_SUMMARY', 'PUBLISHED_HEALTH', 'RED', 'أحمر', 'Red', 'RPT-PRJ-004'),
+    ('PORTFOLIO_SUMMARY', 'PUBLISHED_HEALTH', 'UNKNOWN', 'غير معروف', 'Unknown', NULL),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'DRAFT', 'مسودة', 'Draft', NULL),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'SUBMITTED', 'مقدم', 'Submitted', NULL),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'UNDER_REVIEW', 'قيد المراجعة', 'Under review', NULL),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'RETURNED', 'معاد', 'Returned', NULL),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'APPROVED_PLANNED', 'معتمد ومخطط', 'Approved, planned', NULL),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'ACTIVE', 'نشط', 'Active', 'RPT-PRJ-003'),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'SUSPENDED', 'معلق', 'Suspended', 'RPT-SUS-001'),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'COMPLETED', 'مكتمل', 'Completed', 'RPT-CLO-001'),
+    ('PROJECT_REGISTER', 'LIFECYCLE_STATE', 'CLOSED', 'مغلق', 'Closed', 'RPT-CLO-001'),
+    ('PROGRESS_REPORTING', 'REPORTING_STATUS', 'UP_TO_DATE', 'محدث', 'Up to date', NULL),
+    ('PROGRESS_REPORTING', 'REPORTING_STATUS', 'OVERDUE', 'متأخر', 'Overdue', 'RPT-PRG-001'),
+    ('SCHEDULE_DELIVERY', 'SCHEDULE_HEALTH', 'GREEN', 'أخضر', 'Green', NULL),
+    ('SCHEDULE_DELIVERY', 'SCHEDULE_HEALTH', 'AMBER', 'كهرماني', 'Amber', NULL),
+    ('SCHEDULE_DELIVERY', 'SCHEDULE_HEALTH', 'RED', 'أحمر', 'Red', NULL),
+    ('SCHEDULE_DELIVERY', 'SCHEDULE_HEALTH', 'UNKNOWN', 'غير معروف', 'Unknown', NULL),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_CONDITION', 'GREEN', 'أخضر', 'Green', NULL),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_CONDITION', 'AMBER', 'كهرماني', 'Amber', NULL),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_CONDITION', 'RED', 'أحمر', 'Red', NULL),
+    ('FINANCIAL_PERFORMANCE', 'FINANCIAL_CONDITION', 'UNKNOWN', 'غير معروف', 'Unknown', NULL)
+) AS v (code, parameter_code, value_code, label_ar, label_en, catalogue_entry_reference)
+JOIN reports.report_definition d ON d.code = v.code AND d.version_no = 1 AND d.created_by = '00000000-0000-4000-8000-0000000000ff'
+JOIN reports.report_parameter p ON p.report_definition_id = d.id AND p.code = v.parameter_code
+WHERE NOT EXISTS (SELECT 1 FROM reports.report_parameter_option o WHERE o.report_parameter_id = p.id)
+ON CONFLICT (report_parameter_id, value_code) DO NOTHING;
+
+-- 8. The SCR-138 explorer's allowlist (ADR-019; TASK-071): a DRAFT version 1 of REPORT_RULES holding the delivery team's proposal — every field of the
+-- project's identity and of the register's project-grain projections, filterable, and sortable unless it is a reference. It stays DRAFT: the explorer
+-- resolves PUBLISHED versions only and fails closed without one (TASK-034), so nothing is offered until AHDA's configuration administrators review,
+-- narrow and publish it on FG-04 (reports.md F-5). No entry is classified: ADR-010's taxonomy is outstanding.
+INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, lifecycle_state, change_summary, change_summary_lang, created_at, created_by, updated_at, updated_by)
+SELECT md5('configuration_version:REPORT_RULES:1')::uuid, f.id, 1, 'DRAFT',
+       'Proposed SCR-138 allowlist (delivery team, TASK-071): every project-grain field of the register. For AHDA to review, narrow and publish.', 'en',
+       now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM master_data_config.configuration_family f
+WHERE f.code = 'REPORT_RULES'
+ON CONFLICT (configuration_family_id, version_no) DO NOTHING;
+
+-- Entries are added to the seeded version only while it is DRAFT; once AHDA validates it, the seed leaves it alone.
+INSERT INTO master_data_config.report_allowlist_entry (id, configuration_version_id, source_entity_code, field_code, label_ar, label_en, is_filterable, is_sortable,
+                                                     created_at, created_by, updated_at, updated_by)
+SELECT md5('report_allowlist_entry:REPORT_RULES:1:' || e.source_entity_code || '.' || e.field_code)::uuid, v.id, e.source_entity_code, e.field_code,
+       e.label_ar, e.label_en, e.is_filterable, e.is_sortable, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM master_data_config.configuration_version v
+CROSS JOIN (VALUES
+    ('PROJECT', 'FORMAL_PROJECT_ID', 'رقم المشروع', 'Project ID', true, true),
+    ('PROJECT', 'TITLE', 'اسم المشروع', 'Project', true, true),
+    ('PROJECT', 'DEPARTMENT', 'الإدارة', 'Department', true, false),
+    ('PROJECT', 'EXTERNAL_ENTITY', 'الجهة المنفذة', 'Delivering entity', true, false),
+    ('PROJECT_LIFECYCLE_STATE', 'LIFECYCLE_STATE', 'حالة دورة الحياة', 'Lifecycle state', true, true),
+    ('PROGRESS_PROJECT_HEALTH_STATUS', 'OVERALL_HEALTH', 'الصحة العامة الحالية', 'Current Overall Project Health', true, true),
+    ('PROGRESS_PROJECT_HEALTH_STATUS', 'ACTUAL_PERCENT', 'نسبة الإنجاز الفعلية الحالية', 'Current actual progress %', true, true),
+    ('PROGRESS_PROJECT_HEALTH_STATUS', 'PLANNED_PERCENT', 'نسبة الإنجاز المخططة الحالية', 'Current planned progress %', true, true),
+    ('PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'OVERALL_HEALTH', 'الصحة العامة المنشورة', 'Published Overall Project Health', true, true),
+    ('PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'ACTUAL_PERCENT', 'نسبة الإنجاز الفعلية المنشورة', 'Published actual progress %', true, true),
+    ('PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'PLANNED_PERCENT', 'نسبة الإنجاز المخططة المنشورة', 'Published planned progress %', true, true),
+    ('PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT', 'ACTUAL_PERCENT_OVERRIDDEN', 'تم تجاوز نسبة الإنجاز', 'Actual progress overridden', true, true),
+    ('PROGRESS_PUBLISHED_SCHEDULE_HEALTH', 'SCHEDULE_HEALTH', 'صحة الجدول الزمني المنشورة', 'Published schedule health', true, true),
+    ('PROGRESS_REPORTING_COMPLETENESS', 'REPORTING_STATUS', 'حالة تقارير التقدم', 'Progress reporting status', true, true),
+    ('PROGRESS_REPORTING_COMPLETENESS', 'OVERDUE_PERIODS', 'الفترات المتأخرة', 'Overdue reporting periods', true, true),
+    ('SCHEDULE_SCHEDULE_HEALTH_STATUS', 'SCHEDULE_HEALTH', 'صحة الجدول الزمني الحالية', 'Current schedule health', true, true),
+    ('SCHEDULE_SCHEDULE_HEALTH_STATUS', 'FINISH_VARIANCE_DAYS', 'انحراف تاريخ الانتهاء بالأيام', 'Finish variance (days)', true, true),
+    ('RISK_RISK_EXPOSURE', 'OPEN_RISKS', 'المخاطر المفتوحة', 'Open risks', true, true),
+    ('RISK_RISK_EXPOSURE', 'NOT_ASSESSED', 'مخاطر غير مقيمة', 'Risks not assessed', true, true),
+    ('RISK_RISK_EXPOSURE', 'REVIEW_OVERDUE', 'مراجعات مخاطر متأخرة', 'Risk reviews overdue', true, true),
+    ('FINANCIAL_KPI_FINANCIAL_POSITION', 'FINANCIAL_CONDITION', 'الحالة المالية الحالية', 'Current financial condition', true, true),
+    ('FINANCIAL_KPI_FINANCIAL_POSITION', 'APPROVED_BUDGET', 'الميزانية المعتمدة (حالي)', 'Approved budget (current)', true, true),
+    ('FINANCIAL_KPI_FINANCIAL_POSITION', 'ACTUAL_EXPENDITURE_TO_DATE', 'الصرف الفعلي حتى تاريخه (حالي)', 'Actual expenditure to date (current)', true, true),
+    ('FINANCIAL_KPI_FINANCIAL_POSITION', 'FORECAST_AT_COMPLETION', 'التكلفة المتوقعة عند الإنجاز (حالي)', 'Forecast at completion (current)', true, true),
+    ('FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'FINANCIAL_CONDITION', 'الحالة المالية المنشورة', 'Published financial condition', true, true),
+    ('FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'APPROVED_BUDGET', 'الميزانية المعتمدة (منشور)', 'Approved budget (published)', true, true),
+    ('FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'ACTUAL_EXPENDITURE_TO_DATE', 'الصرف الفعلي حتى تاريخه (منشور)', 'Actual expenditure to date (published)', true, true),
+    ('FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT', 'FORECAST_AT_COMPLETION', 'التكلفة المتوقعة عند الإنجاز (منشور)', 'Forecast at completion (published)', true, true),
+    ('FINANCIAL_KPI_KPI_CONDITION', 'ACTIVE_ASSIGNMENTS', 'مؤشرات الأداء النشطة', 'Active KPIs', true, true),
+    ('FINANCIAL_KPI_KPI_CONDITION', 'NOT_PUBLISHED', 'مؤشرات بلا قياس منشور', 'KPIs with no published measurement', true, true),
+    ('FINANCIAL_KPI_KPI_CONDITION', 'RAG_GREEN', 'مؤشرات خضراء', 'KPIs green', true, true),
+    ('FINANCIAL_KPI_KPI_CONDITION', 'RAG_AMBER', 'مؤشرات كهرمانية', 'KPIs amber', true, true),
+    ('FINANCIAL_KPI_KPI_CONDITION', 'RAG_RED', 'مؤشرات حمراء', 'KPIs red', true, true),
+    ('FINANCIAL_KPI_KPI_CONDITION', 'RAG_UNKNOWN', 'مؤشرات غير معروفة الحالة', 'KPIs unknown', true, true),
+    ('FINANCIAL_KPI_KPI_CONDITION', 'RAG_NOT_APPLICABLE', 'مؤشرات لا تنطبق', 'KPIs not applicable', true, true),
+    ('PROJECT_TASK_OPEN_TASKS', 'OPEN_TASKS', 'المهام المفتوحة', 'Open tasks', true, true),
+    ('MILESTONE_OPEN_ACHIEVEMENT_CLAIMS', 'OPEN_ACHIEVEMENT_CLAIMS', 'مطالبات إنجاز معالم مفتوحة', 'Open milestone achievement claims', true, true),
+    ('MANAGEMENT_CONCERN_OPEN_CONCERNS', 'OPEN_CONCERNS', 'القضايا والتحديات المفتوحة', 'Open issues and challenges', true, true),
+    ('CHANGE_REQUEST_CHANGE_POSITION', 'UNDECIDED', 'طلبات تغيير قيد البت', 'Change requests undecided', true, true),
+    ('CHANGE_REQUEST_CHANGE_POSITION', 'APPROVED_NOT_STARTED', 'طلبات تغيير معتمدة لم يبدأ تنفيذها', 'Change requests approved, not started', true, true),
+    ('CHANGE_REQUEST_CHANGE_POSITION', 'IN_IMPLEMENTATION', 'طلبات تغيير قيد التنفيذ', 'Change requests in implementation', true, true),
+    ('SUSPENSION_OPEN_REQUESTS', 'OPEN_REQUESTS', 'طلبات تعليق أو استئناف مفتوحة', 'Open suspension or resumption requests', true, true)
+) AS e (source_entity_code, field_code, label_ar, label_en, is_filterable, is_sortable)
+WHERE v.id = md5('configuration_version:REPORT_RULES:1')::uuid
+  AND v.lifecycle_state = 'DRAFT'
+ON CONFLICT (configuration_version_id, source_entity_code, field_code) DO NOTHING;

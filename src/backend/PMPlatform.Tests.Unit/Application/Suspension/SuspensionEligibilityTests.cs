@@ -106,5 +106,5 @@ public sealed class SuspensionEligibilityTests
         };
 
     private static ProjectFacts Project(ProjectLifecycleState state) =>
-        new(Guid.NewGuid(), "PRJ-000001", Guid.NewGuid(), null, Guid.NewGuid(), state, Guid.NewGuid(), null, null, ParticipationMode.AhdaManaged);
+        new(Guid.NewGuid(), "PRJ-000001", Guid.NewGuid(), null, Guid.NewGuid(), state, Guid.NewGuid(), null, null, ParticipationMode.AhdaManaged, new NarrativeText("Project", Language.En));
 }
