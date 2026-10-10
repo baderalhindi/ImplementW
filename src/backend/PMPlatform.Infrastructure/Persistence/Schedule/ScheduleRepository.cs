@@ -159,6 +159,9 @@ internal sealed class ScheduleRepository(PMPlatformDbContext context) : ISchedul
         return (track ? rows : rows.AsNoTracking()).SingleOrDefaultAsync(h => h.ProjectId == projectId, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<ScheduleHealthStatus>> ListHealthStatusesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        await context.Set<ScheduleHealthStatus>().AsNoTracking().Where(h => projectIds.Contains(h.ProjectId)).ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public uint RowVersionOf(ProjectSchedule schedule) => RowVersion(schedule);
 
     public uint RowVersionOf(ScheduleActivity activity) => RowVersion(activity);

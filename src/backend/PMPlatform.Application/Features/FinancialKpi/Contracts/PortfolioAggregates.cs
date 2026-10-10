@@ -34,7 +34,8 @@ public sealed record AggregateExclusion(Guid ProjectId, Guid? KpiDefinitionId, A
 /// <summary>
 /// Financial totals over a portfolio of projects, in SAR. A project counts only when its figures are measured, visible to the
 /// caller and verified as SAR; otherwise it is listed in <see cref="Exclusions"/> and <see cref="IsPartial"/> is true. With no
-/// project counted, every total is null — never 0.
+/// project counted, every total is null — never 0. <see cref="OldestAsOfDate"/> is the as-of of the oldest figure counted, so a total
+/// is never shown as more current than its least current part (ADR-008: source and as-of on every financial figure; TASK-069).
 /// </summary>
 public sealed record FinancialPortfolioAggregate(
     SemanticState SemanticState,
@@ -46,7 +47,8 @@ public sealed record FinancialPortfolioAggregate(
     Money? TotalApprovedBudgetSar,
     Money? TotalActualExpenditureToDateSar,
     Money? TotalForecastAtCompletionSar,
-    IReadOnlyList<AggregateExclusion> Exclusions);
+    IReadOnlyList<AggregateExclusion> Exclusions,
+    DateOnly? OldestAsOfDate);
 
 /// <summary>The count of each RAG rating among the counted measurements.</summary>
 public sealed record KpiRagCounts(int Green, int Amber, int Red, int Unknown, int NotApplicable);

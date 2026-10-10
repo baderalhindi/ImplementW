@@ -47,7 +47,8 @@ internal static class FinancialAggregation
             any ? Sum(counted.Select(f => f.ApprovedBudget!.Value)) : null,
             any ? Sum(counted.Select(f => f.ActualExpenditure!.Value)) : null,
             any ? Sum(counted.Select(f => f.Forecast!.Value)) : null,
-            [.. exclusions.OrderBy(e => e.ProjectId)]);
+            [.. exclusions.OrderBy(e => e.ProjectId)],
+            any ? counted.Min(f => f.AsOfDate) : null);
     }
 
     private static Money Sum(IEnumerable<Money> amounts) => amounts.Aggregate(Money.Zero, (total, amount) => total + amount);
@@ -58,4 +59,4 @@ internal static class FinancialAggregation
 /// <see cref="Money"/>, whose currency is SAR by construction; an integrated source states its own (financial-kpi.md D-11).
 /// </summary>
 internal sealed record FinancialFigures(
-    Guid ProjectId, string CurrencyCode, Money? ApprovedBudget, Money? ActualExpenditure, Money? Forecast, ValueStatus ValueStatus, bool IsMasked);
+    Guid ProjectId, string CurrencyCode, Money? ApprovedBudget, Money? ActualExpenditure, Money? Forecast, ValueStatus ValueStatus, bool IsMasked, DateOnly? AsOfDate);

@@ -361,13 +361,13 @@ internal sealed class FinancialProgressService(
             IReadOnlyList<PublishedFinancialSnapshot> latest = await repository.ListLatestSnapshotsAsync(visible, cancellationToken).ConfigureAwait(false);
             unavailable.AddRange(visible.Where(id => latest.All(s => s.ProjectId != id)).Select(id => new AggregateExclusion(id, null, AggregateExclusionReason.NoPublishedFigure)));
             figures.AddRange(latest.Select(s => new FinancialFigures(
-                s.ProjectId, Money.CurrencyCode, s.ApprovedBudgetSar, s.ActualExpenditureToDateSar, s.ForecastAtCompletionSar, s.ValueStatus, masked)));
+                s.ProjectId, Money.CurrencyCode, s.ApprovedBudgetSar, s.ActualExpenditureToDateSar, s.ForecastAtCompletionSar, s.ValueStatus, masked, s.AsOfDate)));
         }
         else
         {
             bool masked = !(masks.Commitment.Reveals(AmountSar) && masks.Update.Reveals(ActualExpenditureToDateSar) && masks.Update.Reveals(ForecastAtCompletionSar));
             figures.AddRange((await PositionsAsync(visible, masks, cancellationToken).ConfigureAwait(false)).Select(p => new FinancialFigures(
-                p.ProjectId, Money.CurrencyCode, p.ApprovedBudgetSar, p.ActualExpenditureToDateSar, p.ForecastAtCompletionSar, p.ValueStatus, masked)));
+                p.ProjectId, Money.CurrencyCode, p.ApprovedBudgetSar, p.ActualExpenditureToDateSar, p.ForecastAtCompletionSar, p.ValueStatus, masked, p.AsOfDate)));
         }
 
         return FinancialAggregation.Aggregate(semanticState, projectIds.Distinct().Count(), figures, unavailable);

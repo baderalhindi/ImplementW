@@ -71,6 +71,12 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
         return (items, total);
     }
 
+    public async Task<IReadOnlyList<ProjectEntity>> ListReachedAsync(RecordScope scope, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        return await context.Set<ProjectEntity>().AsNoTracking().Where(Reached(scope)).OrderBy(p => p.Id).ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public Task<long> NextFormalProjectNumberAsync(CancellationToken cancellationToken) =>
         context.Database.SqlQuery<long>($"SELECT nextval('project.formal_project_id_seq') AS \"Value\"").SingleAsync(cancellationToken);
 

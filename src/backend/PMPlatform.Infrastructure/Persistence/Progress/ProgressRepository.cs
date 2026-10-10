@@ -71,6 +71,18 @@ internal sealed class ProgressRepository(PMPlatformDbContext context) : IProgres
         return (track ? rows : rows.AsNoTracking()).SingleOrDefaultAsync(h => h.ProjectId == projectId, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<ReportingCycle>> ListCyclesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        await context.Set<ReportingCycle>().AsNoTracking().Where(c => projectIds.Contains(c.ProjectId))
+            .OrderBy(c => c.ProjectId).ThenBy(c => c.PeriodStart).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<PublishedProgressSnapshot>> ListLatestSnapshotsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        [.. (await context.Set<PublishedProgressSnapshot>().AsNoTracking().Where(s => projectIds.Contains(s.ProjectId)).ToListAsync(cancellationToken).ConfigureAwait(false))
+            .GroupBy(s => s.ProjectId)
+            .Select(g => g.MaxBy(s => (s.PublishedAt, s.Id))!)];
+
+    public async Task<IReadOnlyList<ProjectHealthStatus>> ListHealthStatusesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        await context.Set<ProjectHealthStatus>().AsNoTracking().Where(h => projectIds.Contains(h.ProjectId)).ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public void Add(ReportingCycle cycle) => context.Add(cycle);
 
     public void Add(ProgressSubmission submission) => context.Add(submission);

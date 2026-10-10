@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.Project.Contracts;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
 
@@ -7,6 +8,12 @@ internal sealed class ProjectFactsReader(IProjectRepository repository) : IProje
 {
     public async Task<ProjectFacts?> FindAsync(Guid projectId, CancellationToken cancellationToken) =>
         await repository.ReadAsync(projectId, cancellationToken).ConfigureAwait(false) is { } p ? FactsOf(p) : null;
+
+    public async Task<IReadOnlyList<ProjectFacts>> ListReachedAsync(RecordScope scope, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        return scope.IsEmpty ? [] : [.. (await repository.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false)).Select(FactsOf)];
+    }
 
     public static ProjectFacts FactsOf(ProjectEntity p)
     {

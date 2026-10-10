@@ -9,6 +9,9 @@ using PMPlatform.Application.Features.AuditActivity;
 using PMPlatform.Application.Features.Closure;
 using PMPlatform.Application.Features.Closure.Contracts;
 using PMPlatform.Application.Features.Closure.EventHandlers;
+using PMPlatform.Application.Features.Dashboards;
+using PMPlatform.Application.Features.Dashboards.Contracts;
+using PMPlatform.Application.Features.Dashboards.Projections;
 using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
@@ -87,6 +90,7 @@ public static class DependencyInjection
         services.AddScoped<IDepartmentAdministrationService, DepartmentAdministrationService>();
         services.AddScoped<IExternalEntityAdministrationService, ExternalEntityAdministrationService>();
         services.AddScoped<IRoleDirectory, RoleDirectory>();
+        services.AddScoped<IUserRoleDirectory, UserRoleDirectory>();
         services.AddScoped<IOrganizationDirectory, OrganizationDirectory>();
 
         // TASK-034: FG-04 master data and the versioned configuration engine, and the resolution every module uses
@@ -220,6 +224,7 @@ public static class DependencyInjection
         services.AddScoped<IKpiMeasurementService, KpiMeasurementService>();
         services.AddScoped<IApprovalOutcomeHandler, FinancialKpiApprovalOutcomeHandler>();
         services.AddScoped<IFinancialKpiCloseoutReader, FinancialKpiCloseoutReader>();
+        services.AddScoped<IKpiConditionReader, KpiConditionReader>();
 
         // TASK-055: WF-06's risk register — risks, assessment versions pinned to the RISK_MATRIX version in force, treatment actions,
         // time-bound acceptances and their expiry, and the reminder condition source. Materialisation into an issue goes through
@@ -234,6 +239,7 @@ public static class DependencyInjection
         services.AddScoped<IRiskMaintenance, RiskMaintenance>();
         services.AddScoped<INotificationConditionSource, RiskConditionSource>();
         services.AddScoped<IRiskCloseoutReader, RiskCloseoutReader>();
+        services.AddScoped<IRiskExposureReader, RiskExposureReader>();
 
         // TASK-057: WF-07's issues and challenges — severity computed from impacts on the shared scale and pinned, escalations published
         // to WF-15 once each, resolutions validated through WF-11 (edges 24, 28), and the issue side of edge 15. The repository is
@@ -310,6 +316,24 @@ public static class DependencyInjection
         services.AddScoped<IExternalUpdateRequestService, ExternalUpdateRequestService>();
         services.AddScoped<IExternalContributionService, ExternalContributionService>();
         services.AddScoped<ISourceApplicationService, SourceApplicationService>();
+
+        // TASK-069: FG-01's governed dashboards. Definitions follow the governed lifecycle (ADM-036); at runtime each widget is a registered
+        // projection, read only through its owning module's contracts (ADR-003 §8.2 edges 29 and 47) and authorised on that module's own
+        // view permission. The repository is Infrastructure's.
+        services.AddScoped<IDashboardProjectionSource, ProjectLifecycleSource>();
+        services.AddScoped<IDashboardProjectionSource, ProjectHealthSource>();
+        services.AddScoped<IDashboardProjectionSource, PublishedProgressSource>();
+        services.AddScoped<IDashboardProjectionSource, PublishedProgressHistorySource>();
+        services.AddScoped<IDashboardProjectionSource, PublishedScheduleHealthSource>();
+        services.AddScoped<IDashboardProjectionSource, ReportingCompletenessSource>();
+        services.AddScoped<IDashboardProjectionSource, ScheduleHealthSource>();
+        services.AddScoped<IDashboardProjectionSource, RiskExposureSource>();
+        services.AddScoped<IDashboardProjectionSource, FinancialPositionSource>();
+        services.AddScoped<IDashboardProjectionSource, PublishedFinancialSource>();
+        services.AddScoped<IDashboardProjectionSource, KpiConditionSource>();
+        services.AddScoped<IDashboardProjectionSource, DefinitionBacklogSource>();
+        services.AddScoped<IDashboardDefinitionService, DashboardDefinitionService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         return services;
     }

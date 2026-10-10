@@ -1542,6 +1542,394 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.DashboardAudienceRole", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DashboardDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dashboard_definition_id");
+
+                    b.Property<bool>("IsDefaultLanding")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default_landing");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_dashboard_audience_role");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_dashboard_audience_role_role_id");
+
+                    b.HasIndex("DashboardDefinitionId", "RoleId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_dashboard_audience_role_dashboard_definition_id_role_id");
+
+                    b.ToTable("dashboard_audience_role", "dashboards");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.DashboardDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AllowsPersonalization")
+                        .HasColumnType("boolean")
+                        .HasColumnName("allows_personalization");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("LifecycleState")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("lifecycle_state");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<Guid?>("PublishedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("published_by_user_id");
+
+                    b.Property<DateTimeOffset?>("RetiredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("retired_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset?>("ValidatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("validated_at");
+
+                    b.Property<Guid?>("ValidatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("validated_by_user_id");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_no");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.Dashboards.DashboardDefinition.Description#BilingualLabel", b1 =>
+                        {
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("description_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("description_en");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Name", "PMPlatform.Domain.Dashboards.DashboardDefinition.Name#BilingualLabel", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_en");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_dashboard_definition");
+
+                    b.HasIndex("PublishedByUserId")
+                        .HasDatabaseName("ix_dashboard_definition_published_by_user_id");
+
+                    b.HasIndex("ValidatedByUserId")
+                        .HasDatabaseName("ix_dashboard_definition_validated_by_user_id");
+
+                    b.HasIndex("Code", "VersionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_dashboard_definition_code_version_no");
+
+                    b.HasIndex(new[] { "Code" }, "ix_dashboard_definition_open_code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_dashboard_definition_open_code")
+                        .HasFilter("lifecycle_state IN ('DRAFT', 'VALIDATED')");
+
+                    b.HasIndex(new[] { "Code" }, "ix_dashboard_definition_published")
+                        .HasDatabaseName("ix_dashboard_definition_published")
+                        .HasFilter("lifecycle_state = 'PUBLISHED'");
+
+                    b.ToTable("dashboard_definition", "dashboards", t =>
+                        {
+                            t.HasCheckConstraint("ck_dashboard_definition_allows_personalization", "NOT allows_personalization OR code = 'PORTFOLIO'");
+
+                            t.HasCheckConstraint("ck_dashboard_definition_code", "\"code\" IN ('PORTFOLIO', 'PROJECT', 'GOVERNANCE')");
+
+                            t.HasCheckConstraint("ck_dashboard_definition_description", "(\"description_ar\" IS NULL) = (\"description_en\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_dashboard_definition_lifecycle_state", "\"lifecycle_state\" IN ('DRAFT', 'VALIDATED', 'PUBLISHED', 'RETIRED')");
+
+                            t.HasCheckConstraint("ck_dashboard_definition_version_no", "version_no >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.DashboardWidget", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DashboardDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dashboard_definition_id");
+
+                    b.Property<Guid?>("DataClassificationItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("data_classification_item_id");
+
+                    b.Property<bool>("IsOptionalVisibility")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_optional_visibility");
+
+                    b.Property<short>("LayoutColumn")
+                        .HasColumnType("smallint")
+                        .HasColumnName("layout_column");
+
+                    b.Property<short>("LayoutRow")
+                        .HasColumnType("smallint")
+                        .HasColumnName("layout_row");
+
+                    b.Property<short>("LayoutSpan")
+                        .HasColumnType("smallint")
+                        .HasColumnName("layout_span");
+
+                    b.Property<string>("SourceProjectionCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("source_projection_code");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("WidgetType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("widget_type");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.Dashboards.DashboardWidget.Title#BilingualLabel", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("title_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("title_en");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_dashboard_widget");
+
+                    b.HasIndex("DataClassificationItemId")
+                        .HasDatabaseName("ix_dashboard_widget_data_classification_item_id");
+
+                    b.HasIndex("DashboardDefinitionId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_dashboard_widget_dashboard_definition_id_code");
+
+                    b.ToTable("dashboard_widget", "dashboards", t =>
+                        {
+                            t.HasCheckConstraint("ck_dashboard_widget_code", "code ~ '^[A-Z][A-Z0-9_]*$'");
+
+                            t.HasCheckConstraint("ck_dashboard_widget_layout", "layout_row >= 1 AND layout_column BETWEEN 1 AND 12 AND layout_span BETWEEN 1 AND 12 AND layout_column + layout_span <= 13");
+
+                            t.HasCheckConstraint("ck_dashboard_widget_source_projection_code", "source_projection_code ~ '^[A-Z][A-Z_]*\\.[A-Z][A-Z_]*$'");
+
+                            t.HasCheckConstraint("ck_dashboard_widget_widget_type", "\"widget_type\" IN ('METRIC_CARD', 'STATUS_DISTRIBUTION', 'BAR_COLUMN', 'LINE_TREND', 'DONUT_PIE', 'PROGRESS_INDICATOR')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.UserDashboardPreference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DashboardDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dashboard_definition_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_dashboard_preference");
+
+                    b.HasIndex("DashboardDefinitionId")
+                        .HasDatabaseName("ix_user_dashboard_preference_dashboard_definition_id");
+
+                    b.HasIndex("UserId", "DashboardDefinitionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_dashboard_preference_user_id_dashboard_definition_id");
+
+                    b.ToTable("user_dashboard_preference", "dashboards");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.UserDashboardWidgetPreference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("DashboardWidgetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dashboard_widget_id");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_hidden");
+
+                    b.Property<short?>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserDashboardPreferenceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_dashboard_preference_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_dashboard_widget_preference");
+
+                    b.HasIndex("DashboardWidgetId")
+                        .HasDatabaseName("ix_user_dashboard_widget_preference_dashboard_widget_id");
+
+                    b.HasIndex("UserDashboardPreferenceId", "DashboardWidgetId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_dashboard_widget_preference_user_dashboard_preference_");
+
+                    b.ToTable("user_dashboard_widget_preference", "dashboards", t =>
+                        {
+                            t.HasCheckConstraint("ck_user_dashboard_widget_preference_sort_order", "sort_order IS NULL OR sort_order >= 1");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.BusinessLink", b =>
                 {
                     b.Property<Guid>("Id")
@@ -9833,6 +10221,88 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("WaivedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_readiness_check_user_waived_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.DashboardAudienceRole", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Dashboards.DashboardDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("DashboardDefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_dashboard_audience_role_dashboard_definition_dashboard_defi");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_dashboard_audience_role_role_role_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.DashboardDefinition", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("PublishedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_dashboard_definition_user_published_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ValidatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_dashboard_definition_user_validated_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.DashboardWidget", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Dashboards.DashboardDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("DashboardDefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_dashboard_widget_dashboard_definition_dashboard_definition_");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("DataClassificationItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_dashboard_widget_master_data_item_data_classification_item_");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.UserDashboardPreference", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Dashboards.DashboardDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("DashboardDefinitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_dashboard_preference_dashboard_definition_dashboard_de");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_dashboard_preference_user_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Dashboards.UserDashboardWidgetPreference", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Dashboards.DashboardWidget", null)
+                        .WithMany()
+                        .HasForeignKey("DashboardWidgetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_dashboard_widget_preference_dashboard_widget_dashboard");
+
+                    b.HasOne("PMPlatform.Domain.Dashboards.UserDashboardPreference", null)
+                        .WithMany()
+                        .HasForeignKey("UserDashboardPreferenceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_dashboard_widget_preference_user_dashboard_preference_");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.DocumentManagement.BusinessLink", b =>

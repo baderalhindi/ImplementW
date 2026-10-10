@@ -7,4 +7,7 @@ internal sealed class ReportingCycleReader(IProgressRepository repository) : IRe
 {
     public async Task<IReadOnlyList<ReportingCycleSummary>> ListAsync(Guid projectId, CancellationToken cancellationToken) =>
         [.. (await repository.ListCyclesAsync(projectId, cancellationToken).ConfigureAwait(false)).Select(ProgressMapping.ToSummary)];
+
+    public async Task<IReadOnlyList<ReportingCycleSummary>> ListAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        [.. (await repository.ListCyclesAsync(projectIds, cancellationToken).ConfigureAwait(false)).Select(ProgressMapping.ToSummary)];
 }

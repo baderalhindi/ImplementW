@@ -125,6 +125,11 @@ internal sealed class FinancialKpiRepository(PMPlatformDbContext context) : IFin
             .Where(a => projectIds.Contains(a.ProjectId) && kpiDefinitionIds.Contains(a.KpiDefinitionId))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<KpiAssignment>> ListActiveAssignmentsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        await context.Set<KpiAssignment>().AsNoTracking()
+            .Where(a => projectIds.Contains(a.ProjectId) && a.Status == KpiAssignmentStatus.Active)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public Task<(IReadOnlyList<KpiTargetVersion> Items, int TotalCount)> PageTargetsAsync(Guid assignmentId, PageRequest page, CancellationToken cancellationToken) =>
         PageAsync(context.Set<KpiTargetVersion>().AsNoTracking().Where(t => t.KpiAssignmentId == assignmentId).OrderByDescending(t => t.VersionNo), page, cancellationToken);
 

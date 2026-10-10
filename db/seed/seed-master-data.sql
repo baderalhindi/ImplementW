@@ -13,7 +13,9 @@
 --   4. the twelve configuration families of the ERD;
 --   5. the risk and issue scale, seeded generically (ADR-011, OQ-006): a DRAFT version 1 of RISK_MATRIX holding
 --      five probability levels and five impact levels per dimension, labelled "Level n", with no descriptions and
---      no boundaries.
+--      no boundaries;
+--   6. the three dashboards of ADR-006 — PORTFOLIO, PROJECT, GOVERNANCE — each a PUBLISHED version 1 with its audience, default
+--      landings (Blueprint §20.2) and widgets bound to registered source projections (TASK-069).
 -- Every label is bilingual (ADR-012).
 --
 -- What it does not hold, and why (record §4):
@@ -489,3 +491,81 @@ WHERE v.id = md5('configuration_version:RISK_MATRIX:1')::uuid
   AND c.code = 'IMPACT_DIMENSION'
   AND d.code IN ('COST', 'SCHEDULE', 'REPUTATION', 'OPERATIONAL')
 ON CONFLICT (configuration_version_id, impact_dimension_item_id, level) DO NOTHING;
+
+-- 6. The three dashboards of ADR-006 (TASK-069): PORTFOLIO, PROJECT and GOVERNANCE, each as a PUBLISHED version 1, with the audience and
+-- default landings of Blueprint §20.2 and widgets bound to registered projections only (PMPlatform.Application's DashboardProjections;
+-- DashboardSeedTests checks every one). FG-01's twelve DSH definitions are absorbed into them (dashboards.md D-2): PORTFOLIO is DSH-002 with
+-- DSH-003, DSH-006 and DSH-007 as scope renderings, the Home of those roles, and the summary widgets of DSH-010 to DSH-012; PROJECT is
+-- DSH-009 with DSH-008 as an entity's rendering of its own project (ADR-006, ADR-013, ADR-019: entity users get it and nothing further);
+-- GOVERNANCE is DSH-001, DSH-004 and DSH-005. Personalisation is PORTFOLIO's alone (ADR-019). Reviewer and publisher stay null, as for
+-- the seeded master data: the author/reviewer/publisher separation has no people in a seed. The structure, the labels and the layout are
+-- inserted once, with their version: a change is a new version on ADM-036, never a re-seed, so a deployment never alters a published one.
+INSERT INTO dashboards.dashboard_definition (id, code, version_no, name_ar, name_en, description_ar, description_en, allows_personalization,
+                                             lifecycle_state, published_at, created_at, created_by, updated_at, updated_by)
+SELECT md5('dashboard_definition:' || v.code || ':1')::uuid, v.code, 1, v.name_ar, v.name_en, v.description_ar, v.description_en, v.allows_personalization,
+       'PUBLISHED', now(), now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('PORTFOLIO',  'لوحة المحفظة', 'Portfolio Dashboard',
+     'المشاريع ضمن نطاقك المصرح به: دورة الحياة والصحة والجدول الزمني والمخاطر والمؤشرات والوضع المالي والتقارير.',
+     'The projects in your authorised scope: lifecycle, health, schedule, risk, KPI, financial and reporting position.', true),
+    ('PROJECT',    'لوحة المشروع', 'Project Dashboard',
+     'مشروع واحد في نظرة عامة على المشروع: الصحة والتقدم والجدول الزمني والمخاطر والمؤشرات والوضع المالي.',
+     'One project in its Project Overview: health, progress, schedule, risk, KPI and financial position.', false),
+    ('GOVERNANCE', 'لوحة الحوكمة', 'Governance Dashboard',
+     'الالتزامات ومتطلبات المتابعة: اكتمال التقارير ومراجعات المخاطر وإعداد لوحات المعلومات.',
+     'Obligations and attention: reporting completeness, risk reviews and dashboard configuration.', false)
+) AS v (code, name_ar, name_en, description_ar, description_en, allows_personalization)
+ON CONFLICT (code, version_no) DO NOTHING;
+
+-- The audience of version 1, written with it and never after: a version's audience changes only while it is a DRAFT.
+INSERT INTO dashboards.dashboard_audience_role (id, dashboard_definition_id, role_id, is_default_landing, created_at, created_by, updated_at, updated_by)
+SELECT md5('dashboard_audience_role:' || v.code || ':1:' || v.role_code)::uuid, d.id, r.id, v.is_default_landing,
+       now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('PORTFOLIO',  'R02', true),  ('PORTFOLIO',  'R03', true),  ('PORTFOLIO',  'R06', true),  ('PORTFOLIO',  'R07', true),
+    ('PROJECT',    'R02', false), ('PROJECT',    'R03', false), ('PROJECT',    'R04', false), ('PROJECT',    'R05', false),
+    ('PROJECT',    'R06', false), ('PROJECT',    'R07', false), ('PROJECT',    'R08', true),
+    ('GOVERNANCE', 'R01', true),  ('GOVERNANCE', 'R02', false), ('GOVERNANCE', 'R03', false), ('GOVERNANCE', 'R04', true),
+    ('GOVERNANCE', 'R05', true),  ('GOVERNANCE', 'R07', false)
+) AS v (code, role_code, is_default_landing)
+JOIN dashboards.dashboard_definition d ON d.code = v.code AND d.version_no = 1 AND d.created_by = '00000000-0000-4000-8000-0000000000ff'
+JOIN identity_access.role r ON r.code = v.role_code
+WHERE NOT EXISTS (SELECT 1 FROM dashboards.dashboard_audience_role a WHERE a.dashboard_definition_id = d.id)
+ON CONFLICT (dashboard_definition_id, role_id) DO NOTHING;
+
+-- The widgets of version 1, likewise. Each names a registered projection; its layout is a twelve-column grid, one row high.
+INSERT INTO dashboards.dashboard_widget (id, dashboard_definition_id, code, title_ar, title_en, widget_type, source_projection_code, is_optional_visibility,
+                                         layout_row, layout_column, layout_span, created_at, created_by, updated_at, updated_by)
+SELECT md5('dashboard_widget:' || v.code || ':1:' || v.widget_code)::uuid, d.id, v.widget_code, v.title_ar, v.title_en, v.widget_type, v.projection,
+       v.is_optional, v.layout_row, v.layout_column, v.layout_span, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('PORTFOLIO', 'PROJECTS_BY_LIFECYCLE',  'المشاريع حسب حالة دورة الحياة',  'Projects by lifecycle state',        'STATUS_DISTRIBUTION', 'PROJECT.LIFECYCLE_STATE',                    false, 1, 1, 6),
+    ('PORTFOLIO', 'PUBLISHED_HEALTH',       'الصحة العامة المنشورة',           'Published Overall Project Health',   'STATUS_DISTRIBUTION', 'PROGRESS.PUBLISHED_PROGRESS_SNAPSHOT',       false, 1, 7, 6),
+    ('PORTFOLIO', 'CURRENT_HEALTH',         'الصحة العامة الحالية',            'Current Overall Project Health',     'STATUS_DISTRIBUTION', 'PROGRESS.PROJECT_HEALTH_STATUS',             true,  2, 1, 4),
+    ('PORTFOLIO', 'SCHEDULE_HEALTH',        'صحة الجدول الزمني الحالية',       'Current schedule health',            'STATUS_DISTRIBUTION', 'SCHEDULE.SCHEDULE_HEALTH_STATUS',            true,  2, 5, 4),
+    ('PORTFOLIO', 'REPORTING_COMPLETENESS', 'اكتمال التقارير',                 'Reporting completeness',             'STATUS_DISTRIBUTION', 'PROGRESS.REPORTING_COMPLETENESS',            true,  2, 9, 4),
+    ('PORTFOLIO', 'RISK_EXPOSURE',          'المخاطر المفتوحة حسب التصنيف',    'Open risks by rating',               'BAR_COLUMN',          'RISK.RISK_EXPOSURE',                         true,  3, 1, 6),
+    ('PORTFOLIO', 'KPI_CONDITION',          'حالة مؤشرات الأداء',              'KPI condition',                      'STATUS_DISTRIBUTION', 'FINANCIAL_KPI.KPI_CONDITION',                true,  3, 7, 6),
+    ('PORTFOLIO', 'PUBLISHED_FINANCIALS',   'الوضع المالي المنشور',            'Published financial position',       'METRIC_CARD',         'FINANCIAL_KPI.PUBLISHED_FINANCIAL_SNAPSHOT', true,  4, 1, 6),
+    ('PORTFOLIO', 'CURRENT_FINANCIALS',     'الوضع المالي الحالي',             'Current financial position',         'METRIC_CARD',         'FINANCIAL_KPI.FINANCIAL_POSITION',          true,  4, 7, 6),
+    ('PROJECT',   'LIFECYCLE_STATE',        'حالة دورة الحياة',                'Lifecycle state',                    'METRIC_CARD',         'PROJECT.LIFECYCLE_STATE',                    false, 1, 1, 3),
+    ('PROJECT',   'CURRENT_HEALTH',         'الصحة العامة الحالية',            'Current Overall Project Health',     'METRIC_CARD',         'PROGRESS.PROJECT_HEALTH_STATUS',             false, 1, 4, 3),
+    ('PROJECT',   'PUBLISHED_HEALTH',       'الصحة العامة المنشورة',           'Published Overall Project Health',   'METRIC_CARD',         'PROGRESS.PUBLISHED_PROGRESS_SNAPSHOT',       false, 1, 7, 3),
+    ('PROJECT',   'PUBLISHED_PROGRESS',     'التقدم المنشور',                  'Published progress',                 'PROGRESS_INDICATOR',  'PROGRESS.PUBLISHED_PROGRESS_SNAPSHOT',       false, 1, 10, 3),
+    ('PROJECT',   'PUBLISHED_SCHEDULE',     'صحة الجدول الزمني المنشورة',      'Published schedule health',          'METRIC_CARD',         'PROGRESS.PUBLISHED_SCHEDULE_HEALTH',         false, 2, 1, 4),
+    ('PROJECT',   'SCHEDULE_HEALTH',        'صحة الجدول الزمني الحالية',       'Current schedule health',            'METRIC_CARD',         'SCHEDULE.SCHEDULE_HEALTH_STATUS',            false, 2, 5, 4),
+    ('PROJECT',   'REPORTING_COMPLETENESS', 'اكتمال التقارير',                 'Reporting completeness',             'METRIC_CARD',         'PROGRESS.REPORTING_COMPLETENESS',            false, 2, 9, 4),
+    ('PROJECT',   'PROGRESS_TREND',         'اتجاه التقدم المنشور',            'Published progress trend',           'LINE_TREND',          'PROGRESS.PUBLISHED_PROGRESS_HISTORY',        false, 3, 1, 12),
+    ('PROJECT',   'RISK_EXPOSURE',          'المخاطر المفتوحة حسب التصنيف',    'Open risks by rating',               'STATUS_DISTRIBUTION', 'RISK.RISK_EXPOSURE',                         false, 4, 1, 6),
+    ('PROJECT',   'KPI_CONDITION',          'حالة مؤشرات الأداء',              'KPI condition',                      'STATUS_DISTRIBUTION', 'FINANCIAL_KPI.KPI_CONDITION',                false, 4, 7, 6),
+    ('PROJECT',   'PUBLISHED_FINANCIALS',   'الوضع المالي المنشور',            'Published financial position',       'METRIC_CARD',         'FINANCIAL_KPI.PUBLISHED_FINANCIAL_SNAPSHOT', false, 5, 1, 6),
+    ('PROJECT',   'CURRENT_FINANCIALS',     'الوضع المالي الحالي',             'Current financial position',         'METRIC_CARD',         'FINANCIAL_KPI.FINANCIAL_POSITION',          false, 5, 7, 6),
+    ('GOVERNANCE', 'REPORTING_COMPLETENESS', 'اكتمال التقارير',                'Reporting completeness',             'STATUS_DISTRIBUTION', 'PROGRESS.REPORTING_COMPLETENESS',            false, 1, 1, 6),
+    ('GOVERNANCE', 'PROJECTS_BY_LIFECYCLE', 'المشاريع حسب حالة دورة الحياة',   'Projects by lifecycle state',        'STATUS_DISTRIBUTION', 'PROJECT.LIFECYCLE_STATE',                    false, 1, 7, 6),
+    ('GOVERNANCE', 'RISK_EXPOSURE',         'المخاطر المفتوحة ومراجعاتها',     'Open risks and their reviews',       'BAR_COLUMN',          'RISK.RISK_EXPOSURE',                         false, 2, 1, 6),
+    ('GOVERNANCE', 'KPI_CONDITION',         'حالة مؤشرات الأداء',              'KPI condition',                      'STATUS_DISTRIBUTION', 'FINANCIAL_KPI.KPI_CONDITION',                false, 2, 7, 6),
+    ('GOVERNANCE', 'CONFIGURATION_BACKLOG', 'إعداد لوحات المعلومات',           'Dashboard configuration backlog',    'STATUS_DISTRIBUTION', 'DASHBOARDS.DEFINITION_BACKLOG',              false, 3, 1, 12)
+) AS v (code, widget_code, title_ar, title_en, widget_type, projection, is_optional, layout_row, layout_column, layout_span)
+JOIN dashboards.dashboard_definition d ON d.code = v.code AND d.version_no = 1 AND d.created_by = '00000000-0000-4000-8000-0000000000ff'
+WHERE NOT EXISTS (SELECT 1 FROM dashboards.dashboard_widget w WHERE w.dashboard_definition_id = d.id)
+ON CONFLICT (dashboard_definition_id, code) DO NOTHING;

@@ -63,6 +63,9 @@ public interface IRiskRepository
     /// <summary>The project's risks that are not CLOSED and carry no ACTIVE acceptance, for WF-10's readiness (TASK-063).</summary>
     public Task<int> CountOpenUnacceptedAsync(Guid projectId, CancellationToken cancellationToken);
 
+    /// <summary>The risks of the projects that are not CLOSED, for FG-01's exposure (edge 29, TASK-069). Not tracked.</summary>
+    public Task<IReadOnlyList<RiskEntity>> ListOpenRisksAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
     /// <summary>The row version of a tracked row, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(RiskEntity risk);
 

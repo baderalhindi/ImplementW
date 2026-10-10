@@ -82,6 +82,9 @@ public interface IFinancialKpiRepository
     public Task<IReadOnlyList<KpiAssignment>> ListAssignmentsAsync(
         IReadOnlyCollection<Guid> projectIds, IReadOnlyCollection<Guid> kpiDefinitionIds, CancellationToken cancellationToken);
 
+    /// <summary>The ACTIVE assignments of the projects named, of any KPI (FG-01, TASK-069). Not tracked.</summary>
+    public Task<IReadOnlyList<KpiAssignment>> ListActiveAssignmentsAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
     public Task<(IReadOnlyList<KpiTargetVersion> Items, int TotalCount)> PageTargetsAsync(Guid assignmentId, PageRequest page, CancellationToken cancellationToken);
 
     /// <summary>Every version of the assignment's target. Not tracked.</summary>

@@ -287,7 +287,7 @@ flowchart LR
   EXT --> PRJ
   EXT -->|"staged contribution<br/>via typed target adapter"| CORE
 
-  DSH -->|"published read projection"| CORE
+  DSH -->|"read projections<br/>edges 29, 47"| CORE
   RPT --> DSH
 
   CORE -->|"E-U1 authorize"| IAM
@@ -348,7 +348,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 26 | FinancialKpi | Approval | command | approved commitment/budget versions and KPI target versions. **Route inferred — S-4** | TASK-052 (WF-11 not named) |
 | 27 | Closure | Approval | command, query | completion and closure approval (`IApprovalRequests`, routing keys `COMPLETION` and `CLOSURE`); and `IApprovalSettlementReader`, the project's runs still pending or whose outcome has not reached its module (`closure.md` D-5). **Route inferred — S-4** | TASK-063 (WF-11 not named) |
 | 28 | Approval | source module | outcome event | idempotent decision outcome carrying the subject reference and version | TASK-035 |
-| 29 | Dashboards | Progress, Schedule, Risk, FinancialKpi | read projection | controlled source projections with semantic state, freshness and coverage; read-only | TASK-069 deps |
+| 29 | Dashboards | Progress, Schedule, Risk, FinancialKpi | read projection | controlled source projections with semantic state, freshness and coverage; read-only. Built by TASK-069: `IProjectHealthReader`, `IReportingCycleReader`, `IScheduleHealthReader`, `IRiskExposureReader`, `IFinancialProgressService`, `IKpiConditionReader` (`dashboards.md` D-4) | TASK-069 deps |
 | 30 | Reports | Dashboards | query | the same controlled projections, for report definitions and jobs | TASK-071 dep TASK-069 |
 | 31 | IdentityAccess | IntegrationMonitoring | event | AD/LDAP/SSO invocation and sync-run telemetry | TASK-075 dep TASK-028 |
 | 32 | Notifications | IntegrationMonitoring | event | email/SMS channel invocation telemetry | TASK-075 dep TASK-039; TASK-103 |
@@ -366,6 +366,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 44 | Closure | ChangeRequest | query | readiness: change requests undecided or approved and not carried through (`IChangeRequestCloseoutReader`) | TASK-063 (added 2026-10-08) |
 | 45 | Closure | Suspension | query, command | readiness: open suspension and resumption requests (`ISuspensionCloseoutReader`); on the terminal path, the project's open suspension ended with reason PROJECT_CLOSED in WF-10's unit of work (`ISuspensionClosureCommands`) | TASK-063 (added 2026-10-08, `closure.md` D-6; `suspension.md` F-5) |
 | 46 | Closure | Progress | query | readiness: unpublished progress, and whether any is published (`IProgressCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 47 | Dashboards | Project | query | the projects a caller's record scope reaches — the population an FG-01 aggregate is counted over, authorised before anything is counted — and the Project Dashboard's project (`IProjectFactsReader.ListReachedAsync`, `.FindAsync`) | TASK-069 (added 2026-10-10, `dashboards.md` D-4) |
 
 ### 8.3 Count
 
@@ -374,7 +375,7 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | Modules | **21** |
 | WF/FG domains mapped | **21** (WF-01–WF-15, FG-01–FG-06), 1:1 |
 | Universal edge rules | 4 |
-| Specific edges | 46 |
+| Specific edges | 47 |
 | Edges whose mechanism is direct cross-module repository or table access | **0** |
 | Edges flagged as inferred pending a rank-1 spec | 4 (nos. 19 beyond ProjectTask, 25, 26, 27) |
 | Cycles in the core-domain call graph | **0** (edge 35 is an event; edge 10, the declared split-authority contract, runs Milestone → Schedule only) |
@@ -548,3 +549,4 @@ On Q1 and Q2 being confirmed, the header status becomes **APPROVED**, the regist
 | 2026-10-07 | WF-09 built (TASK-062, `suspension.md`). Edge 7 set: `IProjectSuspensionCommands`, a command in Project's contracts that stages ACTIVE → SUSPENDED or SUSPENDED → ACTIVE in the caller's unit of work, with the project's facts through `IProjectFactsReader`. Edges 23 and 28 implemented (`IApprovalRequests`, routing keys `SUSPENSION` and `RESUMPTION`). Suspension references no other module: in particular none of Schedule, so no resumption can reach a baseline (D-7). A-1 to A-6 pass unchanged |
 | 2026-10-08 | WF-10 built (TASK-063, `closure.md`). Edge 8 set: `IProjectCloseoutCommands` stages ACTIVE → COMPLETED, COMPLETED → CLOSED and SUSPENDED → CLOSED in the caller's unit of work, and `ClosedProjectGuard` makes every module refuse writes to a CLOSED project. Edges 14 and 27 set (`IFinancialKpiCloseoutReader`; `IApprovalRequests` with routing keys `COMPLETION` and `CLOSURE`, and `IApprovalSettlementReader`). Edges 39–46 added, Closure → ProjectTask, Schedule, Milestone, Risk, ManagementConcern, ChangeRequest, Suspension, Progress: each source module answers WF-10's readiness criterion for its own records through a read-only contract, and edge 45 also carries the command that ends a suspended project's open period on terminal closure. All point away from Closure, which no module calls, so the core-domain graph stays acyclic. Count 38 → 46. A-1 to A-6 pass with the registry's eight new entries |
 | 2026-10-09 | WF-13 built (TASK-066, `external-participation.md`). Edge 19 set for its first target: ExternalParticipation → ProjectTask (command), `ITaskProgressContributions`, through the typed adapter `IExternalContributionTarget`; registered in `ModuleRegistry`. Edge 18 used as written (`IProjectFactsReader`, whose `ProjectFacts` gains the participation mode). Edge 17 not used yet (`external-participation.md` F-1). S-5 stays open for the other targets |
+| 2026-10-10 | FG-01 built (TASK-069, `dashboards.md`). Edge 29 implemented through each source's read contracts — bulk reads added to Progress's `IProjectHealthReader` and `IReportingCycleReader` and Schedule's `IScheduleHealthReader`, and `IRiskExposureReader` and `IKpiConditionReader` added to Risk's and FinancialKpi's contracts — none of which authorises anyone or returns a guarded health row (M-12). Edge 47 added, Dashboards → Project (query): the population an aggregate is counted over, the projects the caller's record scope reaches, read through `IProjectFactsReader.ListReachedAsync`; Project calls Dashboards in no way, so no cycle. IdentityAccess's contracts gain `IUserRoleDirectory` (E-U1). Diagram label and §8.3 count updated; `ModuleRegistry` records edge 47. Proposed by the delivery team, for the Engineering Architect's confirmation. | Backend (TASK-069) |

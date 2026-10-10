@@ -84,6 +84,9 @@ public interface IScheduleRepository
     /// <summary>The project's live Schedule Health row; tracked when <paramref name="track"/>.</summary>
     public Task<ScheduleHealthStatus?> FindHealthStatusAsync(Guid projectId, bool track, CancellationToken cancellationToken);
 
+    /// <summary>The live Schedule Health row of each of the projects that has one (FG-01, TASK-069). Not tracked.</summary>
+    public Task<IReadOnlyList<ScheduleHealthStatus>> ListHealthStatusesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
     /// <summary>The row version of a tracked row, as last read or saved: its ETag.</summary>
     public uint RowVersionOf(ProjectSchedule schedule);
 
