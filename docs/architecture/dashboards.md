@@ -110,7 +110,7 @@ stateDiagram-v2
 
 ## 7. How other modules build on it
 
-1. **TASK-070** renders these payloads. Every widget has `projection`; a widget with `unknownReason` has no `data` and is drawn as its reason (Missing, Not applicable, Restricted, Source unavailable), never as 0 or a colour; a STALE one keeps its value with its as-of; `isMasked` figures read Restricted. DSH-009 is `GET /dashboards/PROJECT?projectId=` composed into SCR-040, with no route of its own. The landing is the catalogue entry with `isDefaultLanding`; an entity user's is PROJECT, opened for one of its projects.
+1. **TASK-070** renders these payloads. Every widget has `projection`; a widget with `unknownReason` has no `data` and is drawn as its reason (Missing, Not applicable, Restricted, Source unavailable), never as 0 or a colour; a STALE one keeps its value with its as-of; `isMasked` figures read Restricted. DSH-009 is `GET /dashboards/PROJECT?projectId=` composed into SCR-040, with no route of its own. The landing is the catalogue entry with `isDefaultLanding`; an entity user's is PROJECT, opened for one of its projects. Built: `dashboards-ui.md`.
 2. **TASK-071** (edge 30) reads the same register and contracts for its reports; `ProjectionMeta` is shared (M-10).
 3. **A new projection** is a contract in its owning module (a bulk read that authorises no one), an ADR-003 §8.2 edge if its module is not yet in edge 29, an `IDashboardProjectionSource`, and a row in `DashboardProjections`; a widget binds it through a new version on ADM-036.
 4. **Blueprint Appendix A** turns RESTRICTED widgets into data for AHDA's roles by granting their source view permissions (F-3); nothing here changes.
@@ -206,3 +206,4 @@ M-13 and M-15 are killed by the database guard behind the application rule: each
 | Date | Change |
 | --- | --- |
 | 2026-10-10 | Initial record (TASK-069). |
+| 2026-10-10 | §7 item 1 points to the UI that renders these payloads (TASK-070, `dashboards-ui.md`). |
