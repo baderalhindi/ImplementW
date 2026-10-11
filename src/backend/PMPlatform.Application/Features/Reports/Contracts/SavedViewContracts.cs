@@ -5,7 +5,7 @@ namespace PMPlatform.Application.Features.Reports.Contracts;
 
 /// <summary>
 /// A saved view as its owner writes it, whole (MOD-062): a report's parameter values, or an SCR-138 composition of allowlisted columns (with
-/// their sorts) and filters. Configuration only (BR-RPT-031).
+/// their sorts) and filters, and the roles it is shared with — none for a private view. Configuration only (BR-RPT-031).
 /// </summary>
 public sealed record SavedViewInput(
     NarrativeText Name,
@@ -13,7 +13,8 @@ public sealed record SavedViewInput(
     ReportCode? ReportCode,
     IReadOnlyList<ReportParameterInput> Parameters,
     IReadOnlyList<SavedViewColumnInput> Columns,
-    IReadOnlyList<ReportFilterInput> Filters);
+    IReadOnlyList<ReportFilterInput> Filters,
+    IReadOnlyList<string> SharedWithRoleCodes);
 
 public sealed record SavedViewColumnInput(string SourceEntityCode, string FieldCode, ReportSortDirection? SortDirection);
 
@@ -25,11 +26,13 @@ public enum SavedViewCompatibility
 }
 
 /// <summary>
-/// A saved view (RPT-API-020): what it holds, the report version it was saved against, and whether it fits what is in force now — with each
-/// thing that no longer fits, never silently reinterpreted (SCR-139).
+/// A saved view (RPT-API-020): whose it is, what it holds, the report version it was saved against, and whether it fits what is in force now for
+/// the reader — with each thing that no longer fits, never silently reinterpreted (SCR-139). <see cref="SharedWithRoleCodes"/> is the owner's to
+/// read: a person it is shared with reads it empty.
 /// </summary>
 public sealed record SavedViewDetail(
     Guid Id,
+    Guid OwnerUserId,
     SavedViewType ViewType,
     NarrativeText Name,
     ReportCode? ReportCode,
@@ -38,6 +41,7 @@ public sealed record SavedViewDetail(
     IReadOnlyList<ReportParameterInput> Parameters,
     IReadOnlyList<SavedViewColumnInput> Columns,
     IReadOnlyList<ReportFilterInput> Filters,
+    IReadOnlyList<string> SharedWithRoleCodes,
     SavedViewCompatibility Compatibility,
     IReadOnlyList<SavedViewIssue> Issues,
     DateTimeOffset CreatedAt,
@@ -46,6 +50,15 @@ public sealed record SavedViewDetail(
 /// <summary>What no longer fits: the field of the view, and why.</summary>
 public sealed record SavedViewIssue(string Field, string Code);
 
-public sealed record SavedViewSummary(Guid Id, SavedViewType ViewType, NarrativeText Name, ReportCode? ReportCode, DateTimeOffset UpdatedAt);
+/// <summary>A view in SCR-139's list: its owner, the roles it is shared with (the owner's to read, as on the detail), and whether it fits now.</summary>
+public sealed record SavedViewSummary(
+    Guid Id,
+    Guid OwnerUserId,
+    SavedViewType ViewType,
+    NarrativeText Name,
+    ReportCode? ReportCode,
+    IReadOnlyList<string> SharedWithRoleCodes,
+    SavedViewCompatibility Compatibility,
+    DateTimeOffset UpdatedAt);
 
 public sealed record SavedViewPage(IReadOnlyList<SavedViewSummary> Items, int Page, int PageSize, int TotalCount);

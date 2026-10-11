@@ -29,6 +29,10 @@ internal static partial class ReportRequestValidation
     public const int MaxParameters = 20;
     public const int ValueLength = 500;
 
+    /// <summary>A role code's length (<c>R02</c>) with room; at most the eight canonical roles are named.</summary>
+    public const int RoleCodeLength = 10;
+    public const int MaxRoles = 8;
+
     public static void Field(string? sourceEntityCode, string? fieldCode, string at, List<FieldError> errors)
     {
         Shape(sourceEntityCode, $"{at}.sourceEntityCode", EntityCodeLength, errors);
@@ -144,6 +148,28 @@ internal static partial class ReportRequestValidation
         return [.. filters.Select(f => new ReportFilterInput(f?.SourceEntityCode ?? string.Empty, f?.FieldCode ?? string.Empty, f?.Operator ?? ReportFilterOperator.Eq, f?.Value ?? string.Empty))];
     }
 
+    /// <summary>Role codes, each shaped as a code; whether each is a role a view may be shared with is the module's 422.</summary>
+    public static IReadOnlyList<string> RoleCodes(IReadOnlyList<string?>? codes, string at, List<FieldError> errors)
+    {
+        if (codes is null)
+        {
+            return [];
+        }
+
+        if (codes.Count > MaxRoles)
+        {
+            errors.Add(new FieldError(at, FieldError.OutOfRange));
+            return [];
+        }
+
+        for (int i = 0; i < codes.Count; i++)
+        {
+            Shape(codes[i], $"{at}[{i}]", RoleCodeLength, errors);
+        }
+
+        return [.. codes.Select(c => c ?? string.Empty)];
+    }
+
     public static ReportExportInput Export(ReportExportFormat? format, string? language, List<FieldError> errors)
     {
         if (format is null)
@@ -228,8 +254,8 @@ public sealed record ExplorerExportRequest(
 public sealed record SavedViewColumnRequest(string? SourceEntityCode, string? FieldCode, ReportSortDirection? SortDirection);
 
 /// <summary>
-/// MOD-062: a private saved view, whole — a report's parameter values (REPORT_PARAMETERS), or an SCR-138 composition of allowlisted columns, with
-/// their sorts, and filters (EXPLORER_COMPOSITION). Configuration only.
+/// MOD-062: a saved view, whole — a report's parameter values (REPORT_PARAMETERS), or an SCR-138 composition of allowlisted columns, with their
+/// sorts, and filters (EXPLORER_COMPOSITION) — and the roles it is shared with (TBC-RPT-20): none, or absent, keeps it private. Configuration only.
 /// </summary>
 public sealed record SavedViewRequest(
     NarrativeTextRequest? Name,
@@ -237,7 +263,8 @@ public sealed record SavedViewRequest(
     ReportCode? ReportCode,
     IReadOnlyList<ReportParameterRequest?>? Parameters,
     IReadOnlyList<SavedViewColumnRequest?>? Columns,
-    IReadOnlyList<ReportFilterRequest?>? Filters)
+    IReadOnlyList<ReportFilterRequest?>? Filters,
+    IReadOnlyList<string?>? SharedWithRoleCodes = null)
 {
     internal List<FieldError> Validate(out SavedViewInput? input)
     {
@@ -257,10 +284,11 @@ public sealed record SavedViewRequest(
         IReadOnlyList<ReportFieldReference> columns = ReportRequestValidation.Columns(
             Columns?.Select(c => c is null ? null : new ReportFieldRequest(c.SourceEntityCode, c.FieldCode)).ToList(), required: false, errors) ?? [];
         IReadOnlyList<ReportFilterInput> filters = ReportRequestValidation.Filters(Filters, errors);
+        IReadOnlyList<string> sharedWith = ReportRequestValidation.RoleCodes(SharedWithRoleCodes, "sharedWithRoleCodes", errors);
         input = errors.Count == 0
             ? new SavedViewInput(
                 name!, ViewType!.Value, ReportCode, parameters,
-                [.. columns.Select((c, i) => new SavedViewColumnInput(c.SourceEntityCode, c.FieldCode, Columns![i]!.SortDirection))], filters)
+                [.. columns.Select((c, i) => new SavedViewColumnInput(c.SourceEntityCode, c.FieldCode, Columns![i]!.SortDirection))], filters, sharedWith)
             : null;
         return errors;
     }

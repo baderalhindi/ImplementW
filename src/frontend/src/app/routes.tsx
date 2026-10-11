@@ -19,6 +19,7 @@ import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
 import { SYSTEM_ADMINISTRATOR_ROLE } from '@/features/identity-access/session/useSession.ts';
 import { notificationRoutes } from '@/features/notifications/routes.tsx';
 import { projectRoutes } from '@/features/projects/routes.tsx';
+import { reportRoutes } from '@/features/reports/routes.tsx';
 import { riskRoutes } from '@/features/risks/routes.tsx';
 import { closeoutRoutes, suspensionRoutes } from '@/features/suspension-closure/routes.tsx';
 import { taskRoutes } from '@/features/tasks/routes.tsx';
@@ -168,6 +169,15 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: documentRoutes,
+      },
+      {
+        path: 'reports',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: reportRoutes,
       },
       {
         path: 'notifications',

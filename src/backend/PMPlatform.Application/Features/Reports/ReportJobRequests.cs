@@ -84,7 +84,7 @@ internal static class ReportMapping
     {
         ArgumentNullException.ThrowIfNull(job);
         return new ReportJobDetail(
-            job.Id, job.Kind, code, job.ReportDefinitionId, job.ExportFormat, job.ReportLanguage, job.Status, job.RequestedAt, job.StartedAt, job.CompletedAt,
+            job.Id, job.RequestedByUserId, job.Kind, code, job.ReportDefinitionId, job.ExportFormat, job.ReportLanguage, job.Status, job.RequestedAt, job.StartedAt, job.CompletedAt,
             job.FailureCode, job.CorrelationId,
             output is null ? null : new GeneratedOutputDetail(
                 output.FileName, output.ContentType, output.SizeBytes, output.ChecksumSha256, output.Sensitivity, output.RowCount, output.SourceAsOf, output.ExpiresAt, output.Status));
@@ -93,6 +93,7 @@ internal static class ReportMapping
     public static ReportJobSummary ToSummary(ReportJob job, ReportCode? code, GeneratedOutput? output)
     {
         ArgumentNullException.ThrowIfNull(job);
-        return new ReportJobSummary(job.Id, job.Kind, code, job.ExportFormat, job.Status, job.RequestedAt, job.CompletedAt, output?.Sensitivity, output?.ExpiresAt);
+        return new ReportJobSummary(
+            job.Id, job.RequestedByUserId, job.Kind, code, job.ExportFormat, job.Status, job.FailureCode, job.RequestedAt, job.CompletedAt, output?.Sensitivity, output?.ExpiresAt);
     }
 }

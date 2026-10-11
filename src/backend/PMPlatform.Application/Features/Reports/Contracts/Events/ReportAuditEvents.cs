@@ -77,4 +77,5 @@ public static class ReportAuditAttributes
     public const string SupersededDefinitionId = "superseded_definition_id";
     public const string SupersededByDefinitionId = "superseded_by_definition_id";
     public const string ViewType = "view_type";
+    public const string SharedWithRoleCodes = "shared_with_role_codes";
 }

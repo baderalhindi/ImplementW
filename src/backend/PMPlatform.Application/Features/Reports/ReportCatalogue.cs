@@ -55,6 +55,12 @@ internal static class ReportCatalogue
         ReportCode.KpiPerformance,
     };
 
+    /// <summary>
+    /// ADR-019's saved-view roles — Portfolio Manager, Department Manager and Executive, <c>REPORT_COMPOSE</c>'s holders — and so the only roles a
+    /// view may be shared with (TBC-RPT-20, enabled by TASK-072): a share with any other would reach no one who may open a view.
+    /// </summary>
+    public static IReadOnlySet<string> SavedViewRoles { get; } = new HashSet<string>(StringComparer.Ordinal) { "R02", "R03", "R07" };
+
     /// <summary>A report about one project: a formal Project report, a project's published history. Its PROJECT parameter is required.</summary>
     public static bool RequiresProject(ReportCode code) => code is ReportCode.ProjectReport or ReportCode.ProgressHistory;
 

@@ -9,6 +9,7 @@ namespace PMPlatform.Application.Features.Reports.Contracts;
 /// </summary>
 public sealed record ReportJobDetail(
     Guid Id,
+    Guid RequestedByUserId,
     ReportJobKind Kind,
     ReportCode? ReportCode,
     Guid? ReportDefinitionId,
@@ -34,13 +35,18 @@ public sealed record GeneratedOutputDetail(
     DateTimeOffset ExpiresAt,
     GeneratedOutputStatus Status);
 
-/// <summary>A job in the caller's Export History (SCR-140).</summary>
+/// <summary>
+/// A job in the caller's Export History (SCR-140): who generated it and when, its state — with its failure code when FAILED — and its output's
+/// classification and expiry.
+/// </summary>
 public sealed record ReportJobSummary(
     Guid Id,
+    Guid RequestedByUserId,
     ReportJobKind Kind,
     ReportCode? ReportCode,
     ReportExportFormat ExportFormat,
     ReportJobStatus Status,
+    string? FailureCode,
     DateTimeOffset RequestedAt,
     DateTimeOffset? CompletedAt,
     OutputSensitivity? Sensitivity,

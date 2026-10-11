@@ -7,10 +7,12 @@ using PMPlatform.Domain.Reports;
 namespace PMPlatform.Application.Features.Reports;
 
 /// <summary>
-/// SCR-139 (FG-02 §10.2; ADR-019): private saved views. A view is its owner's alone — anyone else's is 404 (R-47) — and holds configuration only:
-/// parameter values, or allowlist entries with their sorts and filters, never a row (BR-RPT-031). Every read says whether it still fits the report
-/// version and the allowlist in force, naming what no longer does (SAV-012); every run plans it again against them and runs it as its owner may
-/// see now (BR-RPT-033). Saving is <c>REPORT_COMPOSE</c>'s, which ADR-019 gives R02, R03 and R07; an external entity's person saves no view.
+/// SCR-139 (FG-02 §10.2; ADR-019): saved views. A view holds configuration only: parameter values, or allowlist entries with their sorts and
+/// filters, never a row (BR-RPT-031). It is its owner's, and private unless the owner shares it with ADR-019's saved-view roles (TBC-RPT-20, enabled
+/// by TASK-072): a holder of such a role may read and run it, never change it; anyone else learns nothing of it (R-47). The configuration transfers
+/// and the authorisation does not — every read says whether the view still fits the report version and the allowlist in force for the reader,
+/// naming what no longer does (SAV-012), and every run plans it again and runs it as the reader may see now (BR-RPT-033). Saving is
+/// <c>REPORT_COMPOSE</c>'s, which ADR-019 gives R02, R03 and R07; an external entity's person saves no view and is shared none.
 /// </summary>
 internal sealed class SavedViewService(
     IReportRepository repository,
@@ -25,19 +27,25 @@ internal sealed class SavedViewService(
     public async Task<SavedViewPage> ListAsync(Guid callerId, PageRequest page, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
-        (IReadOnlyList<SavedView> items, int total) = await repository.PageViewsAsync(callerId, page, cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, string> roleCodes = await access.RoleCodesAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyCollection<Guid> recipientRoles = RecipientRoleIds(await access.CallerAsync(callerId, cancellationToken).ConfigureAwait(false), roleCodes);
+        (IReadOnlyList<SavedView> items, int total) = await repository.PageViewsAsync(callerId, recipientRoles, page, cancellationToken).ConfigureAwait(false);
+        ILookup<Guid, SavedViewShare> shares = (await repository.ListViewSharesAsync([.. items.Select(v => v.Id)], track: false, cancellationToken).ConfigureAwait(false))
+            .ToLookup(s => s.SavedViewId);
         List<SavedViewSummary> summaries = [];
         foreach (SavedView view in items)
         {
             ReportDefinition? definition = view.ReportDefinitionId is { } id ? await repository.ReadDefinitionAsync(id, cancellationToken).ConfigureAwait(false) : null;
-            summaries.Add(new SavedViewSummary(view.Id, view.ViewType, view.Name, definition?.Code, view.UpdatedAt));
+            (SavedViewCompatibility compatibility, _) = await CompatibilityAsync(callerId, view, cancellationToken).ConfigureAwait(false);
+            summaries.Add(new SavedViewSummary(
+                view.Id, view.OwnerUserId, view.ViewType, view.Name, definition?.Code, SharedWith(callerId, view, shares[view.Id], roleCodes), compatibility, view.UpdatedAt));
         }
 
         return new SavedViewPage(summaries, page.Page, page.PageSize, total);
     }
 
     public async Task<AdministrationResult<Versioned<SavedViewDetail>>> GetAsync(Guid callerId, Guid savedViewId, CancellationToken cancellationToken) =>
-        await OwnAsync(callerId, savedViewId, null, cancellationToken).ConfigureAwait(false) is { } view
+        await VisibleAsync(callerId, savedViewId, cancellationToken).ConfigureAwait(false) is { } view
             ? await VersionedAsync(callerId, view, cancellationToken).ConfigureAwait(false)
             : AdministrationError.NotFound;
 
@@ -65,7 +73,7 @@ internal sealed class SavedViewService(
         };
         repository.Add(view);
         AddChildren(view, content.Value, callerId, now);
-        audit.Stage(ReportAudit.SavedViewCreated(callerId, view));
+        audit.Stage(ReportAudit.SavedViewCreated(callerId, view, input.SharedWithRoleCodes));
         return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) == ReportSaveOutcome.Saved
             ? await VersionedAsync(callerId, view, cancellationToken).ConfigureAwait(false)
             : AdministrationError.PreconditionFailed;
@@ -106,13 +114,18 @@ internal sealed class SavedViewService(
             repository.Remove(value);
         }
 
+        foreach (SavedViewShare share in await repository.ListViewSharesAsync([view.Id], track: true, cancellationToken).ConfigureAwait(false))
+        {
+            repository.Remove(share);
+        }
+
         DateTimeOffset now = timeProvider.GetUtcNow();
         view.Name = input.Name;
         view.ReportDefinitionId = content.Value.Definition?.Id;
         view.UpdatedAt = now;
         view.UpdatedBy = callerId;
         AddChildren(view, content.Value, callerId, now);
-        audit.Stage(ReportAudit.SavedViewChanged(callerId, view));
+        audit.Stage(ReportAudit.SavedViewChanged(callerId, view, input.SharedWithRoleCodes));
         return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) == ReportSaveOutcome.Saved
             ? await VersionedAsync(callerId, view, cancellationToken).ConfigureAwait(false)
             : AdministrationError.PreconditionFailed;
@@ -126,13 +139,13 @@ internal sealed class SavedViewService(
         }
 
         repository.Remove(view);
-        audit.Stage(ReportAudit.SavedViewChanged(callerId, view));
+        audit.Stage(ReportAudit.SavedViewChanged(callerId, view, []));
         return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) == ReportSaveOutcome.Saved ? null : AdministrationError.PreconditionFailed;
     }
 
     public async Task<AdministrationResult<ReportResultPage>> RunAsync(Guid callerId, Guid savedViewId, PageRequest page, CancellationToken cancellationToken)
     {
-        if (await OwnAsync(callerId, savedViewId, null, cancellationToken).ConfigureAwait(false) is not { } view)
+        if (await VisibleAsync(callerId, savedViewId, cancellationToken).ConfigureAwait(false) is not { } view)
         {
             return AdministrationError.NotFound;
         }
@@ -167,7 +180,8 @@ internal sealed class SavedViewService(
 
     /// <summary>
     /// What a view holds once validated: for a report's parameters, the report version in force the caller may run, which allows saved views, and
-    /// parameters that plan; for a composition, the allowlist entries that plan now.
+    /// parameters that plan; for a composition, the allowlist entries that plan now; and the roles it is shared with, each one of ADR-019's
+    /// saved-view roles, once.
     /// </summary>
     private async Task<AdministrationResult<Content>> ContentAsync(Guid callerId, SavedViewInput input, CancellationToken cancellationToken)
     {
@@ -175,6 +189,18 @@ internal sealed class SavedViewService(
         {
             return AdministrationError.Rule(ReportErrorCodes.SavedViewNotAllowed);
         }
+
+        FieldIssue[] shareIssues = [.. input.SharedWithRoleCodes
+            .Select((code, i) => (code, i))
+            .Where(x => !ReportCatalogue.SavedViewRoles.Contains(x.code) || input.SharedWithRoleCodes.Take(x.i).Contains(x.code, StringComparer.Ordinal))
+            .Select(x => new FieldIssue($"sharedWithRoleCodes[{x.i}]", FieldIssue.NotAllowed))];
+        if (shareIssues.Length > 0)
+        {
+            return AdministrationError.Rule(ReportErrorCodes.SavedViewNotAllowed, shareIssues);
+        }
+
+        IReadOnlyList<Guid> shareRoleIds = [.. (await access.RoleCodesAsync(cancellationToken).ConfigureAwait(false))
+            .Where(r => input.SharedWithRoleCodes.Contains(r.Value, StringComparer.Ordinal)).Select(r => r.Key)];
 
         if (input.ViewType == SavedViewType.ExplorerComposition)
         {
@@ -199,7 +225,8 @@ internal sealed class SavedViewService(
                 null,
                 [.. input.Columns.Select(c => (EntryOf(c.SourceEntityCode, c.FieldCode), c.SortDirection))],
                 [.. input.Filters.Select(f => (EntryOf(f.SourceEntityCode, f.FieldCode), f.Operator, f.Value))],
-                []);
+                [],
+                shareRoleIds);
         }
 
         if (input.ReportCode is not { } code || input.Columns.Count > 0 || input.Filters.Count > 0)
@@ -215,7 +242,7 @@ internal sealed class SavedViewService(
 
         ReportParts parts = await access.PartsAsync(definition.Id, cancellationToken).ConfigureAwait(false);
         AdministrationResult<ReportPlan> planned = ReportQueryBuilder.ForReport(fields, code, definition.PrimaryProjectionCode, parts.Columns, parts.Parameters, new ReportRunInput(input.Parameters, null, []));
-        return planned.Succeeded ? new Content(definition, [], [], [.. input.Parameters.Select(p => (p.Code, p.Value))]) : planned.Error;
+        return planned.Succeeded ? new Content(definition, [], [], [.. input.Parameters.Select(p => (p.Code, p.Value))], shareRoleIds) : planned.Error;
     }
 
     /// <summary>
@@ -277,8 +304,37 @@ internal sealed class SavedViewService(
                 .Select(c => new ReportSortInput(entries[c.ReportAllowlistEntryId].SourceEntityCode, entries[c.ReportAllowlistEntryId].FieldCode, c.SortDirection!.Value))]);
     }
 
+    /// <summary>The view, if the caller owns it: the only one who may change or delete it.</summary>
     private async Task<SavedView?> OwnAsync(Guid callerId, Guid savedViewId, uint? expectedVersion, CancellationToken cancellationToken) =>
         await repository.FindViewAsync(savedViewId, expectedVersion, cancellationToken).ConfigureAwait(false) is { } view && view.OwnerUserId == callerId ? view : null;
+
+    /// <summary>The view, if the caller owns it or holds a role it is shared with: the readers who may open and run it.</summary>
+    private async Task<SavedView?> VisibleAsync(Guid callerId, Guid savedViewId, CancellationToken cancellationToken)
+    {
+        if (await repository.FindViewAsync(savedViewId, null, cancellationToken).ConfigureAwait(false) is not { } view)
+        {
+            return null;
+        }
+
+        if (view.OwnerUserId == callerId)
+        {
+            return view;
+        }
+
+        IReadOnlyCollection<Guid> recipientRoles = RecipientRoleIds(
+            await access.CallerAsync(callerId, cancellationToken).ConfigureAwait(false), await access.RoleCodesAsync(cancellationToken).ConfigureAwait(false));
+        return (await repository.ListViewSharesAsync([view.Id], track: false, cancellationToken).ConfigureAwait(false)).Any(s => recipientRoles.Contains(s.SharedWithRoleId))
+            ? view
+            : null;
+    }
+
+    /// <summary>The roles through which views are shared with the caller: those they hold, none for an external entity's person (ADR-013).</summary>
+    private static IReadOnlyCollection<Guid> RecipientRoleIds(UserRoles caller, IReadOnlyDictionary<Guid, string> roleCodes) =>
+        caller.IsExternal ? [] : [.. roleCodes.Where(r => caller.RoleCodes.Contains(r.Value, StringComparer.Ordinal)).Select(r => r.Key)];
+
+    /// <summary>The roles a view is shared with, for its owner; a person it is shared with is not told who else it is shared with.</summary>
+    private static IReadOnlyList<string> SharedWith(Guid callerId, SavedView view, IEnumerable<SavedViewShare> shares, IReadOnlyDictionary<Guid, string> roleCodes) =>
+        view.OwnerUserId == callerId ? [.. shares.Select(s => roleCodes[s.SharedWithRoleId]).Order(StringComparer.Ordinal)] : [];
 
     private async Task<Versioned<SavedViewDetail>> VersionedAsync(Guid callerId, SavedView view, CancellationToken cancellationToken)
     {
@@ -286,11 +342,13 @@ internal sealed class SavedViewService(
         (SavedViewCompatibility compatibility, IReadOnlyList<SavedViewIssue> issues) = await CompatibilityAsync(callerId, view, cancellationToken).ConfigureAwait(false);
         ReportDefinition? definition = view.ReportDefinitionId is { } id ? await repository.ReadDefinitionAsync(id, cancellationToken).ConfigureAwait(false) : null;
         IReadOnlyList<SavedViewColumn> columns = [.. (await repository.ListViewColumnsAsync(view.Id, track: false, cancellationToken).ConfigureAwait(false)).OrderBy(c => c.SortOrder)];
+        IReadOnlyList<SavedViewShare> shares = await repository.ListViewSharesAsync([view.Id], track: false, cancellationToken).ConfigureAwait(false);
         return new(
             new SavedViewDetail(
-                view.Id, view.ViewType, view.Name, definition?.Code, definition?.Id, definition?.VersionNo, saved.Parameters,
+                view.Id, view.OwnerUserId, view.ViewType, view.Name, definition?.Code, definition?.Id, definition?.VersionNo, saved.Parameters,
                 [.. saved.Columns.Zip(columns, (reference, column) => new SavedViewColumnInput(reference.SourceEntityCode, reference.FieldCode, column.SortDirection))],
-                saved.Filters, compatibility, issues, view.CreatedAt, view.UpdatedAt),
+                saved.Filters, SharedWith(callerId, view, shares, await access.RoleCodesAsync(cancellationToken).ConfigureAwait(false)),
+                compatibility, issues, view.CreatedAt, view.UpdatedAt),
             repository.RowVersionOf(view));
     }
 
@@ -329,6 +387,20 @@ internal sealed class SavedViewService(
             });
         }
 
+        foreach (Guid roleId in content.ShareRoleIds)
+        {
+            repository.Add(new SavedViewShare
+            {
+                Id = Guid.CreateVersion7(now),
+                SavedViewId = view.Id,
+                SharedWithRoleId = roleId,
+                CreatedAt = now,
+                CreatedBy = actorId,
+                UpdatedAt = now,
+                UpdatedBy = actorId,
+            });
+        }
+
         foreach ((string code, string value) in content.Parameters)
         {
             repository.Add(new ReportParameterValue
@@ -349,7 +421,8 @@ internal sealed class SavedViewService(
         ReportDefinition? Definition,
         IReadOnlyList<(Guid EntryId, ReportSortDirection? Direction)> Columns,
         IReadOnlyList<(Guid EntryId, ReportFilterOperator Operator, string Value)> Filters,
-        IReadOnlyList<(string Code, string Value)> Parameters);
+        IReadOnlyList<(string Code, string Value)> Parameters,
+        IReadOnlyList<Guid> ShareRoleIds);
 
     private sealed record Saved(
         IReadOnlyList<ReportParameterInput> Parameters,

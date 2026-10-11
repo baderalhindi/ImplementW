@@ -23,6 +23,7 @@ import { milestoneNavigation } from '@/features/milestones/routes.tsx';
 import { NotificationBell } from '@/features/notifications/components/NotificationBell.tsx';
 import { notificationNavigation } from '@/features/notifications/routes.tsx';
 import { projectNavigation } from '@/features/projects/routes.tsx';
+import { reportNavigation } from '@/features/reports/routes.tsx';
 import { riskNavigation } from '@/features/risks/routes.tsx';
 import { suspensionClosureNavigation } from '@/features/suspension-closure/routes.tsx';
 import { taskNavigation } from '@/features/tasks/routes.tsx';
@@ -70,7 +71,7 @@ function Navigation({
 
 /**
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
- * (the role-aware Home with its dashboards, projects, tasks, milestones, KPIs, risks, issues and challenges, change requests, suspensions and closeouts, approvals, documents and notifications for
+ * (the role-aware Home with its dashboards, FG-02's reports, projects, tasks, milestones, KPIs, risks, issues and challenges, change requests, suspensions and closeouts, approvals, documents and notifications for
  * everyone signed in; WF-13's register and monitors for AHDA, or an entity user's requests and contributions; administration for R01),
  * and the page.
  */
@@ -111,6 +112,7 @@ export function AppLayout(): ReactElement {
         {session !== null && (
           <div className="shell__sidebar">
             <Navigation label="dashboards.nav.label" items={dashboardNavigation} />
+            <Navigation label="reports.nav.label" items={reportNavigation(session.user)} />
             <Navigation label="projects.nav.label" items={projectNavigation} />
             <Navigation label="tasks.nav.label" items={taskNavigation} />
             <Navigation label="milestones.nav.label" items={milestoneNavigation} />

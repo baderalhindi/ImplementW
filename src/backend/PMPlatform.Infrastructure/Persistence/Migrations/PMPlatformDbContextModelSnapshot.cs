@@ -8917,11 +8917,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_report_job_requested_by_user_id_idempotency_key");
 
-                    b.HasIndex("RequestedByUserId", "RequestedAt", "Id")
-                        .HasDatabaseName("ix_report_job_requested_by_user_id_requested_at_id");
-
                     b.HasIndex("Status", "RequestedAt")
                         .HasDatabaseName("ix_report_job_status_requested_at");
+
+                    b.HasIndex("RequestedByUserId", "RequestedAt", "Id")
+                        .HasDatabaseName("ix_report_job_requested_by_user_id_requested_at_id");
 
                     b.ToTable("report_job", "reports", t =>
                         {
@@ -9388,6 +9388,50 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_saved_view_filter_operator", "\"operator\" IN ('EQ', 'NEQ', 'IN', 'GT', 'GTE', 'LT', 'LTE', 'BETWEEN', 'CONTAINS')");
                         });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.SavedViewShare", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("SavedViewId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("saved_view_id");
+
+                    b.Property<Guid>("SharedWithRoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("shared_with_role_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_saved_view_share");
+
+                    b.HasIndex("SharedWithRoleId")
+                        .HasDatabaseName("ix_saved_view_share_shared_with_role_id");
+
+                    b.HasIndex("SavedViewId", "SharedWithRoleId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_saved_view_share_saved_view_id_shared_with_role_id");
+
+                    b.ToTable("saved_view_share", "reports");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Risk.Risk", b =>
@@ -12862,6 +12906,23 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_saved_view_filter_saved_view_saved_view_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Reports.SavedViewShare", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Reports.SavedView", null)
+                        .WithMany()
+                        .HasForeignKey("SavedViewId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_saved_view_share_saved_view_saved_view_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.Role", null)
+                        .WithMany()
+                        .HasForeignKey("SharedWithRoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_saved_view_share_role_shared_with_role_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Risk.Risk", b =>

@@ -5,8 +5,8 @@ namespace PMPlatform.Domain.Reports;
 /// <summary>
 /// A person's private report configuration (FG-02 §10.2, SAV-001–014): parameter values for one report, or an SCR-138 composition of
 /// allowlisted fields. Configuration only — no report row is ever stored with it (BR-RPT-031) — and every use revalidates it against the report
-/// version and the allowlist in force and against its owner's access then (BR-RPT-033). Private: sharing is Conditional (TASK-112). Delete
-/// policy: HARD_OWNER.
+/// version and the allowlist in force and against its reader's access then (BR-RPT-033). Private unless its owner shares it with roles
+/// (<see cref="SavedViewShare"/>, TBC-RPT-20). Delete policy: HARD_OWNER.
 /// </summary>
 public sealed class SavedView : AuditedEntity
 {
