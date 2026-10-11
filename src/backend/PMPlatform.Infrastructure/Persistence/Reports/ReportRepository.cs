@@ -76,10 +76,12 @@ internal sealed class ReportRepository(PMPlatformDbContext context) : IReportRep
             : await Rows<ReportParameterOption>(track).Where(o => parameterIds.Contains(o.ReportParameterId)).OrderBy(o => o.ValueCode)
                 .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-    public async Task<(IReadOnlyList<SavedView> Items, int TotalCount)> PageViewsAsync(Guid ownerUserId, PageRequest page, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<SavedView> Items, int TotalCount)> PageViewsAsync(
+        Guid userId, IReadOnlyCollection<Guid> roleIds, PageRequest page, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(page);
-        IQueryable<SavedView> rows = Rows<SavedView>(track: false).Where(v => v.OwnerUserId == ownerUserId);
+        IQueryable<Guid> shared = Rows<SavedViewShare>(track: false).Where(s => roleIds.Contains(s.SharedWithRoleId)).Select(s => s.SavedViewId);
+        IQueryable<SavedView> rows = Rows<SavedView>(track: false).Where(v => v.OwnerUserId == userId || shared.Contains(v.Id));
         int total = await rows.CountAsync(cancellationToken).ConfigureAwait(false);
         List<SavedView> items = await rows.OrderByDescending(v => v.UpdatedAt).ThenBy(v => v.Id).Skip(page.Skip).Take(page.PageSize)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -96,6 +98,11 @@ internal sealed class ReportRepository(PMPlatformDbContext context) : IReportRep
 
         return view;
     }
+
+    public async Task<IReadOnlyList<SavedViewShare>> ListViewSharesAsync(IReadOnlyCollection<Guid> savedViewIds, bool track, CancellationToken cancellationToken) =>
+        savedViewIds.Count == 0
+            ? []
+            : await Rows<SavedViewShare>(track).Where(s => savedViewIds.Contains(s.SavedViewId)).ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task<IReadOnlyList<SavedViewColumn>> ListViewColumnsAsync(Guid savedViewId, bool track, CancellationToken cancellationToken) =>
         await Rows<SavedViewColumn>(track).Where(c => c.SavedViewId == savedViewId).OrderBy(c => c.SortOrder).ToListAsync(cancellationToken).ConfigureAwait(false);

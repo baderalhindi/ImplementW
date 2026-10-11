@@ -10,9 +10,10 @@ using PMPlatform.Application.Features.Reports.Contracts;
 namespace PMPlatform.Api.Controllers;
 
 /// <summary>
-/// SCR-139 Saved Reports / Views (FG-02 §10.2; ADR-019; TASK-071): a person's private configurations — a report's parameters, or an SCR-138
-/// composition — never a row. Another person's view does not exist for them (R-47). Every read says whether the view still fits what is in force;
-/// every run plans it again and runs it as its owner may see now. Under <c>REPORT_COMPOSE</c> (R02, R03, R07).
+/// SCR-139 Saved Reports / Views (FG-02 §10.2; ADR-019; TASK-071, TASK-072): a person's configurations — a report's parameters, or an SCR-138
+/// composition — never a row, private unless the owner shares them with R02, R03 or R07 (TBC-RPT-20). A view neither owned nor shared with the
+/// caller does not exist for them (R-47); a shared one is read and run, never changed. Every read says whether the view still fits what is in
+/// force; every run plans it again and runs it as the caller may see now. Under <c>REPORT_COMPOSE</c> (R02, R03, R07).
 /// </summary>
 [Route(Collection)]
 [Tags("Reports")]
@@ -51,7 +52,7 @@ public sealed class SavedViewsController(ISavedViewService views) : Administrati
     public async Task<IActionResult> Get(Guid savedViewId, CancellationToken cancellationToken) =>
         Respond(await views.GetAsync(CallerId, savedViewId, cancellationToken));
 
-    /// <summary>The view, whole, by its owner. Requires <c>If-Match</c> (R-21).</summary>
+    /// <summary>The view, whole — its sharing with it — by its owner. Requires <c>If-Match</c> (R-21).</summary>
     [HttpPut("{savedViewId:guid}")]
     [RequirePermission(PermissionCatalogue.ReportCompose)]
     [SensitiveWrite]
@@ -76,10 +77,10 @@ public sealed class SavedViewsController(ISavedViewService views) : Administrati
         return error is null || error.Kind == AdministrationErrorKind.NotFound ? NoContent() : Failure(error);
     }
 
-    /// <summary>The view run now, as its owner may see now (RPT-API-023); 422 <c>REPORT_SAVED_VIEW_INCOMPATIBLE</c> names what no longer fits.</summary>
+    /// <summary>The view run now, as the caller may see now (RPT-API-023); 422 <c>REPORT_SAVED_VIEW_INCOMPATIBLE</c> names what no longer fits.</summary>
     [HttpPost("{savedViewId:guid}/run")]
     [RequirePermission(PermissionCatalogue.ReportCompose)]
-    [NonSensitiveWrite("R-35: runs a saved view; reads the owner's authorised rows and stores nothing")]
+    [NonSensitiveWrite("R-35: runs a saved view; reads the caller's authorised rows and stores nothing")]
     [ProducesResponseType<ReportResultPage>(StatusCodes.Status200OK, "application/json")]
     [EndpointName("Reports_RunSavedView")]
     public async Task<IActionResult> Run(Guid savedViewId, [FromQuery] int? page, [FromQuery] int? pageSize, CancellationToken cancellationToken)

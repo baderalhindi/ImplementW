@@ -77,9 +77,11 @@ internal static class ReportAudit
         Job(ReportAuditEvents.OutputAccessDenied, AuditEventClass.AuthorizationDenial, AuditOutcome.Denied, actorId, AuditActorType.User, job,
             [AuditAttribute.Of(ReportAuditAttributes.ReasonCode, Contracts.ReportErrorCodes.DownloadAccessDenied)]);
 
-    public static AuditEntry SavedViewCreated(Guid actorId, SavedView view) => View(ReportAuditEvents.SavedViewCreated, actorId, view);
+    public static AuditEntry SavedViewCreated(Guid actorId, SavedView view, IReadOnlyList<string> sharedWithRoleCodes) =>
+        View(ReportAuditEvents.SavedViewCreated, actorId, view, sharedWithRoleCodes);
 
-    public static AuditEntry SavedViewChanged(Guid actorId, SavedView view) => View(ReportAuditEvents.SavedViewChanged, actorId, view);
+    public static AuditEntry SavedViewChanged(Guid actorId, SavedView view, IReadOnlyList<string> sharedWithRoleCodes) =>
+        View(ReportAuditEvents.SavedViewChanged, actorId, view, sharedWithRoleCodes);
 
     public static AuditEntry DefinitionCreated(Guid actorId, ReportDefinition definition, int columnCount) =>
         Definition(AuditEventClass.ConfigurationChange, ReportAuditEvents.DefinitionCreated, actorId, definition,
@@ -113,12 +115,17 @@ internal static class ReportAudit
             Attributes = [AuditAttribute.Of(ReportAuditAttributes.Kind, job.Kind), .. attributes],
         };
 
-    private static AuditEntry View(string eventType, Guid actorId, SavedView view) =>
+    /// <summary>A view's creation or change (a deletion is a change), with the roles it is shared with then — empty when private.</summary>
+    private static AuditEntry View(string eventType, Guid actorId, SavedView view, IReadOnlyList<string> sharedWithRoleCodes) =>
         new(AuditEventClass.DataChange, eventType, AuditOutcome.Success)
         {
             ActorUserId = actorId,
             Subject = new AuditSubject(SubjectModule, SavedViewType, view.Id),
-            Attributes = [AuditAttribute.Of(ReportAuditAttributes.ViewType, view.ViewType)],
+            Attributes =
+            [
+                AuditAttribute.Of(ReportAuditAttributes.ViewType, view.ViewType),
+                AuditAttribute.Of(ReportAuditAttributes.SharedWithRoleCodes, string.Join(',', sharedWithRoleCodes.Order(StringComparer.Ordinal))),
+            ],
         };
 
     private static AuditEntry Transition(string eventType, Guid actorId, ReportDefinition definition, GovernedLifecycleState from, IEnumerable<AuditAttribute> attributes) =>

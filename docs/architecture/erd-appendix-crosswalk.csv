@@ -74,7 +74,7 @@ F-072,,,"Bilingual, mandatory notification templates",Notifications,Notification
 F-073,,,"DashboardDefinition — governed, bound to controlled projections",Dashboards,DashboardDefinition; DashboardWidget; DashboardAudienceRole,TASK-069; ADR-006,COVERED
 F-074,,,UserDashboardPreference — presentation-only personalisation,Dashboards,UserDashboardPreference; UserDashboardWidgetPreference,TASK-111; ADR-019,COVERED
 F-075,,,"ReportDefinition — parameterised, ten at launch",Reports,ReportDefinition; ReportColumn; ReportParameter; ReportParameterOption; ReportAudienceRole,TASK-071; ADR-006,COVERED
-F-076,,,SavedView including shared controlled-explorer compositions,Reports,SavedView; SavedViewShare; SavedViewColumn; SavedViewFilter,TASK-071; TASK-112; ADR-019,COVERED
+F-076,,,SavedView including shared controlled-explorer compositions,Reports,SavedView; SavedViewShare; SavedViewColumn; SavedViewFilter,TASK-071; TASK-072; ADR-019,COVERED
 F-077,,,ReportJob lifecycle with pinned parameters,Reports,ReportJob; ReportJob.request_snapshot,TASK-071,COVERED
 F-078,,,"Secure generated output, authorised at download time",Reports,GeneratedOutput; GeneratedOutput.authorization_footprint; ReportOutputContent,TASK-071,COVERED
 F-079,,,"User — internal, external and service principals; deactivation preserves attribution",IdentityAccess,User,TASK-031; ADR-013; Appendix A.1,COVERED

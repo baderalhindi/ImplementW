@@ -13800,7 +13800,7 @@
         "tags": [
           "Reports"
         ],
-        "summary": "The view, whole, by its owner. Requires `If-Match` (R-21).",
+        "summary": "The view, whole — its sharing with it — by its owner. Requires `If-Match` (R-21).",
         "operationId": "Reports_UpdateSavedView",
         "parameters": [
           {
@@ -13875,7 +13875,7 @@
         "tags": [
           "Reports"
         ],
-        "summary": "The view run now, as its owner may see now (RPT-API-023); 422 `REPORT_SAVED_VIEW_INCOMPATIBLE` names what no longer fits.",
+        "summary": "The view run now, as the caller may see now (RPT-API-023); 422 `REPORT_SAVED_VIEW_INCOMPATIBLE` names what no longer fits.",
         "operationId": "Reports_RunSavedView",
         "parameters": [
           {
@@ -31798,6 +31798,7 @@
       "ReportJobDetail": {
         "required": [
           "id",
+          "requestedByUserId",
           "kind",
           "reportCode",
           "reportDefinitionId",
@@ -31814,6 +31815,10 @@
         "type": "object",
         "properties": {
           "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedByUserId": {
             "type": "string",
             "format": "uuid"
           },
@@ -31951,10 +31956,12 @@
       "ReportJobSummary": {
         "required": [
           "id",
+          "requestedByUserId",
           "kind",
           "reportCode",
           "exportFormat",
           "status",
+          "failureCode",
           "requestedAt",
           "completedAt",
           "sensitivity",
@@ -31963,6 +31970,10 @@
         "type": "object",
         "properties": {
           "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedByUserId": {
             "type": "string",
             "format": "uuid"
           },
@@ -31984,6 +31995,12 @@
           },
           "status": {
             "$ref": "#/components/schemas/ReportJobStatus"
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "requestedAt": {
             "type": "string",
@@ -32014,7 +32031,7 @@
             "format": "date-time"
           }
         },
-        "description": "A job in the caller's Export History (SCR-140)."
+        "description": "A job in the caller's Export History (SCR-140): who generated it and when, its state — with its failure code when FAILED — and its output's\nclassification and expiry."
       },
       "ReportParameterDataType": {
         "enum": [
@@ -34076,6 +34093,7 @@
       "SavedViewDetail": {
         "required": [
           "id",
+          "ownerUserId",
           "viewType",
           "name",
           "reportCode",
@@ -34084,6 +34102,7 @@
           "parameters",
           "columns",
           "filters",
+          "sharedWithRoleCodes",
           "compatibility",
           "issues",
           "createdAt",
@@ -34092,6 +34111,10 @@
         "type": "object",
         "properties": {
           "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerUserId": {
             "type": "string",
             "format": "uuid"
           },
@@ -34145,6 +34168,12 @@
               "$ref": "#/components/schemas/ReportFilterInput"
             }
           },
+          "sharedWithRoleCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "compatibility": {
             "$ref": "#/components/schemas/SavedViewCompatibility"
           },
@@ -34163,7 +34192,7 @@
             "format": "date-time"
           }
         },
-        "description": "A saved view (RPT-API-020): what it holds, the report version it was saved against, and whether it fits what is in force now — with each\nthing that no longer fits, never silently reinterpreted (SCR-139)."
+        "description": "A saved view (RPT-API-020): whose it is, what it holds, the report version it was saved against, and whether it fits what is in force now for\nthe reader — with each thing that no longer fits, never silently reinterpreted (SCR-139). IReadOnlyList&lt;string&gt; SavedViewDetail.SharedWithRoleCodes is the owner's to\nread: a person it is shared with reads it empty."
       },
       "SavedViewIssue": {
         "required": [
@@ -34289,21 +34318,37 @@
             "items": {
               "$ref": "#/components/schemas/ReportFilterRequest"
             }
+          },
+          "sharedWithRoleCodes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           }
         },
-        "description": "MOD-062: a private saved view, whole — a report's parameter values (REPORT_PARAMETERS), or an SCR-138 composition of allowlisted columns, with\ntheir sorts, and filters (EXPLORER_COMPOSITION). Configuration only."
+        "description": "MOD-062: a saved view, whole — a report's parameter values (REPORT_PARAMETERS), or an SCR-138 composition of allowlisted columns, with their\nsorts, and filters (EXPLORER_COMPOSITION) — and the roles it is shared with (TBC-RPT-20): none, or absent, keeps it private. Configuration only."
       },
       "SavedViewSummary": {
         "required": [
           "id",
+          "ownerUserId",
           "viewType",
           "name",
           "reportCode",
+          "sharedWithRoleCodes",
+          "compatibility",
           "updatedAt"
         ],
         "type": "object",
         "properties": {
           "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerUserId": {
             "type": "string",
             "format": "uuid"
           },
@@ -34323,11 +34368,21 @@
               }
             ]
           },
+          "sharedWithRoleCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "compatibility": {
+            "$ref": "#/components/schemas/SavedViewCompatibility"
+          },
           "updatedAt": {
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "description": "A view in SCR-139's list: its owner, the roles it is shared with (the owner's to read, as on the detail), and whether it fits now."
       },
       "SavedViewType": {
         "enum": [

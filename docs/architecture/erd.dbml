@@ -2103,25 +2103,25 @@ Table reports.saved_view {
   report_definition_id uuid [ref: > reports.report_definition.id, note: 'Required for REPORT_PARAMETERS']
   name text [not null, note: 'Narrative, stored as entered (ADR-012)']
   name_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
-  is_shared boolean [not null, default: false, note: 'TASK-112 (sharing); not built by TASK-071']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Saved parameter set for a definition, or an SCR-138 explorer composition (ADR-019). A shared view carries configuration only; authorisation is per viewer at execution (TASK-112). Delete policy: HARD_OWNER.'
+  Note: 'Saved parameter set for a definition, or an SCR-138 explorer composition (ADR-019). Shared through saved_view_share (TASK-072): a shared view carries configuration only; authorisation is per viewer at execution. Delete policy: HARD_OWNER.'
 }
 
 Table reports.saved_view_share {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   saved_view_id uuid [not null, ref: > reports.saved_view.id]
-  shared_with_role_id uuid [ref: > identity_access.role.id]
-  shared_with_department_id uuid [ref: > identity_access.department.id]
-  shared_with_user_id uuid [ref: > identity_access.user.id]
+  shared_with_role_id uuid [not null, ref: > identity_access.role.id, note: 'One of ADR-019 saved-view roles R02, R03, R07 (TASK-072)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
-  Note: 'Who a view is shared with (TASK-112; not built by TASK-071). CHECK: exactly one of the three shared_with columns is not null. Delete policy: CASCADE.'
+  indexes {
+    (saved_view_id, shared_with_role_id) [unique]
+  }
+  Note: 'A role a view is shared with (TBC-RPT-20, enabled by TASK-072). Its holders read and run the view under their own access; only the owner writes it. Delete policy: CASCADE.'
 }
 
 Table reports.saved_view_column {

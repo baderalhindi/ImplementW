@@ -1242,7 +1242,7 @@ Built by TASK-069 as listed (`dashboards.md` D-9), with what the table above lea
 
 ### 5.20 Reports — FG-02
 
-`SavedView` serves both a saved parameter set for a published definition and an SCR-138 explorer composition (`view_type`). A composition can reference only `ReportAllowlistEntry` rows — the FK is the allowlist enforcement (TASK-071, TASK-112). A share carries configuration; authorisation is evaluated per viewer at `ReportJob` time. As built by TASK-071 (`reports.md` D-13): a definition's columns are `ReportColumn` rows bound to FG-01's projection register, and its rows are decided by `primary_projection_code`; a job pins its whole request in `request_snapshot`, so `ReportParameterValue` belongs to saved views only; a generated file's bytes are `ReportOutputContent`, deleted at expiry while `GeneratedOutput` is kept. `SavedViewShare` and `saved_view.is_shared` are TASK-112's and not yet built.
+`SavedView` serves both a saved parameter set for a published definition and an SCR-138 explorer composition (`view_type`). A composition can reference only `ReportAllowlistEntry` rows — the FK is the allowlist enforcement (TASK-071, TASK-112). A share carries configuration; authorisation is evaluated per viewer at `ReportJob` time. As built by TASK-071 (`reports.md` D-13): a definition's columns are `ReportColumn` rows bound to FG-01's projection register, and its rows are decided by `primary_projection_code`; a job pins its whole request in `request_snapshot`, so `ReportParameterValue` belongs to saved views only; a generated file's bytes are `ReportOutputContent`, deleted at expiry while `GeneratedOutput` is kept. Sharing is built by TASK-072 (`reports-ui.md` D-3): a `SavedViewShare` names one of ADR-019's saved-view roles, whose holders read and run the view under their own access; `saved_view.is_shared` is not built, since the share rows say it.
 
 ```mermaid
 erDiagram
@@ -1287,8 +1287,6 @@ erDiagram
         uuid id PK
         uuid saved_view_id FK
         uuid shared_with_role_id FK
-        uuid shared_with_department_id FK
-        uuid shared_with_user_id FK
     }
     SavedViewColumn {
         uuid id PK
@@ -1346,7 +1344,7 @@ erDiagram
 | **ReportParameter** | `reports.report_parameter` | A parameter (including mode and scope) of a definition. | — | CASCADE | — |
 | **ReportParameterOption** | `reports.report_parameter_option` | Fixed option of an OPTION parameter (report mode / scope variants absorbed per ADR-006). | — | CASCADE | — |
 | **SavedView** | `reports.saved_view` | Saved parameter set for a definition, or an SCR-138 explorer composition (ADR-019). A shared view carries configuration only; authorisation is per viewer at execution (TASK-112). | — | HARD_OWNER | referenceable |
-| **SavedViewShare** | `reports.saved_view_share` | Who a view is shared with (TASK-112; not yet built). CHECK: exactly one of the three shared_with columns is not null. | — | CASCADE | — |
+| **SavedViewShare** | `reports.saved_view_share` | A role a view is shared with (TASK-072): one of R02, R03, R07; unique per view and role. Configuration transfers, authorisation does not. | — | CASCADE | — |
 | **SavedViewColumn** | `reports.saved_view_column` | An allowlisted column selected in an explorer composition (MOD-061). | — | CASCADE | — |
 | **SavedViewFilter** | `reports.saved_view_filter` | An allowlisted filter in a composition; operators from a closed set — no free-text SQL, formulas or joins. | — | CASCADE | — |
 | **ReportParameterValue** | `reports.report_parameter_value` | Pinned parameter value of a saved view; a job pins its whole request in `report_job.request_snapshot` (TASK-071). | — | CASCADE | — |
@@ -1653,7 +1651,7 @@ Completeness check as the task defines it, restated for the day Appendix D is av
 | F-073 | DashboardDefinition — governed, bound to controlled projections | Dashboards | `DashboardDefinition`, `DashboardWidget`, `DashboardAudienceRole` | TASK-069; ADR-006 |
 | F-074 | UserDashboardPreference — presentation-only personalisation | Dashboards | `UserDashboardPreference`, `UserDashboardWidgetPreference` | TASK-111; ADR-019 |
 | F-075 | ReportDefinition — parameterised, ten at launch | Reports | `ReportDefinition`, `ReportColumn`, `ReportParameter`, `ReportParameterOption`, `ReportAudienceRole` | TASK-071; ADR-006 |
-| F-076 | SavedView including shared controlled-explorer compositions | Reports | `SavedView`, `SavedViewShare`, `SavedViewColumn`, `SavedViewFilter` | TASK-071; TASK-112; ADR-019 |
+| F-076 | SavedView including shared controlled-explorer compositions | Reports | `SavedView`, `SavedViewShare`, `SavedViewColumn`, `SavedViewFilter` | TASK-071; TASK-072; ADR-019 |
 | F-077 | ReportJob lifecycle with pinned parameters | Reports | `ReportJob`, `ReportJob.request_snapshot` | TASK-071 |
 | F-078 | Secure generated output, authorised at download time | Reports | `GeneratedOutput`, `GeneratedOutput.authorization_footprint`, `ReportOutputContent` | TASK-071 |
 | F-079 | User — internal, external and service principals; deactivation preserves attribution | IdentityAccess | `User` | TASK-031; ADR-013; Appendix A.1 |
@@ -1764,3 +1762,4 @@ On Q1 and Q6, the E-1 reconciliation is run, the crosswalk's Appendix D columns 
 | 2026-10-09 | §5.16, `erd.dbml`: `external_update_request.request_type_item_id` (an `UPDATE_REQUEST_TYPE` no source defines) becomes `contribution_type_item_id` (`CONTRIBUTION_TYPE`), and `external_contribution.contribution_type_item_id` is removed: WF-13's specification puts the contribution type on the request (EXT-F-011) — one purpose per request (BR-EXT-004) — and every revision answers in that type's schema. The columns TASK-066 adds beyond the ERD are listed in `external-participation.md` D-2 and F-8 | TASK-066 |
 | 2026-10-10 | §5.19: the `dashboards` schema built as the ERD lists it (TASK-069, `dashboards.md` D-9); the CHECKs, the partial unique key and the guard it adds are noted under the table. No column added or changed. | Backend (TASK-069) |
 | 2026-10-10 | §5.20, `erd.dbml`, §8: the `reports` schema as TASK-071 builds it (`reports.md` D-13). Added: `ReportColumn` (a definition's columns, bound to FG-01's projection register) and `ReportOutputContent` (a file's bytes, `HARD_WORKING`: deleted at expiry while `GeneratedOutput` is kept), so 123 tables; `report_definition.primary_projection_code` and `.allows_saved_views`; `report_parameter.sort_order`, `.source_entity_code`, `.field_code`; `report_job.kind`, `.idempotency_key`, `.request_snapshot`, and `.failure_code` in place of `failure_reason`; `generated_output.sensitivity`, `.row_count`, `.source_as_of`, `.authorization_footprint`. Removed: `report_parameter.option_catalogue_id` (no MASTER_DATA_ITEM parameter is defined), `report_job.saved_view_id` and `report_parameter_value.report_job_id` (a job pins its whole request in `request_snapshot`). `SavedViewShare` and `saved_view.is_shared` stay as TASK-112's, not yet built. | Backend (TASK-071) |
+| 2026-10-11 | §5.20, `erd.dbml`, §8: `SavedViewShare` built by TASK-072 (`reports-ui.md` D-3), migration `TASK-072_ShareSavedViews`. A share names a role only (`shared_with_role_id`, not null, unique with `saved_view_id`): the recipients ADR-019 allows are three roles, and a non-administrator can list neither users nor departments to choose from, so `shared_with_department_id`, `shared_with_user_id` and the one-of-three CHECK are not built. `saved_view.is_shared` is not built: whether a view is shared is whether it has share rows. Table count unchanged (123). | Frontend (TASK-072) |

@@ -123,6 +123,15 @@ public sealed class ReportAcceptanceTests(ReportTestHost host)
         JsonObject job = await client.JobOrFailAsync(departmentManager, jobId);
         Assert.Equal("COMPLETED", job["status"]!.GetValue<string>());
 
+        // SCR-140 names who generated it and when: the requester, in their job and in their Export History.
+        Assert.Equal(ReportDriver.Person(3).ToString(), job["requestedByUserId"]!.GetValue<string>());
+        using (HttpResponseMessage history = await client.GetAsync($"{ReportDriver.Jobs}?pageSize=200", departmentManager))
+        {
+            JsonNode listed = (await history.ReadObjectAsync())["items"]!.AsArray().Single(j => j!["id"]!.GetValue<string>() == jobId.ToString())!;
+            Assert.Equal(ReportDriver.Person(3).ToString(), listed["requestedByUserId"]!.GetValue<string>());
+            Assert.Equal(job["completedAt"]!.GetValue<string>(), listed["completedAt"]!.GetValue<string>());
+        }
+
         // Its requester downloads it: the bytes they were given, matching the hash recorded at generation.
         byte[] content;
         using (HttpResponseMessage download = await client.DownloadAsync(departmentManager, jobId))

@@ -41,8 +41,14 @@ public interface IReportRepository
     /// <summary>The options of the parameters named; tracked when <paramref name="track"/>.</summary>
     public Task<IReadOnlyList<ReportParameterOption>> ListOptionsAsync(IReadOnlyCollection<Guid> parameterIds, bool track, CancellationToken cancellationToken);
 
-    /// <summary>One page of a person's saved views, the most recently changed first. Not tracked.</summary>
-    public Task<(IReadOnlyList<SavedView> Items, int TotalCount)> PageViewsAsync(Guid ownerUserId, PageRequest page, CancellationToken cancellationToken);
+    /// <summary>
+    /// One page of the saved views a person may open — their own, and those shared with one of <paramref name="roleIds"/> — the most recently changed
+    /// first. Not tracked.
+    /// </summary>
+    public Task<(IReadOnlyList<SavedView> Items, int TotalCount)> PageViewsAsync(Guid userId, IReadOnlyCollection<Guid> roleIds, PageRequest page, CancellationToken cancellationToken);
+
+    /// <summary>The shares of the views named; tracked when <paramref name="track"/>.</summary>
+    public Task<IReadOnlyList<SavedViewShare>> ListViewSharesAsync(IReadOnlyCollection<Guid> savedViewIds, bool track, CancellationToken cancellationToken);
 
     /// <summary>Tracked. With <paramref name="expectedVersion"/>, the next save is conditional on it (R-21).</summary>
     public Task<SavedView?> FindViewAsync(Guid savedViewId, uint? expectedVersion, CancellationToken cancellationToken);

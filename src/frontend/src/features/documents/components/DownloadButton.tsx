@@ -1,24 +1,12 @@
 import { type ReactElement, useId, useState } from 'react';
 
 import { type DownloadedFile } from '@/shared/api/httpClient.ts';
+import { saveFile } from '@/shared/api/saveFile.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
 import { type ScanState } from '../api/types.ts';
 import { isUsable } from '../presentation.ts';
 import { documentProblemMessage } from '../problems.ts';
-
-/** Hands the bytes to the browser as a file to save; the object URL is released once the click is dispatched. */
-function saveFile({ content, fileName }: DownloadedFile, fallbackName: string): void {
-  const url = URL.createObjectURL(content);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = fileName ?? fallbackName;
-  anchor.rel = 'noopener';
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
-}
 
 interface DownloadButtonProps {
   label: string;
