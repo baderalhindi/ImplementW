@@ -587,6 +587,34 @@ public sealed class ShippedGrantTests
             PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("NOTIFICATION_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
     }
 
+    /// <summary>
+    /// TASK-073 (BR-AUD-023; Appendix A "Audit / activity"): R01 reads administration audit and operates the audit store; R04 reads the
+    /// Activity of the projects it manages and R08 its entity's (ADR-013). No role ships with security, business, financial, external or
+    /// integration audit, nor request context: the reviewers are AHDA's to name (audit-activity.md F-2).
+    /// </summary>
+    [Fact]
+    public void AuditAndActivityGoToTheirShippedHoldersOnly() =>
+        Assert.Equal(
+            [
+                ("R01", PermissionCatalogue.AuditAdministrationView, DataScope.All), ("R01", PermissionCatalogue.AuditOperationsManage, DataScope.All),
+                ("R04", PermissionCatalogue.ActivityView, DataScope.Own), ("R08", PermissionCatalogue.ActivityView, DataScope.Entity),
+            ],
+            PermissionCatalogue.ShippedDefaultGrants
+                .Where(g => g.PermissionCode.StartsWith("AUDIT_", StringComparison.Ordinal) || g.PermissionCode == PermissionCatalogue.ActivityView)
+                .Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
+
+    /// <summary>ADR-013's participation amendment to TASK-073: an entity user reads the Activity of its own entity's projects and of no other entity's.</summary>
+    [Fact]
+    public async Task AnEntitySeesTheActivityOfItsOwnProjectsOnly()
+    {
+        AuthorizationScenario entityUser = new AuthorizationScenario(PermissionCatalogue.Platform)
+            .WithUser(UserType.External, Grant("R08", PermissionCatalogue.ActivityView, DataScope.Entity, entityId: EntityId));
+
+        Assert.Equal(AuthorizationDecision.Allowed, await entityUser.AuthorizeAsync(PermissionCatalogue.ActivityView, Managed(ProjectId, EntityId, OtherUserId)));
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.ActivityView, Managed(OtherProjectId, OtherEntityId, OtherUserId))).IsAllowed);
+        Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.AuditExternalView, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
+    }
+
     [Fact]
     public void OnlyR01ManagesIdentityIntegration() =>
         Assert.Equal(["R01"], RoleCodes.Where(role => ShippedGrant(role, PermissionCatalogue.IdentityIntegrationManage) is not null));

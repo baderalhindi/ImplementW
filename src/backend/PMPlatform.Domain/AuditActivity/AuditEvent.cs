@@ -7,7 +7,7 @@ namespace PMPlatform.Domain.AuditActivity;
 /// sets <see cref="RecordedAt"/>, <see cref="PreviousEventHash"/> and <see cref="EventHash"/> on insert and refuses
 /// every update and delete, so the application can neither choose a place in the hash chain nor rewrite one.
 /// </summary>
-public sealed class AuditEvent : AuditedEntity
+public sealed class AuditEvent : AuditedEntity, IAuditEvidence
 {
     public DateTimeOffset OccurredAt { get; set; }
 
@@ -40,9 +40,15 @@ public sealed class AuditEvent : AuditedEntity
 
     public Guid? DataClassificationItemId { get; set; }
 
+    /// <summary>
+    /// SHA-256 over the event's attributes (<c>AuditAttributeDigest</c>), set on ingestion and covered by <see cref="EventHash"/>, so a
+    /// changed attribute breaks the chain as a changed event does (TASK-073; TASK-033 F-2). Null for events stored before TASK-073.
+    /// </summary>
+    public string? AttributeDigest { get; set; }
+
     /// <summary>Set by the database: the hash of the event recorded before this one, null for the first.</summary>
     public string? PreviousEventHash { get; set; }
 
-    /// <summary>Set by the database: SHA-256 over this row and <see cref="PreviousEventHash"/>.</summary>
+    /// <summary>Set by the database: SHA-256 over this row, its <see cref="AttributeDigest"/> and <see cref="PreviousEventHash"/>.</summary>
     public string? EventHash { get; set; }
 }

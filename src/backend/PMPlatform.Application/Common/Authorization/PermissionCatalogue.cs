@@ -325,6 +325,39 @@ public sealed class PermissionCatalogue
     /// </summary>
     public const string ReportExport = "REPORT_EXPORT";
 
+    /// <summary>
+    /// FG-06 (TASK-073): a project's business Activity timeline (SCR-057, AUD.ACTIVITY.VIEW), on the projects the grant's scope covers.
+    /// It shows safe Activity lines, never formal audit evidence.
+    /// </summary>
+    public const string ActivityView = "ACTIVITY_VIEW";
+
+    /// <summary>FG-06 (TASK-073): formal audit of authentication and authorization refusals (ADM-050/051, AUD.SECURITY.VIEW).</summary>
+    public const string AuditSecurityView = "AUDIT_SECURITY_VIEW";
+
+    /// <summary>FG-06 (TASK-073): formal audit of privileged actions, permission changes and configuration changes (AUD.ADMIN.VIEW).</summary>
+    public const string AuditAdministrationView = "AUDIT_ADMINISTRATION_VIEW";
+
+    /// <summary>FG-06 (TASK-073): formal audit of material integration operator actions (ADM-053, AUD.INTEGRATION.VIEW).</summary>
+    public const string AuditIntegrationView = "AUDIT_INTEGRATION_VIEW";
+
+    /// <summary>FG-06 (TASK-073): formal audit of WF-14's financial and KPI events (AUD.FINANCIAL.VIEW).</summary>
+    public const string AuditFinancialView = "AUDIT_FINANCIAL_VIEW";
+
+    /// <summary>FG-06 (TASK-073): formal audit of WF-13's external participation events (AUD.EXTERNAL.VIEW). Never held by an external user's need to know.</summary>
+    public const string AuditExternalView = "AUDIT_EXTERNAL_VIEW";
+
+    /// <summary>FG-06 (TASK-073): formal audit of every other lifecycle transition, data change and approval decision (SCR-058, ADM-050).</summary>
+    public const string AuditBusinessView = "AUDIT_BUSINESS_VIEW";
+
+    /// <summary>FG-06 (TASK-073): an audit event's request context — the client address and the name typed at sign-in (AUD.CONTEXT.SENSITIVE).</summary>
+    public const string AuditContextView = "AUDIT_CONTEXT_VIEW";
+
+    /// <summary>
+    /// FG-06 (TASK-073): operate the audit store — ingestion status, integrity verification, and checking and rebuilding the Activity
+    /// projection (AUD-API-035, -037, -039; AUD.HEALTH.VIEW). It reveals no event's content.
+    /// </summary>
+    public const string AuditOperationsManage = "AUDIT_OPERATIONS_MANAGE";
+
     public static PermissionCatalogue Platform { get; } = new(
         [
             new(IdentityIntegrationManage, "IDENTITY_ACCESS", AccessMode.Write),
@@ -402,6 +435,15 @@ public sealed class PermissionCatalogue
             new(LayoutPersonalize, "DASHBOARDS", AccessMode.Write),
             new(ReportCompose, "REPORTS", AccessMode.Write),
             new(ReportExport, "REPORTS", AccessMode.Read),
+            new(ActivityView, "ACTIVITY", AccessMode.Read),
+            new(AuditSecurityView, "AUDIT_SECURITY", AccessMode.Read),
+            new(AuditAdministrationView, "AUDIT_ADMINISTRATION", AccessMode.Read),
+            new(AuditIntegrationView, "AUDIT_INTEGRATION", AccessMode.Read),
+            new(AuditFinancialView, "AUDIT_FINANCIAL", AccessMode.Read),
+            new(AuditExternalView, "AUDIT_EXTERNAL", AccessMode.Read),
+            new(AuditBusinessView, "AUDIT_BUSINESS", AccessMode.Read),
+            new(AuditContextView, "AUDIT_CONTEXT", AccessMode.Read),
+            new(AuditOperationsManage, "AUDIT_OPERATIONS", AccessMode.Write),
         ]);
 
     /// <summary>
@@ -469,7 +511,13 @@ public sealed class PermissionCatalogue
     /// (notification-runtime.md F-1): they are platform-wide. ADR-013's amendment to TASK-071 lets an entity run and export a
     /// defined report set on its own projects, financial fields masked: R08 and R04 export reports at ENTITY, which reaches only
     /// a holder with an entity. FG-02 §18 makes export Conditional for every internal role: those grants wait for Appendix A
-    /// (reports.md F-3).
+    /// (reports.md F-3). FG-06 (TASK-073) separates audit access from administration (BR-AUD-023, §6.3): R01 reads the administration
+    /// audit category and operates the audit store, both at ALL, as Appendix A's "V technical, immutable" for R01 — and nothing of the
+    /// security, business, financial, external or integration categories, nor any request context. Those are Audit Reviewer and
+    /// Security Reviewer assignments AHDA has not named (TBC-AUD-05 to -07, PTBC-011) and ship to no role. Appendix A's "V own history"
+    /// gives R04 the Activity timeline at OWN, the projects the holder manages, internal or entity alike; ADR-013's participation
+    /// amendment to TASK-073 lets an entity see its own activity history: R08 at ENTITY. The other Activity cells are asterisked and
+    /// wait for Appendix A (audit-activity.md F-2).
     /// </summary>
     public static IReadOnlyList<ShippedGrant> ShippedDefaultGrants { get; } =
     [
@@ -553,6 +601,10 @@ public sealed class PermissionCatalogue
         new("R07", ReportCompose, DataScope.Own),
         new("R04", ReportExport, DataScope.Entity),
         new("R08", ReportExport, DataScope.Entity),
+        new("R01", AuditAdministrationView, DataScope.All),
+        new("R01", AuditOperationsManage, DataScope.All),
+        new("R04", ActivityView, DataScope.Own),
+        new("R08", ActivityView, DataScope.Entity),
     ];
 
     private readonly Dictionary<string, PermissionDefinition> _definitions;

@@ -2,17 +2,17 @@ using PMPlatform.Application.Features.AuditActivity;
 
 namespace PMPlatform.Tests.Unit.Application.Auditing;
 
-internal sealed class FakeAuditEventRepository : IAuditEventRepository
+internal sealed class FakeAuditCaptureStore : IAuditCaptureStore
 {
-    public List<AuditRecord> Staged { get; } = [];
+    public List<AuditCapture> Staged { get; } = [];
 
-    public List<AuditRecord> Appended { get; } = [];
+    public List<AuditCapture> Recorded { get; } = [];
 
-    public void Stage(AuditRecord record) => Staged.Add(record);
+    public void Stage(AuditCapture capture) => Staged.Add(capture);
 
-    public Task AppendAsync(AuditRecord record)
+    public Task RecordAsync(AuditCapture capture)
     {
-        Appended.Add(record);
+        Recorded.Add(capture);
         return Task.CompletedTask;
     }
 }

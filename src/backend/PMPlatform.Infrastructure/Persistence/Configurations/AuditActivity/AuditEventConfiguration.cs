@@ -23,6 +23,9 @@ internal sealed class AuditEventConfiguration : IEntityTypeConfiguration<AuditEv
         builder.Property(e => e.PreviousEventHash).HasColumnType("char(64)").ValueGeneratedOnAdd();
         builder.Property(e => e.EventHash).HasColumnType("char(64)").IsRequired().ValueGeneratedOnAdd();
 
+        // TASK-073: written by ingestion and covered by the hash, so a changed attribute breaks the chain (TASK-033 F-2).
+        builder.Property(e => e.AttributeDigest).HasColumnType("char(64)");
+
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.ActorUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<ProjectEntity>().WithMany().HasForeignKey(e => e.ScopeProjectId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<ExternalEntity>().WithMany().HasForeignKey(e => e.ScopeExternalEntityId).OnDelete(DeleteBehavior.Restrict);
