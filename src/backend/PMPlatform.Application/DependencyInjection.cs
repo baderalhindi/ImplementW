@@ -6,6 +6,7 @@ using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.AuditActivity;
+using PMPlatform.Application.Features.AuditActivity.Contracts;
 using PMPlatform.Application.Features.Closure;
 using PMPlatform.Application.Features.Closure.Contracts;
 using PMPlatform.Application.Features.Closure.EventHandlers;
@@ -70,6 +71,13 @@ public static class DependencyInjection
         // client are Infrastructure's; the request context is the API's.
         services.AddScoped<IAuditTrail, AuditTrail>();
         services.AddScoped<ISiemForwarder, SiemForwarder>();
+
+        // TASK-073: FG-06 — capture through the outbox, ingestion into the store, the Activity projection and the audit read API.
+        services.AddSingleton<AuditRecordFactory>();
+        services.AddScoped<IActivityProjectionBuilder, ActivityProjectionBuilder>();
+        services.AddScoped<IAuditEventService, AuditEventService>();
+        services.AddScoped<IActivityService, ActivityService>();
+        services.AddScoped<IAuditOperationsService, AuditOperationsService>();
 
         // IdentityAccess (TASK-028): sign-in and ADM-041. The ports they use are implemented in Infrastructure.
         services.AddScoped<IAuthenticationService, AuthenticationService>();

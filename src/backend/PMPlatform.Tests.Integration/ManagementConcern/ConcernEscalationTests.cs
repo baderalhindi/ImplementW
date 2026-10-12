@@ -63,7 +63,7 @@ public sealed class ConcernEscalationTests(ConcernTestHost host)
 
         Assert.Equal(["1|1|1"], await host.Database.QueryAsync($"""
             SELECT (SELECT count(*) FROM management_concern.concern_escalation WHERE management_concern_id = '{concernId}')::text || '|'
-                || (SELECT count(*) FROM common.outbox_message WHERE message_key LIKE '{ConcernDriver.EscalatedEvent}:%' AND payload->'subject'->>'id' = '{concernId}')::text || '|'
+                || (SELECT count(*) FROM common.outbox_message WHERE message_type = 'NOTIFICATION_INTENT' AND message_key LIKE '{ConcernDriver.EscalatedEvent}:%' AND payload->'subject'->>'id' = '{concernId}')::text || '|'
                 || (SELECT count(*) FROM notifications.notification_intent WHERE source_event_type = '{ConcernDriver.EscalatedEvent}' AND subject_id = '{concernId}')::text
             """));
         Assert.Equal(["3|IN_APP|SENT|"], await host.Database.QueryAsync(NotificationDriver.DeliveriesOf(ConcernDriver.EscalatedEvent, Guid.Parse(escalationId))));
@@ -126,7 +126,7 @@ public sealed class ConcernEscalationTests(ConcernTestHost host)
         }
 
         Assert.Equal(["1"], await host.Database.QueryAsync(
-            $"SELECT count(*)::text FROM common.outbox_message WHERE message_key LIKE '{ConcernDriver.EscalatedEvent}:%' AND payload->'subject'->>'id' = '{concernId}'"));
+            $"SELECT count(*)::text FROM common.outbox_message WHERE message_type = 'NOTIFICATION_INTENT' AND message_key LIKE '{ConcernDriver.EscalatedEvent}:%' AND payload->'subject'->>'id' = '{concernId}'"));
     }
 
     /// <summary>

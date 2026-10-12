@@ -5,13 +5,18 @@ using static PMPlatform.Tests.Integration.Persistence.MigratedDatabase;
 namespace PMPlatform.Tests.Integration.Persistence;
 
 /// <summary>
-/// TASK-033's part of the formal audit store, against PostgreSQL with every migration applied: the three tables are the
-/// ERD's, the database places every event in the hash chain, and a change to a stored event is detected.
+/// The formal audit store, against PostgreSQL with every migration applied (TASK-033, TASK-073): its tables are the ERD's, the
+/// database places every event in the hash chain, the chain covers each event's attribute digest, and a change to a stored event is
+/// detected.
 /// </summary>
 public sealed class AuditActivitySchemaTests(MigratedDatabase database) : IClassFixture<MigratedDatabase>
 {
-    /// <summary>ERD §5.22 without TASK-073's <c>business_activity_entry</c>.</summary>
-    private static readonly string[] Tables = ["audit_activity.audit_event", "audit_activity.audit_event_attribute", "audit_activity.audit_forwarding_record"];
+    /// <summary>ERD §5.22, complete since TASK-073.</summary>
+    private static readonly string[] Tables =
+    [
+        "audit_activity.audit_event", "audit_activity.audit_event_attribute", "audit_activity.audit_forwarding_record",
+        "audit_activity.business_activity_entry", "audit_activity.activity_projection_checkpoint",
+    ];
 
     /// <summary>The one ERD line not built: its target, <c>integration_monitoring.invocation</c>, does not exist yet (record F-3).</summary>
     private const string DeferredForeignKey = "fk|audit_activity.audit_forwarding_record.invocation_id|integration_monitoring.invocation";
@@ -44,7 +49,7 @@ public sealed class AuditActivitySchemaTests(MigratedDatabase database) : IClass
             WHERE x.contype = 'f' AND n.nspname = 'audit_activity'
             """)).Order(StringComparer.Ordinal)];
 
-        Assert.Equal(3, erd.Count(line => line.StartsWith("column|", StringComparison.Ordinal) && line.Contains(".id|", StringComparison.Ordinal)));
+        Assert.Equal(5, erd.Count(line => line.StartsWith("column|", StringComparison.Ordinal) && line.Contains(".id|", StringComparison.Ordinal)));
         Assert.Equal([.. erd.Order(StringComparer.Ordinal)], schema);
     }
 
@@ -85,6 +90,36 @@ public sealed class AuditActivitySchemaTests(MigratedDatabase database) : IClass
         Assert.Equal([detectedAt], broken);
     }
 
+    /// <summary>
+    /// TASK-073 (TASK-033 F-2): the hash covers the attribute digest, so an attribute changed out of band is caught by the chain once
+    /// verification recomputes the digest; and an event without a digest, stored before TASK-073, hashes as it always did.
+    /// </summary>
+    [Fact]
+    public async Task TheHashCoversTheAttributeDigest()
+    {
+        IReadOnlyList<string> changedDigest = await database.QueryRolledBackAsync(
+            $"""
+            {EventRow(1, attributeDigest: "repeat('a', 64)")};
+            {EventRow(2, attributeDigest: "repeat('a', 64)")};
+            ALTER TABLE audit_activity.audit_event DISABLE TRIGGER append_only;
+            UPDATE audit_activity.audit_event SET attribute_digest = repeat('b', 64) WHERE event_type = 'Test.Event2'
+            """,
+            $"SELECT e.event_type FROM ({AuditStore.BrokenChainLinks}) b JOIN audit_activity.audit_event e ON e.id::text = b.id");
+        IReadOnlyList<string> legacy = await database.QueryRolledBackAsync(
+            EventRow(1),
+            """
+            SELECT (e.event_hash = encode(sha256(convert_to(concat_ws('|', coalesce(e.previous_event_hash, ''), e.id::text,
+                       to_char(e.occurred_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'), to_char(e.recorded_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+                       e.event_class, e.event_type, e.actor_type, coalesce(e.actor_user_id::text, ''), coalesce(e.subject_module, ''), coalesce(e.subject_type, ''),
+                       coalesce(e.subject_id::text, ''), coalesce(e.scope_project_id::text, ''), coalesce(e.scope_external_entity_id::text, ''), e.correlation_id::text,
+                       e.outcome, coalesce(e.data_classification_item_id::text, ''), e.created_by::text), 'UTF8')), 'hex'))::text
+            FROM audit_activity.audit_event e
+            """);
+
+        Assert.Equal(["Test.Event2"], changedDigest);
+        Assert.Equal(["true"], legacy);
+    }
+
     [Fact]
     public async Task AStoredEventCannotBeChanged()
     {
@@ -112,10 +147,10 @@ public sealed class AuditActivitySchemaTests(MigratedDatabase database) : IClass
 
     private static string EventId(int n) => $"00000000-0331-4000-8000-{n:D12}";
 
-    private static string EventRow(int n, string eventHash = "NULL", string previousEventHash = "NULL") => $"""
+    private static string EventRow(int n, string eventHash = "NULL", string previousEventHash = "NULL", string attributeDigest = "NULL") => $"""
         INSERT INTO audit_activity.audit_event (id, occurred_at, recorded_at, event_class, event_type, actor_type, correlation_id, outcome,
-                                                previous_event_hash, event_hash, created_at, created_by, updated_at, updated_by)
+                                                previous_event_hash, event_hash, attribute_digest, created_at, created_by, updated_at, updated_by)
         VALUES ('{EventId(n)}', now(), '2000-01-01', 'AUTHENTICATION', 'Test.Event{n}', 'USER', gen_random_uuid(), 'FAILED',
-                {previousEventHash}, {eventHash}, now(), '{ServiceUserId}', now(), '{ServiceUserId}')
+                {previousEventHash}, {eventHash}, {attributeDigest}, now(), '{ServiceUserId}', now(), '{ServiceUserId}')
         """;
 }

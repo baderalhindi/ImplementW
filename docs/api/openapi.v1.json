@@ -865,6 +865,372 @@
         }
       }
     },
+    "/api/v1/audit-events": {
+      "get": {
+        "tags": [
+          "AuditActivity"
+        ],
+        "summary": "The events the caller may read, newest first (AUD-API-003). Filters: `category`, `eventClass` and `outcome`\n(sets), `occurredFrom`/`occurredTo`, `actorUserId`, `eventType`, `projectId`, `subjectType`,\n`subjectId`, `correlationId`. Without `category`, every category the caller reads; naming one they may not is 403.",
+        "operationId": "AuditActivity_ListAuditEvents",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "occurredFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "occurredTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "actorUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "eventClass",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subjectType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "correlationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit-events/{auditEventId}": {
+      "get": {
+        "tags": [
+          "AuditActivity"
+        ],
+        "summary": "One event with its attributes, integrity metadata and SIEM forwarding (AUD-API-004). 404 for an event the caller may not read.",
+        "operationId": "AuditActivity_GetAuditEvent",
+        "parameters": [
+          {
+            "name": "auditEventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit-access": {
+      "get": {
+        "tags": [
+          "AuditActivity"
+        ],
+        "operationId": "AuditActivity_GetAuditAccess",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditAccessView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity-entries": {
+      "get": {
+        "tags": [
+          "AuditActivity"
+        ],
+        "operationId": "AuditActivity_ListActivityEntries",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "subjectType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "activityKind",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "occurredFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "occurredTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityEntryPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit-ingestion-status": {
+      "get": {
+        "tags": [
+          "AuditActivity"
+        ],
+        "summary": "What is captured and not yet stored, what keeps failing, and how far the Activity projection trails the store.",
+        "operationId": "AuditActivity_GetAuditIngestionStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditIngestionStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit-integrity-verifications": {
+      "post": {
+        "tags": [
+          "AuditActivity"
+        ],
+        "summary": "Walks the whole hash chain and every attribute digest; reports what no longer matches (AUD-CC-27).",
+        "operationId": "AuditActivity_VerifyAuditIntegrity",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditIntegrityReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity-projection-checks": {
+      "post": {
+        "tags": [
+          "AuditActivity"
+        ],
+        "summary": "Compares the Activity projection with what the store derives, up to the projection's checkpoint; changes nothing.",
+        "operationId": "AuditActivity_CheckActivityProjection",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityProjectionReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity-projection-rebuilds": {
+      "post": {
+        "tags": [
+          "AuditActivity"
+        ],
+        "summary": "Derives the Activity projection again from every stored event and repairs each difference (FG-06 §4.5).",
+        "operationId": "AuditActivity_RebuildActivityProjection",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityProjectionReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/change-authorizations": {
       "get": {
         "tags": [
@@ -16089,6 +16455,155 @@
         },
         "description": "A project's suspension periods, most recently started first: its suspension history across cycles (BR-SUS-039)."
       },
+      "ActivityDifference": {
+        "required": [
+          "auditEventId",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "auditEventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ActivityDifferenceKind"
+          }
+        }
+      },
+      "ActivityDifferenceKind": {
+        "enum": [
+          "MISSING",
+          "UNEXPECTED",
+          "CHANGED"
+        ],
+        "description": "How a stored Activity line differs from what the audit store derives (TASK-073 rebuild-and-diff)."
+      },
+      "ActivityEntryPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityEntryView"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ActivityEntryView": {
+        "required": [
+          "id",
+          "auditEventId",
+          "projectId",
+          "occurredAt",
+          "activityKind",
+          "eventType",
+          "summaryAr",
+          "summaryEn",
+          "actorUserId",
+          "actorDisplayName",
+          "subjectModule",
+          "subjectType",
+          "subjectId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "auditEventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activityKind": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "summaryAr": {
+            "type": "string"
+          },
+          "summaryEn": {
+            "type": "string"
+          },
+          "actorUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "actorDisplayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subjectModule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subjectType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subjectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "One line of a project's Activity timeline (SCR-057; FG-06 §7.1): what happened, when, in which domain, and by whom when the\ncaller may know. An external viewer sees the actor only when the actor belongs to their own entity (§7.4); otherwise\nGuid? ActivityEntryView.ActorUserId and string? ActivityEntryView.ActorDisplayName are null. The subject is a reference for a drill-through that the\nsource module authorises again (AUD-CC-17); it carries no source data."
+      },
       "ActivityExecutionProgressDetail": {
         "required": [
           "id",
@@ -16167,6 +16682,91 @@
           }
         },
         "description": "A project's Activity Execution Progress (R-29)."
+      },
+      "ActivityProjectionReport": {
+        "required": [
+          "rebuilt",
+          "eventsCompared",
+          "entriesExpected",
+          "missing",
+          "unexpected",
+          "changed",
+          "pendingEvents",
+          "checkpointRecordedAt",
+          "differences"
+        ],
+        "type": "object",
+        "properties": {
+          "rebuilt": {
+            "type": "boolean"
+          },
+          "eventsCompared": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "entriesExpected": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missing": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "unexpected": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "changed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pendingEvents": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "checkpointRecordedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "differences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityDifference"
+            }
+          },
+          "matches": {
+            "type": "boolean",
+            "description": "True when the compared events derive exactly the stored lines."
+          }
+        },
+        "description": "The Activity projection compared with what the audit store derives (AUD-API-035). A check compares the events up to the\nprojection's checkpoint and reports the events after it as int ActivityProjectionReport.PendingEvents, the expected lag; a rebuild compares\nevery event, repairs each difference and moves the checkpoint to the store's head. IReadOnlyList&lt;ActivityDifference&gt; ActivityProjectionReport.Differences lists at most\nint ActivityProjectionReport.MaxListedDifferences; the three counts are complete."
       },
       "AggregateCoverage": {
         "enum": [
@@ -16896,6 +17496,496 @@
           "WITHDRAWN"
         ],
         "description": "ERD `financial_commitment.status` and `kpi_target_version.status`: a version approved through WF-11. It is born\nDRAFT, SUBMITTED to WF-11, and ends ACTIVE, RETURNED (resubmitted as the next revision), REJECTED or WITHDRAWN; an ACTIVE\nversion becomes SUPERSEDED when the next one activates. UNDER_REVIEW is in the ERD's value set but no edge reaches it: WF-11\ngives the source no signal between start and outcome (financial-kpi.md F-9)."
+      },
+      "AuditAccessView": {
+        "required": [
+          "categories",
+          "requestContextVisible",
+          "activityVisible",
+          "operationsPermitted"
+        ],
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditCategory"
+            }
+          },
+          "requestContextVisible": {
+            "type": "boolean"
+          },
+          "activityVisible": {
+            "type": "boolean"
+          },
+          "operationsPermitted": {
+            "type": "boolean"
+          }
+        },
+        "description": "What the caller may do with audit and Activity (AUD-API-014): the categories they may read, whether they see request context,\nwhether they read Activity, and whether they operate the store. The SPA shows what this allows; the API enforces it again."
+      },
+      "AuditActorType": {
+        "enum": [
+          "USER",
+          "SERVICE",
+          "INTEGRATION"
+        ],
+        "description": "Who acted (ERD `audit_event.actor_type`). A service principal is a `User` row (ERD D-2)."
+      },
+      "AuditAttributeView": {
+        "required": [
+          "name",
+          "oldValue",
+          "newValue"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "oldValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newValue": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A captured value; a request-context value the caller may not see is left out and named in IReadOnlyList&lt;string&gt; AuditEventDetail.MaskedAttributes."
+      },
+      "AuditCategory": {
+        "enum": [
+          "SECURITY",
+          "ADMINISTRATION",
+          "INTEGRATION",
+          "FINANCIAL",
+          "EXTERNAL",
+          "BUSINESS"
+        ],
+        "description": "The category an audit event is authorised by (FG-06 §6.1, AUD-CC-03; TBC-AUD-02). It is derived from the event's class and\nthe module it is about, never stored, so no event can be re-categorised. Each category has its own read permission."
+      },
+      "AuditEventClass": {
+        "enum": [
+          "AUTHENTICATION",
+          "AUTHORIZATION_DENIAL",
+          "PRIVILEGED_ACTION",
+          "PERMISSION_CHANGE",
+          "LIFECYCLE_TRANSITION",
+          "DATA_CHANGE",
+          "APPROVAL_DECISION",
+          "INTEGRATION",
+          "CONFIGURATION_CHANGE"
+        ],
+        "description": "The mandatory audit classes (PTBC-011; ERD `audit_event.event_class`; event-conventions EV-9). Every module\nrecords its audit events in one of these; which classes are forwarded to the SIEM is configuration (PTBC-029)."
+      },
+      "AuditEventDetail": {
+        "required": [
+          "event",
+          "attributes",
+          "maskedAttributes",
+          "integrity",
+          "forwarding"
+        ],
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/AuditEventSummary"
+          },
+          "attributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditAttributeView"
+            }
+          },
+          "maskedAttributes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "integrity": {
+            "$ref": "#/components/schemas/AuditEventIntegrity"
+          },
+          "forwarding": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AuditEventForwarding"
+              }
+            ]
+          }
+        },
+        "description": "ADM-051: the immutable event with its attributes, integrity metadata and forwarding state (FG-06 §8.3)."
+      },
+      "AuditEventForwarding": {
+        "required": [
+          "status",
+          "forwardedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/AuditForwardingStatus"
+          },
+          "forwardedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "Whether the event has reached the SIEM (PTBC-029); null for a class that is not forwarded."
+      },
+      "AuditEventIntegrity": {
+        "required": [
+          "eventHash",
+          "previousEventHash",
+          "attributeDigest"
+        ],
+        "type": "object",
+        "properties": {
+          "eventHash": {
+            "type": "string"
+          },
+          "previousEventHash": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "attributeDigest": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "What makes the event tamper-evident (FG-06 §8.3): its place in the hash chain and the digest of its attributes."
+      },
+      "AuditEventPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEventSummary"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "AuditEventSummary": {
+        "required": [
+          "id",
+          "occurredAt",
+          "recordedAt",
+          "category",
+          "eventClass",
+          "eventType",
+          "outcome",
+          "actorType",
+          "actorUserId",
+          "actorDisplayName",
+          "subjectModule",
+          "subjectType",
+          "subjectId",
+          "scopeProjectId",
+          "scopeExternalEntityId",
+          "correlationId",
+          "dataClassificationItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "category": {
+            "$ref": "#/components/schemas/AuditCategory"
+          },
+          "eventClass": {
+            "$ref": "#/components/schemas/AuditEventClass"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AuditOutcome"
+          },
+          "actorType": {
+            "$ref": "#/components/schemas/AuditActorType"
+          },
+          "actorUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "actorDisplayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subjectModule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subjectType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subjectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "scopeProjectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "scopeExternalEntityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dataClassificationItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "One audit event as ADM-050 lists it (FG-06 §8.2). The actor's name is today's; the actor's id is the historical identity."
+      },
+      "AuditForwardingStatus": {
+        "enum": [
+          "PENDING",
+          "FORWARDED",
+          "FAILED"
+        ],
+        "description": "PENDING until the SIEM accepts the event, then FORWARDED. FAILED means the last attempt was refused or did not\nreach the SIEM; the event is tried again on the next pass."
+      },
+      "AuditIngestionStatus": {
+        "required": [
+          "pendingMessages",
+          "failingMessages",
+          "oldestPendingOccurredAt",
+          "lastError",
+          "eventsStored",
+          "storeHeadRecordedAt",
+          "projectionLag",
+          "projectionCheckpointRecordedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "pendingMessages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "failingMessages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "oldestPendingOccurredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastError": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "eventsStored": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "storeHeadRecordedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "projectionLag": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "projectionCheckpointRecordedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "The audit pipeline's health (AUD-API-039, -040; FG-06 §24.4): what is captured and not yet stored, what keeps failing, and how\nfar the Activity projection trails the store. Counts and times only, never an event's content."
+      },
+      "AuditIntegrityFinding": {
+        "required": [
+          "auditEventId",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "auditEventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AuditIntegrityFindingKind"
+          }
+        }
+      },
+      "AuditIntegrityFindingKind": {
+        "enum": [
+          "BROKEN_LINK",
+          "ATTRIBUTE_DIGEST_MISMATCH"
+        ]
+      },
+      "AuditIntegrityReport": {
+        "required": [
+          "eventsVerified",
+          "brokenLinks",
+          "attributeDigestMismatches",
+          "eventsWithoutDigest",
+          "findings"
+        ],
+        "type": "object",
+        "properties": {
+          "eventsVerified": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "brokenLinks": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "attributeDigestMismatches": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "eventsWithoutDigest": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditIntegrityFinding"
+            }
+          },
+          "intact": {
+            "type": "boolean"
+          }
+        },
+        "description": "The whole chain checked (AUD-API-037; AUD-CC-27). int AuditIntegrityReport.EventsWithoutDigest are events stored before TASK-073, whose\nattributes the chain does not cover. IReadOnlyList&lt;AuditIntegrityFinding&gt; AuditIntegrityReport.Findings lists at most int AuditIntegrityReport.MaxListedFindings; the counts are complete."
+      },
+      "AuditOutcome": {
+        "enum": [
+          "SUCCESS",
+          "DENIED",
+          "FAILED"
+        ],
+        "description": "How the audited occurrence ended (ERD `audit_event.outcome`)."
       },
       "BaselineActivityDetail": {
         "required": [
@@ -36569,6 +37659,9 @@
     },
     {
       "name": "Approval"
+    },
+    {
+      "name": "AuditActivity"
     },
     {
       "name": "ChangeRequest"

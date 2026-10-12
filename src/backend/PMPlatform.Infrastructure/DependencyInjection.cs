@@ -79,7 +79,10 @@ public static class DependencyInjection
 
         // Resolved when a context is created, not at start-up, so the API still starts and reports Unhealthy
         // without a database, as it did before TASK-024.
-        services.AddDbContext<PMPlatformDbContext>(options => options.UsePlatformDatabase(RequiredConnectionString(configuration)));
+        // TASK-073: every context refuses to change committed audit evidence, and ingests the audit messages it commits.
+        services.AddDbContext<PMPlatformDbContext>((provider, options) => options
+            .UsePlatformDatabase(RequiredConnectionString(configuration))
+            .AddInterceptors(provider.GetRequiredService<AuditEvidenceGuard>(), provider.GetRequiredService<AuditCommitInterceptor>()));
 
         // TASK-028: the directory, SSO and session-token adapters, and the IdentityAccess repository sign-in reads.
         services.AddIdentityIntegration(configuration);
@@ -291,13 +294,35 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// TASK-033: the audit store and SIEM forwarding. The forwarded subset (PTBC-029) is configuration; an environment whose
+    /// TASK-033 and TASK-073: the audit store, its capture and ingestion, the Activity projection, and SIEM forwarding. The forwarded subset (PTBC-029) is configuration; an environment whose
     /// subset leaves out authentication, or names a class that does not exist, does not start (CTL-26).
     /// </summary>
     private static void AddAuditForwarding(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddScoped<IAuditEventRepository, AuditEventRepository>();
         services.AddScoped<IAuditForwardingRepository, AuditForwardingRepository>();
+
+        // TASK-073: capture into the outbox, ingestion at commit and by a worker, the Activity projection and the read side.
+        services.AddSingleton<AuditEvidenceGuard>();
+        services.AddScoped<AuditCommitInterceptor>();
+        services.AddScoped<IAuditCaptureStore, AuditCaptureStore>();
+        services.AddSingleton<IAuditIngestor, AuditIngestor>();
+        services.AddSingleton<IActivityProjectionRunner, ActivityProjectionRunner>();
+        services.AddScoped<IActivityProjectionRepository, ActivityProjectionRepository>();
+        services.AddScoped<IAuditReadRepository, AuditReadRepository>();
+        services.AddScoped<IAuditIntegrityRepository, AuditIntegrityRepository>();
+        services.AddOptions<AuditIngestionOptions>()
+            .Bind(configuration.GetSection(AuditIngestionOptions.Section))
+            .Validate(
+                options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0 && options.RetryBaseDelay > TimeSpan.Zero
+                           && options.MaxRetryDelay >= options.RetryBaseDelay && options.LockTimeout > TimeSpan.Zero,
+                $"{AuditIngestionOptions.Section}: PollInterval, BatchSize, RetryBaseDelay and LockTimeout must be positive, MaxRetryDelay at least RetryBaseDelay.")
+            .ValidateOnStart();
+        services.AddOptions<ActivityProjectionOptions>()
+            .Bind(configuration.GetSection(ActivityProjectionOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{ActivityProjectionOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<AuditIngestionWorker>();
+        services.AddHostedService<ActivityProjectionWorker>();
 
         services.AddOptions<SiemForwardingPolicy>()
             .Bind(configuration.GetSection(SiemForwardingPolicy.Section))

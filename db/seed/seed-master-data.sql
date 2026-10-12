@@ -203,8 +203,13 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- configuration wait for Appendix A (financial-kpi.md F-2). The four WF-15 permissions (TASK-039) — notification templates and the
 -- delivery operations view with dead-letter redrive — go to R01 at ALL by delivery-team decision, as FG-04 did
 -- (notification-runtime.md F-1): templates and deliveries are platform-wide, with no record to scope. A person's own
--- inbox and preferences need no permission. Blueprint Appendix A, the rest of the matrix, is not in
--- the repository (record F-1).
+-- inbox and preferences need no permission. The nine FG-06 permissions (TASK-073) keep audit access apart from administration
+-- (BR-AUD-023): one read permission per audit category, each in a group of its own, plus request context, operations and the
+-- Activity timeline. R01 reads the ADMINISTRATION category and operates the audit store at ALL, and nothing of the security,
+-- business, financial, external or integration categories: those are Audit and Security Reviewer assignments AHDA has not named
+-- (TBC-AUD-05 to -07, PTBC-011). ACTIVITY_VIEW goes to R04 at OWN (Appendix A: "V own history") and, by ADR-013's participation
+-- amendment to TASK-073, to R08 at ENTITY: an entity sees its own activity history (audit-activity.md F-2). Blueprint Appendix A,
+-- the rest of the matrix, is not in the repository (record F-1).
 --
 -- The grants go into version 1 because no environment has run this seed with version 1 in use (none is provisioned).
 -- Once one has, a change to the shipped grants is a new version and a migration of the assignments (TASK-110), not
@@ -228,6 +233,15 @@ FROM (VALUES
     ('LAYOUT_PERSONALIZE',          'تخصيص التخطيط',      'Personalize layout',          'DASHBOARDS',      false),
     ('REPORT_COMPOSE',              'إعداد التقارير',      'Compose report',              'REPORTS',         false),
     ('REPORT_EXPORT',               'تصدير التقارير',      'Export report',               'REPORTS',         false),
+    ('ACTIVITY_VIEW',               'عرض سجل النشاط',      'View activity',               'ACTIVITY',        false),
+    ('AUDIT_SECURITY_VIEW',         'عرض تدقيق الأمن',     'View security audit',         'AUDIT_SECURITY',  false),
+    ('AUDIT_ADMINISTRATION_VIEW',   'عرض تدقيق الإدارة',   'View administration audit',   'AUDIT_ADMINISTRATION', false),
+    ('AUDIT_INTEGRATION_VIEW',      'عرض تدقيق التكامل',   'View integration audit',      'AUDIT_INTEGRATION', false),
+    ('AUDIT_FINANCIAL_VIEW',        'عرض التدقيق المالي',  'View financial audit',        'AUDIT_FINANCIAL', false),
+    ('AUDIT_EXTERNAL_VIEW',         'عرض تدقيق الجهات الخارجية', 'View external entity audit', 'AUDIT_EXTERNAL', false),
+    ('AUDIT_BUSINESS_VIEW',         'عرض تدقيق الأعمال',   'View business audit',         'AUDIT_BUSINESS',  false),
+    ('AUDIT_CONTEXT_VIEW',          'عرض سياق الطلب في التدقيق', 'View audit request context', 'AUDIT_CONTEXT', false),
+    ('AUDIT_OPERATIONS_MANAGE',     'إدارة عمليات التدقيق', 'Operate the audit store',     'AUDIT_OPERATIONS', true),
     ('APPROVAL_VIEW',               'عرض الموافقات',       'View approvals',              'APPROVAL',        false),
     ('APPROVAL_DECIDE',             'البت في الموافقات',    'Decide approvals',            'APPROVAL',        false),
     ('DOCUMENT_VIEW',               'عرض الوثائق',         'View documents',              'DOCUMENT_MANAGEMENT', false),
@@ -379,7 +393,11 @@ FROM (VALUES
     ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
     ('R03', 'REPORT_COMPOSE',              'OWN'),
     ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),
-    ('R07', 'REPORT_COMPOSE',              'OWN')
+    ('R07', 'REPORT_COMPOSE',              'OWN'),
+    ('R01', 'AUDIT_ADMINISTRATION_VIEW',   'ALL'),
+    ('R01', 'AUDIT_OPERATIONS_MANAGE',     'ALL'),
+    ('R04', 'ACTIVITY_VIEW',               'OWN'),
+    ('R08', 'ACTIVITY_VIEW',               'ENTITY')
 ) AS g (role_code, permission_code, data_scope)
 JOIN identity_access.role r ON r.code = g.role_code
 JOIN identity_access.permission_profile pp ON pp.base_role_id = r.id AND pp.code = r.code || '-DEFAULT'

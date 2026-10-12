@@ -14,6 +14,7 @@ using PMPlatform.Application;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Infrastructure;
+using PMPlatform.Infrastructure.Audit;
 using PMPlatform.Infrastructure.Identity;
 using PMPlatform.Infrastructure.Persistence;
 using PMPlatform.Infrastructure.Secrets;
@@ -96,6 +97,14 @@ if (args is [DatabaseMigration.Command, ..])
 if (args is [string scriptCommand] && DatabaseScripts.IsCommand(scriptCommand))
 {
     await app.Services.RunScriptCommandAsync(scriptCommand).ConfigureAwait(false);
+    return;
+}
+
+// TASK-073: `audit-integrity-verify`, `activity-projection-check` and `activity-projection-rebuild` — the FG-06 rebuild tooling — run
+// once and exit, non-zero when the chain is broken or the Activity projection differs from the audit store.
+if (args is [string auditCommand] && AuditCommands.IsCommand(auditCommand))
+{
+    Environment.ExitCode = await app.Services.RunAuditCommandAsync(auditCommand).ConfigureAwait(false);
     return;
 }
 

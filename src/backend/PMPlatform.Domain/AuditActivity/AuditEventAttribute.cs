@@ -9,7 +9,7 @@ namespace PMPlatform.Domain.AuditActivity;
 /// APPEND_ONLY.
 /// </summary>
 [SuppressMessage("Naming", "CA1711", Justification = "ERD D-4: the entity is the PascalCase of its table, audit_activity.audit_event_attribute.")]
-public sealed class AuditEventAttribute : AuditedEntity
+public sealed class AuditEventAttribute : AuditedEntity, IAuditEvidence
 {
     public Guid AuditEventId { get; set; }
 

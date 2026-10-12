@@ -99,7 +99,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             WHERE ar !~ '[؀-ۿ]' OR en ~ '[؀-ۿ]' OR btrim(en) = ''
             """);
 
-        Assert.Equal("395", count[0]);
+        Assert.Equal("404", count[0]);
         Assert.Empty(notBilingual);
     }
 

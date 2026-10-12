@@ -345,6 +345,46 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.AuditActivity.ActivityProjectionCheckpoint", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid?>("LastAuditEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_audit_event_id");
+
+                    b.Property<DateTimeOffset?>("LastRecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_recorded_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_activity_projection_checkpoint");
+
+                    b.ToTable("activity_projection_checkpoint", "audit_activity", t =>
+                        {
+                            t.HasCheckConstraint("ck_activity_projection_checkpoint_position", "(last_recorded_at IS NULL) = (last_audit_event_id IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -361,6 +401,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ActorUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("actor_user_id");
+
+                    b.Property<string>("AttributeDigest")
+                        .HasColumnType("char(64)")
+                        .HasColumnName("attribute_digest");
 
                     b.Property<Guid>("CorrelationId")
                         .HasColumnType("uuid")
@@ -588,6 +632,79 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_audit_forwarding_record_status", "\"status\" IN ('PENDING', 'FORWARDED', 'FAILED')");
                         });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.AuditActivity.BusinessActivityEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActivityKind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("activity_kind");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<Guid>("AuditEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("audit_event_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("SummaryAr")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("summary_ar");
+
+                    b.Property<string>("SummaryEn")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("summary_en");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_business_activity_entry");
+
+                    b.HasIndex("ActorUserId")
+                        .HasDatabaseName("ix_business_activity_entry_actor_user_id");
+
+                    b.HasIndex("AuditEventId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_business_activity_entry_audit_event_id");
+
+                    b.HasIndex("ProjectId", "OccurredAt", "Id")
+                        .HasDatabaseName("ix_business_activity_entry_project_id_occurred_at_id");
+
+                    b.ToTable("business_activity_entry", "audit_activity");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.ChangeRequest.ChangeAuthorization", b =>
@@ -11079,6 +11196,28 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_audit_forwarding_record_audit_event_audit_event_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.AuditActivity.BusinessActivityEntry", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_business_activity_entry_user_actor_user_id");
+
+                    b.HasOne("PMPlatform.Domain.AuditActivity.AuditEvent", null)
+                        .WithOne()
+                        .HasForeignKey("PMPlatform.Domain.AuditActivity.BusinessActivityEntry", "AuditEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_business_activity_entry_audit_event_audit_event_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_business_activity_entry_project_project_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.ChangeRequest.ChangeAuthorization", b =>

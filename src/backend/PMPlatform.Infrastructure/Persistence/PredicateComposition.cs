@@ -15,6 +15,25 @@ internal static class PredicateComposition
         return Expression.Lambda<Func<T, bool>>(body, row);
     }
 
+    /// <summary>The AND of two predicates over one parameter.</summary>
+    public static Expression<Func<T, bool>> Both<T>(Expression<Func<T, bool>> first, Expression<Func<T, bool>> second)
+    {
+        ArgumentNullException.ThrowIfNull(first);
+        ArgumentNullException.ThrowIfNull(second);
+        ParameterExpression row = Expression.Parameter(typeof(T), "r");
+        return Expression.Lambda<Func<T, bool>>(
+            Expression.AndAlso(new ParameterReplacer(first.Parameters[0], row).Visit(first.Body), new ParameterReplacer(second.Parameters[0], row).Visit(second.Body)),
+            row);
+    }
+
+    /// <summary><paramref name="predicate"/> applied to the part of a row <paramref name="member"/> selects.</summary>
+    public static Expression<Func<TRow, bool>> Over<TRow, TPart>(Expression<Func<TPart, bool>> predicate, Expression<Func<TRow, TPart>> member)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(member);
+        return Expression.Lambda<Func<TRow, bool>>(new ParameterReplacer(predicate.Parameters[0], member.Body).Visit(predicate.Body), member.Parameters[0]);
+    }
+
     private sealed class ParameterReplacer(ParameterExpression parameter, Expression replacement) : ExpressionVisitor
     {
         protected override Expression VisitParameter(ParameterExpression node) => node == parameter ? replacement : base.VisitParameter(node);

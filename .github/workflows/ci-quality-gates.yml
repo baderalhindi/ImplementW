@@ -331,6 +331,19 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Reports.
 
+      # TASK-033 and TASK-073: FG-06's formal audit — every failed sign-in, refusal and privileged action audited, the SIEM forwarder, the
+      # redaction suite; capture through the outbox and ingestion at commit, an event refused an edit or delete by the API, the data layer
+      # and the database, the Activity projection rebuilt from the store and diffed, audit access by category, scope and sensitivity apart
+      # from R01, the hash chain verified, and the API against docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace
+      # alone. Same database and directory as above.
+      - name: AuditActivity integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.AuditActivity.
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest
