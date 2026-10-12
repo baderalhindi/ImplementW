@@ -1435,6 +1435,10 @@ erDiagram
         uuid project_id FK
         uuid actor_user_id FK
     }
+    ActivityProjectionCheckpoint {
+        uuid id PK
+        timestamptz last_recorded_at
+    }
     Project |o..o{ AuditEvent : "scope_project_id"
     AuditEvent ||--o{ AuditEventAttribute : "audit_event_id"
     AuditEvent ||--o| AuditForwardingRecord : "audit_event_id"
@@ -1445,10 +1449,11 @@ erDiagram
 
 | Entity | Table | Purpose | Lifecycle column → states | Delete policy | Identity |
 | --- | --- | --- | --- | --- | --- |
-| **AuditEvent** | `audit_activity.audit_event` | Append-only, tamper-evident formal audit record (Blueprint Section 18; TASK-033, TASK-073). Hash-chained; no update or delete by any application role. | — | APPEND_ONLY | referenceable |
+| **AuditEvent** | `audit_activity.audit_event` | Append-only, tamper-evident formal audit record (Blueprint Section 18; TASK-033, TASK-073). Hash-chained, the hash covering the digest of its attributes (TASK-073); no update or delete by any application role. | — | APPEND_ONLY | referenceable |
 | **AuditEventAttribute** | `audit_activity.audit_event_attribute` | Old/new value pair captured with the event (the diff TASK-110 requires). | — | APPEND_ONLY | — |
 | **AuditForwardingRecord** | `audit_activity.audit_forwarding_record` | SIEM forwarding state kept apart from the immutable event (PTBC-029). | `status` → PENDING · FORWARDED · FAILED | RETAIN | — |
-| **BusinessActivityEntry** | `audit_activity.business_activity_entry` | Derived, rebuildable business-readable projection of audit events (SCR-057); rebuild-and-diff must reproduce it exactly (TASK-073). Stored — D-8 register. | — | RETAIN | — |
+| **BusinessActivityEntry** | `audit_activity.business_activity_entry` | Derived, rebuildable business-readable projection of audit events (SCR-057); rebuild-and-diff must reproduce it exactly (TASK-073). Stored — D-8 register. A rebuild may replace or remove a line; a line is never purged otherwise. | — | RETAIN | — |
+| **ActivityProjectionCheckpoint** | `audit_activity.activity_projection_checkpoint` | How far the Activity projection has read the audit store, in commit order (TASK-073). One row. | — | RETAIN | — |
 
 ## 6. Lifecycle-state review (Appendix C)
 
@@ -1763,3 +1768,4 @@ On Q1 and Q6, the E-1 reconciliation is run, the crosswalk's Appendix D columns 
 | 2026-10-10 | §5.19: the `dashboards` schema built as the ERD lists it (TASK-069, `dashboards.md` D-9); the CHECKs, the partial unique key and the guard it adds are noted under the table. No column added or changed. | Backend (TASK-069) |
 | 2026-10-10 | §5.20, `erd.dbml`, §8: the `reports` schema as TASK-071 builds it (`reports.md` D-13). Added: `ReportColumn` (a definition's columns, bound to FG-01's projection register) and `ReportOutputContent` (a file's bytes, `HARD_WORKING`: deleted at expiry while `GeneratedOutput` is kept), so 123 tables; `report_definition.primary_projection_code` and `.allows_saved_views`; `report_parameter.sort_order`, `.source_entity_code`, `.field_code`; `report_job.kind`, `.idempotency_key`, `.request_snapshot`, and `.failure_code` in place of `failure_reason`; `generated_output.sensitivity`, `.row_count`, `.source_as_of`, `.authorization_footprint`. Removed: `report_parameter.option_catalogue_id` (no MASTER_DATA_ITEM parameter is defined), `report_job.saved_view_id` and `report_parameter_value.report_job_id` (a job pins its whole request in `request_snapshot`). `SavedViewShare` and `saved_view.is_shared` stay as TASK-112's, not yet built. | Backend (TASK-071) |
 | 2026-10-11 | §5.20, `erd.dbml`, §8: `SavedViewShare` built by TASK-072 (`reports-ui.md` D-3), migration `TASK-072_ShareSavedViews`. A share names a role only (`shared_with_role_id`, not null, unique with `saved_view_id`): the recipients ADR-019 allows are three roles, and a non-administrator can list neither users nor departments to choose from, so `shared_with_department_id`, `shared_with_user_id` and the one-of-three CHECK are not built. `saved_view.is_shared` is not built: whether a view is shared is whether it has share rows. Table count unchanged (123). | Frontend (TASK-072) |
+| 2026-10-12 | §5.22, `erd.dbml`, §8: the `audit_activity` schema completed by TASK-073 (`audit-activity.md` D-5, D-8), migrations `TASK-073_CreateActivityProjection` and `TASK-073_AddActivityProjectionCrossModuleForeignKeys`. Added: `audit_event.attribute_digest` (SHA-256 over the event's attributes, now covered by `event_hash`; null for events stored before it, whose hash is unchanged) and `ActivityProjectionCheckpoint` (how far the projection has read the store), so 124 tables. `BusinessActivityEntry` built as listed; a rebuild may replace or remove a line. No `event_id` column (event-conventions S-8): the stored event's `id` is the captured event's id, so a repeated delivery finds it. | Backend (TASK-073) |
