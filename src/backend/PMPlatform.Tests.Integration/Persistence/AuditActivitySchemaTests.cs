@@ -11,22 +11,18 @@ namespace PMPlatform.Tests.Integration.Persistence;
 /// </summary>
 public sealed class AuditActivitySchemaTests(MigratedDatabase database) : IClassFixture<MigratedDatabase>
 {
-    /// <summary>ERD §5.22, complete since TASK-073.</summary>
+    /// <summary>ERD §5.22, complete since TASK-073; <c>audit_forwarding_record.invocation_id</c>'s foreign key since TASK-075 built its target.</summary>
     private static readonly string[] Tables =
     [
         "audit_activity.audit_event", "audit_activity.audit_event_attribute", "audit_activity.audit_forwarding_record",
         "audit_activity.business_activity_entry", "audit_activity.activity_projection_checkpoint",
     ];
 
-    /// <summary>The one ERD line not built: its target, <c>integration_monitoring.invocation</c>, does not exist yet (record F-3).</summary>
-    private const string DeferredForeignKey = "fk|audit_activity.audit_forwarding_record.invocation_id|integration_monitoring.invocation";
-
     [Fact]
     public async Task TheAuditTablesAreTheCanonicalErd()
     {
         IReadOnlyList<string> erd = [.. ErdModel.Lines(["audit_activity"])
-            .Where(line => Tables.Any(table => line.Contains($"|{table}.", StringComparison.Ordinal) || line.Contains($"|{table}|", StringComparison.Ordinal)))
-            .Where(line => line != DeferredForeignKey)];
+            .Where(line => Tables.Any(table => line.Contains($"|{table}.", StringComparison.Ordinal) || line.Contains($"|{table}|", StringComparison.Ordinal)))];
         IReadOnlyList<string> schema = [.. (await database.QueryAsync("""
             SELECT 'column|' || n.nspname || '.' || c.relname || '.' || a.attname || '|' || format_type(a.atttypid, a.atttypmod)
                    || '|' || CASE WHEN a.attnotnull THEN 'not null' ELSE 'null' END

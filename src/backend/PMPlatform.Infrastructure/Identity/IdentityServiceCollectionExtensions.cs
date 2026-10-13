@@ -1,15 +1,17 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
+using PMPlatform.Infrastructure.Hosting;
 using PMPlatform.Infrastructure.Identity.Nafath;
 
 namespace PMPlatform.Infrastructure.Identity;
 
 /// <summary>
 /// Registers the directory, single sign-on and session-token adapters (TASK-028), the MFA provider and policy (TASK-029),
-/// and the Nafath identity verification adapter and policy (TASK-068).
+/// and the Nafath identity verification adapter and policy (TASK-068), each observed as FG-05 telemetry (TASK-075).
 /// </summary>
 public static class IdentityServiceCollectionExtensions
 {
@@ -35,18 +37,26 @@ public static class IdentityServiceCollectionExtensions
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<MultiFactorPolicy>>().Value);
 
+        // R-42: each provider call carries the correlation id of the work it is part of (TASK-075).
+        services.TryAddTransient<CorrelationPropagationHandler>();
         services.AddHttpClient(OpenIdConnectProvider.HttpClientName, (provider, client) =>
-            client.Timeout = provider.GetRequiredService<IOptions<SingleSignOnOptions>>().Value.Timeout);
+                client.Timeout = provider.GetRequiredService<IOptions<SingleSignOnOptions>>().Value.Timeout)
+            .AddHttpMessageHandler<CorrelationPropagationHandler>();
         services.AddHttpClient(HttpMultiFactorProvider.HttpClientName, (provider, client) =>
-            client.Timeout = provider.GetRequiredService<IOptions<MultiFactorProviderOptions>>().Value.Timeout);
+                client.Timeout = provider.GetRequiredService<IOptions<MultiFactorProviderOptions>>().Value.Timeout)
+            .AddHttpMessageHandler<CorrelationPropagationHandler>();
         services.AddHttpClient(NafathIdentityVerifier.HttpClientName, (provider, client) =>
-            client.Timeout = provider.GetRequiredService<IOptions<NafathOptions>>().Value.Timeout);
+                client.Timeout = provider.GetRequiredService<IOptions<NafathOptions>>().Value.Timeout)
+            .AddHttpMessageHandler<CorrelationPropagationHandler>();
 
         services.AddSingleton<IDirectoryService, LdapDirectoryService>();
         services.AddSingleton<ISingleSignOnProvider, OpenIdConnectProvider>();
         services.AddSingleton<ISessionTokenService, JwtSessionTokenService>();
         services.AddSingleton<IMultiFactorProvider, HttpMultiFactorProvider>();
         services.AddSingleton<IIdentityVerificationProvider, NafathIdentityVerifier>();
+
+        // TASK-075: every call to these providers is FG-05 telemetry.
+        services.ObserveIdentityIntegrations();
 
         return services;
     }

@@ -14,6 +14,7 @@ using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.IntegrationMonitoring;
 using PMPlatform.Application.Features.FinancialKpi;
 using PMPlatform.Application.Features.MasterDataConfig;
 using PMPlatform.Application.Features.ExternalParticipation;
@@ -30,7 +31,9 @@ using PMPlatform.Application.Features.Closure;
 using PMPlatform.Infrastructure.Approval;
 using PMPlatform.Infrastructure.Audit;
 using PMPlatform.Infrastructure.DocumentManagement;
+using PMPlatform.Infrastructure.Hosting;
 using PMPlatform.Infrastructure.Identity;
+using PMPlatform.Infrastructure.IntegrationMonitoring;
 using PMPlatform.Infrastructure.Notifications;
 using PMPlatform.Infrastructure.Risk;
 using PMPlatform.Infrastructure.Suspension;
@@ -57,6 +60,7 @@ using PMPlatform.Infrastructure.Persistence.Suspension;
 using PMPlatform.Infrastructure.Persistence.Closure;
 using PMPlatform.Infrastructure.Persistence.Authorization;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
+using PMPlatform.Infrastructure.Persistence.IntegrationMonitoring;
 using PMPlatform.Infrastructure.Persistence.MasterDataConfig;
 using PMPlatform.Infrastructure.Persistence.Messaging;
 using PMPlatform.Infrastructure.Persistence.Notifications;
@@ -183,8 +187,29 @@ public static class DependencyInjection
         services.AddHostedService<CloseoutActivationWorker>();
 
         services.AddNotifications(configuration);
+        services.AddIntegrationMonitoring(configuration);
 
         return services;
+    }
+
+    /// <summary>
+    /// TASK-075: FG-05 — the integration_monitoring schema, the policy (thresholds are AHDA's and none is set by default; an invalid one stops
+    /// the API at start-up) and the pass that retries, ends abandoned attempts and evaluates health.
+    /// </summary>
+    private static void AddIntegrationMonitoring(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IIntegrationMonitoringRepository, IntegrationMonitoringRepository>();
+        services.AddOptions<IntegrationMonitoringPolicy>()
+            .Bind(configuration.GetSection(IntegrationMonitoringPolicy.Section))
+            .Validate(policy => policy.IsValid(),
+                $"{IntegrationMonitoringPolicy.Section}: MetricsWindow, AbandonAfter and every freshness window must be positive, every minimum delivery rate above 0 and at most 1.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<IntegrationMonitoringPolicy>>().Value);
+        services.AddOptions<IntegrationMonitoringWorkerOptions>()
+            .Bind(configuration.GetSection(IntegrationMonitoringWorkerOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{IntegrationMonitoringWorkerOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<IntegrationMonitoringWorker>();
     }
 
     /// <summary>
@@ -337,8 +362,10 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(SiemOptions.Section))
             .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{SiemOptions.Section}: PollInterval and BatchSize must be positive.")
             .ValidateOnStart();
+        services.TryAddTransient<CorrelationPropagationHandler>();
         services.AddHttpClient(HttpSiemClient.HttpClientName, (provider, client) =>
-            client.Timeout = provider.GetRequiredService<IOptions<SiemOptions>>().Value.Timeout);
+                client.Timeout = provider.GetRequiredService<IOptions<SiemOptions>>().Value.Timeout)
+            .AddHttpMessageHandler<CorrelationPropagationHandler>();
         services.AddSingleton<ISiemClient, HttpSiemClient>();
         services.AddHostedService<SiemForwardingWorker>();
     }

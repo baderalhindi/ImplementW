@@ -113,6 +113,19 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<DirectoryLinkedPerson>> ListDirectoryLinkedPeopleAsync(CancellationToken cancellationToken) =>
+        await (from user in context.Set<User>().AsNoTracking()
+               where user.UserType == UserType.Internal && user.Status == UserStatus.Active && user.DirectorySubjectId != null
+               join department in context.Set<Department>() on user.DepartmentId equals department.Id into departments
+               from department in departments.DefaultIfEmpty()
+               join manager in context.Set<User>() on user.ManagerUserId equals manager.Id into managers
+               from manager in managers.DefaultIfEmpty()
+               orderby user.Id
+               select new DirectoryLinkedPerson(
+                   user.Id, user.DirectorySubjectId!, user.JobTitle, department == null ? null : department.DirectoryReference,
+                   manager == null ? null : manager.DirectorySubjectId))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     private async Task<UserAccess?> FindAsync(Expression<Func<User, bool>> predicate, CancellationToken cancellationToken)
     {
         var user = await context.Set<User>().AsNoTracking()

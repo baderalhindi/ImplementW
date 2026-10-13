@@ -18,7 +18,9 @@
 --      landings (Blueprint §20.2) and widgets bound to registered source projections (TASK-069);
 --   7. the ten reports of ADR-006, each a PUBLISHED version 1 with its audience, parameters, options and columns, every column a field of a
 --      registered source projection, FG-02's catalogue entries absorbed as reports.md D-2 maps them (TASK-071);
---   8. the SCR-138 explorer's allowlist as a DRAFT version 1 of REPORT_RULES, for AHDA to review and publish (TASK-071).
+--   8. the SCR-138 explorer's allowlist as a DRAFT version 1 of REPORT_RULES, for AHDA to review and publish (TASK-071);
+--   9. the integration registry of FG-05 (TASK-075): the six integrations the platform calls — directory, single sign-on, MFA, Nafath,
+--      the Exchange relay and the SMS provider — each ACTIVE with one instance, PRIMARY, named by its endpoint's configuration key.
 -- Every label is bilingual (ADR-012).
 --
 -- What it does not hold, and why (record §4):
@@ -57,7 +59,10 @@
 -- PMPlatform.Application's SuspensionServicePrincipal.Id; the closeout-activation principal's, which effects approved
 -- completion and closure cases (TASK-063), is PMPlatform.Application's CloseoutServicePrincipal.Id; the report-generation principal's,
 -- which validates, generates and expires FG-02's report jobs and their outputs (TASK-071), is PMPlatform.Application's
--- ReportServicePrincipal.Id.
+-- ReportServicePrincipal.Id; the identity-integration principal's, which publishes each call IdentityAccess makes to the directory, the
+-- identity provider, the MFA provider or Nafath as FG-05 telemetry (TASK-075), is PMPlatform.Application's IdentityIntegrationServicePrincipal.Id;
+-- the integration-monitoring principal's, which records that telemetry, runs FG-05's operations and their retries, evaluates health and
+-- raises operational alerts (TASK-075), is PMPlatform.Application's IntegrationMonitoringServicePrincipal.Id.
 INSERT INTO identity_access."user" (id, user_type, username, display_name, email, preferred_language, status, created_at, created_by, updated_at, updated_by)
 VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 'Platform seed (service principal)', 'svc.platform-seed@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
@@ -80,6 +85,10 @@ VALUES ('00000000-0000-4000-8000-0000000000ff', 'SERVICE', 'svc.platform-seed', 
        ('00000000-0000-4000-8000-0000000000f6', 'SERVICE', 'svc.closeout-activation', 'Completion and closure activation (service principal)', 'svc.closeout-activation@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
        ('00000000-0000-4000-8000-0000000000f5', 'SERVICE', 'svc.report-generation', 'Report generation (service principal)', 'svc.report-generation@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000f4', 'SERVICE', 'svc.identity-integration', 'Identity integration telemetry (service principal)', 'svc.identity-integration@pmplatform.invalid', 'en', 'ACTIVE',
+        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'),
+       ('00000000-0000-4000-8000-0000000000f3', 'SERVICE', 'svc.integration-monitoring', 'Integration monitoring (service principal)', 'svc.integration-monitoring@pmplatform.invalid', 'en', 'ACTIVE',
         now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff')
 ON CONFLICT (id) DO NOTHING;
 
@@ -208,8 +217,11 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- Activity timeline. R01 reads the ADMINISTRATION category and operates the audit store at ALL, and nothing of the security,
 -- business, financial, external or integration categories: those are Audit and Security Reviewer assignments AHDA has not named
 -- (TBC-AUD-05 to -07, PTBC-011). ACTIVITY_VIEW goes to R04 at OWN (Appendix A: "V own history") and, by ADR-013's participation
--- amendment to TASK-073, to R08 at ENTITY: an entity sees its own activity history (audit-activity.md F-2). Blueprint Appendix A,
--- the rest of the matrix, is not in the repository (record F-1).
+-- amendment to TASK-073, to R08 at ENTITY: an entity sees its own activity history (audit-activity.md F-2). The five FG-05 permissions
+-- (TASK-075) — INTEGRATION_VIEW, INTEGRATION_LOG_VIEW, INTEGRATION_OPERATE, INTEGRATION_ALERT_MANAGE, INTEGRATION_CONFIGURE — go to R01 at ALL
+-- by delivery-team decision, as FG-04's and WF-15's did: integrations are platform-wide. FG-05's Integration Operator is an assignment AHDA
+-- has not named (TBC-INT-19), and R08 holds none (integration-monitoring.md F-2). Blueprint Appendix A, the rest of the matrix, is not in
+-- the repository (record F-1).
 --
 -- The grants go into version 1 because no environment has run this seed with version 1 in use (none is provisioned).
 -- Once one has, a change to the shipped grants is a new version and a migration of the assignments (TASK-110), not
@@ -301,7 +313,12 @@ FROM (VALUES
     ('NOTIFICATION_TEMPLATE_VIEW',  'عرض قوالب الإشعارات',  'View notification templates', 'NOTIFICATIONS',   false),
     ('NOTIFICATION_TEMPLATE_MANAGE', 'إدارة قوالب الإشعارات', 'Manage notification templates', 'NOTIFICATIONS', true),
     ('NOTIFICATION_DELIVERY_VIEW',  'عرض عمليات الإشعارات', 'View notification deliveries', 'NOTIFICATIONS',  false),
-    ('NOTIFICATION_DELIVERY_MANAGE', 'إدارة عمليات الإشعارات', 'Manage notification deliveries', 'NOTIFICATIONS', true)
+    ('NOTIFICATION_DELIVERY_MANAGE', 'إدارة عمليات الإشعارات', 'Manage notification deliveries', 'NOTIFICATIONS', true),
+    ('INTEGRATION_VIEW',            'عرض حالة التكاملات',   'View integration health',     'INTEGRATION_MONITORING', false),
+    ('INTEGRATION_LOG_VIEW',        'عرض سجلات التكامل',    'View integration logs',       'INTEGRATION_MONITORING', false),
+    ('INTEGRATION_OPERATE',         'تشغيل عمليات التكامل', 'Operate integrations',        'INTEGRATION_MONITORING', true),
+    ('INTEGRATION_ALERT_MANAGE',    'معالجة التنبيهات التشغيلية', 'Handle operational alerts', 'INTEGRATION_MONITORING', true),
+    ('INTEGRATION_CONFIGURE',       'تفعيل مراقبة التكاملات وإيقافها', 'Enable and disable integration monitoring', 'INTEGRATION_MONITORING', true)
 ) AS v (code, name_ar, name_en, permission_group, is_privileged)
 ON CONFLICT (code) DO UPDATE SET
     permission_group = EXCLUDED.permission_group,
@@ -397,7 +414,12 @@ FROM (VALUES
     ('R01', 'AUDIT_ADMINISTRATION_VIEW',   'ALL'),
     ('R01', 'AUDIT_OPERATIONS_MANAGE',     'ALL'),
     ('R04', 'ACTIVITY_VIEW',               'OWN'),
-    ('R08', 'ACTIVITY_VIEW',               'ENTITY')
+    ('R08', 'ACTIVITY_VIEW',               'ENTITY'),
+    ('R01', 'INTEGRATION_VIEW',            'ALL'),
+    ('R01', 'INTEGRATION_LOG_VIEW',        'ALL'),
+    ('R01', 'INTEGRATION_OPERATE',         'ALL'),
+    ('R01', 'INTEGRATION_ALERT_MANAGE',    'ALL'),
+    ('R01', 'INTEGRATION_CONFIGURE',       'ALL')
 ) AS g (role_code, permission_code, data_scope)
 JOIN identity_access.role r ON r.code = g.role_code
 JOIN identity_access.permission_profile pp ON pp.base_role_id = r.id AND pp.code = r.code || '-DEFAULT'
@@ -913,3 +935,45 @@ CROSS JOIN (VALUES
 WHERE v.id = md5('configuration_version:REPORT_RULES:1')::uuid
   AND v.lifecycle_state = 'DRAFT'
 ON CONFLICT (configuration_version_id, source_entity_code, field_code) DO NOTHING;
+
+-- 9. The integration registry of FG-05 (TASK-075; Blueprint §17.1): one definition per external integration the platform calls, and one instance
+-- per definition — this environment's, named PRIMARY, its endpoint named by the configuration or secret key that holds it, never by a value.
+-- Producers name the integration by its code (PMPlatform.Application's IntegrationCodes). The retry policy is the ERD's default, three attempts
+-- with a 60-second back-off doubling each time; it governs the operations FG-05 runs itself (the directory reconciliation), not the e-mail and
+-- SMS deliveries WF-15 retries under its own policy (integration-monitoring.md D-6). Nafath is registered although its feature flag is off by
+-- default: an integration that is never called shows availability UNKNOWN, not a failure. The SMS provider is registered for ADR-004's
+-- monitoring although none is selected yet (OQ-012). The seed owns codes, direction and kind and puts them back; labels, the policy, the
+-- owner role and the activation are AHDA's once inserted, so a deployment never re-enables what an administrator disabled.
+INSERT INTO integration_monitoring.integration_definition AS d (id, code, name_ar, name_en, direction, integration_kind, max_attempts, retry_backoff_seconds, status,
+                                                                created_at, created_by, updated_at, updated_by)
+SELECT md5('integration_definition:' || v.code)::uuid, v.code, v.name_ar, v.name_en, v.direction, v.integration_kind, 3, 60, 'ACTIVE',
+       now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('DIRECTORY',      'دليل المستخدمين (AD/LDAP)',      'Directory (AD/LDAP)',           'INBOUND',  'IDENTITY'),
+    ('SSO',            'الدخول الموحد (OpenID Connect)', 'Single sign-on (OpenID Connect)', 'INBOUND', 'IDENTITY'),
+    ('MFA',            'مزود التحقق متعدد العوامل',       'MFA verification provider',     'OUTBOUND', 'IDENTITY'),
+    ('NAFATH',         'التحقق من الهوية عبر نفاذ',        'Nafath identity verification',  'OUTBOUND', 'VERIFICATION'),
+    ('EXCHANGE_EMAIL', 'خادم البريد Exchange',            'Exchange e-mail relay',         'OUTBOUND', 'MESSAGING'),
+    ('SMS',            'مزود الرسائل النصية',             'SMS provider',                  'OUTBOUND', 'MESSAGING')
+) AS v (code, name_ar, name_en, direction, integration_kind)
+ON CONFLICT (code) DO UPDATE SET
+    direction = EXCLUDED.direction,
+    integration_kind = EXCLUDED.integration_kind,
+    updated_at = EXCLUDED.updated_at,
+    updated_by = EXCLUDED.updated_by
+WHERE (d.direction, d.integration_kind) IS DISTINCT FROM (EXCLUDED.direction, EXCLUDED.integration_kind);
+
+INSERT INTO integration_monitoring.integration_instance AS i (id, integration_definition_id, code, endpoint_configuration_key, is_enabled, availability, freshness,
+                                                              created_at, created_by, updated_at, updated_by)
+SELECT md5('integration_instance:' || v.code || ':PRIMARY')::uuid, d.id, 'PRIMARY', v.endpoint_configuration_key, true, 'UNKNOWN', 'UNKNOWN',
+       now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('DIRECTORY',      'AD_LDAP_URL'),
+    ('SSO',            'SSO_OIDC_AUTHORITY'),
+    ('MFA',            'MFA_PROVIDER_ENDPOINT'),
+    ('NAFATH',         'Identity:Nafath:Authority'),
+    ('EXCHANGE_EMAIL', 'EXCHANGE_SMTP_HOST'),
+    ('SMS',            'SMS_PROVIDER_ENDPOINT')
+) AS v (code, endpoint_configuration_key)
+JOIN integration_monitoring.integration_definition d ON d.code = v.code
+ON CONFLICT (integration_definition_id, code) DO NOTHING;

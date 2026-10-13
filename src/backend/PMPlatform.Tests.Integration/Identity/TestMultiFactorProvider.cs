@@ -33,6 +33,7 @@ public sealed class TestMultiFactorProvider : IAsyncDisposable
     private readonly ConcurrentDictionary<string, Challenge> _challenges = new();
     private readonly ConcurrentDictionary<string, bool> _enrolledSubjects = new();
     private readonly ConcurrentQueue<string> _requestBodies = new();
+    private readonly ConcurrentQueue<string> _correlationIds = new();
 
     private TestMultiFactorProvider(WebApplication app)
     {
@@ -43,6 +44,9 @@ public sealed class TestMultiFactorProvider : IAsyncDisposable
 
     /// <summary>Every request body the provider received, so a test can check what the platform sends it.</summary>
     public IEnumerable<string> RequestBodies => _requestBodies;
+
+    /// <summary>The <c>X-Correlation-Id</c> of every request that carried one (api-conventions R-42; TASK-075).</summary>
+    public IEnumerable<string> CorrelationIds => _correlationIds;
 
     public IReadOnlyDictionary<string, string?> Settings => new Dictionary<string, string?>
     {
@@ -142,6 +146,11 @@ public sealed class TestMultiFactorProvider : IAsyncDisposable
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return null;
+        }
+
+        if (context.Request.Headers["X-Correlation-Id"].ToString() is { Length: > 0 } correlationId)
+        {
+            _correlationIds.Enqueue(correlationId);
         }
 
         using StreamReader reader = new(context.Request.Body);

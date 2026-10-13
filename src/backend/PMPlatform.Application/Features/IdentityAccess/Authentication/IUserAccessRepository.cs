@@ -1,3 +1,5 @@
+using PMPlatform.Application.Features.IdentityAccess.Contracts;
+
 namespace PMPlatform.Application.Features.IdentityAccess.Authentication;
 
 /// <summary>The platform side of a sign-in: the user a directory subject belongs to and their active assignments.</summary>
@@ -21,4 +23,10 @@ public interface IUserAccessRepository
     /// (OQ-007). The first verification stands; a later one changes nothing. The change is the user's own.
     /// </summary>
     public Task RecordIdentityVerificationAsync(Guid userId, string reference, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Active internal users with a directory subject, with their job title, their department's directory reference and their manager's
+    /// subject, ordered by id: what a directory reconciliation compares (TASK-075). Reads only.
+    /// </summary>
+    public Task<IReadOnlyList<DirectoryLinkedPerson>> ListDirectoryLinkedPeopleAsync(CancellationToken cancellationToken);
 }

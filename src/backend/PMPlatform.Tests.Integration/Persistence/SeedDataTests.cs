@@ -91,6 +91,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             UNION ALL SELECT 'report_parameter ' || code, label_ar, label_en FROM reports.report_parameter
             UNION ALL SELECT 'report_parameter_option ' || value_code, label_ar, label_en FROM reports.report_parameter_option
             UNION ALL SELECT 'report_allowlist_entry ' || source_entity_code || '.' || field_code, label_ar, label_en FROM master_data_config.report_allowlist_entry
+            UNION ALL SELECT 'integration_definition ' || code, name_ar, name_en FROM integration_monitoring.integration_definition
             """;
 
         IReadOnlyList<string> count = await database.QueryAsync($"SELECT count(*)::text FROM ({labels}) l");
@@ -99,7 +100,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             WHERE ar !~ '[؀-ۿ]' OR en ~ '[؀-ۿ]' OR btrim(en) = ''
             """);
 
-        Assert.Equal("404", count[0]);
+        Assert.Equal("415", count[0]);
         Assert.Empty(notBilingual);
     }
 

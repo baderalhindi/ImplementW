@@ -4,6 +4,7 @@ using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Content;
 using PMPlatform.Application.Features.Notifications.Contracts;
 using PMPlatform.Domain.Common;
+using IntegrationInvocationCompleted = PMPlatform.Application.Features.Notifications.Contracts.Events.IntegrationInvocationCompleted;
 using PMPlatform.Domain.Notifications;
 
 namespace PMPlatform.Application.Features.Notifications;
@@ -13,7 +14,8 @@ namespace PMPlatform.Application.Features.Notifications;
 /// recipient is rechecked first — still a holder of a recipient role over the scope, still active, still not opted out —
 /// because a retry can come hours after routing. A channel that refuses or cannot be reached leaves the delivery FAILED
 /// with its next attempt after an exponential back-off, and after the last attempt DEAD_LETTER. None of this can touch
-/// the source's transaction: it committed before the intent was even received.
+/// the source's transaction: it committed before the intent was even received. Each attempt is published to FG-05 with the
+/// attempt's own record, as <c>Notifications.IntegrationInvocationCompleted</c> (TASK-075, ADR-003 §8.2 edge 32).
 /// </summary>
 /// <remarks>
 /// Delivery is at least once. If the relay accepts a message and the save that records it then fails, the next attempt
@@ -26,6 +28,7 @@ internal sealed partial class NotificationSending(
     IUserContactDirectory contacts,
     IEmailSender email,
     ISmsGateway sms,
+    IOutbox outbox,
     NotificationDeliveryPolicy policy,
     TimeProvider timeProvider,
     ILogger<NotificationSending> logger)
@@ -65,6 +68,7 @@ internal sealed partial class NotificationSending(
         else
         {
             await AttemptAsync(delivery, holder!, mobileNumber, now, cancellationToken).ConfigureAwait(false);
+            outbox.Stage(Telemetry(delivery, envelope.CorrelationId, now));
         }
 
         delivery.UpdatedAt = now;
@@ -135,6 +139,53 @@ internal sealed partial class NotificationSending(
                 LogAttemptFailed(logger, delivery.Id, delivery.Channel, delivery.AttemptCount, delivery.FailureReason);
             }
         }
+    }
+
+    /// <summary>
+    /// The attempt as FG-05 telemetry: the provider, the outcome and what WF-15 does next. The delivery is the lineage, so FG-05 sees a
+    /// delivery's attempts as one operation; the failure is the kind of fault only, as the delivery records it.
+    /// </summary>
+    private IntegrationInvocationCompleted Telemetry(NotificationDelivery delivery, Guid correlationId, DateTimeOffset startedAt)
+    {
+        DateTimeOffset completedAt = timeProvider.GetUtcNow();
+        string key = $"{delivery.Id:N}-{delivery.AttemptCount}-{startedAt.UtcTicks}";
+        bool sent = delivery.Status == NotificationDeliveryStatus.Sent;
+        IntegrationRetryDisposition next = delivery.Status switch
+        {
+            NotificationDeliveryStatus.Failed => IntegrationRetryDisposition.RetryScheduled,
+            NotificationDeliveryStatus.DeadLetter => IntegrationRetryDisposition.DeadLetter,
+            NotificationDeliveryStatus.Sent or NotificationDeliveryStatus.Pending or NotificationDeliveryStatus.Delivered
+                or NotificationDeliveryStatus.Suppressed or NotificationDeliveryStatus.Read => IntegrationRetryDisposition.None,
+            _ => throw new InvalidOperationException($"Unknown notification delivery status {delivery.Status}."),
+        };
+        return new IntegrationInvocationCompleted
+        {
+            EventId = Guid.CreateVersion7(completedAt),
+            EventType = IntegrationInvocationCompleted.Type,
+            SchemaVersion = IntegrationInvocationCompleted.CurrentSchemaVersion,
+            Kind = EventKind.DomainEvent,
+            MessageKey = EventMessageKey.Of(IntegrationInvocationCompleted.Type, key),
+            IdempotencyKey = key,
+            OccurredAt = completedAt,
+            SourceModule = NotificationAudit.Module,
+            CorrelationId = correlationId,
+            Actor = new EventActor(AuditActorType.Service, NotificationServicePrincipal.Id),
+            Subject = new EventSubject(NotificationAudit.Module, nameof(NotificationDelivery), delivery.Id, null),
+            Scope = new EventScope(null, null, null),
+            Data = new IntegrationInvocationData(
+                delivery.Channel == NotificationChannel.Sms ? IntegrationCodes.Sms : IntegrationCodes.ExchangeEmail,
+                "SEND",
+                delivery.Id.ToString(),
+                sent ? IntegrationInvocationOutcome.Succeeded : IntegrationInvocationOutcome.Failed,
+                sent ? null : IntegrationFailureKind.Technical,
+                next,
+                startedAt,
+                completedAt,
+                null,
+                sent ? null : delivery.FailureReason,
+                next == IntegrationRetryDisposition.RetryScheduled ? delivery.NextAttemptAt : null,
+                $"{nameof(NotificationDelivery)}/{delivery.Id}"),
+        };
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Notification delivery {DeliveryId} ({Channel}) attempt {Attempt} failed: {Reason}. It is tried again after its back-off.")]

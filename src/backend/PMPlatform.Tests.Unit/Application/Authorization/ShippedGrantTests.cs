@@ -134,6 +134,22 @@ public sealed class ShippedGrantTests
         Assert.Equal(["R02", "R03", "R07"], RoleCodes.Where(role => ShippedGrant(role, permission) is not null));
 
     /// <summary>
+    /// FG-05 (TASK-075): the five integration permissions go to R01 at ALL by delivery-team decision and to no other role; an external entity
+    /// user never holds one (BR-INT-022). The Integration Operator is an assignment AHDA has not named (TBC-INT-19).
+    /// </summary>
+    [Theory]
+    [InlineData(PermissionCatalogue.IntegrationView)]
+    [InlineData(PermissionCatalogue.IntegrationLogView)]
+    [InlineData(PermissionCatalogue.IntegrationOperate)]
+    [InlineData(PermissionCatalogue.IntegrationAlertManage)]
+    [InlineData(PermissionCatalogue.IntegrationConfigure)]
+    public void IntegrationMonitoringGoesToR01Only(string permission)
+    {
+        Assert.Equal(["R01"], RoleCodes.Where(role => ShippedGrant(role, permission) is not null));
+        Assert.Equal(DataScope.All, ShippedGrant("R01", permission)!.Scope);
+    }
+
+    /// <summary>
     /// ADR-013's amendment to TASK-037, verbatim: entity Project Managers may upload, view and see version history on their own
     /// project. R04 at ENTITY, and nothing else: managing documents waits for Appendix A (document-management.md F-1).
     /// </summary>
