@@ -6652,6 +6652,310 @@
         }
       }
     },
+    "/api/v1/integration-invocations": {
+      "get": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "Newest first. Filters: `integrationId`, `status` (a set), `operationCode`, `correlationId` (a request's whole\ntechnical lineage), `idempotencyKey`, `sourceReference`, `startedFrom`/`startedTo`.",
+        "operationId": "IntegrationMonitoring_ListIntegrationInvocations",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "operationCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "correlationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "idempotencyKey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sourceReference",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startedFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "startedTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvocationPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integration-invocations/{invocationId}": {
+      "get": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "The attempt with every attempt of its lineage, and whether FG-05 would retry it now.",
+        "operationId": "IntegrationMonitoring_GetIntegrationInvocation",
+        "parameters": [
+          {
+            "name": "invocationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvocationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integration-invocations/{invocationId}/retry": {
+      "post": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "Runs the lineage's next attempt now, under its own correlation id and key. Only from the latest attempt of a lineage FG-05 runs that\nis dead-lettered or waiting for a retry: 409 `INVOCATION_ALREADY_SUCCEEDED` or `INVOCATION_NOT_RETRYABLE` otherwise, 422\n`RETRY_NOT_PERMITTED` for an attempt another module made, `INTEGRATION_DISABLED` when monitoring is off.",
+        "operationId": "IntegrationMonitoring_RetryIntegrationInvocation",
+        "parameters": [
+          {
+            "name": "invocationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvocationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integrations": {
+      "get": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "The catalogue, by code, with the environment it describes.",
+        "operationId": "IntegrationMonitoring_ListIntegrations",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationCatalogueView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/{integrationId}": {
+      "get": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "One integration with its policy and each instance's measures from `from` to `to`; by default over the last metrics window.",
+        "operationId": "IntegrationMonitoring_GetIntegration",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/{integrationId}/enable": {
+      "post": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "DISABLED → ACTIVE: monitored again. Changes no adapter (BR-INT-008).",
+        "operationId": "IntegrationMonitoring_EnableIntegration",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/{integrationId}/disable": {
+      "post": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "ACTIVE → DISABLED: telemetry is still recorded; no alert is raised and FG-05 runs none of its operations.",
+        "operationId": "IntegrationMonitoring_DisableIntegration",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/kpi-assignments": {
       "get": {
         "tags": [
@@ -9730,6 +10034,258 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NotificationTemplateDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operational-alerts": {
+      "get": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "Newest first. Filters: `integrationId`, `status` and `alertType` (sets), `raisedFrom`/`raisedTo`.",
+        "operationId": "IntegrationMonitoring_ListOperationalAlerts",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "alertType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "raisedFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "raisedTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationalAlertPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operational-alerts/{alertId}": {
+      "get": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "operationId": "IntegrationMonitoring_GetOperationalAlert",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationalAlertView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operational-alerts/{alertId}/acknowledge": {
+      "post": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "OPEN → ACKNOWLEDGED, recording who and when. It does not claim the integration recovered.",
+        "operationId": "IntegrationMonitoring_AcknowledgeOperationalAlert",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationalAlertView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operational-alerts/{alertId}/resolve": {
+      "post": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "OPEN or ACKNOWLEDGED → RESOLVED with the operator's note (required).",
+        "operationId": "IntegrationMonitoring_ResolveOperationalAlert",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationalAlertNoteCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationalAlertNoteCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationalAlertNoteCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationalAlertView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/operational-alerts/{alertId}/dismiss": {
+      "post": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "OPEN or ACKNOWLEDGED → DISMISSED with the operator's note (required): the condition was not real.",
+        "operationId": "IntegrationMonitoring_DismissOperationalAlert",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationalAlertNoteCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationalAlertNoteCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationalAlertNoteCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationalAlertView"
                 }
               }
             }
@@ -15549,6 +16105,155 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SuspensionRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync-runs": {
+      "get": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "Newest first. Filters: `integrationId`, `runType` and `status` (sets), `correlationId`.",
+        "operationId": "IntegrationMonitoring_ListSyncRuns",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "runType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "correlationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncRunPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync-runs/{syncRunId}": {
+      "get": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "operationId": "IntegrationMonitoring_GetSyncRun",
+        "parameters": [
+          {
+            "name": "syncRunId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncRunView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/integration-reconciliations": {
+      "post": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "201 with the lineage's first attempt (or, for a repeated key, its latest) and its run; `Location` is the attempt. 422\n`RECONCILIATION_NOT_AVAILABLE` or `INTEGRATION_DISABLED`; 503 when the source is not configured.",
+        "operationId": "IntegrationMonitoring_CreateIntegrationReconciliation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationReconciliationCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationReconciliationCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationReconciliationCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvocationDetail"
                 }
               }
             }
@@ -25302,6 +26007,574 @@
           }
         }
       },
+      "IntegrationAvailability": {
+        "enum": [
+          "UP",
+          "DOWN",
+          "UNKNOWN"
+        ],
+        "description": "Whether the provider answered the last technical attempt (FG-05 §5.1 Endpoint Availability). Separate from\nIntegrationFreshness (BR-INT-013): a reachable source can still be stale."
+      },
+      "IntegrationCatalogueView": {
+        "required": [
+          "environment",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "environment": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationSummary"
+            }
+          }
+        },
+        "description": "The integration catalogue, with the environment it describes (FG-05 §4.3: environment context is always visible). Each environment has\nits own database, so every instance listed is this environment's."
+      },
+      "IntegrationDefinitionStatus": {
+        "enum": [
+          "ACTIVE",
+          "DISABLED",
+          "RETIRED"
+        ],
+        "description": "Whether an integration is monitored (ERD §6 row 49). This is activation, never health: a DISABLED integration is not\nan unavailable one (BR-INT-008), and disabling it changes nothing in the adapter that calls the provider."
+      },
+      "IntegrationDetail": {
+        "required": [
+          "integration",
+          "ownerRoleId",
+          "maxAttempts",
+          "retryBackoffSeconds",
+          "operations",
+          "metrics"
+        ],
+        "type": "object",
+        "properties": {
+          "integration": {
+            "$ref": "#/components/schemas/IntegrationSummary"
+          },
+          "ownerRoleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "maxAttempts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "retryBackoffSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationMetrics"
+            }
+          }
+        },
+        "description": "ADM-046: the definition with its retry policy, its instances, and each instance's measures over the window asked for."
+      },
+      "IntegrationDirection": {
+        "enum": [
+          "INBOUND",
+          "OUTBOUND",
+          "BIDIRECTIONAL"
+        ],
+        "description": "Which way an integration's data flows, seen from the platform (FG-05 §4.2)."
+      },
+      "IntegrationFreshness": {
+        "enum": [
+          "FRESH",
+          "STALE",
+          "UNKNOWN"
+        ],
+        "description": "Whether the integration has succeeded recently enough (FG-05 §5.4 Data Freshness), against the window its policy\nconfigures. Without a configured window it stays IntegrationFreshness.Unknown: no threshold is invented (BR-INT-016)."
+      },
+      "IntegrationInstanceView": {
+        "required": [
+          "id",
+          "code",
+          "endpointConfigurationKey",
+          "isEnabled",
+          "availability",
+          "freshness",
+          "lastSuccessAt",
+          "lastFailureAt",
+          "evaluatedAt",
+          "openAlertCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "endpointConfigurationKey": {
+            "type": "string"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/IntegrationAvailability"
+          },
+          "freshness": {
+            "$ref": "#/components/schemas/IntegrationFreshness"
+          },
+          "lastSuccessAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastFailureAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "evaluatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "openAlertCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "An instance's runtime state (ADM-040, ADM-047): availability and freshness as two indicators, never one combined health (Blueprint\n§17.1, BR-INT-013), beside activation, which is neither. The endpoint is named by its configuration key; no secret is ever here."
+      },
+      "IntegrationKind": {
+        "enum": [
+          "IDENTITY",
+          "MESSAGING",
+          "VERIFICATION",
+          "FINANCE",
+          "SECURITY",
+          "DATA"
+        ],
+        "description": "The category of an integration (FG-05 §4.1), for the catalogue and its filters."
+      },
+      "IntegrationMetrics": {
+        "required": [
+          "integrationInstanceId",
+          "from",
+          "to",
+          "attempts",
+          "failedAttempts",
+          "failureRate",
+          "deliveredLineages",
+          "undeliveredLineages",
+          "deliveryRate",
+          "medianLatencyMilliseconds",
+          "p95LatencyMilliseconds",
+          "receipts",
+          "medianReceiptLatencyMilliseconds"
+        ],
+        "type": "object",
+        "properties": {
+          "integrationInstanceId": {
+            "type": "string",
+            "description": "The instance measured.",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "description": "The window's start, included.",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "description": "The window's end, excluded.",
+            "format": "date-time"
+          },
+          "attempts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Attempts that ended in the window.",
+            "format": "int32"
+          },
+          "failedAttempts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Those that failed, whatever the reason.",
+            "format": "int32"
+          },
+          "failureRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "FailedAttempts / Attempts.",
+            "format": "double"
+          },
+          "deliveredLineages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Operations (lineages) whose latest attempt succeeded.",
+            "format": "int32"
+          },
+          "undeliveredLineages": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Operations that ended without success: failed or dead-lettered. Those still retrying are neither.",
+            "format": "int32"
+          },
+          "deliveryRate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Delivered / (delivered + undelivered).",
+            "format": "double"
+          },
+          "medianLatencyMilliseconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "The median duration of an attempt.",
+            "format": "double"
+          },
+          "p95LatencyMilliseconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "The 95th percentile duration of an attempt.",
+            "format": "double"
+          },
+          "receipts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Delivery receipts the provider sent back (SMS, TASK-103).",
+            "format": "int32"
+          },
+          "medianReceiptLatencyMilliseconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "The median time from a send's first attempt to its receipt.",
+            "format": "double"
+          }
+        },
+        "description": "ADR-004's measures of a provider over a window: delivery rate, failure rate, call latency and receipt latency. A measure with no\nsample is null, never zero (Blueprint safety rule: missing ≠ zero)."
+      },
+      "IntegrationReconciliationCreateRequest": {
+        "required": [
+          "integrationId"
+        ],
+        "type": "object",
+        "properties": {
+          "integrationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "FG-05 US-INT-OPS-047: reconcile an integration that supports it. The request's `Idempotency-Key` is the run's key."
+      },
+      "IntegrationSummary": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "direction",
+          "integrationKind",
+          "status",
+          "instances"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/IntegrationDirection"
+          },
+          "integrationKind": {
+            "$ref": "#/components/schemas/IntegrationKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IntegrationDefinitionStatus"
+          },
+          "instances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationInstanceView"
+            }
+          }
+        },
+        "description": "ADM-040: one integration of the catalogue with its instances."
+      },
+      "InvocationDetail": {
+        "required": [
+          "invocation",
+          "lineage",
+          "retryPermitted"
+        ],
+        "type": "object",
+        "properties": {
+          "invocation": {
+            "$ref": "#/components/schemas/InvocationSummary"
+          },
+          "lineage": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvocationSummary"
+            }
+          },
+          "retryPermitted": {
+            "type": "boolean"
+          }
+        },
+        "description": "An attempt with every attempt of its lineage, oldest first (FG-05 US-INT-OPS-003), and whether FG-05 would retry the lineage now: the\nbackend decides, the screen shows it (FG-05 §20.1)."
+      },
+      "InvocationFailureCategory": {
+        "enum": [
+          "TECHNICAL",
+          "BUSINESS_VALIDATION",
+          "SECURITY",
+          null
+        ]
+      },
+      "InvocationPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvocationSummary"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "InvocationStatus": {
+        "enum": [
+          "IN_PROGRESS",
+          "SUCCEEDED",
+          "FAILED",
+          "RETRY_SCHEDULED",
+          "DEAD_LETTER"
+        ],
+        "description": "One attempt's outcome (ERD §6). An attempt is IN_PROGRESS until it ends, then fixed: a retry is a new attempt of the same\nlineage, never a rewrite of this one (INT-CC-13). The lineage's state is its latest attempt's."
+      },
+      "InvocationSummary": {
+        "required": [
+          "id",
+          "integrationInstanceId",
+          "integrationCode",
+          "syncRunId",
+          "operationCode",
+          "correlationId",
+          "idempotencyKey",
+          "attemptNo",
+          "sourceModule",
+          "sourceReference",
+          "startedAt",
+          "completedAt",
+          "status",
+          "failureCategory",
+          "responseCode",
+          "errorSummary",
+          "nextAttemptAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "integrationInstanceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "integrationCode": {
+            "type": "string"
+          },
+          "syncRunId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "operationCode": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "idempotencyKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "attemptNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "sourceModule": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvocationStatus"
+          },
+          "failureCategory": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/InvocationFailureCategory"
+              }
+            ]
+          },
+          "responseCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errorSummary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextAttemptAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "One attempt as ADM-048 lists it: codes, times and correlation; never a payload, a secret or a provider's message."
+      },
       "KpiAssignmentCreateRequest": {
         "required": [
           "projectId",
@@ -28658,6 +29931,190 @@
           }
         },
         "description": "A DRAFT's full text."
+      },
+      "OperationalAlertNoteCommand": {
+        "required": [
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "note": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "FG-05 §7.5, §13.3: resolving or dismissing an alert takes the operator's note, in the language it was entered in."
+      },
+      "OperationalAlertPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationalAlertView"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "OperationalAlertSeverity": {
+        "enum": [
+          "INFO",
+          "WARNING",
+          "CRITICAL"
+        ],
+        "description": "How urgent an operational alert is. Fixed per alert type; AHDA's own levels are TBC-INT-17."
+      },
+      "OperationalAlertStatus": {
+        "enum": [
+          "OPEN",
+          "ACKNOWLEDGED",
+          "RESOLVED",
+          "DISMISSED"
+        ],
+        "description": "An alert's attention lifecycle (FG-05 §10.2), distinct from the integration's health: acknowledging an alert does not\nclaim the integration is healthy, and the integration recovering does not close the alert (BR-INT-037, BR-INT-038)."
+      },
+      "OperationalAlertType": {
+        "enum": [
+          "AVAILABILITY",
+          "FRESHNESS",
+          "RECONCILIATION_MISMATCH",
+          "DEAD_LETTER",
+          "DELIVERY_RATE"
+        ],
+        "description": "The condition an operational alert reports (FG-05 §10.1)."
+      },
+      "OperationalAlertView": {
+        "required": [
+          "id",
+          "integrationInstanceId",
+          "integrationCode",
+          "syncRunId",
+          "invocationId",
+          "alertType",
+          "severity",
+          "raisedAt",
+          "status",
+          "acknowledgedByUserId",
+          "acknowledgedAt",
+          "resolvedAt",
+          "resolutionNote",
+          "detail"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "integrationInstanceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "integrationCode": {
+            "type": "string"
+          },
+          "syncRunId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "invocationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "alertType": {
+            "$ref": "#/components/schemas/OperationalAlertType"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/OperationalAlertSeverity"
+          },
+          "raisedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OperationalAlertStatus"
+          },
+          "acknowledgedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "acknowledgedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "resolvedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "resolutionNote": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "An operational alert (FG-05 §10): the condition, where it was found, and the operator's handling, apart from the integration's health."
       },
       "OutputSensitivity": {
         "enum": [
@@ -36815,6 +38272,147 @@
         ],
         "description": "ERD `suspension_request.request_type` (TASK-062): what an approved request, once effected, does to its ACTIVE or SUSPENDED project."
       },
+      "SyncRunPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncRunView"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "SyncRunStatus": {
+        "enum": [
+          "RUNNING",
+          "SUCCEEDED",
+          "PARTIAL",
+          "FAILED"
+        ],
+        "description": "A sync run's outcome (ERD §6). A run ends once and is then fixed."
+      },
+      "SyncRunType": {
+        "enum": [
+          "DIRECTORY_SYNC",
+          "RECONCILIATION"
+        ],
+        "description": "What a sync run does (ERD `sync_run.run_type`)."
+      },
+      "SyncRunView": {
+        "required": [
+          "id",
+          "integrationInstanceId",
+          "integrationCode",
+          "runType",
+          "correlationId",
+          "startedAt",
+          "completedAt",
+          "status",
+          "recordsRead",
+          "recordsApplied",
+          "recordsRejected",
+          "mismatchCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "integrationInstanceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "integrationCode": {
+            "type": "string"
+          },
+          "runType": {
+            "$ref": "#/components/schemas/SyncRunType"
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SyncRunStatus"
+          },
+          "recordsRead": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "recordsApplied": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "recordsRejected": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "mismatchCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A synchronisation or reconciliation run and its counts (FG-05 §6.4). A reconciliation applies nothing: `RecordsApplied` is 0."
+      },
       "TaskBlockCommand": {
         "required": [
           "reason"
@@ -37686,6 +39284,9 @@
     },
     {
       "name": "FinancialKpi"
+    },
+    {
+      "name": "IntegrationMonitoring"
     },
     {
       "name": "Milestone"

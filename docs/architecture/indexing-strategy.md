@@ -130,6 +130,10 @@ Each row is one index, by its key columns. **`IndexingStrategyTests` reads this 
 | I-53 | `reports.saved_view` | `owner_user_id, view_type` | SCR-139 Saved Views: the caller's own. Views shared with the caller are found through `saved_view_share`'s foreign-key indexes (P-1) | TASK-071 |
 | I-55 | `audit_activity.audit_event` | `recorded_at, id` | The head of the hash chain, read under the chain lock by every insert (TASK-033). Without it each insert scans the table | TASK-033 |
 | I-56 | `audit_activity.audit_forwarding_record` | `status, created_at` | The SIEM forwarder's queue: PENDING and FAILED records, oldest first | TASK-033 |
+| I-57 | `integration_monitoring.invocation` | `integration_instance_id, started_at, id` | ADM-048 Integration Logs for one integration, newest first; ADR-004's measures over a window (`integration-monitoring.md` §5) | TASK-075 |
+| I-58 | `integration_monitoring.invocation` | `correlation_id` | ADM-048 search by Correlation ID: one request's whole technical lineage (FG-05 §13.2) | TASK-075 |
+| I-59 | `integration_monitoring.operational_alert` | `status, raised_at, id` | ADM-047 operational alerts by state, newest first | TASK-075 |
+| I-60 | `integration_monitoring.sync_run` | `integration_instance_id, started_at, id` | ADM-047 an integration's synchronisation and reconciliation runs, newest first | TASK-075 |
 
 ### 4.3 Screens covered without a register row
 
