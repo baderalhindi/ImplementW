@@ -30,9 +30,26 @@ import {
   type RegistrationValues,
 } from './registration.ts';
 
-const internalReached: ProjectAccess = { internal: true, reached: true, creator: false };
-const externalReached: ProjectAccess = { internal: false, reached: true, creator: true };
-const internalUnreached: ProjectAccess = { internal: true, reached: false, creator: false };
+// No audit permission: FG-06's two history tabs follow GET /audit-access (audit-activity/rules.test.ts).
+const noHistory = { activity: false, projectAudit: false };
+const internalReached: ProjectAccess = {
+  internal: true,
+  reached: true,
+  creator: false,
+  ...noHistory,
+};
+const externalReached: ProjectAccess = {
+  internal: false,
+  reached: true,
+  creator: true,
+  ...noHistory,
+};
+const internalUnreached: ProjectAccess = {
+  internal: true,
+  reached: false,
+  creator: false,
+  ...noHistory,
+};
 
 describe('scope reach (access.ts)', () => {
   test('an assignment reaches a project when each of its anchors matches, and an unanchored one reaches all', () => {

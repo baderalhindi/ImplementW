@@ -316,9 +316,13 @@ describe('gate decision: no origination and no escalation controls in the extern
           ? null
           : within(main).getByRole('link', { name: en('externalParticipation.nav.mine') }),
       ).toBeTruthy();
-      expect(api.requests.filter((request) => !request.path.startsWith('/notifications'))).toEqual(
-        [],
-      );
+      // The shell's own reads (the unread badge, the audit navigation) aside.
+      expect(
+        api.requests.filter(
+          (request) =>
+            !request.path.startsWith('/notifications') && request.path !== '/audit-access',
+        ),
+      ).toEqual([]);
     },
   );
 

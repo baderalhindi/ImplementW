@@ -138,7 +138,9 @@
       "closeout": "الإقفال",
       "externalRequests": "طلبات التحديث الخارجية",
       "reviews": "سجل المراجعات",
-      "documents": "الوثائق"
+      "documents": "الوثائق",
+      "activity": "سجل النشاط",
+      "audit": "سجل التدقيق الرسمي"
     }
   },
   "overview": {

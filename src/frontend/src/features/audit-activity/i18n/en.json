@@ -1,0 +1,208 @@
+{
+  "nav": {
+    "label": "Audit & logs",
+    "auditTrail": "Audit trail",
+    "integrationAudit": "Integration audit",
+    "systemEvents": "System event logs"
+  },
+  "category": {
+    "SECURITY": "Security",
+    "ADMINISTRATION": "Administration",
+    "INTEGRATION": "Integration",
+    "FINANCIAL": "Financial",
+    "EXTERNAL": "External participation",
+    "BUSINESS": "Business"
+  },
+  "eventClass": {
+    "AUTHENTICATION": "Authentication",
+    "AUTHORIZATION_DENIAL": "Access refused",
+    "PRIVILEGED_ACTION": "Privileged action",
+    "PERMISSION_CHANGE": "Permission change",
+    "LIFECYCLE_TRANSITION": "Lifecycle transition",
+    "DATA_CHANGE": "Data change",
+    "APPROVAL_DECISION": "Approval decision",
+    "INTEGRATION": "Integration action",
+    "CONFIGURATION_CHANGE": "Configuration change"
+  },
+  "outcome": {
+    "SUCCESS": "Succeeded",
+    "DENIED": "Denied",
+    "FAILED": "Failed"
+  },
+  "actorType": {
+    "USER": "Person",
+    "SERVICE": "Platform service",
+    "INTEGRATION": "Integration"
+  },
+  "actor": {
+    "anonymous": "Not signed in"
+  },
+  "forwarding": {
+    "PENDING": "Waiting for the SIEM",
+    "FORWARDED": "Forwarded to the SIEM",
+    "FAILED": "SIEM forwarding failed; retrying"
+  },
+  "activityKind": {
+    "PROJECT": "Project",
+    "PROGRESS": "Progress",
+    "SCHEDULE": "Schedule",
+    "PROJECT_TASK": "Tasks",
+    "MILESTONE": "Milestones",
+    "FINANCIAL_KPI": "Financials & KPIs",
+    "RISK": "Risks",
+    "MANAGEMENT_CONCERN": "Issues & challenges",
+    "CHANGE_REQUEST": "Change requests",
+    "SUSPENSION": "Suspension",
+    "CLOSURE": "Closeout",
+    "EXTERNAL_PARTICIPATION": "External participation",
+    "DOCUMENT_MANAGEMENT": "Documents",
+    "APPROVAL": "Approvals"
+  },
+  "fields": {
+    "category": "Audit category",
+    "eventClass": "Event class",
+    "outcome": "Outcome",
+    "eventType": "Event type",
+    "projectId": "Project ID",
+    "actorUserId": "Actor ID",
+    "correlationId": "Correlation ID",
+    "occurredAt": "Occurred",
+    "recordedAt": "Recorded",
+    "event": "Event",
+    "actor": "Actor",
+    "actorType": "Actor type",
+    "eventId": "Event ID",
+    "classification": "Classification",
+    "subject": "Record type",
+    "subjectId": "Record ID",
+    "externalEntityId": "External entity ID",
+    "attribute": "Attribute",
+    "oldValue": "Before",
+    "newValue": "After",
+    "eventHash": "Event hash",
+    "previousEventHash": "Previous event hash",
+    "attributeDigest": "Attribute digest",
+    "forwarding": "SIEM forwarding"
+  },
+  "filters": {
+    "from": "From",
+    "to": "To",
+    "anyHeldCategory": "Any category you may read",
+    "eventTypeHint": "The exact code, for example Risk.RiskClosed.",
+    "malformed": "Enter a valid value.",
+    "dateBeforeStart": "The end date must not be before the start date."
+  },
+  "list": {
+    "open": "Open"
+  },
+  "problems": {
+    "notFound": "This audit event was not found, or it is not available to you.",
+    "permissionDenied": "You do not hold the audit permission this needs."
+  },
+  "denied": {
+    "trail": "The audit trail needs an explicit audit permission for at least one category. A system administrator role does not include business, financial, security or external-participation audit.",
+    "integration": "Integration audit needs the integration audit permission.",
+    "system": "System event logs need the audit operations permission.",
+    "projectAudit": "A project's formal audit history needs an explicit audit permission for business, financial or external-participation audit. Holding the system administrator role does not give it."
+  },
+  "trail": {
+    "title": "Audit trail",
+    "description": "Formal, immutable audit evidence, searched on the server within the categories, scope and classification you are authorised for.",
+    "held": "You may read: {categories}.",
+    "empty": "No audit events match these filters."
+  },
+  "integration": {
+    "title": "Integration audit logs",
+    "description": "Formal audit evidence of integration operator and configuration actions.",
+    "boundary": "Only material integration actions recorded as audit evidence are listed here. Runtime integration logs and diagnostics belong to integration monitoring and are not shown.",
+    "empty": "No integration audit events match these filters."
+  },
+  "detail": {
+    "title": "Audit event",
+    "backToTrail": "Back to the audit trail",
+    "immutable": "Audit evidence is immutable: this event cannot be edited or deleted, here or anywhere else.",
+    "event": "Event",
+    "unclassified": "Not classified",
+    "classified": "Classified",
+    "actor": "Actor",
+    "actorEvents": "Show this actor's events",
+    "source": "Source and correlation",
+    "openRecord": "Open the record",
+    "openProject": "Open the project",
+    "correlatedEvents": "Show correlated events",
+    "attributes": "Captured attributes",
+    "noAttributes": "This event records no attributes.",
+    "masked": "Request context withheld from you (it needs its own permission):",
+    "integrity": "Integrity",
+    "chainStart": "None — the first event in the chain",
+    "noDigest": "Not covered — stored before attribute digests",
+    "notForwarded": "Not forwarded for this event class"
+  },
+  "system": {
+    "title": "System event logs",
+    "description": "The audit subsystem's own state and checks.",
+    "scopeTitle": "Narrow technical view",
+    "scope": "This page shows only the audit subsystem's own system events: what has been captured and not yet stored, what keeps failing, and how far the Activity timeline trails the audit store, with its integrity and consistency checks. It is not the formal audit trail, and it is not an observability or SIEM console: application logs, metrics and security analytics are kept in the operations and SIEM tooling.",
+    "pipeline": "Audit pipeline",
+    "refresh": "Refresh",
+    "state": "State",
+    "healthy": "No failing captures",
+    "failing": "Captures failing",
+    "pendingMessages": "Captured, not yet stored",
+    "failingMessages": "Failing captures",
+    "oldestPending": "Oldest waiting capture",
+    "lastError": "Last error code",
+    "eventsStored": "Events stored",
+    "storeHead": "Latest stored event",
+    "projectionLag": "Events not yet in the Activity timeline",
+    "projectionCheckpoint": "Activity timeline up to",
+    "checks": "Checks",
+    "checksNote": "Each check reads the store without changing it, and is itself recorded as audit evidence.",
+    "integrityTitle": "Hash chain and attribute digests",
+    "verify": "Verify the audit store",
+    "projectionTitle": "Activity timeline against the audit store",
+    "check": "Compare the Activity timeline",
+    "running": "Running…",
+    "intact": "Intact",
+    "tampered": "Tampering found",
+    "eventsVerified": "Events verified",
+    "brokenLinks": "Broken chain links",
+    "digestMismatches": "Attribute digest mismatches",
+    "withoutDigest": "Events stored before attribute digests",
+    "finding": {
+      "BROKEN_LINK": "Broken chain link",
+      "ATTRIBUTE_DIGEST_MISMATCH": "Attributes changed"
+    },
+    "matches": "Matches the audit store",
+    "differs": "Differs from the audit store",
+    "eventsCompared": "Events compared",
+    "missing": "Missing lines",
+    "unexpected": "Unexpected lines",
+    "changed": "Changed lines",
+    "pendingEvents": "Events still to be projected",
+    "difference": {
+      "MISSING": "Missing from the timeline",
+      "UNEXPECTED": "Not derived from the store",
+      "CHANGED": "Differs from the store"
+    }
+  },
+  "activity": {
+    "title": "Activity history",
+    "intro": "What has happened on this project, in plain language. It is derived from the formal audit record for everyday reading; it is not itself audit evidence.",
+    "domain": "Area",
+    "by": "by {name}",
+    "actorNotShown": "Actor not shown",
+    "openRecord": "Open the record",
+    "empty": "No activity matches these filters."
+  },
+  "projectAudit": {
+    "title": "Formal audit history",
+    "caption": "This project's audit events",
+    "intro": "Immutable audit evidence for this project: each event as recorded, with its class, outcome and actor, protected by the audit store's hash chain. Shown to holders of an explicit audit permission only.",
+    "searchTrail": "Search this project in the audit trail",
+    "empty": "No audit events match these filters.",
+    "back": "Back to the formal audit history",
+    "deniedTitle": "Formal audit history is not available to you",
+    "toActivity": "Go to the project's activity history"
+  }
+}

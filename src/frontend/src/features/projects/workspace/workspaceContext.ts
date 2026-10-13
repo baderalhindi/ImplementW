@@ -1,5 +1,6 @@
 import { useOutletContext } from 'react-router';
 
+import { type AuditAccessView } from '@/features/audit-activity/api/types.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type Notice } from '@/shared/ui/PageNotice.tsx';
 
@@ -14,6 +15,10 @@ export interface WorkspaceContext {
   /** Sent back as If-Match by every change, so a change made meanwhile is 412, not overwritten. */
   etag: string | null;
   access: ProjectAccess;
+  /** What the person may read of FG-06 (GET /audit-access); null until it answers, or if it could not be read. */
+  auditAccess: AuditAccessView | null;
+  /** True while GET /audit-access has not answered: the history tabs wait for it rather than refuse. */
+  auditAccessPending: boolean;
   lookups: ProjectLookups;
   /** Reads the project again, e.g. after a tab changed it. */
   reload: () => void;

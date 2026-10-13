@@ -1,6 +1,7 @@
 import { type ReactElement, type ReactNode, useCallback, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 
+import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { LifecycleBanner } from '@/features/suspension-closure/components/LifecycleBanner.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -47,6 +48,8 @@ const TAB_LABELS: Record<WorkspaceTabKey, TranslationKey> = {
   externalRequests: 'projects.workspace.tabs.externalRequests',
   reviews: 'projects.workspace.tabs.reviews',
   documents: 'projects.workspace.tabs.documents',
+  activity: 'projects.workspace.tabs.activity',
+  audit: 'projects.workspace.tabs.audit',
 };
 
 /** The notices SCR-033/034, and SCR-107 when it deletes a draft change request, hand over when they navigate here. */
@@ -74,6 +77,7 @@ export function ProjectWorkspace(): ReactElement | null {
     [projectId],
   );
   const project = useApiResource(load);
+  const auditAccess = useAuditAccess();
   const lookups = useProjectLookups();
   const arrival = (location.state as { notice?: string } | null)?.notice;
   const arrivalKey = arrival === undefined ? undefined : ARRIVAL_NOTICES[arrival];
@@ -95,7 +99,9 @@ export function ProjectWorkspace(): ReactElement | null {
 
   const detail = project.data.data;
   const etag = project.data.etag;
-  const access = projectAccess(session.user, detail);
+  // A failed GET /audit-access offers no history tab: audit permissions are never assumed.
+  const audit = auditAccess.data ?? null;
+  const access = projectAccess(session.user, detail, audit);
   const editable = access.reached && isEditable(detail.status);
   const commands = statusCommands(detail.status, access);
   const context: WorkspaceContext = {
@@ -103,6 +109,8 @@ export function ProjectWorkspace(): ReactElement | null {
     project: detail,
     etag,
     access,
+    auditAccess: audit,
+    auditAccessPending: auditAccess.loading,
     lookups,
     reload: project.reload,
     notify: setNotice,
@@ -250,21 +258,32 @@ function ActionButton({
 }
 
 /**
- * A tab reached by its address shows only to someone it is offered to; anyone else is told it is not available, and
- * nothing is read for them.
+ * A tab reached by its address shows only to someone it is offered to; anyone else is told it is not available (or
+ * `denied`, when the tab says why), and nothing is read for them. A history tab waits for GET /audit-access first.
  */
 export function WorkspaceTabGuard({
   tab,
   children,
+  denied,
 }: {
   tab: WorkspaceTabKey;
   children: ReactNode;
+  denied?: ReactNode;
 }): ReactElement {
   const { t } = useI18n();
-  const { access } = useWorkspace();
+  const { access, auditAccessPending } = useWorkspace();
   const definition = WORKSPACE_TABS.find((candidate) => candidate.key === tab);
+  const waitsForAudit =
+    definition?.audience === 'activity' || definition?.audience === 'projectAudit';
+  if (waitsForAudit && auditAccessPending) {
+    return <LoadingState />;
+  }
   if (definition === undefined || !canSeeTab(definition, access)) {
-    return <p className="state">{t('projects.workspace.tabUnavailable')}</p>;
+    return denied === undefined ? (
+      <p className="state">{t('projects.workspace.tabUnavailable')}</p>
+    ) : (
+      <>{denied}</>
+    );
   }
   return <>{children}</>;
 }
