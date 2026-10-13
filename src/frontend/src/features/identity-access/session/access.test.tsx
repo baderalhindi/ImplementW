@@ -41,9 +41,13 @@ describe('R01 only', () => {
         ).toBeNull();
         unmount();
       }
-      // The shell's unread badge (TASK-040) is the only call; nothing administrative is asked for.
+      // The shell's unread badge (TASK-040) and audit navigation (TASK-074) are the only calls; nothing
+      // administrative is asked for.
       expect(
-        api.requests.filter((request) => request.path !== '/notifications/unread-count'),
+        api.requests.filter(
+          (request) =>
+            request.path !== '/notifications/unread-count' && request.path !== '/audit-access',
+        ),
       ).toHaveLength(0);
     },
   );

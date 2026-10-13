@@ -138,7 +138,9 @@
       "closeout": "Closeout",
       "externalRequests": "External requests",
       "reviews": "Review history",
-      "documents": "Documents"
+      "documents": "Documents",
+      "activity": "Activity history",
+      "audit": "Audit history (formal)"
     }
   },
   "overview": {

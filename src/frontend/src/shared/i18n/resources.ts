@@ -1,5 +1,7 @@
 import approvalsAr from '@/features/approvals/i18n/ar.json';
 import approvalsEn from '@/features/approvals/i18n/en.json';
+import auditActivityAr from '@/features/audit-activity/i18n/ar.json';
+import auditActivityEn from '@/features/audit-activity/i18n/en.json';
 import changeRequestsAr from '@/features/change-requests/i18n/ar.json';
 import changeRequestsEn from '@/features/change-requests/i18n/en.json';
 import dashboardsAr from '@/features/dashboards/i18n/ar.json';
@@ -58,6 +60,7 @@ const en = {
   externalParticipation: externalParticipationEn,
   dashboards: dashboardsEn,
   reports: reportsEn,
+  auditActivity: auditActivityEn,
 };
 
 // English is the reference shape; resources.test.ts fails if Arabic lacks or adds a key.
@@ -84,6 +87,7 @@ export const resources: Record<Language, Resources> = {
     externalParticipation: externalParticipationAr,
     dashboards: dashboardsAr,
     reports: reportsAr,
+    auditActivity: auditActivityAr,
   },
 };
 

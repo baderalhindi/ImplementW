@@ -1,5 +1,11 @@
 import { type RouteObject } from 'react-router';
 
+import { ProjectActivityTab } from '@/features/audit-activity/workspace/ProjectActivityTab.tsx';
+import {
+  ProjectAuditDenied,
+  ProjectAuditEventTab,
+  ProjectAuditTab,
+} from '@/features/audit-activity/workspace/ProjectAuditTab.tsx';
 import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 
 import { CreateProjectPage, EditProjectPage } from './form/ProjectFormPages.tsx';
@@ -214,6 +220,30 @@ export const projectRoutes: RouteObject[] = [
         element: (
           <WorkspaceTabGuard tab="documents">
             <DocumentsTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'activity-history', // SCR-057 (TASK-074): business Activity, its own tab
+        element: (
+          <WorkspaceTabGuard tab="activity">
+            <ProjectActivityTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'audit-history', // SCR-058 (TASK-074): formal audit, its own tab, for explicit audit permission
+        element: (
+          <WorkspaceTabGuard tab="audit" denied={<ProjectAuditDenied />}>
+            <ProjectAuditTab />
+          </WorkspaceTabGuard>
+        ),
+      },
+      {
+        path: 'audit-history/:auditEventId', // ADM-051 inside the project, from SCR-058
+        element: (
+          <WorkspaceTabGuard tab="audit" denied={<ProjectAuditDenied />}>
+            <ProjectAuditEventTab />
           </WorkspaceTabGuard>
         ),
       },

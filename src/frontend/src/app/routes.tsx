@@ -1,6 +1,7 @@
 import { Navigate, Outlet, type RouteObject } from 'react-router';
 
 import { approvalRoutes } from '@/features/approvals/routes.tsx';
+import { auditActivityRoutes } from '@/features/audit-activity/routes.tsx';
 import { changeRequestRoutes } from '@/features/change-requests/routes.tsx';
 import { documentRoutes } from '@/features/documents/routes.tsx';
 import {
@@ -35,14 +36,20 @@ export const appRoutes: RouteObject[] = [
       { path: 'sign-in', element: <SignInPage /> },
       {
         path: 'admin',
-        element: (
-          <RequireRole roleCode={SYSTEM_ADMINISTRATOR_ROLE}>
-            <Outlet />
-          </RequireRole>
-        ),
         children: [
-          { index: true, element: <Navigate to="users" replace /> },
-          ...identityAccessRoutes,
+          {
+            element: (
+              <RequireRole roleCode={SYSTEM_ADMINISTRATOR_ROLE}>
+                <Outlet />
+              </RequireRole>
+            ),
+            children: [
+              { index: true, element: <Navigate to="users" replace /> },
+              ...identityAccessRoutes,
+            ],
+          },
+          // FG-06's screens open on audit permissions, not on R01 (TASK-074; each guards itself).
+          ...auditActivityRoutes,
         ],
       },
       {

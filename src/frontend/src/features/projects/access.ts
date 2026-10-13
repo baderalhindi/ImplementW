@@ -1,3 +1,5 @@
+import { canReadActivity, canReadProjectAudit } from '@/features/audit-activity/access.ts';
+import { type AuditAccessView } from '@/features/audit-activity/api/types.ts';
 import {
   type SessionRoleAssignment,
   type SessionUser,
@@ -42,8 +44,12 @@ export function ownEntityId(user: SessionUser): string | null {
   return !isInternal(user) && entities.size === 1 ? ([...entities][0] ?? null) : null;
 }
 
-/** Who sees a workspace tab, beyond seeing the project at all (which the API decided by answering). */
-export type TabAudience = 'anyone' | 'reached' | 'internalReached';
+/**
+ * Who sees a workspace tab, beyond seeing the project at all (which the API decided by answering). FG-06's two
+ * histories follow audit permissions, which GET /audit-access reports: Activity for ACTIVITY_VIEW, the formal audit for
+ * a project audit category (TASK-074).
+ */
+export type TabAudience = 'anyone' | 'reached' | 'internalReached' | 'activity' | 'projectAudit';
 
 export type WorkspaceTabKey =
   | 'overview'
@@ -62,7 +68,9 @@ export type WorkspaceTabKey =
   | 'closeout'
   | 'externalRequests'
   | 'reviews'
-  | 'documents';
+  | 'documents'
+  | 'activity'
+  | 'audit';
 
 export interface WorkspaceTab {
   key: WorkspaceTabKey;
@@ -87,6 +95,7 @@ export interface WorkspaceTab {
  * their scope reaches.
  * Review history is AHDA's: a review's requester is the AHDA reviewer (TASK-041 F-11) and a run carries no entity
  * anchor (TASK-035 F-8), so an external user can never read one.
+ * SCR-057 Activity History and SCR-058 Audit History are two tabs, never one (TASK-074 acceptance criterion 1).
  */
 export const WORKSPACE_TABS: WorkspaceTab[] = [
   { key: 'overview', path: '', audience: 'anyone' },
@@ -106,6 +115,8 @@ export const WORKSPACE_TABS: WorkspaceTab[] = [
   { key: 'externalRequests', path: 'external-requests', audience: 'reached' },
   { key: 'reviews', path: 'reviews', audience: 'internalReached' },
   { key: 'documents', path: 'documents', audience: 'reached' },
+  { key: 'activity', path: 'activity-history', audience: 'activity' },
+  { key: 'audit', path: 'audit-history', audience: 'projectAudit' },
 ];
 
 export interface ProjectAccess {
@@ -114,13 +125,24 @@ export interface ProjectAccess {
   reached: boolean;
   /** The person who created the project: only they may delete its draft (TASK-041 D-11). */
   creator: boolean;
+  /** ACTIVITY_VIEW: SCR-057. */
+  activity: boolean;
+  /** An explicit project audit permission: SCR-058. R01 alone does not give it. */
+  projectAudit: boolean;
 }
 
-export function projectAccess(user: SessionUser, project: ProjectDetail): ProjectAccess {
+/** `audit` is the API's GET /audit-access, or null while it is unknown: no audit tab is offered until it says so. */
+export function projectAccess(
+  user: SessionUser,
+  project: ProjectDetail,
+  audit: AuditAccessView | null = null,
+): ProjectAccess {
   return {
     internal: isInternal(user),
     reached: assignmentsReaching(user, project).length > 0,
     creator: project.createdBy === user.id,
+    activity: canReadActivity(audit),
+    projectAudit: canReadProjectAudit(audit),
   };
 }
 
@@ -132,6 +154,10 @@ export function canSeeTab(tab: WorkspaceTab, access: ProjectAccess): boolean {
       return access.reached;
     case 'internalReached':
       return access.internal && access.reached;
+    case 'activity':
+      return access.activity;
+    case 'projectAudit':
+      return access.projectAudit;
   }
 }
 

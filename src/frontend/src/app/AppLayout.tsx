@@ -2,6 +2,8 @@ import { type ReactElement } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 
 import { approvalNavigation } from '@/features/approvals/routes.tsx';
+import { auditNavigation } from '@/features/audit-activity/access.ts';
+import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
 import { changeRequestNavigation } from '@/features/change-requests/routes.tsx';
 import { dashboardNavigation } from '@/features/dashboards/routes.tsx';
 import { documentNavigation } from '@/features/documents/routes.tsx';
@@ -72,13 +74,15 @@ function Navigation({
 /**
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
  * (the role-aware Home with its dashboards, FG-02's reports, projects, tasks, milestones, KPIs, risks, issues and challenges, change requests, suspensions and closeouts, approvals, documents and notifications for
- * everyone signed in; WF-13's register and monitors for AHDA, or an entity user's requests and contributions; administration for R01),
+ * everyone signed in; WF-13's register and monitors for AHDA, or an entity user's requests and contributions; FG-06's
+ * audit screens for the audit permissions the API reports; administration for R01),
  * and the page.
  */
 export function AppLayout(): ReactElement {
   const { t } = useI18n();
   const { session } = useSession();
   const administrator = useHasRole(SYSTEM_ADMINISTRATOR_ROLE);
+  const auditItems = auditNavigation(useAuditAccess().data ?? null);
 
   return (
     <div className="shell">
@@ -128,6 +132,9 @@ export function AppLayout(): ReactElement {
             <Navigation label="approvals.nav.label" items={approvalNavigation} />
             <Navigation label="documents.nav.label" items={documentNavigation} />
             <Navigation label="notifications.nav.label" items={notificationNavigation} />
+            {auditItems.length > 0 && (
+              <Navigation label="auditActivity.nav.label" items={auditItems} />
+            )}
             {administrator && (
               <Navigation label="identityAccess.nav.label" items={identityAccessNavigation} />
             )}
