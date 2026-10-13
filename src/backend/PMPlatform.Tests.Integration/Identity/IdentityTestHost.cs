@@ -7,10 +7,14 @@ namespace PMPlatform.Tests.Integration.Identity;
 /// One database, one identity provider, one MFA provider, one Nafath, one SIEM and one API for the whole identity suite. The API does
 /// not forward to the SIEM; a test that needs forwarding creates an API with <see cref="TestSiem.Settings"/>. The shared API has no Nafath
 /// (the feature is off by default); a test that needs it creates an API with <see cref="TestNafath.Settings"/>. Tests that move the clock or
-/// change a row put it back, so the order they run in does not matter.
+/// change a row put it back, so the order they run in does not matter. A suite that runs the background passes itself gives the shared
+/// API settings that park them (<see cref="SharedApiSettings"/>), so no pass of the shared API races its tests on the same database.
 /// </summary>
 public sealed class IdentityTestHost : IAsyncLifetime
 {
+    /// <summary>Settings of the shared API on top of the identity ones, e.g. to park its background passes.</summary>
+    public IReadOnlyDictionary<string, string?>? SharedApiSettings { get; init; }
+
     public IdentityDatabase Database { get; } = new();
 
     public AdjustableTimeProvider Clock { get; } = new();
@@ -34,7 +38,7 @@ public sealed class IdentityTestHost : IAsyncLifetime
         MultiFactorProvider = await TestMultiFactorProvider.StartAsync();
         Nafath = await TestNafath.StartAsync();
         Siem = await TestSiem.StartAsync();
-        Api = CreateApi();
+        Api = CreateApi(SharedApiSettings);
     }
 
     /// <summary>The API with every identity setting in place, <paramref name="overrides"/> on top, and <paramref name="services"/> added.</summary>

@@ -13,10 +13,13 @@ public sealed record ActivityTemplate(string SummaryEn, string SummaryAr);
 /// </summary>
 public static class ActivityTemplateCatalogue
 {
-    /// <summary>Modules whose events are administration, security, configuration or read-side records, never project activity.</summary>
+    /// <summary>
+    /// Modules whose events are administration, security, configuration, integration operations or read-side records, never project
+    /// activity. IntegrationMonitoring's are technical operations, kept apart from business state (TASK-075, BR-INT-001).
+    /// </summary>
     public static IReadOnlySet<string> ExcludedModules { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
-        "AuditActivity", "Dashboards", "IdentityAccess", "MasterDataConfig", "Notifications", "Reports",
+        "AuditActivity", "Dashboards", "IdentityAccess", "IntegrationMonitoring", "MasterDataConfig", "Notifications", "Reports",
     };
 
     /// <summary>

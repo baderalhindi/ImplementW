@@ -1,8 +1,10 @@
+using PMPlatform.Application.Common.Correlation;
+
 namespace PMPlatform.Api.Correlation;
 
 /// <summary>
 /// api-conventions R-41: <c>X-Correlation-Id</c> is taken from the request when it is a uuid, generated otherwise, echoed
-/// on every response and bound to the request's logging scope (R-42).
+/// on every response and bound to the request's logging scope and its <see cref="CorrelationScope"/> (R-42).
 /// </summary>
 internal sealed class CorrelationId(RequestDelegate next, ILogger<CorrelationId> logger)
 {
@@ -24,6 +26,7 @@ internal sealed class CorrelationId(RequestDelegate next, ILogger<CorrelationId>
         });
 
         using (logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = id }))
+        using (CorrelationScope.Begin(id))
         {
             await next(context).ConfigureAwait(false);
         }

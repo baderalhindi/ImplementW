@@ -19,6 +19,9 @@ using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.IntegrationMonitoring;
+using PMPlatform.Application.Features.IntegrationMonitoring.Contracts;
+using PMPlatform.Application.Features.IntegrationMonitoring.EventHandlers;
 using PMPlatform.Application.Features.MasterDataConfig;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
@@ -370,6 +373,25 @@ public static class DependencyInjection
         services.AddScoped<IReportJobService, ReportJobService>();
         services.AddScoped<IReportDefinitionService, ReportDefinitionService>();
         services.AddScoped<IReportMaintenance, ReportMaintenance>();
+
+        // TASK-075: FG-05 integration monitoring. Telemetry arrives through the outbox from IdentityAccess and Notifications (edges 31–33);
+        // FG-05 runs its own operations — the directory reconciliation, read through IdentityAccess's contract (E-U1) — with retry and dead
+        // letter, evaluates health and raises alerts, writing only integration_monitoring. The repository and the worker are Infrastructure's.
+        services.AddScoped<IDirectoryReconciliationSource, DirectoryReconciliationSource>();
+        services.AddScoped<OperationalAlerting>();
+        services.AddScoped<IntegrationHealthRecorder>();
+        services.AddScoped<InvocationTelemetryIntake>();
+        services.AddScoped<IDomainEventConsumer, IdentityAccessInvocationConsumer>();
+        services.AddScoped<IDomainEventConsumer, NotificationInvocationConsumer>();
+        services.AddScoped<IIntegrationOperation, DirectoryReconciliation>();
+        services.AddScoped<IntegrationInvocationEngine>();
+        services.AddScoped<IntegrationHealthEvaluation>();
+        services.AddScoped<IIntegrationMonitoringMaintenance, IntegrationMonitoringMaintenance>();
+        services.AddScoped<IIntegrationCatalogue, IntegrationCatalogueService>();
+        services.AddScoped<IntegrationInvocationService>();
+        services.AddScoped<IIntegrationInvocationService>(provider => provider.GetRequiredService<IntegrationInvocationService>());
+        services.AddScoped<ISyncRunService, SyncRunService>();
+        services.AddScoped<IOperationalAlertService, OperationalAlertService>();
 
         return services;
     }

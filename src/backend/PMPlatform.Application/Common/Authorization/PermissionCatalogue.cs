@@ -358,6 +358,24 @@ public sealed class PermissionCatalogue
     /// </summary>
     public const string AuditOperationsManage = "AUDIT_OPERATIONS_MANAGE";
 
+    /// <summary>
+    /// FG-05 (TASK-075): ADM-040, -046, -047 — the integration catalogue, each instance's availability and freshness, its measures, its runs and
+    /// its operational alerts (INT.VIEW, INT.VIEW_HEALTH, INT.VIEW_ALERTS). Platform-wide: there is no record to scope.
+    /// </summary>
+    public const string IntegrationView = "INTEGRATION_VIEW";
+
+    /// <summary>FG-05 (TASK-075): ADM-048 — attempts and their lineages, searched by correlation id (INT.VIEW_LOGS, INT.SEARCH_CORRELATION). No payload exists to show.</summary>
+    public const string IntegrationLogView = "INTEGRATION_LOG_VIEW";
+
+    /// <summary>FG-05 (TASK-075): retry a lineage FG-05 runs, and request a reconciliation (INT.RETRY, INT.RUN_RECONCILIATION). Confers no business authority (BR-INT-021).</summary>
+    public const string IntegrationOperate = "INTEGRATION_OPERATE";
+
+    /// <summary>FG-05 (TASK-075): acknowledge, resolve and dismiss operational alerts (INT.ACK_ALERT, INT.RESOLVE_ALERT).</summary>
+    public const string IntegrationAlertManage = "INTEGRATION_ALERT_MANAGE";
+
+    /// <summary>FG-05 (TASK-075): enable and disable an integration's monitoring (MOD-101), apart from operating it (FG-05 §12.3).</summary>
+    public const string IntegrationConfigure = "INTEGRATION_CONFIGURE";
+
     public static PermissionCatalogue Platform { get; } = new(
         [
             new(IdentityIntegrationManage, "IDENTITY_ACCESS", AccessMode.Write),
@@ -444,6 +462,11 @@ public sealed class PermissionCatalogue
             new(AuditBusinessView, "AUDIT_BUSINESS", AccessMode.Read),
             new(AuditContextView, "AUDIT_CONTEXT", AccessMode.Read),
             new(AuditOperationsManage, "AUDIT_OPERATIONS", AccessMode.Write),
+            new(IntegrationView, "INTEGRATION_MONITORING", AccessMode.Read),
+            new(IntegrationLogView, "INTEGRATION_MONITORING", AccessMode.Read),
+            new(IntegrationOperate, "INTEGRATION_MONITORING", AccessMode.Write),
+            new(IntegrationAlertManage, "INTEGRATION_MONITORING", AccessMode.Write),
+            new(IntegrationConfigure, "INTEGRATION_MONITORING", AccessMode.Write),
         ]);
 
     /// <summary>
@@ -517,7 +540,10 @@ public sealed class PermissionCatalogue
     /// Security Reviewer assignments AHDA has not named (TBC-AUD-05 to -07, PTBC-011) and ship to no role. Appendix A's "V own history"
     /// gives R04 the Activity timeline at OWN, the projects the holder manages, internal or entity alike; ADR-013's participation
     /// amendment to TASK-073 lets an entity see its own activity history: R08 at ENTITY. The other Activity cells are asterisked and
-    /// wait for Appendix A (audit-activity.md F-2).
+    /// wait for Appendix A (audit-activity.md F-2). FG-05's five permissions (TASK-075) go to R01 at ALL by delivery-team decision, as FG-04's
+    /// and WF-15's did: integrations are platform-wide, with no record to scope, and FG-05 §15 makes the System Administrator their viewer.
+    /// The Integration Operator of FG-05 §12 is an assignment AHDA has not named (TBC-INT-19); no other role ships with any of them, and R08
+    /// never does (BR-INT-022). R01 sees no payload by holding them, because FG-05 stores none (integration-monitoring.md D-11).
     /// </summary>
     public static IReadOnlyList<ShippedGrant> ShippedDefaultGrants { get; } =
     [
@@ -605,6 +631,11 @@ public sealed class PermissionCatalogue
         new("R01", AuditOperationsManage, DataScope.All),
         new("R04", ActivityView, DataScope.Own),
         new("R08", ActivityView, DataScope.Entity),
+        new("R01", IntegrationView, DataScope.All),
+        new("R01", IntegrationLogView, DataScope.All),
+        new("R01", IntegrationOperate, DataScope.All),
+        new("R01", IntegrationAlertManage, DataScope.All),
+        new("R01", IntegrationConfigure, DataScope.All),
     ];
 
     private readonly Dictionary<string, PermissionDefinition> _definitions;

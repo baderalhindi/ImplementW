@@ -625,6 +625,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_audit_forwarding_record_audit_event_id");
 
+                    b.HasIndex("InvocationId")
+                        .HasDatabaseName("ix_audit_forwarding_record_invocation_id");
+
                     b.HasIndex("Status", "CreatedAt")
                         .HasDatabaseName("ix_audit_forwarding_record_status_created_at");
 
@@ -4724,6 +4727,559 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_user_status", "\"status\" IN ('ACTIVE', 'DISABLED')");
 
                             t.HasCheckConstraint("ck_user_user_type", "\"user_type\" IN ('INTERNAL', 'EXTERNAL', 'SERVICE')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("direction");
+
+                    b.Property<string>("IntegrationKind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("integration_kind");
+
+                    b.Property<short>("MaxAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint")
+                        .HasDefaultValue((short)3)
+                        .HasColumnName("max_attempts");
+
+                    b.Property<Guid?>("OwnerRoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_role_id");
+
+                    b.Property<int>("RetryBackoffSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(60)
+                        .HasColumnName("retry_backoff_seconds");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Name", "PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition.Name#BilingualLabel", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_en");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_integration_definition");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_integration_definition_code");
+
+                    b.HasIndex("OwnerRoleId")
+                        .HasDatabaseName("ix_integration_definition_owner_role_id");
+
+                    b.ToTable("integration_definition", "integration_monitoring", t =>
+                        {
+                            t.HasCheckConstraint("ck_integration_definition_direction", "\"direction\" IN ('INBOUND', 'OUTBOUND', 'BIDIRECTIONAL')");
+
+                            t.HasCheckConstraint("ck_integration_definition_integration_kind", "\"integration_kind\" IN ('IDENTITY', 'MESSAGING', 'VERIFICATION', 'FINANCE', 'SECURITY', 'DATA')");
+
+                            t.HasCheckConstraint("ck_integration_definition_max_attempts", "max_attempts >= 1");
+
+                            t.HasCheckConstraint("ck_integration_definition_retry_backoff_seconds", "retry_backoff_seconds >= 0");
+
+                            t.HasCheckConstraint("ck_integration_definition_status", "\"status\" IN ('ACTIVE', 'DISABLED', 'RETIRED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationInstance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Availability")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("availability");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("EndpointConfigurationKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("endpoint_configuration_key");
+
+                    b.Property<string>("Freshness")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("freshness");
+
+                    b.Property<DateTimeOffset?>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("evaluated_at");
+
+                    b.Property<Guid>("IntegrationDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("integration_definition_id");
+
+                    b.Property<bool>("IsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_enabled");
+
+                    b.Property<DateTimeOffset?>("LastFailureAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_failure_at");
+
+                    b.Property<DateTimeOffset?>("LastSuccessAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_success_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_integration_instance");
+
+                    b.HasIndex("IntegrationDefinitionId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_integration_instance_integration_definition_id_code");
+
+                    b.ToTable("integration_instance", "integration_monitoring", t =>
+                        {
+                            t.HasCheckConstraint("ck_integration_instance_availability", "\"availability\" IN ('UP', 'DOWN', 'UNKNOWN')");
+
+                            t.HasCheckConstraint("ck_integration_instance_freshness", "\"freshness\" IN ('FRESH', 'STALE', 'UNKNOWN')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.Invocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<short>("AttemptNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint")
+                        .HasDefaultValue((short)1)
+                        .HasColumnName("attempt_no");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("ErrorSummary")
+                        .HasColumnType("text")
+                        .HasColumnName("error_summary");
+
+                    b.Property<string>("FailureCategory")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("failure_category");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<Guid>("IntegrationInstanceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("integration_instance_id");
+
+                    b.Property<DateTimeOffset?>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<string>("OperationCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("operation_code");
+
+                    b.Property<string>("ResponseCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("response_code");
+
+                    b.Property<string>("SourceModule")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("source_module");
+
+                    b.Property<string>("SourceReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("source_reference");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid?>("SyncRunId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_run_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_invocation");
+
+                    b.HasIndex("CorrelationId")
+                        .HasDatabaseName("ix_invocation_correlation_id");
+
+                    b.HasIndex("SyncRunId")
+                        .HasDatabaseName("ix_invocation_sync_run_id");
+
+                    b.HasIndex("NextAttemptAt", "Id")
+                        .HasDatabaseName("ix_invocation_retry_queue")
+                        .HasFilter("status = 'RETRY_SCHEDULED'");
+
+                    b.HasIndex("IntegrationInstanceId", "StartedAt", "Id")
+                        .HasDatabaseName("ix_invocation_integration_instance_id_started_at_id");
+
+                    b.HasIndex("IntegrationInstanceId", "OperationCode", "IdempotencyKey", "AttemptNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invocation_lineage_attempt");
+
+                    b.ToTable("invocation", "integration_monitoring", t =>
+                        {
+                            t.HasCheckConstraint("ck_invocation_attempt_no", "attempt_no >= 1");
+
+                            t.HasCheckConstraint("ck_invocation_completed", "(status = 'IN_PROGRESS') = (completed_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_invocation_failure", "(status IN ('IN_PROGRESS', 'SUCCEEDED')) = (failure_category IS NULL)");
+
+                            t.HasCheckConstraint("ck_invocation_failure_category", "\"failure_category\" IN ('TECHNICAL', 'BUSINESS_VALIDATION', 'SECURITY')");
+
+                            t.HasCheckConstraint("ck_invocation_next_attempt", "(status = 'RETRY_SCHEDULED') = (next_attempt_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_invocation_status", "\"status\" IN ('IN_PROGRESS', 'SUCCEEDED', 'FAILED', 'RETRY_SCHEDULED', 'DEAD_LETTER')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.OperationalAlert", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AcknowledgedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("acknowledged_at");
+
+                    b.Property<Guid?>("AcknowledgedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("acknowledged_by_user_id");
+
+                    b.Property<string>("AlertType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("alert_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Detail")
+                        .HasColumnType("text")
+                        .HasColumnName("detail");
+
+                    b.Property<Guid>("IntegrationInstanceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("integration_instance_id");
+
+                    b.Property<Guid?>("InvocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invocation_id");
+
+                    b.Property<DateTimeOffset>("RaisedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("raised_at");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("severity");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid?>("SyncRunId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_run_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ResolutionNote", "PMPlatform.Domain.IntegrationMonitoring.OperationalAlert.ResolutionNote#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("resolution_note_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("resolution_note");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_operational_alert");
+
+                    b.HasIndex("AcknowledgedByUserId")
+                        .HasDatabaseName("ix_operational_alert_acknowledged_by_user_id");
+
+                    b.HasIndex("InvocationId")
+                        .HasDatabaseName("ix_operational_alert_invocation_id");
+
+                    b.HasIndex("SyncRunId")
+                        .HasDatabaseName("ix_operational_alert_sync_run_id");
+
+                    b.HasIndex("IntegrationInstanceId", "AlertType")
+                        .IsUnique()
+                        .HasDatabaseName("ix_operational_alert_live")
+                        .HasFilter("status IN ('OPEN', 'ACKNOWLEDGED')");
+
+                    b.HasIndex("Status", "RaisedAt", "Id")
+                        .HasDatabaseName("ix_operational_alert_status_raised_at_id");
+
+                    b.ToTable("operational_alert", "integration_monitoring", t =>
+                        {
+                            t.HasCheckConstraint("ck_operational_alert_acknowledged", "(acknowledged_by_user_id IS NULL) = (acknowledged_at IS NULL) AND (status <> 'ACKNOWLEDGED' OR acknowledged_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_operational_alert_alert_type", "\"alert_type\" IN ('AVAILABILITY', 'FRESHNESS', 'RECONCILIATION_MISMATCH', 'DEAD_LETTER', 'DELIVERY_RATE')");
+
+                            t.HasCheckConstraint("ck_operational_alert_resolution_note_lang", "\"resolution_note_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_operational_alert_resolution_note_pair", "(\"resolution_note\" IS NULL) = (\"resolution_note_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_operational_alert_resolved", "(status IN ('RESOLVED', 'DISMISSED')) = (resolved_at IS NOT NULL) AND (status IN ('RESOLVED', 'DISMISSED')) = (resolution_note IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_operational_alert_severity", "\"severity\" IN ('INFO', 'WARNING', 'CRITICAL')");
+
+                            t.HasCheckConstraint("ck_operational_alert_status", "\"status\" IN ('OPEN', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.SyncRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("IntegrationInstanceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("integration_instance_id");
+
+                    b.Property<int>("MismatchCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("mismatch_count");
+
+                    b.Property<int>("RecordsApplied")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("records_applied");
+
+                    b.Property<int>("RecordsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("records_read");
+
+                    b.Property<int>("RecordsRejected")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("records_rejected");
+
+                    b.Property<string>("RunType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("run_type");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sync_run");
+
+                    b.HasIndex("IntegrationInstanceId", "StartedAt", "Id")
+                        .HasDatabaseName("ix_sync_run_integration_instance_id_started_at_id");
+
+                    b.ToTable("sync_run", "integration_monitoring", t =>
+                        {
+                            t.HasCheckConstraint("ck_sync_run_completed", "(status = 'RUNNING') = (completed_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_sync_run_counts", "records_read >= 0 AND records_applied >= 0 AND records_rejected >= 0 AND mismatch_count >= 0");
+
+                            t.HasCheckConstraint("ck_sync_run_run_type", "\"run_type\" IN ('DIRECTORY_SYNC', 'RECONCILIATION')");
+
+                            t.HasCheckConstraint("ck_sync_run_status", "\"status\" IN ('RUNNING', 'SUCCEEDED', 'PARTIAL', 'FAILED')");
                         });
                 });
 
@@ -11196,6 +11752,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_audit_forwarding_record_audit_event_audit_event_id");
+
+                    b.HasOne("PMPlatform.Domain.IntegrationMonitoring.Invocation", null)
+                        .WithMany()
+                        .HasForeignKey("InvocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_audit_forwarding_record_invocation_invocation_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.AuditActivity.BusinessActivityEntry", b =>
@@ -12082,6 +12644,79 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ManagerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_user_user_manager_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.Role", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerRoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_integration_definition_role_owner_role_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationInstance", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("IntegrationDefinitionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_integration_instance_integration_definition_integration_def");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.Invocation", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IntegrationMonitoring.IntegrationInstance", null)
+                        .WithMany()
+                        .HasForeignKey("IntegrationInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_invocation_integration_instance_integration_instance_id");
+
+                    b.HasOne("PMPlatform.Domain.IntegrationMonitoring.SyncRun", null)
+                        .WithMany()
+                        .HasForeignKey("SyncRunId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_invocation_sync_run_sync_run_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.OperationalAlert", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("AcknowledgedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_operational_alert_user_acknowledged_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IntegrationMonitoring.IntegrationInstance", null)
+                        .WithMany()
+                        .HasForeignKey("IntegrationInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_operational_alert_integration_instance_integration_instance");
+
+                    b.HasOne("PMPlatform.Domain.IntegrationMonitoring.Invocation", null)
+                        .WithMany()
+                        .HasForeignKey("InvocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_operational_alert_invocation_invocation_id");
+
+                    b.HasOne("PMPlatform.Domain.IntegrationMonitoring.SyncRun", null)
+                        .WithMany()
+                        .HasForeignKey("SyncRunId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_operational_alert_sync_run_sync_run_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.SyncRun", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IntegrationMonitoring.IntegrationInstance", null)
+                        .WithMany()
+                        .HasForeignKey("IntegrationInstanceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_sync_run_integration_instance_integration_instance_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.ManagementConcern.ConcernEscalation", b =>
