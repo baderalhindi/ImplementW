@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
@@ -98,8 +98,11 @@ describe('sign-in', () => {
       challengeId: 'challenge-1',
       code: '654321',
     });
-    expect(api.requestsTo('GET', /^\/roles$/)[0]?.headers.get('Authorization')).toBe(
-      'Bearer test-access-token',
-    );
+    // The page renders its heading before it reads the list, so wait for the read rather than assume it was sent.
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/roles$/)[0]?.headers.get('Authorization')).toBe(
+        'Bearer test-access-token',
+      );
+    });
   });
 });
