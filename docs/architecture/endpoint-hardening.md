@@ -134,6 +134,25 @@ All against the API image built from this branch, on a scratch database (`task07
 | 4 | Every kind of response (`check.py`): 200, 401, 401 for an unknown route, 429, 403 origin | All nine headers on each; no `Server` header |
 | 5 | **The SPA under its CSP, in Chromium** (`check078.mjs`) through the edge | local.r02 signs in through the edge (its `Origin` allowlisted); Home, notifications and the project register render with **no CSP violation and no page error**; another origin framing the SPA is blocked by `frame-ancestors 'none'`; after a 31-request burst from the page (29 × 401, then 429), the sign-in form shows the throttling message. 7 of 7 |
 
+### 5.4 The SIT check, scripted and rehearsed
+
+`infra/environments/verify-endpoint-hardening.sh <env>` runs the workbook's two validation checks against an environment's `APP_BASE_URL`. It prints one PASS, FAIL or SKIP line per check and exits 0 only when all pass:
+- **E-1:** a burst of `SIGN_IN_LIMIT` + 1 sign-ins, as a username no directory holds, so it cannot lock out a real account;
+- **E-2:** a foreign Origin, preflight and simple request;
+- **E-3:** the nine headers on the SPA's `/` and on the API's 401;
+- **E-4:** the MDN Observatory scanner (Node 24+).
+
+On 2026-10-14 it was run with `BASE_URL=https://pmplatform.ahda.test` from a container on the stack's network. The stack was the deployed shape: the API with Redis counters, trusting one forwarded hop, behind the HTTPS edge of §5.3 row 3.
+
+| Check | Result |
+| --- | --- |
+| E-1 | PASS: attempts 1–30 got 401; attempt 31 got 429 `RATE_LIMITED` with `Retry-After: 30`. The Redis key was the script container's address (`…address:172.18.0.8`), not the edge's (172.18.0.7): the forwarded client was counted, which is the mechanism SIT relies on |
+| E-2 | PASS: the preflight and the request from `https://evil.example` both got 403 `ORIGIN_NOT_ALLOWED` |
+| E-3 | PASS: all nine headers on the frontend's `/` (200) and on the API's `/api/v1/sessions/current` (401) |
+| E-4 | FAIL, as expected locally: grade B+, 11 of 12 tests. The one failure is `strict-transport-security=hsts-invalid-cert`, caused by the edge's local certificate |
+
+Against SIT, with its publicly trusted certificate, all four are expected to pass.
+
 ## 6. Acceptance criteria and validation checks
 
 | Criterion / check | Evidence | Verdict |
@@ -141,8 +160,8 @@ All against the API image built from this branch, on a scratch database (`task07
 | A scripted burst of login attempts beyond the configured threshold is throttled with a standard 429 response | §5.3 row 1; `ASignInBurstBeyondTheLimit…`, `ASpoofedForwardedFor…`, `EverySignInStep…` | **Met** |
 | A request from a non-allowlisted Origin is rejected by CORS | §5.3 row 2; `OriginAllowlistTests` | **Met** |
 | A security-header scan (e.g. Mozilla Observatory equivalent) reports no missing mandatory header | §5.3 row 3; `SecurityHeadersTests` | **Met** — no header missing; the one failed test is the scan's local certificate, not a header |
-| Validation check: "Script a login-attempt burst against SIT and confirm throttling kicks in at the configured threshold" | The same script on the DEV compose stack, with in-memory and Redis counters; SIT does not exist | **Pending SIT** (F-1) |
-| Validation check: "run a header-scan tool against the deployed frontend and API" | The same scanner against the deployed shape locally; no environment serves the SPA yet | **Pending SIT** (F-1, F-3) |
+| Validation check: "Script a login-attempt burst against SIT and confirm throttling kicks in at the configured threshold" | **Scripted:** `infra/environments/verify-endpoint-hardening.sh sit` (E-1). Rehearsed on 2026-10-14 against the deployed shape locally (§5.4): PASS. SIT has no address (`APP_BASE_URL` empty) and no deployment, and no credential for its project was available, so it has not run there | **Pending SIT** (F-1) |
+| Validation check: "run a header-scan tool against the deployed frontend and API" | **Scripted:** the same script's E-3 (the nine headers on the SPA's `/` and the API's 401) and E-4 (the MDN Observatory scanner). Rehearsal: E-3 PASS on both; E-4 11/12, the 12th being the local certificate | **Pending SIT** (F-1, F-3) |
 | `RATE_LIMIT_STORE_CONNECTION_STRING`: "throttling behaves consistently across multiple API instances in a load test" | `TwoApiInstancesSharingTheStore…` in process; the image with Redis on the stack | **Met in test**; load test on SIT pending (F-1, F-2) |
 | `CORS_ALLOWED_ORIGINS`: "request from a non-listed origin is rejected by CORS in a test" | `OriginAllowlistTests` | **Met** |
 
@@ -150,7 +169,7 @@ All against the API image built from this branch, on a scratch database (`task07
 
 | # | Finding | Owner | Status |
 | --- | --- | --- | --- |
-| F-1 | **The workbook's checks name SIT, which does not exist.** Rerun `check.py` and the Observatory scan against SIT once it does. Confirm there that `ClientAddress:TrustedProxyHops` = 2 yields the client's address: one request with a known source address, then that address in `audit_event.client_address`. A wrong value shows either as everyone sharing one counter (too few hops) or as a spoofable address (too many) | DevOps/Platform Lead (TASK-018) | Open |
+| F-1 | **The workbook's checks name SIT, which does not exist.** Run `infra/environments/verify-endpoint-hardening.sh sit` once it does (§5.4); exit 0 is the check passed. Run it from an address no one else is using and at least a minute after any other sign-in from that address, or E-1 also counts their requests. Confirm there that `ClientAddress:TrustedProxyHops` = 2 yields the client's address: one request with a known source address, then that address in `audit_event.client_address`. A wrong value shows either as everyone sharing one counter (too few hops) or as a spoofable address (too many) | DevOps/Platform Lead (TASK-018) | Open |
 | F-2 | **No Redis instance is provisioned.** `RATE_LIMIT_STORE_CONNECTION_STRING`'s secret containers exist (`environments.json`), but Terraform has no Memorystore instance. Until one does, each Cloud Run instance counts alone, so a client gets up to max-instances × the limit. The client takes a connection string and works with Memorystore for Redis or Valkey. Rotating the secret takes a restart (D-7), like the database's | DevOps/Platform Lead | Open |
 | F-3 | **The deployed SPA's headers depend on how it is served**, which is not decided (`identity-access-administration-ui.md` F-5). Whatever serves the bundle must send §3.2's set — a Cloud Storage backend bucket's `custom_response_headers`, or the API serving the bundle (its middleware then covers it, with the SPA's CSP). Until then ZAP's TASK-077 header alerts on the SPA are closed only under `vite preview` | TASK-018 / TASK-021 | Open |
 | F-4 | **The limits are engineering values, not measured ones.** `SignIn` is per address, and AHDA's users most likely share a few corporate egress addresses: 30 a minute is ten complete sign-ins a minute per address. Read PROD's load balancer logs after go-live and adjust; the values are configuration, no release needed | Delivery team, with AHDA IT | Open |
