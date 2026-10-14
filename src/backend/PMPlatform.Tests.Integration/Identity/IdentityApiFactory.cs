@@ -20,10 +20,21 @@ public sealed class IdentityApiFactory(
     /// <summary>A test value, never a real key.</summary>
     public const string SigningKey = "identity-integration-test-signing-key-32-bytes-or-more";
 
+    /// <summary>
+    /// TASK-078: limits no suite reaches. Every test request comes from one address and a few users, so the shipped limits would
+    /// throttle the suites themselves; the rate-limiting tests set their own in the factory's settings, which win.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string?> UnreachableRateLimits = new Dictionary<string, string?>
+    {
+        ["RateLimiting:Policies:SignIn:PermitLimit"] = "1000000",
+        ["RateLimiting:Policies:SessionRefresh:PermitLimit"] = "1000000",
+        ["RateLimiting:Policies:SensitiveWrite:PermitLimit"] = "1000000",
+    };
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
-        builder.ConfigureAppConfiguration(configuration => configuration.AddInMemoryCollection(settings));
+        builder.ConfigureAppConfiguration(configuration => configuration.AddInMemoryCollection(UnreachableRateLimits).AddInMemoryCollection(settings));
         builder.ConfigureLogging(logging => logging.AddProvider(logs).SetMinimumLevel(LogLevel.Trace));
         builder.ConfigureTestServices(collection =>
         {

@@ -129,8 +129,11 @@ module "compute" {
   # Only variables the Environment and Secrets sheet names. The sheet has no row for the document
   # bucket or the Cloud SQL connection name; both are carried inside the connection strings
   # TASK-019 writes, so nothing is invented here (infrastructure-as-code.md F-5).
+  # CORS_ALLOWED_ORIGINS is the environment's one origin (TASK-016 D-1): the SPA calls the API same-origin, and a
+  # browser sends Origin on those writes too, so the API's allowlist (TASK-078) holds exactly APP_BASE_URL.
   plain_environment = {
     APP_BASE_URL          = local.app_base_url
+    CORS_ALLOWED_ORIGINS  = local.app_base_url
     SECRET_STORE_ENDPOINT = local.secret_store_endpoint
   }
 }

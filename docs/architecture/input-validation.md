@@ -153,7 +153,7 @@ The stack: the compose images built from this branch (`docker compose … up -d 
 
 | # | Finding | Owner | Status |
 | --- | --- | --- | --- |
-| F-1 | ZAP reports the missing response headers — CSP and anti-clickjacking (Medium), `X-Content-Type-Options`, `Permissions-Policy`, the cross-origin policies (Low) — on the SPA and the API. They are CTL-12's | TASK-078 | Open there |
+| F-1 | ZAP reports the missing response headers — CSP and anti-clickjacking (Medium), `X-Content-Type-Options`, `Permissions-Policy`, the cross-origin policies (Low) — on the SPA and the API. They are CTL-12's. **Closed for the API 2026-10-14 by TASK-078** (`endpoint-hardening.md`): every API response carries the nine headers, and the SPA's production build carries its own set under `vite preview`; how the deployed SPA is served, and so its headers, stays open there (F-3) | TASK-078 | Closed for the API; the deployed SPA open (`endpoint-hardening.md` F-3) |
 | F-2 | **Fixed here.** The SPA followed `/\evil.example` as an app path (notification deep link, sign-in redirect); a browser opens it as `//evil.example`. The API's intake already refused it, so no stored deep link carried it | This task | Closed |
 | F-3 | **Fixed here.** A U+0000 in any text field was a 500 (§5.1) | This task | Closed |
 | F-4 | Two values from integrated systems are logged as received: the identity provider's `error` string (`OpenIdConnectRelyingParty`) and Nafath's verification reference. Neither comes from an end user; a hostile or broken provider could still put a line break into a plain-text log line | TASK-083 (redaction) | Open |

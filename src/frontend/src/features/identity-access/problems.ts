@@ -21,6 +21,7 @@ const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   INVALID_TRANSITION: 'common.problems.invalidTransition',
   TERMINAL_STATE: 'common.problems.terminalState',
   UNAVAILABLE: 'common.problems.unavailable',
+  RATE_LIMITED: 'common.problems.rateLimited',
   IDENTITY_ACCESS_DUPLICATE_KEY: 'identityAccess.problems.duplicateKey',
   IDENTITY_ACCESS_ALREADY_ASSIGNED: 'identityAccess.problems.alreadyAssigned',
   IDENTITY_ACCESS_REFERENCE_INVALID: 'identityAccess.problems.referenceInvalid',

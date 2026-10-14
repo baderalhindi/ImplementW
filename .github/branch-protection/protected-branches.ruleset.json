@@ -30,6 +30,7 @@
         "required_status_checks": [
           { "context": "backend" },
           { "context": "backend-risk-governance" },
+          { "context": "backend-endpoint-hardening" },
           { "context": "frontend" },
           { "context": "repo-checks" },
           { "context": "terraform" }

@@ -69,6 +69,7 @@
     "invalidTransition": "The record is already in that state.",
     "terminalState": "The record is retired or ended and cannot be changed.",
     "unavailable": "The service is unavailable at the moment. Try again later.",
+    "rateLimited": "You have made too many requests in a short time. Wait a minute, then try again.",
     "unexpected": "Something went wrong. Try again.",
     "unexpectedWithReference": "Something went wrong. Try again. If it happens again, quote reference {reference}."
   },

@@ -3,12 +3,16 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Configuration.Json;
+using Microsoft.Extensions.Options;
 using PMPlatform.Api.Auditing;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Correlation;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Middleware;
 using PMPlatform.Api.Models;
 using PMPlatform.Api.Validation;
 using PMPlatform.Application;
@@ -84,6 +88,37 @@ builder.Services.AddOptions<StepUpOptions>()
     .Validate(options => options.MaxAge > TimeSpan.Zero, $"{StepUpOptions.Section}:MaxAge must be positive.")
     .ValidateOnStart();
 
+// TASK-078 (CTL-12): endpoint hardening. Kestrel does not name itself in a Server header.
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
+
+// The client address rate limiting and the audit trail (TASK-033 F-5) read. Behind AHDA's load balancer the TCP peer is
+// Google's front end and the client is in X-Forwarded-For, which the regional load balancer extends with
+// "<client>, <load balancer>". Cloud Run accepts traffic only from that load balancer (network-security.md §3.3), so the last
+// ClientAddress:TrustedProxyHops entries are the platform's own and the one before them is the client; anything a client
+// wrote further left is ignored. Zero (Development) keeps the TCP peer.
+builder.Services.AddOptions<ForwardedHeadersOptions>().Configure<IConfiguration>((options, configuration) =>
+{
+    int trustedProxyHops = configuration.GetValue<int>("ClientAddress:TrustedProxyHops");
+    options.ForwardedHeaders = trustedProxyHops > 0 ? ForwardedHeaders.XForwardedFor : ForwardedHeaders.None;
+    options.ForwardLimit = trustedProxyHops;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+builder.Services.AddOptions<RateLimitingOptions>()
+    .Bind(builder.Configuration.GetSection(RateLimitingOptions.Section))
+    .Validate(options => options.IsComplete(),
+        $"{RateLimitingOptions.Section}:Policies needs a positive PermitLimit and Window for each of {string.Join(", ", Enum.GetNames<RateLimitPolicy>())}.")
+    .ValidateOnStart();
+
+builder.Services.AddOptions<AllowedOrigins>()
+    .Configure<IConfiguration, IHostEnvironment>((allowed, configuration, environment) =>
+        allowed.Origins = OriginAllowlist.Parse(configuration[OriginAllowlist.Variable], allowHttp: environment.IsDevelopment()))
+    .ValidateOnStart();
+builder.Services.AddCors();
+builder.Services.AddOptions<CorsOptions>().Configure<IOptions<AllowedOrigins>>((cors, allowed) =>
+    cors.AddDefaultPolicy(OriginAllowlist.Policy(allowed.Value.Origins)));
+
 WebApplication app = builder.Build();
 
 // TASK-024: `dotnet PMPlatform.Api.dll migrate [<target migration>]` applies the release's migrations and exits
@@ -110,6 +145,8 @@ if (args is [string auditCommand] && AuditCommands.IsCommand(auditCommand))
     return;
 }
 
+app.UseForwardedHeaders();
+app.UseMiddleware<SecurityHeaders>();
 app.UseMiddleware<CorrelationId>();
 
 // R-26: an unhandled exception is a 500 carrying code, correlation id and timestamp, and nothing about the exception.
@@ -126,7 +163,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<OriginAllowlist>();
+app.UseCors();
 app.UseAuthentication();
+app.UseMiddleware<RateLimiting>();
 app.UseAuthorization();
 app.UseMiddleware<StepUpAuthentication>();
 
