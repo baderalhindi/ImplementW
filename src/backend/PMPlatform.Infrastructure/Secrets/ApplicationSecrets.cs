@@ -53,6 +53,9 @@ public static class ApplicationSecrets
     /// <summary>TASK-068: the platform's client secret at Nafath.</summary>
     public const string NafathClientSecret = "NAFATH_CLIENT_SECRET";
 
+    /// <summary>TASK-078: the Redis-compatible store that holds the rate-limit counters every API instance shares.</summary>
+    public const string RateLimitStoreConnectionString = "RATE_LIMIT_STORE_CONNECTION_STRING";
+
     /// <summary>The configuration keys loaded from the secret store and required at start-up, in the order they are read.</summary>
     public static readonly IReadOnlyList<string> Keys = [DatabaseConnectionString, JwtSigningKey];
 
@@ -66,11 +69,12 @@ public static class ApplicationSecrets
     /// document store, uploads and downloads answer 503 and the API still starts. The Exchange relay's account is scoped to
     /// SIT/UAT/PROD; without it, a relay that needs no authentication is used as it is, and without a relay no e-mail is sent.
     /// The Nafath client is scoped to SIT/UAT/PROD; without it, an external user who must be verified is told verification
-    /// is unavailable and gets no session, never one without the verification (TASK-068).
+    /// is unavailable and gets no session, never one without the verification (TASK-068). The rate-limit store is scoped to
+    /// SIT/UAT/PROD; without it, each API instance keeps its own counters (TASK-078).
     /// </summary>
     public static readonly IReadOnlyList<string> OptionalKeys =
     [
         DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey, SiemApiToken, DocumentStorageConnectionString,
-        ExchangeSmtpUser, ExchangeSmtpPassword, NafathClientId, NafathClientSecret,
+        ExchangeSmtpUser, ExchangeSmtpPassword, NafathClientId, NafathClientSecret, RateLimitStoreConnectionString,
     ];
 }

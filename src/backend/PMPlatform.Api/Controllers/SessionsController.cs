@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Middleware;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Domain.IdentityAccess;
@@ -17,7 +18,8 @@ namespace PMPlatform.Api.Controllers;
 /// configured) is a 503. A sign-in by a person who requires MFA answers 200 with an MFA token instead of 201 with a
 /// session; one by an external user Nafath has not verified answers 200 with an identity verification token. A
 /// verification Nafath declined is a 422, and one Nafath could not complete a 503 with <c>Retry-After</c>: never a
-/// session, and never a refusal that blames the person.
+/// session, and never a refusal that blames the person. Every anonymous endpoint here is rate-limited per client address
+/// (TASK-078): past the limit it answers 429 <c>RATE_LIMITED</c> with <c>Retry-After</c> and does not reach the directory or a provider.
 /// </summary>
 [ApiController]
 [Route("api/v1/sessions")]
@@ -29,6 +31,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// <summary>Signs in with directory credentials.</summary>
     [HttpPost]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateSession")]
     public async Task<IActionResult> Create(SessionCreateRequest request, CancellationToken cancellationToken)
     {
@@ -45,6 +48,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// <summary>Starts an SSO sign-in. Nothing is stored server-side; the transaction travels with the client.</summary>
     [HttpGet("sso-authorization")]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_GetSsoAuthorization")]
     public async Task<IActionResult> GetSsoAuthorization(CancellationToken cancellationToken)
     {
@@ -58,6 +62,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// <summary>Completes an SSO sign-in with the code the identity provider redirected back with.</summary>
     [HttpPost("sso")]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateSsoSession")]
     public async Task<IActionResult> CreateSso(SsoSessionCreateRequest request, CancellationToken cancellationToken)
     {
@@ -74,6 +79,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// <summary>Starts the second factor of a sign-in: an enrolment for a person with no factor yet, else a verification.</summary>
     [HttpPost("mfa-challenge")]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateMfaChallenge")]
     public async Task<IActionResult> CreateMfaChallenge(MfaChallengeCreateRequest request, CancellationToken cancellationToken)
     {
@@ -90,6 +96,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// <summary>Completes a sign-in with the second factor. The session is issued only here, once the code is verified.</summary>
     [HttpPost("mfa")]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateMfaSession")]
     public async Task<IActionResult> CreateMfa(MfaSessionCreateRequest request, CancellationToken cancellationToken)
     {
@@ -109,6 +116,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// </summary>
     [HttpPost("identity-verification-authorization")]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateIdentityVerificationAuthorization")]
     public async Task<IActionResult> CreateIdentityVerificationAuthorization(IdentityVerificationAuthorizationCreateRequest request, CancellationToken cancellationToken)
     {
@@ -128,6 +136,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// <summary>Completes the Nafath identity verification with the code Nafath redirected back with. The session is issued only here, once Nafath has verified the person.</summary>
     [HttpPost("identity-verification")]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateIdentityVerificationSession")]
     public async Task<IActionResult> CreateIdentityVerificationSession(IdentityVerificationSessionCreateRequest request, CancellationToken cancellationToken)
     {
@@ -173,6 +182,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// </summary>
     [HttpPost("current/refresh")]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SessionRefresh)]
     [EndpointName("IdentityAccess_RefreshSession")]
     public async Task<IActionResult> Refresh(SessionRefreshCommand command, CancellationToken cancellationToken)
     {
@@ -192,6 +202,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// </summary>
     [HttpPost("current/step-up-challenge")]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateStepUpChallenge")]
     public async Task<IActionResult> CreateStepUpChallenge(StepUpChallengeCommand command, CancellationToken cancellationToken)
     {
@@ -208,6 +219,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     /// <summary>Completes a step-up: the session's next token pair, authenticated now. Session id and absolute expiry are unchanged.</summary>
     [HttpPost("current/step-up")]
     [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_StepUpSession")]
     public async Task<IActionResult> StepUp(StepUpCommand command, CancellationToken cancellationToken)
     {

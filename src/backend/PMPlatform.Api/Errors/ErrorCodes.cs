@@ -16,6 +16,12 @@ internal static class ErrorCodes
     public const string PreconditionRequired = "PRECONDITION_REQUIRED";
     public const string Unavailable = "UNAVAILABLE";
 
+    /// <summary>429 with <c>Retry-After</c>: the client has used up its requests on a rate-limited endpoint for now (R-48, TASK-078).</summary>
+    public const string RateLimited = "RATE_LIMITED";
+
+    /// <summary>403: the request carries an <c>Origin</c> that <c>CORS_ALLOWED_ORIGINS</c> does not list; it is not executed (TASK-078).</summary>
+    public const string OriginNotAllowed = "ORIGIN_NOT_ALLOWED";
+
     /// <summary>413 / 415 on uploads (R-8, TASK-037).</summary>
     public const string PayloadTooLarge = "PAYLOAD_TOO_LARGE";
     public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";

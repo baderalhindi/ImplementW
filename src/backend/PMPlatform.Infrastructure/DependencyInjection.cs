@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.Events;
+using PMPlatform.Application.Common.RateLimiting;
 using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.ChangeRequest;
 using PMPlatform.Application.Features.Dashboards;
@@ -64,6 +66,7 @@ using PMPlatform.Infrastructure.Persistence.IntegrationMonitoring;
 using PMPlatform.Infrastructure.Persistence.MasterDataConfig;
 using PMPlatform.Infrastructure.Persistence.Messaging;
 using PMPlatform.Infrastructure.Persistence.Notifications;
+using PMPlatform.Infrastructure.RateLimiting;
 using PMPlatform.Infrastructure.Secrets;
 
 namespace PMPlatform.Infrastructure;
@@ -188,6 +191,12 @@ public static class DependencyInjection
 
         services.AddNotifications(configuration);
         services.AddIntegrationMonitoring(configuration);
+
+        // TASK-078: the rate-limit counters — shared through RATE_LIMIT_STORE_CONNECTION_STRING where it is set (SIT/UAT/PROD),
+        // this instance's own otherwise. Read once at start-up: a new store address takes a restart, like the database's.
+        services.AddSingleton<IRateLimitStore>(provider => configuration[ApplicationSecrets.RateLimitStoreConnectionString] is { Length: > 0 } store
+            ? new RedisRateLimitStore(store, provider.GetRequiredService<ILogger<RedisRateLimitStore>>())
+            : new InMemoryRateLimitStore(provider.GetRequiredService<TimeProvider>()));
 
         return services;
     }

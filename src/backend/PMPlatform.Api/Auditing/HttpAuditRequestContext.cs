@@ -17,7 +17,7 @@ internal sealed class HttpAuditRequestContext(IHttpContextAccessor accessor) : I
         CorrelationScope.Current
         ?? (accessor.HttpContext is { } context && RequestCorrelation.Of(context) is var id && id != Guid.Empty ? id : UnitOfWorkId);
 
-    /// <summary>The peer address. Behind AHDA's load balancer this is the balancer until forwarded headers are configured (record F-5).</summary>
+    /// <summary>The client address: behind AHDA's load balancer the forwarded one, as rate limiting reads it (TASK-078, <c>endpoint-hardening.md</c> D-4).</summary>
     public string? ClientAddress => accessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
 
     private Guid UnitOfWorkId { get; } = Guid.NewGuid();
