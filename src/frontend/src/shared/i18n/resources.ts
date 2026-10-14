@@ -14,6 +14,8 @@ import financialKpiAr from '@/features/financial-kpi/i18n/ar.json';
 import financialKpiEn from '@/features/financial-kpi/i18n/en.json';
 import identityAccessAr from '@/features/identity-access/i18n/ar.json';
 import identityAccessEn from '@/features/identity-access/i18n/en.json';
+import integrationAdminAr from '@/features/integration-admin/i18n/ar.json';
+import integrationAdminEn from '@/features/integration-admin/i18n/en.json';
 import issuesChallengesAr from '@/features/issues-challenges/i18n/ar.json';
 import issuesChallengesEn from '@/features/issues-challenges/i18n/en.json';
 import milestonesAr from '@/features/milestones/i18n/ar.json';
@@ -61,6 +63,7 @@ const en = {
   dashboards: dashboardsEn,
   reports: reportsEn,
   auditActivity: auditActivityEn,
+  integrationAdmin: integrationAdminEn,
 };
 
 // English is the reference shape; resources.test.ts fails if Arabic lacks or adds a key.
@@ -88,6 +91,7 @@ export const resources: Record<Language, Resources> = {
     dashboards: dashboardsAr,
     reports: reportsAr,
     auditActivity: auditActivityAr,
+    integrationAdmin: integrationAdminAr,
   },
 };
 

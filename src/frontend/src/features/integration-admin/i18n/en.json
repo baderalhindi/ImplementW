@@ -1,0 +1,344 @@
+{
+  "nav": {
+    "label": "Integrations",
+    "overview": "Integrations overview",
+    "monitoring": "Integration monitoring",
+    "logs": "Integration logs",
+    "ssoDirectory": "SSO and directory",
+    "emailExchange": "E-mail and Exchange",
+    "nafath": "Nafath",
+    "internalSystems": "Internal systems",
+    "apiCatalogue": "API integration catalogue"
+  },
+  "environment": {
+    "label": "Environment:"
+  },
+  "indicators": {
+    "legend": "What the two indicators mean",
+    "availability": "Availability",
+    "availabilityMeaning": "Whether the endpoint or provider answers: the latest technical outcome of a call. A refused password or code is the provider answering, not an outage.",
+    "freshness": "Freshness",
+    "freshnessMeaning": "How current the data is: the last success against the integration's configured window. A reachable integration can still be stale. Unknown when no window is configured or nothing has succeeded yet."
+  },
+  "availability": {
+    "UP": "Up",
+    "DOWN": "Down",
+    "UNKNOWN": "Unknown"
+  },
+  "freshness": {
+    "FRESH": "Fresh",
+    "STALE": "Stale",
+    "UNKNOWN": "Unknown"
+  },
+  "activationStatus": {
+    "ACTIVE": "Monitored",
+    "DISABLED": "Monitoring disabled",
+    "RETIRED": "Retired"
+  },
+  "direction": {
+    "INBOUND": "Inbound",
+    "OUTBOUND": "Outbound",
+    "BIDIRECTIONAL": "Both directions"
+  },
+  "kind": {
+    "IDENTITY": "Identity",
+    "MESSAGING": "Messaging",
+    "VERIFICATION": "Identity verification",
+    "FINANCE": "Finance",
+    "SECURITY": "Security",
+    "DATA": "Data"
+  },
+  "invocationStatus": {
+    "IN_PROGRESS": "In progress",
+    "SUCCEEDED": "Succeeded",
+    "FAILED": "Failed",
+    "RETRY_SCHEDULED": "Retry scheduled",
+    "DEAD_LETTER": "Dead letter"
+  },
+  "failureCategory": {
+    "TECHNICAL": "Technical failure",
+    "BUSINESS_VALIDATION": "Refused by the provider",
+    "SECURITY": "Security refusal"
+  },
+  "runType": {
+    "DIRECTORY_SYNC": "Directory synchronisation",
+    "RECONCILIATION": "Reconciliation"
+  },
+  "runStatus": {
+    "RUNNING": "Running",
+    "SUCCEEDED": "Succeeded",
+    "PARTIAL": "Partial",
+    "FAILED": "Failed"
+  },
+  "alertType": {
+    "AVAILABILITY": "Availability",
+    "FRESHNESS": "Freshness",
+    "RECONCILIATION_MISMATCH": "Reconciliation mismatch",
+    "DEAD_LETTER": "Dead letter",
+    "DELIVERY_RATE": "Delivery rate"
+  },
+  "severity": {
+    "INFO": "Information",
+    "WARNING": "Warning",
+    "CRITICAL": "Critical"
+  },
+  "alertStatus": {
+    "OPEN": "Open",
+    "ACKNOWLEDGED": "Acknowledged",
+    "RESOLVED": "Resolved",
+    "DISMISSED": "Dismissed"
+  },
+  "fields": {
+    "integration": "Integration",
+    "code": "Code",
+    "direction": "Direction",
+    "kind": "Kind",
+    "instance": "Instance",
+    "endpointKey": "Endpoint configuration key",
+    "activation": "Activation",
+    "lastSuccess": "Last success",
+    "lastFailure": "Last failure",
+    "evaluatedAt": "Evaluated",
+    "liveAlerts": "Live alerts",
+    "retryPolicy": "Retry policy",
+    "operations": "Operations run by integration monitoring",
+    "startedAt": "Started",
+    "completedAt": "Completed",
+    "operation": "Operation",
+    "attempt": "Attempt",
+    "invocationStatus": "State",
+    "failure": "Failure",
+    "responseCode": "Response code",
+    "errorSummary": "Error summary",
+    "sourceModule": "Made by",
+    "sourceReference": "Business reference",
+    "correlationId": "Correlation ID",
+    "idempotencyKey": "Lineage key",
+    "runType": "Run",
+    "runStatus": "Result",
+    "recordsRead": "Read",
+    "recordsApplied": "Applied",
+    "recordsRejected": "Rejected",
+    "mismatches": "Mismatches",
+    "raisedAt": "Raised",
+    "alertType": "Condition",
+    "severity": "Severity",
+    "alertStatus": "Alert state",
+    "alertDetail": "Detail",
+    "note": "Note"
+  },
+  "values": {
+    "never": "Never",
+    "notEvaluated": "Not evaluated yet",
+    "noInstance": "No instance registered",
+    "noSample": "No sample",
+    "running": "Still running"
+  },
+  "list": {
+    "open": "Open"
+  },
+  "actions": {
+    "testConnection": "Test connection",
+    "enable": "Enable monitoring",
+    "disable": "Disable monitoring",
+    "reconcile": "Run reconciliation",
+    "retry": "Retry now",
+    "acknowledge": "Acknowledge",
+    "resolve": "Resolve",
+    "dismiss": "Dismiss",
+    "close": "Close"
+  },
+  "sections": {
+    "runtime": "Runtime state"
+  },
+  "configuration": {
+    "directory": "Directory (AD/LDAP) settings",
+    "singleSignOn": "Single sign-on settings",
+    "nafath": "Nafath settings",
+    "configured": "Configured",
+    "set": "Set",
+    "notSet": "Not set",
+    "directoryUrl": "Directory address (AD_LDAP_URL)",
+    "bindDn": "Service account (AD_BIND_DN)",
+    "bindPassword": "Service account password (AD_BIND_PASSWORD)",
+    "transportSecurity": "Encrypted transport (LDAPS or StartTLS)",
+    "usernameAttribute": "Username attribute",
+    "subjectAttribute": "Subject attribute",
+    "jobTitleAttribute": "Job title attribute",
+    "departmentAttribute": "Department attribute",
+    "managerAttribute": "Manager attribute",
+    "authority": "Authority",
+    "clientId": "Client ID",
+    "clientSecret": "Client secret",
+    "callbackUrl": "Callback address",
+    "subjectClaim": "Subject claim",
+    "scopes": "Scopes",
+    "nafathEnabled": "Switched on in this environment",
+    "applicationId": "Application ID"
+  },
+  "overview": {
+    "title": "Integrations overview",
+    "description": "Every integration the platform calls, with its activation, availability, freshness and live alerts.",
+    "empty": "No integration is registered."
+  },
+  "ssoDirectory": {
+    "title": "SSO and directory integration",
+    "description": "The directory, single sign-on and the MFA provider used at sign-in, and the settings in effect. Settings are changed in the approved configuration and secret stores, not here."
+  },
+  "emailExchange": {
+    "title": "E-mail and Exchange integration",
+    "description": "The providers notifications are sent through: the Exchange relay and the SMS provider.",
+    "boundary": "Notification content, recipients and delivery history belong to Notifications. This page shows the providers' technical state only."
+  },
+  "nafath": {
+    "title": "Nafath integration",
+    "description": "Nafath identity verification for external users: whether it is switched on here, its state and its settings.",
+    "switchedOff": "Nafath verification is switched off in this environment: sign-in does not call it."
+  },
+  "internalSystems": {
+    "title": "Internal-system integrations",
+    "description": "Integrations with internal systems, registered in the catalogue beside the external providers.",
+    "empty": "No internal-system integration is registered."
+  },
+  "apiCatalogue": {
+    "title": "API integration catalogue",
+    "description": "Each integration's direction, kind, instances and the configuration key that names each endpoint. The endpoint itself is never shown."
+  },
+  "detail": {
+    "title": "Integration detail",
+    "description": "Definition, instances, measures, alerts and runs. Secret values are never shown.",
+    "backToOverview": "Back to the overview",
+    "definition": "Definition",
+    "instances": "Instances",
+    "retryPolicy": "Up to {attempts} attempts, {seconds} s before the first retry, doubling each time",
+    "noOperations": "None: its calls are made and retried by the module that owns them.",
+    "noSecrets": "An endpoint is named by its configuration key. Secret values are never returned by the API or shown here.",
+    "openLogs": "Open this integration's logs"
+  },
+  "measures": {
+    "title": "Measures",
+    "titleFor": "Measures for {name}",
+    "windowChoice": "Window",
+    "lastDays": "Last {days} day(s)",
+    "window": "From",
+    "attempts": "Attempts",
+    "failedAttempts": "Failed attempts",
+    "failureRate": "Failure rate",
+    "delivered": "Operations delivered",
+    "undelivered": "Operations not delivered",
+    "deliveryRate": "Delivery rate",
+    "medianLatency": "Median attempt time",
+    "p95Latency": "95th percentile attempt time",
+    "receipts": "Delivery receipts",
+    "receiptLatency": "Median time to receipt"
+  },
+  "monitoring": {
+    "title": "Integration monitoring",
+    "description": "Integrations that are down or stale, the alerts to handle, dead letters and runs.",
+    "health": "Availability and freshness",
+    "down": "Availability down",
+    "stale": "Freshness stale",
+    "liveAlerts": "Live alerts",
+    "deadLetters": "Dead letters",
+    "deadLettersNote": "Operations that failed every permitted attempt. A dead letter stays until an operator retries it; the integration recovering does not clear it.",
+    "noDeadLetters": "No dead letter."
+  },
+  "alerts": {
+    "title": "Operational alerts",
+    "liveTitle": "Live alerts",
+    "live": "Live (open or acknowledged)",
+    "none": "No alert in this state.",
+    "noneLive": "No live alert.",
+    "acknowledgedAt": "Acknowledged",
+    "openInvocation": "Open the attempt",
+    "acknowledgeTitle": "Acknowledge this alert?",
+    "acknowledgeBody": "Your name and the time are recorded. Acknowledging does not mark the integration as recovered.",
+    "acknowledged": "The alert was acknowledged.",
+    "resolveTitle": "Resolve this alert",
+    "resolveBody": "Say what was done. A resolved alert is final; the attempts it is about stay as they were.",
+    "resolved": "The alert was resolved.",
+    "dismissTitle": "Dismiss this alert",
+    "dismissBody": "Say why no action is needed. A dismissed alert is final.",
+    "dismissed": "The alert was dismissed."
+  },
+  "syncRuns": {
+    "title": "Synchronisation and reconciliation runs",
+    "empty": "No run yet.",
+    "openAttempts": "Open its attempts"
+  },
+  "logs": {
+    "title": "Integration logs",
+    "description": "Each attempt's operation, state, failure category and codes. Provider messages are redacted by the server and payloads are not stored.",
+    "empty": "No attempt matches these filters."
+  },
+  "filters": {
+    "from": "Started from",
+    "to": "Started to",
+    "malformed": "This value is not in the expected format.",
+    "tooLong": "This value is too long.",
+    "dateBeforeStart": "The end date must not be before the start date."
+  },
+  "invocations": {
+    "nextAttempt": "Next attempt",
+    "thisAttempt": "This attempt",
+    "attemptOf": "attempt {number} of {operation}"
+  },
+  "invocation": {
+    "title": "Integration attempt",
+    "backToLogs": "Back to the logs",
+    "attempt": "Attempt",
+    "lineage": "Every attempt of this operation",
+    "sameCorrelation": "Find every attempt with this correlation ID",
+    "notRetryable": "This attempt cannot be retried from here: it is not the latest of its operation, or another module makes and retries it."
+  },
+  "retry": {
+    "title": "Retry this operation now?",
+    "body": "A new attempt is made under the same lineage key and correlation ID. The attempts before it are kept as they are.",
+    "done": "The retry was recorded."
+  },
+  "reconcile": {
+    "title": "Run a reconciliation?",
+    "body": "The directory is compared with the platform's copy of each person's job title, department and manager. Differences are raised as an alert; nothing is changed."
+  },
+  "activation": {
+    "enableTitle": "Enable monitoring of {name}?",
+    "enableBody": "Alerts are raised again for this integration, and integration monitoring runs its operations again.",
+    "disableTitle": "Disable monitoring of {name}?",
+    "disableBody": "No alert is raised for this integration and integration monitoring runs none of its operations. The integration itself keeps working: sign-in and delivery go on, and their attempts are still recorded.",
+    "enabled": "Monitoring was enabled.",
+    "disabled": "Monitoring was disabled."
+  },
+  "connectionTest": {
+    "title": "Test integration connection",
+    "intro": "Connects to the directory with the service account and checks the single sign-on and Nafath providers, using the settings in effect. Nothing is changed or stored.",
+    "noSecret": "Only the outcome and a failure code are shown for each connection. No setting or secret value is sent or displayed.",
+    "run": "Run the test",
+    "runAgain": "Run the test again",
+    "running": "Testing…",
+    "results": "Connection test results",
+    "targets": {
+      "directory": "Directory (AD/LDAP)",
+      "singleSignOn": "Single sign-on",
+      "identityVerification": "Nafath"
+    },
+    "outcome": {
+      "SUCCEEDED": "Connected",
+      "FAILED": "Failed",
+      "NOT_CONFIGURED": "Not configured"
+    },
+    "failures": {
+      "UNREACHABLE": "The provider could not be reached (no connection, TLS failure or time-out).",
+      "BIND_REJECTED": "The directory refused the service account.",
+      "ISSUER_MISMATCH": "The provider's issuer does not match the configured authority.",
+      "other": "The connection failed."
+    }
+  },
+  "problems": {
+    "permissionDenied": "You do not have the integration permission this needs.",
+    "alreadySucceeded": "This operation already succeeded; there is nothing to retry.",
+    "notRetryable": "This attempt can no longer be retried: a later attempt exists or it is not waiting for one.",
+    "retryNotPermitted": "Another module made this attempt and retries it under its own policy.",
+    "integrationDisabled": "Monitoring of this integration is disabled. Enable it first.",
+    "reconciliationNotAvailable": "This integration has no reconciliation."
+  }
+}
