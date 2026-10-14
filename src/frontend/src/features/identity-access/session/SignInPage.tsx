@@ -2,6 +2,7 @@ import { type SyntheticEvent, type ReactElement, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { isAppPath } from '@/shared/navigation/appPath.ts';
 import { TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
@@ -24,7 +25,7 @@ interface PendingSecondFactor {
 
 function redirectTarget(state: unknown): string {
   const from = (state as { from?: unknown } | null)?.from;
-  return typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') ? from : '/';
+  return isAppPath(from) ? from : '/';
 }
 
 /**

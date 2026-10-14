@@ -163,6 +163,15 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Execution
 
+      # TASK-077: the platform's text rules on every action argument, a multipart upload's fields, and text stored and returned
+      # exactly as entered (CTL-11). Same database and directory as above.
+      - name: Input validation integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.InputValidation.
+
   # TASK-065: the WF-06 to WF-10 integration steps and the two domain invariant suites, apart from `backend` so that each job
   # stays inside its ten-minute budget (ci-quality-gates.md F-4: split rather than raise the cap). It builds the same commit on its own
   # runner, in parallel with `backend`, against the same PostgreSQL service and test directory.

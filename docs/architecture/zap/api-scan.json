@@ -1,0 +1,1299 @@
+{
+	"@programName": "ZAP",
+	"@version": "2.17.0",
+	"@generated": "Wed, 14 Oct 2026 17:48:10",
+	"created": "2026-10-14T17:48:10.063040759Z",
+	"insights":[
+		{
+			"level": "Low",
+			"reason": "Warning",
+			"site": "",
+			"key": "insight.log.warn",
+			"description": "ZAP warnings logged - see the zap.log file for details",
+			"statistic": "105"
+		},
+		{
+			"level": "Low",
+			"reason": "Exceeded High",
+			"site": "http://api077:8080",
+			"key": "insight.code.4xx",
+			"description": "Percentage of responses with status code 4xx",
+			"statistic": "98"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://api077:8080",
+			"key": "insight.code.2xx",
+			"description": "Percentage of responses with status code 2xx",
+			"statistic": "1"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://api077:8080",
+			"key": "insight.endpoint.ctype.application/json",
+			"description": "Percentage of endpoints with content type application/json",
+			"statistic": "1"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://api077:8080",
+			"key": "insight.endpoint.ctype.application/problem+json",
+			"description": "Percentage of endpoints with content type application/problem+json",
+			"statistic": "47"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://api077:8080",
+			"key": "insight.endpoint.method.DELETE",
+			"description": "Percentage of endpoints with method DELETE",
+			"statistic": "11"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://api077:8080",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "51"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://api077:8080",
+			"key": "insight.endpoint.method.POST",
+			"description": "Percentage of endpoints with method POST",
+			"statistic": "28"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://api077:8080",
+			"key": "insight.endpoint.method.PUT",
+			"description": "Percentage of endpoints with method PUT",
+			"statistic": "8"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://api077:8080",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "92"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "http://api077:8080",
+			"key": "insight.response.slow",
+			"description": "Percentage of slow responses",
+			"statistic": "1"
+		}
+	],
+	"site":[ 
+		{
+			"@name": "http://api077:8080",
+			"@host": "api077",
+			"@port": "8080",
+			"@ssl": "false",
+			"alerts": [ 
+				{
+					"pluginid": "90004",
+					"alertRef": "90004-1",
+					"alert": "Cross-Origin-Resource-Policy Header Missing or Invalid",
+					"name": "Cross-Origin-Resource-Policy Header Missing or Invalid",
+					"riskcode": "1",
+					"confidence": "2",
+					"riskdesc": "Low (Medium)",
+					"desc": "<p>Cross-Origin-Resource-Policy header is an opt-in header designed to counter side-channels attacks like Spectre. Resource should be specifically set as shareable amongst different origins.</p>",
+					"instances":[ 
+						{
+							"id": "46",
+							"uri": "http://api077:8080/api/v1/notifications?unread=true&eventFamilyCode=eventFamilyCode&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/notifications (eventFamilyCode,page,pageSize,unread)",
+							"method": "GET",
+							"param": "Cross-Origin-Resource-Policy",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": ""
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>Ensure that the application/web server sets the Cross-Origin-Resource-Policy header appropriately, and that it sets the Cross-Origin-Resource-Policy header to 'same-origin' for all web pages.</p><p>'same-site' is considered as less secured and should be avoided.</p><p>If resources must be shared, set the header to 'cross-origin'.</p><p>If possible, ensure that the end user uses a standards-compliant and modern web browser that supports the Cross-Origin-Resource-Policy header (https://caniuse.com/mdn-http_headers_cross-origin-resource-policy).</p>",
+					"otherinfo": "",
+					"reference": "<p>https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Embedder-Policy</p>",
+					"cweid": "693",
+					"wascid": "14",
+					"sourceid": "20"
+				},
+				{
+					"pluginid": "10021",
+					"alertRef": "10021",
+					"alert": "X-Content-Type-Options Header Missing",
+					"name": "X-Content-Type-Options Header Missing",
+					"riskcode": "1",
+					"confidence": "2",
+					"riskdesc": "Low (Medium)",
+					"desc": "<p>The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.</p>",
+					"instances":[ 
+						{
+							"id": "44",
+							"uri": "http://api077:8080/api/v1/notifications?unread=true&eventFamilyCode=eventFamilyCode&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/notifications (eventFamilyCode,page,pageSize,unread)",
+							"method": "GET",
+							"param": "x-content-type-options",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.\nAt \"High\" threshold this scan rule will not alert on client or server error responses."
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages.</p><p>If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.</p>",
+					"otherinfo": "<p>This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.</p><p>At \"High\" threshold this scan rule will not alert on client or server error responses.</p>",
+					"reference": "<p>https://learn.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/compatibility/gg622941(v=vs.85)</p><p>https://owasp.org/www-community/Security_Headers</p>",
+					"cweid": "693",
+					"wascid": "15",
+					"sourceid": "20"
+				},
+				{
+					"pluginid": "100000",
+					"alertRef": "100000-1",
+					"alert": "A Client Error response code was returned by the server",
+					"name": "A Client Error response code was returned by the server",
+					"riskcode": "0",
+					"confidence": "3",
+					"riskdesc": "Informational (High)",
+					"desc": "<p>A response code of 404 was returned by the server.</p><p>This may indicate that the application is failing to handle unexpected input correctly.</p><p>Raised by the 'Alert on HTTP Response Code Error' script</p>",
+					"instances":[ 
+						{
+							"id": "5",
+							"uri": "http://api077:8080/api/v1/change-requests/changeRequestId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/changeRequestId",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13532",
+							"uri": "http://api077:8080/api/v1/change-requests/changeRequestId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/changeRequestId\/",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "22",
+							"uri": "http://api077:8080/api/v1/projects/projectId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects\/projectId",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13535",
+							"uri": "http://api077:8080/api/v1/projects/projectId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects\/projectId\/",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "10075",
+							"uri": "http://api077:8080/computeMetadata/v1/",
+							"nodeName": "http:\/\/api077:8080\/computeMetadata\/v1\/",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "10071",
+							"uri": "http://api077:8080/latest/meta-data/",
+							"nodeName": "http:\/\/api077:8080\/latest\/meta-data\/",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "10100",
+							"uri": "http://api077:8080/metadata/instance",
+							"nodeName": "http:\/\/api077:8080\/metadata\/instance",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "10129",
+							"uri": "http://api077:8080/metadata/v1",
+							"nodeName": "http:\/\/api077:8080\/metadata\/v1",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "10078",
+							"uri": "http://api077:8080/opc/v1/instance/",
+							"nodeName": "http:\/\/api077:8080\/opc\/v1\/instance\/",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "10089",
+							"uri": "http://api077:8080/opc/v2/instance/",
+							"nodeName": "http:\/\/api077:8080\/opc\/v2\/instance\/",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "10149",
+							"uri": "http://api077:8080/openstack/latest/meta_data.json",
+							"nodeName": "http:\/\/api077:8080\/openstack\/latest\/meta_data.json",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "69",
+							"uri": "http://api077:8080",
+							"nodeName": "http:\/\/api077:8080",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13552",
+							"uri": "http://api077:8080/",
+							"nodeName": "http:\/\/api077:8080\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "51",
+							"uri": "http://api077:8080/410994502074757865",
+							"nodeName": "http:\/\/api077:8080\/410994502074757865",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "84",
+							"uri": "http://api077:8080/api",
+							"nodeName": "http:\/\/api077:8080\/api",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13553",
+							"uri": "http://api077:8080/api/",
+							"nodeName": "http:\/\/api077:8080\/api\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "52",
+							"uri": "http://api077:8080/api/702698442525320433",
+							"nodeName": "http:\/\/api077:8080\/api\/702698442525320433",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "94",
+							"uri": "http://api077:8080/api/v1",
+							"nodeName": "http:\/\/api077:8080\/api\/v1",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13555",
+							"uri": "http://api077:8080/api/v1/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "53",
+							"uri": "http://api077:8080/api/v1/4149729398349588040",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/4149729398349588040",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "0",
+							"uri": "http://api077:8080/api/v1/audit-events?category=category&occurredFrom=occurredFrom&occurredTo=occurredTo&actorUserId=actorUserId&eventClass=eventClass&eventType=eventType&outcome=outcome&projectId=projectId&subjectType=subjectType&subjectId=subjectId&correlationId=correlationId&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/audit-events (actorUserId,category,correlationId,eventClass,eventType,occurredFrom,occurredTo,outcome,page,pageSize,projectId,subjectId,subjectType)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "99",
+							"uri": "http://api077:8080/api/v1/change-requests",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "1",
+							"uri": "http://api077:8080/api/v1/change-requests?projectId=projectId&status=status&changeType=changeType&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests (changeType,page,pageSize,projectId,status)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13559",
+							"uri": "http://api077:8080/api/v1/change-requests/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "54",
+							"uri": "http://api077:8080/api/v1/change-requests/8826777379095752447",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/8826777379095752447",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "15201",
+							"uri": "http://api077:8080/api/v1/change-requests/actuator/health",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/actuator\/health",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "3",
+							"uri": "http://api077:8080/api/v1/change-requests/changeRequestId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/changeRequestId",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13557",
+							"uri": "http://api077:8080/api/v1/change-requests/changeRequestId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/changeRequestId\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "6",
+							"uri": "http://api077:8080/api/v1/departments?isActive=true&parentDepartmentId=parentDepartmentId&q=q&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/departments (isActive,page,pageSize,parentDepartmentId,q)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "8",
+							"uri": "http://api077:8080/api/v1/documents?projectId=projectId&status=status&q=q&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/documents (page,pageSize,projectId,q,status)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "120",
+							"uri": "http://api077:8080/api/v1/management-concerns",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "10",
+							"uri": "http://api077:8080/api/v1/management-concerns?projectId=projectId&concernType=concernType&status=status&assigneeUserId=assigneeUserId&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns (assigneeUserId,concernType,page,pageSize,projectId,status)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13562",
+							"uri": "http://api077:8080/api/v1/management-concerns/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "55",
+							"uri": "http://api077:8080/api/v1/management-concerns/2997936582801509674",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns\/2997936582801509674",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "12",
+							"uri": "http://api077:8080/api/v1/management-concerns/concernId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns\/concernId",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13561",
+							"uri": "http://api077:8080/api/v1/management-concerns/concernId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns\/concernId\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "14",
+							"uri": "http://api077:8080/api/v1/notification-templates?eventType=eventType&eventFamilyCode=eventFamilyCode&channel=channel&lifecycleState=lifecycleState&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/notification-templates (channel,eventFamilyCode,eventType,lifecycleState,page,pageSize)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "130",
+							"uri": "http://api077:8080/api/v1/notifications?unread=http%3A%2F%2Fwww.google.com%2F&eventFamilyCode=eventFamilyCode&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/notifications (eventFamilyCode,page,pageSize,unread)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "16",
+							"uri": "http://api077:8080/api/v1/progress-submissions?projectId=projectId&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/progress-submissions (page,pageSize,projectId)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13564",
+							"uri": "http://api077:8080/api/v1/progress-submissions/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/progress-submissions\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "18",
+							"uri": "http://api077:8080/api/v1/projects?status=status&departmentId=departmentId&externalEntityId=externalEntityId&projectManagerUserId=projectManagerUserId&q=q&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects (departmentId,externalEntityId,page,pageSize,projectManagerUserId,q,status)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "56",
+							"uri": "http://api077:8080/api/v1/projects/3273165328633006342",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects\/3273165328633006342",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "20",
+							"uri": "http://api077:8080/api/v1/projects/projectId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects\/projectId",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13565",
+							"uri": "http://api077:8080/api/v1/projects/projectId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects\/projectId\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "206",
+							"uri": "http://api077:8080/api/v1/report-explorer",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/report-explorer",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13567",
+							"uri": "http://api077:8080/api/v1/report-explorer/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/report-explorer\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "57",
+							"uri": "http://api077:8080/api/v1/report-explorer/2046574317550981488",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/report-explorer\/2046574317550981488",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "58",
+							"uri": "http://api077:8080/api/v1/reports/2162904341796764283",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/reports\/2162904341796764283",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "306",
+							"uri": "http://api077:8080/api/v1/reports/reportCode",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/reports\/reportCode",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13569",
+							"uri": "http://api077:8080/api/v1/reports/reportCode/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/reports\/reportCode\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "59",
+							"uri": "http://api077:8080/api/v1/reports/reportCode/8143650122750679729",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/reports\/reportCode\/8143650122750679729",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "337",
+							"uri": "http://api077:8080/api/v1/risks",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "25",
+							"uri": "http://api077:8080/api/v1/risks?projectId=projectId&status=status&ownerUserId=ownerUserId&nextReviewDateFrom=nextReviewDateFrom&nextReviewDateTo=nextReviewDateTo&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks (nextReviewDateFrom,nextReviewDateTo,ownerUserId,page,pageSize,projectId,status)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13572",
+							"uri": "http://api077:8080/api/v1/risks/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "60",
+							"uri": "http://api077:8080/api/v1/risks/1340846487143103408",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/1340846487143103408",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "27",
+							"uri": "http://api077:8080/api/v1/risks/riskId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/riskId",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13571",
+							"uri": "http://api077:8080/api/v1/risks/riskId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/riskId\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "61",
+							"uri": "http://api077:8080/api/v1/risks/riskId/5109469411083877654",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/riskId\/5109469411083877654",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "49",
+							"uri": "http://api077:8080/api/v1/users?status=status&userType=userType&departmentId=departmentId&externalEntityId=externalEntityId&q=q&sort=sort&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/users (departmentId,externalEntityId,page,pageSize,q,sort,status,userType)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "2",
+							"uri": "http://api077:8080/api/v1/change-requests",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests ()({projectId,changeType,title,justification,costImpactSar,scheduleImpactDays,scopeImpact,isContractualObligation,requestedGovernanceProfileItemId})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13542",
+							"uri": "http://api077:8080/api/v1/change-requests/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/ ()({projectId,changeType,title,justification,costImpactSar,scheduleImpactDays,scopeImpact,isContractualObligation,requestedGovernanceProfileItemId})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "7",
+							"uri": "http://api077:8080/api/v1/departments",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/departments ()({\"code\":\"John Doe\",\"name\":ZAP,\"parentDepartmentId\":\"John Doe\",\"directoryReference\":\"John Doe\"})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13533",
+							"uri": "http://api077:8080/api/v1/departments/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/departments\/ ()({\"code\":\"John Doe\",\"name\":ZAP,\"parentDepartmentId\":\"John Doe\",\"directoryReference\":\"John Doe\"})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "9",
+							"uri": "http://api077:8080/api/v1/documents",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/documents",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "415",
+							"otherinfo": ""
+						},
+						{
+							"id": "13550",
+							"uri": "http://api077:8080/api/v1/documents/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/documents\/",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "415",
+							"otherinfo": ""
+						},
+						{
+							"id": "11",
+							"uri": "http://api077:8080/api/v1/management-concerns",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns ()({\"projectId\":\"John Doe\",\"concernType\":\"John Doe\",\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"categoryItemId\":\"John Doe\",\"priorityItemId\":\"John Doe\",\"impacts\":[{\"impactDimensionItemId\":\"John Doe\",\"impactLevel\":\"John Doe\",\"rationale\":\"John Doe\"}],\"targetResolutionDate\":\"1970-01-01\"})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13543",
+							"uri": "http://api077:8080/api/v1/management-concerns/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns\/ ()({\"projectId\":\"John Doe\",\"concernType\":\"John Doe\",\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"categoryItemId\":\"John Doe\",\"priorityItemId\":\"John Doe\",\"impacts\":[{\"impactDimensionItemId\":\"John Doe\",\"impactLevel\":\"John Doe\",\"rationale\":\"John Doe\"}],\"targetResolutionDate\":\"1970-01-01\"})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "15",
+							"uri": "http://api077:8080/api/v1/notification-templates",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/notification-templates ()({eventFamilyCode,eventType,channel,subjectAr,subjectEn,bodyAr,bodyEn})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13534",
+							"uri": "http://api077:8080/api/v1/notification-templates/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/notification-templates\/ ()({eventFamilyCode,eventType,channel,subjectAr,subjectEn,bodyAr,bodyEn})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "17",
+							"uri": "http://api077:8080/api/v1/progress-submissions",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/progress-submissions ()({projectId})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13548",
+							"uri": "http://api077:8080/api/v1/progress-submissions/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/progress-submissions\/ ()({projectId})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "19",
+							"uri": "http://api077:8080/api/v1/projects",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects ()({\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"classificationItemId\":\"John Doe\",\"departmentId\":\"John Doe\",\"externalEntityId\":\"John Doe\",\"participationMode\":\"John Doe\",\"governanceProfileItemId\":\"John Doe\",\"registrationBudgetSar\":\"John Doe\",\"plannedStartDate\":\"1970-01-01\",\"plannedEndDate\":\"1970-01-01\",\"regionItemId\":\"John Doe\",\"cityItemId\":\"John Doe\",\"latitude\":\"John Doe\",\"longitude\":\"John Doe\"})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13545",
+							"uri": "http://api077:8080/api/v1/projects/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects\/ ()({\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"classificationItemId\":\"John Doe\",\"departmentId\":\"John Doe\",\"externalEntityId\":\"John Doe\",\"participationMode\":\"John Doe\",\"governanceProfileItemId\":\"John Doe\",\"registrationBudgetSar\":\"John Doe\",\"plannedStartDate\":\"1970-01-01\",\"plannedEndDate\":\"1970-01-01\",\"regionItemId\":\"John Doe\",\"cityItemId\":\"John Doe\",\"latitude\":\"John Doe\",\"longitude\":\"John Doe\"})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "23",
+							"uri": "http://api077:8080/api/v1/report-explorer/run?page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/report-explorer\/run (page,pageSize)({columns:[{sourceEntityCode,fieldCode,label,isFilterable,isSortable,dataClassificationItemId}],filters:[{sourceEntityCode,fieldCode,operator,value}],sort:[{sourceEntityCode,fieldCode,direction}]})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13549",
+							"uri": "http://api077:8080/api/v1/report-explorer/run/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/report-explorer\/run\/ ()({columns:[{sourceEntityCode,fieldCode,label,isFilterable,isSortable,dataClassificationItemId}],filters:[{sourceEntityCode,fieldCode,operator,value}],sort:[{sourceEntityCode,fieldCode,direction}]})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "24",
+							"uri": "http://api077:8080/api/v1/reports/reportCode/run?page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/reports\/reportCode\/run (page,pageSize)({parameters:[{code,value}],columns:[{sourceEntityCode,fieldCode,label,isFilterable,isSortable,dataClassificationItemId}],sort:[{sourceEntityCode,fieldCode,direction}]})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13541",
+							"uri": "http://api077:8080/api/v1/reports/reportCode/run/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/reports\/reportCode\/run\/ ()({parameters:[{code,value}],columns:[{sourceEntityCode,fieldCode,label,isFilterable,isSortable,dataClassificationItemId}],sort:[{sourceEntityCode,fieldCode,direction}]})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "26",
+							"uri": "http://api077:8080/api/v1/risks",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks ()({\"projectId\":\"John Doe\",\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"riskCategoryItemId\":\"John Doe\",\"ownerUserId\":\"John Doe\",\"identifiedDate\":\"1970-01-01\",\"nextReviewDate\":\"1970-01-01\"})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13539",
+							"uri": "http://api077:8080/api/v1/risks/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/ ()({\"projectId\":\"John Doe\",\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"riskCategoryItemId\":\"John Doe\",\"ownerUserId\":\"John Doe\",\"identifiedDate\":\"1970-01-01\",\"nextReviewDate\":\"1970-01-01\"})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "29",
+							"uri": "http://api077:8080/api/v1/risks/riskId/close",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/riskId\/close ()({rationale})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13544",
+							"uri": "http://api077:8080/api/v1/risks/riskId/close/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/riskId\/close\/ ()({rationale})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13585",
+							"uri": "http://api077:8080/api/v1/sessions",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/sessions ()({username,password})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "48",
+							"uri": "http://api077:8080/api/v1/sessions",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/sessions ()({username,password})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "13574",
+							"uri": "http://api077:8080/api/v1/sessions/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/sessions\/ ()({username,password})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "401",
+							"otherinfo": ""
+						},
+						{
+							"id": "50",
+							"uri": "http://api077:8080/api/v1/users",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/users ()({userType,username,displayName,email,mobileNumber,preferredLanguage,directorySubjectId,jobTitle,externalEntityId})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "13540",
+							"uri": "http://api077:8080/api/v1/users/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/users\/ ()({userType,username,displayName,email,mobileNumber,preferredLanguage,directorySubjectId,jobTitle,externalEntityId})",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "400",
+							"otherinfo": ""
+						},
+						{
+							"id": "4",
+							"uri": "http://api077:8080/api/v1/change-requests/changeRequestId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/changeRequestId ()({title,justification,costImpactSar,scheduleImpactDays,scopeImpact,isContractualObligation,requestedGovernanceProfileItemId})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13538",
+							"uri": "http://api077:8080/api/v1/change-requests/changeRequestId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/changeRequestId\/ ()({title,justification,costImpactSar,scheduleImpactDays,scopeImpact,isContractualObligation,requestedGovernanceProfileItemId})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13",
+							"uri": "http://api077:8080/api/v1/management-concerns/concernId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns\/concernId ()({\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"categoryItemId\":\"John Doe\",\"priorityItemId\":\"John Doe\",\"targetResolutionDate\":\"1970-01-01\"})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13537",
+							"uri": "http://api077:8080/api/v1/management-concerns/concernId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns\/concernId\/ ()({\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"categoryItemId\":\"John Doe\",\"priorityItemId\":\"John Doe\",\"targetResolutionDate\":\"1970-01-01\"})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "21",
+							"uri": "http://api077:8080/api/v1/projects/projectId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects\/projectId ()({\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"classificationItemId\":\"John Doe\",\"departmentId\":\"John Doe\",\"externalEntityId\":\"John Doe\",\"participationMode\":\"John Doe\",\"governanceProfileItemId\":\"John Doe\",\"registrationBudgetSar\":\"John Doe\",\"plannedStartDate\":\"1970-01-01\",\"plannedEndDate\":\"1970-01-01\",\"regionItemId\":\"John Doe\",\"cityItemId\":\"John Doe\",\"latitude\":\"John Doe\",\"longitude\":\"John Doe\"})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13536",
+							"uri": "http://api077:8080/api/v1/projects/projectId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects\/projectId\/ ()({\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"classificationItemId\":\"John Doe\",\"departmentId\":\"John Doe\",\"externalEntityId\":\"John Doe\",\"participationMode\":\"John Doe\",\"governanceProfileItemId\":\"John Doe\",\"registrationBudgetSar\":\"John Doe\",\"plannedStartDate\":\"1970-01-01\",\"plannedEndDate\":\"1970-01-01\",\"regionItemId\":\"John Doe\",\"cityItemId\":\"John Doe\",\"latitude\":\"John Doe\",\"longitude\":\"John Doe\"})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "28",
+							"uri": "http://api077:8080/api/v1/risks/riskId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/riskId ()({\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"riskCategoryItemId\":\"John Doe\",\"ownerUserId\":\"John Doe\",\"identifiedDate\":\"1970-01-01\",\"nextReviewDate\":\"1970-01-01\"})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						},
+						{
+							"id": "13546",
+							"uri": "http://api077:8080/api/v1/risks/riskId/",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks\/riskId\/ ()({\"title\":\"John Doe\",\"description\":Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.,\"riskCategoryItemId\":\"John Doe\",\"ownerUserId\":\"John Doe\",\"identifiedDate\":\"1970-01-01\",\"nextReviewDate\":\"1970-01-01\"})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "404",
+							"otherinfo": ""
+						}
+					],
+					"count": "94",
+					"systemic": false,
+					"solution": "",
+					"otherinfo": "",
+					"reference": "",
+					"cweid": "388",
+					"wascid": "20",
+					"sourceid": "10"
+				},
+				{
+					"pluginid": "10111",
+					"alertRef": "10111",
+					"alert": "Authentication Request Identified",
+					"name": "Authentication Request Identified",
+					"riskcode": "0",
+					"confidence": "1",
+					"riskdesc": "Informational (Low)",
+					"desc": "<p>The given request has been identified as an authentication request. The 'Other Info' field contains a set of key=value lines which identify any relevant fields. If the request is in a context which has an Authentication Method set to \"Auto-Detect\" then this rule will change the authentication to match the request identified.</p>",
+					"instances":[ 
+						{
+							"id": "1371",
+							"uri": "http://api077:8080/api/v1/sessions",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/sessions ()({username,password})",
+							"method": "POST",
+							"param": "username",
+							"attack": "",
+							"evidence": "password",
+							"otherinfo": "userParam=username\nuserValue=John Doe\npasswordParam=password"
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>This is an informational alert rather than a vulnerability and so there is nothing to fix.</p>",
+					"otherinfo": "<p>userParam=username</p><p>userValue=John Doe</p><p>passwordParam=password</p>",
+					"reference": "<p>https://www.zaproxy.org/docs/desktop/addons/authentication-helper/auth-req-id/</p>",
+					"cweid": "-1",
+					"wascid": "-1",
+					"sourceid": "43"
+				},
+				{
+					"pluginid": "10024",
+					"alertRef": "10024",
+					"alert": "Information Disclosure - Sensitive Information in URL",
+					"name": "Information Disclosure - Sensitive Information in URL",
+					"riskcode": "0",
+					"confidence": "2",
+					"riskdesc": "Informational (Medium)",
+					"desc": "<p>The request appeared to contain sensitive information leaked in the URL. This can violate PCI and most organizational compliance policies. You can configure the list of strings for this check to add or remove values specific to your environment.</p>",
+					"instances":[ 
+						{
+							"id": "33",
+							"uri": "http://api077:8080/api/v1/audit-events?category=category&occurredFrom=occurredFrom&occurredTo=occurredTo&actorUserId=actorUserId&eventClass=eventClass&eventType=eventType&outcome=outcome&projectId=projectId&subjectType=subjectType&subjectId=subjectId&correlationId=correlationId&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/audit-events (actorUserId,category,correlationId,eventClass,eventType,occurredFrom,occurredTo,outcome,page,pageSize,projectId,subjectId,subjectType)",
+							"method": "GET",
+							"param": "actorUserId",
+							"attack": "",
+							"evidence": "actorUserId",
+							"otherinfo": "The URL contains potentially sensitive information. The following string was found via the pattern: user\nactorUserId"
+						},
+						{
+							"id": "41",
+							"uri": "http://api077:8080/api/v1/management-concerns?projectId=projectId&concernType=concernType&status=status&assigneeUserId=assigneeUserId&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/management-concerns (assigneeUserId,concernType,page,pageSize,projectId,status)",
+							"method": "GET",
+							"param": "assigneeUserId",
+							"attack": "",
+							"evidence": "assigneeUserId",
+							"otherinfo": "The URL contains potentially sensitive information. The following string was found via the pattern: user\nassigneeUserId"
+						},
+						{
+							"id": "45",
+							"uri": "http://api077:8080/api/v1/projects?status=status&departmentId=departmentId&externalEntityId=externalEntityId&projectManagerUserId=projectManagerUserId&q=q&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/projects (departmentId,externalEntityId,page,pageSize,projectManagerUserId,q,status)",
+							"method": "GET",
+							"param": "projectManagerUserId",
+							"attack": "",
+							"evidence": "projectManagerUserId",
+							"otherinfo": "The URL contains potentially sensitive information. The following string was found via the pattern: user\nprojectManagerUserId"
+						},
+						{
+							"id": "47",
+							"uri": "http://api077:8080/api/v1/risks?projectId=projectId&status=status&ownerUserId=ownerUserId&nextReviewDateFrom=nextReviewDateFrom&nextReviewDateTo=nextReviewDateTo&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/risks (nextReviewDateFrom,nextReviewDateTo,ownerUserId,page,pageSize,projectId,status)",
+							"method": "GET",
+							"param": "ownerUserId",
+							"attack": "",
+							"evidence": "ownerUserId",
+							"otherinfo": "The URL contains potentially sensitive information. The following string was found via the pattern: user\nownerUserId"
+						},
+						{
+							"id": "1372",
+							"uri": "http://api077:8080/api/v1/users?status=status&userType=userType&departmentId=departmentId&externalEntityId=externalEntityId&q=q&sort=sort&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/users (departmentId,externalEntityId,page,pageSize,q,sort,status,userType)",
+							"method": "GET",
+							"param": "userType",
+							"attack": "",
+							"evidence": "userType",
+							"otherinfo": "The URL contains potentially sensitive information. The following string was found via the pattern: user\nuserType"
+						}
+					],
+					"count": "5",
+					"systemic": false,
+					"solution": "<p>Do not pass sensitive information in URIs.</p>",
+					"otherinfo": "<p>The URL contains potentially sensitive information. The following string was found via the pattern: user</p><p>actorUserId</p>",
+					"reference": "",
+					"cweid": "598",
+					"wascid": "13",
+					"sourceid": "1"
+				},
+				{
+					"pluginid": "10049",
+					"alertRef": "10049-1",
+					"alert": "Non-Storable Content",
+					"name": "Non-Storable Content",
+					"riskcode": "0",
+					"confidence": "2",
+					"riskdesc": "Informational (Medium)",
+					"desc": "<p>The response contents are not storable by caching components such as proxy servers. If the response does not contain sensitive, personal or user-specific information, it may benefit from being stored and cached, to improve performance.</p>",
+					"instances":[ 
+						{
+							"id": "30",
+							"uri": "http://api077:8080/api/v1/change-requests/changeRequestId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/changeRequestId",
+							"method": "DELETE",
+							"param": "",
+							"attack": "",
+							"evidence": "DELETE ",
+							"otherinfo": ""
+						},
+						{
+							"id": "36",
+							"uri": "http://api077:8080/api/v1/audit-events?category=category&occurredFrom=occurredFrom&occurredTo=occurredTo&actorUserId=actorUserId&eventClass=eventClass&eventType=eventType&outcome=outcome&projectId=projectId&subjectType=subjectType&subjectId=subjectId&correlationId=correlationId&page=10&pageSize=10",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/audit-events (actorUserId,category,correlationId,eventClass,eventType,occurredFrom,occurredTo,outcome,page,pageSize,projectId,subjectId,subjectType)",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "authorization:",
+							"otherinfo": ""
+						},
+						{
+							"id": "32",
+							"uri": "http://api077:8080/api/v1/change-requests/changeRequestId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/changeRequestId",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "authorization:",
+							"otherinfo": ""
+						},
+						{
+							"id": "35",
+							"uri": "http://api077:8080/api/v1/documents",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/documents",
+							"method": "POST",
+							"param": "",
+							"attack": "",
+							"evidence": "authorization:",
+							"otherinfo": ""
+						},
+						{
+							"id": "31",
+							"uri": "http://api077:8080/api/v1/change-requests/changeRequestId",
+							"nodeName": "http:\/\/api077:8080\/api\/v1\/change-requests\/changeRequestId ()({title,justification,costImpactSar,scheduleImpactDays,scopeImpact,isContractualObligation,requestedGovernanceProfileItemId})",
+							"method": "PUT",
+							"param": "",
+							"attack": "",
+							"evidence": "PUT ",
+							"otherinfo": ""
+						}
+					],
+					"count": "5",
+					"systemic": true,
+					"solution": "<p>The content may be marked as storable by ensuring that the following conditions are satisfied:</p><p>The request method must be understood by the cache and defined as being cacheable (\"GET\", \"HEAD\", and \"POST\" are currently defined as cacheable)</p><p>The response status code must be understood by the cache (one of the 1XX, 2XX, 3XX, 4XX, or 5XX response classes are generally understood)</p><p>The \"no-store\" cache directive must not appear in the request or response header fields</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"private\" response directive must not appear in the response</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"Authorization\" header field must not appear in the request, unless the response explicitly allows it (using one of the \"must-revalidate\", \"public\", or \"s-maxage\" Cache-Control response directives)</p><p>In addition to the conditions above, at least one of the following conditions must also be satisfied by the response:</p><p>It must contain an \"Expires\" header field</p><p>It must contain a \"max-age\" response directive</p><p>For \"shared\" caches such as \"proxy\" caches, it must contain a \"s-maxage\" response directive</p><p>It must contain a \"Cache Control Extension\" that allows it to be cached</p><p>It must have a status code that is defined as cacheable by default (200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501).</p>",
+					"otherinfo": "",
+					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
+					"cweid": "524",
+					"wascid": "13",
+					"sourceid": "10"
+				}
+			]
+		}
+	],
+	"sequences":[
+	]
+
+}

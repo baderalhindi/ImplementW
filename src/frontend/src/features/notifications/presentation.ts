@@ -1,4 +1,5 @@
 import { type Language } from '@/shared/i18n/i18n.ts';
+import { isAppPath } from '@/shared/navigation/appPath.ts';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
 import {
@@ -106,10 +107,7 @@ export function headline(notification: Pick<NotificationSummary, 'subject' | 'bo
   return firstLine.length > HEADLINE_LENGTH ? `${firstLine.slice(0, HEADLINE_LENGTH)}…` : firstLine;
 }
 
-/**
- * A deep link the SPA may follow: a route on this origin. The API already refuses anything else at intake (TASK-039
- * D-3); the screen checks again rather than render a link it cannot vouch for.
- */
+/** A deep link the SPA may follow: a route on this origin (isAppPath). */
 export function isAppRoute(deepLink: string | null): deepLink is string {
-  return deepLink !== null && deepLink.startsWith('/') && !deepLink.startsWith('//');
+  return isAppPath(deepLink);
 }

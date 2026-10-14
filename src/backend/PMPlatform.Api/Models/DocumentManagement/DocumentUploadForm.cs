@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.Features;
 using PMPlatform.Api.Errors;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Api.Models.MasterDataConfig;
+using PMPlatform.Application.Common.Validation;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Domain.Common;
 
@@ -60,13 +61,30 @@ internal static class DocumentUploadForm
         }
     }
 
-    /// <summary>The file part, required and not empty. Its size and media type are the upload policy's to judge.</summary>
+    /// <summary>
+    /// The file part, required and not empty. Its size and media type are the upload policy's to judge. A form is not bound by MVC,
+    /// so <see cref="Validation.RequestTextValidation"/> never sees it: its fields and the file's name obey <see cref="TextInput"/> here.
+    /// </summary>
     public static DocumentFile? File(IFormCollection form, List<FieldError> errors)
     {
+        foreach ((string key, Microsoft.Extensions.Primitives.StringValues values) in form)
+        {
+            if (values.Select(value => value is null ? null : TextInput.Violation(value)).FirstOrDefault(code => code is not null) is { } code)
+            {
+                errors.Add(new FieldError(key, code));
+            }
+        }
+
         IFormFile? file = form.Files.GetFile(FilePart);
         if (file is null || file.Length == 0)
         {
             errors.Add(new FieldError(FilePart, FieldError.Required));
+            return null;
+        }
+
+        if (TextInput.Violation(file.FileName) is { } fileNameCode)
+        {
+            errors.Add(new FieldError(FilePart, fileNameCode));
             return null;
         }
 

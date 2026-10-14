@@ -10,6 +10,7 @@ using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Correlation;
 using PMPlatform.Api.Errors;
 using PMPlatform.Api.Models;
+using PMPlatform.Api.Validation;
 using PMPlatform.Application;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
@@ -40,7 +41,8 @@ configurationSources.Insert(environmentVariablesIndex, new JsonConfigurationSour
 // it is configured. Only local development may run without it, on the git-ignored Local.json above (CTL-18).
 builder.Configuration.AddSecretStore(required: !builder.Environment.IsDevelopment());
 
-builder.Services.AddControllers()
+// TASK-077: every string an action receives obeys the platform's text rules before the action runs (CTL-11).
+builder.Services.AddControllers(options => options.Filters.Add<RequestTextValidation>())
     .AddJsonOptions(options => AddWireConverters(options.JsonSerializerOptions))
     // R-23: a body that does not bind (malformed JSON, no body) is a 400 in the platform envelope, and says only where.
     .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = context =>
