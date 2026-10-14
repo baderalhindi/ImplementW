@@ -134,6 +134,7 @@ Each rule states what it is and, where it is not obvious, why. §8 says which ru
 | 401 | `AUTHENTICATION_REQUIRED` | No or invalid token. Generic — no user enumeration | TASK-028 |
 | 403 | `PERMISSION_DENIED` | The caller may see the resource but lacks the permission for this operation | TASK-030 |
 | 403 | `STEP_UP_REQUIRED` | The operation needs a fresh authentication context | TASK-029, ADR-010 |
+| 403 | `ORIGIN_NOT_ALLOWED` | The request carries an `Origin` that `CORS_ALLOWED_ORIGINS` does not list; nothing ran (`endpoint-hardening.md` D-9) | TASK-078 |
 | 404 | `NOT_FOUND` | The resource does not exist **or is outside the caller's data scope** (R-47) | TASK-066 |
 | 409 | `INVALID_TRANSITION` | The command is not allowed from the current lifecycle state | TASK-041, TASK-060 |
 | 409 | `TERMINAL_STATE` | Any write against a CLOSED project or other terminal aggregate ("an explicit terminal-state error") | TASK-063 |
@@ -191,7 +192,7 @@ Each rule states what it is and, where it is not obvious, why. §8 says which ru
 | --- | --- |
 | **R-46** | Credentials travel only in `Authorization: Bearer <token>`. No token, key or credential in a query string or a body; no cookie-based session for the API (the SPA holds the token). |
 | **R-47** | **Least disclosure on 403 versus 404.** A resource outside the caller's data scope — another department under DEPT scope, another entity under ENTITY scope (R08), a project the caller is not assigned to — returns **404 `NOT_FOUND`, identical to a nonexistent id.** 403 is returned only when the caller may see the resource and lacks the permission for this operation. This is what makes TASK-066's criterion — an R08 user "can never query or infer data outside their explicit ENTITY/Project grant" — hold for the single-item endpoints, where a 403 would confirm existence. The threat-model review confirms the rule (S-4). |
-| **R-48** | Rate limiting, CORS and security response headers are TASK-078's. The only contract fixed here is that a throttled request answers 429 with the R-23 envelope and a `Retry-After` header. |
+| **R-48** | Rate limiting, CORS and security response headers are TASK-078's (built: `endpoint-hardening.md`). The only contract fixed here is that a throttled request answers 429 with the R-23 envelope and a `Retry-After` header. |
 
 ### 4.9 The OpenAPI document
 
