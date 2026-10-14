@@ -12,6 +12,7 @@ import {
 import { HomeDashboardPage } from '@/features/dashboards/HomeDashboardPage.tsx';
 import { kpiRoutes } from '@/features/financial-kpi/routes.tsx';
 import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
+import { integrationAdminRoutes } from '@/features/integration-admin/routes.tsx';
 import { issuesChallengesRoutes } from '@/features/issues-challenges/routes.tsx';
 import { milestoneRoutes } from '@/features/milestones/routes.tsx';
 import { RequireRole } from '@/features/identity-access/session/RequireRole.tsx';
@@ -46,6 +47,7 @@ export const appRoutes: RouteObject[] = [
             children: [
               { index: true, element: <Navigate to="users" replace /> },
               ...identityAccessRoutes,
+              ...integrationAdminRoutes, // FG-05 (TASK-076): R01 holds its permissions
             ],
           },
           // FG-06's screens open on audit permissions, not on R01 (TASK-074; each guards itself).

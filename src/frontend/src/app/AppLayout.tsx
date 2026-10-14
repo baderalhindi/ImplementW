@@ -13,6 +13,7 @@ import {
   identityAccessNavigation,
   type NavigationItem,
 } from '@/features/identity-access/routes.tsx';
+import { integrationAdminNavigation } from '@/features/integration-admin/catalogue.ts';
 import { issuesChallengesNavigation } from '@/features/issues-challenges/routes.tsx';
 import { sessionStore } from '@/features/identity-access/session/sessionStore.ts';
 import { StepUpDialog } from '@/features/identity-access/session/StepUpDialog.tsx';
@@ -75,7 +76,7 @@ function Navigation({
  * The application shell: skip link, header with the unread notification badge, the navigation the session allows
  * (the role-aware Home with its dashboards, FG-02's reports, projects, tasks, milestones, KPIs, risks, issues and challenges, change requests, suspensions and closeouts, approvals, documents and notifications for
  * everyone signed in; WF-13's register and monitors for AHDA, or an entity user's requests and contributions; FG-06's
- * audit screens for the audit permissions the API reports; administration for R01),
+ * audit screens for the audit permissions the API reports; administration and FG-05's integrations for R01),
  * and the page.
  */
 export function AppLayout(): ReactElement {
@@ -137,6 +138,9 @@ export function AppLayout(): ReactElement {
             )}
             {administrator && (
               <Navigation label="identityAccess.nav.label" items={identityAccessNavigation} />
+            )}
+            {administrator && (
+              <Navigation label="integrationAdmin.nav.label" items={integrationAdminNavigation} />
             )}
           </div>
         )}
