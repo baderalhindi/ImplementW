@@ -123,13 +123,13 @@ Each rule states what it is and, where it is not obvious, why. §8 says which ru
 | `correlationId` | uuid | yes | R-41 |
 | `idempotencyKey` | uuid or null | yes | Echo of the request `Idempotency-Key`; null when the request carried none |
 | `timestamp` | date-time | yes | Server time, UTC |
-| `errors[]` | `{ field, code, message? }` | on 400/422 | `field` is the dotted path into the body, or the parameter name; `code` is a validation code (`REQUIRED`, `MAX_LENGTH`, `ENUM_VALUE`, `DATE_BEFORE_START`, …) |
+| `errors[]` | `{ field, code, message? }` | on 400/422 | `field` is the dotted path into the body, or the parameter name; `code` is a validation code (`REQUIRED`, `MAX_LENGTH`, `ENUM_VALUE`, `DATE_BEFORE_START`, `INVALID_CHARACTER`, …; the list is `ValidationCode`, TASK-077) |
 
 **Status-code catalogue.**
 
 | Status | `code` | When | Source |
 | --- | --- | --- | --- |
-| 400 | `VALIDATION_FAILED` | Body, query or header fails shape validation; `errors[]` lists each field | TASK-077, T-3 |
+| 400 | `VALIDATION_FAILED` | Body, query or header fails shape validation; `errors[]` lists each field. Every string an action receives also obeys the platform's text rules — no control character but tab and line breaks, no lone surrogate, at most 10,000 characters — before the action runs (`input-validation.md`) | TASK-077, T-3 |
 | 400 | `IDEMPOTENCY_KEY_REQUIRED` / `IDEMPOTENCY_KEY_INVALID` | Sensitive write without a key, or key not a uuid | R-36 |
 | 401 | `AUTHENTICATION_REQUIRED` | No or invalid token. Generic — no user enumeration | TASK-028 |
 | 403 | `PERMISSION_DENIED` | The caller may see the resource but lacks the permission for this operation | TASK-030 |
