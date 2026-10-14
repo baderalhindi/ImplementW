@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
 import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixtures.ts';
-import { mockApi } from '@/test/mockApi.ts';
+import { mockApi, problem } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
 
 import { identityAccessNavigation } from '../routes.tsx';
@@ -104,5 +104,19 @@ describe('sign-in', () => {
         'Bearer test-access-token',
       );
     });
+  });
+
+  test('a throttled sign-in says to wait, not that something went wrong (TASK-078)', async () => {
+    const api = mockApi().on('POST', /^\/sessions$/, problem(429, 'RATE_LIMITED'));
+    renderApp({ path: '/sign-in' });
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByRole('textbox', { name: /Username/ }), 'local.r02');
+    await user.type(screen.getByLabelText(/Password/), 'local-test-password');
+    await user.click(screen.getByRole('button', { name: en('identityAccess.signIn.submit') }));
+
+    expect(await screen.findByText(en('common.problems.rateLimited'))).toBeTruthy();
+    expect(api.requestsTo('POST', /^\/sessions$/)).toHaveLength(1);
+    expect(screen.getByRole('textbox', { name: /Username/ })).toBeTruthy();
   });
 });
