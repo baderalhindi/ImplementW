@@ -29,6 +29,12 @@
 /.github/workflows/                                 @baderalhindi/devops @baderalhindi/security
 /.github/branch-protection/                         @baderalhindi/devops @baderalhindi/security
 /.github/security/                                  @baderalhindi/devops @baderalhindi/security
+# TASK-080: the secret and dependency gates. An allowlist entry or a weaker scan is a security decision.
+/.gitleaks.toml                                     @baderalhindi/devops @baderalhindi/security
+/.github/scripts/secret-scan.sh                     @baderalhindi/devops @baderalhindi/security
+/.github/scripts/dependency-vuln-gate.sh            @baderalhindi/devops @baderalhindi/security
+/.github/scripts/report-to-owner.sh                 @baderalhindi/devops @baderalhindi/security
+/.github/scripts/verify-scanning-gates.sh           @baderalhindi/devops @baderalhindi/security
 /.github/CODEOWNERS                                 @baderalhindi/architecture @baderalhindi/security
 /.github/PULL_REQUEST_TEMPLATE.md                   @baderalhindi/architecture @baderalhindi/security
 

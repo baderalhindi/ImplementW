@@ -496,6 +496,9 @@ jobs:
       - name: Secret management (TASK-019)
         run: python3 docs/architecture/secret-management-check.py
 
+      - name: Secret scanning and dependency vulnerability gates (TASK-080)
+        run: python3 docs/architecture/secret-and-dependency-scanning-check.py
+
       - name: Database provisioning (TASK-020)
         run: python3 docs/architecture/database-check.py
 

@@ -33,7 +33,9 @@
           { "context": "backend-endpoint-hardening" },
           { "context": "frontend" },
           { "context": "repo-checks" },
-          { "context": "terraform" }
+          { "context": "terraform" },
+          { "context": "secret-scan" },
+          { "context": "dependency-vuln-gate" }
         ]
       }
     }
