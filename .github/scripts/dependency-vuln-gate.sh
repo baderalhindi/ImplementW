@@ -134,10 +134,12 @@ gate() {
      | unique_by([.component, .id, .package, .installed])' \
     "$EVIDENCE_DIR/head.json" >"$EVIDENCE_DIR/new.json"
 
+  # A package is listed once per lock file that resolves it, so both counts are of distinct findings.
   local new carried
   new=$(jq length "$EVIDENCE_DIR/new.json")
-  carried=$(jq --slurpfile new "$EVIDENCE_DIR/new.json" '[.[] | select(. as $f | $new[0] | index($f) | not)] | length' \
-    "$EVIDENCE_DIR/head.json")
+  carried=$(jq --slurpfile base "$EVIDENCE_DIR/base.json" \
+    '[.[] | select([.id, .package] as $key | [$base[0][] | [.id, .package]] | index([$key]))]
+     | unique_by([.component, .id, .package, .installed]) | length' "$EVIDENCE_DIR/head.json")
   {
     echo "### Dependency vulnerability gate"
     echo
