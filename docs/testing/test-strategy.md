@@ -346,3 +346,6 @@ the `AHDA-frontend` container (Node 24, as `.nvmrc`).
 | 13 | Every other `repo-checks` script and `migration-forward-only.sh` | exit 0 each |
 | 14 | `actionlint` 1.7.7 over `.github/workflows/` | exit 0, no findings |
 | 15 | `@vitest/coverage-v8` lockfile delta | 8 packages added, all dev, none changed; `npm audit`: the one High (`source-map-js`) is already on `dev` |
+| 16 | CI on PR #96 (run 38969753960) | every check green; `coverage` merged 28 reports (one per test step of the four backend jobs, `Persistence` included): lowest module 86.7% (MasterDataConfig), total 93.7%. Jobs: `backend` 8m35s, `backend-risk-governance` 5m44s, `backend-endpoint-hardening` 5m45s, `backend-platform-services` 7m0s, `frontend` 2m35s |
+| 17 | Validation drill, draft PR #97 (run 38969754827): this branch plus 130 untested lines in `Features/Milestone` | `coverage` **failed**: "CV-2 Milestone: 74.3% of 584 lines, below 80%"; every other check green. Closed with its branch deleted |
+| 18 | First CI runs of #96 (before F-8, F-9) | `Notifications` failed on F-8; `backend-risk-governance` hit its cap (F-9); `RateLimitingTests.ASignInBurstBeyondTheLimitIsThrottledWith429AndRetryAfter` failed once on a missing log line and passed on every later run, as it has on `dev`. It is recorded here as seen, not explained |
