@@ -159,10 +159,11 @@ The stack: the compose images built from this branch (`docker compose … up -d 
 | F-4 | Two values from integrated systems are logged as received: the identity provider's `error` string (`OpenIdConnectRelyingParty`) and Nafath's verification reference. Neither comes from an end user; a hostile or broken provider could still put a line break into a plain-text log line | TASK-083 (redaction) | Open |
 | F-5 | The workbook's check names a SIT deployment; none exists yet. The scans ran against the DEV compose stack built from this branch, with the SPA's production build under `vite preview`, which adds no headers of its own. Rerun `zap/` against SIT when it exists; F-1's header alerts depend on how SIT serves the SPA | Delivery team (TASK-018) | Open |
 | F-6 | The local compose database fails the seed's integrity check (30 `audit_activity.audit_event` rows reference projects removed by earlier live checks), so `docker compose up` stops at `seed`. Local data only; the live checks here used a scratch database | Local environment | Open |
-| F-7 | DocumentManagement's integration tests run in no CI step (`ci-quality-gates.yml` has no `…Integration.DocumentManagement` filter). This task's upload test runs in its own step; the module's own suite does not | Owner of `ci-quality-gates.yml` | Open |
+| F-7 | DocumentManagement's integration tests run in no CI step (`ci-quality-gates.yml` has no `…Integration.DocumentManagement` filter). This task's upload test runs in its own step; the module's own suite does not | Owner of `ci-quality-gates.yml` | **Closed 2026-10-16 by TASK-081**: a "DocumentManagement integration tests" step in the `backend-endpoint-hardening` job (`docs/security/threat-model-documents.md` §3) |
 
 ## 8. Change log
 
 | Date | Change |
 | --- | --- |
 | 2026-10-14 | Built and verified (this record) |
+| 2026-10-16 | F-7 closed by TASK-081 (DocumentManagement integration tests in CI) |
