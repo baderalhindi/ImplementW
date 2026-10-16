@@ -1,9 +1,10 @@
-# Secret-scanner configuration (TASK-019).
+# Secret-scanner configuration (TASK-019; owned by TASK-080's gate, CTL-42).
 #
-# The default rule set, plus one allowlist. TASK-080 (CTL-42) owns the scanning *gate* — per pull
-# request, on a schedule, as a required status check — and owns this file from the point it lands;
-# it is here now because TASK-019's acceptance criterion is a clean repository-wide scan, and a
-# finding that is not a secret has to be answered somewhere a reviewer can read.
+# The default rule set, plus scoped allowlists. Read by the `secret-scan` required check on every pull
+# request and by the weekly full-history scan (.github/workflows/secret-scan.yml). A pull request is
+# scanned with its *base's* copy of this file, so an allowlist must merge, reviewed by the Security
+# Lead (CODEOWNERS), before the change that needs it; inline `gitleaks:allow` comments are ignored.
+# Record: docs/architecture/secret-and-dependency-scanning.md
 #
 # Nothing here suppresses a rule globally. Each allowlist names the rule, the paths and the shape of
 # the value, so a real credential in the same file is still found.

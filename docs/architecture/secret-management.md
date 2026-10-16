@@ -223,12 +223,13 @@ exactly those checks and is the first thing to run against DEV.
 | **F-3** | **No rotation cadence exists.** Control matrix G-3; proposed as **UGV-13**, owner AHDA Cybersecurity, gate Before Production. Rotation is trigger-driven until it is registered (runbook §8) | PMO (register); AHDA Cybersecurity (value) |
 | **F-4** | **Who may read and write PROD secrets is not accepted in writing.** CTL-51, including delivery-vendor access from outside the Kingdom (ADR-001 C-9). The scripts and the IAM model enforce per-environment scope; who holds that scope is AHDA's decision | AHDA Cybersecurity |
 | **F-5** | **Four secrets have no confirmed rotation pattern**, because their provider is not selected or its capability is unknown: `MFA_PROVIDER_API_KEY` (ADR-010), `MALWARE_SCAN_API_KEY`, `SMS_PROVIDER_API_KEY` (UGV-10), `NAFATH_CLIENT_SECRET`. Runbook §7, F-2 | DevOps/Platform Lead; Security Lead |
-| **F-6** | **`.gitleaks.toml` is here but the gate is not.** TASK-080 / CTL-42 owns scanning per pull request, on a schedule, and as a required status check, and owns this file from the point it lands. Until then nothing prevents a secret being committed between scans | TASK-080 |
+| **F-6** | **CLOSED by TASK-080 (2026-10-16).** `.gitleaks.toml` now drives the `secret-scan` required check on every pull request and a weekly full-history scan reported to a named owner (`secret-and-dependency-scanning.md`). The required check is enforced once the ruleset is applied (`branching-strategy.md` S-1) | TASK-080 |
 | **F-7** | **Rotating `JWT_SIGNING_KEY` ends every session.** An overlapping previous-key window is a TASK-028 decision. Runbook §7, F-3 | Security Lead; TASK-028 |
 
 ## 10. Change log
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-10-16 | F-6 closed: TASK-080's `secret-scan` gate and weekly full-history scan (`secret-and-dependency-scanning.md`) | Security (TASK-080) |
 | 2026-09-24 | Validation cell executed. The rotation rehearsed end to end against the running application with `rehearse-rotation.sh` and `stub-store.py` (§7.1); the scanner run over the full history with JSON reports retained. F-2 narrowed to what only Secret Manager can answer | Security (TASK-019) |
 | 2026-09-23 | Record created with the module, the runbook, the check and the scan | Security (TASK-019) |
