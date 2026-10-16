@@ -165,6 +165,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseMiddleware<OriginAllowlist>();
 app.UseCors();
+
+// TASK-079 (CTL-13): a state-changing request another site could have made the browser send is refused before it is
+// authenticated. After the origin allowlist, so a request from a foreign origin is still refused as ORIGIN_NOT_ALLOWED.
+app.UseMiddleware<CsrfProtection>();
 app.UseAuthentication();
 app.UseMiddleware<RateLimiting>();
 app.UseAuthorization();

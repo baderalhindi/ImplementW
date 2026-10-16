@@ -58,7 +58,7 @@ The template's HTML comments are guidance and do not satisfy any condition. A Ta
 
 **Bootstrap.** GitHub pre-fills a PR from `PULL_REQUEST_TEMPLATE.md` only once the file exists on the repository's default branch.
 
-**The security checklist.** Seven items, each derived from a control the matrix already assigns and each worded so that it is either satisfied or does not apply to the change, which is why every box must be ticked rather than "ticked where relevant":
+**The security checklist.** Eight items (seven at TASK-012, the CSRF item added by TASK-079), each derived from a control the matrix already assigns and each worded so that it is either satisfied or does not apply to the change, which is why every box must be ticked rather than "ticked where relevant":
 
 | Item | Control |
 | --- | --- |
@@ -68,6 +68,7 @@ The template's HTML comments are guidance and do not satisfy any condition. A Ta
 | New dependencies pinned and free of known CRITICAL vulnerabilities | CTL-41, CTL-42 (self-attestation until TASK-080's scanner is a required check) |
 | Migrations under `Persistence/Migrations`, no forbidden column, cross-schema writes reviewed | A-5; ERD D-3, D-5, D-16; `monorepo-bootstrap.md` §5 row 4 |
 | No cross-module reference outside `Contracts/`; ADR-003 §8.2 revised before a new edge | A-1, A-6 |
+| No state change on GET/HEAD, no cookie or query-string credential, no form write without the bearer token, no endpoint exempted from `CsrfProtection` | CTL-13 (`csrf-protection.md` §7) |
 | Security Lead review requested on authentication, SSO, RBAC, data scope, upload, WF-13, Nafath | CTL-43 |
 
 ### 3.1 Verification of the check (historical)
@@ -171,6 +172,7 @@ The script creates the ruleset or updates the one with the same name, then print
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-10-16 | TASK-079: an eighth security-checklist item, the CSRF rules for new endpoints (`csrf-protection.md` §7, CTL-13). | Security (TASK-079) |
 | 2026-09-27 | `pr-policy.yml` and `pr-policy.sh` deleted at the repository owner's instruction (§3, §5.1). The template is enforced by code-owner review; acceptance criterion 1 moves from MET to PARTIAL (§6). | Repository owner |
 | 2026-09-22 | `pr-policy` removed from `required_status_checks` at the repository owner's instruction (§5.1). The workflow and script are unchanged and still report; the check is advisory. CTL-38's PR-content enforcement falls back to code-owner review. | Repository owner |
 | 2026-09-22 | TASK-015: `branch_types` in `pr-policy.sh` corrected to accept `infra`, `sec` and `release` (§2) — the workbook's authoritative Branch column uses all three, so 26 of 112 tasks could not open a compliant PR. `ci.yml` renamed to `ci-quality-gates.yml`; `repo-checks` appended to `required_status_checks` (§5); S-5 closed for the contract check and the frontend unit tests (§7). | DevOps (TASK-015) |
