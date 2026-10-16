@@ -13,11 +13,13 @@
 #     + the same key marked `gitleaks:allow`             blocks (inline allows are ignored)
 #     + the key and an allowlist for it in one change    blocks (the base's configuration is read)
 #     + the key, then a commit deleting it               blocks (the value is in the change's history)
+#     + the key, its allowlist already merged in the base passes (the reviewed route past a false positive)
 #     the key removed by rewriting the change            passes
 #   dependency-vuln-gate
 #     + log4net 2.0.9 (CVE-2018-1285) and lodash 4.17.11 as a dev dependency (CVE-2019-10744),
 #       both CRITICAL with a fixed version               blocks, naming both
 #     + both and an exception for each in one change     blocks (the base's exceptions are read)
+#     + both, their exceptions already merged in the base passes (the reviewed route past a finding)
 #     both already in the base, another manifest edit    passes (not this change's finding)
 #     both removed by rewriting the change               passes
 #
@@ -96,10 +98,14 @@ plant_credential " // gitleaks:allow"
 commit "drill: fake credential marked gitleaks:allow"
 expect 1 "an inline gitleaks:allow does not clear it" secret_gate
 
+allowlist_credential() {
+  printf '\n[[allowlists]]\ndescription = "drill"\ntargetRules = ["generic-api-key"]\ncondition = "AND"\npaths = [%s]\nregexes = [%s]\n' \
+    "'''DrillCredential\\.cs'''" "'''.*'''" >>.gitleaks.toml
+}
+
 reset_to "$CLEAN"
 plant_credential
-printf '\n[[allowlists]]\ndescription = "drill"\ntargetRules = ["generic-api-key"]\ncondition = "AND"\npaths = [%s]\nregexes = [%s]\n' \
-  "'''DrillCredential\\.cs'''" "'''.*'''" >>.gitleaks.toml
+allowlist_credential
 commit "drill: fake credential and an allowlist for it"
 expect 1 "an allowlist in the same change does not clear it" secret_gate
 
@@ -110,6 +116,14 @@ expect 1 "deleting it in a later commit does not clear it" secret_gate
 
 reset_to "$CLEAN"
 expect 0 "the change rewritten without it passes" secret_gate
+
+reset_to "$CLEAN"
+allowlist_credential
+commit "drill: an allowlist, merged on its own"
+ALLOWLISTED=$(git rev-parse HEAD)
+plant_credential
+commit "drill: the allowlisted value"
+expect 0 "an allowlist merged first in its own change clears it" .github/scripts/secret-scan.sh range "$ALLOWLISTED" "$(git rev-parse HEAD)"
 
 # The vulnerable versions are the ones TASK-022's drill uses: each CRITICAL with a fixed version.
 plant_dependencies() {
@@ -137,7 +151,8 @@ names CVE-2018-1285
 names CVE-2019-10744
 VULNERABLE=$(git rev-parse HEAD)
 
-cat >>.github/security/vulnerability-exceptions.yaml <<'EOF'
+except_dependencies() {
+  cat >>.github/security/vulnerability-exceptions.yaml <<'EOF'
   - id: CVE-2018-1285
     purls: [pkg:nuget/log4net@2.0.9]
     expired_at: 2026-12-31
@@ -147,7 +162,9 @@ cat >>.github/security/vulnerability-exceptions.yaml <<'EOF'
     expired_at: 2026-12-31
     statement: drill
 EOF
-perl -pi -e 's/^vulnerabilities: \[\]$/vulnerabilities:/' .github/security/vulnerability-exceptions.yaml
+  perl -pi -e 's/^vulnerabilities: \[\]$/vulnerabilities:/' .github/security/vulnerability-exceptions.yaml
+}
+except_dependencies
 commit "drill: the dependencies and an exception for each"
 expect 1 "an exception in the same change does not clear it" dependency_gate "$BASE"
 
@@ -158,6 +175,13 @@ expect 0 "findings the base already carries are not the change's" dependency_gat
 
 reset_to "$BASE"
 expect 0 "the change rewritten without them passes" dependency_gate "$BASE"
+
+except_dependencies
+commit "drill: an exception for each, merged on its own"
+EXCEPTED=$(git rev-parse HEAD)
+plant_dependencies
+commit "drill: the excepted dependencies"
+expect 0 "exceptions merged first in their own change clear them" dependency_gate "$EXCEPTED"
 
 if [ "$failures" -gt 0 ]; then
   echo "drill: $failures assertion(s) failed" >&2
