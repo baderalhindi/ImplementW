@@ -42,7 +42,10 @@ internal sealed class NotificationInbox(
 
         if (item.Delivery.Status == NotificationDeliveryStatus.Sent)
         {
-            DateTimeOffset now = timeProvider.GetUtcNow();
+            // At PostgreSQL's precision: the answer below is the tracked entity, so a 100 ns clock (Linux) would otherwise answer
+            // a readAt the database does not hold, and a second read would answer a different one (TASK-084, test-strategy.md F-8).
+            DateTimeOffset utcNow = timeProvider.GetUtcNow();
+            DateTimeOffset now = utcNow.AddTicks(-(utcNow.Ticks % TimeSpan.TicksPerMicrosecond));
             item.Delivery.Status = NotificationDeliveryStatus.Read;
             item.Delivery.ReadAt = now;
             item.Delivery.UpdatedAt = now;
