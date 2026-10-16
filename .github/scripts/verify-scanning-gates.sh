@@ -73,7 +73,7 @@ secret_gate() { .github/scripts/secret-scan.sh range "$BASE" "$(git rev-parse HE
 dependency_gate() { .github/scripts/dependency-vuln-gate.sh gate "$1" "$(git rev-parse HEAD)"; }
 
 # Random on every run, so no scanner can have seen it, and labelled so no reader takes it for real.
-FAKE_KEY=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 40)
+FAKE_KEY=$(head -c 600 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | cut -c1-40)
 CREDENTIAL_FILE=src/backend/PMPlatform.Infrastructure/DrillCredential.cs
 plant_credential() {
   printf 'namespace PMPlatform.Infrastructure;\n\n// TASK-080 drill: a fake credential that must block the merge.\ninternal static class DrillCredential\n{\n    internal const string ReportingApiKey = "%s";%s\n}\n' \
