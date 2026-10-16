@@ -50,5 +50,15 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['src/test/setup.ts'],
     restoreMocks: true,
+    // TASK-084: `npm run test:coverage` (the CI frontend job) fails below these (docs/testing/test-strategy.md §5.2). The fixtures
+    // under src/test are test code; main.tsx only mounts the app.
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/main.tsx', 'src/vite-env.d.ts'],
+      reporter: ['text-summary', 'json-summary'],
+      reportOnFailure: true,
+      thresholds: { lines: 80, branches: 70 },
+    },
   },
 });

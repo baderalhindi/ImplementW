@@ -152,25 +152,16 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.FinancialKpi
 
-      # TASK-054: the execution domain's separations under real interaction — Overall Health held and served by WF-02 alone, one
-      # shared milestone row across WF-03 and WF-05, WF-14's published period unchanged by later corrections, and variance and
-      # Schedule Health against the one ACTIVE Approved Baseline — and the WF-02/03/04/05/14 APIs against docs/api/openapi.v1.json
-      # (api-conventions R-10). Same database and directory as above.
-      - name: Execution domain contract and integration tests
-        env:
-          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
-        run: >-
-          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Execution
-
-      # TASK-077: the platform's text rules on every action argument, a multipart upload's fields, and text stored and returned
-      # exactly as entered (CTL-11). Same database and directory as above.
-      - name: Input validation integration tests
-        env:
-          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
-        run: >-
-          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.InputValidation.
+      # TASK-084: every `dotnet test` above wrote a Cobertura report (CI=true sets coverage.runsettings in Directory.Build.props);
+      # the `coverage` job merges this job's with the other backend jobs' and gates them (docs/testing/test-strategy.md §5).
+      - name: Upload coverage
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend
+          path: src/backend/PMPlatform.Tests.*/TestResults/**/*.cobertura.xml
+          if-no-files-found: error
+          retention-days: 7
 
   # TASK-065: the WF-06 to WF-10 integration steps and the two domain invariant suites, apart from `backend` so that each job
   # stays inside its ten-minute budget (ci-quality-gates.md F-4: split rather than raise the cap). It builds the same commit on its own
@@ -365,6 +356,17 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.IntegrationMonitoring.
 
+      # TASK-084: every `dotnet test` above wrote a Cobertura report (CI=true sets coverage.runsettings in Directory.Build.props);
+      # the `coverage` job merges this job's with the other backend jobs' and gates them (docs/testing/test-strategy.md §5).
+      - name: Upload coverage
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend-risk-governance
+          path: src/backend/PMPlatform.Tests.*/TestResults/**/*.cobertura.xml
+          if-no-files-found: error
+          retention-days: 7
+
   # TASK-078: rate limiting, CORS and the security headers (CTL-12), in a sixth job: `backend` and `backend-risk-governance` both ran
   # within a minute and a half of their ten-minute budget on `dev` (ci-quality-gates.md F-4: split rather than raise the cap). The
   # shared counters are tested against a real Redis, as two API instances would use it in SIT, UAT and PROD.
@@ -444,6 +446,85 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.DocumentManagement.
 
+      # TASK-054: the execution domain's separations under real interaction — Overall Health held and served by WF-02 alone, one
+      # shared milestone row across WF-03 and WF-05, WF-14's published period unchanged by later corrections, and variance and
+      # Schedule Health against the one ACTIVE Approved Baseline — and the WF-02/03/04/05/14 APIs against docs/api/openapi.v1.json
+      # (api-conventions R-10). This step and the next moved here from `backend` in TASK-084: `backend` ran 9.4 of its 10 minutes
+      # on `dev`, and coverage collection adds to every step. Same database and directory as above.
+      - name: Execution domain contract and integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Execution
+
+      # TASK-077: the platform's text rules on every action argument, a multipart upload's fields, and text stored and returned
+      # exactly as entered (CTL-11). Same database and directory as above.
+      - name: Input validation integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.InputValidation.
+
+      # TASK-084: WF-11 approvals (TASK-035), FG-04 master data and configuration (TASK-034) and WF-15 notifications (TASK-039). These
+      # namespaces ran in no step until TASK-084 (test-strategy.md F-2); test-strategy-check.py now fails a PR that leaves any integration
+      # namespace out of every filter. The filters end in `.`, so each runs its namespace alone. Same database and directory as above.
+      - name: Approval integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Approval.
+
+      - name: MasterDataConfig integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.MasterDataConfig.
+
+      - name: Notifications integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Notifications.
+
+      # TASK-084: every `dotnet test` above wrote a Cobertura report (CI=true sets coverage.runsettings in Directory.Build.props);
+      # the `coverage` job merges this job's with the other backend jobs' and gates them (docs/testing/test-strategy.md §5).
+      - name: Upload coverage
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend-endpoint-hardening
+          path: src/backend/PMPlatform.Tests.*/TestResults/**/*.cobertura.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  # TASK-084: the business-logic coverage gate. Each backend job uploads the Cobertura reports of its own steps; this job merges them line
+  # by line and fails if any Domain/Application module, or all of them together, is below docs/testing/coverage-thresholds.json
+  # (test-strategy.md §5). It needs all three, so it gates on the same commit's full backend run and nothing less.
+  coverage:
+    name: coverage
+    needs: [backend, backend-risk-governance, backend-endpoint-hardening]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage
+
+      # Standard library only; the runner's python3 is enough.
+      - name: Business-logic coverage gate
+        run: python3 docs/testing/coverage-check.py coverage
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest
@@ -471,8 +552,9 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
-      - name: Unit tests
-        run: npm test
+      # TASK-084: the unit tests with coverage; vite.config.ts fails the run below its thresholds (docs/testing/test-strategy.md §5.2).
+      - name: Unit tests and coverage
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build
@@ -517,6 +599,9 @@ jobs:
 
       - name: Penetration test report, remediation tracker and retest evidence (TASK-082)
         run: python3 docs/security/penetration-test-check.py
+
+      - name: Test strategy, coverage wiring and journey traceability (TASK-084)
+        run: python3 docs/testing/test-strategy-check.py
 
       - name: Database provisioning (TASK-020)
         run: python3 docs/architecture/database-check.py

@@ -31,6 +31,7 @@
           { "context": "backend" },
           { "context": "backend-risk-governance" },
           { "context": "backend-endpoint-hardening" },
+          { "context": "coverage" },
           { "context": "frontend" },
           { "context": "repo-checks" },
           { "context": "terraform" },

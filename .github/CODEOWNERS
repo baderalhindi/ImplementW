@@ -46,6 +46,8 @@
 /docs/architecture/cybersecurity-control-matrix.md  @baderalhindi/architecture @baderalhindi/security
 # TASK-081: threat models, the findings log and the risk-acceptance register. A rating, a disposition or a signature is the Security Lead's.
 /docs/security/                                     @baderalhindi/security @baderalhindi/architecture
+# TASK-084: the test strategy, the coverage thresholds and their gate. Lowering a threshold or dropping a journey is QA's call.
+/docs/testing/                                      @baderalhindi/qa @baderalhindi/architecture
 
 # infra: docker (TASK-014), environments (TASK-016), terraform (TASK-017/020/021), secrets templates (TASK-019)
 /infra/                                             @baderalhindi/devops
@@ -61,6 +63,7 @@
 /src/backend/PMPlatform.Infrastructure/Persistence/Migrations/  @baderalhindi/backend @baderalhindi/database
 /src/backend/PMPlatform.Tests.Unit/Architecture/    @baderalhindi/architecture
 /src/backend/PMPlatform.Tests.Integration/          @baderalhindi/backend @baderalhindi/qa
+/src/backend/coverage.runsettings                   @baderalhindi/backend @baderalhindi/qa
 
 # src/frontend: React SPA
 /src/frontend/                                      @baderalhindi/frontend

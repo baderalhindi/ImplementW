@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TASK-084: line coverage of the business-logic assemblies, collected by every `dotnet test` run in CI
+     (Directory.Build.props sets RunSettingsFilePath when CI=true) and gated by docs/testing/coverage-check.py.
+     Run locally with: dotnet test src/backend/<test project> -s src/backend/coverage.runsettings
+     The collector is Microsoft.CodeCoverage, which Microsoft.NET.Test.Sdk already brings; no other package. -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <CodeCoverage>
+            <!-- docs/testing/test-strategy.md §5.1: the business logic is Domain and Application. Api and Infrastructure are
+                 adapters, proved by the contract and integration layers, and are not instrumented. -->
+            <ModulePaths>
+              <Include>
+                <ModulePath>.*[\\/]PMPlatform\.Domain\.dll$</ModulePath>
+                <ModulePath>.*[\\/]PMPlatform\.Application\.dll$</ModulePath>
+              </Include>
+            </ModulePaths>
+            <!-- Source-generated code (regex, logging and JSON generators under obj/) is not code anyone wrote. Not
+                 CompilerGeneratedAttribute: async state machines and lambdas carry it, and they hold most handler code. -->
+            <Sources>
+              <Exclude>
+                <Source>.*[\\/]obj[\\/].*</Source>
+              </Exclude>
+            </Sources>
+            <Attributes>
+              <Exclude>
+                <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+              </Exclude>
+            </Attributes>
+          </CodeCoverage>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
