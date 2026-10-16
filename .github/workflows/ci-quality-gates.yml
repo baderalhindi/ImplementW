@@ -515,6 +515,9 @@ jobs:
       - name: Threat models and security findings log (TASK-081)
         run: python3 docs/security/findings-log-check.py
 
+      - name: Penetration test report, remediation tracker and retest evidence (TASK-082)
+        run: python3 docs/security/penetration-test-check.py
+
       - name: Database provisioning (TASK-020)
         run: python3 docs/architecture/database-check.py
 
