@@ -66,7 +66,7 @@ internal sealed class DocumentRepository(PMPlatformDbContext context) : IDocumen
         if (!string.IsNullOrWhiteSpace(query.Q))
         {
             string pattern = AdministrationPersistence.ContainsPattern(query.Q.Trim());
-            rows = rows.Where(r => EF.Functions.ILike(r.Document.Title.Text, pattern));
+            rows = rows.Where(r => EF.Functions.ILike(r.Document.Title.Text, pattern, AdministrationPersistence.LikeEscape));
         }
 
         int total = await rows.CountAsync(cancellationToken).ConfigureAwait(false);

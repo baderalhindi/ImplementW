@@ -52,7 +52,13 @@ internal static class AdministrationPersistence
         }
     }
 
-    /// <summary>An ILIKE pattern matching <paramref name="text"/> anywhere, with its wildcards taken literally.</summary>
+    /// <summary>
+    /// The escape character <see cref="ContainsPattern"/> uses; pass it as ILike's third argument. Npgsql translates the two-argument
+    /// ILike with <c>ESCAPE ''</c>, so without it "\_" is matched literally and a search containing "_" finds nothing (TASK-084).
+    /// </summary>
+    public const string LikeEscape = @"\";
+
+    /// <summary>An ILIKE pattern matching <paramref name="text"/> anywhere, with its wildcards taken literally under <see cref="LikeEscape"/>.</summary>
     public static string ContainsPattern(string text) =>
         $"%{text.Replace(@"\", @"\\", StringComparison.Ordinal).Replace("%", @"\%", StringComparison.Ordinal).Replace("_", @"\_", StringComparison.Ordinal)}%";
 }

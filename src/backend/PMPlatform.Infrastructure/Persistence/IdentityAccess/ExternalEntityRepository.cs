@@ -30,7 +30,7 @@ internal sealed class ExternalEntityRepository(PMPlatformDbContext context) : IE
         if (!string.IsNullOrWhiteSpace(query.Text))
         {
             string pattern = AdministrationPersistence.ContainsPattern(query.Text.Trim());
-            entities = entities.Where(e => EF.Functions.ILike(e.Code, pattern) || EF.Functions.ILike(e.Name.Ar, pattern) || EF.Functions.ILike(e.Name.En, pattern));
+            entities = entities.Where(e => EF.Functions.ILike(e.Code, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(e.Name.Ar, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(e.Name.En, pattern, AdministrationPersistence.LikeEscape));
         }
 
         int totalCount = await entities.CountAsync(cancellationToken).ConfigureAwait(false);

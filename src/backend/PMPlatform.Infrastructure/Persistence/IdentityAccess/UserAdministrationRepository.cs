@@ -37,7 +37,7 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
         if (!string.IsNullOrWhiteSpace(query.Text))
         {
             string pattern = AdministrationPersistence.ContainsPattern(query.Text.Trim());
-            users = users.Where(u => EF.Functions.ILike(u.Username, pattern) || EF.Functions.ILike(u.DisplayName, pattern) || EF.Functions.ILike(u.Email, pattern));
+            users = users.Where(u => EF.Functions.ILike(u.Username, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(u.DisplayName, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(u.Email, pattern, AdministrationPersistence.LikeEscape));
         }
 
         int totalCount = await users.CountAsync(cancellationToken).ConfigureAwait(false);

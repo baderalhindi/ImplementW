@@ -27,7 +27,7 @@ internal sealed class DepartmentRepository(PMPlatformDbContext context) : IDepar
         if (!string.IsNullOrWhiteSpace(query.Text))
         {
             string pattern = AdministrationPersistence.ContainsPattern(query.Text.Trim());
-            departments = departments.Where(d => EF.Functions.ILike(d.Code, pattern) || EF.Functions.ILike(d.Name.Ar, pattern) || EF.Functions.ILike(d.Name.En, pattern));
+            departments = departments.Where(d => EF.Functions.ILike(d.Code, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(d.Name.Ar, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(d.Name.En, pattern, AdministrationPersistence.LikeEscape));
         }
 
         int totalCount = await departments.CountAsync(cancellationToken).ConfigureAwait(false);
