@@ -134,24 +134,6 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.ProjectTask
 
-      # TASK-050: WF-05 milestone achievement and WF-03's shared milestone — a correction as a new revision with the accepted one
-      # kept and SUPERSEDED, acceptance through WF-11, mandatory evidence, and the database guards. Same database and directory as above.
-      - name: Milestone integration tests
-        env:
-          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
-        run: >-
-          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Milestone
-
-      # TASK-052: WF-14 Financial Progress and KPI Performance — measurements pinned to their target version, Unknown never 0,
-      # portfolio aggregates only over compatible figures, immutable published snapshots, and the database guards. Same database and directory as above.
-      - name: FinancialKpi integration tests
-        env:
-          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
-        run: >-
-          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.FinancialKpi
-
       # TASK-084: every `dotnet test` above wrote a Cobertura report (CI=true sets coverage.runsettings in Directory.Build.props);
       # the `coverage` job merges this job's with the other backend jobs' and gates them (docs/testing/test-strategy.md §5).
       - name: Upload coverage
@@ -306,55 +288,25 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Governance.
 
-      # TASK-069: FG-01's dashboards — every widget's semantic state and as-of, a missing source UNKNOWN and a stale one STALE and never 0,
-      # the catalogue fixed at ADR-006's three, an entity user's Project Dashboard and nothing internal, scope before any count, one failing
-      # source isolated, ADR-019's personalisation, the governed lifecycle and its database guard, and the API against
-      # docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
-      - name: Dashboards integration tests
+      # TASK-050 (moved here from `backend` in TASK-084, as is the next step): WF-05 milestone achievement and WF-03's shared milestone — a correction as a new revision with the accepted one
+      # kept and SUPERSEDED, acceptance through WF-11, mandatory evidence, and the database guards. Same database and directory as above.
+      - name: Milestone integration tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         env:
           DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
         run: >-
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Dashboards.
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Milestone
 
-      # TASK-071: FG-02's reports — a field outside the SCR-138 allowlist refused by a direct call, an output authorised again at download on
-      # the rules of its data, an entity's report set on its own projects with financials masked, the catalogue fixed at ADR-006's ten,
-      # missing never 0 and stale never current, parameters that only narrow, PDF/XLSX/CSV without a formula a spreadsheet could run, the job
-      # lifecycle and its expiry, private saved views, ADM-037's governed lifecycle and its database guard, and the API against
-      # docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
-      - name: Reports integration tests
+      # TASK-052: WF-14 Financial Progress and KPI Performance — measurements pinned to their target version, Unknown never 0,
+      # portfolio aggregates only over compatible figures, immutable published snapshots, and the database guards. Same database and directory as above.
+      - name: FinancialKpi integration tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         env:
           DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
         run: >-
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Reports.
-
-      # TASK-033 and TASK-073: FG-06's formal audit — every failed sign-in, refusal and privileged action audited, the SIEM forwarder, the
-      # redaction suite; capture through the outbox and ingestion at commit, an event refused an edit or delete by the API, the data layer
-      # and the database, the Activity projection rebuilt from the store and diffed, audit access by category, scope and sensitivity apart
-      # from R01, the hash chain verified, and the API against docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace
-      # alone. Same database and directory as above.
-      - name: AuditActivity integration tests
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        env:
-          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
-        run: >-
-          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.AuditActivity.
-
-      # TASK-075: FG-05 integration monitoring — a downstream outage simulated end to end with every business table unchanged, a
-      # reconciliation mismatch raised as an alert with nothing repaired, idempotent and correlation-traceable retries to the dead letter
-      # and back, telemetry from IdentityAccess and Notifications, alerts' lifecycle, ADR-004's measures, access and the API against
-      # docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
-      - name: IntegrationMonitoring integration tests
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        env:
-          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
-        run: >-
-          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.IntegrationMonitoring.
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.FinancialKpi
 
       # TASK-084: every `dotnet test` above wrote a Cobertura report (CI=true sets coverage.runsettings in Directory.Build.props);
       # the `coverage` job merges this job's with the other backend jobs' and gates them (docs/testing/test-strategy.md §5).
@@ -450,7 +402,7 @@ jobs:
       # shared milestone row across WF-03 and WF-05, WF-14's published period unchanged by later corrections, and variance and
       # Schedule Health against the one ACTIVE Approved Baseline — and the WF-02/03/04/05/14 APIs against docs/api/openapi.v1.json
       # (api-conventions R-10). This step and the next moved here from `backend` in TASK-084: `backend` ran 9.4 of its 10 minutes
-      # on `dev`, and coverage collection adds to every step. Same database and directory as above.
+      # on `dev`. Same database and directory as above.
       - name: Execution domain contract and integration tests
         env:
           DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
@@ -466,6 +418,64 @@ jobs:
         run: >-
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.InputValidation.
+
+      # TASK-084: every `dotnet test` above wrote a Cobertura report (CI=true sets coverage.runsettings in Directory.Build.props);
+      # the `coverage` job merges this job's with the other backend jobs' and gates them (docs/testing/test-strategy.md §5).
+      - name: Upload coverage
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend-endpoint-hardening
+          path: src/backend/PMPlatform.Tests.*/TestResults/**/*.cobertura.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  # TASK-084: the platform services — WF-11 approvals, FG-04 configuration, WF-15 notifications — and FG-01, FG-02, FG-05 and FG-06, a seventh
+  # job because on a slow runner (builds of 115-127 s against 82 s) `backend` and `backend-risk-governance` both reached their ten-minute
+  # budget (ci-quality-gates.md F-4: split rather than raise the cap). Same commit, same PostgreSQL service and test directory.
+  backend-platform-services:
+    name: backend-platform-services
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    # Docker Hub images are pulled through Google's public mirror: GitHub's shared runner addresses exhaust Docker Hub's
+    # anonymous pull limit ("toomanyrequests"), which failed PR #78 three times before any test ran. Same image, same digest.
+    services:
+      postgres:
+        image: mirror.gcr.io/library/postgres:17
+        env:
+          POSTGRES_PASSWORD: scratch
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/backend/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet restore src/backend
+
+      - name: Build
+        id: build
+        run: dotnet build src/backend --no-restore --configuration Release
+
+      - name: Start the test directory
+        run: docker compose -f infra/docker/docker-compose.yml up --detach --wait ldap
 
       # TASK-084: WF-11 approvals (TASK-035), FG-04 master data and configuration (TASK-034) and WF-15 notifications (TASK-039). These
       # namespaces ran in no step until TASK-084 (test-strategy.md F-2); test-strategy-check.py now fails a PR that leaves any integration
@@ -494,23 +504,73 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Notifications.
 
+      # TASK-069: FG-01's dashboards — every widget's semantic state and as-of, a missing source UNKNOWN and a stale one STALE and never 0,
+      # the catalogue fixed at ADR-006's three, an entity user's Project Dashboard and nothing internal, scope before any count, one failing
+      # source isolated, ADR-019's personalisation, the governed lifecycle and its database guard, and the API against
+      # docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
+      - name: Dashboards integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Dashboards.
+
+      # TASK-071: FG-02's reports — a field outside the SCR-138 allowlist refused by a direct call, an output authorised again at download on
+      # the rules of its data, an entity's report set on its own projects with financials masked, the catalogue fixed at ADR-006's ten,
+      # missing never 0 and stale never current, parameters that only narrow, PDF/XLSX/CSV without a formula a spreadsheet could run, the job
+      # lifecycle and its expiry, private saved views, ADM-037's governed lifecycle and its database guard, and the API against
+      # docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
+      - name: Reports integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Reports.
+
+      # TASK-033 and TASK-073: FG-06's formal audit — every failed sign-in, refusal and privileged action audited, the SIEM forwarder, the
+      # redaction suite; capture through the outbox and ingestion at commit, an event refused an edit or delete by the API, the data layer
+      # and the database, the Activity projection rebuilt from the store and diffed, audit access by category, scope and sensitivity apart
+      # from R01, the hash chain verified, and the API against docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace
+      # alone. Same database and directory as above.
+      - name: AuditActivity integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.AuditActivity.
+
+      # TASK-075: FG-05 integration monitoring — a downstream outage simulated end to end with every business table unchanged, a
+      # reconciliation mismatch raised as an alert with nothing repaired, idempotent and correlation-traceable retries to the dead letter
+      # and back, telemetry from IdentityAccess and Notifications, alerts' lifecycle, ADR-004's measures, access and the API against
+      # docs/api/openapi.v1.json. The filter ends in `.`, so it runs this namespace alone. Same database and directory as above.
+      - name: IntegrationMonitoring integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.IntegrationMonitoring.
+
       # TASK-084: every `dotnet test` above wrote a Cobertura report (CI=true sets coverage.runsettings in Directory.Build.props);
       # the `coverage` job merges this job's with the other backend jobs' and gates them (docs/testing/test-strategy.md §5).
       - name: Upload coverage
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-backend-endpoint-hardening
+          name: coverage-backend-platform-services
           path: src/backend/PMPlatform.Tests.*/TestResults/**/*.cobertura.xml
           if-no-files-found: error
           retention-days: 7
 
   # TASK-084: the business-logic coverage gate. Each backend job uploads the Cobertura reports of its own steps; this job merges them line
   # by line and fails if any Domain/Application module, or all of them together, is below docs/testing/coverage-thresholds.json
-  # (test-strategy.md §5). It needs all three, so it gates on the same commit's full backend run and nothing less.
+  # (test-strategy.md §5). It needs all four, so it gates on the same commit's full backend run and nothing less.
   coverage:
     name: coverage
-    needs: [backend, backend-risk-governance, backend-endpoint-hardening]
+    needs: [backend, backend-risk-governance, backend-endpoint-hardening, backend-platform-services]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

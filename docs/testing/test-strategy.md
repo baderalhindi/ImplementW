@@ -32,7 +32,7 @@ It does not execute UAT (TASK-088), build the e2e suite (TASK-085), run load tes
 | Layer | Proves | Where | Tooling | Runs | Fails the PR on |
 | --- | --- | --- | --- | --- | --- |
 | **Unit** | Pure rules with no I/O: the authorization engine, state machines, calculators, validators, the A-1 to A-6 architecture rules | `src/backend/PMPlatform.Tests.Unit`; `src/frontend/src/**/*.test.tsx` | xUnit; Vitest with Testing Library in jsdom | every PR (`backend`, `frontend`) | any failing test |
-| **Integration** | A module's behaviour through its real API and real database: handlers, guards and triggers, transactions, outbox and audit, authorization by scope | `src/backend/PMPlatform.Tests.Integration/<Module>` | xUnit, `WebApplicationFactory`, PostgreSQL 17, the `AHDA-ldap` test directory, Redis | every PR, one CI step per namespace across `backend`, `backend-risk-governance`, `backend-endpoint-hardening` | any failing test; a namespace left out of every step (TS-1) |
+| **Integration** | A module's behaviour through its real API and real database: handlers, guards and triggers, transactions, outbox and audit, authorization by scope | `src/backend/PMPlatform.Tests.Integration/<Module>` | xUnit, `WebApplicationFactory`, PostgreSQL 17, the `AHDA-ldap` test directory, Redis | every PR, one CI step per namespace across `backend`, `backend-risk-governance`, `backend-endpoint-hardening`, `backend-platform-services` | any failing test; a namespace left out of every step (TS-1) |
 | **Contract** | The API is what `docs/api/openapi.v1.json` promises and nothing else; events match `event-envelope.schema.json` | `*ContractTests` in the integration namespaces; `docs/architecture/contract-check.py` | snapshot comparison (api-conventions R-10); standard-library lint | every PR (backend jobs, `repo-checks`) | a breaking change, an undocumented operation, a convention violation |
 | **End-to-end** | A Step 18 journey across modules through the browser, against the deployed stack | `src/frontend/e2e/journeys/uj-nnn-*.spec.ts` (§7) | Playwright (TASK-085) | nightly against SIT (TASK-085) | a failing journey blocks promotion to UAT (TASK-085 AC) |
 | **Performance** | p95 latency of the register, dashboard and report endpoints under load | `docs/testing` load-test report (TASK-086) | TASK-086's choice | before UAT | a breach of the agreed threshold without a filed optimisation task |
@@ -108,9 +108,10 @@ from today's figure as the line minimum does.
 - **How it is collected.** Under `CI=true`, `src/backend/Directory.Build.props` sets `RunSettingsFilePath` to
   `src/backend/coverage.runsettings` for every test project, so every `dotnet test` step in CI writes a Cobertura report
   with `Microsoft.CodeCoverage`, which `Microsoft.NET.Test.Sdk` already brings. A new CI step is covered without
-  remembering to be. Overhead measured locally: about one second per step.
-- **How it is gated.** Each of the three backend jobs uploads its reports as `coverage-<job>`. The `coverage` job needs
-  all three, downloads the reports and runs `python3 docs/testing/coverage-check.py coverage`, which merges them line by
+  remembering to be. Overhead: about one second per step locally; on a CI runner that built in 82 s, every step ran within
+  its `dev` time.
+- **How it is gated.** Each of the four backend jobs uploads its reports as `coverage-<job>`. The `coverage` job needs
+  all four, downloads the reports and runs `python3 docs/testing/coverage-check.py coverage`, which merges them line by
   line (a line is covered when any run executed it) and fails on CV-1 (an assembly missing from the reports), CV-2 (a
   module under `minimumPerModule`) or CV-3 (the total under `minimumTotal`). The table goes to the job summary.
 - **Locally.** `dotnet test src/backend/<test project> -s src/backend/coverage.runsettings --results-directory <dir>`
@@ -304,12 +305,14 @@ Findings of this task:
 | # | Finding | Disposition |
 | --- | --- | --- |
 | F-1 | The strategy needs the PMO engagement lead's approval (workbook AC). | **Open** — §11 |
-| F-2 | 27 integration test files in `Approval` (WF-11), `MasterDataConfig` (FG-04) and `Notifications` (WF-15) ran in no CI step, the same gap DocumentManagement had until TASK-081. | **Closed** — three steps in `backend-endpoint-hardening`; TS-1 prevents a recurrence |
+| F-2 | 27 integration test files in `Approval` (WF-11), `MasterDataConfig` (FG-04) and `Notifications` (WF-15) ran in no CI step, the same gap DocumentManagement had until TASK-081. | **Closed** — three steps in the new `backend-platform-services` job; TS-1 prevents a recurrence |
 | F-3 | Every admin text search containing `_`, `%` or `\` found nothing: `ContainsPattern` escaped them with `\`, but Npgsql translates the two-argument `EF.Functions.ILike` with `ESCAPE ''`, so the backslash was matched literally. A search for a code such as `RISK_MATRIX` returned an empty page. Affected: users, departments, external entities, master-data items, KPI definitions, projects, documents. | **Closed** — `AdministrationPersistence.LikeEscape` passed to all 17 calls; `AdministrationReadAndEditTests` searches with `_` and fails without the fix |
 | F-4 | The acceptance criterion's wording is "unit-test coverage"; this strategy gates unit + integration coverage (D-1, §3). | **Open** — approver to confirm D-1 |
 | F-5 | The ruleset is not applied on GitHub (`apply.sh` needs an authenticated admin run; `dev` reports "Branch not protected"), so `coverage` — like every other check — turns a PR red but blocks no merge until it is. | **Open** — repository owner, as for TASK-015 F-1 |
 | F-6 | No journey is automated end to end; three have API-level gaps (G-1 to G-3). | **Open** — TASK-085 |
 | F-7 | The performance threshold (PTBC-043) and the accessibility conformance level (PTBC-040) are AHDA's to set. | **Open** — AHDA, before TASK-086/087 |
+| F-8 | `NotificationInboxEndpointTests.TheBadgeCounts…` failed the first time it ran in CI (F-2): marking a notification read answered the tracked entity's `readAt` at the Linux clock's 100 ns precision, while PostgreSQL stores microseconds, so a second read answered a different `readAt`. Invisible on macOS, whose clock ticks in microseconds. | **Closed** — `NotificationInbox.MarkReadAsync` stamps at microsecond precision |
+| F-9 | On a slow runner (builds of 115–127 s against 82 s on `dev`) every step runs about 1.4× longer, and `backend-risk-governance` (10m17s) and `backend` (9m41s) reached their ten-minute cap on this PR's first runs. | **Closed** — a seventh job, `backend-platform-services`, takes seven steps (ci-quality-gates.md F-4: split rather than raise the cap) |
 
 ## 11. Approval
 
