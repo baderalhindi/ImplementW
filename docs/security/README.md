@@ -100,12 +100,25 @@ Without `--gate`, the check makes sure the models and the log agree. Every model
 
 With `--gate`, it also lists each High or Critical finding that is not closed and exits 1 if there is any. With `--verify-prs`, each cited PR must be MERGED on GitHub. The Release Checklist's row is marked green only on a passing `--gate --verify-prs` run against the release candidate's commit.
 
-## 6. Keeping the models current
+## 6. The penetration test (TASK-082)
+
+The independent penetration test before production has its own records here, and its own gate: the Release Checklist's "External Penetration Test Passed".
+
+| Record | Holds |
+| --- | --- |
+| [`penetration-test.md`](penetration-test.md) | The engagement: its prerequisites, statement of work, rules of engagement, what the provider delivers, and how findings are handled |
+| [`penetration-test-report.md`](penetration-test-report.md) | The register of each report the provider issues, and its finding list (`PT-nn`). The report itself stays out of this public repository |
+| [`penetration-test-tracker.md`](penetration-test-tracker.md) | The remediation tracker and the retest evidence |
+
+`penetration-test-check.py` keeps the three in agreement on every PR (repo-checks). With `--gate`, it decides the Release Checklist row. A High `PT-nn` is risk-accepted in `risk-acceptances.md`, like an `SR-nn`. A penetration-test finding that shows a threat the models missed also changes its model and this log (`penetration-test.md` §6).
+
+## 7. Keeping the models current
 
 A change to authentication, SSO, RBAC, data scope, document upload, WF-13, Nafath or the SMS callback updates its threat model in the same PR. A new threat, or a control that moves, is a row in the model and, if it qualifies (§4), a row in the log. The PR template's CTL-43 item says so. CODEOWNERS sends `docs/security/` to the Security Lead.
 
-## 7. Change log
+## 8. Change log
 
 | Date | Change |
 | --- | --- |
 | 2026-10-16 | First review (this record) |
+| 2026-10-16 | §6: the penetration test records (TASK-082) |

@@ -2,8 +2,8 @@
 
 | Field | Value |
 | --- | --- |
-| Task | TASK-081 |
-| Purpose | The risk acceptances AHDA is asked to decide, for High findings that will not be fixed before UAT |
+| Task | TASK-081; TASK-082 |
+| Purpose | The risk acceptances AHDA is asked to decide: for High findings of the security review (`SR-nn`, `findings-log.md`) that will not be fixed before UAT, and for High findings of the penetration test (`PT-nn`, `penetration-test-report.md`) that will not be fixed before go-live. A penetration-test acceptance must cover production; a Critical cannot be accepted (`penetration-test.md` §6) |
 | Who signs | AHDA Cybersecurity, as risk owner (CS-003: "risk register with likelihood/impact, treatment, owner and acceptance"). The delivery team prepares a request; it cannot accept a risk on AHDA's behalf |
 | How a record becomes Signed | The signer's name, role, date and a reference to the signed copy (e-mail, memo or ticket) are entered here, in a PR the Security Lead reviews, and `Status` is set to `Signed`. `findings-log-check.py` refuses a `Signed` record with any of the three missing |
 
