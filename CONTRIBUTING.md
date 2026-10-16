@@ -253,6 +253,13 @@ Full record, topology diagram and promotion path: `docs/architecture/environment
   `AHDA-ldap`, started from the Compose file (TASK-024, TASK-028). The same four jobs are called by the promotion pipeline on a
   push to `main`, so a deployment gates on the checks that guarded the pull request rather than on a copy of them.
 
+- **Coverage** (TASK-084, `docs/testing/test-strategy.md` §5): in CI every `dotnet test` collects line coverage of
+  `PMPlatform.Domain` and `PMPlatform.Application` (`src/backend/coverage.runsettings`), and the `coverage` job fails a PR
+  when any module is under 80% or all of them under 85%. The frontend fails under 80% lines or 70% branches
+  (`npm run test:coverage`). A new integration namespace needs its own CI step in the same PR (`test-strategy-check.py`
+  TS-1). To see your numbers locally: `dotnet test <project> -s src/backend/coverage.runsettings --results-directory <dir>`,
+  then `python3 docs/testing/coverage-check.py <dir>`.
+
 ## Branches, pull requests, and main
 
 Full policy: `docs/architecture/branching-strategy.md` (TASK-012).

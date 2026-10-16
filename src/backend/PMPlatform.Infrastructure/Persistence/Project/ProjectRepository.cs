@@ -59,7 +59,7 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
         if (!string.IsNullOrWhiteSpace(query.Q))
         {
             string pattern = AdministrationPersistence.ContainsPattern(query.Q.Trim());
-            rows = rows.Where(p => EF.Functions.ILike(p.Title.Text, pattern) || EF.Functions.ILike(p.FormalProjectId!, pattern));
+            rows = rows.Where(p => EF.Functions.ILike(p.Title.Text, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(p.FormalProjectId!, pattern, AdministrationPersistence.LikeEscape));
         }
 
         int total = await rows.CountAsync(cancellationToken).ConfigureAwait(false);

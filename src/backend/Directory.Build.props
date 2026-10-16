@@ -24,4 +24,10 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
+
+  <!-- TASK-084: in CI every `dotnet test` collects business-logic coverage, so no test step can be left out of the coverage
+       gate (docs/testing/test-strategy.md §5). Locally, pass `-s src/backend/coverage.runsettings` to do the same. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('PMPlatform.Tests.')) And '$(CI)' == 'true'">
+    <RunSettingsFilePath>$(MSBuildThisFileDirectory)coverage.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
 </Project>

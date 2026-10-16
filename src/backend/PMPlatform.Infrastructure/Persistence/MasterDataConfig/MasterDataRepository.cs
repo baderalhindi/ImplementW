@@ -71,7 +71,7 @@ internal sealed class MasterDataRepository(PMPlatformDbContext context) : IMaste
         if (!string.IsNullOrWhiteSpace(query.Text))
         {
             string pattern = AdministrationPersistence.ContainsPattern(query.Text.Trim());
-            items = items.Where(i => EF.Functions.ILike(i.Code, pattern) || EF.Functions.ILike(i.Label.Ar, pattern) || EF.Functions.ILike(i.Label.En, pattern));
+            items = items.Where(i => EF.Functions.ILike(i.Code, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(i.Label.Ar, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(i.Label.En, pattern, AdministrationPersistence.LikeEscape));
         }
 
         int totalCount = await items.CountAsync(cancellationToken).ConfigureAwait(false);
@@ -158,7 +158,7 @@ internal sealed class MasterDataRepository(PMPlatformDbContext context) : IMaste
         if (!string.IsNullOrWhiteSpace(query.Text))
         {
             string pattern = AdministrationPersistence.ContainsPattern(query.Text.Trim());
-            definitions = definitions.Where(d => EF.Functions.ILike(d.Code, pattern) || EF.Functions.ILike(d.Name.Ar, pattern) || EF.Functions.ILike(d.Name.En, pattern));
+            definitions = definitions.Where(d => EF.Functions.ILike(d.Code, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(d.Name.Ar, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(d.Name.En, pattern, AdministrationPersistence.LikeEscape));
         }
 
         int totalCount = await definitions.CountAsync(cancellationToken).ConfigureAwait(false);
