@@ -44,6 +44,8 @@
 # docs: architecture records, ADRs, governance, planning
 /docs/                                              @baderalhindi/architecture
 /docs/architecture/cybersecurity-control-matrix.md  @baderalhindi/architecture @baderalhindi/security
+# TASK-081: threat models, the findings log and the risk-acceptance register. A rating, a disposition or a signature is the Security Lead's.
+/docs/security/                                     @baderalhindi/security @baderalhindi/architecture
 
 # infra: docker (TASK-014), environments (TASK-016), terraform (TASK-017/020/021), secrets templates (TASK-019)
 /infra/                                             @baderalhindi/devops

@@ -431,6 +431,19 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.EndpointHardening.
 
+      # WF-12 (TASK-037): only a CLEAN version is served, as an attachment that is never sniffed; EICAR quarantined and never
+      # evidence; scanning fails closed; per-document authorization and entity isolation at the API; the history guards. These
+      # tests ran in no step until TASK-081 (input-validation.md F-7); they are the evidence for threat-model-documents.md
+      # DOC-T04, DOC-T05, DOC-T09 to DOC-T11. In this job because `backend` and `backend-risk-governance` are near their cap.
+      # The filter ends in `.`, so it runs this namespace alone.
+      - name: DocumentManagement integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.DocumentManagement.
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest
@@ -498,6 +511,9 @@ jobs:
 
       - name: Secret scanning and dependency vulnerability gates (TASK-080)
         run: python3 docs/architecture/secret-and-dependency-scanning-check.py
+
+      - name: Threat models and security findings log (TASK-081)
+        run: python3 docs/security/findings-log-check.py
 
       - name: Database provisioning (TASK-020)
         run: python3 docs/architecture/database-check.py

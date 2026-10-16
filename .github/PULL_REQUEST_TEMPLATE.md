@@ -37,7 +37,7 @@ npm run lint && npm run typecheck       ->
 - [ ] Every migration lives under `Infrastructure/Persistence/Migrations`, adds no `deleted_at`, `currency_code` or `row_version` column, and has been reviewed for cross-schema writes, or this PR adds no migration (A-5, ERD D-3/D-5/D-16).
 - [ ] No cross-module reference outside `Contracts/` and no edge missing from ADR-003 §8.2; the architecture tests (A-1 to A-6) pass unchanged, or ADR-003 was revised first and the revision is linked above.
 - [ ] No state change on GET or HEAD, no credential read from a cookie or a query string, no write taken as a form without the bearer token, and no endpoint exempted from `CsrfProtection`, or this PR adds no endpoint (CTL-13, `csrf-protection.md` §7).
-- [ ] Any change to authentication, SSO, RBAC, data scope, document upload, WF-13 or Nafath has a Security Lead review requested (CTL-43), or this PR touches none of these.
+- [ ] Any change to authentication, SSO, RBAC, data scope, document upload, WF-13, Nafath or the SMS receipt callback has a Security Lead review requested and updates its threat model and the findings log in `docs/security/` (CTL-43), or this PR touches none of these.
 
 ## Notes for reviewers
 
