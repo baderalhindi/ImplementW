@@ -1,0 +1,117 @@
+# Dependency vulnerability gate (TASK-080, CTL-42, CTL-55). Record: docs/architecture/secret-and-dependency-scanning.md
+#
+#   dependency-vuln-gate     every pull request and every push to a protected branch. A required status check
+#                            (.github/branch-protection): a change that adds a CRITICAL vulnerability with a fixed
+#                            version, in the backend NuGet graph or the frontend npm graph (dev dependencies too),
+#                            cannot merge. A finding the base already carries is not the change's.
+#   dependency-vuln-report   weekly and on demand: every fixable HIGH or CRITICAL on the default branch, the
+#                            release gate's line, reported to the named owner in .github/security/scan-owner.yaml.
+#
+# The release pipeline keeps its own gate (ci-cd-pipeline.yml `dependency-scan`, TASK-022), which blocks
+# promotion on any fixable HIGH or CRITICAL whatever change brought it in. Same scanner, same exceptions file.
+name: dependency-vuln-gate
+
+on:
+  pull_request:
+    branches: [main, dev, stage]
+  push:
+    branches: [main, dev, stage]
+  # Mondays 03:47 UTC, half an hour after the secret scan.
+  schedule:
+    - cron: "47 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-vuln-gate-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  EVIDENCE_DIR: artifacts/security/dependency-vuln-gate
+
+jobs:
+  dependency-vuln-gate:
+    name: dependency-vuln-gate
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Both the base and the head are checked out as worktrees and scanned.
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/backend/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - uses: aquasecurity/setup-trivy@v0.3.1
+        with:
+          version: v0.74.0
+
+      # A pull request is judged as it would merge (the merge commit) against the base it targets.
+      - name: Gate
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: .github/scripts/dependency-vuln-gate.sh gate "$BASE_SHA" "$HEAD_SHA"
+
+      - name: Attach the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-vuln-gate
+          path: artifacts/security/dependency-vuln-gate/
+          retention-days: 90
+          if-no-files-found: ignore
+
+  dependency-vuln-report:
+    name: dependency-vuln-report
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - uses: aquasecurity/setup-trivy@v0.3.1
+        with:
+          version: v0.74.0
+
+      - name: Scan the default branch
+        id: scan
+        run: .github/scripts/dependency-vuln-gate.sh report
+
+      - name: Report to the named owner
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          .github/scripts/report-to-owner.sh "Scheduled dependency vulnerability scan"
+          "$EVIDENCE_DIR/summary.md" "${{ steps.scan.outcome }}"
+
+      - name: Attach the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-vuln-report
+          path: artifacts/security/dependency-vuln-gate/
+          retention-days: 90
+          if-no-files-found: ignore

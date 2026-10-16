@@ -44,7 +44,7 @@ the PR rather than passing it.
 | `backend-risk-governance` | `dotnet restore`; `dotnet build --configuration Release`; the WF-06 to WF-10 integration steps, the WF-13 ExternalParticipation step (TASK-066), the RiskIssue and Governance invariant suites (TASK-065), and the FG-01, FG-02, FG-06 and FG-05 steps (TASK-069, TASK-071, TASK-073, TASK-075) | any failing test of those steps; split from `backend` so each job keeps its ten-minute budget (F-4) |
 | `backend-endpoint-hardening` | `dotnet restore`; `dotnet build --configuration Release`; the EndpointHardening integration step against PostgreSQL, the test directory and a Redis service container (TASK-078) | any failing test of that step; a sixth job because both backend jobs ran within 90 s of the cap (F-4) |
 | `frontend` | `npm ci`; `npm run lint`; `npm run format:check`; `npm run typecheck`; `npm test`; `npm run build` | any ESLint error, any Prettier deviation, any type error (`tsc -b --noEmit`), any failing Vitest test, any Vite build failure |
-| `repo-checks` | the four `python3 docs/architecture/*-check.py` scripts | contract, ERD, environment-template or local-stack drift (§3.2) |
+| `repo-checks` | the `python3 docs/architecture/*-check.py` scripts (four at TASK-015; one per guarded record since) | contract, ERD, environment-template or local-stack drift (§3.2), and every later record's guard, e.g. a weakened secret or dependency gate (TASK-080) |
 
 Deliberately outside the line:
 
@@ -54,7 +54,9 @@ Deliberately outside the line:
   compiles it, so it cannot rot.
 - **Coverage.** `branching-strategy.md` S-5 anticipated a coverage check here. There is no coverage policy to gate
   against — that is TASK-084 — and a threshold invented by the CI task is a number no one agreed to. §6 F-3.
-- **Secret and dependency scanning.** CTL-42, TASK-080.
+- **Secret and dependency scanning.** CTL-42, TASK-080: their own workflows, `secret-scan.yml` and
+  `dependency-vuln-gate.yml`, each a required check (`secret-and-dependency-scanning.md`). `repo-checks` runs
+  their static guard, `secret-and-dependency-scanning-check.py`.
 
 `timeout-minutes: 10` on each job is the acceptance criterion made mechanical: the gate cannot quietly grow past
 its budget, it fails instead. NuGet packages are cached on the hash of `Directory.Packages.props`; npm packages on
@@ -179,6 +181,7 @@ from the built API — F-5.
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-10-16 | `repo-checks` gains "Secret scanning and dependency vulnerability gates (TASK-080)", the static guard of the two new required checks, which run in their own workflows | TASK-080 (`secret-and-dependency-scanning.md`) |
 | 2026-10-14 | A sixth job, `backend-endpoint-hardening`: it builds the commit and runs the "Endpoint hardening integration tests" step (rate limiting, CORS, security headers; about 40 s of tests) against PostgreSQL, the test directory and a `mirror.gcr.io/library/redis:7-alpine` service container, which the shared rate-limit counter tests need. On `dev` before it, `backend` ran 8 min 29 s and `backend-risk-governance` 9 min 1 s, so neither had room (F-4). The filter ends in `.`. The ruleset file and `ci-cd-pipeline.yml`'s job list gain the check | TASK-078 (`endpoint-hardening.md` §5.1) |
 | 2026-10-12 | `backend-risk-governance` gains the "AuditActivity integration tests" step (FG-06: TASK-033's audit trail, SIEM and redaction tests, which had run in no step since they were written, and TASK-073's capture, immutability, rebuild-and-diff, audit access and integrity tests, about 25 s). The filter ends in `.` | TASK-073 (`audit-activity.md` §6) |
 | 2026-10-13 | `backend-risk-governance` gains the "IntegrationMonitoring integration tests" step (FG-05: the outage simulation over every business table, reconciliation, the engine's retries and dead letters, telemetry, alerts, ADR-004's measures, access and the contract tests, about 20 s; the job ran 5 min 34 s on `dev` before it). The filter ends in `.` | TASK-075 (`integration-monitoring.md` §7) |
