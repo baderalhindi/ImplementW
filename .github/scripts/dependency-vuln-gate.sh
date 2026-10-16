@@ -134,10 +134,12 @@ gate() {
      | unique_by([.component, .id, .package, .installed])' \
     "$EVIDENCE_DIR/head.json" >"$EVIDENCE_DIR/new.json"
 
+  # A package is listed once per lock file that resolves it, so both counts are of distinct findings.
   local new carried
   new=$(jq length "$EVIDENCE_DIR/new.json")
-  carried=$(jq --slurpfile new "$EVIDENCE_DIR/new.json" '[.[] | select(. as $f | $new[0] | index($f) | not)] | length' \
-    "$EVIDENCE_DIR/head.json")
+  carried=$(jq --slurpfile base "$EVIDENCE_DIR/base.json" \
+    '[.[] | select([.id, .package] as $key | [$base[0][] | [.id, .package]] | index([$key]))]
+     | unique_by([.component, .id, .package, .installed]) | length' "$EVIDENCE_DIR/head.json")
   {
     echo "### Dependency vulnerability gate"
     echo
@@ -177,7 +179,8 @@ report() {
     if [ "$count" -eq 0 ]; then
       echo "**No fixable $REPORT_SEVERITIES finding.**"
     else
-      echo "**$count finding(s).** Each blocks the next release until it is upgraded or excepted."
+      echo "**$count finding(s).** Upgrade or except each. One in a production dependency also blocks the next"
+      echo "release; the release gate does not scan dev dependencies, which this report includes."
       echo
       table "$EVIDENCE_DIR/report.json"
     fi

@@ -172,6 +172,12 @@ reset_to "$VULNERABLE"
 perl -pi -e 's#^</Project>$#  <!-- TASK-080 drill: an unrelated manifest edit. -->\n</Project>#' src/backend/Directory.Packages.props
 commit "drill: an unrelated manifest edit on a base that carries both"
 expect 0 "findings the base already carries are not the change's" dependency_gate "$VULNERABLE"
+if grep -q "already carries 2 fixable" "$EVIDENCE_DIR/summary.md"; then
+  echo "  ok    the summary counts the base's 2 findings once each"
+else
+  echo "  FAIL  the summary miscounts the base's findings: $(grep -o 'already carries [0-9]* fixable' "$EVIDENCE_DIR/summary.md")"
+  failures=$((failures + 1))
+fi
 
 reset_to "$BASE"
 expect 0 "the change rewritten without them passes" dependency_gate "$BASE"
