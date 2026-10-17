@@ -372,3 +372,5 @@ Run on this branch, 2026-10-17.
 | 8 | Report probe for each of the 10 reports as a portfolio person, one at a time | §5.2's single-user figures |
 | 9 | `EXPLAIN (ANALYZE, BUFFERS)` of the unread count, as the API sends it and with `read_at IS NULL` | 1,905 heap blocks 29.1 ms; index-only 4 buffers 0.037 ms |
 | 10 | `EXPLAIN (ANALYZE, BUFFERS)` of the Document Library's DEPT and ENTITY counts | 60,000 documents read through `ix_document_data_classification_item_id`, hash-joined to 231 / 75 projects: 13.9 ms / 33.5 ms |
+| 11 | CI on PR #107: `load-test` (smoke on a GitHub runner, run 39042090878) | the stack up with the volume in 201 s; 9,785 of 9,785 checks pass, k6 exit 0. Its first run (39041287449) failed before any request: k6's unprivileged user could not write into the runner-owned results folder; `run.sh` now opens it |
+| 12 | CI on PR #107: `e2e-journeys` with the changed `ldap.Dockerfile` (default build), run 39042090883 | 17 passed (UJ-002 as its expected failure); the job is red only at "Summarise the journeys" (`summary.md` not writable), the report-folder fault PR #100 fixes and `dev` still has. Every other check green |
