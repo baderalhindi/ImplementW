@@ -125,7 +125,12 @@ public sealed class FinancialCommitmentsController(IFinancialCommitmentService c
             return ValidationFailed(errors);
         }
 
-        AdministrationResult<EvidenceReferenceDetail> result = await commitments.AttachDocumentAsync(CallerId, commitmentId, attachment!, cancellationToken);
+        if (!TryReadIfMatch(required: false, out uint? version, out IActionResult? problem))
+        {
+            return problem!;
+        }
+
+        AdministrationResult<EvidenceReferenceDetail> result = await commitments.AttachDocumentAsync(CallerId, commitmentId, attachment!, version, cancellationToken);
         return result.Succeeded ? Created($"/api/v1/evidence-references/{result.Value.Id}", result.Value) : Failure(result.Error);
     }
 
@@ -136,5 +141,7 @@ public sealed class FinancialCommitmentsController(IFinancialCommitmentService c
     [ProducesResponseType<EvidenceReferenceDetail>(StatusCodes.Status200OK, "application/json")]
     [EndpointName("FinancialKpi_WithdrawFinancialCommitmentDocument")]
     public async Task<IActionResult> WithdrawDocument(Guid commitmentId, Guid evidenceReferenceId, CancellationToken cancellationToken) =>
-        Respond(await commitments.WithdrawDocumentAsync(CallerId, commitmentId, evidenceReferenceId, cancellationToken));
+        TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
+            ? Respond(await commitments.WithdrawDocumentAsync(CallerId, commitmentId, evidenceReferenceId, version, cancellationToken))
+            : problem!;
 }

@@ -258,17 +258,22 @@ internal sealed class MilestoneAchievementService(
     }
 
     public async Task<AdministrationResult<EvidenceReferenceDetail>> AttachEvidenceAsync(
-        Guid callerId, Guid achievementId, MilestoneEvidenceAttachment attachment, CancellationToken cancellationToken)
+        Guid callerId, Guid achievementId, MilestoneEvidenceAttachment attachment, uint? expectedVersion, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(attachment);
 
-        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.MilestoneSubmit, achievementId, null, cancellationToken).ConfigureAwait(false);
+        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.MilestoneSubmit, achievementId, expectedVersion, cancellationToken).ConfigureAwait(false);
         if (loaded.Error is { } refused)
         {
             return refused;
         }
 
         (ProjectFacts project, MilestoneAchievement achievement) = (loaded.Project!, loaded.Achievement!);
+        if (IsStale(achievement, expectedVersion))
+        {
+            return AdministrationError.PreconditionFailed;
+        }
+
         if (EvidenceRefused(project, achievement) is { } closed)
         {
             return closed;
@@ -292,15 +297,20 @@ internal sealed class MilestoneAchievementService(
     }
 
     public async Task<AdministrationResult<EvidenceReferenceDetail>> WithdrawEvidenceAsync(
-        Guid callerId, Guid achievementId, Guid evidenceReferenceId, CancellationToken cancellationToken)
+        Guid callerId, Guid achievementId, Guid evidenceReferenceId, uint? expectedVersion, CancellationToken cancellationToken)
     {
-        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.MilestoneSubmit, achievementId, null, cancellationToken).ConfigureAwait(false);
+        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.MilestoneSubmit, achievementId, expectedVersion, cancellationToken).ConfigureAwait(false);
         if (loaded.Error is { } refused)
         {
             return refused;
         }
 
         (ProjectFacts project, MilestoneAchievement achievement) = (loaded.Project!, loaded.Achievement!);
+        if (IsStale(achievement, expectedVersion))
+        {
+            return AdministrationError.PreconditionFailed;
+        }
+
         if (EvidenceRefused(project, achievement) is { } closed)
         {
             return closed;
@@ -363,6 +373,14 @@ internal sealed class MilestoneAchievementService(
     /// <summary>The record DocumentManagement links the revision's evidence to: the revision, not the milestone, so each revision keeps its own.</summary>
     internal static BusinessTarget TargetOf(MilestoneAchievement achievement) =>
         new(MilestoneApprovalRouting.SubjectModule, MilestoneApprovalRouting.SubjectType, achievement.Id);
+
+    /// <summary>
+    /// Whether the caller sent an If-Match the row no longer has (R-21). Evidence commands check it before anything is written:
+    /// DocumentManagement saves the link first, and that save accepts every tracked change, so the expected version would be gone
+    /// by the time the row itself is saved (TASK-085, UJ-006).
+    /// </summary>
+    private bool IsStale(MilestoneAchievement achievement, uint? expectedVersion) =>
+        expectedVersion is { } expected && repository.RowVersionOf(achievement) != expected;
 
     private async Task<Loaded> LoadAsync(Guid callerId, string permissionCode, Guid achievementId, uint? expectedVersion, CancellationToken cancellationToken)
     {

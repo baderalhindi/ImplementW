@@ -72,6 +72,52 @@ public sealed class AchievementEvidenceTests(MilestoneTestHost host)
     }
 
     /// <summary>
+    /// Attaching and withdrawing evidence are commands on the revision, and honour <c>If-Match</c> when it is sent (R-21): a
+    /// caller who read the revision before another change is refused 412 and nothing is attached or withdrawn. TASK-085's UJ-006
+    /// found both commands ignored it, and a stale attach linked evidence to a revision that had moved on.
+    /// </summary>
+    [Fact]
+    public async Task AStaleEvidenceChangeIsRefusedAndChangesNothing()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        MilestoneSessions sessions = await client.SignInAsync();
+        Guid projectId = await host.ScheduledProjectAsync(client, sessions.ProjectManager);
+        Guid milestoneId = await client.MilestoneAsync(sessions.ProjectManager, projectId, MilestoneTestHost.HandoverCategoryId);
+        Guid achievementId = AdministrationApi.IdOf(await client.ClaimAsync(sessions.ProjectManager, milestoneId, MilestoneDriver.Today));
+        (Guid documentId, Guid versionId) = await client.UploadAsync(sessions.ProjectManager, projectId);
+        await host.Api.ScanAsync();
+        string stale = await client.ETagOfAchievementAsync(sessions.ProjectManager, achievementId);
+
+        using (HttpResponseMessage attached = await client.PostAsync($"{MilestoneDriver.Achievements}/{achievementId}/evidence", sessions.ProjectManager, Evidence(documentId, versionId), stale))
+        {
+            Assert.Equal(HttpStatusCode.Created, attached.StatusCode);
+        }
+
+        Assert.NotEqual(stale, await client.ETagOfAchievementAsync(sessions.ProjectManager, achievementId));
+        string referenceId = (await client.EvidenceAsync(sessions.ProjectManager, achievementId))["links"]!.AsArray().Single()!["evidence"]!.AsArray().Single()!.Text("id");
+        (Guid otherDocumentId, Guid otherVersionId) = await client.UploadAsync(sessions.ProjectManager, projectId);
+        await host.Api.ScanAsync();
+        using (HttpResponseMessage staleAttach = await client.PostAsync(
+            $"{MilestoneDriver.Achievements}/{achievementId}/evidence", sessions.ProjectManager, Evidence(otherDocumentId, otherVersionId), stale))
+        {
+            Assert.Equal((HttpStatusCode.PreconditionFailed, "PRECONDITION_FAILED"), await staleAttach.RefusalAsync());
+        }
+
+        using (HttpResponseMessage staleWithdraw = await client.PostAsync($"{MilestoneDriver.Achievements}/{achievementId}/evidence/{referenceId}/withdraw", sessions.ProjectManager, null, stale))
+        {
+            Assert.Equal((HttpStatusCode.PreconditionFailed, "PRECONDITION_FAILED"), await staleWithdraw.RefusalAsync());
+        }
+
+        JsonObject unchanged = await client.EvidenceAsync(sessions.ProjectManager, achievementId);
+        Assert.Equal([documentId.ToString()], [.. unchanged["links"]!.AsArray().Select(l => l!.Text("documentId"))]);
+        Assert.Equal(["Milestone.AchievementStarted", "Milestone.EvidenceAttached"], await host.AuditEventsAsync("Milestone", achievementId));
+
+        string current = await client.ETagOfAchievementAsync(sessions.ProjectManager, achievementId);
+        using HttpResponseMessage withdrawn = await client.PostAsync($"{MilestoneDriver.Achievements}/{achievementId}/evidence/{referenceId}/withdraw", sessions.ProjectManager, null, current);
+        Assert.Equal(HttpStatusCode.OK, withdrawn.StatusCode);
+    }
+
+    /// <summary>
     /// Evidence belongs to its revision: withdrawing a DRAFT's evidence makes it unsatisfied again; deleting a DRAFT ends its links;
     /// another revision's evidence reference is not this one's to withdraw (R-47).
     /// </summary>
@@ -151,6 +197,13 @@ file static class EvidenceDriver
         using HttpResponseMessage response = await client.GetAsync($"{MilestoneDriver.Achievements}/{achievementId}/evidence", token);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return await response.ReadObjectAsync();
+    }
+
+    public static async Task<string> ETagOfAchievementAsync(this HttpClient client, string token, Guid achievementId)
+    {
+        using HttpResponseMessage response = await client.GetAsync($"{MilestoneDriver.Achievements}/{achievementId}", token);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return AdministrationApi.ETagOf(response);
     }
 
     /// <summary>Uploads a certificate to the project as the caller, classified INTERNAL; returns the document and its version 1, not yet scanned.</summary>

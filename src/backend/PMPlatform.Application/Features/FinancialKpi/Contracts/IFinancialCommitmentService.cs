@@ -34,9 +34,14 @@ public interface IFinancialCommitmentService
 
     public Task<AdministrationResult<CommitmentDocumentDetail>> GetDocumentsAsync(Guid callerId, Guid commitmentId, CancellationToken cancellationToken);
 
-    /// <summary>Attaches a document to a DRAFT or RETURNED version and pins one of its CLEAN versions as the reference.</summary>
+    /// <summary>
+    /// Attaches a document to a DRAFT or RETURNED version and pins one of its CLEAN versions as the reference. With
+    /// <paramref name="expectedVersion"/>, a version changed since the caller read it is 412 and nothing is attached (R-21).
+    /// </summary>
     public Task<AdministrationResult<EvidenceReferenceDetail>> AttachDocumentAsync(
-        Guid callerId, Guid commitmentId, CommitmentDocumentAttachment attachment, CancellationToken cancellationToken);
+        Guid callerId, Guid commitmentId, CommitmentDocumentAttachment attachment, uint? expectedVersion, CancellationToken cancellationToken);
 
-    public Task<AdministrationResult<EvidenceReferenceDetail>> WithdrawDocumentAsync(Guid callerId, Guid commitmentId, Guid evidenceReferenceId, CancellationToken cancellationToken);
+    /// <summary>Withdraws a referenced document; with <paramref name="expectedVersion"/>, a stale caller is 412 (R-21).</summary>
+    public Task<AdministrationResult<EvidenceReferenceDetail>> WithdrawDocumentAsync(
+        Guid callerId, Guid commitmentId, Guid evidenceReferenceId, uint? expectedVersion, CancellationToken cancellationToken);
 }

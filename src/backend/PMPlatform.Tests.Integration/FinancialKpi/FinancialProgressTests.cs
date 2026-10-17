@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.FinancialKpi.Contracts;
 using PMPlatform.Tests.Integration.ChangeRequest.Fixtures;
+using PMPlatform.Tests.Integration.DocumentManagement;
 using PMPlatform.Tests.Integration.Identity;
 
 namespace PMPlatform.Tests.Integration.FinancialKpi;
@@ -14,6 +15,51 @@ namespace PMPlatform.Tests.Integration.FinancialKpi;
 [Collection(FinancialKpiSuite.Name)]
 public sealed class FinancialProgressTests(FinancialKpiTestHost host)
 {
+    /// <summary>
+    /// Attaching and withdrawing a budget version's referenced document are commands on the version, and honour <c>If-Match</c>
+    /// when it is sent (R-21): a caller who read the version before another change is refused 412 and nothing changes. TASK-085
+    /// found Milestone's evidence commands ignored it; these share their shape.
+    /// </summary>
+    [Fact]
+    public async Task AStaleDocumentChangeIsRefusedAndChangesNothing()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        Guid projectId = await host.ProjectAsync();
+        Guid budget = AdministrationApi.IdOf(await client.CreatedOrFailAsync(sessions.ProjectManager, FinancialKpiDriver.Commitments, FinancialKpiDriver.Budget(projectId, "500000.00")));
+        string stale;
+        using (HttpResponseMessage read = await client.GetAsync($"{FinancialKpiDriver.Commitments}/{budget}", sessions.ProjectManager))
+        {
+            stale = AdministrationApi.ETagOf(read);
+        }
+
+        await host.AttachDocumentAsync(client, sessions.ProjectManager, projectId, budget);
+        JsonObject held = await client.GetOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{budget}/documents");
+        string referenceId = held["links"]!.AsArray().Single()!["evidence"]!.AsArray().Single()!.Text("id");
+
+        using (HttpResponseMessage uploaded = await client.UploadAsync(
+            sessions.ProjectManager, DocumentDriver.Text($"Budget approval {Guid.NewGuid()}"), projectId, FinancialKpiTestHost.Internal, documentType: FinancialKpiTestHost.DocumentTypeId))
+        {
+            JsonObject other = await uploaded.ReadObjectAsync();
+            await host.Api.ScanAsync();
+            using HttpResponseMessage staleAttach = await client.PostAsync($"{FinancialKpiDriver.Commitments}/{budget}/documents", sessions.ProjectManager, new
+            {
+                documentId = AdministrationApi.IdOf(other),
+                documentVersionId = other["latestVersion"]!.Text("id"),
+                evidenceTypeItemId = FinancialKpiTestHost.EvidenceTypeId,
+            }, stale);
+            Assert.Equal((HttpStatusCode.PreconditionFailed, "PRECONDITION_FAILED"), await staleAttach.RefusalAsync());
+        }
+
+        using (HttpResponseMessage staleWithdraw = await client.PostAsync($"{FinancialKpiDriver.Commitments}/{budget}/documents/{referenceId}/withdraw", sessions.ProjectManager, null, stale))
+        {
+            Assert.Equal((HttpStatusCode.PreconditionFailed, "PRECONDITION_FAILED"), await staleWithdraw.RefusalAsync());
+        }
+
+        JsonObject unchanged = await client.GetOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{budget}/documents");
+        Assert.Equal(held["links"]!.ToJsonString(), unchanged["links"]!.ToJsonString());
+    }
+
     /// <summary>
     /// ADR-008: any change to the Approved Budget requires a referenced document. Approval makes the version ACTIVE — the budget of
     /// record — and supersedes the previous one, which keeps every figure it had. Provenance is recorded on each version.
