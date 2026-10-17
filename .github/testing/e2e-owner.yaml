@@ -1,0 +1,9 @@
+# Named owner of the nightly cross-domain journey runs (TASK-085). Record: docs/testing/e2e-suite.md §8
+#
+# Every nightly run of .github/workflows/e2e-journeys.yml comments on one issue assigned to this GitHub account, green or
+# red, so the suite's pass/fail history is in one place and its owner is told every night. The account must have access to
+# this repository, or the assignment fails and the nightly run goes red.
+#
+# The role is the QA Lead (docs/testing/ is QA's). Until AHDA names one, the repository owner holds it (e2e-suite.md F-6).
+role: QA Lead
+github: baderalhindi

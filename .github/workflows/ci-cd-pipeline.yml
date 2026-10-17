@@ -359,12 +359,30 @@ jobs:
           authorisation-ref: ${{ vars.ADR001_CONFIRMATION_REF }}
           migration-job: ${{ vars.MIGRATION_JOB }}
 
+  # G-3's first precondition (TASK-085): the cross-domain journeys pass against SIT, on the release just deployed there. The
+  # same workflow runs them nightly (docs/testing/e2e-suite.md); here it is a need of deploy-uat, so a failing journey
+  # blocks promotion to UAT before any reviewer is asked.
+  e2e-sit:
+    name: e2e-sit
+    needs: [release-metadata, preflight, deploy-sit]
+    if: ${{ success() && needs.preflight.outputs.ready == 'true' }}
+    uses: ./.github/workflows/e2e-journeys.yml
+    permissions:
+      contents: read
+      issues: write
+    with:
+      target: sit
+      commit_sha: ${{ needs.release-metadata.outputs.commit_sha }}
+    secrets:
+      E2E_SECRET_READER_KEY: ${{ secrets.E2E_SECRET_READER_KEY }}
+      E2E_TEST_USER_CREDENTIALS_SECRET_REF: ${{ secrets.E2E_TEST_USER_CREDENTIALS_SECRET_REF }}
+
   # G-3, QA Lead and Security Lead.
   deploy-uat:
     name: deploy-uat
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [release-metadata, preflight, package, deploy-sit]
+    needs: [release-metadata, preflight, package, deploy-sit, e2e-sit]
     if: ${{ success() && needs.preflight.outputs.ready == 'true' }}
     environment:
       name: uat
