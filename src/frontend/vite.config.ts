@@ -40,6 +40,9 @@ export default defineConfig({
   },
   preview: {
     headers: SPA_SECURITY_HEADERS,
+    // TASK-085: the e2e stack's browser reaches the preview by its service name (e2e/stack/compose.yml), which Vite refuses
+    // unless listed. Unset everywhere else, so only localhost is accepted.
+    allowedHosts: process.env.PMPLATFORM_PREVIEW_ALLOWED_HOSTS?.split(','),
   },
   build: {
     sourcemap: true,

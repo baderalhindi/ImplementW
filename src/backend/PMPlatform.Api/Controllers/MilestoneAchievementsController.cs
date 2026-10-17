@@ -129,7 +129,12 @@ public sealed class MilestoneAchievementsController(IMilestoneAchievementService
             return ValidationFailed(errors);
         }
 
-        AdministrationResult<EvidenceReferenceDetail> result = await achievements.AttachEvidenceAsync(CallerId, achievementId, attachment!, cancellationToken);
+        if (!TryReadIfMatch(required: false, out uint? version, out IActionResult? problem))
+        {
+            return problem!;
+        }
+
+        AdministrationResult<EvidenceReferenceDetail> result = await achievements.AttachEvidenceAsync(CallerId, achievementId, attachment!, version, cancellationToken);
         return result.Succeeded ? Created($"/api/v1/evidence-references/{result.Value.Id}", result.Value) : Failure(result.Error);
     }
 
@@ -140,5 +145,7 @@ public sealed class MilestoneAchievementsController(IMilestoneAchievementService
     [ProducesResponseType<EvidenceReferenceDetail>(StatusCodes.Status200OK, "application/json")]
     [EndpointName("Milestone_WithdrawMilestoneAchievementEvidence")]
     public async Task<IActionResult> WithdrawEvidence(Guid achievementId, Guid evidenceReferenceId, CancellationToken cancellationToken) =>
-        Respond(await achievements.WithdrawEvidenceAsync(CallerId, achievementId, evidenceReferenceId, cancellationToken));
+        TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
+            ? Respond(await achievements.WithdrawEvidenceAsync(CallerId, achievementId, evidenceReferenceId, version, cancellationToken))
+            : problem!;
 }

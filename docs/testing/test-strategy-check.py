@@ -14,6 +14,9 @@
         Every test the table cites as evidence exists.
   TS-6  The Step 18 domain table has the 21 WF/FG domains once each, its scenario counts add up to 4,079 (2,854 business-run,
         1,225 QA-assisted), and every integration namespace and frontend feature it names exists.
+  TS-7  The journey suite stays wired as TASK-085 built it (docs/testing/e2e-suite.md): e2e-journeys.yml runs on a schedule and
+        can be called; ci-cd-pipeline.yml's e2e-sit calls it against SIT and deploy-uat needs e2e-sit, so a failing journey blocks
+        promotion to UAT; Playwright retries nothing; every uj-nnn spec under src/frontend/e2e/journeys owns a row of the table.
 
 Run from the repository root: python3 docs/testing/test-strategy-check.py
 """
@@ -42,6 +45,9 @@ NAMESPACE_ROOT = "PMPlatform.Tests.Integration."
 DOMAINS = [f"WF-{n:02d}" for n in range(1, 16)] + [f"FG-{n:02d}" for n in range(1, 7)]
 JOURNEYS = [f"UJ-{n:03d}" for n in range(1, 16)]
 SCENARIOS, BUSINESS, QA_ASSISTED = 4079, 2854, 1225
+E2E_WORKFLOW = ROOT / ".github/workflows/e2e-journeys.yml"
+PIPELINE = ROOT / ".github/workflows/ci-cd-pipeline.yml"
+PLAYWRIGHT_CONFIG = ROOT / "src/frontend/e2e/playwright.config.ts"
 
 
 def cells(line: str) -> list[str]:
@@ -204,6 +210,29 @@ def check_domains(strategy: str, failures: list[str]) -> None:
         failures.append(f"TS-6 the domain table adds up to {totals}, Step 18 has {[SCENARIOS, BUSINESS, QA_ASSISTED]}")
 
 
+def check_e2e_wiring(strategy: str, failures: list[str]) -> None:
+    suite = E2E_WORKFLOW.read_text(encoding="utf-8") if E2E_WORKFLOW.is_file() else ""
+    trigger = suite.split("\njobs:\n", 1)[0]
+    if not re.search(r"^  schedule:\s*\n\s+- cron:", trigger, flags=re.MULTILINE):
+        failures.append("TS-7 e2e-journeys.yml has no schedule: the journeys no longer run nightly")
+    if not re.search(r"^  workflow_call:", trigger, flags=re.MULTILINE):
+        failures.append("TS-7 e2e-journeys.yml cannot be called, so the pipeline cannot gate on it")
+    pipeline = jobs(PIPELINE.read_text(encoding="utf-8"))
+    gate = pipeline.get("e2e-sit", "")
+    if "uses: ./.github/workflows/e2e-journeys.yml" not in gate or not re.search(r"target:\s*sit\b", gate):
+        failures.append("TS-7 ci-cd-pipeline.yml has no e2e-sit job calling e2e-journeys.yml against SIT")
+    needs = re.search(r"needs:\s*\[([^\]]*)\]", pipeline.get("deploy-uat", ""))
+    if needs is None or "e2e-sit" not in [need.strip() for need in needs.group(1).split(",")]:
+        failures.append("TS-7 deploy-uat does not need e2e-sit: a failing journey would not block promotion to UAT")
+    config = PLAYWRIGHT_CONFIG.read_text(encoding="utf-8") if PLAYWRIGHT_CONFIG.is_file() else ""
+    if not re.search(r"^\s*retries:\s*0,", config, flags=re.MULTILINE):
+        failures.append("TS-7 playwright.config.ts must set `retries: 0` (test-strategy.md §10)")
+    owned = {owner for row in table_rows(strategy, r"UJ-\d{3}") for owner in ticked(row[3])}
+    for spec in sorted((ROOT / E2E / "journeys").glob("uj-*.spec.ts")):
+        if spec.relative_to(ROOT).as_posix() not in owned:
+            failures.append(f"TS-7 {spec.relative_to(ROOT)} owns no row of the journey table")
+
+
 def main() -> int:
     strategy = STRATEGY.read_text(encoding="utf-8")
     workflow = WORKFLOW.read_text(encoding="utf-8")
@@ -215,6 +244,7 @@ def main() -> int:
     check_register(strategy, policy, failures)
     check_journeys(strategy, failures)
     check_domains(strategy, failures)
+    check_e2e_wiring(strategy, failures)
     for failure in failures:
         print(failure)
     print(f"test strategy: {len(failures)} finding(s)")

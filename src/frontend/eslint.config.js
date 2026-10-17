@@ -70,5 +70,11 @@ export default tseslint.config(
     files: ['eslint.config.js', 'vite.config.ts'],
     languageOptions: { globals: globals.node },
   },
+  // TASK-085: the Playwright journeys run in Node. A fixture's `use` callback is Playwright's, not React's `use`.
+  {
+    files: ['e2e/**/*.{ts,mjs}'],
+    languageOptions: { globals: globals.node },
+    rules: { 'react-hooks/rules-of-hooks': 'off' },
+  },
   prettier,
 );

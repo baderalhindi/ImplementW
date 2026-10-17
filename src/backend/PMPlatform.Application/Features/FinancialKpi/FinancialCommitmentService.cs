@@ -259,16 +259,21 @@ internal sealed class FinancialCommitmentService(
     }
 
     public async Task<AdministrationResult<EvidenceReferenceDetail>> AttachDocumentAsync(
-        Guid callerId, Guid commitmentId, CommitmentDocumentAttachment attachment, CancellationToken cancellationToken)
+        Guid callerId, Guid commitmentId, CommitmentDocumentAttachment attachment, uint? expectedVersion, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(attachment);
-        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.FinancialSubmit, commitmentId, null, cancellationToken).ConfigureAwait(false);
+        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.FinancialSubmit, commitmentId, expectedVersion, cancellationToken).ConfigureAwait(false);
         if (loaded.Error is { } refused)
         {
             return refused;
         }
 
         (ProjectFacts project, FinancialCommitment commitment) = (loaded.Project!, loaded.Commitment!);
+        if (IsStale(commitment, expectedVersion))
+        {
+            return AdministrationError.PreconditionFailed;
+        }
+
         if (!ApprovedVersionWorkflow.IsEditable(commitment.Status))
         {
             return AdministrationError.Conflict(FinancialKpiErrorCodes.VersionNotEditable);
@@ -291,15 +296,21 @@ internal sealed class FinancialCommitmentService(
             : evidence.Error;
     }
 
-    public async Task<AdministrationResult<EvidenceReferenceDetail>> WithdrawDocumentAsync(Guid callerId, Guid commitmentId, Guid evidenceReferenceId, CancellationToken cancellationToken)
+    public async Task<AdministrationResult<EvidenceReferenceDetail>> WithdrawDocumentAsync(
+        Guid callerId, Guid commitmentId, Guid evidenceReferenceId, uint? expectedVersion, CancellationToken cancellationToken)
     {
-        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.FinancialSubmit, commitmentId, null, cancellationToken).ConfigureAwait(false);
+        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.FinancialSubmit, commitmentId, expectedVersion, cancellationToken).ConfigureAwait(false);
         if (loaded.Error is { } refused)
         {
             return refused;
         }
 
         (ProjectFacts project, FinancialCommitment commitment) = (loaded.Project!, loaded.Commitment!);
+        if (IsStale(commitment, expectedVersion))
+        {
+            return AdministrationError.PreconditionFailed;
+        }
+
         if (!ApprovedVersionWorkflow.IsEditable(commitment.Status))
         {
             return AdministrationError.Conflict(FinancialKpiErrorCodes.VersionNotEditable);
@@ -348,6 +359,14 @@ internal sealed class FinancialCommitmentService(
         ?? (amount.Amount < 0 ? AdministrationError.Rule(FinancialKpiErrorCodes.ValueStatusInvalid, new FieldIssue("amountSar", FieldIssue.NotAllowed)) : null)
         ?? ValueRules.AsOfRefused(asOfDate, ValueRules.Today(now))
         ?? await FinancialSourceModeService.ManualEntryRefusedAsync(repository, project.Id, [(FinancialField.ApprovedBudget, "amountSar")], cancellationToken).ConfigureAwait(false);
+
+    /// <summary>
+    /// Whether the caller sent an If-Match the row no longer has (R-21). Evidence commands check it before anything is written:
+    /// DocumentManagement saves the link first, and that save accepts every tracked change, so the expected version would be gone
+    /// by the time the row itself is saved (TASK-085, UJ-006).
+    /// </summary>
+    private bool IsStale(FinancialCommitment commitment, uint? expectedVersion) =>
+        expectedVersion is { } expected && repository.RowVersionOf(commitment) != expected;
 
     private async Task<Loaded> LoadAsync(Guid callerId, string permissionCode, Guid commitmentId, uint? expectedVersion, CancellationToken cancellationToken)
     {

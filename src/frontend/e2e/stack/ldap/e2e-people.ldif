@@ -1,0 +1,126 @@
+# The e2e suite's people (TASK-085), added to the test directory (infra/docker/ldap/directory.ldif) in the e2e stack's
+# directory image only. Synthetic people on the reserved pmplatform.local domain; the integration tests never see them.
+#
+# entryUUID is each person's directory subject: e2e/stack/provision/10-people.sql stores the same value in
+# identity_access.user.directory_subject_id (synthetic kind e2e3). DEPT-E2E and DEPT-E2E-OTHER are the e2e departments'
+# directory_reference values.
+#
+# Every userPassword below is a LOCAL DEFAULT, never a real credential ("e2e-directory-password"). On SIT the same
+# personas are SIT directory accounts whose credentials come from E2E_TEST_USER_CREDENTIALS_SECRET_REF.
+
+dn: uid=e2e.admin,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.admin
+cn: E2E Administrator
+sn: Administrator
+displayName: E2E Administrator
+mail: e2e.admin@pmplatform.local
+title: System Administrator
+departmentNumber: DEPT-E2E
+entryUUID: 00000000-e2e3-4000-8000-000000000001
+userPassword: e2e-directory-password
+
+dn: uid=e2e.portfolio,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.portfolio
+cn: E2E Portfolio Manager
+sn: Portfolio
+displayName: E2E Portfolio Manager
+mail: e2e.portfolio@pmplatform.local
+title: Portfolio Manager
+departmentNumber: DEPT-E2E
+entryUUID: 00000000-e2e3-4000-8000-000000000002
+userPassword: e2e-directory-password
+
+dn: uid=e2e.department,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.department
+cn: E2E Department Manager
+sn: Department
+displayName: E2E Department Manager
+mail: e2e.department@pmplatform.local
+title: Department Manager
+departmentNumber: DEPT-E2E
+entryUUID: 00000000-e2e3-4000-8000-000000000003
+userPassword: e2e-directory-password
+
+dn: uid=e2e.pm,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.pm
+cn: E2E Project Manager
+sn: ProjectManager
+displayName: E2E Project Manager
+mail: e2e.pm@pmplatform.local
+title: Project Manager
+departmentNumber: DEPT-E2E
+entryUUID: 00000000-e2e3-4000-8000-000000000004
+userPassword: e2e-directory-password
+
+dn: uid=e2e.executive,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.executive
+cn: E2E Executive
+sn: Executive
+displayName: E2E Executive
+mail: e2e.executive@pmplatform.local
+title: Executive
+departmentNumber: DEPT-E2E
+entryUUID: 00000000-e2e3-4000-8000-000000000005
+userPassword: e2e-directory-password
+
+dn: uid=e2e.viewer,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.viewer
+cn: E2E Viewer
+sn: Viewer
+displayName: E2E Viewer
+mail: e2e.viewer@pmplatform.local
+title: Viewer
+departmentNumber: DEPT-E2E
+entryUUID: 00000000-e2e3-4000-8000-000000000006
+userPassword: e2e-directory-password
+
+dn: uid=e2e.other-department,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.other-department
+cn: E2E Other Department Manager
+sn: OtherDepartment
+displayName: E2E Other Department Manager
+mail: e2e.other-department@pmplatform.local
+title: Department Manager
+departmentNumber: DEPT-E2E-OTHER
+entryUUID: 00000000-e2e3-4000-8000-000000000007
+userPassword: e2e-directory-password
+
+dn: uid=e2e.entity-pm,ou=External,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.entity-pm
+cn: E2E Entity Project Manager
+sn: EntityProjectManager
+displayName: E2E Entity Project Manager
+mail: e2e.entity-pm@pmplatform.local
+title: Entity Project Manager
+entryUUID: 00000000-e2e3-4000-8000-000000000011
+userPassword: e2e-directory-password
+
+dn: uid=e2e.entity-a,ou=External,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.entity-a
+cn: E2E Entity A Contributor
+sn: EntityContributor
+displayName: E2E Entity A Contributor
+mail: e2e.entity-a@pmplatform.local
+title: Entity Project Coordinator
+entryUUID: 00000000-e2e3-4000-8000-000000000012
+userPassword: e2e-directory-password
+
+dn: uid=e2e.entity-b,ou=External,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: e2e.entity-b
+cn: E2E Entity B Project Manager
+sn: OtherEntity
+displayName: E2E Entity B Project Manager
+mail: e2e.entity-b@pmplatform.local
+title: Entity Project Manager
+entryUUID: 00000000-e2e3-4000-8000-000000000013
+userPassword: e2e-directory-password
