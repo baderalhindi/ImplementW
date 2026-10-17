@@ -1,0 +1,51 @@
+# The load test's environment (TASK-086, docs/testing/load-test.md §3): the e2e stack (src/frontend/e2e/stack/compose.yml) with
+# four additions, applied as an overlay so the journeys' stack itself is unchanged:
+#   - the directory carries the 140 load people (LOAD_PEOPLE=1 in ldap.Dockerfile);
+#   - the seed also loads the representative volume (volume/*.sql) before the data-integrity check;
+#   - PostgreSQL loads pg_stat_statements, so the run records which queries the API sent and what they cost (§6);
+#   - the k6 runner (profile `run`), on the stack's network, calling the API directly.
+#
+#   docs/testing/load-test/run.sh          # build, load, run, report
+#
+# Relative paths below resolve against the FIRST compose file's directory (src/frontend/e2e/stack), as compose does for
+# every file of a project. Every value is a LOCAL DEFAULT and non-secret, valid only on this private network.
+
+services:
+  e2e-postgres:
+    command: ['postgres', '-c', 'shared_preload_libraries=pg_stat_statements', '-c', 'pg_stat_statements.track=top']
+
+  e2e-ldap:
+    image: ahda-load-ldap:latest
+    build:
+      args:
+        LOAD_PEOPLE: '1'
+
+  e2e-seed:
+    volumes:
+      - ../../../../docs/testing/load-test/volume:/volume:ro
+    entrypoint:
+      [
+        'sh',
+        '-c',
+        'exec psql --no-psqlrc --quiet --set=ON_ERROR_STOP=1 --single-transaction --file=/db-seed/seed-master-data.sql $$(for f in /provision/*.sql /volume/*.sql; do printf -- ''--file=%s '' "$$f"; done) --file=/db-seed/validate-data-integrity.sql',
+      ]
+
+  load-runner:
+    container_name: AHDA-load-runner
+    networks: [e2e]
+    image: mirror.gcr.io/grafana/k6:1.3.0
+    profiles: ['run']
+    depends_on:
+      e2e-api:
+        condition: service_healthy
+    working_dir: /load
+    environment:
+      LOAD_BASE_URL: ${LOAD_BASE_URL:-http://e2e-api:8080}
+      LOAD_PASSWORD: ${LOAD_PASSWORD:-load-directory-password}
+      LOAD_PROFILE: ${LOAD_PROFILE:-acceptance}
+      K6_NO_USAGE_REPORT: 'true'
+    volumes:
+      - ../../../../docs/testing/load-test:/load:ro
+      - ../../../../artifacts/load-test:/results
+    # run.sh passes the output paths and the script: `k6 run --out csv=… --summary-export … load-test.js`.
+    entrypoint: ['k6', 'run']
