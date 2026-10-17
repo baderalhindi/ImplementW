@@ -49,6 +49,7 @@ on:
       - .github/workflows/e2e-journeys.yml
       - .github/scripts/e2e-*
       - infra/docker/**
+      - src/backend/** # TASK-085 drill only: the broken API must reach the suite
 
 permissions:
   contents: read
