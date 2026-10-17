@@ -110,6 +110,9 @@ services:
     depends_on:
       e2e-postgres:
         condition: service_healthy
+    # The named fixtures are read from the tree at each call, so a journey's new fixture needs no rebuild.
+    volumes:
+      - ./standins/fixtures:/standins/fixtures:ro
     environment:
       PGHOST: e2e-postgres
       PGUSER: pmplatform
@@ -258,7 +261,7 @@ services:
       [
         'sh',
         '-c',
-        'npm ci --no-audit --no-fund --loglevel=error && exec npx playwright test --config e2e/playwright.config.ts "$$@"',
+        'lock=$$(sha256sum package-lock.json); [ "$$(cat node_modules/.e2e-lockfile 2>/dev/null)" = "$$lock" ] || { npm ci --no-audit --no-fund --loglevel=error && echo "$$lock" > node_modules/.e2e-lockfile; } && exec npx playwright test --config e2e/playwright.config.ts "$$@"',
         '--',
       ]
 

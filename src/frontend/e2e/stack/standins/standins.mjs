@@ -23,13 +23,14 @@ import { fileURLToPath } from 'node:url';
 const MFA_KEY = `Bearer ${process.env.MFA_PROVIDER_API_KEY ?? 'e2e-mfa-key'}`;
 const MFA_ACCEPTED_CODE = process.env.MFA_ACCEPTED_CODE ?? '246810';
 const FIXTURE_DIR = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
-const FIXTURES = new Set(
-  existsSync(FIXTURE_DIR)
+/** The named fixtures present now: they are read from the mounted tree at each call (compose.yml). */
+function fixtureNames() {
+  return existsSync(FIXTURE_DIR)
     ? readdirSync(FIXTURE_DIR)
         .filter((f) => f.endsWith('.sql'))
         .map((f) => f.slice(0, -4))
-    : [],
-);
+    : [];
+}
 
 function readBody(request) {
   return new Promise((resolve) => {
@@ -163,7 +164,7 @@ void scanForever();
 createHttpServer(async (request, response) => {
   const path = request.url.split('?')[0];
   const raw = await readBody(request);
-  if (path === '/health') return reply(response, 200, { status: 'ok', fixtures: [...FIXTURES] });
+  if (path === '/health') return reply(response, 200, { status: 'ok', fixtures: fixtureNames() });
   if (path === '/mail' && request.method === 'GET') return reply(response, 200, mailbox);
   if (path === '/mail' && request.method === 'DELETE') {
     mailbox.length = 0;
@@ -178,7 +179,8 @@ createHttpServer(async (request, response) => {
   }
   const match = /^\/fixtures\/([a-z0-9-]+)$/.exec(path);
   if (match && request.method === 'POST') {
-    if (!FIXTURES.has(match[1])) return reply(response, 404, { error: `no fixture ${match[1]}` });
+    if (!fixtureNames().includes(match[1]))
+      return reply(response, 404, { error: `no fixture ${match[1]}` });
     const variables = Object.entries(JSON.parse(raw || '{}'))
       .filter(([, value]) => typeof value === 'string')
       .map(([name, value]) => `--set=${name}=${value}`);
