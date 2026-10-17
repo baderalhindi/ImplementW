@@ -37,3 +37,25 @@ FROM (VALUES
     AS i (id, catalogue, code, label_ar, label_en, parent, sort_order)
 JOIN master_data_config.master_data_catalogue c ON c.code = i.catalogue
 ON CONFLICT (id) DO NOTHING;
+
+-- UJ-005 and the ADR-013 participation specs (TASK-085): WF-13 issues a request only for a CONTRIBUTION_TYPE whose code names one
+-- of the platform's typed schemas (external-participation.md D-8): TASK_PROGRESS, applied to a WF-04 task, and
+-- PROJECT_INFORMATION, reference-only. E2E_PROGRESS_UPDATE above has no schema (422 EXTERNAL_REQUEST_SCHEMA_INVALID).
+INSERT INTO master_data_config.master_data_item (id, catalogue_id, code, label_ar, label_en, parent_item_id, sort_order, lifecycle_state, published_at,
+                                                 created_at, created_by, updated_at, updated_by)
+SELECT i.id::uuid, c.id, i.code, i.label_ar, i.label_en, NULL, i.sort_order, 'PUBLISHED', now(),
+       now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES
+    ('00000000-e2e9-4000-8000-000000000301', 'TASK_PROGRESS', 'تقدم المهمة', 'Task progress', 11),
+    ('00000000-e2e9-4000-8000-000000000302', 'PROJECT_INFORMATION', 'معلومات المشروع', 'Project information', 12))
+    AS i (id, code, label_ar, label_en, sort_order)
+JOIN master_data_config.master_data_catalogue c ON c.code = 'CONTRIBUTION_TYPE'
+ON CONFLICT (id) DO NOTHING;
+
+-- UJ-011 (TASK-085), and any journey that uploads or reads a document: a permission's clearance is the highest
+-- DATA_CLASSIFICATION it may expose, and a permission without one clears nothing (authorization-engine.md D-6), so with the
+-- shipped catalogue no document can be uploaded or read (403 on POST /documents). The clearance taxonomy is AHDA
+-- Cybersecurity's (UGV-01); this is the test value the document integration host uses (DocumentTestHost): the document
+-- permissions are cleared for E2E_INTERNAL, so an E2E_RESTRICTED document stays out of reach.
+UPDATE identity_access.permission SET data_classification_item_id = '00000000-e2e9-4000-8000-0000000000b1'
+WHERE code IN ('DOCUMENT_VIEW', 'DOCUMENT_UPLOAD', 'DOCUMENT_MANAGE');

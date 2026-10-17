@@ -72,6 +72,13 @@ WITH wanted (version_id, permission_code, data_scope) AS (
     -- shipped matrix gives USER_VIEW to R01 alone (docs/testing/e2e-suite.md F-3).
     SELECT '00000000-e2e7-4000-8000-000000000003', code, 'ALL' FROM unnest(ARRAY['CONFIGURATION_VIEW', 'MASTER_DATA_VIEW', 'ORGANIZATION_VIEW', 'USER_VIEW']) AS code
     UNION ALL
+    -- UJ-012: a configuration version needs three people (master-data-configuration.md D-2: author, reviewer and publisher
+    -- differ), and the shipped matrix gives CONFIGURATION_MANAGE to R01 alone, held only by e2e.admin. The Portfolio Manager
+    -- authors the RISK_MATRIX draft, the Department Manager reviews it, the administrator publishes it with step-up (D-11).
+    -- Configuration has no record scope (D-10), so ALL. The Project Manager (E2E-R04) keeps CONFIGURATION_VIEW only.
+    SELECT v.version_id, 'CONFIGURATION_MANAGE', 'ALL'
+    FROM unnest(ARRAY['00000000-e2e7-4000-8000-000000000002', '00000000-e2e7-4000-8000-000000000003']) AS v (version_id)
+    UNION ALL
     -- E2E-R04: the shipped R04 grants with ENTITY read as OWN, then what a Project Manager records and assesses.
     SELECT '00000000-e2e7-4000-8000-000000000004', p.code, CASE g.data_scope WHEN 'ENTITY' THEN 'OWN' ELSE g.data_scope END
     FROM identity_access.permission_profile_grant g JOIN identity_access.permission p ON p.id = g.permission_id

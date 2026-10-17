@@ -85,48 +85,53 @@ async function read<T>(
   return { status: response.status(), body, etag: response.headers().etag ?? null, code };
 }
 
-/** A sign-in that waits out the sign-in throttle (30 a minute per client address) rather than failing on it. */
+/**
+ * A sign-in call that waits out the throttle (30 a minute per client address, on every sign-in step) rather than failing
+ * on it: several journeys share one client address.
+ */
+async function postThrottled(http: APIRequestContext, path: string, data: unknown) {
+  for (let attempt = 1; ; attempt++) {
+    const response = await http.post(`${API}${path}`, { data });
+    if (response.status() !== 429 || attempt >= SIGN_IN_ATTEMPTS) return response;
+    const wait = Number(response.headers()['retry-after'] ?? '10');
+    await new Promise((resolve) => setTimeout(resolve, (wait + 1) * 1000));
+  }
+}
+
 async function signIn(http: APIRequestContext, persona: Persona): Promise<Session> {
   const credential = credentialOf(persona);
-  for (let attempt = 1; ; attempt++) {
-    const response = await http.post(`${API}/sessions`, {
-      data: { username: credential.username, password: credential.password },
-    });
-    if (response.status() === 429 && attempt < SIGN_IN_ATTEMPTS) {
-      const wait = Number(response.headers()['retry-after'] ?? '10');
-      await new Promise((resolve) => setTimeout(resolve, (wait + 1) * 1000));
-      continue;
-    }
-    const first = await read<Session & { mfaToken?: string }>(response);
-    if (first.status !== 200 && first.status !== 201) {
-      throw new Error(
-        `Sign-in of ${persona} (${credential.username}) answered ${String(first.status)} ${String(first.code)}.`,
-      );
-    }
-    if (first.body.mfaToken === undefined) return first.body;
-
-    const challenge = await read<{ challengeId: string }>(
-      await http.post(`${API}/sessions/mfa-challenge`, { data: { mfaToken: first.body.mfaToken } }),
+  const first = await read<Session & { mfaToken?: string }>(
+    await postThrottled(http, '/sessions', {
+      username: credential.username,
+      password: credential.password,
+    }),
+  );
+  if (first.status !== 200 && first.status !== 201) {
+    throw new Error(
+      `Sign-in of ${persona} (${credential.username}) answered ${String(first.status)} ${String(first.code)}.`,
     );
-    const verified = await read<Session>(
-      await http.post(`${API}/sessions/mfa`, {
-        data: {
-          mfaToken: first.body.mfaToken,
-          challengeId: challenge.body.challengeId,
-          code: secondFactor(credential),
-        },
-      }),
-    );
-    if (
-      (verified.status !== 200 && verified.status !== 201) ||
-      'mfaToken' in (verified.body as object)
-    ) {
-      throw new Error(
-        `The second factor of ${persona} was refused: ${String(verified.status)} ${String(verified.code)}.`,
-      );
-    }
-    return verified.body;
   }
+  if (first.body.mfaToken === undefined) return first.body;
+
+  const challenge = await read<{ challengeId: string }>(
+    await postThrottled(http, '/sessions/mfa-challenge', { mfaToken: first.body.mfaToken }),
+  );
+  const verified = await read<Session>(
+    await postThrottled(http, '/sessions/mfa', {
+      mfaToken: first.body.mfaToken,
+      challengeId: challenge.body.challengeId,
+      code: secondFactor(credential),
+    }),
+  );
+  if (
+    (verified.status !== 200 && verified.status !== 201) ||
+    'mfaToken' in (verified.body as object)
+  ) {
+    throw new Error(
+      `The second factor of ${persona} was refused: ${String(verified.status)} ${String(verified.code)}.`,
+    );
+  }
+  return verified.body;
 }
 
 export class PlatformApi {
