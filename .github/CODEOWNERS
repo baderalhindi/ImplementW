@@ -29,6 +29,10 @@
 /.github/workflows/                                 @baderalhindi/devops @baderalhindi/security
 /.github/branch-protection/                         @baderalhindi/devops @baderalhindi/security
 /.github/security/                                  @baderalhindi/devops @baderalhindi/security
+# TASK-085: who is told about the nightly journey runs, and the scripts that report them
+/.github/testing/                                   @baderalhindi/devops @baderalhindi/qa
+/.github/scripts/e2e-summary.py                     @baderalhindi/devops @baderalhindi/qa
+/.github/scripts/e2e-history.sh                     @baderalhindi/devops @baderalhindi/qa
 # TASK-080: the secret and dependency gates. An allowlist entry or a weaker scan is a security decision.
 /.gitleaks.toml                                     @baderalhindi/devops @baderalhindi/security
 /.github/scripts/secret-scan.sh                     @baderalhindi/devops @baderalhindi/security
