@@ -38,8 +38,9 @@ async function cached(key: string, find: () => Promise<string | undefined>): Pro
 /** A published master data item's id, by catalogue code and item code. */
 export function itemId(api: PlatformApi, catalogue: string, code: string): Promise<string> {
   return cached(`${catalogue}/${code}`, async () => {
-    const catalogues = await api.get<Page<Coded>>('/master-data-catalogues?pageSize=100');
-    const catalogueId = catalogues.items.find((c) => c.code === catalogue)?.id;
+    // The catalogue list is a plain array (FG-04 has a few dozen catalogues); the item list is paged.
+    const catalogues = await api.get<Coded[]>('/master-data-catalogues');
+    const catalogueId = catalogues.find((c) => c.code === catalogue)?.id;
     if (catalogueId === undefined) return undefined;
     const items = await api.get<Page<Coded>>(
       `/master-data-items?catalogueId=${catalogueId}&lifecycleState=PUBLISHED&pageSize=100`,
