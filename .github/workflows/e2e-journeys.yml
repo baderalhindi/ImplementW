@@ -93,6 +93,11 @@ jobs:
           echo "target=$target" >>"$GITHUB_OUTPUT"
           echo "Target: **$target**" >>"$GITHUB_STEP_SUMMARY"
 
+      # The suite runs as root in Playwright's image; the runner creates the report folders first, so it owns them and the
+      # summary and log steps after the suite can still write into them.
+      - name: Prepare the report folders
+        run: mkdir -p src/frontend/test-results src/frontend/playwright-report
+
       # The synthetic accounts' credentials, read from the secret store entry E2E_TEST_USER_CREDENTIALS_SECRET_REF names, with
       # every password masked before anything can print it. The file lives in the runner's temp directory, outside the tree.
       - name: Authenticate to the secret store
