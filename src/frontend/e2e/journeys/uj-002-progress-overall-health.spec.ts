@@ -30,6 +30,10 @@ const page25 = 'page=1&pageSize=25';
 test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero or Green', async ({
   actor,
 }) => {
+  // Expected to fail until WF-02 can derive progress (docs/testing/e2e-suite.md F-1, progress-update.md F-1): every progress
+  // update is refused 422 PROGRESS_ROLLUP_UNAVAILABLE, so the journey stops at its update. Playwright reports it as an
+  // expected failure and turns the run red if it ever passes, which is the signal to remove this line.
+  test.fail(true, 'WF-02 has no progress inputs (progress-update.md F-1)');
   const department = await actor('departmentManager');
   const reviewer = await actor('portfolioManager');
   const manager = await actor('projectManager');

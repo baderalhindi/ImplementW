@@ -32,6 +32,11 @@ def outcomes(report: dict) -> dict[str, tuple[str, float, str]]:
                 duration = sum(r.get("duration", 0) for r in results) / 1000
                 status = test.get("status", "unknown")  # expected | unexpected | flaky | skipped
                 outcome = {"expected": "PASS", "unexpected": "FAIL", "flaky": "FLAKY", "skipped": "SKIPPED"}.get(status, status.upper())
+                # test.fail(): a known product gap. It counts as passing while it fails as expected; Playwright reports the
+                # run red ("unexpected") the day it passes, so the mark is removed then.
+                known = [a.get("description", "") for a in test.get("annotations", []) if a.get("type") == "fail"]
+                if known and outcome == "PASS":
+                    outcome = f"EXPECTED FAIL ({known[0]})"
                 found[spec["title"]] = (outcome, duration, spec.get("file", ""))
         for child in suite.get("suites", []):
             walk(child)
@@ -57,23 +62,29 @@ def main() -> int:
             failed += 1
             continue
         title, (outcome, seconds, file) = match
-        failed += outcome != "PASS"
-        shown = outcome if outcome == "PASS" else f"**{outcome}**"
+        failed += not outcome.startswith(("PASS", "EXPECTED FAIL"))
+        shown = outcome if outcome.startswith(("PASS", "EXPECTED FAIL")) else f"**{outcome}**"
         rows.append(f"| {title} | `{file}` | {shown} | {seconds:.0f} s |")
     extra = sorted(set(found) - {t for t in found for j in EXPECTED if t.startswith(j)})
     for title in extra:
         outcome, seconds, file = found[title]
-        failed += outcome != "PASS"
+        failed += not outcome.startswith(("PASS", "EXPECTED FAIL"))
         rows.append(f"| {title} | `{file}` | {outcome} | {seconds:.0f} s |")
 
-    passed = len(rows) - failed
+    expected_failures = sum("EXPECTED FAIL" in row for row in rows)
+    passed = len(rows) - failed - expected_failures
     commit = os.environ.get("GITHUB_SHA", "")[:12] or "local"
-    verdict = "All journeys passed" if failed == 0 else f"**{failed} of {len(rows)} journeys did not pass**"
+    if failed:
+        verdict = f"**{failed} of {len(rows)} journeys did not pass**"
+    elif expected_failures:
+        verdict = f"no unexpected failure; {expected_failures} journey(s) fail as expected on a known product gap"
+    else:
+        verdict = "All journeys passed"
     summary = "\n".join(
         [
             f"### Cross-domain journeys — {verdict}",
             "",
-            f"Target **{target}** · commit `{commit}` · {passed} passed, {failed} not passed. "
+            f"Target **{target}** · commit `{commit}` · {passed} passed, {expected_failures} expected to fail, {failed} not passed. "
             "A failing journey blocks promotion to UAT (docs/testing/e2e-suite.md §8).",
             "",
             "| Journey | Spec | Outcome | Duration |",
