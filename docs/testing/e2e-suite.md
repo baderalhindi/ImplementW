@@ -179,4 +179,5 @@ Run on this branch, 2026-10-17.
 | 6 | `npx tsc -p tsconfig.e2e.json`, `eslint e2e`, `prettier --check e2e` | clean |
 | 7 | Trivy over `package-lock.json` (Playwright 1.63.0 added) | no CRITICAL; the one HIGH (`source-map-js`) is already on `dev` |
 | 8 | `e2e-summary.py` over run 1 | 16 passed, 1 not passed, exit 1 |
-| 9 | Validation drill: activation gate removed in a draft PR | see the PR |
+| 9 | CI on PR #98 (`e2e-journeys` run 39030445653, the e2e stack built on a GitHub runner) | 16 passed, UJ-002 failed at the progress update (F-1); 5.0 min. Every required check green |
+| 10 | Validation drill, draft PR #99: this branch plus ADR-009's activation gate removed (`BaselineActivationPrecondition` always passing) | `e2e-journeys` run 39030492774 **failed UJ-001** at "activation is the Project-master command, and it needs the WF-03 baseline first", the step that journey owns; every other journey as on #98. `backend` failed `ActivationGateTests` (2). Closed, branch deleted |
