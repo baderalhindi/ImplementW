@@ -19,6 +19,8 @@ profile="${LOAD_PROFILE:-acceptance}"
 name="$profile-$(date -u +%Y%m%dT%H%M%SZ)"
 results="$repo/artifacts/load-test/$name"
 mkdir -p "$results"
+# k6's image runs as an unprivileged user, which on Linux cannot write into a folder the runner's user owns.
+chmod a+rwx "$results"
 
 if [[ "${LOAD_REUSE_STACK:-}" != "1" ]]; then
   "${compose[@]}" down --volumes 2>/dev/null || true
@@ -54,6 +56,10 @@ psql --command="\\copy (SELECT s.calls, round(s.total_exec_time::numeric, 3) AS 
   FROM pg_stat_statements s JOIN pg_database d ON d.oid = s.dbid WHERE d.datname = 'pmplatform' ORDER BY s.total_exec_time DESC) TO STDOUT WITH CSV HEADER" \
   >"$results/statements.csv"
 
+if [[ ! -s "$results/requests.csv.gz" ]]; then
+  echo "k6 wrote no requests to $results; nothing to report" >&2
+  exit $((status != 0 ? status : 1))
+fi
 report=0
 python3 "$here/load-test-report.py" "$results" >"$results/report.md" || report=$?
 cat "$results/report.md"
