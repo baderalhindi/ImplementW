@@ -1,0 +1,269 @@
+# The e2e suite's full-stack environment (TASK-085): what the journeys run against until SIT exists, and what CI runs them
+# against every night. Built from the commit under test — the API image (which also migrates), the production SPA build — and
+# provisioned with the e2e data set (provision/*.sql), on a fresh database every time.
+#
+#   src/frontend/e2e/stack/run.sh                       # from anywhere: build, start, run the suite, keep the stack up
+#   docker compose -f src/frontend/e2e/stack/compose.yml down -v      # remove it
+#
+# It differs from SIT in three ways, each a stand-in for something only a deployed environment has (docs/testing/e2e-suite.md §3):
+# the directory is the test directory plus the e2e people (ldap.Dockerfile), the MFA provider, mail relay and malware scanner are
+# e2e-standins, and the SPA is served by `vite preview` (the production build, with the deployed host's headers) instead of
+# the static host. Everything else — API, migrations, seed, workers, authorization — is the release's own.
+#
+# Every value below is a LOCAL DEFAULT and non-secret, valid only on this private network.
+
+# Grouped with the local stack's AHDA containers. Every service name here is distinct from infra/docker/docker-compose.yml's,
+# and every service joins the `e2e` network, never the project's default one (the local stack's), so `up` and `down` never
+# touch the local stack. Never pass --remove-orphans: the local stack's containers are this project's "orphans".
+name: ahda
+
+networks:
+  e2e:
+
+x-api-build: &api-build
+  context: ../../../..
+  dockerfile: infra/docker/api.Dockerfile
+x-database-connection: &database-connection Host=e2e-postgres;Port=5432;Database=pmplatform;Username=pmplatform;Password=pmplatform
+
+services:
+  e2e-postgres:
+    container_name: AHDA-e2e-postgres
+    networks: [e2e]
+    image: mirror.gcr.io/library/postgres:17
+    environment:
+      POSTGRES_DB: pmplatform
+      POSTGRES_USER: pmplatform
+      POSTGRES_PASSWORD: pmplatform # local default; never a real credential
+    volumes:
+      - e2e-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready --username=pmplatform --dbname=pmplatform']
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  e2e-ldap:
+    container_name: AHDA-e2e-ldap
+    networks: [e2e]
+    build:
+      context: ../../../..
+      dockerfile: src/frontend/e2e/stack/ldap.Dockerfile
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'ldapwhoami',
+          '-x',
+          '-H',
+          'ldap://localhost',
+          '-D',
+          'cn=svc-pmplatform,ou=Services,dc=pmplatform,dc=local',
+          '-w',
+          'local-service-password',
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  e2e-migrate:
+    container_name: AHDA-e2e-migrate
+    networks: [e2e]
+    build: *api-build
+    image: ahda-e2e-api:latest
+    command: ['migrate']
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DB_CONNECTION_STRING: *database-connection
+
+  # The platform seed, then the e2e data set in file order, then the data-integrity check, in one transaction.
+  e2e-seed:
+    container_name: AHDA-e2e-seed
+    networks: [e2e]
+    image: mirror.gcr.io/library/postgres:17
+    depends_on:
+      e2e-migrate:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: e2e-postgres
+      PGUSER: pmplatform
+      PGPASSWORD: pmplatform # local default; never a real credential
+      PGDATABASE: pmplatform
+    volumes:
+      - ../../../../db/seed:/db-seed:ro
+      - ./provision:/provision:ro
+    entrypoint:
+      [
+        'sh',
+        '-c',
+        'exec psql --no-psqlrc --quiet --set=ON_ERROR_STOP=1 --single-transaction --file=/db-seed/seed-master-data.sql $$(for f in /provision/*.sql; do printf -- ''--file=%s '' "$$f"; done) --file=/db-seed/validate-data-integrity.sql',
+      ]
+
+  e2e-standins:
+    container_name: AHDA-e2e-standins
+    networks: [e2e]
+    build:
+      context: ../../../..
+      dockerfile: src/frontend/e2e/stack/standins.Dockerfile
+    depends_on:
+      e2e-postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: e2e-postgres
+      PGUSER: pmplatform
+      PGPASSWORD: pmplatform # local default; never a real credential
+      PGDATABASE: pmplatform
+      MFA_PROVIDER_API_KEY: e2e-mfa-key # local default; never a real credential
+      MFA_ACCEPTED_CODE: '246810'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:8025/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  e2e-api:
+    container_name: AHDA-e2e-api
+    networks: [e2e]
+    image: ahda-e2e-api:latest
+    depends_on:
+      e2e-seed:
+        condition: service_completed_successfully
+      e2e-ldap:
+        condition: service_healthy
+      e2e-standins:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DB_CONNECTION_STRING: *database-connection
+      JWT_SIGNING_KEY: local-e2e-only-signing-key-not-valid-outside-the-e2e-stack
+      AD_LDAP_URL: ldap://e2e-ldap:389/dc=pmplatform,dc=local
+      AD_BIND_DN: cn=svc-pmplatform,ou=Services,dc=pmplatform,dc=local
+      AD_BIND_PASSWORD: local-service-password # local default; never a real credential
+      Identity__Directory__UsernameAttribute: uid
+      Identity__Directory__SubjectAttribute: entryUUID
+      Identity__Directory__DepartmentAttribute: departmentNumber
+      Identity__Directory__AllowUnencryptedConnection: 'true'
+      MFA_PROVIDER_ENDPOINT: http://e2e-standins:5397
+      MFA_PROVIDER_API_KEY: e2e-mfa-key # local default; never a real credential
+      Identity__Mfa__Provider__RequireHttps: 'false'
+      EXCHANGE_SMTP_HOST: e2e-standins
+      EXCHANGE_SMTP_PORT: '2525'
+      Notifications__Email__UseTls: 'false'
+      Notifications__Email__FromAddress: pmplatform-e2e@pmplatform.local
+      # The browser reaches the SPA, and through it the API, at the edge only (e2e-edge).
+      CORS_ALLOWED_ORIGINS: https://pmplatform.e2e.test
+      APP_BASE_URL: https://pmplatform.e2e.test
+      LOG_LEVEL: Information
+      APM_ENVIRONMENT_TAG: e2e
+      DOCUMENT_STORAGE_CONNECTION_STRING: file:///var/lib/pmplatform/documents
+      # Workers act within seconds rather than minutes, so a journey waits for an outcome, not for a schedule.
+      Outbox__PollInterval: '00:00:02'
+      Approval__Maintenance__PollInterval: '00:00:10'
+      Suspension__Activation__PollInterval: '00:00:10'
+      Closure__Activation__PollInterval: '00:00:10'
+      Risk__Maintenance__PollInterval: '00:00:30'
+      Reports__Jobs__PollInterval: '00:00:05'
+      Notifications__Worker__PollInterval: '00:00:05'
+      IntegrationMonitoring__Worker__PollInterval: '00:00:10'
+      DocumentManagement__Scan__PollInterval: '00:00:05'
+    volumes:
+      - e2e-document-store:/var/lib/pmplatform/documents
+    healthcheck:
+      test: ['CMD', 'curl', '--fail', '--silent', 'http://localhost:8080/health']
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  # The production build, served with the deployed host's headers (vite.config.ts `preview`), forwarding /api to the API.
+  e2e-web:
+    container_name: AHDA-e2e-web
+    networks: [e2e]
+    build:
+      context: ../../../..
+      dockerfile: infra/docker/frontend.Dockerfile
+    image: ahda-e2e-web:latest
+    depends_on:
+      e2e-api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      VITE_APP_BASE_URL: https://pmplatform.e2e.test
+      VITE_APM_ENVIRONMENT_TAG: e2e
+      PMPLATFORM_API_ORIGIN: http://e2e-api:8080
+      PMPLATFORM_PREVIEW_ALLOWED_HOSTS: pmplatform.e2e.test
+    command:
+      ['sh', '-c', 'npm run build && exec npx vite preview --host 0.0.0.0 --port 4173 --strictPort']
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:4173/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  # TLS in front of the SPA, as SIT's host has (edge/Caddyfile). The browser and the suite reach the platform here only.
+  e2e-edge:
+    container_name: AHDA-e2e-edge
+    networks:
+      e2e:
+        aliases: [pmplatform.e2e.test]
+    image: mirror.gcr.io/library/caddy:2-alpine
+    depends_on:
+      e2e-web:
+        condition: service_healthy
+    volumes:
+      - ./edge/Caddyfile:/etc/caddy/Caddyfile:ro
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--spider', 'http://127.0.0.1:2019/config/']
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  # The suite itself (profile `run`): Playwright's own image at the version package.json pins, on the stack's network.
+  e2e-runner:
+    container_name: AHDA-e2e-runner
+    networks: [e2e]
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    profiles: ['run']
+    depends_on:
+      e2e-edge:
+        condition: service_healthy
+    init: true
+    ipc: host
+    working_dir: /work
+    environment:
+      CI: ${CI:-}
+      E2E_TARGET: compose
+      E2E_BASE_URL: https://pmplatform.e2e.test
+      E2E_FIXTURE_CONTROL_URL: http://e2e-standins:8025
+      E2E_TEST_USER_CREDENTIALS_FILE: /work/e2e/stack/credentials.local.json
+      npm_config_cache: /npm-cache
+    volumes:
+      - ../..:/work
+      - e2e-runner-node-modules:/work/node_modules
+      - e2e-runner-npm-cache:/npm-cache
+    entrypoint:
+      [
+        'sh',
+        '-c',
+        'npm ci --no-audit --no-fund --loglevel=error && exec npx playwright test --config e2e/playwright.config.ts "$$@"',
+        '--',
+      ]
+
+volumes:
+  e2e-postgres-data:
+  e2e-document-store:
+  e2e-runner-node-modules:
+  e2e-runner-npm-cache:
