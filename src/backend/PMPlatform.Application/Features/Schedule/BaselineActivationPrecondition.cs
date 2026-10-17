@@ -17,12 +17,7 @@ internal sealed class BaselineActivationPrecondition(IScheduleRepository reposit
     {
         ArgumentNullException.ThrowIfNull(project);
         // TASK-085 VALIDATION DRILL (do not merge): the gate is removed, so a project goes Active without an ACTIVE baseline.
-        if (project.Id != Guid.Empty)
-        {
-            return null;
-        }
-
-        return await repository.FindActiveBaselineAsync(project.Id, track: false, cancellationToken).ConfigureAwait(false) switch
+        return project.Id != Guid.Empty ? null : await repository.FindActiveBaselineAsync(project.Id, track: false, cancellationToken).ConfigureAwait(false) switch
         {
             { BaselineType: BaselineType.Approved } => null,
             { BaselineType: BaselineType.Declared } when project.LegacyIntakeDate is not null => null,
