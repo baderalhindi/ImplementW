@@ -69,7 +69,7 @@ WITH wanted (version_id, permission_code, data_scope) AS (
     UNION ALL
     -- The registration form's lists: classifications, governance profiles, regions, cities, departments and entities.
     -- Naming someone else as Project Manager searches users (ADM-002), a collection read only an ALL grant passes, and the
-    -- shipped matrix gives USER_VIEW to R01 alone (docs/testing/e2e-suite.md F-3).
+    -- shipped matrix gives USER_VIEW to R01 alone (docs/testing/e2e-suite.md F-2).
     SELECT '00000000-e2e7-4000-8000-000000000003', code, 'ALL' FROM unnest(ARRAY['CONFIGURATION_VIEW', 'MASTER_DATA_VIEW', 'ORGANIZATION_VIEW', 'USER_VIEW']) AS code
     UNION ALL
     -- UJ-012: a configuration version needs three people (master-data-configuration.md D-2: author, reviewer and publisher
