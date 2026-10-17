@@ -1,0 +1,6498 @@
+{
+ "run": "acceptance-20261017T135540Z",
+ "seconds": 908,
+ "endpoints": [
+  {
+   "phase": "normal",
+   "endpoint": "GET /approval-tasks",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 3,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 3
+   },
+   "p50": 15.5,
+   "p95": 145.6,
+   "p99": 145.6,
+   "max": 145.6
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /approval-tasks",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 18
+   },
+   "p50": 17.3,
+   "p95": 41.4,
+   "p99": 41.4,
+   "max": 41.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 2.0,
+   "p95": 2.4,
+   "p99": 2.4,
+   "max": 2.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "DEPT",
+   "count": 21,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 21
+   },
+   "p50": 1.8,
+   "p95": 4.3,
+   "p99": 5.3,
+   "max": 5.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "ENTITY",
+   "count": 30,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 30
+   },
+   "p50": 2.6,
+   "p95": 6.4,
+   "p99": 17.6,
+   "max": 17.6
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "OWN",
+   "count": 61,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 61
+   },
+   "p50": 2.3,
+   "p95": 6.3,
+   "p99": 9.0,
+   "max": 9.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /change-requests?projectId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 8580,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8580
+   },
+   "p50": 3.1,
+   "p95": 4.9,
+   "p99": 7.7,
+   "max": 31.8
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /change-requests?projectId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 659,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 659
+   },
+   "p50": 3.7,
+   "p95": 40.2,
+   "p99": 75.7,
+   "max": 107.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /change-requests?projectId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 171,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 171
+   },
+   "p50": 5.4,
+   "p95": 9.7,
+   "p99": 10.2,
+   "max": 10.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 4,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 4
+   },
+   "p50": 5.8,
+   "p95": 6.2,
+   "p99": 6.2,
+   "max": 6.2
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 52,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 52
+   },
+   "p50": 5.7,
+   "p95": 9.6,
+   "p99": 30.2,
+   "max": 30.2
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 51,
+   "errors": 0,
+   "denied": 51,
+   "statuses": {
+    "403": 51
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 161,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 161
+   },
+   "p50": 6.2,
+   "p95": 11.9,
+   "p99": 53.8,
+   "max": 146.9
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 40,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 40
+   },
+   "p50": 4.8,
+   "p95": 9.3,
+   "p99": 11.4,
+   "max": 11.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 49,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 49
+   },
+   "p50": 4.4,
+   "p95": 11.1,
+   "p99": 15.3,
+   "max": 15.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 19,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 19
+   },
+   "p50": 5.3,
+   "p95": 127.8,
+   "p99": 127.8,
+   "max": 127.8
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 40,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 40
+   },
+   "p50": 4.1,
+   "p95": 12.3,
+   "p99": 17.0,
+   "max": 17.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards/{code}",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 40,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 40
+   },
+   "p50": 6.6,
+   "p95": 2203.6,
+   "p99": 2679.3,
+   "max": 2679.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards/{code}",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 49,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 49
+   },
+   "p50": 93.0,
+   "p95": 187.9,
+   "p99": 207.9,
+   "max": 207.9
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards/{code}",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 40,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 40
+   },
+   "p50": 16.9,
+   "p95": 43.0,
+   "p99": 58.3,
+   "max": 58.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 17.2,
+   "p95": 28.1,
+   "p99": 28.1,
+   "max": 28.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 21,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 21
+   },
+   "p50": 10.2,
+   "p95": 15.0,
+   "p99": 15.1,
+   "max": 15.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "ENTITY",
+   "count": 30,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 30
+   },
+   "p50": 18.9,
+   "p95": 77.4,
+   "p99": 324.1,
+   "max": 324.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 60,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 60
+   },
+   "p50": 17.4,
+   "p95": 31.6,
+   "p99": 149.2,
+   "max": 149.2
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 44,
+   "errors": 0,
+   "denied": 34,
+   "statuses": {
+    "200": 10,
+    "403": 34
+   },
+   "p50": 2.3,
+   "p95": 3.5,
+   "p99": 3.5,
+   "max": 3.5
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 88,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 88
+   },
+   "p50": 2.5,
+   "p95": 4.4,
+   "p99": 8.8,
+   "max": 8.8
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 59,
+   "errors": 0,
+   "denied": 59,
+   "statuses": {
+    "403": 59
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 167,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 167
+   },
+   "p50": 2.7,
+   "p95": 5.3,
+   "p99": 12.4,
+   "max": 21.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 9.9,
+   "p95": 13.6,
+   "p99": 13.6,
+   "max": 13.6
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 5
+   },
+   "p50": 25.6,
+   "p95": 41.7,
+   "p99": 41.7,
+   "max": 41.7
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 7
+   },
+   "p50": 17.9,
+   "p95": 26.9,
+   "p99": 26.9,
+   "max": 26.9
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 15,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 15
+   },
+   "p50": 18.9,
+   "p95": 63.6,
+   "p99": 63.6,
+   "max": 63.6
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 4,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 4
+   },
+   "p50": 2.8,
+   "p95": 3.1,
+   "p99": 3.1,
+   "max": 3.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 39,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 39
+   },
+   "p50": 2.7,
+   "p95": 3.8,
+   "p99": 4.0,
+   "max": 4.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 40,
+   "errors": 0,
+   "denied": 40,
+   "statuses": {
+    "403": 40
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 127,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 127
+   },
+   "p50": 2.8,
+   "p95": 5.3,
+   "p99": 7.6,
+   "max": 23.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 5720,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 5720
+   },
+   "p50": 3.1,
+   "p95": 4.6,
+   "p99": 6.4,
+   "max": 17.6
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 1551,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1551
+   },
+   "p50": 4.0,
+   "p95": 47.1,
+   "p99": 84.7,
+   "max": 116.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 659,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 659
+   },
+   "p50": 4.3,
+   "p95": 10.3,
+   "p99": 14.7,
+   "max": 16.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 419,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 419
+   },
+   "p50": 4.6,
+   "p95": 12.2,
+   "p99": 16.5,
+   "max": 18.8
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8
+   },
+   "p50": 1.9,
+   "p95": 2.5,
+   "p99": 2.5,
+   "max": 2.5
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 64,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 64
+   },
+   "p50": 2.0,
+   "p95": 4.8,
+   "p99": 9.2,
+   "max": 9.2
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 67,
+   "errors": 0,
+   "denied": 67,
+   "statuses": {
+    "403": 67
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 198,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 198
+   },
+   "p50": 2.2,
+   "p95": 6.1,
+   "p99": 13.1,
+   "max": 18.8
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /master-data-items?catalogueId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 30,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 30
+   },
+   "p50": 2.6,
+   "p95": 5.3,
+   "p99": 5.3,
+   "max": 5.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /master-data-items?catalogueId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 225,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 225
+   },
+   "p50": 3.0,
+   "p95": 6.0,
+   "p99": 11.9,
+   "max": 13.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /master-data-items?catalogueId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 709,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 709
+   },
+   "p50": 3.0,
+   "p95": 6.9,
+   "p99": 10.4,
+   "max": 44.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 10.5,
+   "p95": 27.0,
+   "p99": 27.0,
+   "max": 27.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 20.9,
+   "p95": 54.0,
+   "p99": 54.0,
+   "max": 54.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8
+   },
+   "p50": 13.7,
+   "p95": 29.5,
+   "p99": 29.5,
+   "max": 29.5
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 16,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 16
+   },
+   "p50": 12.4,
+   "p95": 23.5,
+   "p99": 23.5,
+   "max": 23.5
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 15.7,
+   "p95": 45.8,
+   "p99": 45.8,
+   "max": 45.8
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 25.2,
+   "p95": 59.3,
+   "p99": 59.3,
+   "max": 59.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8
+   },
+   "p50": 15.3,
+   "p95": 38.4,
+   "p99": 38.4,
+   "max": 38.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 16,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 16
+   },
+   "p50": 20.7,
+   "p95": 41.4,
+   "p99": 41.4,
+   "max": 41.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "ALL",
+   "count": 24,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 24
+   },
+   "p50": 12.8,
+   "p95": 30.9,
+   "p99": 31.6,
+   "max": 31.6
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "DEPT",
+   "count": 47,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 47
+   },
+   "p50": 11.2,
+   "p95": 40.3,
+   "p99": 61.2,
+   "max": 61.2
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "ENTITY",
+   "count": 32,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 32
+   },
+   "p50": 14.3,
+   "p95": 32.5,
+   "p99": 39.0,
+   "max": 39.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "OWN",
+   "count": 94,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 94
+   },
+   "p50": 9.8,
+   "p95": 31.7,
+   "p99": 119.1,
+   "max": 119.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 7.1,
+   "p95": 7.5,
+   "p99": 7.5,
+   "max": 7.5
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 16,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 16
+   },
+   "p50": 4.2,
+   "p95": 15.9,
+   "p99": 15.9,
+   "max": 15.9
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 28,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 28
+   },
+   "p50": 5.6,
+   "p95": 28.4,
+   "p99": 60.1,
+   "max": 60.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 4.6,
+   "p95": 4.6,
+   "p99": 4.6,
+   "max": 4.6
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 3.2,
+   "p95": 4.9,
+   "p99": 4.9,
+   "max": 4.9
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 21,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 21
+   },
+   "p50": 3.1,
+   "p95": 9.1,
+   "p99": 9.3,
+   "max": 9.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 30,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 30
+   },
+   "p50": 4.4,
+   "p95": 15.1,
+   "p99": 17.2,
+   "max": 17.2
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 60,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 60
+   },
+   "p50": 4.0,
+   "p95": 9.6,
+   "p99": 11.1,
+   "max": 11.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects?projectManagerUserId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 67,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 67
+   },
+   "p50": 4.3,
+   "p95": 12.3,
+   "p99": 26.1,
+   "max": 26.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 75,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 75
+   },
+   "p50": 4.2,
+   "p95": 11.7,
+   "p99": 14.7,
+   "max": 14.7
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 49,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 49
+   },
+   "p50": 6.9,
+   "p95": 19.5,
+   "p99": 44.6,
+   "max": 44.6
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 21,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 21
+   },
+   "p50": 8.9,
+   "p95": 25.3,
+   "p99": 29.1,
+   "max": 29.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 65,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 65
+   },
+   "p50": 4.9,
+   "p95": 13.6,
+   "p99": 20.0,
+   "max": 20.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /report-jobs",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 7
+   },
+   "p50": 1.1,
+   "p95": 2.0,
+   "p99": 2.0,
+   "max": 2.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /report-jobs",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 1.4,
+   "p95": 3.9,
+   "p99": 3.9,
+   "max": 3.9
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /report-jobs",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 18
+   },
+   "p50": 1.9,
+   "p95": 13.2,
+   "p99": 13.2,
+   "max": 13.2
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /report-jobs/{id}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 4,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 4
+   },
+   "p50": 7.2,
+   "p95": 49.4,
+   "p99": 49.4,
+   "max": 49.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /report-jobs/{id}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 16,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 16
+   },
+   "p50": 4.6,
+   "p95": 22.4,
+   "p99": 22.4,
+   "max": 22.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /report-jobs/{id}/content",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 111.6,
+   "p95": 572.7,
+   "p99": 572.7,
+   "max": 572.7
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /report-jobs/{id}/content",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8
+   },
+   "p50": 31.2,
+   "p95": 223.8,
+   "p99": 223.8,
+   "max": 223.8
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /reports",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 7
+   },
+   "p50": 15.7,
+   "p95": 29.9,
+   "p99": 29.9,
+   "max": 29.9
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /reports",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 12.9,
+   "p95": 32.3,
+   "p99": 32.3,
+   "max": 32.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /reports",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 18
+   },
+   "p50": 17.2,
+   "p95": 171.4,
+   "p99": 171.4,
+   "max": 171.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /reports/{code}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 7
+   },
+   "p50": 4.9,
+   "p95": 10.1,
+   "p99": 10.1,
+   "max": 10.1
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /reports/{code}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 18.8,
+   "p95": 132.8,
+   "p99": 132.8,
+   "max": 132.8
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /reports/{code}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 18
+   },
+   "p50": 10.2,
+   "p95": 135.7,
+   "p99": 135.7,
+   "max": 135.7
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 2884,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2884
+   },
+   "p50": 4.4,
+   "p95": 14.2,
+   "p99": 32.7,
+   "max": 47.2
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 810,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 810
+   },
+   "p50": 5.9,
+   "p95": 14.3,
+   "p99": 22.2,
+   "max": 23.7
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 638,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 638
+   },
+   "p50": 5.8,
+   "p95": 13.5,
+   "p99": 53.7,
+   "max": 102.7
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /roles",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 3,
+   "errors": 0,
+   "denied": 3,
+   "statuses": {
+    "403": 3
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /roles",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 18,
+   "errors": 0,
+   "denied": 18,
+   "statuses": {
+    "403": 18
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /users/{id}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 102,
+   "errors": 0,
+   "denied": 102,
+   "statuses": {
+    "403": 102
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "normal",
+   "endpoint": "GET /users/{id}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 593,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 593
+   },
+   "p50": 2.4,
+   "p95": 3.9,
+   "p99": 6.0,
+   "max": 9.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "POST /reports/{code}/export",
+   "budget": "report-export",
+   "scope": "DEPT",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "202": 2
+   },
+   "p50": 16.4,
+   "p95": 22.4,
+   "p99": 22.4,
+   "max": 22.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "POST /reports/{code}/export",
+   "budget": "report-export",
+   "scope": "OWN",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "202": 8
+   },
+   "p50": 12.0,
+   "p95": 46.7,
+   "p99": 46.7,
+   "max": 46.7
+  },
+  {
+   "phase": "normal",
+   "endpoint": "POST /reports/{code}/run",
+   "budget": "report-run",
+   "scope": "ALL",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 5
+   },
+   "p50": 6.0,
+   "p95": 7.8,
+   "p99": 7.8,
+   "max": 7.8
+  },
+  {
+   "phase": "normal",
+   "endpoint": "POST /reports/{code}/run",
+   "budget": "report-run",
+   "scope": "DEPT",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 20.6,
+   "p95": 127.3,
+   "p99": 127.3,
+   "max": 127.3
+  },
+  {
+   "phase": "normal",
+   "endpoint": "POST /reports/{code}/run",
+   "budget": "report-run",
+   "scope": "OWN",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 18
+   },
+   "p50": 20.2,
+   "p95": 361.4,
+   "p99": 361.4,
+   "max": 361.4
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Approval Inbox",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 3,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 3
+   },
+   "p50": 24.0,
+   "p95": 198.0,
+   "p99": 198.0,
+   "max": 198.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Approval Inbox",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 18
+   },
+   "p50": 30.0,
+   "p95": 197.0,
+   "p99": 197.0,
+   "max": 197.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Change Requests",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 3,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 3
+   },
+   "p50": 2002.0,
+   "p95": 2130.0,
+   "p99": 2130.0,
+   "max": 2130.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Change Requests",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 3,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 3
+   },
+   "p50": 179.0,
+   "p95": 1291.0,
+   "p99": 1291.0,
+   "max": 1291.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Change Requests",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 9
+   },
+   "p50": 33.0,
+   "p95": 38.0,
+   "p99": 38.0,
+   "max": 38.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 73.0,
+   "p95": 74.0,
+   "p99": 74.0,
+   "max": 74.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 5
+   },
+   "p50": 46.0,
+   "p95": 66.0,
+   "p99": 66.0,
+   "max": 66.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 7
+   },
+   "p50": 26.0,
+   "p95": 37.0,
+   "p99": 37.0,
+   "max": 37.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 15,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 15
+   },
+   "p50": 26.0,
+   "p95": 80.0,
+   "p99": 80.0,
+   "max": 80.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 40,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 40
+   },
+   "p50": 22.0,
+   "p95": 2214.0,
+   "p99": 2686.0,
+   "max": 2686.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 49,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 49
+   },
+   "p50": 101.0,
+   "p95": 205.0,
+   "p99": 227.0,
+   "max": 227.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "ENTITY",
+   "count": 19,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 19
+   },
+   "p50": 25.0,
+   "p95": 263.0,
+   "p99": 263.0,
+   "max": 263.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 40,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 40
+   },
+   "p50": 25.0,
+   "p95": 64.0,
+   "p99": 90.0,
+   "max": 90.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 1945.0,
+   "p95": 1980.0,
+   "p99": 1980.0,
+   "max": 1980.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 7
+   },
+   "p50": 211.0,
+   "p95": 1411.0,
+   "p99": 1411.0,
+   "max": 1411.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 9
+   },
+   "p50": 91.0,
+   "p95": 185.0,
+   "p99": 185.0,
+   "max": 185.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 22,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 22
+   },
+   "p50": 32.0,
+   "p95": 57.0,
+   "p99": 110.0,
+   "max": 110.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen My Projects",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 67,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 67
+   },
+   "p50": 20.0,
+   "p95": 42.0,
+   "p99": 76.0,
+   "max": 76.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 9
+   },
+   "p50": 16.0,
+   "p95": 48.0,
+   "p99": 48.0,
+   "max": 48.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 6
+   },
+   "p50": 25.0,
+   "p95": 61.0,
+   "p99": 61.0,
+   "max": 61.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 8
+   },
+   "p50": 15.0,
+   "p95": 40.0,
+   "p99": 40.0,
+   "max": 40.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 16,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 16
+   },
+   "p50": 21.0,
+   "p95": 42.0,
+   "p99": 42.0,
+   "max": 42.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Project Register",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 94.0,
+   "p95": 120.0,
+   "p99": 120.0,
+   "max": 120.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Project Register",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 18
+   },
+   "p50": 35.0,
+   "p95": 54.0,
+   "p99": 54.0,
+   "max": 54.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Project Register",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 10,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 10
+   },
+   "p50": 31.0,
+   "p95": 186.0,
+   "p99": 186.0,
+   "max": 186.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 46.0,
+   "p95": 54.0,
+   "p99": 54.0,
+   "max": 54.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 21,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 21
+   },
+   "p50": 33.0,
+   "p95": 46.0,
+   "p99": 49.0,
+   "max": 49.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "ENTITY",
+   "count": 30,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 30
+   },
+   "p50": 51.0,
+   "p95": 285.0,
+   "p99": 659.0,
+   "max": 659.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 60,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 60
+   },
+   "p50": 38.0,
+   "p95": 71.0,
+   "p99": 256.0,
+   "max": 256.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Report run",
+   "budget": "report-run",
+   "scope": "ALL",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 7
+   },
+   "p50": 23.0,
+   "p95": 46.0,
+   "p99": 46.0,
+   "max": 46.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Report run",
+   "budget": "report-run",
+   "scope": "DEPT",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 9
+   },
+   "p50": 105.0,
+   "p95": 241.0,
+   "p99": 241.0,
+   "max": 241.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Report run",
+   "budget": "report-run",
+   "scope": "OWN",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 18
+   },
+   "p50": 53.0,
+   "p95": 681.0,
+   "p99": 681.0,
+   "max": 681.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 13,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 13
+   },
+   "p50": 225.0,
+   "p95": 851.0,
+   "p99": 851.0,
+   "max": 851.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 11,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 11
+   },
+   "p50": 113.0,
+   "p95": 324.0,
+   "p99": 324.0,
+   "max": 324.0
+  },
+  {
+   "phase": "normal",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 34,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 34
+   },
+   "p50": 43.0,
+   "p95": 86.0,
+   "p99": 518.0,
+   "max": 518.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /approval-tasks",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 16,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 16
+   },
+   "p50": 31.3,
+   "p95": 95.2,
+   "p99": 95.2,
+   "max": 95.2
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /approval-tasks",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 44,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 44
+   },
+   "p50": 26.7,
+   "p95": 565.8,
+   "p99": 707.1,
+   "max": 707.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "ALL",
+   "count": 20,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 20
+   },
+   "p50": 2.2,
+   "p95": 19.4,
+   "p99": 123.1,
+   "max": 123.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "DEPT",
+   "count": 73,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 73
+   },
+   "p50": 3.5,
+   "p95": 31.4,
+   "p99": 51.5,
+   "max": 51.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "ENTITY",
+   "count": 87,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 87
+   },
+   "p50": 4.1,
+   "p95": 102.8,
+   "p99": 176.5,
+   "max": 176.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "OWN",
+   "count": 216,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 216
+   },
+   "p50": 3.3,
+   "p95": 65.5,
+   "p99": 103.3,
+   "max": 230.4
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /change-requests?projectId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 20020,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 20020
+   },
+   "p50": 5.5,
+   "p95": 88.4,
+   "p99": 226.8,
+   "max": 1142.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /change-requests?projectId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 3740,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 3740
+   },
+   "p50": 5.8,
+   "p95": 102.7,
+   "p99": 203.6,
+   "max": 500.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /change-requests?projectId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 564,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 564
+   },
+   "p50": 7.0,
+   "p95": 83.8,
+   "p99": 164.3,
+   "max": 207.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 64,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 64
+   },
+   "p50": 10.0,
+   "p95": 82.3,
+   "p99": 248.3,
+   "max": 248.3
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 181,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 181
+   },
+   "p50": 11.1,
+   "p95": 256.2,
+   "p99": 899.5,
+   "max": 954.6
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 155,
+   "errors": 0,
+   "denied": 155,
+   "statuses": {
+    "403": 155
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 480,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 480
+   },
+   "p50": 12.9,
+   "p95": 281.3,
+   "p99": 531.8,
+   "max": 1639.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 301,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 301
+   },
+   "p50": 5.9,
+   "p95": 100.8,
+   "p99": 294.4,
+   "max": 917.4
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 120,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 120
+   },
+   "p50": 5.2,
+   "p95": 70.7,
+   "p99": 161.4,
+   "max": 226.3
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 60,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 60
+   },
+   "p50": 5.3,
+   "p95": 130.0,
+   "p99": 214.0,
+   "max": 214.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 154,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 154
+   },
+   "p50": 5.1,
+   "p95": 129.6,
+   "p99": 850.7,
+   "max": 1038.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards/{code}",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 301,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 301
+   },
+   "p50": 11.9,
+   "p95": 3678.1,
+   "p99": 39004.1,
+   "max": 43838.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards/{code}",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 120,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 120
+   },
+   "p50": 147.6,
+   "p95": 1472.9,
+   "p99": 3137.7,
+   "max": 3225.6
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards/{code}",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 154,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 154
+   },
+   "p50": 28.1,
+   "p95": 689.2,
+   "p99": 1199.8,
+   "max": 1670.6
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 20,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 20
+   },
+   "p50": 27.5,
+   "p95": 423.3,
+   "p99": 990.7,
+   "max": 990.7
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 73,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 73
+   },
+   "p50": 21.1,
+   "p95": 288.1,
+   "p99": 953.3,
+   "max": 953.3
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "ENTITY",
+   "count": 87,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 87
+   },
+   "p50": 37.2,
+   "p95": 935.2,
+   "p99": 1842.8,
+   "max": 1842.8
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 216,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 216
+   },
+   "p50": 34.5,
+   "p95": 906.0,
+   "p99": 2258.8,
+   "max": 2867.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 353,
+   "errors": 0,
+   "denied": 258,
+   "statuses": {
+    "200": 95,
+    "403": 258
+   },
+   "p50": 3.6,
+   "p95": 18.7,
+   "p99": 36.0,
+   "max": 36.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 264,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 264
+   },
+   "p50": 4.1,
+   "p95": 72.1,
+   "p99": 189.0,
+   "max": 293.7
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 183,
+   "errors": 0,
+   "denied": 183,
+   "statuses": {
+    "403": 183
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 545,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 545
+   },
+   "p50": 4.7,
+   "p95": 76.0,
+   "p99": 242.8,
+   "max": 388.9
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 10,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 10
+   },
+   "p50": 16.5,
+   "p95": 162.9,
+   "p99": 162.9,
+   "max": 162.9
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 22,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 22
+   },
+   "p50": 18.9,
+   "p95": 345.9,
+   "p99": 346.4,
+   "max": 346.4
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 35,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 35
+   },
+   "p50": 22.8,
+   "p95": 345.9,
+   "p99": 871.8,
+   "max": 871.8
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 98,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 98
+   },
+   "p50": 20.3,
+   "p95": 338.9,
+   "p99": 584.2,
+   "max": 584.2
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 53,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 53
+   },
+   "p50": 4.2,
+   "p95": 26.7,
+   "p99": 56.4,
+   "max": 56.4
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 143,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 143
+   },
+   "p50": 4.9,
+   "p95": 93.2,
+   "p99": 132.8,
+   "max": 173.9
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 123,
+   "errors": 0,
+   "denied": 123,
+   "statuses": {
+    "403": 123
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 391,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 391
+   },
+   "p50": 5.1,
+   "p95": 79.5,
+   "p99": 248.5,
+   "max": 365.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 28600,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 28600
+   },
+   "p50": 4.9,
+   "p95": 58.3,
+   "p99": 177.4,
+   "max": 716.3
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 4850,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 4850
+   },
+   "p50": 10.1,
+   "p95": 75.9,
+   "p99": 195.8,
+   "max": 400.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 2492,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2492
+   },
+   "p50": 8.9,
+   "p95": 129.4,
+   "p99": 362.9,
+   "max": 820.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 1741,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1741
+   },
+   "p50": 8.3,
+   "p95": 108.7,
+   "p99": 238.1,
+   "max": 710.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 84,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 84
+   },
+   "p50": 3.0,
+   "p95": 19.7,
+   "p99": 181.0,
+   "max": 181.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 225,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 225
+   },
+   "p50": 3.3,
+   "p95": 46.8,
+   "p99": 99.4,
+   "max": 174.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 225,
+   "errors": 0,
+   "denied": 225,
+   "statuses": {
+    "403": 225
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 671,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 671
+   },
+   "p50": 3.9,
+   "p95": 57.5,
+   "p99": 204.5,
+   "max": 961.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /master-data-items?catalogueId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 304,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 304
+   },
+   "p50": 3.9,
+   "p95": 30.7,
+   "p99": 190.6,
+   "max": 192.6
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /master-data-items?catalogueId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 802,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 802
+   },
+   "p50": 4.8,
+   "p95": 74.8,
+   "p99": 168.7,
+   "max": 370.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /master-data-items?catalogueId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 2408,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2408
+   },
+   "p50": 5.1,
+   "p95": 79.9,
+   "p99": 180.5,
+   "max": 393.8
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 65,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 65
+   },
+   "p50": 23.6,
+   "p95": 242.2,
+   "p99": 305.2,
+   "max": 305.2
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 22,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 22
+   },
+   "p50": 21.1,
+   "p95": 750.4,
+   "p99": 1783.3,
+   "max": 1783.3
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 40,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 40
+   },
+   "p50": 16.8,
+   "p95": 232.6,
+   "p99": 337.8,
+   "max": 337.8
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 46,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 46
+   },
+   "p50": 18.9,
+   "p95": 583.2,
+   "p99": 949.4,
+   "max": 949.4
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 65,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 65
+   },
+   "p50": 38.1,
+   "p95": 272.4,
+   "p99": 561.9,
+   "max": 561.9
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 22,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 22
+   },
+   "p50": 53.4,
+   "p95": 771.9,
+   "p99": 1393.0,
+   "max": 1393.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 40,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 40
+   },
+   "p50": 30.7,
+   "p95": 233.8,
+   "p99": 390.2,
+   "max": 390.2
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 46,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 46
+   },
+   "p50": 35.3,
+   "p95": 596.8,
+   "p99": 708.1,
+   "max": 708.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "ALL",
+   "count": 197,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 197
+   },
+   "p50": 16.0,
+   "p95": 199.9,
+   "p99": 849.1,
+   "max": 897.9
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "DEPT",
+   "count": 157,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 157
+   },
+   "p50": 19.2,
+   "p95": 277.5,
+   "p99": 581.1,
+   "max": 1304.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "ENTITY",
+   "count": 110,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 110
+   },
+   "p50": 20.7,
+   "p95": 239.6,
+   "p99": 421.8,
+   "max": 608.6
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "OWN",
+   "count": 314,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 314
+   },
+   "p50": 16.1,
+   "p95": 165.1,
+   "p99": 406.5,
+   "max": 777.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 25,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 25
+   },
+   "p50": 8.2,
+   "p95": 14.6,
+   "p99": 25.5,
+   "max": 25.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 52,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 52
+   },
+   "p50": 6.4,
+   "p95": 93.9,
+   "p99": 149.1,
+   "max": 149.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 84,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 84
+   },
+   "p50": 5.7,
+   "p95": 76.6,
+   "p99": 242.0,
+   "max": 242.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 2.7,
+   "p95": 2.7,
+   "p99": 2.7,
+   "max": 2.7
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 20,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 20
+   },
+   "p50": 3.8,
+   "p95": 21.5,
+   "p99": 135.4,
+   "max": 135.4
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 73,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 73
+   },
+   "p50": 5.4,
+   "p95": 90.1,
+   "p99": 187.2,
+   "max": 187.2
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 87,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 87
+   },
+   "p50": 5.8,
+   "p95": 162.3,
+   "p99": 401.6,
+   "max": 401.6
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 216,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 216
+   },
+   "p50": 5.2,
+   "p95": 127.2,
+   "p99": 284.8,
+   "max": 989.2
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects?projectManagerUserId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 175,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 175
+   },
+   "p50": 7.6,
+   "p95": 101.3,
+   "p99": 212.6,
+   "max": 363.2
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 429,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 429
+   },
+   "p50": 7.0,
+   "p95": 39.6,
+   "p99": 96.0,
+   "max": 141.8
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 172,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 172
+   },
+   "p50": 7.7,
+   "p95": 156.7,
+   "p99": 303.6,
+   "max": 414.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 80,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 80
+   },
+   "p50": 9.8,
+   "p95": 230.9,
+   "p99": 602.7,
+   "max": 602.7
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 212,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 212
+   },
+   "p50": 7.2,
+   "p95": 96.0,
+   "p99": 214.2,
+   "max": 318.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /report-jobs",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 67,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 67
+   },
+   "p50": 3.2,
+   "p95": 30.9,
+   "p99": 314.7,
+   "max": 314.7
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /report-jobs",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 28,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 28
+   },
+   "p50": 3.5,
+   "p95": 59.2,
+   "p99": 158.3,
+   "max": 158.3
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /report-jobs",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 39,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 39
+   },
+   "p50": 4.1,
+   "p95": 119.4,
+   "p99": 302.0,
+   "max": 302.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /report-jobs/{id}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 11.3,
+   "p95": 17.1,
+   "p99": 17.1,
+   "max": 17.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /report-jobs/{id}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 10,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 10
+   },
+   "p50": 11.3,
+   "p95": 41.5,
+   "p99": 41.5,
+   "max": 41.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /report-jobs/{id}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 20,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 20
+   },
+   "p50": 7.6,
+   "p95": 43.1,
+   "p99": 82.0,
+   "max": 82.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /report-jobs/{id}/content",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 3,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 3
+   },
+   "p50": 72.1,
+   "p95": 3402.8,
+   "p99": 3402.8,
+   "max": 3402.8
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /report-jobs/{id}/content",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 5
+   },
+   "p50": 25.2,
+   "p95": 636.9,
+   "p99": 636.9,
+   "max": 636.9
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /report-jobs/{id}/content",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 11,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 11
+   },
+   "p50": 90.6,
+   "p95": 401.3,
+   "p99": 401.3,
+   "max": 401.3
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /reports",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 67,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 67
+   },
+   "p50": 30.0,
+   "p95": 434.0,
+   "p99": 645.1,
+   "max": 645.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /reports",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 28,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 28
+   },
+   "p50": 27.5,
+   "p95": 562.8,
+   "p99": 1005.7,
+   "max": 1005.7
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /reports",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 39,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 39
+   },
+   "p50": 28.7,
+   "p95": 761.9,
+   "p99": 873.6,
+   "max": 873.6
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /reports/{code}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 67,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 67
+   },
+   "p50": 11.8,
+   "p95": 629.0,
+   "p99": 2789.0,
+   "max": 2789.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /reports/{code}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 28,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 28
+   },
+   "p50": 38.9,
+   "p95": 1014.1,
+   "p99": 5567.5,
+   "max": 5567.5
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /reports/{code}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 39,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 39
+   },
+   "p50": 26.5,
+   "p95": 578.8,
+   "p99": 1077.8,
+   "max": 1077.8
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 31460,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 31460
+   },
+   "p50": 9.5,
+   "p95": 92.7,
+   "p99": 234.3,
+   "max": 871.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 8382,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8382
+   },
+   "p50": 7.0,
+   "p95": 101.4,
+   "p99": 249.5,
+   "max": 676.7
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 2313,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2313
+   },
+   "p50": 9.9,
+   "p95": 212.9,
+   "p99": 432.0,
+   "max": 1302.4
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 1669,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1669
+   },
+   "p50": 12.3,
+   "p95": 167.7,
+   "p99": 360.5,
+   "max": 1212.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /roles",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 16,
+   "errors": 0,
+   "denied": 16,
+   "statuses": {
+    "403": 16
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /roles",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 44,
+   "errors": 0,
+   "denied": 44,
+   "statuses": {
+    "403": 44
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /users/{id}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 1095,
+   "errors": 0,
+   "denied": 1095,
+   "statuses": {
+    "403": 1095
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "peak",
+   "endpoint": "GET /users/{id}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 2356,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2356
+   },
+   "p50": 5.2,
+   "p95": 79.5,
+   "p99": 229.4,
+   "max": 1011.9
+  },
+  {
+   "phase": "peak",
+   "endpoint": "POST /reports/{code}/export",
+   "budget": "report-export",
+   "scope": "ALL",
+   "count": 3,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "202": 3
+   },
+   "p50": 15.1,
+   "p95": 18.0,
+   "p99": 18.0,
+   "max": 18.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "POST /reports/{code}/export",
+   "budget": "report-export",
+   "scope": "DEPT",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "202": 5
+   },
+   "p50": 68.7,
+   "p95": 571.3,
+   "p99": 571.3,
+   "max": 571.3
+  },
+  {
+   "phase": "peak",
+   "endpoint": "POST /reports/{code}/export",
+   "budget": "report-export",
+   "scope": "OWN",
+   "count": 12,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "202": 12
+   },
+   "p50": 28.9,
+   "p95": 446.7,
+   "p99": 446.7,
+   "max": 446.7
+  },
+  {
+   "phase": "peak",
+   "endpoint": "POST /reports/{code}/run",
+   "budget": "report-run",
+   "scope": "ALL",
+   "count": 54,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 54
+   },
+   "p50": 17.9,
+   "p95": 3526.4,
+   "p99": 11845.7,
+   "max": 11845.7
+  },
+  {
+   "phase": "peak",
+   "endpoint": "POST /reports/{code}/run",
+   "budget": "report-run",
+   "scope": "DEPT",
+   "count": 28,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 28
+   },
+   "p50": 50.5,
+   "p95": 1181.2,
+   "p99": 1384.9,
+   "max": 1384.9
+  },
+  {
+   "phase": "peak",
+   "endpoint": "POST /reports/{code}/run",
+   "budget": "report-run",
+   "scope": "OWN",
+   "count": 39,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 39
+   },
+   "p50": 41.6,
+   "p95": 1158.5,
+   "p99": 1917.3,
+   "max": 1917.3
+  },
+  {
+   "phase": "peak",
+   "endpoint": "POST /sessions/current/refresh",
+   "budget": "sign-in",
+   "scope": "",
+   "count": 50,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 50
+   },
+   "p50": 221.8,
+   "p95": 1051.3,
+   "p99": 1725.1,
+   "max": 1725.1
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Approval Inbox",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 16,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 16
+   },
+   "p50": 45.0,
+   "p95": 213.0,
+   "p99": 213.0,
+   "max": 213.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Approval Inbox",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 44,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 44
+   },
+   "p50": 44.0,
+   "p95": 992.0,
+   "p99": 2273.0,
+   "max": 2273.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Change Requests",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 7
+   },
+   "p50": 3996.0,
+   "p95": 40603.0,
+   "p99": 40603.0,
+   "max": 40603.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Change Requests",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 17,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 17
+   },
+   "p50": 287.0,
+   "p95": 6348.0,
+   "p99": 6348.0,
+   "max": 6348.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Change Requests",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 30,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 30
+   },
+   "p50": 30.0,
+   "p95": 602.0,
+   "p99": 635.0,
+   "max": 635.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 10,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 10
+   },
+   "p50": 115.0,
+   "p95": 680.0,
+   "p99": 680.0,
+   "max": 680.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 22,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 22
+   },
+   "p50": 58.0,
+   "p95": 1077.0,
+   "p99": 1529.0,
+   "max": 1529.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 35,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 35
+   },
+   "p50": 45.0,
+   "p95": 789.0,
+   "p99": 1411.0,
+   "max": 1411.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 98,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 98
+   },
+   "p50": 31.0,
+   "p95": 607.0,
+   "p99": 939.0,
+   "max": 939.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 300,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 300
+   },
+   "p50": 43.0,
+   "p95": 3636.0,
+   "p99": 39057.0,
+   "max": 43915.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 121,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 121
+   },
+   "p50": 159.0,
+   "p95": 1768.0,
+   "p99": 3358.0,
+   "max": 3413.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "ENTITY",
+   "count": 60,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 60
+   },
+   "p50": 27.0,
+   "p95": 519.0,
+   "p99": 932.0,
+   "max": 932.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 154,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 154
+   },
+   "p50": 37.0,
+   "p95": 955.0,
+   "p99": 1882.0,
+   "max": 2340.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 10,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 10
+   },
+   "p50": 2867.0,
+   "p95": 46731.0,
+   "p99": 46731.0,
+   "max": 46731.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 22,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 22
+   },
+   "p50": 607.0,
+   "p95": 3012.0,
+   "p99": 5855.0,
+   "max": 5855.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 35,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 35
+   },
+   "p50": 165.0,
+   "p95": 3174.0,
+   "p99": 4079.0,
+   "max": 4079.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 93,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 93
+   },
+   "p50": 55.0,
+   "p95": 740.0,
+   "p99": 2428.0,
+   "max": 2428.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen My Projects",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 175,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 175
+   },
+   "p50": 36.0,
+   "p95": 524.0,
+   "p99": 889.0,
+   "max": 944.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 65,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 65
+   },
+   "p50": 40.0,
+   "p95": 294.0,
+   "p99": 574.0,
+   "max": 574.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 22,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 22
+   },
+   "p50": 64.0,
+   "p95": 775.0,
+   "p99": 1804.0,
+   "max": 1804.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 40,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 40
+   },
+   "p50": 32.0,
+   "p95": 263.0,
+   "p99": 391.0,
+   "max": 391.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 46,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 46
+   },
+   "p50": 39.0,
+   "p95": 657.0,
+   "p99": 959.0,
+   "max": 959.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Project Register",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 33,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 33
+   },
+   "p50": 115.0,
+   "p95": 846.0,
+   "p99": 3666.0,
+   "max": 3666.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Project Register",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 70,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 70
+   },
+   "p50": 83.0,
+   "p95": 1193.0,
+   "p99": 2874.0,
+   "max": 2874.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Project Register",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 36,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 36
+   },
+   "p50": 44.0,
+   "p95": 823.0,
+   "p99": 1678.0,
+   "max": 1678.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 20,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 20
+   },
+   "p50": 65.0,
+   "p95": 970.0,
+   "p99": 2091.0,
+   "max": 2091.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 73,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 73
+   },
+   "p50": 58.0,
+   "p95": 919.0,
+   "p99": 1720.0,
+   "max": 1720.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "ENTITY",
+   "count": 86,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 86
+   },
+   "p50": 93.0,
+   "p95": 1918.0,
+   "p99": 3779.0,
+   "max": 3779.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 216,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 216
+   },
+   "p50": 69.0,
+   "p95": 1570.0,
+   "p99": 3340.0,
+   "max": 3543.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Report run",
+   "budget": "report-run",
+   "scope": "ALL",
+   "count": 67,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 67
+   },
+   "p50": 66.0,
+   "p95": 3943.0,
+   "p99": 14250.0,
+   "max": 14250.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Report run",
+   "budget": "report-run",
+   "scope": "DEPT",
+   "count": 28,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 28
+   },
+   "p50": 159.0,
+   "p95": 3140.0,
+   "p99": 7053.0,
+   "max": 7053.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Report run",
+   "budget": "report-run",
+   "scope": "OWN",
+   "count": 39,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 39
+   },
+   "p50": 90.0,
+   "p95": 3038.0,
+   "p99": 3557.0,
+   "max": 3557.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 11,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 11
+   },
+   "p50": 6223.0,
+   "p95": 51094.0,
+   "p99": 51094.0,
+   "max": 51094.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 38,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 38
+   },
+   "p50": 342.0,
+   "p95": 6269.0,
+   "p99": 8659.0,
+   "max": 8659.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 32,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 32
+   },
+   "p50": 161.0,
+   "p95": 4388.0,
+   "p99": 5137.0,
+   "max": 5137.0
+  },
+  {
+   "phase": "peak",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 89,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 89
+   },
+   "p50": 84.0,
+   "p95": 1253.0,
+   "p99": 3407.0,
+   "max": 3407.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /approval-tasks",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 56.6,
+   "p95": 63.4,
+   "p99": 63.4,
+   "max": 63.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /approval-tasks",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 3,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 3
+   },
+   "p50": 38.8,
+   "p95": 223.6,
+   "p99": 223.6,
+   "max": 223.6
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "ALL",
+   "count": 15,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 15
+   },
+   "p50": 3.7,
+   "p95": 10.4,
+   "p99": 10.4,
+   "max": 10.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "DEPT",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 18
+   },
+   "p50": 2.7,
+   "p95": 12.0,
+   "p99": 12.0,
+   "max": 12.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "ENTITY",
+   "count": 16,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 16
+   },
+   "p50": 2.6,
+   "p95": 131.9,
+   "p99": 131.9,
+   "max": 131.9
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /audit-access",
+   "budget": "shell",
+   "scope": "OWN",
+   "count": 50,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 50
+   },
+   "p50": 2.5,
+   "p95": 8.8,
+   "p99": 51.6,
+   "max": 51.6
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /change-requests?projectId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2860,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2860
+   },
+   "p50": 3.8,
+   "p95": 7.5,
+   "p99": 12.8,
+   "max": 37.3
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /change-requests?projectId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 883,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 883
+   },
+   "p50": 4.5,
+   "p95": 9.1,
+   "p99": 13.2,
+   "max": 23.6
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /change-requests?projectId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 93,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 93
+   },
+   "p50": 4.8,
+   "p95": 51.1,
+   "p99": 51.5,
+   "max": 51.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 4,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 4
+   },
+   "p50": 6.4,
+   "p95": 74.4,
+   "p99": 74.4,
+   "max": 74.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 17,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 17
+   },
+   "p50": 11.1,
+   "p95": 88.4,
+   "p99": 88.4,
+   "max": 88.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 19,
+   "errors": 0,
+   "denied": 19,
+   "statuses": {
+    "403": 19
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /configuration-resolutions/{family}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 48,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 48
+   },
+   "p50": 7.1,
+   "p95": 98.8,
+   "p99": 111.4,
+   "max": 111.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 27,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 27
+   },
+   "p50": 5.8,
+   "p95": 43.8,
+   "p99": 90.9,
+   "max": 90.9
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 6.9,
+   "p95": 52.8,
+   "p99": 52.8,
+   "max": 52.8
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 4.2,
+   "p95": 40.0,
+   "p99": 40.0,
+   "max": 40.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 13,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 13
+   },
+   "p50": 5.6,
+   "p95": 195.0,
+   "p99": 195.0,
+   "max": 195.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards/{code}",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 27,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 27
+   },
+   "p50": 7.9,
+   "p95": 158.3,
+   "p99": 2230.8,
+   "max": 2230.8
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards/{code}",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 122.2,
+   "p95": 872.4,
+   "p99": 872.4,
+   "max": 872.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards/{code}",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 13,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 13
+   },
+   "p50": 23.8,
+   "p95": 207.3,
+   "p99": 207.3,
+   "max": 207.3
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 14.9,
+   "p95": 337.9,
+   "p99": 337.9,
+   "max": 337.9
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8
+   },
+   "p50": 10.7,
+   "p95": 129.2,
+   "p99": 129.2,
+   "max": 129.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "ENTITY",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 32.8,
+   "p95": 340.7,
+   "p99": 340.7,
+   "max": 340.7
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /dashboards/{code}?projectId",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 31,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 31
+   },
+   "p50": 18.8,
+   "p95": 270.9,
+   "p99": 462.5,
+   "max": 462.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 32,
+   "errors": 0,
+   "denied": 26,
+   "statuses": {
+    "200": 6,
+    "403": 26
+   },
+   "p50": 2.6,
+   "p95": 29.4,
+   "p99": 29.4,
+   "max": 29.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 23,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 23
+   },
+   "p50": 4.6,
+   "p95": 21.6,
+   "p99": 23.4,
+   "max": 23.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 23,
+   "errors": 0,
+   "denied": 23,
+   "statuses": {
+    "403": 23
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /departments",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 56,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 56
+   },
+   "p50": 2.9,
+   "p95": 35.1,
+   "p99": 42.7,
+   "max": 42.7
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 42.4,
+   "p95": 42.4,
+   "p99": 42.4,
+   "max": 42.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 4,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 4
+   },
+   "p50": 12.7,
+   "p95": 64.4,
+   "p99": 64.4,
+   "max": 64.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 5
+   },
+   "p50": 14.7,
+   "p95": 33.0,
+   "p99": 33.0,
+   "max": 33.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /documents",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 12.6,
+   "p95": 180.2,
+   "p99": 180.2,
+   "max": 180.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 4,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 4
+   },
+   "p50": 2.7,
+   "p95": 27.4,
+   "p99": 27.4,
+   "max": 27.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 15,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 15
+   },
+   "p50": 5.1,
+   "p95": 38.1,
+   "p99": 38.1,
+   "max": 38.1
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 17,
+   "errors": 0,
+   "denied": 17,
+   "statuses": {
+    "403": 17
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /external-entities",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 43,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 43
+   },
+   "p50": 3.0,
+   "p95": 15.3,
+   "p99": 35.5,
+   "max": 35.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 8580,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8580
+   },
+   "p50": 3.8,
+   "p95": 7.9,
+   "p99": 12.7,
+   "max": 43.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 442,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 442
+   },
+   "p50": 4.1,
+   "p95": 6.1,
+   "p99": 7.5,
+   "max": 8.1
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 74,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 74
+   },
+   "p50": 4.0,
+   "p95": 5.1,
+   "p99": 5.5,
+   "max": 5.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /management-concerns?projectId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 114,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 114
+   },
+   "p50": 6.6,
+   "p95": 42.5,
+   "p99": 50.7,
+   "max": 51.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8
+   },
+   "p50": 2.2,
+   "p95": 8.9,
+   "p99": 8.9,
+   "max": 8.9
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 23,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 23
+   },
+   "p50": 2.8,
+   "p95": 14.0,
+   "p99": 36.1,
+   "max": 36.1
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 25,
+   "errors": 0,
+   "denied": 25,
+   "statuses": {
+    "403": 25
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /master-data-catalogues",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 60,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 60
+   },
+   "p50": 2.7,
+   "p95": 14.8,
+   "p99": 25.7,
+   "max": 25.7
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /master-data-items?catalogueId",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 31,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 31
+   },
+   "p50": 2.8,
+   "p95": 25.1,
+   "p99": 29.3,
+   "max": 29.3
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /master-data-items?catalogueId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 84,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 84
+   },
+   "p50": 3.8,
+   "p95": 36.6,
+   "p99": 39.2,
+   "max": 39.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /master-data-items?catalogueId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 224,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 224
+   },
+   "p50": 3.4,
+   "p95": 21.1,
+   "p99": 36.6,
+   "max": 40.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 11.4,
+   "p95": 20.6,
+   "p99": 20.6,
+   "max": 20.6
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 9.2,
+   "p95": 9.2,
+   "p99": 9.2,
+   "max": 9.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notification-preferences",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 7
+   },
+   "p50": 20.1,
+   "p95": 256.4,
+   "p99": 256.4,
+   "max": 256.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 30.6,
+   "p95": 33.7,
+   "p99": 33.7,
+   "max": 33.7
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 13.2,
+   "p95": 13.2,
+   "p99": 13.2,
+   "max": 13.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notifications",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 7
+   },
+   "p50": 40.0,
+   "p95": 402.0,
+   "p99": 402.0,
+   "max": 402.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "ALL",
+   "count": 18,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 18
+   },
+   "p50": 17.0,
+   "p95": 251.6,
+   "p99": 251.6,
+   "max": 251.6
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "DEPT",
+   "count": 20,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 20
+   },
+   "p50": 17.6,
+   "p95": 56.1,
+   "p99": 267.8,
+   "max": 267.8
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "ENTITY",
+   "count": 13,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 13
+   },
+   "p50": 23.9,
+   "p95": 120.4,
+   "p99": 120.4,
+   "max": 120.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /notifications/unread-count",
+   "budget": "shell",
+   "scope": "OWN",
+   "count": 42,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 42
+   },
+   "p50": 13.3,
+   "p95": 83.1,
+   "p99": 159.5,
+   "max": 159.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 5.3,
+   "p95": 5.3,
+   "p99": 5.3,
+   "max": 5.3
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 7.0,
+   "p95": 37.6,
+   "p99": 37.6,
+   "max": 37.6
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 15,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 15
+   },
+   "p50": 8.7,
+   "p95": 42.5,
+   "p99": 42.5,
+   "max": 42.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8
+   },
+   "p50": 4.2,
+   "p95": 12.0,
+   "p99": 12.0,
+   "max": 12.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 5.5,
+   "p95": 130.2,
+   "p99": 130.2,
+   "max": 130.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 8
+   },
+   "p50": 3.3,
+   "p95": 49.9,
+   "p99": 49.9,
+   "max": 49.9
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 9,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 9
+   },
+   "p50": 10.3,
+   "p95": 64.8,
+   "p99": 64.8,
+   "max": 64.8
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects/{id}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 31,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 31
+   },
+   "p50": 3.1,
+   "p95": 24.6,
+   "p99": 30.5,
+   "max": 30.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects?projectManagerUserId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 12,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 12
+   },
+   "p50": 7.7,
+   "p95": 59.5,
+   "p99": 59.5,
+   "max": 59.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 61,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 61
+   },
+   "p50": 4.5,
+   "p95": 8.7,
+   "p99": 17.2,
+   "max": 17.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 17,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 17
+   },
+   "p50": 4.8,
+   "p95": 28.2,
+   "p99": 28.2,
+   "max": 28.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 5
+   },
+   "p50": 8.0,
+   "p95": 10.2,
+   "p99": 10.2,
+   "max": 10.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /projects?status",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 16,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 16
+   },
+   "p50": 6.2,
+   "p95": 58.3,
+   "p99": 58.3,
+   "max": 58.3
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /report-jobs",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 1.4,
+   "p95": 13.7,
+   "p99": 13.7,
+   "max": 13.7
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /report-jobs",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 2.6,
+   "p95": 18.2,
+   "p99": 18.2,
+   "max": 18.2
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /report-jobs",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 5.4,
+   "p95": 5.4,
+   "p99": 5.4,
+   "max": 5.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /report-jobs/{id}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 4,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 4
+   },
+   "p50": 7.8,
+   "p95": 51.6,
+   "p99": 51.6,
+   "max": 51.6
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /report-jobs/{id}/content",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 2
+   },
+   "p50": 15.2,
+   "p95": 461.9,
+   "p99": 461.9,
+   "max": 461.9
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /reports",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 13.1,
+   "p95": 155.5,
+   "p99": 155.5,
+   "max": 155.5
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /reports",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 25.9,
+   "p95": 138.3,
+   "p99": 138.3,
+   "max": 138.3
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /reports",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 15.3,
+   "p95": 15.3,
+   "p99": 15.3,
+   "max": 15.3
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /reports/{code}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 4.8,
+   "p95": 48.4,
+   "p99": 48.4,
+   "max": 48.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /reports/{code}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 56.9,
+   "p95": 190.4,
+   "p99": 190.4,
+   "max": 190.4
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /reports/{code}",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 44.7,
+   "p95": 44.7,
+   "p99": 44.7,
+   "max": 44.7
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 445,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 445
+   },
+   "p50": 14.0,
+   "p95": 101.1,
+   "p99": 160.9,
+   "max": 204.7
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 146,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 146
+   },
+   "p50": 6.0,
+   "p95": 9.6,
+   "p99": 29.9,
+   "max": 30.1
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /risks?projectId",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 94,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 94
+   },
+   "p50": 10.2,
+   "p95": 36.8,
+   "p99": 39.1,
+   "max": 39.1
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /roles",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 2,
+   "statuses": {
+    "403": 2
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /roles",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 3,
+   "errors": 0,
+   "denied": 3,
+   "statuses": {
+    "403": 3
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /users/{id}",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 77,
+   "errors": 0,
+   "denied": 77,
+   "statuses": {
+    "403": 77
+   },
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "GET /users/{id}",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 281,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 281
+   },
+   "p50": 3.7,
+   "p95": 13.3,
+   "p99": 21.9,
+   "max": 26.7
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "POST /reports/{code}/export",
+   "budget": "report-export",
+   "scope": "OWN",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "202": 1
+   },
+   "p50": 36.6,
+   "p95": 36.6,
+   "p99": 36.6,
+   "max": 36.6
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "POST /reports/{code}/run",
+   "budget": "report-run",
+   "scope": "ALL",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 5
+   },
+   "p50": 4.8,
+   "p95": 26.1,
+   "p99": 26.1,
+   "max": 26.1
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "POST /reports/{code}/run",
+   "budget": "report-run",
+   "scope": "DEPT",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 6
+   },
+   "p50": 74.3,
+   "p95": 322.8,
+   "p99": 322.8,
+   "max": 322.8
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "POST /reports/{code}/run",
+   "budget": "report-run",
+   "scope": "OWN",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "200": 1
+   },
+   "p50": 15.9,
+   "p95": 15.9,
+   "p99": 15.9,
+   "max": 15.9
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Approval Inbox",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 71.0,
+   "p95": 74.0,
+   "p99": 74.0,
+   "max": 74.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Approval Inbox",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 3,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 3
+   },
+   "p50": 53.0,
+   "p95": 358.0,
+   "p99": 358.0,
+   "max": 358.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Change Requests",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 1
+   },
+   "p50": 2659.0,
+   "p95": 2659.0,
+   "p99": 2659.0,
+   "max": 2659.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Change Requests",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 4,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 4
+   },
+   "p50": 225.0,
+   "p95": 333.0,
+   "p99": 333.0,
+   "max": 333.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Change Requests",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 5
+   },
+   "p50": 24.0,
+   "p95": 118.0,
+   "p99": 118.0,
+   "max": 118.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 1
+   },
+   "p50": 424.0,
+   "p95": 424.0,
+   "p99": 424.0,
+   "max": 424.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 4,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 4
+   },
+   "p50": 47.0,
+   "p95": 159.0,
+   "p99": 159.0,
+   "max": 159.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 5
+   },
+   "p50": 28.0,
+   "p95": 56.0,
+   "p99": 56.0,
+   "max": 56.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Document Library",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 6
+   },
+   "p50": 18.0,
+   "p95": 249.0,
+   "p99": 249.0,
+   "max": 249.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 28,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 28
+   },
+   "p50": 33.0,
+   "p95": 2235.0,
+   "p99": 12450.0,
+   "max": 12450.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 8
+   },
+   "p50": 129.0,
+   "p95": 963.0,
+   "p99": 963.0,
+   "max": 963.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "ENTITY",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 6
+   },
+   "p50": 26.0,
+   "p95": 394.0,
+   "p99": 394.0,
+   "max": 394.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Home dashboard",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 13,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 13
+   },
+   "p50": 38.0,
+   "p95": 439.0,
+   "p99": 439.0,
+   "max": 439.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 3,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 3
+   },
+   "p50": 2126.0,
+   "p95": 3471.0,
+   "p99": 3471.0,
+   "max": 3471.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 166.0,
+   "p95": 242.0,
+   "p99": 242.0,
+   "max": 242.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 1
+   },
+   "p50": 70.0,
+   "p95": 70.0,
+   "p99": 70.0,
+   "max": 70.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Issue Register",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 6
+   },
+   "p50": 45.0,
+   "p95": 234.0,
+   "p99": 234.0,
+   "max": 234.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen My Projects",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 12,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 12
+   },
+   "p50": 24.0,
+   "p95": 218.0,
+   "p99": 218.0,
+   "max": 218.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 32.0,
+   "p95": 34.0,
+   "p99": 34.0,
+   "max": 34.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 1
+   },
+   "p50": 14.0,
+   "p95": 14.0,
+   "p99": 14.0,
+   "max": 14.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Notifications",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 7
+   },
+   "p50": 42.0,
+   "p95": 424.0,
+   "p99": 424.0,
+   "max": 424.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Project Register",
+   "budget": "register",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 73.0,
+   "p95": 99.0,
+   "p99": 99.0,
+   "max": 99.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Project Register",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 7,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 7
+   },
+   "p50": 68.0,
+   "p95": 302.0,
+   "p99": 302.0,
+   "max": 302.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Project Register",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 8
+   },
+   "p50": 35.0,
+   "p95": 54.0,
+   "p99": 54.0,
+   "max": 54.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "ALL",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 43.0,
+   "p95": 741.0,
+   "p99": 741.0,
+   "max": 741.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "DEPT",
+   "count": 8,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 8
+   },
+   "p50": 46.0,
+   "p95": 308.0,
+   "p99": 308.0,
+   "max": 308.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "ENTITY",
+   "count": 10,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 10
+   },
+   "p50": 106.0,
+   "p95": 672.0,
+   "p99": 672.0,
+   "max": 672.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Project workspace",
+   "budget": "dashboard",
+   "scope": "OWN",
+   "count": 31,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 31
+   },
+   "p50": 40.0,
+   "p95": 451.0,
+   "p99": 663.0,
+   "max": 663.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Report run",
+   "budget": "report-run",
+   "scope": "ALL",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 6
+   },
+   "p50": 24.0,
+   "p95": 220.0,
+   "p99": 220.0,
+   "max": 220.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Report run",
+   "budget": "report-run",
+   "scope": "DEPT",
+   "count": 6,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 6
+   },
+   "p50": 173.0,
+   "p95": 671.0,
+   "p99": 671.0,
+   "max": 671.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Report run",
+   "budget": "report-run",
+   "scope": "OWN",
+   "count": 1,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 1
+   },
+   "p50": 83.0,
+   "p95": 83.0,
+   "p99": 83.0,
+   "max": 83.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "DEPT",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 239.0,
+   "p95": 2378.0,
+   "p99": 2378.0,
+   "max": 2378.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "ENTITY",
+   "count": 2,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 2
+   },
+   "p50": 122.0,
+   "p95": 135.0,
+   "p99": 135.0,
+   "max": 135.0
+  },
+  {
+   "phase": "ramp",
+   "endpoint": "screen Risk Register",
+   "budget": "register",
+   "scope": "OWN",
+   "count": 5,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "screen": 5
+   },
+   "p50": 73.0,
+   "p95": 186.0,
+   "p99": 186.0,
+   "max": 186.0
+  },
+  {
+   "phase": "setup",
+   "endpoint": "POST /sessions",
+   "budget": "sign-in",
+   "scope": "",
+   "count": 50,
+   "errors": 0,
+   "denied": 0,
+   "statuses": {
+    "201": 50
+   },
+   "p50": 29.5,
+   "p95": 182.5,
+   "p99": 519.3,
+   "max": 519.3
+  }
+ ],
+ "reportJobs": {
+  "normal": {
+   "count": 10,
+   "p50": 4089.0,
+   "p95": 6321.0,
+   "max": 6321.0
+  },
+  "ramp": {
+   "count": 2,
+   "p50": 4066.0,
+   "p95": 6573.0,
+   "max": 6573.0
+  },
+  "peak": {
+   "count": 19,
+   "p50": 4100.0,
+   "p95": 13489.0,
+   "max": 13489.0
+  }
+ },
+ "statements": [
+  {
+   "calls": 991,
+   "totalMs": 40699.58,
+   "meanMs": 41.069,
+   "maxMs": 1704.772,
+   "query": "SELECT k.id, k.as_of_date, k.created_at, k.created_by, k.kpi_assignment_id, k.kpi_target_version_id, k.measured_value, k.period_end, k.period_start, k.published_at, k.published_by_user_id, k.rag_status, k.recorded_by_user_id, k.status, k.submitted_at, k.updated_at, k.updated_by, k.value_status, k.xmin, k.narrative_lang, k.narrative FROM financial_kpi.kpi_measurement AS k WHERE k.kpi_assignment_id "
+  },
+  {
+   "calls": 1068,
+   "totalMs": 34797.431,
+   "meanMs": 32.582,
+   "maxMs": 1002.573,
+   "query": "SELECT count(*)::int FROM notifications.notification_delivery AS n WHERE n.recipient_user_id = $1 AND n.channel = $2 AND n.status = $3"
+  },
+  {
+   "calls": 49840,
+   "totalMs": 30405.964,
+   "meanMs": 0.61,
+   "maxMs": 825.038,
+   "query": "SELECT r.id, r.assessed_at, r.assessed_by_user_id, r.created_at, r.created_by, r.matrix_configuration_version_id, r.overall_impact_level, r.probability_level, r.risk_id, r.risk_rating_definition_id, r.updated_at, r.updated_by, r.version_no, r.rationale_lang, r.rationale FROM risk.risk_assessment_version AS r WHERE r.risk_id = ANY ($1) AND r.version_no = ( SELECT max(r0.version_no) FROM risk.risk_a"
+  },
+  {
+   "calls": 153557,
+   "totalMs": 29756.816,
+   "meanMs": 0.194,
+   "maxMs": 171.225,
+   "query": "SELECT r.code, p2.code, p1.data_scope, a.department_id, a.external_entity_id, a.project_id, p2.data_classification_item_id FROM identity_access.access_relationship AS a INNER JOIN identity_access.permission_profile_version AS p ON a.permission_profile_version_id = p.id INNER JOIN identity_access.permission_profile AS p0 ON p.permission_profile_id = p0.id INNER JOIN identity_access.role AS r ON p0."
+  },
+  {
+   "calls": 2582,
+   "totalMs": 22313.398,
+   "meanMs": 8.642,
+   "maxMs": 1102.182,
+   "query": "SELECT p.id, p.actual_percent, p.created_at, p.created_by, p.financial_status, p.health_rule_configuration_version_id, p.is_overridden, p.overall_health, p.planned_percent, p.progress_submission_id, p.project_id, p.published_at, p.published_by_user_id, p.reporting_cycle_id, p.schedule_health, p.updated_at, p.updated_by FROM progress.published_progress_snapshot AS p WHERE p.project_id = ANY ($1)"
+  },
+  {
+   "calls": 2939,
+   "totalMs": 21330.244,
+   "meanMs": 7.258,
+   "maxMs": 465.662,
+   "query": "INSERT INTO audit_activity.audit_event (id, actor_type, actor_user_id, attribute_digest, correlation_id, created_at, created_by, data_classification_item_id, event_class, event_type, occurred_at, outcome, scope_external_entity_id, scope_project_id, subject_id, subject_module, subject_type, updated_at, updated_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $"
+  },
+  {
+   "calls": 1803598,
+   "totalMs": 20788.737,
+   "meanMs": 0.012,
+   "maxMs": 96.238,
+   "query": "DISCARD ALL"
+  },
+  {
+   "calls": 2768,
+   "totalMs": 15928.49,
+   "meanMs": 5.755,
+   "maxMs": 460.763,
+   "query": "SELECT r.id, r.created_at, r.created_by, r.due_date, r.period_end, r.period_start, r.project_id, r.status, r.updated_at, r.updated_by FROM progress.reporting_cycle AS r WHERE r.project_id = ANY ($1) ORDER BY r.project_id, r.period_start"
+  },
+  {
+   "calls": 222,
+   "totalMs": 14237.523,
+   "meanMs": 64.133,
+   "maxMs": 1063.115,
+   "query": "SELECT count(*)::int FROM notifications.notification_delivery AS n INNER JOIN notifications.notification_intent AS n0 ON n.notification_intent_id = n0.id WHERE n.recipient_user_id = $1 AND n.channel = $2 AND n.status IN ($3, $4)"
+  },
+  {
+   "calls": 3122,
+   "totalMs": 11019.748,
+   "meanMs": 3.53,
+   "maxMs": 459.05,
+   "query": "SELECT * FROM audit_activity.activity_projection_checkpoint WHERE id = $1 FOR UPDATE"
+  },
+  {
+   "calls": 48841,
+   "totalMs": 9653.438,
+   "meanMs": 0.198,
+   "maxMs": 144.721,
+   "query": "SELECT r.id, r.closed_at, r.closed_by_user_id, r.created_at, r.created_by, r.identified_date, r.materialised_at, r.next_review_date, r.owner_user_id, r.project_id, r.reopened_count, r.risk_category_item_id, r.status, r.updated_at, r.updated_by, r.xmin, r.closure_rationale_lang, r.closure_rationale, r.description_lang, r.description, r.title_lang, r.title FROM risk.risk AS r WHERE r.project_id = $1"
+  },
+  {
+   "calls": 50,
+   "totalMs": 7620.981,
+   "meanMs": 152.42,
+   "maxMs": 764.125,
+   "query": "SELECT p.id, p.actual_expenditure_to_date_sar, p.approved_budget_sar, p.as_of_date, p.created_at, p.created_by, p.entered_by_user_id, p.financial_commitment_id, p.financial_progress_update_id, p.financial_status, p.forecast_at_completion_sar, p.project_id, p.published_at, p.published_by_user_id, p.reporting_cycle_id, p.source_reference, p.source_type, p.threshold_configuration_version_id, p.update"
+  },
+  {
+   "calls": 465,
+   "totalMs": 7142.665,
+   "meanMs": 15.361,
+   "maxMs": 598.933,
+   "query": "SELECT f.id, f.actual_expenditure_to_date_sar, f.as_of_date, f.created_at, f.created_by, f.entered_by_user_id, f.forecast_at_completion_sar, f.project_id, f.project_intake_id, f.reporting_cycle_id, f.reviewed_at, f.reviewed_by_user_id, f.revision_no, f.source_reference, f.source_type, f.status, f.submitted_at, f.submitted_by_user_id, f.updated_at, f.updated_by, f.value_status, f.xmin, f.narrative_"
+  },
+  {
+   "calls": 434924,
+   "totalMs": 7057.686,
+   "meanMs": 0.016,
+   "maxMs": 120.564,
+   "query": "SELECT p.id, p.activated_at, p.city_item_id, p.classification_item_id, p.closed_at, p.created_at, p.created_by, p.department_id, p.external_entity_id, p.formal_project_id, p.governance_profile_item_id, p.governance_profile_overridden, p.latitude, p.legacy_intake_date, p.lifecycle_state, p.longitude, p.participation_mode, p.planned_end_date, p.planned_start_date, p.project_manager_user_id, p.region"
+  },
+  {
+   "calls": 55242,
+   "totalMs": 6967.697,
+   "meanMs": 0.126,
+   "maxMs": 147.58,
+   "query": "SELECT m.id, m.assignee_user_id, m.category_item_id, m.closed_at, m.concern_type, m.created_at, m.created_by, m.last_reviewed_at, m.next_review_date, m.originating_risk_id, m.overall_impact_level, m.priority_item_id, m.project_id, m.raised_at, m.raised_by_user_id, m.resolved_at, m.revision_no, m.severity_configuration_version_id, m.severity_item_id, m.status, m.target_resolution_date, m.updated_at"
+  }
+ ],
+ "resources": {
+  "AHDA-e2e-api": {
+   "cpuMedian": 43.6,
+   "cpuMax": 443.7
+  },
+  "AHDA-e2e-postgres": {
+   "cpuMedian": 23.4,
+   "cpuMax": 343.8
+  }
+ }
+}

@@ -663,6 +663,9 @@ jobs:
       - name: Test strategy, coverage wiring and journey traceability (TASK-084)
         run: python3 docs/testing/test-strategy-check.py
 
+      - name: Load-test results against the latency budget, every breach in the backlog (TASK-086)
+        run: python3 docs/testing/load-test/load-test-report.py --check
+
       - name: Database provisioning (TASK-020)
         run: python3 docs/architecture/database-check.py
 
