@@ -23,22 +23,33 @@ export interface Actor {
   api: PlatformApi;
 }
 
-async function englishContext(browser: Browser): Promise<BrowserContext> {
+export type Language = 'ar' | 'en';
+
+/** A browser context in one interface language; the SPA reads it from localStorage before its first render. */
+export async function contextIn(browser: Browser, language: Language): Promise<BrowserContext> {
   const context = await browser.newContext({
     baseURL: environment.baseUrl(),
-    locale: 'en-GB',
+    locale: language === 'ar' ? 'ar-SA' : 'en-GB',
     ignoreHTTPSErrors: environment.target === 'compose', // the e2e stack's internal CA (playwright.config.ts)
   });
-  // The journeys read English labels; both locales' rendering is the component tests' (accessibilityViolations()).
-  await context.addInitScript((languageKey) => {
-    if (window.localStorage.getItem(languageKey) === null)
-      window.localStorage.setItem(languageKey, 'en');
-  }, LANGUAGE_KEY);
+  await context.addInitScript(
+    ([languageKey, value]) => {
+      if (window.localStorage.getItem(languageKey) === null)
+        window.localStorage.setItem(languageKey, value);
+    },
+    [LANGUAGE_KEY, language] as const,
+  );
   return context;
 }
 
-async function signedInContext(browser: Browser, api: PlatformApi): Promise<BrowserContext> {
-  const context = await englishContext(browser);
+/** A context whose tab starts signed in with the API session, in the given language. */
+export async function signedInContext(
+  browser: Browser,
+  api: PlatformApi,
+  language: Language = 'en',
+): Promise<BrowserContext> {
+  // The journeys read English labels; both locales are audited by the accessibility audit (docs/testing/accessibility-audit.md).
+  const context = await contextIn(browser, language);
   // Only when the tab holds no session yet, so a token the SPA refreshes is never overwritten by the original on reload.
   await context.addInitScript(
     ([sessionKey, session]) => {
@@ -53,7 +64,7 @@ async function signedInContext(browser: Browser, api: PlatformApi): Promise<Brow
 export const test = base.extend<{ actor: (persona: Persona) => Promise<Actor>; visitor: Page }>({
   /** A browser tab with no session: someone about to sign in through the form. */
   visitor: async ({ browser }, use) => {
-    const context = await englishContext(browser);
+    const context = await contextIn(browser, 'en');
     await use(await context.newPage());
     await context.close();
   },

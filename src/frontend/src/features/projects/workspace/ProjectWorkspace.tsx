@@ -25,6 +25,7 @@ import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
 import { AssignManagerDialog } from '../dialogs/AssignManagerDialog.tsx';
 import { ChangeStatusDialog } from '../dialogs/ChangeStatusDialog.tsx';
 import { DeleteDraftDialog } from '../dialogs/DeleteDraftDialog.tsx';
+import { languageTag } from '../presentation.ts';
 import { projectProblemMessage } from '../problems.ts';
 import { useProjectLookups } from '../useProjectLookups.ts';
 
@@ -127,6 +128,7 @@ export function ProjectWorkspace(): ReactElement | null {
     <div className={closed ? 'workspace workspace--read-only' : 'workspace'}>
       <PageHeader
         title={detail.title.text}
+        titleLanguage={languageTag(detail.title.language)}
         description={
           detail.formalProjectId === null
             ? t('projects.formalProjectId.notIssuedLong')

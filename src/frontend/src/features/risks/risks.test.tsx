@@ -127,6 +127,10 @@ describe('SCR-080 Risk Register', () => {
     expect(
       within(table).getByRole('link', { name: 'Flooding of the works' }).getAttribute('href'),
     ).toBe(FLOODING_PATH);
+    // The title is read in the language it was entered in, whatever the interface's (WCAG 3.1.2, TASK-087 A11Y-F-002).
+    expect(
+      within(table).getByRole('link', { name: 'Flooding of the works' }).getAttribute('lang'),
+    ).toBe('en');
 
     const critical = document.querySelector('[data-summary="critical"] dd');
     expect(critical?.textContent).toBe('1');

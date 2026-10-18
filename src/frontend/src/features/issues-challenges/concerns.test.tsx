@@ -184,6 +184,12 @@ describe('SCR-083 Issue Register and SCR-085 Challenge Register', () => {
       'Crane breakdown',
     ]);
     expect(within(rowOf(table, 'Crane breakdown')).getByText('Harbour bridge repair')).toBeTruthy();
+    // Titles and project names are read in the language they were entered in (WCAG 3.1.2, TASK-087 A11Y-F-002).
+    const crane = rowOf(table, 'Crane breakdown');
+    expect(within(crane).getByRole('link', { name: 'Crane breakdown' }).getAttribute('lang')).toBe(
+      'en',
+    );
+    expect(within(crane).getByText('Harbour bridge repair').getAttribute('lang')).toBe('en');
   });
 
   test('the delivering entity raises an issue (MOD-036): no severity is sent, and it lands on the new issue', async () => {

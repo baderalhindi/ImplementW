@@ -551,6 +551,12 @@ describe('SCR-105 Change Requests', () => {
         .getByRole('link', { name: 'Replace the bearing pads' })
         .getAttribute('href'),
     ).toBe(`/change-requests/${BEARING_ID}`);
+    // Titles and project names are read in the language they were entered in (WCAG 3.1.2, TASK-087 A11Y-F-002).
+    const bearing = rows[0] ?? table;
+    expect(
+      within(bearing).getByRole('link', { name: 'Replace the bearing pads' }).getAttribute('lang'),
+    ).toBe('en');
+    expect(within(bearing).getByText('Harbour bridge repair').getAttribute('lang')).toBe('en');
     expect(api.requestsTo('GET', /^\/change-requests$/)).toHaveLength(2);
   });
 });

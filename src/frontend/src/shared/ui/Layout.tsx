@@ -4,6 +4,8 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 
 interface PageHeaderProps {
   title: string;
+  /** The title's own language when it is stored narrative (a project title), which may differ from the interface's. */
+  titleLanguage?: string | undefined;
   description?: string | undefined;
   actions?: ReactNode;
 }
@@ -12,7 +14,12 @@ interface PageHeaderProps {
  * The page's single h1, mirrored into the document title so each route is announced by name. A layout effect sets the
  * title in the same commit as the h1: a passive effect can run a task later, leaving the page briefly untitled.
  */
-export function PageHeader({ title, description, actions }: PageHeaderProps): ReactElement {
+export function PageHeader({
+  title,
+  titleLanguage,
+  description,
+  actions,
+}: PageHeaderProps): ReactElement {
   const { t } = useI18n();
   useLayoutEffect(() => {
     document.title = `${title} · ${t('common.appName')}`;
@@ -20,7 +27,13 @@ export function PageHeader({ title, description, actions }: PageHeaderProps): Re
   return (
     <div className="page-header">
       <div>
-        <h1 className="page-header__title">{title}</h1>
+        <h1
+          className="page-header__title"
+          lang={titleLanguage}
+          dir={titleLanguage === undefined ? undefined : 'auto'}
+        >
+          {title}
+        </h1>
         {description !== undefined && <p className="page-header__description">{description}</p>}
       </div>
       {actions !== undefined && <div className="page-header__actions">{actions}</div>}

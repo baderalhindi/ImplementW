@@ -1,6 +1,7 @@
 import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 
+import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 
@@ -59,7 +60,11 @@ export function ConcernTable({
               }
             >
               <td>
-                <Link to={concernPath(project.id, concern.id)} dir="auto">
+                <Link
+                  to={concernPath(project.id, concern.id)}
+                  lang={languageTag(concern.title.language)}
+                  dir="auto"
+                >
                   {concern.title.text}
                 </Link>
                 <span className="cell__aside">{itemLabel(concern.categoryItemId)}</span>
@@ -69,7 +74,11 @@ export function ConcernTable({
               </td>
               {showProject && (
                 <td>
-                  <Link to={`/projects/${project.id}/issues-challenges`} dir="auto">
+                  <Link
+                    to={`/projects/${project.id}/issues-challenges`}
+                    lang={languageTag(project.title.language)}
+                    dir="auto"
+                  >
                     {project.title.text}
                   </Link>
                 </td>

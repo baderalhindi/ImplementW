@@ -1,6 +1,7 @@
 import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 
+import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 
@@ -79,7 +80,11 @@ export function RiskTable({
               className={due ? 'row--overdue' : risk.status === 'CLOSED' ? 'row--muted' : undefined}
             >
               <td>
-                <Link to={`/projects/${project.id}/risks/${risk.id}`} dir="auto">
+                <Link
+                  to={`/projects/${project.id}/risks/${risk.id}`}
+                  lang={languageTag(risk.title.language)}
+                  dir="auto"
+                >
                   {risk.title.text}
                 </Link>
                 {risk.materialisedAt !== null && (
@@ -88,7 +93,11 @@ export function RiskTable({
               </td>
               {showProject && (
                 <td>
-                  <Link to={`/projects/${project.id}/risks`} dir="auto">
+                  <Link
+                    to={`/projects/${project.id}/risks`}
+                    lang={languageTag(project.title.language)}
+                    dir="auto"
+                  >
                     {project.title.text}
                   </Link>
                 </td>

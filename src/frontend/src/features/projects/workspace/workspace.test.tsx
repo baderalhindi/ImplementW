@@ -86,7 +86,9 @@ const button = (key: string) => screen.queryByRole('button', { name: en(key) });
 describe('SCR-040 workspace tabs follow the RBAC scope', () => {
   test('an AHDA user whose department owns the project sees every tab', async () => {
     openWorkspace(projectDetail(), reviewerSession());
-    await screen.findByRole('heading', { level: 1, name: 'Coastal road upgrade' });
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Coastal road upgrade' });
+    // The project title is read in the language it was entered in (WCAG 3.1.2, TASK-087 A11Y-F-002).
+    expect(heading.getAttribute('lang')).toBe('en');
 
     expect(tabNames()).toEqual([
       TAB.overview,

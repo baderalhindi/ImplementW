@@ -1,7 +1,7 @@
 import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 
-import { formatSar } from '@/features/projects/presentation.ts';
+import { formatSar, languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 
@@ -61,7 +61,12 @@ export function ChangeRequestTable({
         {entries.map(({ request, project }) => (
           <tr key={request.id}>
             <td>
-              <Link className="cell__link" to={changeRequestPath(request.id)} dir="auto">
+              <Link
+                className="cell__link"
+                to={changeRequestPath(request.id)}
+                lang={languageTag(request.title.language)}
+                dir="auto"
+              >
                 {request.title.text}
               </Link>
               <span className="cell__aside">
@@ -70,7 +75,9 @@ export function ChangeRequestTable({
             </td>
             {showProject && (
               <td>
-                <span dir="auto">{project.title.text}</span>
+                <span lang={languageTag(project.title.language)} dir="auto">
+                  {project.title.text}
+                </span>
               </td>
             )}
             <td>{t(`changeRequests.changeType.${request.changeType}`)}</td>

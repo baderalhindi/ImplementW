@@ -115,3 +115,14 @@ test('the permission matrix shows the scope each profile grants', async () => {
   const cells = Array.from(row?.querySelectorAll('td') ?? []).map((cell) => cell.textContent);
   expect(cells).toEqual(['All', '—Not granted', '—Not granted']);
 });
+
+test('the permission matrix heads each permission group as a row group (WCAG 1.3.1, TASK-087 A11Y-F-001)', async () => {
+  withIdentityAccessData(mockApi());
+  renderApp({ path: '/admin/permission-matrix', session: R01 });
+
+  const row = (await screen.findByText('Manage users')).closest('tr');
+  const group = row?.closest('tbody')?.querySelector('tr.matrix__group th');
+  expect(group?.textContent).toBe('IDENTITY_ACCESS');
+  expect(group?.getAttribute('scope')).toBe('rowgroup');
+  expect(document.querySelector('th[scope="colgroup"]')).toBeNull();
+});
