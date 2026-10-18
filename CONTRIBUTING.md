@@ -273,9 +273,11 @@ Full policy: `docs/architecture/branching-strategy.md` (TASK-012).
 - Every PR is opened from `.github/PULL_REQUEST_TEMPLATE.md`: Task ID, description, test evidence and a security
   checklist. No check enforces it; reviewers do (branching-strategy §5.1).
 - `main` (and `dev`, `stage`) are protected by `.github/branch-protection/protected-branches.ruleset.json`:
-  a pull request with **one approving review** and a review from the directory's code owners
-  (`.github/CODEOWNERS`); the `backend`, `frontend` and `repo-checks` checks **must pass** on a branch that is current
-  with the target; no direct push, no force-push, no bypass.
+  a pull request whose ten required checks (`backend`, `backend-risk-governance`, `backend-endpoint-hardening`,
+  `backend-platform-services`, `coverage`, `frontend`, `repo-checks`, `terraform`, `secret-scan`,
+  `dependency-vuln-gate`) **must pass** on a branch that is current with the target, with every review thread
+  resolved; no direct push, no force-push, no bypass. No approving review is required while one account holds write
+  access (branching-strategy §7 S-4); one approval and a code-owner review return when a second maintainer joins.
 - Commit messages: imperative subject line, task id in the body or the PR title.
 
 ## Where things do not go

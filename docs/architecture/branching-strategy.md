@@ -5,7 +5,7 @@
 | Task | TASK-012 — Define Branching Strategy, PR Template & Code Owners (P2 - Project Setup & Foundation) |
 | Depends on | TASK-011 — Initialize Monorepo & Solution Structure (`docs/architecture/monorepo-bootstrap.md`, BUILT — PROVISIONAL) |
 | Record date | 2026-09-21 |
-| Status | **FILES BUILT — PROTECTION NOT APPLIED.** The template, CODEOWNERS, policy check and ruleset are on the task branch and verified locally; the ruleset is a repository setting that this environment cannot apply (§7 S-1), and the CODEOWNERS teams do not exist yet (§7 S-2) |
+| Status | **PROTECTION APPLIED, CI-ONLY (2026-10-18).** The ruleset is active on `main`, `dev` and `stage` (ruleset 25347570): a pull request, the ten required checks green on a current branch, review threads resolved, no force-push, no deletion, no bypass. The review requirement is held at zero approvals until a second maintainer exists (§7 S-4), and the CODEOWNERS teams do not exist yet (§7 S-2) |
 | Branch | `chore/task-012-branching-strategy` |
 | Deliverables | `.github/PULL_REQUEST_TEMPLATE.md`; `.github/CODEOWNERS`; `.github/branch-protection/protected-branches.ruleset.json` and `apply.sh`; `.github/workflows/pr-policy.yml` with `.github/scripts/pr-policy.sh` (removed 2026-09-27, §5.1); this record |
 | Implements | CTL-38 (`cybersecurity-control-matrix.md` §4 CF-7); the branch-naming row of ADR-002 §6.4 |
@@ -105,7 +105,7 @@ Recorded at TASK-012; the script was removed on 2026-09-27 (§5.1). `pr-policy.s
 
 The 21 module folders under `Application/Features/`, `Domain/`, `Infrastructure/Persistence/` and `Api/Controllers/` are owned by the tier group. Per-module ownership is added when a module has a named owner other than the tier lead; the pattern is one line per folder, placed after the tier line.
 
-**The groups must exist.** CODEOWNERS resolves an owner only if it is a user with write access or a team that is visible and has write access. The repository is currently hosted under a personal account (`baderalhindi/ImplementW`), and teams exist only in organisations, so at the record date **no line in the file resolves**. Consequences and the fix are S-2 in §7. The one-approval rule of §5 does not depend on CODEOWNERS and holds regardless.
+**The groups must exist.** CODEOWNERS resolves an owner only if it is a user with write access or a team that is visible and has write access. The repository is currently hosted under a personal account (`baderalhindi/ImplementW`), and teams exist only in organisations, so at the record date **no line in the file resolves**. Consequences and the fix are S-2 in §7. The one-approval rule of §5 does not depend on CODEOWNERS; it is held at zero while one account holds write access (§7 S-4).
 
 ## 5. Branch protection
 
@@ -116,8 +116,8 @@ The 21 module folders under `Application/Features/`, `Domain/`, `Infrastructure/
 | Targets | `main`, `dev`, `stage` (§2.1) | "on main" |
 | `deletion` | branch cannot be deleted | — |
 | `non_fast_forward` | no force-push | `monorepo-bootstrap.md` S-3 |
-| `pull_request` | required; **1 approving review**; stale reviews dismissed on push; code-owner review required; every review thread resolved | "at least 1 approving review" |
-| `required_status_checks` | **`backend`, `frontend`, `repo-checks`**; strict (branch must be current with the target). `pr-policy` was removed on 2026-09-22 and the workflow itself on 2026-09-27 (§5.1) | "passing CI"; CTL-39 |
+| `pull_request` | required; **0 approving reviews** and code-owner review off while one account holds write access (S-4); stale reviews dismissed on push; every review thread resolved. Set back to 1 and `true` when a second maintainer joins | "at least 1 approving review" — **not met** until then |
+| `required_status_checks` | **`backend`, `backend-risk-governance`, `backend-endpoint-hardening`, `backend-platform-services`, `coverage`, `frontend`, `repo-checks`, `terraform`, `secret-scan`, `dependency-vuln-gate`**; strict (branch must be current with the target). `pr-policy` was removed on 2026-09-22 and the workflow itself on 2026-09-27 (§5.1) | "passing CI"; CTL-39 |
 | `bypass_actors` | none — administrators included | CTL-38 verification: direct push rejected |
 | `enforcement` | `active` | — |
 
@@ -132,8 +132,9 @@ The check names are the `jobs.<id>.name` values in `ci-quality-gates.yml`. Renam
 repository owner's instruction. No check reads the PR description any more. The PR template is unchanged.
 
 What that costs is precise. **CTL-38's "PR template enforcing linked Task ID, test evidence and a security
-checklist" is enforced by review, not by a check**, as is TASK-012 acceptance criterion 1. The code-owner review
-requirement and the three CI checks are untouched, so an unreviewed or failing-CI change still cannot merge.
+checklist" is enforced by review, not by a check**, as is TASK-012 acceptance criterion 1. The required CI checks
+are untouched, so a failing-CI change cannot merge. Since 2026-10-18 no review is required either (§7 S-4), so until
+a second maintainer joins, the template is enforced by the author alone.
 `release-metadata.sh` still refuses to release a commit on `main` that names no Task ID (`cicd-pipeline.md` §3.4).
 Restoring the gate means restoring both files from git history and, to make it blocking, one line in this ruleset
 and one `apply.sh` run.
@@ -154,17 +155,17 @@ The script creates the ruleset or updates the one with the same name, then print
 | # | Criterion | Result |
 | --- | --- | --- |
 | 1 | PR template enforces linked Task ID, description, test evidence and security checklist | **PARTIAL** — the template carries all four sections; since 2026-09-27 no check enforces them and review is the only enforcement (§3, §5.1). "Description" is present in the template but not machine-checked: a check for prose that says something is not a check worth having |
-| 2 | ≥1 approving review and passing CI are required branch-protection rules on `main` | **PARTIAL** — the rules are fully specified in the ruleset (§5) and the checks they require exist and run; the ruleset is a repository setting this environment cannot apply (no GitHub credential). Reads MET when S-1 is done |
+| 2 | ≥1 approving review and passing CI are required branch-protection rules on `main` | **PARTIAL** — passing CI is required on `main`, `dev` and `stage` since 2026-10-18 (S-1 done). The approving review is not: it is held at zero while one account holds write access (S-4). Reads MET when S-4 is done |
 | 3 | A CODEOWNERS file exists covering every top-level module directory | **MET on file, PARTIAL in effect** — every top-level directory (`.github`, `.vscode`, `db`, `docs`, `infra`, `src/backend`, `src/frontend`) and every root file has an owner, with a `*` default for anything added later; the teams do not yet exist (S-2), so GitHub cannot request them |
 
 ## 7. Residual items
 
 | # | Item | Owner | Owed by | Consequence if unresolved |
 | --- | --- | --- | --- | --- |
-| S-1 | **Apply the ruleset** (§5.1). Supersedes `monorepo-bootstrap.md` S-3, which specified the same rules for `main` without the review requirement | Repository administrator | Before the next PR is merged | Criterion 2 reads PARTIAL; a red CI or an unreviewed PR still merges |
+| S-1 | **DONE (2026-10-18).** The ruleset is applied with `apply.sh` (ruleset 25347570, active); `rules/branches/{main,dev,stage}` each report `deletion`, `non_fast_forward`, `pull_request`, `required_status_checks`, and a PR with pending checks reads `BLOCKED`. Supersedes `monorepo-bootstrap.md` S-3 | Repository administrator | — | — |
 | S-2 | **Create the seven teams** of §4 in the organisation that hosts the repository, each with write access, and move the repository into that organisation if it stays under a personal account. Then replace the `baderalhindi/` namespace in `CODEOWNERS` if the organisation name differs | Repository administrator + Engagement Lead | With S-1 | No owner resolves; `require_code_owner_review` requests nobody, so the only reviewer requirement in force is "one approval from anyone with write access" |
 | S-3 | **Bring `main` up to `dev`** (`main` is a strict ancestor; a fast-forward suffices) so that task branches can be cut from the trunk as §2 requires, and **retire `dev` and `stage`** once TASK-018's artifact promotion exists (§2.1) | Repository administrator (fast-forward); TASK-018 owner (retirement) | Fast-forward with S-1; retirement at TASK-018 | Until the fast-forward, a branch cut from `main` lacks the entire skeleton; until retirement, three protected branches carry three copies of the same rules |
-| S-4 | **Single maintainer**: with one account holding write access, "1 approving review" cannot be satisfied — GitHub does not count the author's own approval. A second reviewer with write access is needed before S-1 is applied, or every PR blocks | Engagement Lead | With S-1 | Either the rule is applied and nothing merges, or it is not applied and criterion 2 stays PARTIAL |
+| S-4 | **Single maintainer**: with one account holding write access, "1 approving review" cannot be satisfied — GitHub does not count the author's own approval. The ruleset was therefore applied with `required_approving_review_count: 0` and `require_code_owner_review: false` (repository owner's decision, 2026-10-18). When a second reviewer with write access joins, set both back (1, `true`) and rerun `apply.sh` | Engagement Lead | When a second maintainer joins | A PR merges on green CI with no second person's review; criterion 2 stays PARTIAL |
 | S-5 | **TASK-015 — DONE for the contract check and the frontend unit tests** (appended `repo-checks`; Vitest runs inside `frontend`). Coverage was **not** appended: no coverage policy exists to gate against until TASK-084 (`ci-quality-gates.md` §6 F-3). **TASK-084 — DONE** (2026-10-17): `coverage` is in the ruleset's required checks and `frontend` gates its own coverage (`docs/testing/test-strategy.md` §5). **TASK-080 — DONE** (2026-10-16): `secret-scan` and `dependency-vuln-gate` are in the ruleset's required checks, and the secret and dependency items of the security checklist point at them | TASK-084, TASK-080 owners | Per task | The ruleset requires only the four listed checks; a later gate is advisory until listed |
 | S-6 | **Per-module CODEOWNERS lines** once modules have named owners (§4) | Backend and Frontend leads | First module with an owner other than the tier lead | Tier lead reviews everything in the tier |
 
@@ -172,6 +173,7 @@ The script creates the ruleset or updates the one with the same name, then print
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-10-18 | Ruleset applied to `main`, `dev` and `stage` (S-1 done), CI-only: approvals 0 and code-owner review off while one account holds write access (S-4). §5's required-checks row brought up to the ten the ruleset lists. | Repository owner |
 | 2026-10-17 | TASK-084: `coverage` added to the ruleset's required checks; S-5 closed for TASK-084 (`docs/testing/test-strategy.md`). | QA (TASK-084) |
 | 2026-10-16 | TASK-080: `secret-scan` and `dependency-vuln-gate` added to the ruleset's required checks; the secret and dependency checklist items point at them; S-5 closed for TASK-080 (`secret-and-dependency-scanning.md`). | Security (TASK-080) |
 | 2026-10-16 | TASK-079: an eighth security-checklist item, the CSRF rules for new endpoints (`csrf-protection.md` §7, CTL-13). | Security (TASK-079) |
