@@ -1,0 +1,72 @@
+# Platform accessibility audit (TASK-087). Record: docs/testing/accessibility-audit.md
+#
+# axe-core at WCAG 2.1 AA and a Tab walk over the audited screens, in Arabic (RTL) and English (LTR), against the e2e stack
+# (src/frontend/e2e/stack) built from the commit. Three ways in:
+#
+#   weekly        against the head of the default branch, so a regression on an audited screen shows within a week of its
+#                 merge. The component tests' axe checks still run on every pull request; this adds what jsdom cannot do
+#                 (contrast, real keyboard focus, reflow) on the deployed build.
+#   pull request  a change to the audit, its screen set or this workflow runs it against the stack built from the change.
+#   dispatch      on demand, e.g. to re-run the scan after a remediation.
+#
+# The run's per-screen table goes to the job summary and its records (JSON, ARIA snapshots, screenshots) are attached. The
+# report's verdicts come from the runs recorded in docs/testing/accessibility-audit/results/, not from CI runs.
+name: accessibility-audit
+
+on:
+  # Sundays 22:10 UTC = Monday 01:10 Riyadh, off the hour and clear of the nightly journeys at 21:40.
+  schedule:
+    - cron: "10 22 * * 0"
+  workflow_dispatch:
+  pull_request:
+    branches: [main, dev, stage]
+    paths:
+      - src/frontend/e2e/accessibility/**
+      - src/frontend/e2e/accessibility.config.ts
+      - docs/testing/accessibility-audit/**
+      - .github/workflows/accessibility-audit.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: accessibility-audit-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  audit:
+    name: accessibility-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      # The audit runs as root in Playwright's image; the runner creates the report folders first, so it owns them and the
+      # summary step can still read them.
+      - name: Prepare the report folders
+        run: mkdir -p src/frontend/test-results src/frontend/playwright-report
+
+      - name: Run the audit against the e2e stack
+        run: src/frontend/e2e/accessibility/run.sh
+
+      - name: Summarise
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          if ls src/frontend/test-results/accessibility/A11Y-S*.json >/dev/null 2>&1; then
+            python3 docs/testing/accessibility-audit/accessibility-audit.py --record "ci-${{ github.run_id }}" \
+              --note "GitHub Actions run ${{ github.run_id }} at ${{ github.sha }}" >>"$GITHUB_STEP_SUMMARY"
+          else
+            echo "No audit records were written." >>"$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Attach the records
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-audit
+          path: |
+            src/frontend/test-results/accessibility/
+            src/frontend/playwright-report/accessibility/
+          retention-days: 90
+          if-no-files-found: warn

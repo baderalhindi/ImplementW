@@ -1,4 +1,4 @@
-import { Fragment, type ReactElement, useCallback } from 'react';
+import { type ReactElement, useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -165,49 +165,48 @@ export function PermissionMatrixPage(): ReactElement {
               ))}
             </tr>
           </thead>
-          <tbody>
-            {groupByPermissionGroup(permissions).map(([group, members]) => (
-              <Fragment key={group}>
-                <tr className="matrix__group">
-                  <th scope="colgroup" colSpan={columns.length + 1}>
-                    {group}
-                  </th>
-                </tr>
-                {members.map((permission) => (
-                  <tr key={permission.id}>
-                    <th scope="row" className="matrix__permission">
-                      {labelOf(permission.name, language)}
-                      <span className="matrix__code" dir="ltr">
-                        {permission.code}
+          {/* One row group per permission group, headed by a rowgroup header (WCAG 1.3.1, TASK-087 A11Y-F-001). */}
+          {groupByPermissionGroup(permissions).map(([group, members]) => (
+            <tbody key={group}>
+              <tr className="matrix__group">
+                <th scope="rowgroup" colSpan={columns.length + 1}>
+                  {group}
+                </th>
+              </tr>
+              {members.map((permission) => (
+                <tr key={permission.id}>
+                  <th scope="row" className="matrix__permission">
+                    {labelOf(permission.name, language)}
+                    <span className="matrix__code" dir="ltr">
+                      {permission.code}
+                    </span>
+                    {permission.isPrivileged && (
+                      <span className="badge badge--negative">
+                        {t('identityAccess.permissionMatrix.privileged')}
                       </span>
-                      {permission.isPrivileged && (
-                        <span className="badge badge--negative">
-                          {t('identityAccess.permissionMatrix.privileged')}
-                        </span>
-                      )}
-                    </th>
-                    {columns.map(({ profile, version }) => {
-                      const grant = version?.grants.find((g) => g.permissionId === permission.id);
-                      return (
-                        <td key={profile.id} className="matrix__cell">
-                          {grant === undefined ? (
-                            <>
-                              <span aria-hidden="true">—</span>
-                              <span className="visually-hidden">
-                                {t('identityAccess.permissionMatrix.notGranted')}
-                              </span>
-                            </>
-                          ) : (
-                            t(`identityAccess.dataScope.${grant.dataScope}`)
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </Fragment>
-            ))}
-          </tbody>
+                    )}
+                  </th>
+                  {columns.map(({ profile, version }) => {
+                    const grant = version?.grants.find((g) => g.permissionId === permission.id);
+                    return (
+                      <td key={profile.id} className="matrix__cell">
+                        {grant === undefined ? (
+                          <>
+                            <span aria-hidden="true">—</span>
+                            <span className="visually-hidden">
+                              {t('identityAccess.permissionMatrix.notGranted')}
+                            </span>
+                          </>
+                        ) : (
+                          t(`identityAccess.dataScope.${grant.dataScope}`)
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          ))}
         </TableContainer>
       )}
     </>

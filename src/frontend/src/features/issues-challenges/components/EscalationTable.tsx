@@ -1,6 +1,7 @@
 import { type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
+import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 
@@ -79,7 +80,11 @@ export function EscalationTable({
                   <td>
                     {concern !== undefined && (
                       <>
-                        <Link to={concernPath(concern.projectId, concern.id)} dir="auto">
+                        <Link
+                          to={concernPath(concern.projectId, concern.id)}
+                          lang={languageTag(concern.title.language)}
+                          dir="auto"
+                        >
                           {concern.title.text}
                         </Link>
                         <span className="cell__aside">
@@ -88,7 +93,12 @@ export function EscalationTable({
                       </>
                     )}
                   </td>
-                  <td dir="auto">{project?.title.text}</td>
+                  <td
+                    dir="auto"
+                    lang={project === undefined ? undefined : languageTag(project.title.language)}
+                  >
+                    {project?.title.text}
+                  </td>
                   <td>
                     {concern !== undefined && (
                       <SeverityBadge concern={concern} itemLabel={itemLabel} />
