@@ -164,7 +164,7 @@ def check(gate: bool) -> int:
     if not runs:
         print("AA-1 no recorded run in results/")
         return 1
-    latest_name = max(runs)
+    latest_name = max(runs, key=lambda name: runs[name]["recordedAt"])  # by when it was recorded, not by its name
     latest = runs[latest_name]
     deferrals = json.loads(DEFERRALS.read_text(encoding="utf-8"))
     deferred_rules = {(d["rule"], s) for d in deferrals for s in d["screens"]}
