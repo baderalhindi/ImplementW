@@ -80,6 +80,14 @@ Under expand-then-contract (R-6), the earlier release still runs on the newer sc
 only need the re-promotion (`docs/architecture/cicd-pipeline.md` §4.4). Revert the schema only when the
 migration itself is the fault.
 
+A Down that passes `MigrationRollbackTests` on an empty database can still fail, or delete data, once the
+tables hold rows: re-adding a `NOT NULL` column without a default is the usual case. The pull request that
+adds a migration runs `migration-rollback-validation`, which rolls it back and re-applies it with the
+TASK-026 volume loaded. Before reverting a schema in an environment, fingerprint the database, revert, and
+compare (`docs/operations/verify-restore.sh fingerprint` and `compare`). Only the history table and the
+tables and columns the Down drops may differ. The procedure and its evidence are in
+[`db/migrations/rollback-validation.md`](../../../../../db/migrations/rollback-validation.md) (TASK-089).
+
 ## The history table
 
 `common."__EFMigrationsHistory"`, with columns `migration_id` and `product_version`. The names are

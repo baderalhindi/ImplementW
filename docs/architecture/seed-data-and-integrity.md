@@ -21,7 +21,7 @@
 | **Out** | Values AHDA has not given: item lists of most catalogues, rating labels and the 5×5 matrix, band values, profile settings (§3.2) | AHDA, through FG-04 (TASK-034) once the values arrive |
 | **Out** | Permission grants on the shipped-default profiles | TASK-030, TASK-110 |
 | **Out** | Local test users. They stay local-only in `infra/docker/postgres/seed/seed-local-users.sql` and are never promoted | TASK-014 |
-| **Out** | Legacy data migration and the up/down/up validation at production volume | TASK-089 |
+| **Out** | Legacy data migration and the up/down/up validation at production volume | TASK-089 (`db/migrations/rollback-validation.md`; legacy plan Blocked on OQ-008, `db/migrations/legacy-data-migration.md`) |
 
 ## 2. Decisions
 
