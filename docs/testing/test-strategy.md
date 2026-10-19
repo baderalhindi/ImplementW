@@ -271,13 +271,13 @@ registration approval (`RegistrationLifecycleTests`), and no `PROJECT_ACTIVATION
 | Push to `main` | the same, called by `ci-cd-pipeline.yml` before any deployment | the pipeline's first stage |
 | SIT, nightly and on promotion (TASK-085) | the 15 journey specs and ADR-013's, against SIT — until SIT exists, nightly against the e2e stack (`e2e-suite.md` §3) | a failing journey blocks promotion to UAT (`e2e-sit`) |
 | Before UAT entry | performance (TASK-086), accessibility audit (TASK-087), `findings-log-check.py --gate` | Step 18 18-G-01 and the Release Checklist rows |
-| UAT (TASK-088) | Step 18 scenarios by AHDA testers with QA evidence (§6) | 18-G-05: exit criteria AHDA approves |
+| UAT (TASK-088) | Step 18 scenarios by AHDA testers with QA evidence (§6); prepared in `uat/uat-execution.md`, not yet executed | `uat-catalogue.py --gate`; 18-G-05: exit criteria AHDA approves (proposed in `uat/uat-execution.md` §7) |
 
 SIT and UAT do not exist yet. Every environment apply is held on the hosting confirmation (penetration-test.md §2).
 
 ## 9. Test data
 
-Step 18's fixture classes are met as follows; UAT data itself is TASK-088's.
+Step 18's fixture classes are met as follows; the UAT data set is TASK-088's (`uat/uat-execution.md` §5).
 
 | Step 18 | Need | Automated suites today |
 | --- | --- | --- |

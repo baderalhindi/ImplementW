@@ -1,0 +1,102 @@
+{
+  "description": "The UAT data set (TASK-088, docs/testing/uat/uat-execution.md §5): projects in every lifecycle state UAT starts from, staged through the product's own API as the people who own each step. Titles are bilingual-realistic and synthetic; no real person, contract or document.",
+  "fixtures": [
+    {
+      "id": "UAT-FX-01",
+      "kind": "draft",
+      "title": {
+        "text": "إعادة تأهيل شبكة تصريف مياه الأمطار — المرحلة الثانية",
+        "language": "ar"
+      },
+      "budgetSar": "18750000.00",
+      "startsInDays": 30,
+      "purpose": "TD-02 WF-01: a DRAFT AHDA project to edit, submit, withdraw or delete"
+    },
+    {
+      "id": "UAT-FX-02",
+      "kind": "submitted",
+      "title": { "text": "Northern region school maintenance programme 2027", "language": "en" },
+      "budgetSar": "9400000.00",
+      "startsInDays": 45,
+      "purpose": "TD-02 WF-01: SUBMITTED, waiting for AHDA's review to start"
+    },
+    {
+      "id": "UAT-FX-03",
+      "kind": "underReview",
+      "title": { "text": "تطوير الواجهة البحرية — الحزمة الأولى", "language": "ar" },
+      "budgetSar": "64000000.00",
+      "startsInDays": 60,
+      "purpose": "TD-02 WF-01 and WF-11: UNDER_REVIEW, its registration approval task in the Portfolio Manager's inbox"
+    },
+    {
+      "id": "UAT-FX-04",
+      "kind": "approvedPlanned",
+      "title": { "text": "Southern city ring road — section B", "language": "en" },
+      "budgetSar": "112500000.00",
+      "startsInDays": 14,
+      "purpose": "TD-02 WF-03: APPROVED_PLANNED with a working schedule of one activity and no baseline"
+    },
+    {
+      "id": "UAT-FX-05",
+      "kind": "active",
+      "title": { "text": "Public library renovation and digital services", "language": "en" },
+      "budgetSar": "23800000.00",
+      "startsInDays": 7,
+      "records": true,
+      "purpose": "TD-02/TD-03 WF-02 to WF-14: ACTIVE and baselined, with tasks, risks, an issue, a draft change request and documents CLEAN, QUARANTINED and held pending"
+    },
+    {
+      "id": "UAT-FX-06",
+      "kind": "active",
+      "department": "otherDepartment",
+      "title": { "text": "مشروع إنارة الطرق الريفية", "language": "ar" },
+      "budgetSar": "7300000.00",
+      "startsInDays": 7,
+      "purpose": "TD-01: ACTIVE in the other department — out of scope for the Department Manager and the internal Project Manager"
+    },
+    {
+      "id": "UAT-FX-07",
+      "kind": "active",
+      "entity": "entityA",
+      "title": { "text": "Industrial zone access road — entity delivered", "language": "en" },
+      "budgetSar": "41000000.00",
+      "startsInDays": 7,
+      "records": true,
+      "purpose": "ADR-013 and TD-01: ACTIVE, entity A's own Project Manager manages it, with the tasks, risks and issue they created"
+    },
+    {
+      "id": "UAT-FX-08",
+      "kind": "draft",
+      "entity": "entityA",
+      "title": { "text": "مركز خدمات المستثمرين — مبادرة الجهة", "language": "ar" },
+      "budgetSar": "5600000.00",
+      "startsInDays": 90,
+      "purpose": "ADR-013: a DRAFT entity A's Project Manager created, for UAT-A13-03 onwards"
+    },
+    {
+      "id": "UAT-FX-09",
+      "kind": "active",
+      "entity": "entityB",
+      "title": { "text": "تطوير مرافق الحديقة العامة", "language": "ar" },
+      "budgetSar": "12100000.00",
+      "startsInDays": 7,
+      "purpose": "TD-01 and ADR-013: ACTIVE, entity B's — entity A's people must reach nothing of it"
+    },
+    {
+      "id": "UAT-FX-10",
+      "kind": "active",
+      "title": { "text": "Heritage district pedestrianisation", "language": "en" },
+      "budgetSar": "15900000.00",
+      "startsInDays": 7,
+      "purpose": "TD-02 WF-09: ACTIVE, reserved for suspension and resumption"
+    },
+    {
+      "id": "UAT-FX-11",
+      "kind": "active",
+      "title": { "text": "مشروع تشجير المحاور الرئيسية", "language": "ar" },
+      "budgetSar": "3200000.00",
+      "startsInDays": 7,
+      "purpose": "TD-02 WF-10: ACTIVE, reserved for completion and closure"
+    }
+  ]
+}
