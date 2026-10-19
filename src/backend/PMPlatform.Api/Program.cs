@@ -125,7 +125,11 @@ WebApplication app = builder.Build();
 // without serving. Each environment runs it as its migration job before the service is deployed.
 if (args is [DatabaseMigration.Command, ..])
 {
-    await app.Services.MigrateDatabaseAsync(args.ElementAtOrDefault(1)).ConfigureAwait(false);
+    Environment.ExitCode = await RunToCompletionAsync(args[0], async () =>
+    {
+        await app.Services.MigrateDatabaseAsync(args.ElementAtOrDefault(1)).ConfigureAwait(false);
+        return 0;
+    }).ConfigureAwait(false);
     return;
 }
 
@@ -133,7 +137,11 @@ if (args is [DatabaseMigration.Command, ..])
 // and exits non-zero on any violation. Each environment runs both after `migrate`, as executions of the same job.
 if (args is [string scriptCommand] && DatabaseScripts.IsCommand(scriptCommand))
 {
-    await app.Services.RunScriptCommandAsync(scriptCommand).ConfigureAwait(false);
+    Environment.ExitCode = await RunToCompletionAsync(scriptCommand, async () =>
+    {
+        await app.Services.RunScriptCommandAsync(scriptCommand).ConfigureAwait(false);
+        return 0;
+    }).ConfigureAwait(false);
     return;
 }
 
@@ -141,7 +149,7 @@ if (args is [string scriptCommand] && DatabaseScripts.IsCommand(scriptCommand))
 // once and exit, non-zero when the chain is broken or the Activity projection differs from the audit store.
 if (args is [string auditCommand] && AuditCommands.IsCommand(auditCommand))
 {
-    Environment.ExitCode = await app.Services.RunAuditCommandAsync(auditCommand).ConfigureAwait(false);
+    Environment.ExitCode = await RunToCompletionAsync(auditCommand, () => app.Services.RunAuditCommandAsync(auditCommand)).ConfigureAwait(false);
     return;
 }
 
@@ -180,6 +188,25 @@ app.RequireKnownStepUpOperations();
 app.RequireEndpointAuthorization();
 
 await app.RunAsync().ConfigureAwait(false);
+
+// TASK-089: a one-shot command fails by its exit status, never by an unhandled exception. An unhandled exception aborts the
+// runtime, and the release image runs dotnet as PID 1 with no init: the kernel ignores the abort signal for PID 1, so the
+// process spins at full CPU instead of exiting, and a failed `migrate` would hold its migration job until the job times out
+// (db/migrations/rollback-validation.md F-1).
+static async Task<int> RunToCompletionAsync(string command, Func<Task<int>> run)
+{
+#pragma warning disable CA1031 // Every failure of a one-shot command is reported the same way: on stderr, and as exit status 1.
+    try
+    {
+        return await run().ConfigureAwait(false);
+    }
+    catch (Exception exception)
+    {
+        await Console.Error.WriteLineAsync($"{command} failed: {exception}").ConfigureAwait(false);
+        return 1;
+    }
+#pragma warning restore CA1031
+}
 
 // api-conventions R-19: enumerations are UPPER_SNAKE_CASE strings.
 // R-16: a SAR amount is a decimal string with two fraction digits.
