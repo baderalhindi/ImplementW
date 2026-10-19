@@ -669,6 +669,9 @@ jobs:
       - name: Accessibility audit results and remediation tracker (TASK-087)
         run: python3 docs/testing/accessibility-audit/accessibility-audit.py --check
 
+      - name: UAT scenario register, execution log, defect tracker and sign-off (TASK-088)
+        run: python3 docs/testing/uat/uat-catalogue.py --check
+
       - name: Database provisioning (TASK-020)
         run: python3 docs/architecture/database-check.py
 
