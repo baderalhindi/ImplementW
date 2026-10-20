@@ -42,3 +42,13 @@ output "migration_job_name" {
   description = "Cloud Run job that applies the release's migrations; the value of the MIGRATION_JOB repository variable (TASK-024)."
   value       = module.compute.migration_job_name
 }
+
+output "uptime_alert_policy_name" {
+  description = "The readiness alert policy; null where uptime_monitoring is off (TASK-091)."
+  value       = one(module.monitoring[*].alert_policy_name)
+}
+
+output "uptime_configured_detection_seconds" {
+  description = "The longest the uptime configuration lets an outage go unflagged, before Cloud Monitoring's own delay; null where uptime_monitoring is off."
+  value       = one(module.monitoring[*].configured_detection_seconds)
+}

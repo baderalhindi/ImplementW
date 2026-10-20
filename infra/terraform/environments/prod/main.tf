@@ -54,4 +54,7 @@ module "platform" {
 
   waf_preview         = var.waf_preview
   deletion_protection = var.deletion_protection
+
+  uptime_monitoring          = var.uptime_monitoring
+  alert_notification_channel = var.alert_notification_channel
 }

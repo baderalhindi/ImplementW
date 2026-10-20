@@ -13,9 +13,10 @@ namespace PMPlatform.Infrastructure.Suspension;
 /// </summary>
 internal sealed class SuspensionActivationWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<SuspensionActivationOptions> options,
     TimeProvider timeProvider,
-    ILogger<SuspensionActivationWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<SuspensionActivationWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

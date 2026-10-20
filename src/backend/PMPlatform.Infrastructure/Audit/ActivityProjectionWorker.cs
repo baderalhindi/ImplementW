@@ -13,9 +13,10 @@ namespace PMPlatform.Infrastructure.Audit;
 /// </summary>
 internal sealed class ActivityProjectionWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<ActivityProjectionOptions> options,
     TimeProvider timeProvider,
-    ILogger<ActivityProjectionWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<ActivityProjectionWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

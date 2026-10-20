@@ -37,3 +37,7 @@ compute_max_instances = 2
 waf_preview = false
 
 deletion_protection = false
+
+# TASK-091: no uptime check. DEV has no on-call channel — the Environment and Secrets sheet gives
+# ALERT_CHANNEL_WEBHOOK_URL to SIT, UAT and PROD only — so an alert here would reach no one.
+uptime_monitoring = false

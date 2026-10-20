@@ -153,3 +153,20 @@ module "load_balancer" {
   # The proxies run in the proxy-only subnet; a forwarding rule created before it exists fails.
   depends_on = [module.network]
 }
+
+# TASK-091 (CTL-31): the environment's readiness, checked from outside through the load balancer, and the
+# alert on it, sent to the on-call channel. Only where the Environment and Secrets sheet gives the
+# environment one (ALERT_CHANNEL_WEBHOOK_URL: SIT, UAT, PROD).
+module "monitoring" {
+  source = "../monitoring"
+  count  = var.uptime_monitoring ? 1 : 0
+
+  project_id           = local.environment.project_id
+  environment          = var.environment
+  name_prefix          = local.name_prefix
+  host                 = local.domain_name
+  notification_channel = var.alert_notification_channel
+  labels               = merge(local.labels, { task = "task-091" })
+
+  depends_on = [module.load_balancer]
+}

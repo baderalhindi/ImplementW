@@ -422,6 +422,9 @@ jobs:
       # TASK-090 (CTL-27, CTL-30): APM and error tracking against a stub ingestion endpoint — a deliberate unhandled exception
       # arrives tagged with its request's correlation id, every request is traced, the SPA's error report lands on the request
       # that caused it, and no field of the redaction registry reaches the APM by any path. Same database and directory as above.
+      # TASK-091 (CTL-31): the health endpoints — readiness 503 while a relay between the API and its database is cut, and again
+      # within the probe's timeout when the database accepts connections and never answers; liveness 200 through both, and 503
+      # for a worker stuck in one pass.
       - name: Observability integration tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         env:
@@ -685,6 +688,9 @@ jobs:
 
       - name: Database provisioning (TASK-020)
         run: python3 docs/architecture/database-check.py
+
+      - name: Health checks and uptime monitoring (TASK-091)
+        run: python3 docs/architecture/uptime-monitoring-check.py
 
       - name: Network security (TASK-021)
         run: python3 docs/architecture/network-security-check.py

@@ -9,9 +9,10 @@ namespace PMPlatform.Infrastructure.Persistence.Messaging;
 /// <summary>Runs the outbox dispatcher in the API process (event-conventions EV-6), every <see cref="OutboxOptions.PollInterval"/> while idle.</summary>
 internal sealed class OutboxDispatchWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<OutboxOptions> options,
     TimeProvider timeProvider,
-    ILogger<OutboxDispatchWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<OutboxDispatchWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

@@ -12,6 +12,7 @@ using PMPlatform.Api.Auditing;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Correlation;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.HealthChecks;
 using PMPlatform.Api.Middleware;
 using PMPlatform.Api.Models;
 using PMPlatform.Api.Observability;
@@ -187,7 +188,8 @@ app.UseMiddleware<RateLimiting>();
 app.UseAuthorization();
 app.UseMiddleware<StepUpAuthentication>();
 
-app.MapHealthChecks("/health").AllowAnonymous();
+// TASK-091 (CTL-31): /health, /health/live and /health/ready, anonymous.
+app.MapHealthEndpoints();
 app.MapControllers();
 app.MapApmDiagnostics();
 app.RequireKnownStepUpOperations();

@@ -62,6 +62,11 @@ resource "google_cloud_run_v2_service" "api" {
           memory = var.memory
         }
         startup_cpu_boost = true
+
+        # The background workers (TASK-091's liveness covers them) run between requests, so CPU stays
+        # allocated when no request is in flight. This is the provider's value already whenever
+        # `resources` is set; it is written down because a throttled instance would starve them.
+        cpu_idle = false
       }
 
       dynamic "env" {
@@ -72,19 +77,26 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
+      # TASK-091 (CTL-31). Start-up waits for readiness — the database answers — so a revision that
+      # cannot reach its database never takes traffic and the deployment fails on the old one. The
+      # API's own database probe gives up after 3 seconds, inside this probe's timeout.
       startup_probe {
         http_get {
-          path = "/health"
+          path = "/health/ready"
           port = var.container_port
         }
         initial_delay_seconds = 10
         period_seconds        = 5
+        timeout_seconds       = 4
         failure_threshold     = 12
       }
 
+      # Liveness never touches the database: a database outage must not restart every instance at
+      # once, and a restart does not bring the database back. It fails only when the process stops
+      # answering or a background worker is stuck in one pass (HealthChecks:WorkerPassTimeout).
       liveness_probe {
         http_get {
-          path = "/health"
+          path = "/health/live"
           port = var.container_port
         }
         period_seconds    = 30
