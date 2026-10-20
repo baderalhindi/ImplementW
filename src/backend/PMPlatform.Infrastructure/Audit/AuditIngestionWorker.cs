@@ -14,9 +14,10 @@ namespace PMPlatform.Infrastructure.Audit;
 /// </summary>
 internal sealed class AuditIngestionWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<AuditIngestionOptions> options,
     TimeProvider timeProvider,
-    ILogger<AuditIngestionWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<AuditIngestionWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

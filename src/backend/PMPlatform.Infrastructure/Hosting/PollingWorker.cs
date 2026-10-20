@@ -7,9 +7,11 @@ namespace PMPlatform.Infrastructure.Hosting;
 /// <summary>
 /// A worker in the API process that runs one pass after another, each in its own scope: a pass that filled its batch
 /// is followed at once by the next, otherwise the worker waits <see cref="PollInterval"/>. A failed pass is logged and
-/// retried; it never stops the API. Every API instance runs one, so a pass must be safe to run twice at once.
+/// retried; it never stops the API. Every API instance runs one, so a pass must be safe to run twice at once. Each pass is recorded in
+/// <see cref="WorkerActivity"/> while it runs, which is how the liveness check tells a stalled worker from a busy one (TASK-091).
 /// </summary>
-internal abstract partial class PollingWorker(IServiceScopeFactory scopes, TimeProvider timeProvider, ILogger logger) : BackgroundService
+internal abstract partial class PollingWorker(IServiceScopeFactory scopes, WorkerActivity activity, TimeProvider timeProvider, ILogger logger)
+    : BackgroundService
 {
     protected abstract TimeSpan PollInterval { get; }
 
@@ -26,6 +28,7 @@ internal abstract partial class PollingWorker(IServiceScopeFactory scopes, TimeP
         while (!stoppingToken.IsCancellationRequested)
         {
             int handled = 0;
+            activity.PassStarted(PassName, timeProvider.GetUtcNow());
             try
             {
                 await using AsyncServiceScope scope = scopes.CreateAsyncScope();
@@ -40,6 +43,10 @@ internal abstract partial class PollingWorker(IServiceScopeFactory scopes, TimeP
 #pragma warning restore CA1031
             {
                 LogPassFailed(logger, PassName, exception.GetType().Name);
+            }
+            finally
+            {
+                activity.PassEnded(PassName);
             }
 
             if (handled < BatchSize)

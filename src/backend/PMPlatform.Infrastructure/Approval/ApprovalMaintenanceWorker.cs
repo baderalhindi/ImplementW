@@ -12,9 +12,10 @@ namespace PMPlatform.Infrastructure.Approval;
 /// </summary>
 internal sealed class ApprovalMaintenanceWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<ApprovalMaintenanceOptions> options,
     TimeProvider timeProvider,
-    ILogger<ApprovalMaintenanceWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<ApprovalMaintenanceWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

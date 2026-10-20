@@ -12,9 +12,10 @@ namespace PMPlatform.Infrastructure.Notifications;
 /// </summary>
 internal sealed class NotificationWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<NotificationWorkerOptions> options,
     TimeProvider timeProvider,
-    ILogger<NotificationWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<NotificationWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

@@ -12,9 +12,10 @@ namespace PMPlatform.Infrastructure.IntegrationMonitoring;
 /// </summary>
 internal sealed class IntegrationMonitoringWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<IntegrationMonitoringWorkerOptions> options,
     TimeProvider timeProvider,
-    ILogger<IntegrationMonitoringWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<IntegrationMonitoringWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

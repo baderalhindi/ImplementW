@@ -12,9 +12,10 @@ namespace PMPlatform.Infrastructure.Reports;
 /// </summary>
 internal sealed class ReportJobWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<ReportJobOptions> options,
     TimeProvider timeProvider,
-    ILogger<ReportJobWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<ReportJobWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

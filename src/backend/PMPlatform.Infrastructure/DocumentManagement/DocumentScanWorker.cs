@@ -12,9 +12,10 @@ namespace PMPlatform.Infrastructure.DocumentManagement;
 /// </summary>
 internal sealed class DocumentScanWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<DocumentScanOptions> options,
     TimeProvider timeProvider,
-    ILogger<DocumentScanWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<DocumentScanWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

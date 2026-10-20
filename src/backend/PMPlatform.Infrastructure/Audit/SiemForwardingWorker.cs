@@ -12,9 +12,10 @@ namespace PMPlatform.Infrastructure.Audit;
 /// </summary>
 internal sealed class SiemForwardingWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<SiemOptions> options,
     TimeProvider timeProvider,
-    ILogger<SiemForwardingWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<SiemForwardingWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

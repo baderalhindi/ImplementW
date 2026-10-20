@@ -12,9 +12,10 @@ namespace PMPlatform.Infrastructure.Risk;
 /// </summary>
 internal sealed class RiskMaintenanceWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<RiskMaintenanceOptions> options,
     TimeProvider timeProvider,
-    ILogger<RiskMaintenanceWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<RiskMaintenanceWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.Events;
+using PMPlatform.Application.Common.Observability;
 using PMPlatform.Application.Common.RateLimiting;
 using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.ChangeRequest;
@@ -82,7 +83,19 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        services.AddHealthChecks().AddCheck<PostgreSqlHealthCheck>("postgresql");
+        // TASK-091 (CTL-31): readiness is the database; liveness is the workers, and never the database, so an outage does not restart
+        // every instance. Both are singletons: the database probe is shared by every request (PostgreSqlHealthCheck), and the workers
+        // record their passes in the one WorkerActivity the liveness check reads.
+        services.AddSingleton<PostgreSqlHealthCheck>();
+        services.AddSingleton<WorkerActivity>();
+        services.AddSingleton<WorkerLivenessHealthCheck>();
+        services.AddOptions<WorkerLivenessOptions>()
+            .Bind(configuration.GetSection(WorkerLivenessOptions.Section))
+            .Validate(options => options.WorkerPassTimeout > TimeSpan.Zero, $"{WorkerLivenessOptions.Section}:WorkerPassTimeout must be positive.")
+            .ValidateOnStart();
+        services.AddHealthChecks()
+            .AddCheck<PostgreSqlHealthCheck>("postgresql", tags: [HealthCheckTags.Readiness])
+            .AddCheck<WorkerLivenessHealthCheck>("background-workers", tags: [HealthCheckTags.Liveness]);
 
         // Resolved when a context is created, not at start-up, so the API still starts and reports Unhealthy
         // without a database, as it did before TASK-024.

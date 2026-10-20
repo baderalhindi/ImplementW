@@ -13,9 +13,10 @@ namespace PMPlatform.Infrastructure.Closure;
 /// </summary>
 internal sealed class CloseoutActivationWorker(
     IServiceScopeFactory scopes,
+    WorkerActivity activity,
     IOptions<CloseoutActivationOptions> options,
     TimeProvider timeProvider,
-    ILogger<CloseoutActivationWorker> logger) : PollingWorker(scopes, timeProvider, logger)
+    ILogger<CloseoutActivationWorker> logger) : PollingWorker(scopes, activity, timeProvider, logger)
 {
     protected override TimeSpan PollInterval => options.Value.PollInterval;
 
