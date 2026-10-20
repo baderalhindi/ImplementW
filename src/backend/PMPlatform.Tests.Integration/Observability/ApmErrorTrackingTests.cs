@@ -122,6 +122,23 @@ public sealed class ApmErrorTrackingTests(IdentityTestHost host)
         Assert.Contains(field, await response.ReadFieldErrorsAsync());
     }
 
+    /// <summary>The diagnostic note obeys the platform's text rules; a refused one throws nothing.</summary>
+    [Theory]
+    [InlineData("bell\u0007")]
+    [InlineData(null)]
+    public async Task ADiagnosticNoteThatBreaksTheTextRulesIsRefused(string? note)
+    {
+        await using ApmIngestStub stub = await ApmIngestStub.StartAsync();
+        await using WebApplicationFactory<Program> api = host.CreateApi(stub);
+        using HttpClient client = api.CreateClient();
+        Session session = await client.SignInOrFailAsync(2);
+
+        using HttpResponseMessage response = await client.PostAsync(ApmApi.DiagnosticExceptions, session.AccessToken, new { note = note ?? new string('x', 4_001) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("VALIDATION_FAILED", (await response.ReadObjectAsync())["code"]!.GetValue<string>());
+    }
+
     /// <summary>Without <c>APM_DSN</c> the SDK is not registered and nothing is captured; a report is accepted and dropped.</summary>
     [Fact]
     public async Task WithoutADsnNothingIsRegistered()

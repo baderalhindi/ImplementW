@@ -1,6 +1,8 @@
 using System.IO.Compression;
 using Microsoft.Extensions.Options;
 using PMPlatform.Api.Authorization;
+using PMPlatform.Api.Errors;
+using PMPlatform.Application.Common.Validation;
 using Sentry.AspNetCore;
 using Sentry.Extensibility;
 
@@ -53,12 +55,22 @@ internal static class ApmRegistration
             return;
         }
 
-        app.MapPost(DiagnosticExceptionPath, ThrowDiagnosticException)
+        app.MapPost(DiagnosticExceptionPath, ThrowDiagnosticExceptionAsync)
             .WithMetadata(new AllowAnyAuthenticatedUserAttribute())
             .ExcludeFromDescription();
     }
 
-    private static IResult ThrowDiagnosticException(ApmDiagnosticExceptionRequest? request) => throw new ApmDiagnosticException(request?.Note);
+    // The note obeys the platform's text rules (TASK-077) like any action argument, or the request is a 400 and nothing is thrown.
+    private static async Task ThrowDiagnosticExceptionAsync(HttpContext context, ApmDiagnosticExceptionRequest? request)
+    {
+        if (request?.Note is { } note && (note.Length > ApmDiagnosticExceptionRequest.NoteLength || TextInput.Violation(note) is not null))
+        {
+            await ApiProblem.WriteAsync(context, StatusCodes.Status400BadRequest, ErrorCodes.ValidationFailed, "Validation failed.").ConfigureAwait(false);
+            return;
+        }
+
+        throw new ApmDiagnosticException(request?.Note);
+    }
 
     private static void Configure(SentryAspNetCoreOptions sentry, ApmOptions apm, ApmEventEnrichment enrichment)
     {
@@ -92,7 +104,10 @@ internal static class ApmRegistration
 }
 
 /// <summary>The body of the diagnostic exception request: a note that is put in the exception's message, so a sensitive value can be planted.</summary>
-internal sealed record ApmDiagnosticExceptionRequest(string? Note);
+internal sealed record ApmDiagnosticExceptionRequest(string? Note)
+{
+    public const int NoteLength = 4_000;
+}
 
 /// <summary>Thrown on purpose by <see cref="ApmRegistration.DiagnosticExceptionPath"/> (TASK-090 validation check).</summary>
 internal sealed class ApmDiagnosticException(string? note)

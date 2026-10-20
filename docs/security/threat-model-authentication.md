@@ -37,7 +37,7 @@ flowchart LR
 
 Sessions are stateless (`sso-directory-integration.md` D-3): an HS256 access token (15 min), a refresh token carrying the idle (30 min) and absolute (8 h) limits, both signed with `JWT_SIGNING_KEY`. Every refresh re-reads the user's status and assignments.
 
-**Anonymous endpoints.** These are the 10 `[AllowAnonymous]` actions of `SessionsController` (lines 33, 50, 64, 81, 98, 118, 138, 184, 204, 221), plus `/health` (`PMPlatform.Api/Program.cs:177`) and OpenAPI in Development only (`Program.cs:160-163`). Every other endpoint must declare its protection, or the API does not start (`PMPlatform.Api/Authorization/EndpointAuthorization.cs:13-30`). Each anonymous action requires its own credential (a password, a code with its transaction, an MFA token or a refresh token), takes a JSON body, and is rate-limited (`RateLimitingTests.EveryAnonymousActionAndEverySensitiveWriteIsRateLimited`).
+**Anonymous endpoints.** These are the 10 `[AllowAnonymous]` actions of `SessionsController` (lines 33, 50, 64, 81, 98, 118, 138, 184, 204, 221), plus `/health` (`PMPlatform.Api/Program.cs:177`) and OpenAPI in Development only (`Program.cs:160-163`). Since TASK-090 an eleventh anonymous action exists outside `SessionsController`: `POST /api/v1/client-error-reports` (`ClientErrorReportsController`), the SPA's error report, which verifies no credential and stores nothing (AUTH-T27). Every other endpoint must declare its protection, or the API does not start (`PMPlatform.Api/Authorization/EndpointAuthorization.cs:13-30`). Each anonymous action requires its own credential (a password, a code with its transaction, an MFA token or a refresh token), takes a JSON body, and is rate-limited (`RateLimitingTests.EveryAnonymousActionAndEverySensitiveWriteIsRateLimited`).
 
 ## 2. Threats
 
@@ -69,6 +69,7 @@ Sessions are stateless (`sso-directory-integration.md` D-3): an HS256 access tok
 | AUTH-T24 | S | After sign-in the SPA follows an attacker-supplied return path to another origin | 3 | 1 | Medium | The return path comes from router state and is followed only if `isAppPath` (`src/frontend/src/features/identity-access/session/SignInPage.tsx:26-29`). `appPath.test.ts` | Low | MITIGATED | — |
 | AUTH-T25 | T | A `challengeId` of `.` or `..` survives URL escaping and, by dot-segment removal, sends the verify call to another provider path | 2 | 1 | Low | Escaping only (`HttpMultiFactorProvider.cs:82-83`); the field is checked for length only | Low | GAP | SR-21 |
 | AUTH-T26 | S | The platform counts the IdP's `amr` as the second factor, or measures step-up freshness from an old IdP `auth_time`, when the IdP did not apply MFA | 2 | 3 | High | `IdentityProviderMethods` empty by default (`MultiFactorPolicy.cs:27-32`); counted only with `auth_time`, capped at now (`AuthenticationService.cs:421-431`). `MultiFactorSignInTests.AnIdentityProviderSecondFactorCountsOnlyWhenTheConfigurationTrustsIt`. Which `amr` values to trust is AHDA's | Low | DEPENDS | SR-15 |
+| AUTH-T27 | D | An anonymous caller floods `POST /client-error-reports`, or fills it with invented or abusive text, burying real errors in the APM and running up its ingest | 3 | 1 | Medium | Rate-limited per client address (`ClientErrorReport`, 30 a minute; `RateLimitingTests.EveryAnonymousActionAndEverySensitiveWriteIsRateLimited`); bounded fields and a path without query (`ClientErrorReportCreateRequest.Validate`; `ApmErrorTrackingTests.AnIncompleteReportIsRefused`); JSON body, so `CsrfProtection` and the origin allowlist apply; nothing stored, no state changed; each event tagged `origin=spa`, so the APM separates reports from server errors; redacted like every event (`ApmRedactionTests.NoRegisteredFieldReachesTheApm`) | Low | MITIGATED | — |
 
 Counts by inherent rating: Critical 4, High 13, Medium 8, Low 1.
 
@@ -82,7 +83,7 @@ Counts by inherent rating: Critical 4, High 13, Medium 8, Low 1.
 | FG-03 §7.4 invalidate or expire sessions where supported | Expiry only | No revocation (SR-10) |
 | CS-025 authentication and authorization failures logged and forwarded | AUTH-T21 | SIEM not named |
 | CS-028 OWASP protections: injection, CSRF | AUTH-T01, AUTH-T23 | — |
-| REV-IAM-003, authentication side | Every endpoint declares its protection; 10 anonymous actions, each correct | — |
+| REV-IAM-003, authentication side | Every endpoint declares its protection; 10 anonymous actions, each correct, and since TASK-090 the SPA's error report (AUTH-T27) | — |
 
 ## 4. Record claims found stale
 
