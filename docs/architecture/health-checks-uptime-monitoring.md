@@ -5,7 +5,7 @@
 | Task | TASK-091 — Implement Health Checks & Uptime Monitoring (P16 - Observability) |
 | Depends on | TASK-016 (DEV / SIT / UAT / PROD environment separation: `infra/environments/environments.json`, whose `APP_BASE_URL` and `ALERT_CHANNEL_WEBHOOK_URL` this task reads); TASK-017 (the Terraform it extends); TASK-018 (the deploy action that applies it) |
 | Record date | 2026-10-20 |
-| Status | **BUILT; READINESS VERIFIED LOCALLY, THE ALERT NOT YET.** The health endpoints are tested in process against a database cut mid-run (§5.1), by mutation (§5.2), and with the release image against a database container that was stopped and paused, using the drill script SIT will run (§5.3). The uptime check, its alert and the routing are codified and validated, but no environment exists to apply them to, so no alert has fired (F-1) |
+| Status | **BUILT; VERIFIED LOCALLY END TO END, WITH A STAND-IN FOR CLOUD MONITORING.** The health endpoints are tested in process against a database cut mid-run (§5.1), by mutation (§5.2), and with the release image against a database container that was stopped and paused, using the drill script SIT will run (§5.3). The alert path was run with a real open-source uptime monitor set to the Terraform's timings and a webhook receiver as the on-call channel: the alert arrived 1 min 42 s after the database stopped (§5.4). The Cloud Monitoring check, alert and channel themselves are codified and validated, but no environment exists to apply them to (F-1) |
 | Branch | `infra/task-091-health-checks-uptime-monitoring` |
 | Directory | `src/backend/PMPlatform.Api/HealthChecks` (the endpoints); the checks are Infrastructure's (`Persistence/PostgreSqlHealthCheck.cs`, `Hosting/WorkerLivenessHealthCheck.cs`), because only the composition root may reference Infrastructure (ADR-003 L-4) |
 | Deliverables | **Health-check endpoints:** `/health/live`, `/health/ready`, and `/health` kept for its callers. **Uptime-monitor configuration:** `infra/terraform/monitoring` — a Cloud Monitoring uptime check on each environment's `/health/ready` and an alert policy on it; Cloud Run's probes in `infra/terraform/compute`. **Alert routing:** the on-call channel, kept by `infra/environments/route-alerts.sh` from `ALERT_CHANNEL_WEBHOOK_URL` and handed to the alert by the deploy action. **Validation drill:** `infra/environments/drill-database-outage.sh` |
@@ -117,15 +117,33 @@ The stack: the API image built from this branch (`ahda-api:latest`) as `AHDA-api
 | D-5 the database started | `/health/ready` 200 after 5 s |
 | A database that accepts connections and never answers (`docker pause`), one request a second for 40 s | Every `/health/ready` **503 in 3.06–3.07 s**; `/health/live` 200; 200 again 1 s after `docker unpause` |
 | The body of a 503 | `Unhealthy`, nothing else; the platform's security headers present |
-| **The alert reaching the on-call channel** | **Not run.** The uptime check, the alert policy and the channel exist only in a Cloud Monitoring project, and no environment has been applied (F-1) |
+| **The alert reaching the on-call channel** | Run with a stand-in for Cloud Monitoring: §5.4 |
+
+### 5.4 The alert half, with a stand-in for Cloud Monitoring
+
+Cloud Monitoring cannot run outside a GCP project, and none exists (F-1). To run the alert half of the check anyway, the uptime monitor was played by **Gatus 5.37.0** (`mirror.gcr.io/twinproduction/gatus:v5.37.0`, an open-source uptime monitor configured as code), set to the Terraform module's defaults on one prober: `/health/ready` every 60 s, 10 s timeout, 200 expected, the alert sent only when the failure is still there one period later (`failure-threshold: 2`, the equivalent of `failure_duration_seconds = 60`), and a resolved notice on recovery. The on-call channel was a webhook receiver on the compose network that logs each POST with the time it arrived. The outage was the drill of §5.3 again, the committed `drill-database-outage.sh sit` with its default 7-minute hold (`artifacts/task-091/alert`: Gatus config, receiver, drill.log; not committed). Run on 2026-10-20:
+
+| Time (UTC) | Event | After D-2 |
+| --- | --- | --- |
+| 18:29:03, 18:30:03 | Two checks pass; nothing sent to the channel | — |
+| 18:30:21 | **D-2: the database stopped** | 0 |
+| 18:30:27 | D-3: `/health/ready` 503 (the drill's own poll); `/health/live` 200 | 6 s |
+| 18:31:03 | The monitor's first failed check: `[STATUS] (503) == 200` | 42 s |
+| 18:32:03 | Second failed check, one period later: **the alert is sent and arrives at the on-call channel** — `TRIGGERED`, `pmplatform-sit-readiness`, `/health/ready failing` | **1 min 42 s** |
+| 18:33:03 – 18:37:03 | Five more failed checks; no repeat notification | — |
+| 18:37:32 | D-5: the database started; `/health/ready` 200 five seconds later | — |
+| 18:38:03 | The next check passes; `RESOLVED` arrives at the channel | 31 s after recovery |
+
+**The alert reached the channel 1 min 42 s after the outage began, inside the 5-minute threshold and inside the 130 s the configuration allows (D-7).** The API container's restart count stayed 0 throughout. What this does not prove is Cloud Monitoring's part: its two-of-three-regions rule, its ingestion and notification delay (F-3), and the channel type AHDA's on-call tool accepts (F-4). Those are what the SIT run of the same drill adds.
+
 
 ## 6. Acceptance criteria and validation check
 
 | Criterion / check | Evidence | Verdict |
 | --- | --- | --- |
 | A readiness check correctly reports unhealthy when the database is unreachable (verified by a simulated DB outage in a non-PROD environment) | §5.1 rows 1–2 (CI, every PR); §5.3 D-1 to D-5 and the paused database, with the release image | **Met** locally; on SIT with the same drill once it exists (F-1) |
-| An uptime-monitor alert fires within the configured threshold when an environment's health endpoint fails | The check, the alert (D-7: at most 130 s of configuration inside a 5-minute threshold) and the route (D-8) are codified, validated and statically checked (§5.1) | **Not met — not yet verifiable.** No environment exists, and Cloud Monitoring has no local equivalent; `drill-database-outage.sh` is the SIT test (F-1, F-3) |
-| Validation check: simulate a DB outage, confirm readiness unhealthy; confirm the alert fires and reaches the on-call channel | §5.3 | Readiness half **met** locally; alert half owed on SIT (F-1) |
+| An uptime-monitor alert fires within the configured threshold when an environment's health endpoint fails | Locally with a stand-in monitor at the module's timings: the alert arrived **1 min 42 s** after the database stopped, against a 5-minute threshold (§5.4). The Cloud Monitoring check, alert (D-7: at most 130 s of configuration inside the threshold) and route (D-8) are codified, validated and statically checked (§5.1) | **Met with a stand-in monitor**; with Cloud Monitoring itself owed on SIT, where the same drill runs (F-1, F-3) |
+| Validation check: simulate a DB outage, confirm readiness unhealthy; confirm the alert fires and reaches the on-call channel | §5.3 (readiness, release image, the database stopped and paused); §5.4 (the alert, sent and received 1 min 42 s after the stop, resolved on recovery) | **Met** locally, with a stand-in for Cloud Monitoring and for the on-call channel; the run on SIT is owed (F-1) |
 | CTL-31: liveness and readiness for the API and background workers; readiness unhealthy when the database is unreachable; external uptime monitoring alerting an on-call channel per environment | D-1 to D-9 | **Built**; per-environment alerting for SIT, UAT and PROD, not DEV (D-9) |
 
 ## 7. Operating it
@@ -148,7 +166,7 @@ The stack: the API image built from this branch (`ahda-api:latest`) as `AHDA-api
 
 | # | Finding | Owner | Status |
 | --- | --- | --- | --- |
-| F-1 | **No environment exists, so no alert has fired.** Every apply is held on ADR-001 §9 (the written confirmation, the tenancy UGV-07 and the DNS zone `environment-separation.md` F-1). Acceptance criterion 2 and the alert half of the validation check are owed on SIT, with `drill-database-outage.sh` | DevOps/Platform Lead (TASK-018) | Open |
+| F-1 | **No environment exists, so Cloud Monitoring's alert has not fired.** Every apply is held on ADR-001 §9 (the written confirmation, the tenancy UGV-07 and the DNS zone `environment-separation.md` F-1). The alert path was run locally with a stand-in monitor at the same timings (§5.4); the run with Cloud Monitoring and AHDA's on-call channel is owed on SIT, with `drill-database-outage.sh` | DevOps/Platform Lead (TASK-018) | Open |
 | F-2 | **`UPTIME_MONITOR_API_KEY` is read by nothing.** Cloud Monitoring authenticates with the deploying identity. The secret holds no value; if AHDA prefers a third-party uptime service, this is its key and the service needs CTL-50 acceptance first; otherwise the Environment and Secrets row can be retired | DevOps/Platform Lead; AHDA Cybersecurity | Open |
 | F-3 | **Cloud Monitoring's own delay is not measured.** Configuration accounts for at most 130 s of the 5-minute threshold (D-7); the remaining 170 s is a budget for ingestion, evaluation and delivery, not a figure Google publishes for this path. The SIT drill measures it; if it does not fit, the threshold or the failure duration changes | DevOps/Platform Lead | Open |
 | F-4 | **No on-call channel is named.** A `webhook_tokenauth` channel posts Cloud Monitoring's own incident JSON. Microsoft Teams and Slack incoming webhooks expect their own formats and will not show it as a message; PagerDuty, Slack (OAuth) and Google Chat have native Cloud Monitoring channel types instead. Which tool AHDA's on-call uses decides the channel type `route-alerts.sh` creates; the URL secret fits only a webhook that accepts the incident JSON | DevOps/Platform Lead (with TASK-093) | Open |
