@@ -117,3 +117,14 @@ variable "deletion_protection" {
   description = "Whether terraform destroy may remove the database instance and the Cloud Run service."
   type        = bool
 }
+
+variable "alert_notification_channel" {
+  description = "The on-call channel's resource name, supplied at apply time by the promotion pipeline as TF_VAR_alert_notification_channel, never committed: the channel holds ALERT_CHANNEL_WEBHOOK_URL, which its owner writes with infra/environments/route-alerts.sh (TASK-091). Empty where uptime_monitoring is off."
+  type        = string
+  default     = ""
+}
+
+variable "uptime_monitoring" {
+  description = "Whether the environment has an uptime check on /health/ready and an alert on it (TASK-091). True where the Environment and Secrets sheet gives it ALERT_CHANNEL_WEBHOOK_URL — SIT, UAT and PROD — so the alert has somewhere to go."
+  type        = bool
+}

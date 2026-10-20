@@ -83,3 +83,13 @@ variable "waf_preview" {
 variable "deletion_protection" {
   type = bool
 }
+
+variable "uptime_monitoring" {
+  type = bool
+}
+
+variable "alert_notification_channel" {
+  description = "The on-call channel's resource name. Supplied by the promotion pipeline as TF_VAR_alert_notification_channel; never committed."
+  type        = string
+  default     = ""
+}

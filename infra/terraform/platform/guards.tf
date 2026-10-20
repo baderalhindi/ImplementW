@@ -45,6 +45,13 @@ resource "terraform_data" "preflight" {
       error_message = "retained_backups is null for PROD. The backup retention period is OQ-003 / PTBC-048, owed by AHDA Cybersecurity and Records before production. Set it from the approved value; do not invent one."
     }
 
+    # TASK-091: an alert policy with no channel notifies no one, and an uptime check nobody hears is
+    # not monitoring. The name is the pipeline's to supply, from the channel the secret's owner made.
+    precondition {
+      condition     = !var.uptime_monitoring || var.alert_notification_channel != ""
+      error_message = "alert_notification_channel is empty for ${var.environment}, which has uptime monitoring. The on-call channel is created by its secret's owner with infra/environments/route-alerts.sh ${var.environment}, and the pipeline passes its name as TF_VAR_alert_notification_channel."
+    }
+
     # Cloud SQL's automated backups are deleted with the instance they belong to, so an environment
     # whose only copy is on the instance has no answer to the instance being deleted. This is not an
     # AHDA value to be supplied — it is the difference between a backup and a snapshot (TASK-020).

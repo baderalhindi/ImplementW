@@ -40,3 +40,7 @@ compute_max_instances = 4
 waf_preview = false
 
 deletion_protection = true
+
+# TASK-091: an uptime check on /health/ready through the load balancer, alerting the on-call channel
+# that infra/environments/route-alerts.sh attaches from ALERT_CHANNEL_WEBHOOK_URL.
+uptime_monitoring = true

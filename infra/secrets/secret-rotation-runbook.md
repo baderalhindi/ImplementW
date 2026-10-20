@@ -156,8 +156,8 @@ Owner and environment scope are the sheet's; the pattern is this runbook's.
 | `SIEM_API_TOKEN` | AHDA Cybersecurity | SIT/UAT/PROD | A | AHDA Cybersecurity issues it. Audit forwarding stops silently if it is wrong — verify an event lands |
 | `RATE_LIMIT_STORE_CONNECTION_STRING` | DevOps/Platform Lead | SIT/UAT/PROD | B | Throttling degrades rather than fails; verify under load, not on one request |
 | `APM_DSN` | DevOps/Platform Lead | SIT/UAT/PROD | A | Verify a test exception arrives before retiring the old DSN |
-| `UPTIME_MONITOR_API_KEY` | DevOps/Platform Lead | SIT/UAT/PROD | A | Verify with a simulated outage, not by the absence of alerts |
-| `ALERT_CHANNEL_WEBHOOK_URL` | DevOps/Platform Lead | SIT/UAT/PROD | A | Create the second webhook, verify a test alert arrives, then delete the first |
+| `UPTIME_MONITOR_API_KEY` | DevOps/Platform Lead | SIT/UAT/PROD | A | Verify with a simulated outage, not by the absence of alerts. Nothing reads it while the uptime monitor is Cloud Monitoring, which needs no key (`health-checks-uptime-monitoring.md` F-2) |
+| `ALERT_CHANNEL_WEBHOOK_URL` | DevOps/Platform Lead | SIT/UAT/PROD | A | Create the second webhook, write it as the new version, run `infra/environments/route-alerts.sh <env>` — the Cloud Monitoring channel keeps its name and takes the new URL — verify a test alert arrives (`drill-database-outage.sh` in SIT/UAT), then delete the first |
 | `E2E_TEST_USER_CREDENTIALS_SECRET_REF` | QA Lead | DEV/SIT | A | A reference to synthetic accounts, never real AHDA credentials. Rotating the accounts themselves is a QA action (TASK-085) |
 | `SMS_PROVIDER_API_KEY` | DevOps/Platform Lead | SIT/UAT/PROD | Confirm at provider selection | Provider is UGV-10; sender-ID registration is separate and is not rotated |
 | `LEGACY_SYSTEM_CONNECTION_STRING` | AHDA IT / DevOps Lead | cutover window only | Not rotated — revoked | Created when the cutover window opens and revoked when it closes (TASK-102). §7.1 |
