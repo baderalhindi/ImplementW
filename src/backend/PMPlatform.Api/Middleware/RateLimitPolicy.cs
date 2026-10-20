@@ -14,6 +14,9 @@ internal enum RateLimitPolicy
 
     /// <summary>Every sensitive write (api-conventions R-35): the operations that change business, financial, identity or access state.</summary>
     SensitiveWrite,
+
+    /// <summary>The SPA's error reports (TASK-090). Anonymous, so counted by client address; a crashing screen reports once per error.</summary>
+    ClientErrorReport,
 }
 
 /// <summary>Puts an action under a <see cref="RateLimitPolicy"/>. A <c>[SensitiveWrite]</c> action is under <see cref="RateLimitPolicy.SensitiveWrite"/> without it.</summary>

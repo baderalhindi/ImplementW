@@ -80,5 +80,10 @@
   "notFound": {
     "title": "Page not found",
     "home": "Go to the home page"
+  },
+  "screenError": {
+    "title": "This page could not be shown",
+    "description": "Something went wrong while showing this page. It has been reported. Reload the page, or go to the home page.",
+    "reload": "Reload the page"
   }
 }

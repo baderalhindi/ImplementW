@@ -164,8 +164,8 @@ public sealed class RateLimitingTests(IdentityTestHost host)
     }
 
     /// <summary>
-    /// What is limited is declared, not left to chance: every anonymous action is a sign-in step or the refresh, and every sensitive write
-    /// (R-35) is under the sensitive-write policy. A new anonymous endpoint without a policy fails here.
+    /// What is limited is declared, not left to chance: every anonymous action is a sign-in step, the refresh or the SPA's error report
+    /// (TASK-090), and every sensitive write (R-35) is under the sensitive-write policy. A new anonymous endpoint without a policy fails here.
     /// </summary>
     [Fact]
     public void EveryAnonymousActionAndEverySensitiveWriteIsRateLimited()
@@ -175,9 +175,15 @@ public sealed class RateLimitingTests(IdentityTestHost host)
         static string Name(Endpoint endpoint) => endpoint.Metadata.GetMetadata<IEndpointNameMetadata>()!.EndpointName;
 
         Endpoint[] anonymous = [.. actions.Where(endpoint => endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null)];
-        Assert.Equal(10, anonymous.Length);
+        Assert.Equal(11, anonymous.Length);
         Assert.All(anonymous, endpoint => Assert.Equal(
-            Name(endpoint) == "IdentityAccess_RefreshSession" ? RateLimitPolicy.SessionRefresh : RateLimitPolicy.SignIn, RateLimiting.PolicyOf(endpoint)));
+            Name(endpoint) switch
+            {
+                "IdentityAccess_RefreshSession" => RateLimitPolicy.SessionRefresh,
+                "IntegrationMonitoring_CreateClientErrorReport" => RateLimitPolicy.ClientErrorReport,
+                _ => RateLimitPolicy.SignIn,
+            },
+            RateLimiting.PolicyOf(endpoint)));
 
         Endpoint[] sensitive = [.. actions.Where(endpoint => endpoint.Metadata.GetMetadata<SensitiveWriteAttribute>() is not null)];
         Assert.NotEmpty(sensitive);

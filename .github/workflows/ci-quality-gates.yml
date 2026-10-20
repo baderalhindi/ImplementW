@@ -419,6 +419,17 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.InputValidation.
 
+      # TASK-090 (CTL-27, CTL-30): APM and error tracking against a stub ingestion endpoint — a deliberate unhandled exception
+      # arrives tagged with its request's correlation id, every request is traced, the SPA's error report lands on the request
+      # that caused it, and no field of the redaction registry reaches the APM by any path. Same database and directory as above.
+      - name: Observability integration tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.Observability.
+
       # TASK-084: every `dotnet test` above wrote a Cobertura report (CI=true sets coverage.runsettings in Directory.Build.props);
       # the `coverage` job merges this job's with the other backend jobs' and gates them (docs/testing/test-strategy.md §5).
       - name: Upload coverage
