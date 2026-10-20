@@ -155,3 +155,4 @@ Adding a field to the redaction: one line in `RedactionRegistry` — its names, 
 | Date | Change |
 | --- | --- |
 | 2026-10-20 | Built and verified (this record) |
+| 2026-10-20 | §5.3 re-run on the PR head (`3678260`, with the diagnostic note's validation), images rebuilt and GlitchTip started fresh: 10 of 10 checks passed — the exception listed 2.1 s after the request on its `correlation_id` (`4344b3f0-…`), environment `dev`; none of the 47 markers nor the access token in any stored event |
