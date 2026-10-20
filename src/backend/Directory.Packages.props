@@ -38,6 +38,9 @@
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <!-- TASK-078: the client for the Redis-compatible store that holds the rate-limit counters API instances share. -->
     <PackageVersion Include="StackExchange.Redis" Version="3.3.1" />
+    <!-- TASK-090: APM and error tracking. The SDK speaks the Sentry protocol, which a self-hosted Sentry or GlitchTip in the named
+         region ingests (CTL-28); the destination is APM_DSN. -->
+    <PackageVersion Include="Sentry.AspNetCore" Version="6.12.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />

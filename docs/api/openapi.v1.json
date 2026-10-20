@@ -1775,6 +1775,40 @@
         }
       }
     },
+    "/api/v1/client-error-reports": {
+      "post": {
+        "tags": [
+          "IntegrationMonitoring"
+        ],
+        "summary": "Reports an error the SPA could not handle.",
+        "operationId": "IntegrationMonitoring_CreateClientErrorReport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientErrorReportCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientErrorReportCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientErrorReportCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/closure-cases": {
       "get": {
         "tags": [
@@ -19595,6 +19629,67 @@
           "GOVERNANCE_PROFILE"
         ],
         "description": "ERD `change_request.change_type`: what the request changes. Fixed when the request is raised."
+      },
+      "ClientErrorReportCreateRequest": {
+        "required": [
+          "source",
+          "errorType",
+          "message",
+          "path"
+        ],
+        "type": "object",
+        "properties": {
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ClientErrorSource"
+              }
+            ]
+          },
+          "errorType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "path": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stack": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "correlationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "An error the SPA could not handle (TASK-090). Its path is the route's path without query or fragment. A failed API call names\nthe correlation id its response carried, so the report lands on the request that caused it."
+      },
+      "ClientErrorSource": {
+        "enum": [
+          "WINDOW_ERROR",
+          "UNHANDLED_REJECTION",
+          "RENDER_ERROR",
+          null
+        ]
       },
       "CloseoutCaseStatus": {
         "enum": [
@@ -39265,6 +39360,9 @@
       "name": "ChangeRequest"
     },
     {
+      "name": "IntegrationMonitoring"
+    },
+    {
       "name": "Closure"
     },
     {
@@ -39284,9 +39382,6 @@
     },
     {
       "name": "FinancialKpi"
-    },
-    {
-      "name": "IntegrationMonitoring"
     },
     {
       "name": "Milestone"

@@ -25,6 +25,7 @@ import { reportRoutes } from '@/features/reports/routes.tsx';
 import { riskRoutes } from '@/features/risks/routes.tsx';
 import { closeoutRoutes, suspensionRoutes } from '@/features/suspension-closure/routes.tsx';
 import { taskRoutes } from '@/features/tasks/routes.tsx';
+import { RouteErrorPage } from '@/shared/observability/RouteErrorPage.tsx';
 
 import { AppLayout } from './AppLayout.tsx';
 import { NotFoundPage } from './pages.tsx';
@@ -32,6 +33,8 @@ import { NotFoundPage } from './pages.tsx';
 export const appRoutes: RouteObject[] = [
   {
     element: <AppLayout />,
+    // TASK-090: a screen that throws is reported to the APM and replaced by an explanation.
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <HomeDashboardPage /> }, // the role-aware Home: DSH-001–008, DSH-010–012
       { path: 'sign-in', element: <SignInPage /> },

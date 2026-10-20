@@ -14,6 +14,7 @@ using PMPlatform.Api.Correlation;
 using PMPlatform.Api.Errors;
 using PMPlatform.Api.Middleware;
 using PMPlatform.Api.Models;
+using PMPlatform.Api.Observability;
 using PMPlatform.Api.Validation;
 using PMPlatform.Application;
 using PMPlatform.Application.Common.Auditing;
@@ -119,6 +120,10 @@ builder.Services.AddCors();
 builder.Services.AddOptions<CorsOptions>().Configure<IOptions<AllowedOrigins>>((cors, allowed) =>
     cors.AddDefaultPolicy(OriginAllowlist.Policy(allowed.Value.Origins)));
 
+// TASK-090 (CTL-30): APM and error tracking when APM_DSN is set — unhandled exceptions, logged errors, failed integration calls
+// and a trace per request, each tagged with its correlation id and redacted against the registry before it leaves (CTL-27).
+builder.AddApm();
+
 WebApplication app = builder.Build();
 
 // TASK-024: `dotnet PMPlatform.Api.dll migrate [<target migration>]` applies the release's migrations and exits
@@ -184,6 +189,7 @@ app.UseMiddleware<StepUpAuthentication>();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
+app.MapApmDiagnostics();
 app.RequireKnownStepUpOperations();
 app.RequireEndpointAuthorization();
 
