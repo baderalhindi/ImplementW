@@ -125,5 +125,6 @@ SIT and UAT do not exist yet; this is the checks' procedure on DEV.
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-10-21 | TASK-092: ADM-047 is the operational dashboard OD-1 (`docs/operations/operational-dashboards.md`) — a queue table (depth, in flight, awaiting retry, oldest queued, dead letters) for every registered integration, queued and dead-letter counts in the summary, every panel read again every 30 s; the alert type QUEUE_BACKLOG is named. | Observability (TASK-092) |
 | 2026-10-14 | F-4 fixed: `System.Security.Cryptography.Pkcs` pinned to 10.0.13, which unblocks restore locally and in CI. | Frontend (TASK-076) |
 | 2026-10-14 | Initial record. ADM-040–048, MOD-100 and MOD-101 over TASK-075's API and ADM-041's identity-integration endpoints; two indicators; secret-safe connection test; 49 tests, 12 mutations, both workbook checks on DEV; 10 decisions, 5 findings. | Frontend (TASK-076) |
