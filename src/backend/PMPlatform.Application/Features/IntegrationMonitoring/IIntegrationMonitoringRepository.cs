@@ -46,6 +46,9 @@ public interface IIntegrationMonitoringRepository
     /// <summary>OPEN and ACKNOWLEDGED alerts per instance.</summary>
     public Task<IReadOnlyDictionary<Guid, int>> CountLiveAlertsAsync(CancellationToken cancellationToken);
 
+    /// <summary>Each instance's queued work and dead letters, now (TASK-092); an instance with none is absent.</summary>
+    public Task<IReadOnlyDictionary<Guid, IntegrationQueueState>> MeasureQueuesAsync(CancellationToken cancellationToken);
+
     public Task<bool> InvocationExistsAsync(Guid invocationId, CancellationToken cancellationToken);
 
     /// <summary>The lineage's attempt with the highest number, tracked; null for a lineage not seen yet.</summary>
@@ -83,6 +86,9 @@ public interface IIntegrationMonitoringRepository
 
     /// <summary>The OPEN or ACKNOWLEDGED alert of the instance and type, including one added in this unit of work and not yet saved.</summary>
     public Task<OperationalAlert?> FindLiveAlertAsync(Guid instanceId, OperationalAlertType alertType, CancellationToken cancellationToken);
+
+    /// <summary>Whether an alert of the instance and type was raised at or after <paramref name="since"/>, whatever has become of it since.</summary>
+    public Task<bool> AlertRaisedSinceAsync(Guid instanceId, OperationalAlertType alertType, DateTimeOffset since, CancellationToken cancellationToken);
 
     /// <summary>Tracked. With <paramref name="expectedVersion"/>, the next save is conditional on it (R-21).</summary>
     public Task<OperationalAlert?> FindAlertAsync(Guid alertId, uint? expectedVersion, CancellationToken cancellationToken);

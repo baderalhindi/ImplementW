@@ -4,7 +4,7 @@ namespace PMPlatform.Domain.IntegrationMonitoring;
 
 /// <summary>
 /// A condition raised for investigation (Blueprint §17.1, FG-05 §10): availability, freshness, a reconciliation mismatch, a dead
-/// letter, a delivery rate. One alert stays open per instance and condition, so a provider outage is one alert, not one per call
+/// letter, a delivery rate, a queue backlog. One alert stays open per instance and condition, so a provider outage is one alert, not one per call
 /// (BR-INT-036). Its lifecycle is the operator's; it neither drives nor follows the integration's health. Delete policy: RETAIN.
 /// </summary>
 public sealed class OperationalAlert : AuditedEntity

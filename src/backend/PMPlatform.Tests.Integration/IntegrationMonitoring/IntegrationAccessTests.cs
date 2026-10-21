@@ -29,9 +29,10 @@ public sealed class IntegrationAccessTests(IntegrationMonitoringTestHost host)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("Development", catalogue["environment"].Text());
+        // The seeded registry and the suite's test system, by code; other tests register integrations of their own (TASK-092).
         Assert.Equal(
             ["DIRECTORY", "EXCHANGE_EMAIL", "MFA", "NAFATH", "SMS", "SSO", TestOperation.Code],
-            catalogue["items"]!.AsArray().Select(i => i!["code"].Text()));
+            catalogue["items"]!.AsArray().Select(i => i!["code"].Text()).Where(code => !code.StartsWith("THRESHOLD_", StringComparison.Ordinal)));
         JsonObject directory = catalogue["items"]!.AsArray().Single(i => i!["code"].Text() == IntegrationCodes.Directory)!.AsObject();
         JsonObject instance = directory["instances"]!.AsArray().Single()!.AsObject();
         Assert.Equal(("PRIMARY", "AD_LDAP_URL", true), (instance["code"].Text(), instance["endpointConfigurationKey"].Text(), instance["isEnabled"]!.GetValue<bool>()));

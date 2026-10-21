@@ -72,6 +72,22 @@ internal sealed class IntegrationMonitoringRepository(PMPlatformDbContext contex
             .Select(g => new { InstanceId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.InstanceId, x => x.Count, cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyDictionary<Guid, IntegrationQueueState>> MeasureQueuesAsync(CancellationToken cancellationToken) =>
+        (await context.Database.SqlQuery<QueueRow>($"""
+                SELECT q.integration_instance_id,
+                       (count(*) FILTER (WHERE q.status = 'IN_PROGRESS'))::int AS in_flight,
+                       (count(*) FILTER (WHERE q.status = 'RETRY_SCHEDULED'))::int AS awaiting_retry,
+                       min(COALESCE(f.started_at, q.started_at)) FILTER (WHERE q.status IN ('IN_PROGRESS', 'RETRY_SCHEDULED')) AS oldest_queued_at,
+                       (count(*) FILTER (WHERE q.status = 'DEAD_LETTER'))::int AS dead_letters
+                FROM integration_monitoring.invocation q
+                LEFT JOIN integration_monitoring.invocation f
+                       ON f.integration_instance_id = q.integration_instance_id AND f.operation_code = q.operation_code
+                      AND f.idempotency_key = q.idempotency_key AND f.attempt_no = 1
+                WHERE q.status IN ('IN_PROGRESS', 'RETRY_SCHEDULED', 'DEAD_LETTER')
+                GROUP BY q.integration_instance_id
+                """).ToListAsync(cancellationToken).ConfigureAwait(false))
+        .ToDictionary(r => r.IntegrationInstanceId, r => new IntegrationQueueState(r.InFlight, r.AwaitingRetry, r.OldestQueuedAt, r.DeadLetters));
+
     public Task<bool> InvocationExistsAsync(Guid invocationId, CancellationToken cancellationToken) =>
         context.Set<Invocation>().AnyAsync(i => i.Id == invocationId, cancellationToken);
 
@@ -217,6 +233,9 @@ internal sealed class IntegrationMonitoringRepository(PMPlatformDbContext contex
             .Where(a => a.IntegrationInstanceId == instanceId && a.AlertType == alertType
                         && (a.Status == OperationalAlertStatus.Open || a.Status == OperationalAlertStatus.Acknowledged))
             .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+
+    public Task<bool> AlertRaisedSinceAsync(Guid instanceId, OperationalAlertType alertType, DateTimeOffset since, CancellationToken cancellationToken) =>
+        context.Set<OperationalAlert>().AnyAsync(a => a.IntegrationInstanceId == instanceId && a.AlertType == alertType && a.RaisedAt >= since, cancellationToken);
 
     public async Task<OperationalAlert?> FindAlertAsync(Guid alertId, uint? expectedVersion, CancellationToken cancellationToken)
     {
@@ -378,5 +397,18 @@ internal sealed class IntegrationMonitoringRepository(PMPlatformDbContext contex
         public int Receipts { get; init; }
 
         public double? MedianReceiptLatency { get; init; }
+    }
+
+    private sealed class QueueRow
+    {
+        public Guid IntegrationInstanceId { get; init; }
+
+        public int InFlight { get; init; }
+
+        public int AwaitingRetry { get; init; }
+
+        public DateTimeOffset? OldestQueuedAt { get; init; }
+
+        public int DeadLetters { get; init; }
     }
 }

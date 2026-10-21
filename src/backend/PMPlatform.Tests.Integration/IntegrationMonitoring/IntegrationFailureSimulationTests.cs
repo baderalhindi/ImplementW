@@ -13,7 +13,7 @@ namespace PMPlatform.Tests.Integration.IntegrationMonitoring;
 /// TASK-075 acceptance criterion 1 and the workbook's first validation check: a downstream integration outage, with everything FG-05 does
 /// about it — failed sign-ins and connection tests, telemetry recorded, availability gone DOWN, alerts raised, a reconciliation retried to its
 /// dead letter, an e-mail relay's deliveries dead-lettered, an operator acknowledging and retrying — leaves every business table exactly as
-/// it was. Only <c>integration_monitoring</c>, the audit store and the outbox change.
+/// it was. Only <c>integration_monitoring</c>, the audit store and the outbox change, and WF-15 receives one intent per alert raised (TASK-092).
 /// </summary>
 [Collection(IntegrationMonitoringSuite.Name)]
 public sealed class IntegrationFailureSimulationTests(IntegrationMonitoringTestHost host)
@@ -36,6 +36,8 @@ public sealed class IntegrationFailureSimulationTests(IntegrationMonitoringTestH
         await host.DispatchAsync();
 
         IReadOnlyList<string> before = await host.BusinessStateAsync();
+        IReadOnlyList<string> intentsBefore = await host.AlertIntentsAsync();
+        IReadOnlyList<string> alertsBefore = await AlertIdsAsync();
         string projectBefore = await ProjectLifecycleAsync();
         try
         {
@@ -98,6 +100,11 @@ public sealed class IntegrationFailureSimulationTests(IntegrationMonitoringTestH
                     WHERE operation_code = 'RECONCILE' AND correlation_id = '{started["invocation"]!["correlationId"].Text()}' ORDER BY attempt_no
                     """));
 
+            // ...handed WF-15 one intent for each alert it raised, and nothing else...
+            IReadOnlyList<string> newIntents = [.. (await host.AlertIntentsAsync()).Except(intentsBefore)];
+            Assert.Equal((await AlertIdsAsync()).Except(alertsBefore), newIntents.Select(i => i.Split('|')[1]));
+            Assert.All(newIntents, i => Assert.StartsWith("IntegrationMonitoring.OperationalAlertRaised|", i, StringComparison.Ordinal));
+
             // ...and changed no business table: the project's lifecycle, the users, the deliveries, everything.
             Assert.Equal(projectBefore, await ProjectLifecycleAsync());
             Assert.Equal(before, await host.BusinessStateAsync());
@@ -107,6 +114,9 @@ public sealed class IntegrationFailureSimulationTests(IntegrationMonitoringTestH
             host.Clock.Reset();
         }
     }
+
+    private Task<IReadOnlyList<string>> AlertIdsAsync() =>
+        host.Database.QueryAsync("SELECT id::text FROM integration_monitoring.operational_alert ORDER BY id::text");
 
     private async Task<string> ProjectLifecycleAsync() =>
         Assert.Single(await host.Database.QueryAsync($"SELECT lifecycle_state || '|' || updated_at::text FROM project.project WHERE id = '{IdentityDatabase.EntityProjectId}'"));

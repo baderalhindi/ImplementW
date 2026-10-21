@@ -139,8 +139,9 @@ public sealed class IntegrationMonitoringTestHost : IAsyncLifetime
         """);
 
     /// <summary>
-    /// Every table outside <c>integration_monitoring</c>, the audit store and the outbox, each with a digest of all its rows: the business
-    /// state FG-05 must never change (TASK-075 acceptance criterion 1).
+    /// Every table outside <c>integration_monitoring</c>, the audit store, the outbox and WF-15's received intents, each with a digest of all
+    /// its rows: the business state FG-05 must never change (TASK-075 acceptance criterion 1). A raised alert is handed to WF-15 as a
+    /// NotificationIntent (TASK-092) — communication history, not business state — which <see cref="AlertIntentsAsync"/> accounts for.
     /// </summary>
     public async Task<IReadOnlyList<string>> BusinessStateAsync()
     {
@@ -148,11 +149,19 @@ public sealed class IntegrationMonitoringTestHost : IAsyncLifetime
             SELECT format('%I.%I', n.nspname, c.relname) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
             WHERE c.relkind = 'r' AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'integration_monitoring', 'audit_activity')
               AND NOT (n.nspname = 'common' AND c.relname = 'outbox_message')
+              AND NOT (n.nspname = 'notifications' AND c.relname IN ('notification_intent', 'notification_intent_parameter'))
             ORDER BY 1
             """);
         return await Database.QueryAsync(string.Join(" UNION ALL ", tables.Select(t =>
             $"SELECT '{t}|' || count(*) || '|' || coalesce(md5(string_agg(r::text, '|' ORDER BY r::text)), '') FROM {t} r")) + " ORDER BY 1");
     }
+
+    /// <summary>WF-15's intents by source event type and reference, each as <c>type|reference|family|deep link</c>.</summary>
+    public Task<IReadOnlyList<string>> AlertIntentsAsync() =>
+        Database.QueryAsync("""
+            SELECT source_event_type || '|' || source_reference || '|' || event_family_code || '|' || deep_link
+            FROM notifications.notification_intent ORDER BY source_reference
+            """);
 
     public async Task DisposeAsync()
     {

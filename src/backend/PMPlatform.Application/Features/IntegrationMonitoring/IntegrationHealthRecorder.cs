@@ -4,8 +4,8 @@ using PMPlatform.Domain.IntegrationMonitoring;
 namespace PMPlatform.Application.Features.IntegrationMonitoring;
 
 /// <summary>
-/// Applies an ended attempt to its instance's health and raises what it calls for: an AVAILABILITY alert when the integration goes down,
-/// a DEAD_LETTER alert when a lineage is dead-lettered. Health is an operational projection on the instance row (ERD derived register
+/// Applies an ended attempt to its instance's health and raises what it calls for: an AVAILABILITY alert when the integration goes down
+/// (unless an availability alert delay is configured: then the health pass raises it once the delay has passed), a DEAD_LETTER alert when a lineage is dead-lettered. Health is an operational projection on the instance row (ERD derived register
 /// row 21); a recovery does not resolve an alert, clear a dead letter or claim the data is current (BR-INT-033, DC-INT-10). Called with
 /// the instance locked, in the unit of work that records the attempt.
 /// </summary>
@@ -24,7 +24,9 @@ internal sealed class IntegrationHealthRecorder(OperationalAlerting alerting, In
         instance.UpdatedAt = now;
         instance.UpdatedBy = IntegrationMonitoringServicePrincipal.Id;
 
-        if (before != IntegrationAvailability.Down && instance.Availability == IntegrationAvailability.Down)
+        // With an availability alert delay the health pass raises it, once the integration has stayed down that long (TASK-092).
+        if (before != IntegrationAvailability.Down && instance.Availability == IntegrationAvailability.Down
+            && policy.AvailabilityAlertDelayOf(definition.Code) is null)
         {
             await alerting.RaiseAsync(
                 definition, instance, OperationalAlertType.Availability,

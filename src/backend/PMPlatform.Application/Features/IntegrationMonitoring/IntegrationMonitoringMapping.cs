@@ -5,13 +5,17 @@ namespace PMPlatform.Application.Features.IntegrationMonitoring;
 
 internal static class IntegrationMonitoringMapping
 {
-    public static IntegrationInstanceView ToView(IntegrationInstance instance, IReadOnlyDictionary<Guid, int> liveAlerts) =>
+    public static IntegrationInstanceView ToView(
+        IntegrationInstance instance, IReadOnlyDictionary<Guid, int> liveAlerts, IReadOnlyDictionary<Guid, IntegrationQueueState> queues) =>
         new(instance.Id, instance.Code, instance.EndpointConfigurationKey, instance.IsEnabled, instance.Availability, instance.Freshness,
-            instance.LastSuccessAt, instance.LastFailureAt, instance.EvaluatedAt, liveAlerts.TryGetValue(instance.Id, out int count) ? count : 0);
+            instance.LastSuccessAt, instance.LastFailureAt, instance.EvaluatedAt, liveAlerts.GetValueOrDefault(instance.Id), instance.AvailabilityChangedAt,
+            queues.GetValueOrDefault(instance.Id) ?? IntegrationQueueState.Empty);
 
-    public static IntegrationSummary ToSummary(IntegrationDefinition definition, IEnumerable<IntegrationInstance> instances, IReadOnlyDictionary<Guid, int> liveAlerts) =>
+    public static IntegrationSummary ToSummary(
+        IntegrationDefinition definition, IEnumerable<IntegrationInstance> instances, IReadOnlyDictionary<Guid, int> liveAlerts,
+        IReadOnlyDictionary<Guid, IntegrationQueueState> queues) =>
         new(definition.Id, definition.Code, definition.Name, definition.Direction, definition.IntegrationKind, definition.Status,
-            [.. instances.Where(i => i.IntegrationDefinitionId == definition.Id).OrderBy(i => i.Code, StringComparer.Ordinal).Select(i => ToView(i, liveAlerts))]);
+            [.. instances.Where(i => i.IntegrationDefinitionId == definition.Id).OrderBy(i => i.Code, StringComparer.Ordinal).Select(i => ToView(i, liveAlerts, queues))]);
 
     public static InvocationSummary ToSummary(Invocation invocation, IReadOnlyDictionary<Guid, string> integrationCodes) =>
         new(invocation.Id, invocation.IntegrationInstanceId, CodeOf(invocation.IntegrationInstanceId, integrationCodes), invocation.SyncRunId, invocation.OperationCode,

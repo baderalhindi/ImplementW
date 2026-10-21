@@ -17,4 +17,7 @@ public enum OperationalAlertType
 
     /// <summary>The delivery rate fell below the configured minimum (ADR-004: the SMS provider's delivery rate).</summary>
     DeliveryRate = 5,
+
+    /// <summary>The integration's queued work — attempts in flight and lineages awaiting a retry — exceeds its configured backlog threshold (FG-05 §10.1).</summary>
+    QueueBacklog = 6,
 }

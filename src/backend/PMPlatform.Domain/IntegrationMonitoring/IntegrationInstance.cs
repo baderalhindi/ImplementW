@@ -22,6 +22,9 @@ public sealed class IntegrationInstance : AuditedEntity
 
     public IntegrationAvailability Availability { get; set; } = IntegrationAvailability.Unknown;
 
+    /// <summary>When <see cref="Availability"/> last changed: since when the integration has been DOWN, for an availability alert delay.</summary>
+    public DateTimeOffset? AvailabilityChangedAt { get; set; }
+
     public IntegrationFreshness Freshness { get; set; } = IntegrationFreshness.Unknown;
 
     /// <summary>The end of the latest attempt that succeeded technically.</summary>

@@ -1,3 +1,4 @@
+using PMPlatform.Application.Features.IntegrationMonitoring.Contracts;
 using PMPlatform.Domain.IntegrationMonitoring;
 
 namespace PMPlatform.Application.Features.IntegrationMonitoring;
@@ -11,7 +12,7 @@ public static class IntegrationHealth
 {
     /// <summary>
     /// Applies an ended attempt to the instance's evidence and returns the availability before it. The latest technical outcome wins,
-    /// whatever order the attempts arrive in.
+    /// whatever order the attempts arrive in; a change of availability is dated by the attempt that made it.
     /// </summary>
     public static IntegrationAvailability Apply(IntegrationInstance instance, Invocation attempt)
     {
@@ -34,6 +35,11 @@ public static class IntegrationHealth
         }
 
         instance.Availability = AvailabilityOf(instance.LastSuccessAt, instance.LastFailureAt);
+        if (instance.Availability != before)
+        {
+            instance.AvailabilityChangedAt = at;
+        }
+
         return before;
     }
 
@@ -52,6 +58,22 @@ public static class IntegrationHealth
         ({ } success, { } span) => now - success <= span ? IntegrationFreshness.Fresh : IntegrationFreshness.Stale,
         _ => IntegrationFreshness.Unknown,
     };
+
+    /// <summary>Whether the integration has been DOWN for at least <paramref name="delay"/> (TBC-INT-08): an availability alert delay has passed.</summary>
+    public static bool DownFor(IntegrationInstance instance, TimeSpan delay, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        return instance.Availability == IntegrationAvailability.Down && instance.AvailabilityChangedAt is { } since && now - since >= delay;
+    }
+
+    /// <summary>Whether the queued work exceeds the threshold (TBC-INT-11): more operations queued than its depth, or the oldest older than its age.</summary>
+    public static bool BacklogExceeds(IntegrationQueueState queue, QueueBacklogThreshold threshold, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(queue);
+        ArgumentNullException.ThrowIfNull(threshold);
+        return (threshold.Depth is { } depth && queue.Depth > depth)
+               || (threshold.OldestAge is { } age && queue.OldestQueuedAt is { } oldest && now - oldest > age);
+    }
 
     private static DateTimeOffset Latest(DateTimeOffset? current, DateTimeOffset candidate) =>
         current is { } value && value > candidate ? value : candidate;
