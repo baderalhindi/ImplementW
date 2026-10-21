@@ -189,7 +189,9 @@ Each mutant was applied alone, built, judged and restored with a fresh modificat
 | Arabic | Right-to-left, the queue section titled «قوائم الانتظار والرسائل المتعذرة»; axe clean |
 | **The on-call route's input** | The API logged one line per alert raised — `Operational alert raised: AVAILABILITY CRITICAL on DIRECTORY (alert …)`, `… QUEUE_BACKLOG WARNING on DIRECTORY …`, `… DEAD_LETTER WARNING on DIRECTORY …` — 3 lines for 3 alerts; the log-based metric's three extractors, taken from `operations.tf`, read each line's type, severity and integration back correctly. Cloud Logging and the policy themselves need an environment (F-1) |
 
-**11 of 11 driver checks and 10 of 10 browser checks passed.** Two earlier runs are kept beside it (`check-run1.out`, `check-run2.out`): the first failed only in the harness — Puppeteer's 180 s protocol timeout ended a 7-minute wait while the page already showed the dead letters; the second found the alert list not refreshed (D-11), fixed before this run. Screenshots: `artifacts/task-092/live/out`.
+| **The dead-letter condition** (re-run, below) | After their last retry the three operations were dead letters; one DEAD_LETTER alert was raised as the first was dead-lettered and reached local.r01 in-app 14.8 s and by e-mail 14.8 s later |
+
+**11 of 11 driver checks and 10 of 10 browser checks passed.** **Re-run on the PR head** (`b35829a`, images rebuilt, a fresh `task092_live`, the image's OpenAPI equal to the snapshot), with the dead-letter routing asserted too: **15 of 15 driver checks and 10 of 10 browser checks passed** — QUEUE_BACKLOG raised 19.3 s after the breach and received in-app 34.2 s and by e-mail 34.4 s after it; the three operations dead-lettered and DEAD_LETTER received 14.8 s after the first; ADM-047 showed 3 queued, then 3 dead letters and the alerts, without a reload. Two earlier runs are kept beside it (`check-run1.out`, `check-run2.out`): the first failed only in the harness — Puppeteer's 180 s protocol timeout ended a 7-minute wait while the page already showed the dead letters; the second found the alert list not refreshed (D-11), fixed before this run. Screenshots: `artifacts/task-092/live/out`.
 
 ## 7. Operating it
 
@@ -252,3 +254,4 @@ The workbook's check, as §6.3 ran it: force a backlog and watch it arrive.
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-10-21 | Initial record. OD-1 and OD-2, the queue state, three new thresholds and QUEUE_BACKLOG, the route of each alert through WF-15 and to the on-call channel, the register and its check; 12 decisions, 8 findings. | Observability (TASK-092) |
+| 2026-10-21 | §6.3 re-run on the PR head with the dead-letter route asserted: 15 of 15 and 10 of 10. The root `.env.example` added (every key). | Observability (TASK-092) |
