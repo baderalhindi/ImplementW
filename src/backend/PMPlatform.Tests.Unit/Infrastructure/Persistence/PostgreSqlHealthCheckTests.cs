@@ -9,8 +9,9 @@ namespace PMPlatform.Tests.Unit.Infrastructure.Persistence;
 
 /// <summary>
 /// TASK-091: the readiness probe behind the anonymous endpoints — one at a time, bounded by its own timeout, and not cancelled by a caller
-/// that gives up. The database is a listener that counts connections and either never answers or closes them at once; Npgsql retries a
-/// closed handshake once, so a probe is counted by whether the count moves, not by one.
+/// that gives up. The database is a listener that counts connections and either never answers or closes them at once. GSS encryption is
+/// disabled because under its default, Prefer, Npgsql retries any failed handshake — a timeout included — on a new socket, and whether that
+/// socket connects before the expired timeout stops it is a race; without it, one probe is one connection.
 /// </summary>
 public sealed class PostgreSqlHealthCheckTests
 {
@@ -96,7 +97,7 @@ public sealed class PostgreSqlHealthCheckTests
             Configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    [PostgreSqlHealthCheck.ConnectionStringKey] = $"Host=127.0.0.1;Port={port};Database=probe;Username=probe;Password=probe;Pooling=false;SSL Mode=Disable",
+                    [PostgreSqlHealthCheck.ConnectionStringKey] = $"Host=127.0.0.1;Port={port};Database=probe;Username=probe;Password=probe;Pooling=false;SSL Mode=Disable;GSS Encryption Mode=Disable",
                 })
                 .Build();
             _ = AcceptAsync(closeAtOnce: !holdConnections);
