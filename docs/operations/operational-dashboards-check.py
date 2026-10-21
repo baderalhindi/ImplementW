@@ -13,7 +13,8 @@ reworded in C# still compiles and silently stops paging anyone. These checks run
   O-1  The register names exactly the alert types FG-05 raises (OperationalAlertType), each once
        or, for a type with two bounds, once per bound.
   O-2  Every threshold's setting is a property of IntegrationMonitoringPolicy (and its bound one of
-       QueueBacklogThreshold's); Terraform's key pattern admits exactly the register's settings.
+       QueueBacklogThreshold's); Terraform's key pattern admits exactly the register's settings; the
+       root .env.example lists every threshold for every seeded integration, commented out, and no other.
   O-3  Every environment's integration_alert_thresholds key is a registered threshold for one
        integration code; PROD sets a value only for a CONFIRMED threshold; an OPEN threshold cites
        its open question.
@@ -44,6 +45,8 @@ QUEUE_TABLE = ROOT / "src/frontend/src/features/integration-admin/components/Que
 OPERATIONS_TF = ROOT / "infra/terraform/monitoring/operations.tf"
 PLATFORM_VARIABLES = ROOT / "infra/terraform/platform/variables.tf"
 ENVIRONMENTS = ROOT / "infra/terraform/environments"
+DOTENV = ROOT / ".env.example"
+SEEDED_CODES = ["DIRECTORY", "SSO", "MFA", "NAFATH", "EXCHANGE_EMAIL", "SMS"]
 
 QUEUE_FIELDS = ["depth", "inFlight", "awaitingRetry", "oldestQueuedAt", "deadLetters"]
 
@@ -119,6 +122,14 @@ def check_settings(register):
     for unregistered in ["Unknown__DIRECTORY", "QueueBacklogThresholds__SMS", "FreshnessWindows__directory"]:
         if regex.match(unregistered):
             fail("O-2", f"Terraform admits {unregistered}, which is no registered threshold")
+    listed = re.findall(r"^\s*#?\s*IntegrationMonitoring__Policy__(\S+?)=", read(DOTENV), re.M)
+    if re.search(r"^IntegrationMonitoring__Policy__", read(DOTENV), re.M):
+        fail("O-2", ".env.example sets a threshold; each stays commented out until AHDA confirms its value")
+    expected = {row["key"].replace("<CODE>", code) for row in register["thresholds"] if row.get("key") for code in SEEDED_CODES}
+    for missing in sorted(expected - set(listed)):
+        fail("O-2", f".env.example does not list the threshold {missing}")
+    for extra in sorted(set(listed) - expected):
+        fail("O-2", f".env.example lists {extra}, which is no registered threshold of a seeded integration")
 
 
 def tfvars_thresholds(path):

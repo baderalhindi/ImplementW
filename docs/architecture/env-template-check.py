@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Environment template check (TASK-013).
 
-Diffs the two environment templates against the Environment and Secrets sheet (snapshotted as
-environment-and-secrets.csv) in both directions, and confirms that neither template carries a value.
+Diffs the three environment templates against the Environment and Secrets sheet (snapshotted as
+environment-and-secrets.csv) in both directions, and confirms that no template carries a value.
 Exit code 1 on any finding.
 
     python3 docs/architecture/env-template-check.py
@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SHEET = ROOT / "docs/architecture/environment-and-secrets.csv"
 BACKEND = ROOT / "src/backend/PMPlatform.Api/appsettings.Template.json"
 FRONTEND = ROOT / "src/frontend/.env.example"
+DOTENV = ROOT / ".env.example"
 VITE_PREFIX = "VITE_"
 
 findings = []
@@ -71,11 +72,34 @@ for name, value in frontend.items():
     if value != "":
         find(f"{FRONTEND.name}: {name} carries a value; templates list names only")
 
+# ---------------------------------------------------------------- root .env.example: every sheet variable, names only
+# Commented lines (the TASK-092 thresholds among them) are not keys; operational-dashboards-check.py holds those.
+dotenv = {}
+for lineno, line in enumerate(DOTENV.read_text().splitlines(), 1):
+    if not line.strip() or line.lstrip().startswith("#"):
+        continue
+    m = re.match(r"^([A-Z0-9_]+)=(.*?)\s*(?:#.*)?$", line)
+    if not m:
+        find(f"{DOTENV.name}:{lineno}: not a NAME= line")
+        continue
+    if m.group(1) in dotenv:
+        find(f"{DOTENV.name}: {m.group(1)} is listed twice")
+    dotenv[m.group(1)] = m.group(2)
+
+for name in sheet:
+    if name not in dotenv:
+        find(f"{DOTENV.name}: sheet variable {name} is missing")
+for name, value in dotenv.items():
+    if name not in sheet:
+        find(f"{DOTENV.name}: {name} is not a sheet variable")
+    if value != "":
+        find(f"{DOTENV.name}: {name} carries a value; templates list names only")
+
 # ---------------------------------------------------------------- report
 if findings:
     print("\n".join(findings))
     sys.exit(1)
 print(
     f"OK: {len(sheet)} sheet variables; {len(backend)} in {BACKEND.name}; "
-    f"{len(frontend)} public variables in {FRONTEND.name}; no values in either template."
+    f"{len(frontend)} public variables in {FRONTEND.name}; {len(dotenv)} in the root {DOTENV.name}; no values in any template."
 )

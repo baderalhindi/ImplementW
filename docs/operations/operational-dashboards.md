@@ -54,6 +54,7 @@
 | OD-1: ADM-047's queue table, summary and refresh | `src/frontend/src/features/integration-admin/components/QueueTable.tsx`, `IntegrationMonitoringPage.tsx`, `useRefresh.ts` (used by `CataloguePage`, `AlertList`, `InvocationList`, `SyncRunList`); the `integrationAdmin` strings in Arabic and English |
 | OD-2, the log-based metric and the on-call policy | `docs/operations/dashboards/platform-service.json.tftpl`; `infra/terraform/monitoring/operations.tf` |
 | Threshold values per environment | `integration_alert_thresholds` in `infra/terraform/environments/*/terraform.tfvars` (empty), passed by `platform/main.tf` |
+| Every key in one file | The root `.env.example`: the 43 sheet variables, names only (`env-template-check.py`), and every threshold setting for each seeded integration, commented out (O-2). An empty duration is ignored, but an empty `QueueBacklogThresholds` bound declares a threshold with no bound and stops the API, so a threshold line is uncommented only with a value |
 | Register and static check | `docs/operations/alert-thresholds.json`; `docs/operations/operational-dashboards-check.py` (repo-checks, O-1 to O-7) |
 | Tests | `PMPlatform.Tests.Unit/Application/IntegrationMonitoring/AlertThresholdTests.cs`; `PMPlatform.Tests.Integration/IntegrationMonitoring/OperationalAlertThresholdTests.cs` (CI step "IntegrationMonitoring integration tests"); `integrationAdmin.test.tsx` |
 
