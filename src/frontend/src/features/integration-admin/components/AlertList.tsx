@@ -18,6 +18,7 @@ import { type OperationalAlertQuery, type OperationalAlertView } from '../api/ty
 import { invocationPath } from '../catalogue.ts';
 import { alertStatusTone, severityTone } from '../presentation.ts';
 import { integrationProblemMessage } from '../problems.ts';
+import { useRefresh } from '../useRefresh.ts';
 
 import { Code, Moment } from './Display.tsx';
 
@@ -30,6 +31,8 @@ interface AlertListProps {
   query: OperationalAlertQuery;
   caption: string;
   emptyTitle: string;
+  /** Read again this often, in milliseconds (ADM-047, TASK-092). */
+  refreshEvery?: number;
 }
 
 /**
@@ -38,7 +41,12 @@ interface AlertListProps {
  * availability or freshness, and the integration recovering closes no alert (TASK-075 D-9), so the page says neither.
  * Each command is the API's to allow: a refusal is shown, and the list is read again.
  */
-export function AlertList({ query, caption, emptyTitle }: AlertListProps): ReactElement {
+export function AlertList({
+  query,
+  caption,
+  emptyTitle,
+  refreshEvery,
+}: AlertListProps): ReactElement {
   const { t } = useI18n();
   const [page, setPage] = useState(1);
   const [acknowledging, setAcknowledging] = useState<OperationalAlertView | null>(null);
@@ -55,6 +63,7 @@ export function AlertList({ query, caption, emptyTitle }: AlertListProps): React
     [key, page],
   );
   const alerts = useApiResource(load, { keepWhileReloading: true });
+  useRefresh(alerts.reload, refreshEvery);
 
   const done = (message: string) => {
     setAcknowledging(null);

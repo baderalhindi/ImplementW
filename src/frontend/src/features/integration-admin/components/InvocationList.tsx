@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { integrationAdminApi } from '../api/integrationAdminApi.ts';
 import { type InvocationQuery } from '../api/types.ts';
 import { integrationProblemMessage } from '../problems.ts';
+import { useRefresh } from '../useRefresh.ts';
 
 import { InvocationTable } from './InvocationTable.tsx';
 
@@ -18,6 +19,8 @@ interface InvocationListProps {
   emptyTitle: string;
   page: number;
   onPageChange: (page: number) => void;
+  /** Read again this often, in milliseconds (ADM-047, TASK-092). */
+  refreshEvery?: number;
 }
 
 /** A page of attempts the API found for `query`, newest first. */
@@ -27,6 +30,7 @@ export function InvocationList({
   emptyTitle,
   page,
   onPageChange,
+  refreshEvery,
 }: InvocationListProps): ReactElement {
   const { t } = useI18n();
   // Compared by value: each screen builds its query on every render.
@@ -40,9 +44,11 @@ export function InvocationList({
       ),
     [key, page],
   );
-  const invocations = useApiResource(load);
+  const invocations = useApiResource(load, { keepWhileReloading: true });
+  useRefresh(invocations.reload, refreshEvery);
 
-  if (invocations.loading) {
+  // A refresh keeps the rows shown until the next read lands; only a first read shows the loading state.
+  if (invocations.data === undefined && invocations.error === null) {
     return <LoadingState />;
   }
   if (invocations.error !== null || invocations.data === undefined) {

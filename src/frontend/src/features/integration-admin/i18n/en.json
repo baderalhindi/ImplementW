@@ -75,7 +75,8 @@
     "FRESHNESS": "Freshness",
     "RECONCILIATION_MISMATCH": "Reconciliation mismatch",
     "DEAD_LETTER": "Dead letter",
-    "DELIVERY_RATE": "Delivery rate"
+    "DELIVERY_RATE": "Delivery rate",
+    "QUEUE_BACKLOG": "Queue backlog"
   },
   "severity": {
     "INFO": "Information",
@@ -241,7 +242,18 @@
     "liveAlerts": "Live alerts",
     "deadLetters": "Dead letters",
     "deadLettersNote": "Operations that failed every permitted attempt. A dead letter stays until an operator retries it; the integration recovering does not clear it.",
-    "noDeadLetters": "No dead letter."
+    "noDeadLetters": "No dead letter.",
+    "queued": "Queued"
+  },
+  "queue": {
+    "title": "Queues and dead letters",
+    "note": "Work each integration has not finished: attempts in flight and operations awaiting a retry, and when the oldest was first attempted. Dead letters are counted apart: they have left the queue and wait for an operator. Refreshed every 30 seconds.",
+    "depth": "Queued",
+    "inFlight": "In flight",
+    "awaitingRetry": "Awaiting retry",
+    "oldestQueuedAt": "Oldest queued since",
+    "deadLetters": "Dead letters",
+    "nothingQueued": "Nothing queued"
   },
   "alerts": {
     "title": "Operational alerts",

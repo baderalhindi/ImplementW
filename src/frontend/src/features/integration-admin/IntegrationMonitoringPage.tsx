@@ -12,13 +12,18 @@ import { Section } from './components/Display.tsx';
 import { IndicatorLegend } from './components/HealthIndicators.tsx';
 import { IntegrationTable } from './components/IntegrationTable.tsx';
 import { InvocationList } from './components/InvocationList.tsx';
+import { QueueTable } from './components/QueueTable.tsx';
 import { SyncRunList } from './components/SyncRunList.tsx';
 
 const DEAD_LETTERS = { statuses: ['DEAD_LETTER'] } as const;
 
+/** FG-05's health pass runs every 30 s (`IntegrationMonitoring:Worker:PollInterval`); reading more often shows nothing new. */
+export const MONITORING_REFRESH_MS = 30_000;
+
 /**
  * How many instances are down, and how many stale — counted per dimension, never combined into one health figure
- * (acceptance criterion 2). Counting is display; each state is the API's.
+ * (acceptance criterion 2) — then the work queued and the dead letters across every integration (TASK-092). Counting is
+ * display; each state is the API's.
  */
 function DimensionSummary({ catalogue }: { catalogue: IntegrationCatalogueView }): ReactElement {
   const { t } = useI18n();
@@ -39,6 +44,14 @@ function DimensionSummary({ catalogue }: { catalogue: IntegrationCatalogueView }
         <dt>{t('integrationAdmin.monitoring.liveAlerts')}</dt>
         <dd>{instances.reduce((sum, instance) => sum + instance.openAlertCount, 0)}</dd>
       </div>
+      <div data-summary="queued">
+        <dt>{t('integrationAdmin.monitoring.queued')}</dt>
+        <dd>{instances.reduce((sum, instance) => sum + instance.queue.depth, 0)}</dd>
+      </div>
+      <div data-summary="deadLetters">
+        <dt>{t('integrationAdmin.monitoring.deadLetters')}</dt>
+        <dd>{instances.reduce((sum, instance) => sum + instance.queue.deadLetters, 0)}</dd>
+      </div>
     </dl>
   );
 }
@@ -50,9 +63,11 @@ function alertStatusesFrom(params: URLSearchParams): readonly OperationalAlertSt
 }
 
 /**
- * ADM-047 Integration Monitoring (FG-05 §13): the operator's workspace. Each integration's availability and freshness
- * are two indicators in two columns, with a legend stating what each means first (Blueprint §17.1: availability is
- * "distinct from freshness"; acceptance criterion 2). Then the alerts to handle, the dead letters, and the runs.
+ * ADM-047 Integration Monitoring (FG-05 §13): the operator's workspace and the operational dashboard of TASK-092
+ * (docs/operations/operational-dashboards.md OD-1). Each integration's availability and freshness are two indicators
+ * in two columns, with a legend stating what each means first (Blueprint §17.1: availability is "distinct from
+ * freshness"); then every integration's queue depth and dead letters; then the alerts to handle, the dead letters, and
+ * the runs. Every part is read again every 30 seconds, so the figures and the lists stay live.
  */
 export function IntegrationMonitoringPage(): ReactElement {
   const { t } = useI18n();
@@ -61,7 +76,11 @@ export function IntegrationMonitoringPage(): ReactElement {
   const alertStatus = params.get('alertStatus') ?? '';
   const title = t('integrationAdmin.monitoring.title');
   return (
-    <CataloguePage title={title} description={t('integrationAdmin.monitoring.description')}>
+    <CataloguePage
+      title={title}
+      description={t('integrationAdmin.monitoring.description')}
+      refreshEvery={MONITORING_REFRESH_MS}
+    >
       {(catalogue) => (
         <>
           <IndicatorLegend />
@@ -70,6 +89,16 @@ export function IntegrationMonitoringPage(): ReactElement {
             <IntegrationTable
               items={catalogue.items}
               caption={t('integrationAdmin.monitoring.health')}
+              emptyTitle={t('integrationAdmin.overview.empty')}
+            />
+          </Section>
+          <Section
+            title={t('integrationAdmin.queue.title')}
+            description={t('integrationAdmin.queue.note')}
+          >
+            <QueueTable
+              items={catalogue.items}
+              caption={t('integrationAdmin.queue.title')}
               emptyTitle={t('integrationAdmin.overview.empty')}
             />
           </Section>
@@ -100,6 +129,7 @@ export function IntegrationMonitoringPage(): ReactElement {
               query={{ statuses: alertStatusesFrom(params) }}
               caption={t('integrationAdmin.alerts.title')}
               emptyTitle={t('integrationAdmin.alerts.none')}
+              refreshEvery={MONITORING_REFRESH_MS}
             />
           </Section>
           <Section
@@ -112,10 +142,14 @@ export function IntegrationMonitoringPage(): ReactElement {
               emptyTitle={t('integrationAdmin.monitoring.noDeadLetters')}
               page={deadLetterPage}
               onPageChange={setDeadLetterPage}
+              refreshEvery={MONITORING_REFRESH_MS}
             />
           </Section>
           <Section title={t('integrationAdmin.syncRuns.title')}>
-            <SyncRunList caption={t('integrationAdmin.syncRuns.title')} />
+            <SyncRunList
+              caption={t('integrationAdmin.syncRuns.title')}
+              refreshEvery={MONITORING_REFRESH_MS}
+            />
           </Section>
         </>
       )}
