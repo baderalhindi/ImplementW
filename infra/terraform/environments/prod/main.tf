@@ -57,4 +57,6 @@ module "platform" {
 
   uptime_monitoring          = var.uptime_monitoring
   alert_notification_channel = var.alert_notification_channel
+
+  integration_alert_thresholds = var.integration_alert_thresholds
 }

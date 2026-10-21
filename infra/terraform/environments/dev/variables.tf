@@ -93,3 +93,9 @@ variable "alert_notification_channel" {
   type        = string
   default     = ""
 }
+
+variable "integration_alert_thresholds" {
+  description = "FG-05's alert thresholds for this environment (TASK-092; docs/operations/alert-thresholds.json)."
+  type        = map(string)
+  default     = {}
+}

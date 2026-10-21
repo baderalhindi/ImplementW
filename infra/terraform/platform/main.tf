@@ -131,11 +131,17 @@ module "compute" {
   # TASK-019 writes, so nothing is invented here (infrastructure-as-code.md F-5).
   # CORS_ALLOWED_ORIGINS is the environment's one origin (TASK-016 D-1): the SPA calls the API same-origin, and a
   # browser sends Origin on those writes too, so the API's allowlist (TASK-078) holds exactly APP_BASE_URL.
-  plain_environment = {
-    APP_BASE_URL          = local.app_base_url
-    CORS_ALLOWED_ORIGINS  = local.app_base_url
-    SECRET_STORE_ENDPOINT = local.secret_store_endpoint
-  }
+  # TASK-092: FG-05's alert thresholds, as the API reads them (IntegrationMonitoring:Policy). They are
+  # AHDA's values (PTBC-037), registered in docs/operations/alert-thresholds.json; each environment's
+  # terraform.tfvars holds the ones set for it, none until AHDA confirms them.
+  plain_environment = merge(
+    {
+      APP_BASE_URL          = local.app_base_url
+      CORS_ALLOWED_ORIGINS  = local.app_base_url
+      SECRET_STORE_ENDPOINT = local.secret_store_endpoint
+    },
+    { for setting, value in var.integration_alert_thresholds : "IntegrationMonitoring__Policy__${setting}" => value },
+  )
 }
 
 module "load_balancer" {
@@ -155,7 +161,8 @@ module "load_balancer" {
 }
 
 # TASK-091 (CTL-31): the environment's readiness, checked from outside through the load balancer, and the
-# alert on it, sent to the on-call channel. Only where the Environment and Secrets sheet gives the
+# alert on it, sent to the on-call channel. TASK-092 (CTL-32): the platform service dashboard and the
+# route of each FG-05 operational alert to the same channel. Only where the Environment and Secrets sheet gives the
 # environment one (ALERT_CHANNEL_WEBHOOK_URL: SIT, UAT, PROD).
 module "monitoring" {
   source = "../monitoring"
@@ -165,6 +172,8 @@ module "monitoring" {
   environment          = var.environment
   name_prefix          = local.name_prefix
   host                 = local.domain_name
+  service_name         = module.compute.service_name
+  database_instance    = local.environment.database.instance
   notification_channel = var.alert_notification_channel
   labels               = merge(local.labels, { task = "task-091" })
 
