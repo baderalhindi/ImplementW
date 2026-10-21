@@ -21,7 +21,8 @@ internal sealed partial class IntegrationCatalogueService(
         IReadOnlyList<IntegrationDefinition> definitions = await repository.ListDefinitionsAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyList<IntegrationInstance> instances = await repository.ListInstancesAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyDictionary<Guid, int> liveAlerts = await repository.CountLiveAlertsAsync(cancellationToken).ConfigureAwait(false);
-        return [.. definitions.Select(d => IntegrationMonitoringMapping.ToSummary(d, instances, liveAlerts))];
+        IReadOnlyDictionary<Guid, IntegrationQueueState> queues = await repository.MeasureQueuesAsync(cancellationToken).ConfigureAwait(false);
+        return [.. definitions.Select(d => IntegrationMonitoringMapping.ToSummary(d, instances, liveAlerts, queues))];
     }
 
     public async Task<AdministrationResult<Versioned<IntegrationDetail>>> GetAsync(
@@ -76,6 +77,7 @@ internal sealed partial class IntegrationCatalogueService(
         IReadOnlyList<IntegrationInstance> instances = [.. (await repository.ListInstancesAsync(cancellationToken).ConfigureAwait(false))
             .Where(i => i.IntegrationDefinitionId == definition.Id)];
         IReadOnlyDictionary<Guid, int> liveAlerts = await repository.CountLiveAlertsAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, IntegrationQueueState> queues = await repository.MeasureQueuesAsync(cancellationToken).ConfigureAwait(false);
         List<IntegrationMetrics> metrics = [];
         foreach (IntegrationInstance instance in instances.OrderBy(i => i.Code, StringComparer.Ordinal))
         {
@@ -84,7 +86,7 @@ internal sealed partial class IntegrationCatalogueService(
         }
 
         IntegrationDetail detail = new(
-            IntegrationMonitoringMapping.ToSummary(definition, instances, liveAlerts), definition.OwnerRoleId, definition.MaxAttempts, definition.RetryBackoffSeconds,
+            IntegrationMonitoringMapping.ToSummary(definition, instances, liveAlerts, queues), definition.OwnerRoleId, definition.MaxAttempts, definition.RetryBackoffSeconds,
             engine.OperationsOf(definition.Code), metrics);
         return new Versioned<IntegrationDetail>(detail, repository.RowVersionOf(definition));
     }

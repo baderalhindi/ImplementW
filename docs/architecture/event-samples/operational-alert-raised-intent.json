@@ -1,0 +1,27 @@
+{
+  "eventId": "0192f3a4-5b6c-7d8e-9f0a-1b2c3d4e5f60",
+  "eventType": "IntegrationMonitoring.OperationalAlertRaised",
+  "schemaVersion": 1,
+  "kind": "NOTIFICATION_INTENT",
+  "messageKey": "IntegrationMonitoring.OperationalAlertRaised:0192f3a4-5b6c-7d8e-9f0a-2c3d4e5f6071",
+  "idempotencyKey": "0192f3a4-5b6c-7d8e-9f0a-2c3d4e5f6071",
+  "occurredAt": "2026-10-21T09:30:00Z",
+  "sourceModule": "IntegrationMonitoring",
+  "correlationId": "6b1f0c2e-8a3d-4e5b-9c7f-1d2e3f4a5b6c",
+  "causationId": null,
+  "actor": { "actorType": "SERVICE", "userId": "00000000-0000-4000-8000-0000000000f3" },
+  "subject": { "module": "IntegrationMonitoring", "type": "OperationalAlert", "id": "0192f3a4-5b6c-7d8e-9f0a-2c3d4e5f6071", "revisionNo": null },
+  "scope": { "projectId": null, "departmentId": null, "externalEntityId": null },
+  "data": {
+    "eventFamilyCode": "INTEGRATION_OPERATIONAL_ALERT",
+    "sourceReference": "0192f3a4-5b6c-7d8e-9f0a-2c3d4e5f6071",
+    "scheduledFor": null,
+    "deepLink": "/admin/integration-detail-configuration/5e3c1a7b-2d4f-4b6a-9c8e-0f1a2b3c4d5e",
+    "parameters": [
+      { "name": "integrationCode", "value": "EXCHANGE_EMAIL" },
+      { "name": "alertType", "value": "QUEUE_BACKLOG" },
+      { "name": "severity", "value": "WARNING" }
+    ],
+    "condition": null
+  }
+}

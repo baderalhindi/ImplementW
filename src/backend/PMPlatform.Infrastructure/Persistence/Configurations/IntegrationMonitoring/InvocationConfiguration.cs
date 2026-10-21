@@ -32,6 +32,10 @@ internal sealed class InvocationConfiguration : IEntityTypeConfiguration<Invocat
         // The retry pass's queue: lineages whose next attempt is due, earliest first (a worker query, indexed by its owner).
         builder.HasIndex(e => new { e.NextAttemptAt, e.Id }).HasFilter("status = 'RETRY_SCHEDULED'").HasDatabaseName("ix_invocation_retry_queue");
 
+        // ADM-047's queue state and the backlog check (TASK-092): only live work and current dead letters, so it stays small as attempts grow.
+        builder.HasIndex(e => new { e.IntegrationInstanceId, e.Status })
+            .HasFilter("status IN ('IN_PROGRESS', 'RETRY_SCHEDULED', 'DEAD_LETTER')").HasDatabaseName("ix_invocation_queue_state");
+
         builder.HasOne<IntegrationInstance>().WithMany().HasForeignKey(e => e.IntegrationInstanceId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<SyncRun>().WithMany().HasForeignKey(e => e.SyncRunId).OnDelete(DeleteBehavior.Restrict);
     }

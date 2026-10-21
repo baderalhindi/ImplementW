@@ -23,6 +23,16 @@ variable "host" {
   }
 }
 
+variable "service_name" {
+  description = "The API's Cloud Run service, whose built-in metrics and log lines the dashboard and the operational-alert metric read (TASK-092)."
+  type        = string
+}
+
+variable "database_instance" {
+  description = "The environment's Cloud SQL instance name, from the manifest, for the dashboard's database panels (TASK-092)."
+  type        = string
+}
+
 variable "notification_channel" {
   description = "The on-call channel's resource name, projects/<project>/notificationChannels/<id>. route-alerts.sh creates the channel from ALERT_CHANNEL_WEBHOOK_URL and prints this name; the pipeline supplies it as TF_VAR_alert_notification_channel."
   type        = string

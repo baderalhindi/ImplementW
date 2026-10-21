@@ -2261,6 +2261,7 @@ Table integration_monitoring.integration_instance {
   freshness varchar(50) [not null, note: 'FRESH | STALE | UNKNOWN']
   last_success_at timestamptz
   last_failure_at timestamptz
+  availability_changed_at timestamptz [note: 'When availability last changed: since when the integration has been DOWN, for an availability alert delay (TASK-092)']
   evaluated_at timestamptz [note: 'When availability and freshness were last evaluated. Named health_evaluated_at until TASK-075: a column named for health is WF-02\'s or WF-03\'s alone (M-12)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
@@ -2323,7 +2324,7 @@ Table integration_monitoring.operational_alert {
   integration_instance_id uuid [not null, ref: > integration_monitoring.integration_instance.id]
   sync_run_id uuid [ref: > integration_monitoring.sync_run.id]
   invocation_id uuid [ref: > integration_monitoring.invocation.id]
-  alert_type varchar(50) [not null, note: 'AVAILABILITY | FRESHNESS | RECONCILIATION_MISMATCH | DEAD_LETTER | DELIVERY_RATE']
+  alert_type varchar(50) [not null, note: 'AVAILABILITY | FRESHNESS | RECONCILIATION_MISMATCH | DEAD_LETTER | DELIVERY_RATE | QUEUE_BACKLOG']
   severity varchar(50) [not null, note: 'INFO | WARNING | CRITICAL']
   raised_at timestamptz [not null]
   status varchar(50) [not null, note: 'OPEN | ACKNOWLEDGED | RESOLVED | DISMISSED']

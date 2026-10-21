@@ -17,6 +17,7 @@ import {
   OPEN_ALERT_ID,
   PLANTED_SECRETS,
   RETRY_ATTEMPT_ID,
+  seededAlerts,
   seededCatalogue,
   SIGN_IN_CALL_ID,
   SMS_ID,
@@ -284,6 +285,102 @@ describe('acceptance criterion 2: ADM-047 shows Availability and Freshness as tw
     expect(legendList.textContent).toContain(en('integrationAdmin.indicators.freshnessMeaning'));
     expect(document.querySelector('[data-summary="availability"] dd')?.textContent).toBe('1');
     expect(document.querySelector('[data-summary="freshness"] dd')?.textContent).toBe('1');
+  });
+});
+
+describe('TASK-092: ADM-047 is the operational dashboard of every registered integration', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test('every integration shows its queue depth, its parts, its oldest queued time and its dead letters', async () => {
+    open('/admin/integration-monitoring', { items: [...seededCatalogue(), internalSystem()] });
+
+    const table = await screen.findByRole('table', { name: en('integrationAdmin.queue.title') });
+    const rows = [...table.querySelectorAll('tbody tr')];
+    // Every registered integration, the one registered after the seed included, and nothing queued is a zero.
+    expect(rows.map((row) => row.getAttribute('data-queue'))).toEqual([
+      'DIRECTORY',
+      'SSO',
+      'MFA',
+      'NAFATH',
+      'EXCHANGE_EMAIL',
+      'SMS',
+      'FINANCE_LEDGER',
+    ]);
+    const cell = (code: string, field: string) =>
+      present(table.querySelector(`tr[data-queue="${code}"] [data-field="${field}"]`), field);
+    expect(
+      ['depth', 'inFlight', 'awaitingRetry', 'deadLetters'].map(
+        (field) => cell('EXCHANGE_EMAIL', field).textContent,
+      ),
+    ).toEqual(['12', '1', '11', '3']);
+    expect(
+      cell('EXCHANGE_EMAIL', 'oldestQueuedAt').querySelector('time')?.getAttribute('dateTime'),
+    ).toBe('2026-10-14T08:40:00Z');
+    expect(cell('DIRECTORY', 'deadLetters').textContent).toBe('1');
+    expect(cell('FINANCE_LEDGER', 'depth').textContent).toBe('0');
+    expect(cell('FINANCE_LEDGER', 'oldestQueuedAt').textContent).toBe(
+      en('integrationAdmin.queue.nothingQueued'),
+    );
+
+    // The summary counts queued work and dead letters across every integration, each on its own.
+    expect(document.querySelector('[data-summary="queued"] dd')?.textContent).toBe('12');
+    expect(document.querySelector('[data-summary="deadLetters"] dd')?.textContent).toBe('4');
+    await expectAccessible();
+  });
+
+  test('the screen reads everything again every 30 seconds, so a forced backlog appears without reopening it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const items = seededCatalogue();
+    const api = open('/admin/integration-monitoring', { items });
+    const table = await screen.findByRole('table', { name: en('integrationAdmin.queue.title') });
+    const depth = () =>
+      table.querySelector('tr[data-queue="SMS"] [data-field="depth"]')?.textContent;
+    expect(depth()).toBe('0');
+    const reads = api.requestsTo('GET', /^\/integrations$/).length;
+
+    const sms = present(items.find((item) => item.code === 'SMS')?.instances[0], 'SMS instance');
+    sms.queue = {
+      depth: 7,
+      inFlight: 0,
+      awaitingRetry: 7,
+      oldestQueuedAt: '2026-10-14T09:00:00Z',
+      deadLetters: 2,
+    };
+    await vi.advanceTimersByTimeAsync(29_000);
+    expect(depth()).toBe('0');
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    await waitFor(() => {
+      expect(depth()).toBe('7');
+    });
+    expect(api.requestsTo('GET', /^\/integrations$/).length).toBe(reads + 1);
+    expect(
+      table.querySelector('tr[data-queue="SMS"] [data-field="deadLetters"]')?.textContent,
+    ).toBe('2');
+    // The lists below are read again with it, so an alert raised meanwhile is listed beside the counts.
+    expect(api.requestsTo('GET', /^\/operational-alerts$/).length).toBeGreaterThanOrEqual(2);
+    expect(api.requestsTo('GET', /^\/integration-invocations$/).length).toBeGreaterThanOrEqual(2);
+    expect(api.requestsTo('GET', /^\/sync-runs$/).length).toBeGreaterThanOrEqual(2);
+  });
+
+  test('a queue backlog alert is named as such', async () => {
+    const [alert] = seededAlerts();
+    open('/admin/integration-monitoring', {
+      alerts: [
+        {
+          ...present(alert, 'alert'),
+          alertType: 'QUEUE_BACKLOG',
+          detail: 'EXCHANGE_EMAIL has 12 operations queued',
+        },
+      ],
+    });
+
+    const row = await waitFor(() =>
+      present(document.querySelector(`tr[data-alert="${OPEN_ALERT_ID}"]`), 'backlog alert'),
+    );
+    expect(row.textContent).toContain(en('integrationAdmin.alertType.QUEUE_BACKLOG'));
   });
 });
 

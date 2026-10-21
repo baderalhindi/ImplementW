@@ -30,6 +30,21 @@ export interface IntegrationInstanceView {
   lastFailureAt: string | null;
   evaluatedAt: string | null;
   openAlertCount: number;
+  /** Since when the availability shown has held; null before its first change (TASK-092). */
+  availabilityChangedAt: string | null;
+  queue: IntegrationQueueState;
+}
+
+/**
+ * An instance's queued work as FG-05 records it (TASK-092): attempts in flight and operations awaiting a retry, the
+ * depth being their sum, and when the oldest was first attempted. Dead letters wait for an operator and are not queued.
+ */
+export interface IntegrationQueueState {
+  depth: number;
+  inFlight: number;
+  awaitingRetry: number;
+  oldestQueuedAt: string | null;
+  deadLetters: number;
 }
 
 export interface IntegrationSummary {
@@ -150,7 +165,12 @@ export interface SyncRunView {
 export type SyncRunPage = Paged<SyncRunView>;
 
 export type OperationalAlertType =
-  'AVAILABILITY' | 'FRESHNESS' | 'RECONCILIATION_MISMATCH' | 'DEAD_LETTER' | 'DELIVERY_RATE';
+  | 'AVAILABILITY'
+  | 'FRESHNESS'
+  | 'RECONCILIATION_MISMATCH'
+  | 'DEAD_LETTER'
+  | 'DELIVERY_RATE'
+  | 'QUEUE_BACKLOG';
 export type OperationalAlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
 export type OperationalAlertStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED' | 'DISMISSED';
 

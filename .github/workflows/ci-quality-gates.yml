@@ -692,6 +692,9 @@ jobs:
       - name: Health checks and uptime monitoring (TASK-091)
         run: python3 docs/architecture/uptime-monitoring-check.py
 
+      - name: Operational dashboards and alert thresholds (TASK-092)
+        run: python3 docs/operations/operational-dashboards-check.py
+
       - name: Network security (TASK-021)
         run: python3 docs/architecture/network-security-check.py
 

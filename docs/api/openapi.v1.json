@@ -26216,7 +26216,9 @@
           "lastSuccessAt",
           "lastFailureAt",
           "evaluatedAt",
-          "openAlertCount"
+          "openAlertCount",
+          "availabilityChangedAt",
+          "queue"
         ],
         "type": "object",
         "properties": {
@@ -26267,9 +26269,19 @@
               "string"
             ],
             "format": "int32"
+          },
+          "availabilityChangedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "queue": {
+            "$ref": "#/components/schemas/IntegrationQueueState"
           }
         },
-        "description": "An instance's runtime state (ADM-040, ADM-047): availability and freshness as two indicators, never one combined health (Blueprint\n§17.1, BR-INT-013), beside activation, which is neither. The endpoint is named by its configuration key; no secret is ever here."
+        "description": "An instance's runtime state (ADM-040, ADM-047): availability and freshness as two indicators, never one combined health (Blueprint\n§17.1, BR-INT-013), beside activation, which is neither, and its queued work (TASK-092). `AvailabilityChangedAt` is since when the\navailability has held, null before its first change. The endpoint is named by its configuration key; no secret is ever here."
       },
       "IntegrationKind": {
         "enum": [
@@ -26412,6 +26424,62 @@
           }
         },
         "description": "ADR-004's measures of a provider over a window: delivery rate, failure rate, call latency and receipt latency. A measure with no\nsample is null, never zero (Blueprint safety rule: missing ≠ zero)."
+      },
+      "IntegrationQueueState": {
+        "required": [
+          "inFlight",
+          "awaitingRetry",
+          "oldestQueuedAt",
+          "deadLetters"
+        ],
+        "type": "object",
+        "properties": {
+          "inFlight": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Attempts begun and not ended.",
+            "format": "int32"
+          },
+          "awaitingRetry": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Operations whose latest attempt is RETRY_SCHEDULED.",
+            "format": "int32"
+          },
+          "oldestQueuedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the first attempt of the oldest queued operation began; null with nothing queued.",
+            "format": "date-time"
+          },
+          "deadLetters": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Operations whose latest attempt is DEAD_LETTER: not in the queue, and not retried until an operator does.",
+            "format": "int32"
+          },
+          "depth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "The queue depth: operations in flight or awaiting a retry.",
+            "format": "int32"
+          }
+        },
+        "description": "An instance's queued work as FG-05 records it (FG-05 §6.6; ADM-047): attempts still in flight and operations whose latest attempt waits\nfor a retry — FG-05's own and those another module reports — with when the oldest of them began, beside the operations that ended\ndead-lettered and wait for an operator. It measures FG-05's records, not a broker: work a module has not attempted yet is not in it\n(docs/operations/operational-dashboards.md F-3)."
       },
       "IntegrationReconciliationCreateRequest": {
         "required": [
@@ -30110,7 +30178,8 @@
           "FRESHNESS",
           "RECONCILIATION_MISMATCH",
           "DEAD_LETTER",
-          "DELIVERY_RATE"
+          "DELIVERY_RATE",
+          "QUEUE_BACKLOG"
         ],
         "description": "The condition an operational alert reports (FG-05 §10.1)."
       },

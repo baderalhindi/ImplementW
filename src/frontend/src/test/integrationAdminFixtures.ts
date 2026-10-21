@@ -58,6 +58,8 @@ function instance(
     lastFailureAt: null,
     evaluatedAt: null,
     openAlertCount: 0,
+    availabilityChangedAt: null,
+    queue: { depth: 0, inFlight: 0, awaitingRetry: 0, oldestQueuedAt: null, deadLetters: 0 },
     ...overrides,
   };
 }
@@ -99,6 +101,8 @@ export function seededCatalogue(): IntegrationSummary[] {
         lastFailureAt: '2026-10-13T07:00:00Z',
         evaluatedAt: '2026-10-14T09:00:00Z',
         openAlertCount: 2,
+        availabilityChangedAt: '2026-10-13T08:00:00Z',
+        queue: { depth: 0, inFlight: 0, awaitingRetry: 0, oldestQueuedAt: null, deadLetters: 1 },
       }),
     }),
     definition(SSO_ID, 'SSO', 'Single sign-on (OpenID Connect)', 'الدخول الموحد (OpenID Connect)', {
@@ -134,6 +138,14 @@ export function seededCatalogue(): IntegrationSummary[] {
         availability: 'UP',
         lastSuccessAt: '2026-10-14T08:30:00Z',
         evaluatedAt: '2026-10-14T08:30:00Z',
+        // A relay that answers again with a backlog still draining (FG-05 §9.3) and three dead letters.
+        queue: {
+          depth: 12,
+          inFlight: 1,
+          awaitingRetry: 11,
+          oldestQueuedAt: '2026-10-14T08:40:00Z',
+          deadLetters: 3,
+        },
       }),
     }),
     definition(SMS_ID, 'SMS', 'SMS provider', 'مزود الرسائل النصية', {

@@ -366,7 +366,8 @@ internal sealed partial class IntegrationInvocationEngine(
                 audit.Stage(IntegrationMonitoringAudit.ReconciliationCompleted(run, attempt, definition.Code));
             }
 
-            if (outcome.MismatchCount > 0)
+            // A tolerance (TBC-INT-15) lets a known number of differences pass without an alert; the run records them all regardless.
+            if (outcome.MismatchCount > policy.MismatchToleranceOf(definition.Code))
             {
                 await alerting.RaiseAsync(
                     definition, instance, OperationalAlertType.ReconciliationMismatch, outcome.MismatchDetail ?? $"{outcome.MismatchCount} mismatches",

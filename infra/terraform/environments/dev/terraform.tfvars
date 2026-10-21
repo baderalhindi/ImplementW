@@ -41,3 +41,10 @@ deletion_protection = false
 # TASK-091: no uptime check. DEV has no on-call channel — the Environment and Secrets sheet gives
 # ALERT_CHANNEL_WEBHOOK_URL to SIT, UAT and PROD only — so an alert here would reach no one.
 uptime_monitoring = false
+
+# TASK-092: FG-05's alert thresholds (docs/operations/alert-thresholds.json). Availability, freshness,
+# queue backlog and reconciliation mismatch are AHDA's values (PTBC-037, PTBC-046), not confirmed yet, so
+# none is set: FG-05 then alerts an integration that goes down at once and any mismatch, and raises no
+# freshness, delivery-rate or backlog alert. A non-PROD drill sets a test value here for its run only
+# (operational-dashboards.md §7.3).
+integration_alert_thresholds = {}

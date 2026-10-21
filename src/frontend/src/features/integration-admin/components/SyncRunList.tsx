@@ -12,12 +12,15 @@ import { integrationAdminApi } from '../api/integrationAdminApi.ts';
 import { logsFilteredBy } from '../catalogue.ts';
 import { syncRunTone } from '../presentation.ts';
 import { integrationProblemMessage } from '../problems.ts';
+import { useRefresh } from '../useRefresh.ts';
 
 import { Code, Moment } from './Display.tsx';
 
 interface SyncRunListProps {
   integrationId?: string;
   caption: string;
+  /** Read again this often, in milliseconds (ADM-047, TASK-092). */
+  refreshEvery?: number;
 }
 
 /**
@@ -25,7 +28,11 @@ interface SyncRunListProps {
  * applied count is always 0 — and reports mismatches as an alert (TASK-075 D-8). Each run opens its attempts in ADM-048
  * by correlation id.
  */
-export function SyncRunList({ integrationId, caption }: SyncRunListProps): ReactElement {
+export function SyncRunList({
+  integrationId,
+  caption,
+  refreshEvery,
+}: SyncRunListProps): ReactElement {
   const { t, formatDateTime } = useI18n();
   const [page, setPage] = useState(1);
   const load = useCallback(
@@ -33,9 +40,11 @@ export function SyncRunList({ integrationId, caption }: SyncRunListProps): React
       integrationAdminApi.syncRuns({ integrationId }, { page, pageSize: PAGE_SIZE }, signal),
     [integrationId, page],
   );
-  const runs = useApiResource(load);
+  const runs = useApiResource(load, { keepWhileReloading: true });
+  useRefresh(runs.reload, refreshEvery);
 
-  if (runs.loading) {
+  // A refresh keeps the rows shown until the next read lands; only a first read shows the loading state.
+  if (runs.data === undefined && runs.error === null) {
     return <LoadingState />;
   }
   if (runs.error !== null || runs.data === undefined) {

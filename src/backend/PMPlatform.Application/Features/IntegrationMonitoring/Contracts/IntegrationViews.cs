@@ -5,7 +5,8 @@ namespace PMPlatform.Application.Features.IntegrationMonitoring.Contracts;
 
 /// <summary>
 /// An instance's runtime state (ADM-040, ADM-047): availability and freshness as two indicators, never one combined health (Blueprint
-/// §17.1, BR-INT-013), beside activation, which is neither. The endpoint is named by its configuration key; no secret is ever here.
+/// §17.1, BR-INT-013), beside activation, which is neither, and its queued work (TASK-092). <c>AvailabilityChangedAt</c> is since when the
+/// availability has held, null before its first change. The endpoint is named by its configuration key; no secret is ever here.
 /// </summary>
 public sealed record IntegrationInstanceView(
     Guid Id,
@@ -17,7 +18,27 @@ public sealed record IntegrationInstanceView(
     DateTimeOffset? LastSuccessAt,
     DateTimeOffset? LastFailureAt,
     DateTimeOffset? EvaluatedAt,
-    int OpenAlertCount);
+    int OpenAlertCount,
+    DateTimeOffset? AvailabilityChangedAt,
+    IntegrationQueueState Queue);
+
+/// <summary>
+/// An instance's queued work as FG-05 records it (FG-05 §6.6; ADM-047): attempts still in flight and operations whose latest attempt waits
+/// for a retry — FG-05's own and those another module reports — with when the oldest of them began, beside the operations that ended
+/// dead-lettered and wait for an operator. It measures FG-05's records, not a broker: work a module has not attempted yet is not in it
+/// (docs/operations/operational-dashboards.md F-3).
+/// </summary>
+/// <param name="InFlight">Attempts begun and not ended.</param>
+/// <param name="AwaitingRetry">Operations whose latest attempt is RETRY_SCHEDULED.</param>
+/// <param name="OldestQueuedAt">When the first attempt of the oldest queued operation began; null with nothing queued.</param>
+/// <param name="DeadLetters">Operations whose latest attempt is DEAD_LETTER: not in the queue, and not retried until an operator does.</param>
+public sealed record IntegrationQueueState(int InFlight, int AwaitingRetry, DateTimeOffset? OldestQueuedAt, int DeadLetters)
+{
+    public static readonly IntegrationQueueState Empty = new(0, 0, null, 0);
+
+    /// <summary>The queue depth: operations in flight or awaiting a retry.</summary>
+    public int Depth => InFlight + AwaitingRetry;
+}
 
 /// <summary>ADM-040: one integration of the catalogue with its instances.</summary>
 public sealed record IntegrationSummary(

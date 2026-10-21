@@ -4853,6 +4853,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("availability");
 
+                    b.Property<DateTimeOffset?>("AvailabilityChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("availability_changed_at");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -4873,15 +4877,15 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("endpoint_configuration_key");
 
+                    b.Property<DateTimeOffset?>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("evaluated_at");
+
                     b.Property<string>("Freshness")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("freshness");
-
-                    b.Property<DateTimeOffset?>("EvaluatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("evaluated_at");
 
                     b.Property<Guid>("IntegrationDefinitionId")
                         .HasColumnType("uuid")
@@ -5033,6 +5037,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("SyncRunId")
                         .HasDatabaseName("ix_invocation_sync_run_id");
 
+                    b.HasIndex("IntegrationInstanceId", "Status")
+                        .HasDatabaseName("ix_invocation_queue_state")
+                        .HasFilter("status IN ('IN_PROGRESS', 'RETRY_SCHEDULED', 'DEAD_LETTER')");
+
                     b.HasIndex("NextAttemptAt", "Id")
                         .HasDatabaseName("ix_invocation_retry_queue")
                         .HasFilter("status = 'RETRY_SCHEDULED'");
@@ -5176,7 +5184,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_operational_alert_acknowledged", "(acknowledged_by_user_id IS NULL) = (acknowledged_at IS NULL) AND (status <> 'ACKNOWLEDGED' OR acknowledged_at IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_operational_alert_alert_type", "\"alert_type\" IN ('AVAILABILITY', 'FRESHNESS', 'RECONCILIATION_MISMATCH', 'DEAD_LETTER', 'DELIVERY_RATE')");
+                            t.HasCheckConstraint("ck_operational_alert_alert_type", "\"alert_type\" IN ('AVAILABILITY', 'FRESHNESS', 'RECONCILIATION_MISMATCH', 'DEAD_LETTER', 'DELIVERY_RATE', 'QUEUE_BACKLOG')");
 
                             t.HasCheckConstraint("ck_operational_alert_resolution_note_lang", "\"resolution_note_lang\" IN ('ar', 'en')");
 
