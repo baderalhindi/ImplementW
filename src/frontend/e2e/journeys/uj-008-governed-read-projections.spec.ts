@@ -205,7 +205,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     ]).toEqual([formalId, title, owningDepartment, 'Active', '1', '1']);
     const banner = page.getByRole('region', { name: 'Coverage and freshness' });
     const kpiSection = banner.locator('[data-projection="FINANCIAL_KPI.KPI_CONDITION"]');
-    await expectText(kpiSection, 'Owned by WF-14');
+    await expectText(kpiSection, 'Source WF-14');
     await expectText(kpiSection, `As of ${dayOf(measuredOn)}`);
     await expectText(kpiSection, '1 of 1 projects shown');
 
@@ -282,10 +282,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     );
     const ours = await departmentId(portfolio.api, DATA_SET.department);
     await outsider.page.goto(`/?department=${ours}`);
-    await expectText(
-      outsider.page.getByRole('main'),
-      'That sector is not one you may filter by.',
-    );
+    await expectText(outsider.page.getByRole('main'), 'That sector is not one you may filter by.');
     const filtered = await outsider.api.send('GET', `/dashboards/PORTFOLIO?departmentId=${ours}`);
     expect([filtered.status, filtered.code]).toEqual([422, 'DASHBOARD_FILTER_VALUE_UNAUTHORIZED']);
     const dashboard = await outsider.api.send('GET', `/dashboards/PROJECT?projectId=${project.id}`);
