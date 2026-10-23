@@ -1,7 +1,8 @@
-import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, test } from 'vitest';
 
+import { AUDIT_TRAIL_PATH } from '@/features/audit-activity/access.ts';
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import {
@@ -28,6 +29,7 @@ import {
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { findMainMenu, menuLink, openMenuNames } from '@/test/shell.ts';
 
 // TASK-074, the FG-06 Audit & Activity UI over TASK-073's API. Acceptance criteria: (1) SCR-057 Activity and SCR-058
 // Audit are visually and navigationally distinct, never one tab; (2) SCR-058 is reachable only with the explicit audit
@@ -69,6 +71,14 @@ async function tabLinks(): Promise<HTMLElement[]> {
     name: en('projects.workspace.tabs.label'),
   });
   return within(tabs).getAllByRole('link');
+}
+
+/** The shell and the workspace each ask /audit-access; both have asked and their answers have been rendered. */
+async function auditAccessLanded(api: MockApi): Promise<void> {
+  await waitFor(() => {
+    expect(api.requestsTo('GET', /^\/audit-access$/).length).toBeGreaterThanOrEqual(2);
+  });
+  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
 }
 
 const auditReads = (api: MockApi) => api.requestsTo('GET', /^\/audit-events/);
@@ -148,11 +158,10 @@ describe('acceptance criterion 1: Activity and Audit are two distinct tabs', () 
 
 describe('acceptance criterion 2: SCR-058 needs the explicit audit permission, not R01', () => {
   test('R01 as shipped is offered no Audit tab', async () => {
-    open(workspace(), r01(), { access: SYSTEM_ADMINISTRATOR_ACCESS });
+    const api = open(workspace(), r01(), { access: SYSTEM_ADMINISTRATOR_ACCESS });
 
     await screen.findByRole('heading', { level: 1, name: 'Coastal road upgrade' });
-    // The audit-access answer has landed: R01's sidebar shows its audit trail entry.
-    await screen.findByRole('navigation', { name: en('auditActivity.nav.label') });
+    await auditAccessLanded(api);
     const names = (await tabLinks()).map((link) => link.textContent);
     expect(names).not.toContain(en('projects.workspace.tabs.audit'));
     expect(names).not.toContain(en('projects.workspace.tabs.activity'));
@@ -429,22 +438,24 @@ describe('SCR-057 Activity', () => {
 
 describe('the sidebar', () => {
   test('lists the audit screens the permissions open, and none for a project manager', async () => {
-    open(workspace(), r01(), { access: SYSTEM_ADMINISTRATOR_ACCESS });
-    const navigation = await screen.findByRole('navigation', {
-      name: en('auditActivity.nav.label'),
+    open(AUDIT_TRAIL_PATH, r01(), { access: SYSTEM_ADMINISTRATOR_ACCESS });
+    await findMainMenu();
+    await waitFor(() => {
+      expect(openMenuNames('common.menu.administration').map(plain)).toEqual(
+        expect.arrayContaining([
+          en('auditActivity.nav.auditTrail'),
+          en('auditActivity.nav.systemEvents'),
+        ]),
+      );
     });
-    expect(
-      within(navigation)
-        .getAllByRole('link')
-        .map((link) => plain(link.textContent)),
-    ).toEqual([en('auditActivity.nav.auditTrail'), en('auditActivity.nav.systemEvents')]);
+    expect(openMenuNames('common.menu.administration').map(plain)).not.toContain(
+      en('auditActivity.nav.integrationAudit'),
+    );
     cleanup();
 
     const api = open(workspace(), reviewer(), { access: PROJECT_MANAGER_ACCESS });
     await screen.findByRole('heading', { level: 1, name: 'Coastal road upgrade' });
-    await waitFor(() => {
-      expect(api.requestsTo('GET', /^\/audit-access$/).length).toBeGreaterThan(0);
-    });
-    expect(screen.queryByRole('navigation', { name: en('auditActivity.nav.label') })).toBeNull();
+    await auditAccessLanded(api);
+    expect(menuLink('common.menu.administration')).toBeNull();
   });
 });

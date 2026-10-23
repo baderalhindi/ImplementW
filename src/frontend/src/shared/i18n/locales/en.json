@@ -87,5 +87,30 @@
     "title": "This page could not be shown",
     "description": "Something went wrong while showing this page. It has been reported. Reload the page, or go to the home page.",
     "reload": "Reload the page"
+  },
+  "menu": {
+    "label": "Main menu",
+    "home": "Home",
+    "portfolio": "Portfolio",
+    "projects": "Projects",
+    "myWork": "My Work",
+    "risksIssues": "Risks and Issues",
+    "requestsApprovals": "Requests and Approvals",
+    "documents": "Documents",
+    "dashboardsReports": "Dashboards and Reports",
+    "notifications": "Notifications",
+    "administration": "Administration",
+    "administrationHidden": "Administration hidden for this role",
+    "awaitingDecision": "{count} awaiting your decision",
+    "collapse": "Collapse menu",
+    "expand": "Expand menu",
+    "open": "Open menu",
+    "close": "Close menu"
+  },
+  "shell": {
+    "breadcrumb": "Breadcrumb",
+    "create": "Create",
+    "createChangeRequest": "Change request",
+    "account": "Account"
   }
 }

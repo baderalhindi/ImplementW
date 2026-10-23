@@ -43,6 +43,7 @@ import {
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { findMainMenu, openMenuNames } from '@/test/shell.ts';
 
 // SCR-160 to SCR-167 (TASK-067) against the TASK-066 API. Acceptance criteria: (1) the external-facing view of SCR-162
 // never renders internal-only fields present in the internal view — verified by comparing what is rendered for an R08
@@ -328,32 +329,28 @@ describe('gate decision: no origination and no escalation controls in the extern
 
   test('the sidebar offers an entity user its own requests and contributions, and AHDA its register and monitors', async () => {
     open('/my-external-requests', {}, { session: entitySession() });
-    const externalNav = await screen.findByRole('navigation', {
-      name: en('externalParticipation.nav.label'),
-    });
-    expect(
-      within(externalNav)
-        .getAllByRole('link')
-        .map((link) => link.textContent),
-    ).toEqual([
-      en('externalParticipation.nav.mine'),
-      en('externalParticipation.nav.contributions'),
-    ]);
+    await findMainMenu();
+    const external = openMenuNames('common.menu.requestsApprovals');
+    expect(external).toEqual(
+      expect.arrayContaining([
+        en('externalParticipation.nav.mine'),
+        en('externalParticipation.nav.contributions'),
+      ]),
+    );
+    expect(external).not.toContain(en('externalParticipation.nav.register'));
 
     cleanup();
     open('/external-requests', {}, { session: managerSession() });
-    const internalNav = await screen.findByRole('navigation', {
-      name: en('externalParticipation.nav.label'),
-    });
-    expect(
-      within(internalNav)
-        .getAllByRole('link')
-        .map((link) => link.textContent),
-    ).toEqual([
-      en('externalParticipation.nav.register'),
-      en('externalParticipation.nav.applications'),
-      en('externalParticipation.nav.monitor'),
-    ]);
+    await findMainMenu();
+    const internal = openMenuNames('common.menu.requestsApprovals');
+    expect(internal).toEqual(
+      expect.arrayContaining([
+        en('externalParticipation.nav.register'),
+        en('externalParticipation.nav.applications'),
+        en('externalParticipation.nav.monitor'),
+      ]),
+    );
+    expect(internal).not.toContain(en('externalParticipation.nav.mine'));
   });
 });
 

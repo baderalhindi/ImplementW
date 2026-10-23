@@ -127,7 +127,7 @@ h3 {
   background: var(--color-primary);
   color: var(--color-on-primary);
   border-radius: var(--radius);
-  z-index: 10;
+  z-index: 30;
 }
 
 .skip-link:focus {
@@ -136,10 +136,8 @@ h3 {
 }
 
 /*
- * The header stays in view while the page scrolls; below the skip link, and native dialogs sit in the top layer.
- * White with the gold AHDA logo, on the sign-in page and inside the platform alike; once the page has scrolled it
- * floats as a translucent pill. The floating state changes
- * no block size, so toggling it never moves the scroll position.
+ * Signed out (the sign-in page): the header stays in view while the page scrolls and, once it has scrolled, floats
+ * as a translucent pill. The floating state changes no block size, so toggling it never moves the scroll position.
  */
 .shell__header {
   position: sticky;
@@ -154,19 +152,14 @@ h3 {
   border-block-end: 1px solid var(--color-border-subtle);
   background: var(--color-background);
   color: var(--color-text);
-  transition-property: inset-block-start, margin-inline, padding-inline, border-radius, background-color, box-shadow;
+  transition-property:
+    inset-block-start, margin-inline, padding-inline, border-radius, background-color, box-shadow;
   transition-duration: 0.4s;
   transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/*
- * The blur keeps the dark text readable over whatever scrolls under the translucent white. The pill is
- * slightly narrower than the window, by margins rather than a width, so the change animates; its block size is the
- * header's own, so the content under it does not move.
- */
 .shell__header--floating {
   inset-block-start: var(--space-3);
-  /* At most 56rem wide, centred; on a narrow window, the window less a small gutter. */
   margin-inline: max(var(--space-4), calc((100% - 56rem) / 2));
   padding-inline: var(--space-6);
   border-block-end: 0;
@@ -187,33 +180,44 @@ h3 {
   align-items: center;
 }
 
-/* The AHDA logo, as tall as a header control so the header keeps its one-line block size. */
 .shell__logo {
   display: block;
   block-size: 2.75rem;
   inline-size: auto;
 }
 
-.shell__session {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.shell__header .button--quiet,
-.shell__header .bell {
+.shell__header .button--quiet {
   background: transparent;
   font-weight: 400;
 }
 
-.shell__header .button--quiet:hover,
-.shell__header .bell:hover {
+.shell__header .button--quiet:hover {
   background: var(--color-surface);
 }
 
-/* The language switch: a globe, a 2.75rem square, opening a small list of the languages under it. */
-.language-switch {
+.shell__main {
+  padding: var(--space-4);
+  background: var(--color-canvas);
+}
+
+.shell__main:focus,
+.app__main:focus {
+  outline: none;
+}
+
+.shell-icon {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+/* An icon that points along the reading direction (collapse, expand) turns round in Arabic. */
+[dir='rtl'] .shell-icon--mirrored {
+  transform: scaleX(-1);
+}
+
+/* A button's drop-down (Language, Create, the account): a small list under the button, at its end edge. */
+.popover {
   position: relative;
 }
 
@@ -228,12 +232,12 @@ h3 {
   block-size: 1.25rem;
 }
 
-.language-switch__menu {
+.popover__menu {
   position: absolute;
   inset-block-start: calc(100% + var(--space-2));
   inset-inline-end: 0;
-  z-index: 1;
-  min-inline-size: 10rem;
+  z-index: 20;
+  min-inline-size: 12rem;
   margin: 0;
   padding: var(--space-1);
   border: 1px solid var(--color-border-subtle);
@@ -243,11 +247,7 @@ h3 {
   list-style: none;
 }
 
-.language-switch__menu[hidden] {
-  display: none;
-}
-
-.language-switch__option {
+.popover__option {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -260,137 +260,433 @@ h3 {
   color: var(--color-text);
   font: inherit;
   text-align: start;
+  text-decoration: none;
   cursor: pointer;
 }
 
-.language-switch__option:hover {
+.popover__option:hover {
   background: var(--color-neutral-surface);
+  color: var(--color-text);
 }
 
-.language-switch__option[aria-pressed='true'] {
+.popover__option[aria-pressed='true'] {
   color: var(--color-primary);
   font-weight: 600;
 }
 
-.language-switch__check {
+.popover__check {
   inline-size: 1rem;
 }
 
-.shell__body {
+.popover__name {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-block-end: 1px solid var(--color-border-subtle);
+  font-weight: 600;
+}
+
+/*
+ * Signed in: the master navigation (Blueprint §20.1). The rail is the authority's dark teal; the open menu has a
+ * lighter ground and a sand bar on its leading edge, so the position survives grayscale and forced-colors mode. Rail
+ * text is at least 6:1 on its ground; the counts are dark on sand.
+ */
+.app {
+  --color-rail: #1c4245;
+  --color-rail-hover: #24504f;
+  --color-rail-open: #2e5c5d;
+  --color-rail-text: #eef4f3;
+  --color-rail-muted: #b3c6c4;
+  --color-sand: #cdb98a;
+  --color-on-sand: #1f2a2a;
+  --rail-inline-size: 15rem;
+  --topbar-block-size: 3.5rem;
   display: flex;
-  flex-direction: column;
+  min-block-size: 100vh;
   background: var(--color-canvas);
 }
 
-.shell__sidebar {
-  padding-block: var(--space-2);
-  border-block-end: 1px solid var(--color-border-subtle);
-  background: var(--color-background);
+.app--collapsed {
+  --rail-inline-size: 4.5rem;
 }
 
-/* One titled group per landmark; the title is the landmark's name. */
-.shell__nav {
+.rail {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 15;
+  display: flex;
+  flex: 0 0 var(--rail-inline-size);
+  flex-direction: column;
+  inline-size: var(--rail-inline-size);
+  block-size: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-rail);
+  color: var(--color-rail-text);
+}
+
+.rail__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 5.5rem;
+  padding: var(--space-4);
+}
+
+/* The gold logo drawn white on the teal. Collapsed, only its emblem (the square at its end) shows. */
+.rail__logo {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 10.5rem;
+  block-size: auto;
+  filter: brightness(0) invert(1);
+}
+
+.rail--collapsed .rail__logo {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  object-fit: cover;
+  object-position: right center;
+}
+
+.rail__nav {
+  flex: 1;
   padding: var(--space-2) var(--space-3);
 }
 
-.shell__nav-title {
-  margin: 0;
-  padding: var(--space-2) var(--space-3) var(--space-1);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.shell__nav ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
+.rail__nav ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.shell__nav a {
-  display: block;
+.rail__nav > ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rail__menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-block-size: 2.75rem;
   padding: var(--space-2) var(--space-3);
+  border: 0;
   border-radius: var(--radius);
-  color: var(--color-text);
+  background: none;
+  color: var(--color-rail-text);
+  font: inherit;
   font-size: 0.95rem;
-  line-height: 1.4;
+  line-height: 1.3;
+  text-align: start;
   text-decoration: none;
+  cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
-.shell__nav a:hover {
-  background: var(--color-neutral-surface);
+.rail__menu:hover {
+  background: var(--color-rail-hover);
+  color: var(--color-rail-text);
 }
 
-/* The current page: primary text on its tint (about 6.8:1), with a bar on the leading edge. */
-.shell__nav a[aria-current='page'] {
-  background: var(--color-primary-tint);
-  box-shadow: inset 3px 0 0 var(--color-primary);
-  color: var(--color-primary);
+.rail__menu--open {
+  background: var(--color-rail-open);
+  box-shadow: inset 3px 0 0 var(--color-sand);
   font-weight: 600;
 }
 
-[dir='rtl'] .shell__nav a[aria-current='page'] {
-  box-shadow: inset -3px 0 0 var(--color-primary);
+[dir='rtl'] .rail__menu--open {
+  box-shadow: inset -3px 0 0 var(--color-sand);
 }
 
-.shell__main {
+.rail :focus-visible {
+  outline-color: var(--color-sand);
+}
+
+.rail__label {
+  flex: 1;
+}
+
+.rail__count {
+  min-inline-size: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--color-sand);
+  color: var(--color-on-sand);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+  text-align: center;
+}
+
+.rail__nav .rail__items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-block: var(--space-1) var(--space-2);
+  padding-inline-start: 2.75rem;
+}
+
+.rail__item {
+  display: block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius);
+  color: var(--color-rail-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+.rail__item:hover {
+  background: var(--color-rail-hover);
+  color: var(--color-rail-text);
+}
+
+.rail__item[aria-current='page'] {
+  color: var(--color-rail-text);
+  font-weight: 600;
+}
+
+.rail__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-block-start: 1px solid rgb(255 255 255 / 12%);
+}
+
+.rail__note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-rail-muted);
+  font-size: 0.8rem;
+}
+
+.rail__toggle {
+  color: var(--color-rail-muted);
+  font-size: 0.875rem;
+}
+
+/* Collapsed: icons only, each name kept for screen readers and as the tooltip; a count sits on its icon's corner. */
+.rail--collapsed .rail__nav,
+.rail--collapsed .rail__footer {
+  padding-inline: var(--space-2);
+}
+
+.rail--collapsed .rail__menu {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.rail--collapsed .rail__label {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.rail--collapsed .rail__count {
+  position: absolute;
+  inset-block-start: 0.15rem;
+  inset-inline-end: 0.35rem;
+  min-inline-size: 1.1rem;
+  padding: 0 0.25rem;
+  font-size: 0.65rem;
+  line-height: 1.1rem;
+}
+
+.rail__backdrop {
+  display: none;
+}
+
+.app__column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--topbar-block-size);
+  padding: var(--space-2) var(--space-6);
+  border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-background);
+}
+
+.topbar .topbar__drawer {
+  display: none;
+  inline-size: 2.75rem;
+  padding: 0;
+  background: transparent;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+.topbar .topbar__control {
+  gap: var(--space-2);
+  background: transparent;
+  font-weight: 400;
+}
+
+.topbar .topbar__control:hover {
+  background: var(--color-surface);
+}
+
+.topbar__chevron {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.topbar .topbar__create {
+  gap: var(--space-2);
+  background: var(--color-rail);
+  border-color: var(--color-rail);
+}
+
+.topbar .topbar__create:hover {
+  background: var(--color-rail-hover);
+  border-color: var(--color-rail-hover);
+}
+
+.topbar__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.topbar__avatar:hover {
+  background: var(--color-neutral-surface);
+}
+
+.breadcrumb {
+  min-inline-size: 0;
+}
+
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.breadcrumb li + li::before {
+  content: '/';
+  margin-inline-end: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.breadcrumb a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.breadcrumb [aria-current='page'] {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.app__main {
   flex: 1;
   min-inline-size: 0;
-  padding: var(--space-4);
+  padding: var(--space-6) var(--space-8) var(--space-8);
 }
 
-.shell__main:focus {
-  outline: none;
+.app__main > * {
+  max-inline-size: 90rem;
 }
 
-@media (min-width: 60rem) {
-  .shell__body {
-    flex-direction: row;
-    align-items: flex-start;
-    min-block-size: calc(100vh - var(--header-block-size));
+/* A narrow window: the rail becomes a drawer over the page, opened from the top bar; the Create and Language labels go. */
+@media (max-width: 59.99rem) {
+  .rail {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: 25;
+    inline-size: 16rem;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    visibility: hidden;
   }
 
-  /* The sidebar keeps its place and scrolls on its own, so a short page is not as long as the menu. */
-  .shell__sidebar {
-    position: sticky;
-    inset-block-start: var(--header-block-size);
-    flex: 0 0 16rem;
-    block-size: calc(100vh - var(--header-block-size));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    border-block-end: 0;
-    /*
-     * The sidebar's ground and edge are carried up through the header's slot, so once the header floats the strip
-     * above the sidebar is not the canvas. Shadows, because the scroll container clips a pseudo-element; the edge is
-     * two 1px shadows (in place and raised) rather than a border, so it is one line along the whole height.
-     */
-    box-shadow:
-      0 calc(-1 * var(--header-block-size)) 0 var(--color-background),
-      1px 0 0 var(--color-border-subtle),
-      1px calc(-1 * var(--header-block-size)) 0 var(--color-border-subtle);
+  [dir='rtl'] .rail {
+    transform: translateX(100%);
   }
 
-  [dir='rtl'] .shell__sidebar {
-    box-shadow:
-      0 calc(-1 * var(--header-block-size)) 0 var(--color-background),
-      -1px 0 0 var(--color-border-subtle),
-      -1px calc(-1 * var(--header-block-size)) 0 var(--color-border-subtle);
+  .rail.rail--drawer-open {
+    transform: none;
+    visibility: visible;
   }
 
-  .shell__nav ul {
-    flex-direction: column;
+  .rail__toggle {
+    display: none;
   }
 
-  .shell__main {
-    padding: var(--space-6) var(--space-8) var(--space-8);
+  .rail__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: block;
+    border: 0;
+    background: rgb(0 0 0 / 40%);
   }
 
-  .shell__main > * {
-    max-inline-size: 90rem;
+  .topbar {
+    padding-inline: var(--space-3);
+  }
+
+  .topbar .topbar__drawer {
+    display: inline-flex;
+  }
+
+  .breadcrumb {
+    display: none;
+  }
+
+  .app__main {
+    padding: var(--space-4);
+  }
+}
+
+@media (max-width: 59.99rem) and (prefers-reduced-motion: reduce) {
+  .rail {
+    transition: none;
   }
 }
 
@@ -1088,44 +1384,6 @@ select.field__input {
 }
 
 /* ---------------------------------------------------------------------------------------------- notifications */
-
-/* The header link to SCR-150 (TASK-040): a bell in a 2.75rem square, the unread count on its top corner. */
-.bell {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 2.75rem;
-  block-size: 2.75rem;
-  border-radius: var(--radius);
-  color: var(--color-text);
-  text-decoration: none;
-}
-
-.bell:hover {
-  background: var(--color-neutral-surface);
-}
-
-.bell__icon {
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
-}
-
-/* The number on the badge, white on the primary colour (the pair the active navigation link uses). */
-.bell__count {
-  position: absolute;
-  inset-block-start: 0.2rem;
-  inset-inline-end: 0.1rem;
-  min-inline-size: 1.25rem;
-  padding: 0 0.3rem;
-  border-radius: 999px;
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.25rem;
-  text-align: center;
-}
 
 /* An unread notification reads heavier as well as saying "Unread". */
 .row--unread .button--link {

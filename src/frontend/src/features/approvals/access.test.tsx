@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
@@ -6,6 +6,7 @@ import { APPROVER_ID, sessionAs, withApprovalNames } from '@/test/approvalFixtur
 import { catalogueFor, withDashboards } from '@/test/dashboardFixtures.ts';
 import { mockApi, page } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
+import { findMainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
 
 import { approvalNavigation } from './routes.tsx';
 
@@ -35,22 +36,20 @@ describe('approval routes', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: en('approvals.inbox.title') }),
     ).toBeTruthy();
-    const navigation = screen.getByRole('navigation', { name: en('approvals.nav.label') });
-    expect(
-      within(navigation)
-        .getAllByRole('link')
-        .map((link) => link.getAttribute('href')),
-    ).toEqual(approvalNavigation.map((item) => item.to));
-    expect(screen.queryByRole('navigation', { name: en('identityAccess.nav.label') })).toBeNull();
+    expect(openMenuTargets('common.menu.requestsApprovals')).toEqual(
+      expect.arrayContaining(approvalNavigation.map((item) => item.to)),
+    );
+    expect(menuLink('common.menu.administration')).toBeNull();
   });
 
   test('from the home page, the shell links to the inbox for everyone', async () => {
     withDashboards(mockApi(), { catalogue: catalogueFor(['R05']) });
     renderApp({ path: '/', session: sessionAs(APPROVER_ID, ['R05']) });
 
-    const navigation = await screen.findByRole('navigation', { name: en('approvals.nav.label') });
-    const link = within(navigation).getByRole('link', { name: en('approvals.nav.inbox') });
-    expect(link.getAttribute('href')).toBe('/approvals/inbox');
-    expect(screen.queryByRole('navigation', { name: en('identityAccess.nav.label') })).toBeNull();
+    await findMainMenu();
+    expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe(
+      '/approvals/inbox',
+    );
+    expect(menuLink('common.menu.administration')).toBeNull();
   });
 });

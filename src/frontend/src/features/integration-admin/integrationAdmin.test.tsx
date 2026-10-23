@@ -2,6 +2,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, type MockInstance, test, vi } from 'vitest';
 
+import { integrationAdminNavigation } from '@/features/integration-admin/catalogue.ts';
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
@@ -26,6 +27,7 @@ import {
 } from '@/test/integrationAdminFixtures.ts';
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { findMainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
 
 // TASK-076, the FG-05 Integration Administration UI over TASK-075's API. Acceptance criteria: (1) the Test Integration
 // Connection action never displays or logs the underlying secret value in the UI or the browser console; (2) ADM-047
@@ -459,13 +461,16 @@ describe('access', () => {
 
   test('the sidebar offers the integrations group to R01 only', async () => {
     open('/admin/integrations-overview');
-    const nav = await screen.findByRole('navigation', { name: en('integrationAdmin.nav.label') });
-    expect(within(nav).getAllByRole('link')).toHaveLength(8);
+    await findMainMenu();
+    expect(openMenuTargets('common.menu.administration')).toEqual(
+      expect.arrayContaining(integrationAdminNavigation.map((item) => item.to)),
+    );
     cleanup();
 
     open('/', {}, sessionFor(['R02']));
-    await screen.findByRole('navigation', { name: en('projects.nav.label') });
-    expect(screen.queryByRole('navigation', { name: en('integrationAdmin.nav.label') })).toBeNull();
+    await findMainMenu();
+    expect(menuLink('common.menu.projects')).toBeTruthy();
+    expect(menuLink('common.menu.administration')).toBeNull();
   });
 
   test('an R01 whose integration grant was withdrawn is told so, not shown an empty catalogue', async () => {

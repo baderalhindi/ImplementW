@@ -6,6 +6,7 @@ import { translate } from '@/shared/i18n/i18n.ts';
 import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixtures.ts';
 import { mockApi, problem } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
+import { menuLink, openMenuTargets } from '@/test/shell.ts';
 
 import { identityAccessNavigation } from '../routes.tsx';
 
@@ -36,13 +37,11 @@ describe('R01 only', () => {
         expect(
           await screen.findByRole('heading', { level: 1, name: en('common.forbidden.title') }),
         ).toBeTruthy();
-        expect(
-          screen.queryByRole('navigation', { name: en('identityAccess.nav.label') }),
-        ).toBeNull();
+        expect(menuLink('common.menu.administration')).toBeNull();
         unmount();
       }
-      // The shell's unread badge (TASK-040) and audit navigation (TASK-074) are the only calls; nothing
-      // administrative is asked for.
+      // The shell's unread badge (TASK-040) and audit navigation (TASK-074) are the only calls besides its approval
+      // count (kept apart by mockApi); nothing administrative is asked for.
       expect(
         api.requests.filter(
           (request) =>
@@ -59,8 +58,9 @@ describe('R01 only', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: en('identityAccess.users.list.title') }),
     ).toBeTruthy();
-    const navigation = screen.getByRole('navigation', { name: en('identityAccess.nav.label') });
-    expect(navigation.querySelectorAll('a')).toHaveLength(ADMIN_PATHS.length);
+    expect(openMenuTargets('common.menu.administration')).toEqual(
+      expect.arrayContaining(ADMIN_PATHS),
+    );
   });
 });
 

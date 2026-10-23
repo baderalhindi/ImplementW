@@ -12,6 +12,7 @@ import {
 } from '@/test/documentFixtures.ts';
 import { type MockApi, mockApi, page, problem } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { findMainMenu, openMenu } from '@/test/shell.ts';
 
 // SCR-120 Document Library, SCR-121 Project Documents and SCR-122 Recent Documents.
 
@@ -131,9 +132,9 @@ describe('SCR-120 Document Library', () => {
 
   test('the shell offers the documents navigation to anyone signed in', async () => {
     openList('/documents', []);
-    const navigation = await screen.findByRole('navigation', { name: en('documents.nav.label') });
+    await findMainMenu();
     expect(
-      within(navigation)
+      within(openMenu('common.menu.documents'))
         .getByRole('link', { name: en('documents.nav.library') })
         .getAttribute('aria-current'),
     ).toBe('page');

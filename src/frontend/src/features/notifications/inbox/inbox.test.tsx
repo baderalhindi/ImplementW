@@ -14,6 +14,7 @@ import {
 import { withDashboards } from '@/test/dashboardFixtures.ts';
 import { mockApi, problem } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { findMainMenu, findOpenMenu, mainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
 
 // SCR-150 All Notifications, SCR-151 Alerts, SCR-152 Escalations and MOD-070 Notification Detail.
 
@@ -113,14 +114,11 @@ describe('SCR-150 All Notifications', () => {
   test('is reached from the shell navigation, on the home page too', async () => {
     withDashboards(withInbox(mockApi()));
     renderApp({ path: '/', session: notificationSession() });
-    const navigation = await screen.findByRole('navigation', {
-      name: en('notifications.nav.label'),
-    });
-    expect(
-      within(navigation)
-        .getAllByRole('link')
-        .map((link) => link.getAttribute('href')),
-    ).toEqual([
+    await findMainMenu();
+    expect(menuLink('common.menu.notifications')?.getAttribute('href')).toBe('/notifications');
+    await userEvent.setup().click(within(mainMenu()).getByRole('link', { name: /^Notifications/ }));
+    expect((await findOpenMenu('common.menu.notifications')).querySelectorAll('a')).toHaveLength(5);
+    expect(openMenuTargets('common.menu.notifications')).toEqual([
       '/notifications',
       '/notifications/alerts',
       '/notifications/escalations',
@@ -235,7 +233,9 @@ describe('MOD-070 Notification Detail', () => {
     );
     await waitFor(() => {
       expect(
-        screen.getByRole('link', { name: /^Notifications/ }).querySelector('.bell__count'),
+        within(mainMenu())
+          .getByRole('link', { name: /^Notifications/ })
+          .querySelector('.rail__count'),
       ).toBeNull();
     });
   });

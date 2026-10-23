@@ -13,22 +13,25 @@ import {
 } from '@/test/notificationFixtures.ts';
 import { mockApi, type MockReply, page, problem } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
+import { mainMenu } from '@/test/shell.ts';
 
 // The unread badge and MOD-071 Mark All Read, against TASK-040's first two acceptance criteria.
 
 const en = (key: string, params?: Record<string, string | number>) => translate('en', key, params);
 
-function bell() {
-  return screen.getByRole('link', { name: new RegExp(`^${en('notifications.bell.text')}`) });
+function notificationsMenu() {
+  return within(mainMenu()).getByRole('link', {
+    name: new RegExp(`^${en('common.menu.notifications')}`),
+  });
 }
 
 async function shownCount(expected: number | null) {
   await waitFor(() => {
-    const link = bell();
+    const link = notificationsMenu();
     if (expected === null) {
-      expect(link.querySelector('.bell__count')).toBeNull();
+      expect(link.querySelector('.rail__count')).toBeNull();
     } else {
-      expect(link.querySelector('.bell__count [aria-hidden="true"]')?.textContent).toBe(
+      expect(link.querySelector('.rail__count [aria-hidden="true"]')?.textContent).toBe(
         String(expected),
       );
       expect(link.textContent).toContain(en('notifications.bell.unread', { count: expected }));
@@ -54,7 +57,7 @@ describe('unread badge', () => {
     renderApp({ path: '/', session: notificationSession() });
 
     await shownCount(3);
-    expect(bell().getAttribute('href')).toBe('/notifications');
+    expect(notificationsMenu().getAttribute('href')).toBe('/notifications');
 
     unreadCount = 41;
     await vi.advanceTimersByTimeAsync(UNREAD_POLL_INTERVAL_MS - 1);
