@@ -135,6 +135,7 @@ internal sealed class XlsxImportWorkbook : IImportWorkbook
         ImportValueKind.WholeNumber => "Whole number",
         ImportValueKind.Boolean => "TRUE or FALSE",
         ImportValueKind.Choice => "One of the allowed values",
+        ImportValueKind.Money => "Amount in SAR, up to 2 decimal places",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown import value kind."),
     };
 

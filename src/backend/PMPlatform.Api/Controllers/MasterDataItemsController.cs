@@ -20,7 +20,7 @@ namespace PMPlatform.Api.Controllers;
 public sealed class MasterDataItemsController(IMasterDataAdministrationService masterData, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/master-data-items";
-    private const string ImportRegister = "MASTER_DATA_ITEM";
+    private const string ImportRegister = ImportRegisterCodes.MasterDataItem;
 
     /// <summary>Filters: <c>catalogueId</c>, <c>lifecycleState</c> (a set), <c>parentItemId</c>, <c>q</c>. In display order.</summary>
     [HttpGet]

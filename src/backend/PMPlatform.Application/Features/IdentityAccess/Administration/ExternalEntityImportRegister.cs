@@ -28,7 +28,7 @@ internal sealed class ExternalEntityImportRegister(
         ["sponsorUserId"] = SponsorColumn,
     };
 
-    public string Code => "EXTERNAL_ENTITY";
+    public string Code => ImportRegisterCodes.ExternalEntity;
 
     public string OwningModule => "IdentityAccess";
 

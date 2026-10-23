@@ -27,6 +27,9 @@ public enum ImportValueKind
 
     /// <summary>One of <see cref="ImportColumn.Choices"/>.</summary>
     Choice = 9,
+
+    /// <summary>A SAR amount (ADR-008): not negative, at most two decimal places, within numeric(18,2).</summary>
+    Money = 10,
 }
 
 /// <summary>

@@ -1,5 +1,6 @@
 using System.Globalization;
 using PMPlatform.Application.Common.Validation;
+using PMPlatform.Domain.Common;
 
 namespace PMPlatform.Application.Common.DataImport;
 
@@ -15,6 +16,9 @@ internal static class ImportCellParser
     // 1900-02-29) to 2958465 (9999-12-31).
     private const double FirstSerial = 61;
     private const double LastSerial = 2_958_465;
+
+    // numeric(18,2) (ERD D-5).
+    private const decimal MaxMoney = 9_999_999_999_999_999.99m;
 
     /// <summary>The typed value, or null with <paramref name="issue"/> set; null with no issue is an empty cell.</summary>
     public static object? Parse(ImportColumn column, string? cell, out string? issue)
@@ -54,6 +58,7 @@ internal static class ImportCellParser
             },
             ImportValueKind.Choice => column.Choices.FirstOrDefault(c => string.Equals(c, text, StringComparison.OrdinalIgnoreCase))
                 ?? Refuse(ValidationCode.EnumValue, out issue),
+            ImportValueKind.Money => ParseMoney(text, out issue),
             _ => throw new ArgumentOutOfRangeException(nameof(column), column.Kind, "Unknown import value kind."),
         };
         return value;
@@ -79,6 +84,15 @@ internal static class ImportCellParser
                && number == decimal.Truncate(number) && number is >= int.MinValue and <= int.MaxValue
             ? (int)number
             : Refuse(ValidationCode.Malformed, out issue);
+    }
+
+    /// <summary>R-16's amount, as a number cell or typed text holds it: two decimal places at most, never negative.</summary>
+    private static object? ParseMoney(string text, out string? issue)
+    {
+        issue = null;
+        return !decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal amount) || decimal.Round(amount, 2) != amount
+            ? Refuse(ValidationCode.Malformed, out issue)
+            : amount is < 0 or > MaxMoney ? Refuse(ValidationCode.OutOfRange, out issue) : new Money(amount);
     }
 
     private static object? Refuse(string code, out string? issue)

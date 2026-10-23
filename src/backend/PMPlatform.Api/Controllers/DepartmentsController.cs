@@ -15,7 +15,7 @@ namespace PMPlatform.Api.Controllers;
 public sealed class DepartmentsController(IDepartmentAdministrationService departments, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/departments";
-    private const string ImportRegister = "DEPARTMENT";
+    private const string ImportRegister = ImportRegisterCodes.Department;
 
     /// <summary>Filters: <c>isActive</c>, <c>parentDepartmentId</c> (one level of the tree), <c>q</c>. By code.</summary>
     [HttpGet]

@@ -16,7 +16,7 @@ namespace PMPlatform.Api.Controllers;
 public sealed class ExternalEntitiesController(IExternalEntityAdministrationService entities, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/external-entities";
-    private const string ImportRegister = "EXTERNAL_ENTITY";
+    private const string ImportRegister = ImportRegisterCodes.ExternalEntity;
 
     /// <summary>Filters: <c>status</c> (set), <c>entityTypeItemId</c>, <c>q</c>. By code.</summary>
     [HttpGet]

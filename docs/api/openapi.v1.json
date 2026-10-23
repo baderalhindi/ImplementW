@@ -113,6 +113,57 @@
         }
       }
     },
+    "/api/v1/access-relationships/import-template/content": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.",
+        "operationId": "IdentityAccess_DownloadRoleAssignmentImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/access-relationships/imports": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "TASK-102: validates the workbook in part `file`, or with `commit=true` imports it, all rows or none.",
+        "operationId": "IdentityAccess_ImportRoleAssignments",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/access-relationships/{accessRelationshipId}": {
       "get": {
         "tags": [
@@ -12136,6 +12187,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/import-template/content": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.",
+        "operationId": "Project_DownloadProjectImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/imports": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "TASK-102: validates the workbook in part `file`, or with `commit=true` imports it, all rows or none.",
+        "operationId": "Project_ImportProjects",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
                 }
               }
             }

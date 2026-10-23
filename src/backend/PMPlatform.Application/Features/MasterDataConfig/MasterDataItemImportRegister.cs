@@ -28,7 +28,7 @@ internal sealed class MasterDataItemImportRegister(IMasterDataAdministrationServ
         ["parentItemId"] = ParentColumn,
     };
 
-    public string Code => "MASTER_DATA_ITEM";
+    public string Code => ImportRegisterCodes.MasterDataItem;
 
     public string OwningModule => "MasterDataConfig";
 

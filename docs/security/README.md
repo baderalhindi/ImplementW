@@ -31,6 +31,7 @@ The UAT gate reads only the findings log. "Security Review & Threat Modeling Sig
 | External entity participation (WF-13) | [`threat-model-external-participation.md`](threat-model-external-participation.md) | `external-participation.md`, `external-participation-ui.md` | TASK-066, 067 |
 | Nafath identity verification | [`threat-model-nafath.md`](threat-model-nafath.md) | `nafath-identity-verification.md`, `nafath-data-minimisation.md` | TASK-068 |
 | SMS delivery-receipt callback (ADR-004) | [`threat-model-sms-delivery-receipt.md`](threat-model-sms-delivery-receipt.md) | `notification-runtime.md`, `integration-monitoring.md` | TASK-103 (not built) |
+| Migration data import (workbook upload and load) | [`threat-model-data-import.md`](threat-model-data-import.md) | `data-import.md` | TASK-102 |
 
 Nafath is in scope: TASK-068 shipped it, switched off by `Identity:Nafath:Enabled`. Because it is shipped, it can be switched on in any environment without a code change. The SMS receipt callback is not built. Its model is a design review, so its controls are requirements on TASK-103, and its findings stay open until TASK-103 merges with them.
 

@@ -1,3 +1,5 @@
+using PMPlatform.Domain.Common;
+
 namespace PMPlatform.Application.Common.DataImport;
 
 /// <summary>
@@ -20,6 +22,8 @@ public sealed class ImportRecord(int rowNumber, string legacyId, IReadOnlyDictio
     public int? WholeNumber(string key) => Value<int>(key);
 
     public bool? Boolean(string key) => Value<bool>(key);
+
+    public Money? Money(string key) => Value<Money>(key);
 
     /// <summary>A choice column built by <see cref="ImportColumn.ChoiceOf{TEnum}"/>, as its enum value.</summary>
     public TEnum? Choice<TEnum>(string key)

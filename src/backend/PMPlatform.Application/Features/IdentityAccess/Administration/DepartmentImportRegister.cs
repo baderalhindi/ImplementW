@@ -20,7 +20,7 @@ internal sealed class DepartmentImportRegister(IDepartmentAdministrationService 
 
     private static readonly Dictionary<string, string> ColumnOfField = new(StringComparer.Ordinal) { ["parentDepartmentId"] = ParentCodeColumn };
 
-    public string Code => "DEPARTMENT";
+    public string Code => ImportRegisterCodes.Department;
 
     public string OwningModule => "IdentityAccess";
 

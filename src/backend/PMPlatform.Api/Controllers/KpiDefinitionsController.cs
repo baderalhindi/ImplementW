@@ -17,7 +17,7 @@ namespace PMPlatform.Api.Controllers;
 public sealed class KpiDefinitionsController(IKpiDefinitionAdministrationService kpiDefinitions, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/kpi-definitions";
-    private const string ImportRegister = "KPI_DEFINITION";
+    private const string ImportRegister = ImportRegisterCodes.KpiDefinition;
 
     /// <summary>Filters: <c>lifecycleState</c> (a set), <c>q</c>. By code.</summary>
     [HttpGet]

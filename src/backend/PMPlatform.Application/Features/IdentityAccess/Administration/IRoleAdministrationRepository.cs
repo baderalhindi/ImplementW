@@ -18,5 +18,11 @@ public interface IRoleAdministrationRepository
 
     public Task<PermissionProfileDetail?> FindProfileAsync(Guid profileId, CancellationToken cancellationToken);
 
+    /// <summary>The latest PUBLISHED version of the profile with this code, if any.</summary>
+    public Task<Guid?> FindPublishedProfileVersionIdAsync(string profileCode, CancellationToken cancellationToken);
+
+    /// <summary>Every profile with a PUBLISHED version, by code.</summary>
+    public Task<IReadOnlyList<PermissionProfileSummary>> ListAssignableProfilesAsync(CancellationToken cancellationToken);
+
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken);
 }

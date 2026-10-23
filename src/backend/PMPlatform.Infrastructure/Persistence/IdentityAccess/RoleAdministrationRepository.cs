@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Infrastructure.Persistence.IdentityAccess;
@@ -63,6 +64,18 @@ internal sealed class RoleAdministrationRepository(PMPlatformDbContext context) 
             .ToListAsync(cancellationToken).ConfigureAwait(false);
         return new PermissionProfilePage(items, page.Page, page.PageSize, totalCount);
     }
+
+    public Task<Guid?> FindPublishedProfileVersionIdAsync(string profileCode, CancellationToken cancellationToken) =>
+        context.Set<PermissionProfileVersion>().AsNoTracking()
+            .Join(context.Set<PermissionProfile>(), v => v.PermissionProfileId, p => p.Id, (v, p) => new { Version = v, p.Code })
+            .Where(x => x.Code == profileCode && x.Version.LifecycleState == GovernedLifecycleState.Published)
+            .OrderByDescending(x => x.Version.VersionNo)
+            .Select(x => (Guid?)x.Version.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<PermissionProfileSummary>> ListAssignableProfilesAsync(CancellationToken cancellationToken) =>
+        await ProfileSummaries(p => context.Set<PermissionProfileVersion>().Any(v => v.PermissionProfileId == p.Id && v.LifecycleState == GovernedLifecycleState.Published))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task<PermissionProfileDetail?> FindProfileAsync(Guid profileId, CancellationToken cancellationToken)
     {

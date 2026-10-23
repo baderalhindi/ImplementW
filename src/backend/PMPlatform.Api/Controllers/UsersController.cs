@@ -20,7 +20,7 @@ namespace PMPlatform.Api.Controllers;
 public sealed class UsersController(IUserAdministrationService users, IMobileNumberVerificationService mobileVerification, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/users";
-    private const string ImportRegister = "USER";
+    private const string ImportRegister = ImportRegisterCodes.User;
 
     /// <summary>ADM-002. Filters: <c>status</c>, <c>userType</c> (sets), <c>departmentId</c>, <c>externalEntityId</c>, <c>q</c>; sort <c>displayName</c> or <c>username</c>.</summary>
     [HttpGet]

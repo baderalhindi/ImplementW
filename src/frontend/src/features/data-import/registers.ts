@@ -49,4 +49,18 @@ export const IMPORT_REGISTERS: ImportRegister[] = [
     name: 'dataImport.registers.KPI_DEFINITION.name',
     description: 'dataImport.registers.KPI_DEFINITION.description',
   },
+  {
+    code: 'PROJECT',
+    collectionPath: '/projects',
+    name: 'dataImport.registers.PROJECT.name',
+    description: 'dataImport.registers.PROJECT.description',
+    page: '/projects',
+  },
+  {
+    code: 'ROLE_ASSIGNMENT',
+    collectionPath: '/access-relationships',
+    name: 'dataImport.registers.ROLE_ASSIGNMENT.name',
+    description: 'dataImport.registers.ROLE_ASSIGNMENT.description',
+    page: '/admin/role-assignments',
+  },
 ];

@@ -27,6 +27,14 @@
     "KPI_DEFINITION": {
       "name": "KPI definitions",
       "description": "The KPI catalogue. Imported as drafts for validation and publication."
+    },
+    "PROJECT": {
+      "name": "Projects",
+      "description": "Projects under way, taken in ACTIVE with their Formal Project ID, manager, declared baseline and opening progress and spend. A manager without R04 is given it on the project."
+    },
+    "ROLE_ASSIGNMENT": {
+      "name": "Role assignments",
+      "description": "Who holds which permission profile, over a department, an entity or an imported project. Loaded after projects."
     }
   },
   "action": "Import",

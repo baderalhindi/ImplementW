@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Models.DocumentManagement;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.IdentityAccess;
 
@@ -14,9 +16,10 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route(Collection)]
 [Tags("IdentityAccess")]
-public sealed class AccessRelationshipsController(IAccessRelationshipService assignments) : AdministrationControllerBase
+public sealed class AccessRelationshipsController(IAccessRelationshipService assignments, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/access-relationships";
+    private const string ImportRegister = ImportRegisterCodes.RoleAssignment;
 
     /// <summary>Filters: <c>userId</c>, <c>projectId</c>, <c>status</c> (set). Newest start first.</summary>
     [HttpGet]
@@ -31,6 +34,23 @@ public sealed class AccessRelationshipsController(IAccessRelationshipService ass
             userId, projectId, QueryParameters.EnumSet<AccessRelationshipStatus>(status, "status", errors), QueryParameters.Page(page, pageSize, errors));
         return errors.Count > 0 ? ValidationFailed(errors) : Respond(await assignments.ListAsync(CallerId, query, cancellationToken));
     }
+
+    /// <summary>TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.</summary>
+    [HttpGet("import-template/content")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK, "application/octet-stream")]
+    [EndpointName("IdentityAccess_DownloadRoleAssignmentImportTemplate")]
+    public Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken) => ImportTemplateAsync(imports, ImportRegister, cancellationToken);
+
+    /// <summary>TASK-102: validates the workbook in part <c>file</c>, or with <c>commit=true</c> imports it, all rows or none.</summary>
+    [HttpPost("imports")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [SensitiveWrite]
+    [DisableFormValueModelBinding]
+    [ProducesResponseType<ImportReport>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_ImportRoleAssignments")]
+    public Task<IActionResult> Import([FromQuery] bool? commit, CancellationToken cancellationToken) =>
+        ImportAsync(imports, ImportRegister, commit == true, cancellationToken);
 
     [HttpGet("{accessRelationshipId:guid}")]
     [RequirePermission(PermissionCatalogue.UserView)]

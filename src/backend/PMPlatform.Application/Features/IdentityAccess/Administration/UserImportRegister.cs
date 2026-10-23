@@ -26,7 +26,7 @@ internal sealed class UserImportRegister(IUserAdministrationService users, IUser
 
     private static readonly Dictionary<string, string> ColumnOfField = new(StringComparer.Ordinal) { ["externalEntityId"] = EntityColumn };
 
-    public string Code => "USER";
+    public string Code => ImportRegisterCodes.User;
 
     public string OwningModule => "IdentityAccess";
 

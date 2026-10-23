@@ -25,7 +25,7 @@ internal sealed class KpiDefinitionImportRegister(
 
     private static readonly Dictionary<string, string> ColumnOfField = new(StringComparer.Ordinal) { ["unitItemId"] = UnitColumn };
 
-    public string Code => "KPI_DEFINITION";
+    public string Code => ImportRegisterCodes.KpiDefinition;
 
     public string OwningModule => "MasterDataConfig";
 
