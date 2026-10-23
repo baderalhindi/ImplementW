@@ -770,16 +770,40 @@ describe('SCR-072 KPI Register', () => {
     expect(within(aggregates).getByText(en('financialKpi.aggregate.coverage.NONE'))).toBeTruthy();
   });
 
-  test('the "No data this period" filter, and its empty state for a choice nothing matches', async () => {
+  test('the period cards count each rating and filter the list, with an empty state for a choice nothing matches', async () => {
     openRegister();
-    const filter = await screen.findByRole('combobox', {
-      name: en('financialKpi.register.filter'),
-    });
-    await userEvent.selectOptions(filter, 'noData');
+    const cards = await screen.findByRole('group', { name: en('financialKpi.register.filter') });
+    const card = (filter: string) =>
+      within(cards).getByRole('button', {
+        name: new RegExp(`^${en(`financialKpi.register.filters.${filter}`)}`),
+      });
+    expect(card('all').getAttribute('aria-pressed')).toBe('true');
+    expect(card('noData').textContent).toContain('2');
+    expect(card('red').textContent).toContain('0');
+
+    await userEvent.click(card('noData'));
+    expect(card('noData').getAttribute('aria-pressed')).toBe('true');
     const table = screen.getByRole('region', { name: en('financialKpi.register.caption') });
     expect(within(table).getAllByRole('row')).toHaveLength(3);
-    await userEvent.selectOptions(filter, 'red');
+    await userEvent.click(card('red'));
     expect(screen.getByText(en('financialKpi.register.filteredEmpty'))).toBeTruthy();
+  });
+
+  test('the search keeps the KPIs whose project matches, and the cards count only those', async () => {
+    openRegister();
+    await userEvent.type(
+      await screen.findByRole('searchbox', { name: en('financialKpi.register.search') }),
+      'harbour',
+    );
+    const table = screen.getByRole('region', { name: en('financialKpi.register.caption') });
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    expect(within(table).getByRole('link', { name: 'Harbour bridge repair' })).toBeTruthy();
+    const cards = screen.getByRole('group', { name: en('financialKpi.register.filter') });
+    expect(
+      within(cards).getByRole('button', {
+        name: new RegExp(`^${en('financialKpi.register.filters.all')}`),
+      }).textContent,
+    ).toContain('1');
   });
 
   test('with nothing assigned anywhere the register says so', async () => {
