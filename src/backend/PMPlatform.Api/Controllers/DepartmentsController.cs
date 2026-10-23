@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Models.DocumentManagement;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
 namespace PMPlatform.Api.Controllers;
@@ -10,9 +12,10 @@ namespace PMPlatform.Api.Controllers;
 /// <summary>ADM-011 Organization Structure and ADM-012 Departments (TASK-031). Never deleted (RETAIN): deactivated.</summary>
 [Route(Collection)]
 [Tags("IdentityAccess")]
-public sealed class DepartmentsController(IDepartmentAdministrationService departments) : AdministrationControllerBase
+public sealed class DepartmentsController(IDepartmentAdministrationService departments, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/departments";
+    private const string ImportRegister = "DEPARTMENT";
 
     /// <summary>Filters: <c>isActive</c>, <c>parentDepartmentId</c> (one level of the tree), <c>q</c>. By code.</summary>
     [HttpGet]
@@ -27,6 +30,23 @@ public sealed class DepartmentsController(IDepartmentAdministrationService depar
         DepartmentQuery query = new(isActive, parentDepartmentId, q, QueryParameters.Page(page, pageSize, errors));
         return errors.Count > 0 ? ValidationFailed(errors) : Respond(await departments.ListAsync(CallerId, query, cancellationToken));
     }
+
+    /// <summary>TASK-102: the migration workbook template, with the columns a row must fill and the department codes a parent may name.</summary>
+    [HttpGet("import-template/content")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK, "application/octet-stream")]
+    [EndpointName("IdentityAccess_DownloadDepartmentImportTemplate")]
+    public Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken) => ImportTemplateAsync(imports, ImportRegister, cancellationToken);
+
+    /// <summary>TASK-102: validates the workbook in part <c>file</c>, or with <c>commit=true</c> imports it, all rows or none.</summary>
+    [HttpPost("imports")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [SensitiveWrite]
+    [DisableFormValueModelBinding]
+    [ProducesResponseType<ImportReport>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_ImportDepartments")]
+    public Task<IActionResult> Import([FromQuery] bool? commit, CancellationToken cancellationToken) =>
+        ImportAsync(imports, ImportRegister, commit == true, cancellationToken);
 
     [HttpGet("{departmentId:guid}")]
     [RequirePermission(PermissionCatalogue.OrganizationView)]

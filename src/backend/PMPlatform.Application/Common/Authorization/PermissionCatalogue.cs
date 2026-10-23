@@ -376,6 +376,12 @@ public sealed class PermissionCatalogue
     /// <summary>FG-05 (TASK-075): enable and disable an integration's monitoring (MOD-101), apart from operating it (FG-05 §12.3).</summary>
     public const string IntegrationConfigure = "INTEGRATION_CONFIGURE";
 
+    /// <summary>
+    /// TASK-102: load a register's migration workbook — validate it, and import it in the legacy state each row records, around the
+    /// registers' approval workflows. Platform-wide: there is no record to scope.
+    /// </summary>
+    public const string DataImport = "DATA_IMPORT";
+
     public static PermissionCatalogue Platform { get; } = new(
         [
             new(IdentityIntegrationManage, "IDENTITY_ACCESS", AccessMode.Write),
@@ -467,6 +473,7 @@ public sealed class PermissionCatalogue
             new(IntegrationOperate, "INTEGRATION_MONITORING", AccessMode.Write),
             new(IntegrationAlertManage, "INTEGRATION_MONITORING", AccessMode.Write),
             new(IntegrationConfigure, "INTEGRATION_MONITORING", AccessMode.Write),
+            new(DataImport, "DATA_IMPORT", AccessMode.Write),
         ]);
 
     /// <summary>
@@ -544,6 +551,8 @@ public sealed class PermissionCatalogue
     /// and WF-15's did: integrations are platform-wide, with no record to scope, and FG-05 §15 makes the System Administrator their viewer.
     /// The Integration Operator of FG-05 §12 is an assignment AHDA has not named (TBC-INT-19); no other role ships with any of them, and R08
     /// never does (BR-INT-022). R01 sees no payload by holding them, because FG-05 stores none (integration-monitoring.md D-11).
+    /// DATA_IMPORT (TASK-102) goes to R01 at ALL by delivery-team decision: the migration load is an administrator's operation, platform-wide,
+    /// and each batch is audited in the administration category (data-import.md D-2).
     /// </summary>
     public static IReadOnlyList<ShippedGrant> ShippedDefaultGrants { get; } =
     [
@@ -636,6 +645,7 @@ public sealed class PermissionCatalogue
         new("R01", IntegrationOperate, DataScope.All),
         new("R01", IntegrationAlertManage, DataScope.All),
         new("R01", IntegrationConfigure, DataScope.All),
+        new("R01", DataImport, DataScope.All),
     ];
 
     private readonly Dictionary<string, PermissionDefinition> _definitions;

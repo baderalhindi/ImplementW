@@ -3837,6 +3837,57 @@
         }
       }
     },
+    "/api/v1/departments/import-template/content": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "TASK-102: the migration workbook template, with the columns a row must fill and the department codes a parent may name.",
+        "operationId": "IdentityAccess_DownloadDepartmentImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/departments/imports": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "TASK-102: validates the workbook in part `file`, or with `commit=true` imports it, all rows or none.",
+        "operationId": "IdentityAccess_ImportDepartments",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/departments/{departmentId}": {
       "get": {
         "tags": [
@@ -4961,6 +5012,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExternalEntityDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-entities/import-template/content": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.",
+        "operationId": "IdentityAccess_DownloadExternalEntityImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/external-entities/imports": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "TASK-102: validates the workbook in part `file`, or with `commit=true` imports it, all rows or none.",
+        "operationId": "IdentityAccess_ImportExternalEntities",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
                 }
               }
             }
@@ -7405,6 +7507,57 @@
         }
       }
     },
+    "/api/v1/kpi-definitions/import-template/content": {
+      "get": {
+        "tags": [
+          "MasterDataConfig"
+        ],
+        "summary": "TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.",
+        "operationId": "MasterDataConfig_DownloadKpiDefinitionImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-definitions/imports": {
+      "post": {
+        "tags": [
+          "MasterDataConfig"
+        ],
+        "summary": "TASK-102: validates the workbook in part `file`, or with `commit=true` imports it, all rows or none.",
+        "operationId": "MasterDataConfig_ImportKpiDefinitions",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/kpi-definitions/{kpiDefinitionId}": {
       "get": {
         "tags": [
@@ -8731,6 +8884,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MasterDataItemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master-data-items/import-template/content": {
+      "get": {
+        "tags": [
+          "MasterDataConfig"
+        ],
+        "summary": "TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.",
+        "operationId": "MasterDataConfig_DownloadMasterDataItemImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master-data-items/imports": {
+      "post": {
+        "tags": [
+          "MasterDataConfig"
+        ],
+        "summary": "TASK-102: validates the workbook in part `file`, or with `commit=true` imports it, all rows or none.",
+        "operationId": "MasterDataConfig_ImportMasterDataItems",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
                 }
               }
             }
@@ -16537,6 +16741,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/import-template/content": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.",
+        "operationId": "IdentityAccess_DownloadUserImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/imports": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "TASK-102: validates the workbook in part `file`, or with `commit=true` imports it, all rows or none.",
+        "operationId": "IdentityAccess_ImportUsers",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
                 }
               }
             }
@@ -26101,6 +26356,137 @@
             "format": "double"
           }
         }
+      },
+      "ImportIssue": {
+        "required": [
+          "row",
+          "column",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "row": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "column": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "description": "One reason the workbook cannot be loaded: its worksheet row (1 for the header), its column, and the code."
+      },
+      "ImportReport": {
+        "required": [
+          "registerCode",
+          "committed",
+          "batchId",
+          "rowCount",
+          "createdCount",
+          "skippedCount",
+          "issues",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "registerCode": {
+            "type": "string"
+          },
+          "committed": {
+            "type": "boolean"
+          },
+          "batchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "rowCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "skippedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportIssue"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowOutcome"
+            }
+          }
+        },
+        "description": "What a validation or an import found. Nothing is committed unless every row passed (all or nothing), so bool ImportReport.Committed is\ntrue only with no IReadOnlyList&lt;ImportIssue&gt; ImportReport.Issues."
+      },
+      "ImportRowOutcome": {
+        "required": [
+          "row",
+          "legacyId",
+          "status",
+          "entityId"
+        ],
+        "type": "object",
+        "properties": {
+          "row": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "legacyId": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportRowStatus"
+          },
+          "entityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "Where one row ended up. Guid? ImportRowOutcome.EntityId is the record it became, once committed."
+      },
+      "ImportRowStatus": {
+        "enum": [
+          "READY",
+          "CREATED",
+          "SKIPPED",
+          "REJECTED"
+        ]
       },
       "IntegrationAvailability": {
         "enum": [

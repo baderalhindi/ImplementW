@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval;
 using PMPlatform.Application.Features.Approval.Contracts;
@@ -82,6 +83,11 @@ public static class DependencyInjection
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IAuditOperationsService, AuditOperationsService>();
 
+        // TASK-102: the migration import. Each register is its module's, registered with the module; the workbook and the lineage
+        // are Infrastructure's.
+        services.AddScoped<IDataImportService, DataImportService>();
+        services.AddScoped<CatalogueCodeBook>();
+
         // IdentityAccess (TASK-028): sign-in and ADM-041. The ports they use are implemented in Infrastructure.
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IIdentityIntegrationService, IdentityIntegrationService>();
@@ -105,6 +111,10 @@ public static class DependencyInjection
         services.AddScoped<IRoleDirectory, RoleDirectory>();
         services.AddScoped<IUserRoleDirectory, UserRoleDirectory>();
         services.AddScoped<IOrganizationDirectory, OrganizationDirectory>();
+        services.AddScoped<IUserLookup, UserLookup>();
+        services.AddScoped<IImportRegister, DepartmentImportRegister>();
+        services.AddScoped<IImportRegister, ExternalEntityImportRegister>();
+        services.AddScoped<IImportRegister, UserImportRegister>();
 
         // TASK-034: FG-04 master data and the versioned configuration engine, and the resolution every module uses
         // (E-U2). The repositories are Infrastructure's.
@@ -115,6 +125,8 @@ public static class DependencyInjection
         services.AddScoped<IConfigurationResolver, ConfigurationResolver>();
         services.AddScoped<IReportAllowlistReader, ReportAllowlistReader>();
         services.AddScoped<IMasterDataResolver, MasterDataResolver>();
+        services.AddScoped<IImportRegister, MasterDataItemImportRegister>();
+        services.AddScoped<IImportRegister, KpiDefinitionImportRegister>();
 
         // TASK-035: the WF-11 approval runtime. Source modules start runs through IApprovalRequests and receive outcomes
         // through their IApprovalOutcomeHandler, which the outbox dispatcher reaches through ApprovalOutcomeDispatch.

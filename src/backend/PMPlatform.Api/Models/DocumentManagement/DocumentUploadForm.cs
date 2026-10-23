@@ -27,15 +27,20 @@ internal static class DocumentUploadForm
         TooLarge = 2,
     }
 
-    public static async Task<(IFormCollection? Form, Refusal Refusal)> ReadAsync(HttpContext context, DocumentUploadPolicy policy, CancellationToken cancellationToken)
+    public static Task<(IFormCollection? Form, Refusal Refusal)> ReadAsync(HttpContext context, DocumentUploadPolicy policy, CancellationToken cancellationToken) =>
+        ReadAsync(context, policy.MaxFileSizeBytes, cancellationToken);
+
+    /// <summary>A multipart form whose file may be up to <paramref name="maxFileBytes"/> long; the migration import's workbook reads its form here too (TASK-102).</summary>
+    public static async Task<(IFormCollection? Form, Refusal Refusal)> ReadAsync(HttpContext context, long maxFileBytes, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(context);
         HttpRequest request = context.Request;
         if (!request.HasFormContentType || request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) != true)
         {
             return (null, Refusal.NotMultipart);
         }
 
-        long limit = policy.MaxFileSizeBytes + EnvelopeBytes;
+        long limit = maxFileBytes + EnvelopeBytes;
         if (request.ContentLength > limit)
         {
             return (null, Refusal.TooLarge);

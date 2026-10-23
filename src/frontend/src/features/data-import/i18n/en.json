@@ -1,0 +1,95 @@
+{
+  "nav": "Data migration",
+  "page": {
+    "title": "Data migration",
+    "description": "Load records from the legacy system one register at a time, in the order below: each register refers only to the registers above it.",
+    "order": "Order",
+    "register": "Register",
+    "holds": "What it loads"
+  },
+  "registers": {
+    "DEPARTMENT": {
+      "name": "Departments",
+      "description": "AHDA's departments and their hierarchy. Active or inactive as in the legacy system."
+    },
+    "MASTER_DATA_ITEM": {
+      "name": "Master data items",
+      "description": "Legacy code lists into their catalogues. Imported as drafts: two other administrators validate and publish them before records can use them."
+    },
+    "EXTERNAL_ENTITY": {
+      "name": "External entities",
+      "description": "Delivering entities with their type and AHDA sponsor, in their legacy status."
+    },
+    "USER": {
+      "name": "Users",
+      "description": "Internal users linked to the directory and external users of their entity, active or disabled. Role assignments are made afterwards."
+    },
+    "KPI_DEFINITION": {
+      "name": "KPI definitions",
+      "description": "The KPI catalogue. Imported as drafts for validation and publication."
+    }
+  },
+  "action": "Import",
+  "title": "Import {register}",
+  "intro": "Bring records over from the legacy system. Fill in the template, then check the file: nothing is saved until every row passes.",
+  "template": {
+    "heading": "1. Download the template",
+    "hint": "Required columns are highlighted. The Columns sheet describes each column; the Reference values sheet lists the codes you can use.",
+    "download": "Download template",
+    "downloading": "Downloading…"
+  },
+  "file": {
+    "heading": "2. Choose the filled workbook",
+    "label": "Workbook (.xlsx)",
+    "hint": "Up to 5,000 rows and 10 MB. The first row holds the column names from the template."
+  },
+  "check": {
+    "heading": "3. Check and import",
+    "run": "Check file",
+    "running": "Checking…",
+    "noFile": "Choose a workbook first."
+  },
+  "commit": {
+    "run": "Import {count} rows",
+    "running": "Importing…"
+  },
+  "close": "Close",
+  "report": {
+    "issues": "{issues} problems found. Nothing was imported. Correct the workbook and check it again.",
+    "ready": "All {rows} rows passed: {created} will be created and {skipped} already imported earlier will be skipped.",
+    "nothingNew": "Every row was imported earlier: there is nothing new to import.",
+    "committed": "Imported {created} records. {skipped} rows imported earlier were skipped.",
+    "batch": "Batch reference: {batchId}",
+    "caption": "Problems found in the workbook",
+    "row": "Row",
+    "column": "Column",
+    "problem": "Problem",
+    "wholeRow": "Whole row",
+    "truncated": "Showing the first {shown} of {total} problems."
+  },
+  "issues": {
+    "REQUIRED": "Required: enter a value.",
+    "MAX_LENGTH": "Too long for this column.",
+    "MALFORMED": "Not in the expected format (see the Columns sheet).",
+    "ENUM_VALUE": "Not one of the allowed values.",
+    "OUT_OF_RANGE": "Out of the accepted range.",
+    "INVALID_CHARACTER": "Contains a character that is not accepted.",
+    "COLUMN_MISSING": "This required column is missing from the first row.",
+    "COLUMN_UNKNOWN": "Column not recognised: use the template's column names.",
+    "COLUMN_DUPLICATE": "This column appears twice.",
+    "NO_ROWS": "The workbook has no rows under the column names.",
+    "DUPLICATE_IN_FILE": "This legacy ID is already used by an earlier row.",
+    "REFERENCE_NOT_FOUND": "Nothing with this code or ID exists (see the Reference values sheet).",
+    "ALREADY_EXISTS": "A record with this value already exists on the platform.",
+    "NOT_FOUND": "The record it names was not found.",
+    "INACTIVE": "The record it names is not active.",
+    "DUPLICATE": "Another record already holds this value.",
+    "NOT_ALLOWED": "Not allowed here.",
+    "DATE_BEFORE_START": "This date is before the start date.",
+    "other": "Not accepted ({code})."
+  },
+  "problems": {
+    "notWorkbook": "The file is not an Excel workbook. Save it as .xlsx and try again.",
+    "tooLarge": "The workbook is too large. Split it into files of at most 5,000 rows."
+  }
+}

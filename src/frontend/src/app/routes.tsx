@@ -3,6 +3,7 @@ import { Navigate, Outlet, type RouteObject } from 'react-router';
 import { approvalRoutes } from '@/features/approvals/routes.tsx';
 import { auditActivityRoutes } from '@/features/audit-activity/routes.tsx';
 import { changeRequestRoutes } from '@/features/change-requests/routes.tsx';
+import { dataImportRoutes } from '@/features/data-import/routes.tsx';
 import { documentRoutes } from '@/features/documents/routes.tsx';
 import {
   externalContributionRoutes,
@@ -51,6 +52,7 @@ export const appRoutes: RouteObject[] = [
               { index: true, element: <Navigate to="users" replace /> },
               ...identityAccessRoutes,
               ...integrationAdminRoutes, // FG-05 (TASK-076): R01 holds its permissions
+              ...dataImportRoutes, // TASK-102: DATA_IMPORT is R01's
             ],
           },
           // FG-06's screens open on audit permissions, not on R01 (TASK-074; each guards itself).

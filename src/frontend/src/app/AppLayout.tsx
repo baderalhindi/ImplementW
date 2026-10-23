@@ -4,6 +4,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useInboxCount } from '@/features/approvals/useInboxCount.ts';
 import { auditNavigation } from '@/features/audit-activity/access.ts';
 import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
+import { dataImportNavigation } from '@/features/data-import/routes.tsx';
 import { identityAccessNavigation } from '@/features/identity-access/routes.tsx';
 import { integrationAdminNavigation } from '@/features/integration-admin/catalogue.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
@@ -441,7 +442,9 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
   const administrator = useHasRole(SYSTEM_ADMINISTRATOR_ROLE);
   const auditItems = auditNavigation(useAuditAccess().data ?? null);
   const menus = menusFor(user, [
-    ...(administrator ? [...identityAccessNavigation, ...integrationAdminNavigation] : []),
+    ...(administrator
+      ? [...identityAccessNavigation, ...integrationAdminNavigation, ...dataImportNavigation]
+      : []),
     ...auditItems,
   ]);
   const current = activeMenu(menus, pathname, search);

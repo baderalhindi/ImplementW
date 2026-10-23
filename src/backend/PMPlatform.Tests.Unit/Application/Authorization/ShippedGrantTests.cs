@@ -631,6 +631,13 @@ public sealed class ShippedGrantTests
         Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.AuditExternalView, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
     }
 
+    /// <summary>TASK-102: the migration import is an administrator's operation, platform-wide; no other role ships with it.</summary>
+    [Fact]
+    public void OnlyR01ImportsMigrationData() =>
+        Assert.Equal(
+            [("R01", DataScope.All)],
+            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode == PermissionCatalogue.DataImport).Select(g => (g.RoleCode, g.Scope)));
+
     [Fact]
     public void OnlyR01ManagesIdentityIntegration() =>
         Assert.Equal(["R01"], RoleCodes.Where(role => ShippedGrant(role, PermissionCatalogue.IdentityIntegrationManage) is not null));

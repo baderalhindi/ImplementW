@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Models.DocumentManagement;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Api.Models.MasterDataConfig;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Domain.Common;
 
@@ -12,9 +14,10 @@ namespace PMPlatform.Api.Controllers;
 /// <summary>The KPI catalogue (TASK-034): stable KPI identities under the governed lifecycle; never deleted (RETAIN).</summary>
 [Route(Collection)]
 [Tags("MasterDataConfig")]
-public sealed class KpiDefinitionsController(IKpiDefinitionAdministrationService kpiDefinitions) : AdministrationControllerBase
+public sealed class KpiDefinitionsController(IKpiDefinitionAdministrationService kpiDefinitions, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/kpi-definitions";
+    private const string ImportRegister = "KPI_DEFINITION";
 
     /// <summary>Filters: <c>lifecycleState</c> (a set), <c>q</c>. By code.</summary>
     [HttpGet]
@@ -29,6 +32,23 @@ public sealed class KpiDefinitionsController(IKpiDefinitionAdministrationService
             QueryParameters.EnumSet<GovernedLifecycleState>(lifecycleState, "lifecycleState", errors), q, QueryParameters.Page(page, pageSize, errors));
         return errors.Count > 0 ? ValidationFailed(errors) : Respond(await kpiDefinitions.ListAsync(query, cancellationToken));
     }
+
+    /// <summary>TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.</summary>
+    [HttpGet("import-template/content")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK, "application/octet-stream")]
+    [EndpointName("MasterDataConfig_DownloadKpiDefinitionImportTemplate")]
+    public Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken) => ImportTemplateAsync(imports, ImportRegister, cancellationToken);
+
+    /// <summary>TASK-102: validates the workbook in part <c>file</c>, or with <c>commit=true</c> imports it, all rows or none.</summary>
+    [HttpPost("imports")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [SensitiveWrite]
+    [DisableFormValueModelBinding]
+    [ProducesResponseType<ImportReport>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("MasterDataConfig_ImportKpiDefinitions")]
+    public Task<IActionResult> Import([FromQuery] bool? commit, CancellationToken cancellationToken) =>
+        ImportAsync(imports, ImportRegister, commit == true, cancellationToken);
 
     [HttpGet("{kpiDefinitionId:guid}")]
     [RequirePermission(PermissionCatalogue.MasterDataView)]

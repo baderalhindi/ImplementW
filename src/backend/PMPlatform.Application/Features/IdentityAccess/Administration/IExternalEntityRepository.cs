@@ -21,5 +21,10 @@ public interface IExternalEntityRepository
     /// <summary>The names of the entitys named, by id; an id that names nothing is left out.</summary>
     public Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
+    public Task<Guid?> FindIdByCodeAsync(string code, CancellationToken cancellationToken);
+
+    /// <summary>The active external entity codes and names, by code.</summary>
+    public Task<IReadOnlyList<OrganizationCode>> ListActiveCodesAsync(CancellationToken cancellationToken);
+
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken);
 }

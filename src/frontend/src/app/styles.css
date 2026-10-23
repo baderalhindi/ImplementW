@@ -1478,6 +1478,23 @@ select.field__input {
   color: var(--color-text-muted);
 }
 
+/* TASK-102: the migration import's three steps, each a titled block. */
+.import__step {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.import__step h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.import__step .table-container,
+.import__step .notice {
+  justify-self: stretch;
+}
+
 .dialog .form {
   max-inline-size: none;
 }

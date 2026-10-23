@@ -21,4 +21,5 @@ public static class MasterDataCatalogueCodes
     public const string ProjectClassification = "PROJECT_CLASSIFICATION";
     public const string Region = "REGION";
     public const string City = "CITY";
+    public const string ExternalEntityType = "EXTERNAL_ENTITY_TYPE";
 }
