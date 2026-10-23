@@ -161,9 +161,13 @@ function NafathPanel(): ReactElement {
       className="sign-in__panel sign-in__nafath"
       aria-label={t('identityAccess.signIn.nafath.name')}
     >
-      <p className="sign-in__nafath-mark" aria-hidden="true">
-        {t('identityAccess.signIn.nafath.name')}
-      </p>
+      <img
+        className="sign-in__nafath-mark"
+        src="/brand/nafath-logo.png"
+        alt=""
+        width="681"
+        height="293"
+      />
       <p className="badge sign-in__soon">{t('identityAccess.signIn.comingSoon')}</p>
       <p className="sign-in__note">
         <Icon>
