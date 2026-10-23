@@ -1,7 +1,9 @@
 {
   "appName": "PMPlatform",
+  "organizationName": "هيئة تطوير الأحساء",
   "skipToContent": "الانتقال إلى المحتوى الرئيسي",
   "signOut": "تسجيل الخروج",
+  "language": "اللغة",
   "languages": {
     "ar": "العربية",
     "en": "الإنجليزية"

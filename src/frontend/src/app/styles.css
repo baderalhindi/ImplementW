@@ -24,7 +24,14 @@
   --color-warning: #7a4100;
   --color-warning-surface: #fdf0dc;
   --color-focus: #1f5fbf;
+  /* The content area's ground: cards (filters, tables, form sections, widgets) sit on it in --color-background. */
+  --color-canvas: #f5f7f9;
+  --color-primary-tint: #e3eeeb;
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 8%);
   --radius: 6px;
+  --radius-card: 10px;
+  /* One line of header: its block padding plus a 2.75rem control. The sidebar sticks below it. */
+  --header-block-size: 4.25rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -47,6 +54,8 @@ html {
   line-height: 1.6;
   color: var(--color-text);
   background: var(--color-background);
+  /* Keeps a focused or scrolled-to element clear of the sticky header (WCAG 2.4.11). */
+  scroll-padding-block-start: 5rem;
 }
 
 body {
@@ -126,7 +135,16 @@ h3 {
   color: var(--color-on-primary);
 }
 
+/*
+ * The header stays in view while the page scrolls; below the skip link, and native dialogs sit in the top layer.
+ * White with the gold AHDA logo, on the sign-in page and inside the platform alike; once the page has scrolled it
+ * floats as a translucent pill. The floating state changes
+ * no block size, so toggling it never moves the scroll position.
+ */
 .shell__header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -134,13 +152,46 @@ h3 {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-background);
+  color: var(--color-text);
+  transition-property: inset-block-start, margin-inline, padding-inline, border-radius, background-color, box-shadow;
+  transition-duration: 0.4s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * The blur keeps the dark text readable over whatever scrolls under the translucent white. The pill is
+ * slightly narrower than the window, by margins rather than a width, so the change animates; its block size is the
+ * header's own, so the content under it does not move.
+ */
+.shell__header--floating {
+  inset-block-start: var(--space-3);
+  /* At most 56rem wide, centred; on a narrow window, the window less a small gutter. */
+  margin-inline: max(var(--space-4), calc((100% - 56rem) / 2));
+  padding-inline: var(--space-6);
+  border-block-end: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-background) 85%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__header {
+    transition: none;
+  }
 }
 
 .shell__brand {
-  font-weight: 700;
-  font-size: 1.15rem;
-  text-decoration: none;
-  color: var(--color-text);
+  display: flex;
+  align-items: center;
+}
+
+/* The AHDA logo, as tall as a header control so the header keeps its one-line block size. */
+.shell__logo {
+  display: block;
+  block-size: 2.75rem;
+  inline-size: auto;
 }
 
 .shell__session {
@@ -150,31 +201,112 @@ h3 {
   gap: var(--space-2);
 }
 
-.shell__user {
-  color: var(--color-text-muted);
+.shell__header .button--quiet,
+.shell__header .bell {
+  background: transparent;
+  font-weight: 400;
+}
+
+.shell__header .button--quiet:hover,
+.shell__header .bell:hover {
+  background: var(--color-surface);
+}
+
+/* The language switch: a globe, a 2.75rem square, opening a small list of the languages under it. */
+.language-switch {
+  position: relative;
+}
+
+.language-switch__button {
+  inline-size: 2.75rem;
+  padding: 0;
+}
+
+.language-switch__icon {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.language-switch__menu {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: 1;
+  min-inline-size: 10rem;
+  margin: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: 0 8px 24px rgb(16 24 40 / 16%);
+  list-style: none;
+}
+
+.language-switch__menu[hidden] {
+  display: none;
+}
+
+.language-switch__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.language-switch__option:hover {
+  background: var(--color-neutral-surface);
+}
+
+.language-switch__option[aria-pressed='true'] {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.language-switch__check {
+  inline-size: 1rem;
 }
 
 .shell__body {
   display: flex;
   flex-direction: column;
+  background: var(--color-canvas);
 }
 
 .shell__sidebar {
+  padding-block: var(--space-2);
   border-block-end: 1px solid var(--color-border-subtle);
-  background: var(--color-surface);
+  background: var(--color-background);
 }
 
-/* Approvals for everyone signed in, then administration for R01: one list per landmark. */
-.shell__nav + .shell__nav {
-  border-block-start: 1px solid var(--color-border-subtle);
+/* One titled group per landmark; the title is the landmark's name. */
+.shell__nav {
+  padding: var(--space-2) var(--space-3);
+}
+
+.shell__nav-title {
+  margin: 0;
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 
 .shell__nav ul {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: 2px;
   margin: 0;
-  padding: var(--space-2) var(--space-4);
+  padding: 0;
   list-style: none;
 }
 
@@ -183,16 +315,26 @@ h3 {
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius);
   color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.4;
   text-decoration: none;
+  transition: background-color 0.15s ease;
 }
 
 .shell__nav a:hover {
   background: var(--color-neutral-surface);
 }
 
+/* The current page: primary text on its tint (about 6.8:1), with a bar on the leading edge. */
 .shell__nav a[aria-current='page'] {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: var(--color-primary-tint);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+[dir='rtl'] .shell__nav a[aria-current='page'] {
+  box-shadow: inset -3px 0 0 var(--color-primary);
 }
 
 .shell__main {
@@ -208,22 +350,47 @@ h3 {
 @media (min-width: 60rem) {
   .shell__body {
     flex-direction: row;
-    min-block-size: calc(100vh - 4rem);
+    align-items: flex-start;
+    min-block-size: calc(100vh - var(--header-block-size));
   }
 
+  /* The sidebar keeps its place and scrolls on its own, so a short page is not as long as the menu. */
   .shell__sidebar {
-    flex: 0 0 15rem;
+    position: sticky;
+    inset-block-start: var(--header-block-size);
+    flex: 0 0 16rem;
+    block-size: calc(100vh - var(--header-block-size));
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border-block-end: 0;
-    border-inline-end: 1px solid var(--color-border-subtle);
+    /*
+     * The sidebar's ground and edge are carried up through the header's slot, so once the header floats the strip
+     * above the sidebar is not the canvas. Shadows, because the scroll container clips a pseudo-element; the edge is
+     * two 1px shadows (in place and raised) rather than a border, so it is one line along the whole height.
+     */
+    box-shadow:
+      0 calc(-1 * var(--header-block-size)) 0 var(--color-background),
+      1px 0 0 var(--color-border-subtle),
+      1px calc(-1 * var(--header-block-size)) 0 var(--color-border-subtle);
+  }
+
+  [dir='rtl'] .shell__sidebar {
+    box-shadow:
+      0 calc(-1 * var(--header-block-size)) 0 var(--color-background),
+      -1px 0 0 var(--color-border-subtle),
+      -1px calc(-1 * var(--header-block-size)) 0 var(--color-border-subtle);
   }
 
   .shell__nav ul {
     flex-direction: column;
-    padding: var(--space-4) var(--space-3);
   }
 
   .shell__main {
-    padding: var(--space-6) var(--space-8);
+    padding: var(--space-6) var(--space-8) var(--space-8);
+  }
+
+  .shell__main > * {
+    max-inline-size: 90rem;
   }
 }
 
@@ -235,11 +402,18 @@ h3 {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-block-end: var(--space-4);
+  margin-block-end: var(--space-6);
 }
 
 .page-header__title {
   margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[lang='ar'] .page-header__title {
+  letter-spacing: normal;
 }
 
 .page-header__description {
@@ -358,9 +532,10 @@ h3 {
 /* ---------------------------------------------------------------------------------------------- states */
 
 .state {
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-8) var(--space-4);
   border: 1px dashed var(--color-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
   text-align: center;
   color: var(--color-text-muted);
 }
@@ -440,12 +615,17 @@ h3 {
   min-block-size: 2.75rem;
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: 8px;
   background: var(--color-background);
   color: var(--color-text);
   font: inherit;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .button:hover {
@@ -555,6 +735,24 @@ textarea.field__input {
   resize: vertical;
 }
 
+/*
+ * Safari draws a native select at its own fixed height, ignoring min-block-size and padding, so it came out shorter
+ * than the text inputs beside it. Without the native appearance it takes the same box; the chevron is drawn here, at
+ * the inline end.
+ */
+select.field__input {
+  appearance: none;
+  padding-inline-end: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a5561' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 1rem;
+}
+
+[dir='rtl'] select.field__input {
+  background-position: left var(--space-3) center;
+}
+
 /* A value the form shows but does not take (a server-computed severity): a dashed edge on the neutral ground, and the
    field's hint says why. */
 .field__input--readonly {
@@ -599,13 +797,15 @@ textarea.field__input {
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
   align-items: end;
-  gap: var(--space-3);
-  margin-block-end: var(--space-4);
-  padding: var(--space-4);
-  border-radius: var(--radius);
-  background: var(--color-surface);
+  gap: var(--space-4);
+  margin-block-end: var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
 }
 
 .filters > .form-alert {
@@ -649,7 +849,9 @@ textarea.field__input {
   position: relative;
   overflow-x: auto;
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
 }
 
 .table {
@@ -659,7 +861,7 @@ textarea.field__input {
 
 .table th,
 .table td {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-block-end: 1px solid var(--color-border-subtle);
   text-align: start;
   vertical-align: top;
@@ -667,7 +869,22 @@ textarea.field__input {
 
 .table thead th {
   background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.table-container .table tbody tr:last-child > * {
+  border-block-end: 0;
+}
+
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+  background: var(--color-canvas);
 }
 
 .cell--ltr {
@@ -872,12 +1089,14 @@ textarea.field__input {
 
 /* ---------------------------------------------------------------------------------------------- notifications */
 
-/* The header link to SCR-150 with the unread count (TASK-040). */
+/* The header link to SCR-150 (TASK-040): a bell in a 2.75rem square, the unread count on its top corner. */
 .bell {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
+  justify-content: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
   border-radius: var(--radius);
   color: var(--color-text);
   text-decoration: none;
@@ -887,15 +1106,24 @@ textarea.field__input {
   background: var(--color-neutral-surface);
 }
 
+.bell__icon {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
 /* The number on the badge, white on the primary colour (the pair the active navigation link uses). */
 .bell__count {
-  min-inline-size: 1.5rem;
-  padding: 0 var(--space-2);
+  position: absolute;
+  inset-block-start: 0.2rem;
+  inset-inline-end: 0.1rem;
+  min-inline-size: 1.25rem;
+  padding: 0 0.3rem;
   border-radius: 999px;
   background: var(--color-primary);
   color: var(--color-on-primary);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.25rem;
   text-align: center;
 }
 
@@ -972,10 +1200,264 @@ textarea.field__input {
 
 /* ---------------------------------------------------------------------------------------------- sign-in */
 
+/*
+ * The AHDA sign-in mockup: one card split into Nafath (start side) and the account card (end side), a rule between
+ * them. The account card comes first in the source, so on a narrow screen the working form is on top; Nafath moves to
+ * the start column only on a wide one, and every control in it is disabled, so the focus order is unaffected.
+ */
 .sign-in {
-  max-inline-size: 28rem;
-  margin-inline: auto;
-  padding-block-start: var(--space-8);
+  max-inline-size: 72rem;
+  margin: var(--space-6) auto 0;
+}
+
+/* No bold text on the sign-in page: headings, labels, buttons and badges are all regular weight. */
+.sign-in :is(h1, h2, .button, .badge, .field__label, .field__error) {
+  font-weight: 400;
+}
+
+.sign-in__card {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-6);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
+}
+
+@media (min-width: 56rem) {
+  .sign-in__card {
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .sign-in__nafath {
+    order: -1;
+    padding-inline-end: var(--space-8);
+    border-inline-end: 1px solid var(--color-border-subtle);
+  }
+
+  .sign-in__account {
+    padding-inline-start: var(--space-8);
+  }
+}
+
+.sign-in__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.sign-in__panel > * {
+  inline-size: 100%;
+  max-inline-size: 26rem;
+}
+
+.sign-in__icon {
+  flex: none;
+}
+
+.sign-in__wide {
+  inline-size: 100%;
+}
+
+.sign-in__soon {
+  inline-size: auto;
+  background: var(--color-neutral-surface);
+  color: var(--color-text-muted);
+}
+
+.sign-in__nafath-mark {
+  margin: var(--space-6) 0 0;
+  color: var(--color-primary);
+  font-size: 4rem;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.sign-in__note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: 0;
+  text-align: center;
+}
+
+/* "or", centred on a rule. */
+.sign-in__divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.sign-in__divider::before,
+.sign-in__divider::after {
+  content: '';
+  flex: 1;
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.sign-in__avatar {
+  display: flex;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.sign-in__avatar .sign-in__icon {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  padding: var(--space-2);
+  border: 2px solid currentcolor;
+  border-radius: 50%;
+}
+
+.sign-in__account .page-header {
+  justify-content: center;
+  margin: 0;
+  text-align: center;
+}
+
+.sign-in__account .page-header__title {
+  font-size: 1.35rem;
+}
+
+.sign-in__tabs {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.sign-in__tablist {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.sign-in__tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  border: 0;
+  border-block-end: 3px solid transparent;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.sign-in__tab[aria-selected='true'] {
+  border-block-end-color: var(--color-primary);
+}
+
+.sign-in__tabpanel {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.sign-in__provider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius);
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  text-align: center;
+}
+
+.sign-in__provider:disabled {
+  cursor: not-allowed;
+}
+
+.sign-in__microsoft-mark {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.sign-in__tabpanel > .sign-in__provider .sign-in__microsoft-mark {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+}
+
+.sign-in__provider-text {
+  display: grid;
+  flex: 1;
+  gap: var(--space-1);
+}
+
+.sign-in__provider-hint {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.sign-in__subtitle {
+  margin: 0;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.sign-in__form {
+  max-inline-size: none;
+}
+
+/*
+ * The mockup's input: the icon sits inside it, at the page's end. The input is left-to-right for a Latin username, so
+ * both sides keep the icon's room; empty, it follows the page so an Arabic placeholder starts on the right.
+ */
+.sign-in__input {
+  position: relative;
+}
+
+.sign-in__input .field__input {
+  padding-inline: 2.75rem;
+}
+
+[dir='rtl'] .sign-in__input .field__input:placeholder-shown {
+  direction: rtl;
+}
+
+.sign-in__input > .sign-in__icon,
+.sign-in__reveal {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: 2.75rem;
+  margin: auto;
+  color: var(--color-text-muted);
+}
+
+.sign-in__input > .sign-in__icon {
+  block-size: 1.25rem;
+  padding-inline: var(--space-3);
+  box-sizing: content-box;
+  inline-size: 1.25rem;
+}
+
+.sign-in__reveal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.sign-in__footer {
+  padding: var(--space-6) 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 /* ---------------------------------------------------------------------------------------------- projects (TASK-042) */
@@ -995,19 +1477,50 @@ textarea.field__input {
   color: var(--color-text-muted);
 }
 
-/* A form in titled groups: each fieldset is a column of fields under its legend. */
-.form__section {
-  display: grid;
-  gap: var(--space-4);
-  margin: 0;
-  padding: var(--space-4);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
+/*
+ * A form in titled groups: each fieldset is a card, its legend the card's heading. On a wide screen the fields sit in
+ * two aligned columns; a text area, an option group and anything that is not a single field take the whole row.
+ */
+.form:has(> .form__section) {
+  max-inline-size: 60rem;
+  gap: var(--space-6);
 }
 
+.form__section {
+  display: grid;
+  gap: var(--space-4) var(--space-6);
+  align-items: start;
+  margin: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
+}
+
+/* Floated, the legend is laid out as a grid item inside the card instead of on its border. */
 .form__section > legend {
-  padding-inline: var(--space-2);
+  float: inline-start;
+  grid-column: 1 / -1;
+  inline-size: 100%;
+  margin: 0;
+  padding: 0 0 var(--space-3);
+  border-block-end: 1px solid var(--color-border-subtle);
+  font-size: 1.05rem;
   font-weight: 600;
+}
+
+@media (min-width: 48rem) {
+  .form__section {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form__section > :not(.field),
+  .form__section > .field--group,
+  .form__section > .field:has(textarea),
+  .form__section > .field:has(+ :not(.field), + .field--group, + .field textarea) {
+    grid-column: 1 / -1;
+  }
 }
 
 .workspace__status {
@@ -2293,10 +2806,11 @@ textarea.field__input {
   align-content: start;
   gap: var(--space-2);
   min-inline-size: 0;
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-6);
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
   background: var(--color-background);
+  box-shadow: var(--shadow-card);
 }
 
 /* A stale value is framed in the warning colour along its inline-start edge; the "Stale" flag says so in words. */

@@ -1,7 +1,9 @@
 {
   "appName": "PMPlatform",
+  "organizationName": "Al Ahsa Development Authority",
   "skipToContent": "Skip to main content",
   "signOut": "Sign out",
+  "language": "Language",
   "languages": {
     "ar": "Arabic",
     "en": "English"

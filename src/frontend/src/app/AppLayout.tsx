@@ -1,4 +1,4 @@
-import { type ReactElement } from 'react';
+import { type ReactElement, useEffect, useId, useRef, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router';
 
 import { approvalNavigation } from '@/features/approvals/routes.tsx';
@@ -32,21 +32,119 @@ import { suspensionClosureNavigation } from '@/features/suspension-closure/route
 import { taskNavigation } from '@/features/tasks/routes.tsx';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 
-function LanguageSwitch(): ReactElement {
-  const { language, setLanguage } = useI18n();
-  const other = language === 'ar' ? 'en' : 'ar';
+function GlobeIcon(): ReactElement {
   return (
-    <button
-      type="button"
-      className="button button--quiet"
-      lang={other}
-      onClick={() => {
-        setLanguage(other);
-      }}
+    <svg
+      className="language-switch__icon"
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      aria-hidden="true"
+      focusable="false"
     >
-      {other === 'ar' ? 'العربية' : 'English'}
-    </button>
+      <g fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18M12 3c2.5 2.6 3.75 5.6 3.75 9S14.5 18.4 12 21c-2.5-2.6-3.75-5.6-3.75-9S9.5 5.6 12 3z" />
+      </g>
+    </svg>
   );
+}
+
+/** Each language in its own script, so a reader finds theirs whichever is showing. */
+const languageChoices = [
+  { code: 'en', name: 'English' },
+  { code: 'ar', name: 'العربية' },
+] as const;
+
+/**
+ * The globe opens a list of the languages; the current one is ticked. A choice, Escape or a click elsewhere closes it,
+ * and Escape returns focus to the globe.
+ */
+function LanguageSwitch(): ReactElement {
+  const { t, language, setLanguage } = useI18n();
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    const closeOnOutsideClick = (event: PointerEvent): void => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div className="language-switch" ref={containerRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="button button--quiet language-switch__button"
+        aria-expanded={open}
+        aria-controls={menuId}
+        title={t('common.language')}
+        onClick={() => {
+          setOpen((value) => !value);
+        }}
+      >
+        <GlobeIcon />
+        <span className="visually-hidden">{t('common.language')}</span>
+      </button>
+      <ul className="language-switch__menu" id={menuId} hidden={!open}>
+        {languageChoices.map((choice) => (
+          <li key={choice.code}>
+            <button
+              type="button"
+              className="language-switch__option"
+              lang={choice.code}
+              aria-pressed={language === choice.code}
+              onClick={() => {
+                setLanguage(choice.code);
+                setOpen(false);
+              }}
+            >
+              <span className="language-switch__check" aria-hidden="true">
+                {language === choice.code ? '✓' : ''}
+              </span>
+              {choice.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Whether the window has scrolled past <paramref name="offset"/> pixels; the header floats once it has. */
+function useScrolledPast(offset: number): boolean {
+  const [scrolled, setScrolled] = useState(() => window.scrollY > offset);
+  useEffect(() => {
+    const update = (): void => {
+      setScrolled(window.scrollY > offset);
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', update);
+    };
+  }, [offset]);
+  return scrolled;
 }
 
 function Navigation({
@@ -57,8 +155,12 @@ function Navigation({
   items: NavigationItem[];
 }): ReactElement {
   const { t } = useI18n();
+  const titleId = useId();
   return (
-    <nav className="shell__nav" aria-label={t(label)}>
+    <nav className="shell__nav" aria-labelledby={titleId}>
+      <p className="shell__nav-title" id={titleId}>
+        {t(label)}
+      </p>
       <ul>
         {items.map((item) => (
           <li key={item.to}>
@@ -84,15 +186,22 @@ export function AppLayout(): ReactElement {
   const { session } = useSession();
   const administrator = useHasRole(SYSTEM_ADMINISTRATOR_ROLE);
   const auditItems = auditNavigation(useAuditAccess().data ?? null);
+  const floating = useScrolledPast(8);
 
   return (
     <div className="shell">
       <a className="skip-link" href="#main">
         {t('common.skipToContent')}
       </a>
-      <header className="shell__header">
+      <header className={floating ? 'shell__header shell__header--floating' : 'shell__header'}>
         <Link className="shell__brand" to="/">
-          {t('common.appName')}
+          <img
+            className="shell__logo"
+            src="/brand/ahda-logo.png"
+            alt={t('common.organizationName')}
+            width="596"
+            height="232"
+          />
         </Link>
         <div className="shell__session">
           <LanguageSwitch />

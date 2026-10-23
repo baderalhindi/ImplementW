@@ -301,7 +301,7 @@
     }
   },
   "signIn": {
-    "title": "Sign in",
+    "title": "Sign in to the platform",
     "username": "Username",
     "password": "Password",
     "submit": "Sign in",
@@ -311,7 +311,32 @@
     "provisioningUri": "Authenticator key",
     "code": "Verification code",
     "verify": "Verify",
-    "verifying": "Verifying…"
+    "verifying": "Verifying…",
+    "chooseMethod": "Choose how to sign in",
+    "tabs": {
+      "microsoft": "Microsoft account",
+      "directory": "Regular account"
+    },
+    "microsoft": {
+      "submit": "Sign in with Microsoft",
+      "hint": "Single sign-on with your Microsoft account"
+    },
+    "directoryTitle": "Sign in with a regular account",
+    "showPassword": "Show password",
+    "or": "or",
+    "comingSoon": "Coming soon",
+    "nafath": {
+      "name": "Nafath",
+      "instructions": "Users inside the Kingdom of Saudi Arabia sign in through the National Single Sign-On (Nafath)",
+      "submit": "Sign in with Nafath"
+    },
+    "biometric": {
+      "instructions": "If you cannot use the Nafath app, you can sign in with biometric verification",
+      "nationalId": "National ID / Iqama number",
+      "nationalIdPlaceholder": "Enter your national ID or Iqama number",
+      "submit": "Sign in with biometrics"
+    },
+    "copyright": "© {year} Al Ahsa Development Authority. All rights reserved."
   },
   "stepUp": {
     "title": "Confirm it is you",

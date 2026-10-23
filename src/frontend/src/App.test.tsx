@@ -7,7 +7,9 @@ test('without a session the application opens on sign-in, inside the main landma
   render(<App />);
 
   const main = screen.getByRole('main');
-  expect(await screen.findByRole('heading', { level: 1, name: 'تسجيل الدخول' })).toBeTruthy();
+  expect(
+    await screen.findByRole('heading', { level: 1, name: 'تسجيل الدخول إلى المنصة' }),
+  ).toBeTruthy();
   expect(main.contains(screen.getByRole('heading', { level: 1 }))).toBe(true);
   expect(document.documentElement.dir).toBe('rtl');
 });
