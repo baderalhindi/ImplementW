@@ -2,7 +2,7 @@ import { type ReactElement } from 'react';
 
 import { OverriddenBadge } from '@/features/progress/components/ProgressBadges.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 import { ValueStateFlag } from '@/shared/ui/ValueState.tsx';
 
 import { type WidgetData, type WidgetFigure } from '../api/types.ts';
@@ -64,7 +64,39 @@ function Figures({ figures }: { figures: WidgetFigure[] }): ReactElement | null 
   );
 }
 
-/** METRIC_CARD: a single state (a health, a lifecycle state, a condition) and its figures. */
+const TONE_ICONS: Record<StatusTone, ReactElement> = {
+  positive: <path d="m5 12.5 4.5 4.5L19 7.5" />,
+  warning: <path d="M12 4 2.5 20h19zM12 10v4.5M12 17.5h.01" />,
+  negative: <path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5V13M12 16.5h.01" />,
+  info: <path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v5.5M12 7.5h.01" />,
+  neutral: <path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12h8" />,
+};
+
+/** A state's icon in its tone's colour; it only repeats the word beside it (WCAG 1.4.1). */
+function ToneIcon({ tone }: { tone: StatusTone }): ReactElement {
+  return (
+    <svg
+      className={`widget__icon widget__icon--${tone}`}
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {TONE_ICONS[tone]}
+      </g>
+    </svg>
+  );
+}
+
+/** METRIC_CARD: a single state (a health, a lifecycle state, a condition) as the card's value, and its figures. */
 export function MetricBody({ projectionCode, data }: BodyProps): ReactElement {
   const { t, language } = useI18n();
   const state =
@@ -72,8 +104,9 @@ export function MetricBody({ projectionCode, data }: BodyProps): ReactElement {
   return (
     <div className="widget__body">
       {state !== null && (
-        <p className="widget__state">
-          <StatusBadge label={state.text} tone={state.tone} />
+        <p className="widget__state" data-tone={state.tone}>
+          <ToneIcon tone={state.tone} />
+          <span className="widget__state-text">{state.text}</span>
           {isOverridden(data.figures) && <OverriddenBadge />}
         </p>
       )}
@@ -139,7 +172,7 @@ export function ProgressBody({ data }: BodyProps): ReactElement {
   const percentages = shownFigures(data.figures).filter((figure) => figure.unit === 'PERCENT');
   return (
     <div className="widget__body">
-      <dl className="widget__figures">
+      <dl className="widget__figures widget__figures--progress">
         {percentages.map((figure) => {
           const value = figure.value === null || figure.isMasked ? null : Number(figure.value);
           return (

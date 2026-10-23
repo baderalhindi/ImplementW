@@ -120,18 +120,18 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
 
   await test.step("the Project Dashboard projects the same record, naming each value's source and its own freshness point", async () => {
     const lifecycle = widget(page, 'Lifecycle state');
-    await expectText(lifecycle, 'Source WF-01');
+    await expectText(lifecycle, 'Owned by WF-01');
     await expect(lifecycle.getByText('Active', { exact: true })).toBeVisible();
 
     const risks = widget(page, 'Open risks by rating');
     await expectText(risks, 'Current · live');
-    await expectText(risks, 'Source WF-06');
+    await expectText(risks, 'Owned by WF-06');
     await expect(risks.getByRole('definition').first()).toHaveText('1');
 
     // The KPI condition is dated by the measurement's own as-of, not by when the dashboard was assembled.
     const kpi = widget(page, 'KPI condition');
     await expectText(kpi, 'Published · official');
-    await expectText(kpi, 'Source WF-14');
+    await expectText(kpi, 'Owned by WF-14');
     await expectText(kpi, `As of ${dayOf(measuredOn)}`);
     await expect(kpi.getByRole('row', { name: 'Green 1' })).toBeVisible();
 
@@ -205,7 +205,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     ]).toEqual([formalId, title, owningDepartment, 'Active', '1', '1']);
     const banner = page.getByRole('region', { name: 'Coverage and freshness' });
     const kpiSection = banner.locator('[data-projection="FINANCIAL_KPI.KPI_CONDITION"]');
-    await expectText(kpiSection, 'Source WF-14');
+    await expectText(kpiSection, 'Owned by WF-14');
     await expectText(kpiSection, `As of ${dayOf(measuredOn)}`);
     await expectText(kpiSection, '1 of 1 projects shown');
 

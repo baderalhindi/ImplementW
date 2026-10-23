@@ -56,7 +56,7 @@
     "at": "بتاريخ {date}",
     "none": "لا تاريخ سريان: لا توجد قيمة لتأريخها"
   },
-  "source": "المصدر {source} · إصدار الإسقاط {version}",
+  "source": "مملوكة لـ {source} · الإصدار {version}",
   "coverage": {
     "counted": "احتُسب {included} من {eligible} مشروعًا",
     "leftOut": "المستبعد: {reasons}",

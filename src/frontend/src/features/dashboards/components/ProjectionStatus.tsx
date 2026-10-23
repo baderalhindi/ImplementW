@@ -49,9 +49,10 @@ export function CoverageLine({ coverage }: { coverage: WidgetCoverage }): ReactE
   );
 }
 
+/** The widget's semantic state and, when the source says so, that it is stale: stated beside the title, before the value. */
 export function ProjectionStatus({ widget }: { widget: DashboardWidgetResult }): ReactElement {
-  const { t, formatDateTime } = useI18n();
-  const { semanticState, freshness, asOf } = widget.projection;
+  const { t } = useI18n();
+  const { semanticState, freshness } = widget.projection;
   const semantic = SEMANTIC_STATES[semanticState];
   return (
     <div className="widget__status">
@@ -66,18 +67,28 @@ export function ProjectionStatus({ widget }: { widget: DashboardWidgetResult }):
           tone="warning"
         />
       )}
-      <span className="widget__as-of">
-        {asOf === null
-          ? t('dashboards.asOf.none')
-          : t('dashboards.asOf.at', { date: formatDateTime(asOf) })}
-      </span>
+    </div>
+  );
+}
+
+/** The card's footer: when the value was current, and which source owns it in which projection version. */
+export function ProjectionOrigin({ widget }: { widget: DashboardWidgetResult }): ReactElement {
+  const { t, formatDateTime } = useI18n();
+  const { asOf } = widget.projection;
+  return (
+    <p className="widget__origin">
       <span className="widget__source">
         {t('dashboards.source', {
           source: widget.sourceDomain === '' ? '—' : widget.sourceDomain,
           version: widget.projectionVersion === '' ? '—' : widget.projectionVersion,
         })}
       </span>
-    </div>
+      <span className="widget__as-of">
+        {asOf === null
+          ? t('dashboards.asOf.none')
+          : t('dashboards.asOf.at', { date: formatDateTime(asOf) })}
+      </span>
+    </p>
   );
 }
 

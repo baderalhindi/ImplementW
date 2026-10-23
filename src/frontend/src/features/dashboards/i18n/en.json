@@ -56,7 +56,7 @@
     "at": "As of {date}",
     "none": "No as-of date: there is no value to date"
   },
-  "source": "Source {source} · projection version {version}",
+  "source": "Owned by {source} · version {version}",
   "coverage": {
     "counted": "{included} of {eligible} projects counted",
     "leftOut": "left out: {reasons}",

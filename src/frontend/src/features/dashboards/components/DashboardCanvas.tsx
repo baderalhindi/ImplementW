@@ -7,7 +7,12 @@ import { type DashboardView, type DashboardWidgetResult } from '../api/types.ts'
 import { drillPath } from '../drill.ts';
 import { visibleWidgets } from '../layout.ts';
 
-import { CoverageLine, ProjectionStatus, UnknownValue } from './ProjectionStatus.tsx';
+import {
+  CoverageLine,
+  ProjectionOrigin,
+  ProjectionStatus,
+  UnknownValue,
+} from './ProjectionStatus.tsx';
 import { ProgressTrend } from './ProgressTrend.tsx';
 import { DistributionBody, MetricBody, ProgressBody } from './WidgetBodies.tsx';
 
@@ -61,6 +66,7 @@ function WidgetCard({
       className={stale ? 'widget widget--stale' : 'widget'}
       aria-labelledby={titleId}
       data-widget={widget.code}
+      data-widget-type={widget.widgetType}
       data-semantic-state={widget.projection.semanticState}
       data-freshness={widget.projection.freshness}
       style={{ '--widget-span': widget.layoutSpan } as CSSProperties}
@@ -69,13 +75,13 @@ function WidgetCard({
         <Heading id={titleId} className="widget__title">
           {title}
         </Heading>
+        <ProjectionStatus widget={widget} />
         {drill !== null && (
           <Link className="widget__drill" to={drill}>
             {t('dashboards.widget.open')} <span className="visually-hidden">{title}</span>
           </Link>
         )}
       </div>
-      <ProjectionStatus widget={widget} />
       {stale && (
         <p className="widget__explanation">
           {widget.coverageDetail === null
@@ -83,8 +89,11 @@ function WidgetCard({
             : t('dashboards.freshness.staleAggregate')}
         </p>
       )}
-      {widget.coverageDetail !== null && <CoverageLine coverage={widget.coverageDetail} />}
       <WidgetBody widget={widget} title={title} />
+      <div className="widget__footer">
+        {widget.coverageDetail !== null && <CoverageLine coverage={widget.coverageDetail} />}
+        <ProjectionOrigin widget={widget} />
+      </div>
     </section>
   );
 }
