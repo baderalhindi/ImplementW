@@ -19,8 +19,12 @@ internal static class HardeningApi
         ["ClientAddress:TrustedProxyHops"] = "2",
     };
 
-    /// <summary>An address from the IPv6 documentation range that no other test uses.</summary>
-    public static string NewClientAddress() => $"2001:db8::{RandomNumberGenerator.GetHexString(4, lowercase: true)}:{RandomNumberGenerator.GetHexString(4, lowercase: true)}";
+    /// <summary>
+    /// An address from the IPv6 documentation range that no other test uses, written as the API writes it (leading zeros dropped,
+    /// a zero group folded), so a test finds it verbatim in what the API logs.
+    /// </summary>
+    public static string NewClientAddress() =>
+        IPAddress.Parse($"2001:db8::{RandomNumberGenerator.GetHexString(4, lowercase: true)}:{RandomNumberGenerator.GetHexString(4, lowercase: true)}").ToString();
 
     public static IReadOnlyDictionary<string, string?> Settings(params (string Key, string Value)[] settings)
     {
