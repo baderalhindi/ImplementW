@@ -17,7 +17,7 @@ import {
 import { unreadCountStore, useUnreadCount } from '@/features/notifications/unreadCount.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
-import { activeItem, activeMenu, type Menu, type MenuId, menusFor } from './menus.ts';
+import { activeItem, activeMenu, isCurrent, type Menu, type MenuId, menusFor } from './menus.ts';
 import { ShellIcon } from './ShellIcon.tsx';
 
 /** Each language in its own script, so a reader finds theirs whichever is showing. */
@@ -218,7 +218,8 @@ function Breadcrumb({
   pathname: string;
 }): ReactElement {
   const { t } = useI18n();
-  const item = activeItem(menu, pathname);
+  const { search } = useLocation();
+  const item = activeItem(menu, pathname, search);
   const crumbs = [
     ...(menu === undefined ? [] : [{ to: menu.to, label: t(menu.label) }]),
     ...(item === undefined ? [] : [{ to: item.to, label: t(item.label) }]),
@@ -229,7 +230,7 @@ function Breadcrumb({
       <ol>
         {crumbs.map((crumb, index) => (
           <li key={crumb.label}>
-            {index === crumbs.length - 1 && crumb.to === pathname ? (
+            {index === crumbs.length - 1 && isCurrent(crumb.to, pathname, search) ? (
               <span aria-current="page">{crumb.label}</span>
             ) : (
               <Link to={crumb.to}>{crumb.label}</Link>
@@ -296,6 +297,7 @@ function Rail({
   onToggleCollapsed: () => void;
 }): ReactElement {
   const { t } = useI18n();
+  const { search } = useLocation();
   const unread = useUnreadCount().count;
   const awaiting = useInboxCount(pathname);
 
@@ -335,7 +337,7 @@ function Rail({
                 <Link
                   className={open ? 'rail__menu rail__menu--open' : 'rail__menu'}
                   to={menu.to}
-                  aria-current={pathname === menu.to ? 'page' : undefined}
+                  aria-current={open && isCurrent(menu.to, pathname, search) ? 'page' : undefined}
                   title={collapsed ? t(menu.label) : undefined}
                 >
                   <ShellIcon name={menu.id} />
@@ -435,14 +437,14 @@ function SignedOutLayout(): ReactElement {
  */
 function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
   const { t } = useI18n();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const administrator = useHasRole(SYSTEM_ADMINISTRATOR_ROLE);
   const auditItems = auditNavigation(useAuditAccess().data ?? null);
   const menus = menusFor(user, [
     ...(administrator ? [...identityAccessNavigation, ...integrationAdminNavigation] : []),
     ...auditItems,
   ]);
-  const current = activeMenu(menus, pathname);
+  const current = activeMenu(menus, pathname, search);
   const [collapsed, setCollapsed] = useState(readCollapsed);
   // The drawer is open on the page it was opened on, so choosing a screen closes it.
   const [drawerOpenOn, setDrawerOpenOn] = useState<string | null>(null);
