@@ -653,6 +653,11 @@ h3 {
   max-inline-size: 90rem;
 }
 
+/* With the rail collapsed, a dashboard page takes the full width of the window. */
+.app--collapsed .app__main:has(> .dashboard) > * {
+  max-inline-size: none;
+}
+
 /* A narrow window: the rail becomes a drawer over the page, opened from the top bar; the Create and Language labels go. */
 @media (max-width: 59.99rem) {
   .rail {
