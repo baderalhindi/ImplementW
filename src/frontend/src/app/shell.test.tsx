@@ -8,7 +8,7 @@ import { sessionFor } from '@/test/identityAccessFixtures.ts';
 import { mockApi, SHELL_INBOX_COUNT } from '@/test/mockApi.ts';
 import { notificationSession, withInbox } from '@/test/notificationFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
-import { findMainMenu, mainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
+import { findMainMenu, findOpenMenu, mainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
 
 // The master navigation of Blueprint §20.1 (the AHDA Global Navigation design): eleven menus in order, the open menu's
 // screens only, counts on Requests and Approvals and on Notifications only, Administration hidden from a role without it.
@@ -69,6 +69,39 @@ describe('the master navigation', () => {
     expect(
       within(breadcrumb).getByText(en('notifications.nav.all')).getAttribute('aria-current'),
     ).toBe('page');
+  });
+
+  test('a Portfolio Manager’s Portfolio menu leads to the Portfolio Dashboard, the portfolio reports and the KPI register', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R02']) });
+    renderApp({ path: '/?dashboard=PORTFOLIO', session: sessionFor(['R02']) });
+
+    await findOpenMenu('common.menu.portfolio');
+    expect(openMenuTargets('common.menu.portfolio')).toEqual([
+      '/?dashboard=PORTFOLIO',
+      '/reports/portfolio',
+      '/kpis',
+    ]);
+    // The dashboard is the Home's rendering, but its link belongs to Portfolio: Home is not the current page.
+    expect(menuLink('common.menu.home')?.getAttribute('aria-current')).toBeNull();
+    const breadcrumb = screen.getByRole('navigation', { name: en('common.shell.breadcrumb') });
+    expect(
+      within(breadcrumb)
+        .getAllByRole('listitem')
+        .map((crumb) => crumb.textContent),
+    ).toEqual([en('common.menu.portfolio'), en('common.menu.portfolioDashboard')]);
+    expect(
+      within(breadcrumb)
+        .getByText(en('common.menu.portfolioDashboard'))
+        .getAttribute('aria-current'),
+    ).toBe('page');
+  });
+
+  test('a role outside the Portfolio Dashboard’s audience keeps the KPI register alone', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) });
+    renderApp({ path: '/kpis', session: sessionFor(['R04']) });
+
+    await findOpenMenu('common.menu.portfolio');
+    expect(openMenuTargets('common.menu.portfolio')).toEqual(['/kpis']);
   });
 
   test('Requests and Approvals carries the number of approvals awaiting the person, read from the inbox total', async () => {

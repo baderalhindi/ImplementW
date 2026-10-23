@@ -107,4 +107,5 @@ F-105,,,SIEM forwarding of a defined subset,AuditActivity,AuditForwardingRecord,
 F-106,,,"Business Activity projection — derived, rebuildable",AuditActivity,BusinessActivityEntry,TASK-073; TASK-074,COVERED
 F-107,,,"Transactional outbox for audit, notification and domain events",Common,OutboxMessage,M-5; M-6; TASK-073,COVERED
 F-108,,,Entry-language attribute on every narrative field,Common,Project.title_lang; Risk.description_lang; ProgressSubmission.narrative_lang,TASK-109; ADR-012 extension — 51 columns platform-wide,COVERED
-F-109,,,Audit columns on every table,Common,Project.id,"TASK-008; TASK-025 — created_at/by, updated_at/by on all 123 tables",COVERED
+F-109,,,Audit columns on every table,Common,Project.id,"TASK-008; TASK-025 — created_at/by, updated_at/by on all 126 tables",COVERED
+F-110,,,"Migration import lineage: legacy ID to platform record, per batch",Common,ImportBatch; ImportedRecord,TASK-102; Step 17 BE-027,COVERED

@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
 import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixtures.ts';
@@ -119,4 +119,39 @@ describe('sign-in', () => {
     expect(api.requestsTo('POST', /^\/sessions$/)).toHaveLength(1);
     expect(screen.getByRole('textbox', { name: /Username/ })).toBeTruthy();
   });
+
+  test("a forgotten password leads to AHDA's reset page when the build names it", async () => {
+    vi.stubEnv('VITE_PASSWORD_RESET_URL', 'https://reset.example.test/');
+    try {
+      mockApi();
+      renderApp({ path: '/sign-in' });
+
+      const link = await screen.findByRole('link', {
+        name: en('identityAccess.signIn.forgotPassword'),
+      });
+      expect(link.getAttribute('href')).toBe('https://reset.example.test/');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  test.each(['', ['javascript', 'alert(1)'].join(':'), 'http://reset.example.test/', '/reset'])(
+    'without an https reset page (%j), a forgotten password is sent to the IT service desk',
+    async (value) => {
+      vi.stubEnv('VITE_PASSWORD_RESET_URL', value);
+      try {
+        mockApi();
+        renderApp({ path: '/sign-in' });
+
+        expect(
+          await screen.findByText(en('identityAccess.signIn.forgotPasswordContact')),
+        ).toBeTruthy();
+        expect(
+          screen.queryByRole('link', { name: en('identityAccess.signIn.forgotPassword') }),
+        ).toBeNull();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    },
+  );
 });

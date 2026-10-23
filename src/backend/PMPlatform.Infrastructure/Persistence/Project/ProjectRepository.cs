@@ -4,6 +4,7 @@ using Npgsql;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.Project.Contracts;
+using PMPlatform.Domain.Project;
 using PMPlatform.Infrastructure.Persistence.IdentityAccess;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
 
@@ -81,6 +82,11 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
         context.Database.SqlQuery<long>($"SELECT nextval('project.formal_project_id_seq') AS \"Value\"").SingleAsync(cancellationToken);
 
     public void Add(ProjectEntity project) => context.Add(project);
+
+    public void Add(ProjectIntake intake) => context.Add(intake);
+
+    public Task<Guid?> FindIdByFormalProjectIdAsync(string formalProjectId, CancellationToken cancellationToken) =>
+        context.Set<ProjectEntity>().AsNoTracking().Where(p => p.FormalProjectId == formalProjectId).Select(p => (Guid?)p.Id).SingleOrDefaultAsync(cancellationToken);
 
     public void Remove(ProjectEntity project) => context.Remove(project);
 

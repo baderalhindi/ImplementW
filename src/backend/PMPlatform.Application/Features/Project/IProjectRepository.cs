@@ -1,5 +1,6 @@
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.Project.Contracts;
+using PMPlatform.Domain.Project;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
 
 namespace PMPlatform.Application.Features.Project;
@@ -26,6 +27,12 @@ public interface IProjectRepository
     public Task<long> NextFormalProjectNumberAsync(CancellationToken cancellationToken);
 
     public void Add(ProjectEntity project);
+
+    /// <summary>ADR-014: the intake declaration a project is taken in with, saved with it.</summary>
+    public void Add(ProjectIntake intake);
+
+    /// <summary>The project with this Formal Project ID, if any.</summary>
+    public Task<Guid?> FindIdByFormalProjectIdAsync(string formalProjectId, CancellationToken cancellationToken);
 
     public void Remove(ProjectEntity project);
 

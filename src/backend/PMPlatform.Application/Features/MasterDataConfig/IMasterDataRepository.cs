@@ -32,6 +32,9 @@ public interface IMasterDataRepository
     /// <summary>The PUBLISHED items of a catalogue in display order.</summary>
     public Task<IReadOnlyList<MasterDataItemReference>> ListPublishedItemsAsync(string catalogueCode, CancellationToken cancellationToken);
 
+    /// <summary>The item of the catalogue with this code, whatever its state.</summary>
+    public Task<Guid?> FindItemIdAsync(Guid catalogueId, string code, CancellationToken cancellationToken);
+
     public void AddItem(MasterDataItem item);
 
     public Task<KpiDefinitionPage> ListKpiDefinitionsAsync(KpiDefinitionQuery query, CancellationToken cancellationToken);
@@ -43,6 +46,9 @@ public interface IMasterDataRepository
     /// <summary>The state of each KPI definition named; an id with no definition is absent from the answer.</summary>
     public Task<IReadOnlyDictionary<Guid, GovernedLifecycleState>> FindKpiDefinitionStatesAsync(
         IReadOnlyCollection<Guid> kpiDefinitionIds, CancellationToken cancellationToken);
+
+    /// <summary>The KPI definition with this code, whatever its state.</summary>
+    public Task<Guid?> FindKpiDefinitionIdAsync(string code, CancellationToken cancellationToken);
 
     public void AddKpiDefinition(KpiDefinition definition);
 

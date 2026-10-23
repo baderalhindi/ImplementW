@@ -96,6 +96,28 @@ internal static class FinancialKpiAudit
     public static AuditEntry DocumentWithdrawn(Guid actorId, ProjectFacts project, FinancialCommitment commitment, EvidenceReferenceDetail evidence) =>
         Entry(AuditEventClass.DataChange, FinancialKpiAuditEvents.DocumentWithdrawn, actorId, project, FinancialKpiApprovalRouting.CommitmentType, commitment.Id, EvidenceAttributes(evidence));
 
+    // ADR-014's opening position (TASK-102).
+
+    public static AuditEntry DeclaredBudgetRecorded(Guid actorId, ProjectFacts project, FinancialCommitment budget) =>
+        Entry(AuditEventClass.DataChange, FinancialKpiAuditEvents.DeclaredBudgetRecorded, actorId, project, FinancialKpiApprovalRouting.CommitmentType, budget.Id,
+        [
+            AuditAttribute.Of(A.Status, budget.Status),
+            AuditAttribute.Of(A.VersionNo, budget.VersionNo),
+            AuditAttribute.Of(A.AmountSar, budget.AmountSar.Amount),
+            AuditAttribute.Of(A.EffectiveFrom, budget.EffectiveFrom),
+            AuditAttribute.Of(A.ProjectIntakeId, budget.ProjectIntakeId),
+        ]);
+
+    public static AuditEntry OpeningSpendRecorded(Guid actorId, ProjectFacts project, FinancialProgressUpdate update) =>
+        Entry(AuditEventClass.DataChange, FinancialKpiAuditEvents.OpeningSpendRecorded, actorId, project, UpdateType, update.Id,
+        [
+            AuditAttribute.Of(A.Status, update.Status),
+            AuditAttribute.Of(A.ReportingCycleId, update.ReportingCycleId),
+            AuditAttribute.Of(A.ActualExpenditureToDateSar, update.ActualExpenditureToDateSar?.Amount),
+            AuditAttribute.Of(A.ValueStatus, update.ValueStatus),
+            AuditAttribute.Of(A.ProjectIntakeId, update.ProjectIntakeId),
+        ]);
+
     // Financial updates.
 
     public static AuditEntry UpdateStarted(Guid actorId, ProjectFacts project, FinancialProgressUpdate update) =>

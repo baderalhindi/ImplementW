@@ -2,12 +2,16 @@ import { type ReactElement, useState } from 'react';
 
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
-import { type AggregateCoverage, type KpiPortfolioAggregate } from './api/types.ts';
+import {
+  type AggregateCoverage,
+  type KpiPortfolioAggregate,
+  type KpiRagCounts,
+} from './api/types.ts';
 import { KpiTable } from './components/KpiTable.tsx';
 import { currentMeasurement } from './financialKpiRules.ts';
 import { formatKpiValue } from './presentation.ts';
@@ -41,6 +45,25 @@ function matches(entry: KpiRegisterEntry, filter: Filter, today: string): boolea
 
 const COVERAGE_TONES = { COMPLETE: 'info', PARTIAL: 'warning', NONE: 'neutral' } as const;
 
+/** The rating segments of an aggregate's bar, in reading order, each in its rating's colour. */
+const RAG_SEGMENTS = [
+  ['green', 'GREEN'],
+  ['amber', 'AMBER'],
+  ['red', 'RED'],
+  ['unknown', 'UNKNOWN'],
+  ['notApplicable', 'NOT_APPLICABLE'],
+] as const satisfies readonly (readonly [keyof KpiRagCounts, string])[];
+
+/** A search matches the project's title or the KPI's name, ignoring case. */
+function matchesSearch(entry: KpiRegisterEntry, search: string, kpiName: string): boolean {
+  const needle = search.trim().toLocaleLowerCase();
+  return (
+    needle === '' ||
+    entry.project.title.text.toLocaleLowerCase().includes(needle) ||
+    kpiName.toLocaleLowerCase().includes(needle)
+  );
+}
+
 /**
  * SCR-072 KPI Register: every KPI of the projects the person can see, with where each stands for the period today
  * falls in (acceptance criterion 1), and, for each KPI, the API's aggregate of the latest published values across
@@ -53,6 +76,7 @@ export function KpiRegisterPage(): ReactElement {
   const portfolio = useKpiPortfolio();
   const lookups = useKpiLookups();
   const [filter, setFilter] = useState<Filter>('all');
+  const [search, setSearch] = useState('');
 
   const header = (
     <PageHeader
@@ -79,7 +103,10 @@ export function KpiRegisterPage(): ReactElement {
   }
 
   const { entries } = portfolio.data;
-  const shown = entries.filter((entry) => matches(entry, filter, today));
+  const searched = entries.filter((entry) =>
+    matchesSearch(entry, search, lookups.kpiName(entry.assignment.kpiDefinitionId)),
+  );
+  const shown = searched.filter((entry) => matches(entry, filter, today));
   return (
     <>
       {header}
@@ -88,22 +115,29 @@ export function KpiRegisterPage(): ReactElement {
           <p>{t('financialKpi.register.emptyBody')}</p>
         </EmptyState>
       ) : (
-        <div className="progress">
+        <div className="kpi-register">
+          <PeriodSummary
+            counts={Object.fromEntries(
+              FILTERS.map((value) => [
+                value,
+                searched.filter((entry) => matches(entry, value, today)).length,
+              ]),
+            )}
+            filter={filter}
+            onFilter={setFilter}
+          />
           <Aggregates portfolio={portfolio.data} lookups={lookups} />
           <section className="section" aria-labelledby="kpi-register-list">
-            <h2 id="kpi-register-list">{t('financialKpi.register.listTitle')}</h2>
-            <SelectField
-              label={t('financialKpi.register.filter')}
-              name="filter"
-              value={filter}
-              options={FILTERS.map((value) => ({
-                value,
-                label: t(`financialKpi.register.filters.${value}`),
-              }))}
-              onChange={(value) => {
-                setFilter(FILTERS.find((candidate) => candidate === value) ?? 'all');
-              }}
-            />
+            <div className="kpi-register__list-header">
+              <h2 id="kpi-register-list">{t('financialKpi.register.listTitle')}</h2>
+              <TextField
+                label={t('financialKpi.register.search')}
+                name="search"
+                type="search"
+                value={search}
+                onChange={setSearch}
+              />
+            </div>
             {shown.length === 0 ? (
               <EmptyState title={t('financialKpi.register.filteredEmpty')}>
                 <p>{t('financialKpi.register.filteredEmptyBody')}</p>
@@ -121,6 +155,51 @@ export function KpiRegisterPage(): ReactElement {
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * Where the register's KPIs stand this period, one card per rating. Each card is also the list's filter: pressing it
+ * shows only those KPIs, and the pressed card says so (aria-pressed).
+ */
+function PeriodSummary({
+  counts,
+  filter,
+  onFilter,
+}: {
+  counts: Partial<Record<Filter, number>>;
+  filter: Filter;
+  onFilter: (filter: Filter) => void;
+}): ReactElement {
+  const { t } = useI18n();
+  return (
+    <section className="kpi-summary" aria-labelledby="kpi-summary-title">
+      <h2 id="kpi-summary-title" className="kpi-summary__title">
+        {t('financialKpi.register.summaryTitle')}
+      </h2>
+      <div
+        className="kpi-summary__cards"
+        role="group"
+        aria-label={t('financialKpi.register.filter')}
+      >
+        {FILTERS.map((value) => (
+          <button
+            key={value}
+            type="button"
+            className={`kpi-summary__card kpi-summary__card--${value}`}
+            aria-pressed={filter === value}
+            onClick={() => {
+              onFilter(value);
+            }}
+          >
+            <span className="kpi-summary__label">
+              {t(`financialKpi.register.filters.${value}`)}
+            </span>
+            <span className="kpi-summary__count">{counts[value] ?? 0}</span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -149,13 +228,17 @@ function Aggregates({
     <section className="section" aria-labelledby="kpi-aggregates">
       <h2 id="kpi-aggregates">{t('financialKpi.aggregate.title')}</h2>
       <p className="form__note">{t('financialKpi.aggregate.explanation')}</p>
-      <ul className="revision-list">
+      <ul className="kpi-aggregates">
         {portfolio.aggregates.map(({ kpiDefinitionId, aggregate }) => (
-          <li key={kpiDefinitionId} data-aggregate={kpiDefinitionId}>
-            <p className="figure-group">
-              <span className="revision-list__number">{lookups.kpiName(kpiDefinitionId)}</span>
+          <li
+            key={kpiDefinitionId}
+            className="widget kpi-aggregate"
+            data-aggregate={kpiDefinitionId}
+          >
+            <div className="widget__header">
+              <h3 className="widget__title">{lookups.kpiName(kpiDefinitionId)}</h3>
               {aggregate !== null && <CoverageBadge coverage={aggregate.coverage} />}
-            </p>
+            </div>
             {aggregate === null ? (
               <p className="form__note">{t('financialKpi.aggregate.unavailable')}</p>
             ) : (
@@ -179,32 +262,55 @@ function AggregateBody({
 }): ReactElement {
   const { t } = useI18n();
   const { ragCounts } = aggregate;
+  const rated = RAG_SEGMENTS.reduce((sum, [key]) => sum + ragCounts[key], 0);
   return (
     <>
-      <p>
-        {/* With nothing counted the API reports no unit as compatible (F-17): that is "no value", not "units differ". */}
-        {aggregate.measuredCount === 0
-          ? t('financialKpi.aggregate.noMean')
-          : !aggregate.isUnitCompatible || aggregate.meanValue === null
-            ? t('financialKpi.aggregate.unitsDiffer')
-            : t('financialKpi.aggregate.mean', {
-                value: formatKpiValue(aggregate.meanValue),
-                unit: aggregate.unitItemId === null ? '' : lookups.itemLabel(aggregate.unitItemId),
-                count: aggregate.measuredCount,
-              })}
-      </p>
-      <p className="details__aside">
-        {t('financialKpi.aggregate.ragCounts', {
-          green: ragCounts.green,
-          amber: ragCounts.amber,
-          red: ragCounts.red,
-          unknown: ragCounts.unknown,
-          notApplicable: ragCounts.notApplicable,
-        })}
-      </p>
+      {/* With nothing counted the API reports no unit as compatible (F-17): that is "no value", not "units differ". */}
+      {aggregate.measuredCount === 0 ? (
+        <p className="kpi-aggregate__note">{t('financialKpi.aggregate.noMean')}</p>
+      ) : !aggregate.isUnitCompatible || aggregate.meanValue === null ? (
+        <p className="kpi-aggregate__note">{t('financialKpi.aggregate.unitsDiffer')}</p>
+      ) : (
+        <div className="kpi-aggregate__mean">
+          <span className="kpi-aggregate__label">{t('financialKpi.aggregate.average')}</span>
+          <p className="kpi-aggregate__value">
+            <span className="figure" dir="ltr">
+              {formatKpiValue(aggregate.meanValue)}
+            </span>
+            {aggregate.unitItemId !== null && (
+              <span className="kpi-aggregate__unit">{lookups.itemLabel(aggregate.unitItemId)}</span>
+            )}
+          </p>
+          <span className="kpi-aggregate__label">
+            {t('financialKpi.aggregate.over', { count: aggregate.measuredCount })}
+          </span>
+        </div>
+      )}
+      {rated > 0 && (
+        // The bar draws the legend's counts; the legend says them, so the bar is not read out twice.
+        <div className="kpi-aggregate__bar" aria-hidden="true">
+          {RAG_SEGMENTS.filter(([key]) => ragCounts[key] > 0).map(([key]) => (
+            <span
+              key={key}
+              className={`kpi-aggregate__segment kpi-aggregate__segment--${key}`}
+              style={{ flexGrow: ragCounts[key] }}
+            />
+          ))}
+        </div>
+      )}
+      <ul className="kpi-aggregate__legend">
+        {RAG_SEGMENTS.map(([key, rag]) => (
+          <li key={key} className={`kpi-aggregate__key kpi-aggregate__key--${key}`}>
+            {t(`financialKpi.rag.${rag}`)}{' '}
+            <span className="kpi-aggregate__count">{ragCounts[key]}</span>
+          </li>
+        ))}
+      </ul>
       {aggregate.isPartial && aggregate.exclusions.length > 0 && (
-        <>
-          <p>{t('financialKpi.aggregate.partial')}</p>
+        <details className="kpi-aggregate__excluded">
+          <summary>
+            {t('financialKpi.aggregate.partial', { count: aggregate.exclusions.length })}
+          </summary>
           <ul className="reason-list">
             {aggregate.exclusions.map((exclusion) => (
               <li key={`${exclusion.projectId}-${exclusion.reason}`}>
@@ -215,7 +321,7 @@ function AggregateBody({
               </li>
             ))}
           </ul>
-        </>
+        </details>
       )}
     </>
   );

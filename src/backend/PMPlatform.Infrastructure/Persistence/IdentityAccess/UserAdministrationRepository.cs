@@ -93,5 +93,8 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
 
     public void Add(User user) => context.Set<User>().Add(user);
 
+    public Task<Guid?> FindIdByUsernameAsync(string username, CancellationToken cancellationToken) =>
+        context.Set<User>().AsNoTracking().Where(u => u.Username == username).Select(u => (Guid?)u.Id).SingleOrDefaultAsync(cancellationToken);
+
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken) => AdministrationPersistence.SaveAsync(context, cancellationToken);
 }

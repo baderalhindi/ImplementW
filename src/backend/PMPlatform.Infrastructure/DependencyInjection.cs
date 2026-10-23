@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Common.Observability;
 using PMPlatform.Application.Common.RateLimiting;
@@ -69,6 +70,8 @@ using PMPlatform.Infrastructure.Persistence.Messaging;
 using PMPlatform.Infrastructure.Persistence.Notifications;
 using PMPlatform.Infrastructure.RateLimiting;
 using PMPlatform.Infrastructure.Secrets;
+using PMPlatform.Infrastructure.DataImport;
+using PMPlatform.Infrastructure.Persistence.DataImport;
 
 namespace PMPlatform.Infrastructure;
 
@@ -171,6 +174,10 @@ public static class DependencyInjection
 
         // TASK-060: WF-08's change_request schema.
         services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
+
+        // TASK-102: the migration import's transaction and lineage, and its workbook.
+        services.AddScoped<IImportRepository, ImportRepository>();
+        services.AddSingleton<IImportWorkbook, XlsxImportWorkbook>();
 
         // TASK-071: FG-02's reports schema; the PDF, XLSX and CSV renderers; and the pass that validates, generates and expires report jobs.
         services.AddScoped<IReportRepository, ReportRepository>();

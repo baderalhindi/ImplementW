@@ -68,7 +68,7 @@ Each rule states what it is, why, and how it is checked. `erd-check.py` verifies
 | **D-14** | **Cross-module references.** A foreign key may cross a schema only to a table marked *referenceable* (an identity another module is allowed to hold — M-4, M-13). Polymorphic references (`subject_module`, `subject_type`, `subject_id`; `target_*`) carry no FK, by design: Approval, Notifications, Audit and DocumentManagement are subject-agnostic. No navigation property crosses a module (A-3). | The dashed edges in §5 are exactly these FKs. | `erd-check.py`: every cross-schema FK targets a referenceable table. 167 cross-schema FKs, 59 referenceable tables. |
 | **D-15** | **Revisions and approval subjects.** Every aggregate that goes through WF-11 carries `revision_no`. `ApprovalInstance` references (`subject_module`, `subject_type`, `subject_id`, `subject_revision_no`) and is unique on the four. A RETURNED decision creates revision+1 and a new linked instance (TASK-035). Subjects do not store their approval instance id — Approval is queried by subject (M-4). | The idempotency and "never mutate the rejected one" rules of TASK-035 fall out of the unique key. | 13 approvable aggregates. |
 | **D-16** | **Concurrency.** Optimistic concurrency uses PostgreSQL's `xmin` system column through Npgsql; no `row_version` column exists. | A concurrency token is not a business fact and should not look like one. | — |
-| **D-17** | **Outbox.** `common.outbox_message` is the single transactional outbox (M-5, M-6). Its `payload jsonb` is the one jsonb column in the platform: it is a serialised envelope, never queried by attribute. `__EFMigrationsHistory` is the only other table outside a module schema. | Blueprint Section 15 (commit-before-notify) and Section 18 (durable audit capture) both need a write inside the source transaction that a dispatcher reads after commit; that table can belong to no module. | — |
+| **D-17** | **Outbox.** `common.outbox_message` is the single transactional outbox (M-5, M-6). Its `payload jsonb` is the one jsonb column in the platform: it is a serialised envelope, never queried by attribute. Outside a module schema there are only `__EFMigrationsHistory` and, since TASK-102, the migration import's lineage, `common.import_batch` and `common.imported_record`: every register's import writes them, so they can belong to no module either (data-import.md D-3). | Blueprint Section 15 (commit-before-notify) and Section 18 (durable audit capture) both need a write inside the source transaction that a dispatcher reads after commit; that table can belong to no module. | — |
 
 ### 4.1 Semantic state is a property of the table, not a column
 
@@ -89,11 +89,26 @@ erDiagram
         varchar message_type
         varchar message_key
     }
+    ImportBatch {
+        uuid id PK
+        varchar register_code
+        char file_sha256
+    }
+    ImportedRecord {
+        uuid id PK
+        uuid import_batch_id FK
+        varchar register_code
+        varchar legacy_id
+        uuid entity_id
+    }
+    ImportBatch ||--o{ ImportedRecord : "loaded"
 ```
 
 | Entity | Table | Purpose | Lifecycle column → states | Delete policy | Identity |
 | --- | --- | --- | --- | --- | --- |
 | **OutboxMessage** | `common.outbox_message` | Transactional outbox: audit events, notification intents and domain events written inside the source transaction and dispatched after commit (M-5, M-6). | — | RETAIN | — |
+| **ImportBatch** | `common.import_batch` | One committed migration import: a workbook of one register, loaded in one transaction, with the file's SHA-256 and its counts (TASK-102). | — | APPEND_ONLY | — |
+| **ImportedRecord** | `common.imported_record` | Import lineage: each legacy ID and the record it became, unique per register, so loading a workbook again creates no second identity (Step 17 BE-027; TASK-102). | — | APPEND_ONLY | — |
 
 ### 5.2 IdentityAccess — FG-03
 
@@ -1689,7 +1704,8 @@ Completeness check as the task defines it, restated for the day Appendix D is av
 | F-106 | Business Activity projection — derived, rebuildable | AuditActivity | `BusinessActivityEntry` | TASK-073; TASK-074 |
 | F-107 | Transactional outbox for audit, notification and domain events | Common | `OutboxMessage` | M-5; M-6; TASK-073 |
 | F-108 | Entry-language attribute on every narrative field | Common | `Project.title_lang`, `Risk.description_lang`, `ProgressSubmission.narrative_lang` | TASK-109; ADR-012 extension — 51 columns platform-wide |
-| F-109 | Audit columns on every table | Common | `Project.id` | TASK-008; TASK-025 — created_at/by, updated_at/by on all 123 tables |
+| F-109 | Audit columns on every table | Common | `Project.id` | TASK-008; TASK-025 — created_at/by, updated_at/by on all 126 tables |
+| F-110 | Migration import lineage: legacy ID to platform record, per batch | Common | `ImportBatch`, `ImportedRecord` | TASK-102; Step 17 BE-027 |
 
 ## 10. Normalisation
 

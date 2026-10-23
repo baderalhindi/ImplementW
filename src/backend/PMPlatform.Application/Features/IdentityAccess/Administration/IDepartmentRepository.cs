@@ -24,5 +24,10 @@ public interface IDepartmentRepository
     /// <summary>The names of the departments named, by id; an id that names nothing is left out.</summary>
     public Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
+    public Task<Guid?> FindIdByCodeAsync(string code, CancellationToken cancellationToken);
+
+    /// <summary>The active department codes and names, by code.</summary>
+    public Task<IReadOnlyList<OrganizationCode>> ListActiveCodesAsync(CancellationToken cancellationToken);
+
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken);
 }

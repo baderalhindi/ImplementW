@@ -212,5 +212,11 @@ internal sealed class MasterDataRepository(PMPlatformDbContext context) : IMaste
 
     public void AddKpiDefinition(KpiDefinition definition) => context.Set<KpiDefinition>().Add(definition);
 
+    public Task<Guid?> FindItemIdAsync(Guid catalogueId, string code, CancellationToken cancellationToken) =>
+        context.Set<MasterDataItem>().AsNoTracking().Where(i => i.CatalogueId == catalogueId && i.Code == code).Select(i => (Guid?)i.Id).SingleOrDefaultAsync(cancellationToken);
+
+    public Task<Guid?> FindKpiDefinitionIdAsync(string code, CancellationToken cancellationToken) =>
+        context.Set<KpiDefinition>().AsNoTracking().Where(d => d.Code == code).Select(d => (Guid?)d.Id).SingleOrDefaultAsync(cancellationToken);
+
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken) => MasterDataConfigPersistence.SaveAsync(context, cancellationToken);
 }

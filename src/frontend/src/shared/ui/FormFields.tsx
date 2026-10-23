@@ -245,6 +245,8 @@ export function CheckboxField({
 interface FileFieldProps extends FieldBaseProps {
   /** The chosen file, or null when the choice is cleared. */
   onChange: (file: File | null) => void;
+  /** The file types the picker offers, as the input's `accept` (a hint: the API judges the file). */
+  accept?: string | undefined;
 }
 
 /** One file to upload. The input keeps its own value (a browser never lets a script set it). */
@@ -256,6 +258,7 @@ export function FileField({
   hint,
   required = false,
   disabled = false,
+  accept,
 }: FileFieldProps): ReactElement {
   const id = useId();
   const hintId = `${id}-hint`;
@@ -268,6 +271,7 @@ export function FileField({
         name={name}
         className="field__input field__input--file"
         type="file"
+        accept={accept}
         onChange={(event) => {
           onChange(event.target.files?.[0] ?? null);
         }}

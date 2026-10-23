@@ -1,6 +1,7 @@
-import { type ReactElement } from 'react';
+import { type ReactElement, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
@@ -23,6 +24,7 @@ export function ProjectRegisterPage(): ReactElement | null {
   const { session } = useSession();
   const location = useLocation();
   const deleted = (location.state as { notice?: string } | null)?.notice === 'deleted';
+  const [loads, setLoads] = useState(0);
   if (session === null) {
     return null;
   }
@@ -31,12 +33,24 @@ export function ProjectRegisterPage(): ReactElement | null {
       <PageHeader
         title={t('projects.register.title')}
         description={t('projects.register.description')}
-        actions={<CreateProjectLink />}
+        actions={
+          <>
+            <ImportAction
+              collectionPath="/projects"
+              registerName={t('projects.register.title')}
+              onImported={() => {
+                setLoads((n) => n + 1);
+              }}
+            />
+            <CreateProjectLink />
+          </>
+        }
       />
       <PageNotice
         notice={deleted ? { tone: 'success', message: t('projects.done.deleted') } : null}
       />
-      <ProjectList user={session.user} mine={false} basePath="/projects" />
+      {/* An import's projects are read by a fresh list. */}
+      <ProjectList key={loads} user={session.user} mine={false} basePath="/projects" />
     </>
   );
 }

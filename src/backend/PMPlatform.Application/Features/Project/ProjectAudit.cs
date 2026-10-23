@@ -50,6 +50,25 @@ internal static class ProjectAudit
             [AuditAttribute.Of(ProjectAuditAttributes.ActivatedAt, project.ActivatedAt)]);
 
     /// <summary>
+    /// ADR-014's intake: the project enters ACTIVE with its Formal Project ID, its manager and the intake it was taken in by, and every
+    /// registration field as a creation does. The declared scope is free text and is not copied.
+    /// </summary>
+    public static AuditEntry TakenIn(Guid actorId, ProjectEntity project, ProjectIntake intake) =>
+        Entry(AuditEventClass.LifecycleTransition, ProjectAuditEvents.ProjectTakenIn, actorId, project,
+        [
+            AuditAttribute.Change(ProjectAuditAttributes.Status, null, project.LifecycleState)!,
+            AuditAttribute.Of(ProjectAuditAttributes.FormalProjectId, project.FormalProjectId),
+            AuditAttribute.Of(ProjectAuditAttributes.ProjectManagerUserId, project.ProjectManagerUserId),
+            AuditAttribute.Of(ProjectAuditAttributes.LegacyIntakeDate, project.LegacyIntakeDate),
+            AuditAttribute.Of(ProjectAuditAttributes.ProjectIntakeId, intake.Id),
+            AuditAttribute.Of(ProjectAuditAttributes.DeclaredBudgetSar, intake.DeclaredBudgetSar.Amount),
+            AuditAttribute.Of(ProjectAuditAttributes.DeclaredEndDate, intake.DeclaredEndDate),
+            AuditAttribute.Of(ProjectAuditAttributes.OpeningPercentComplete, intake.OpeningPercentComplete),
+            AuditAttribute.Of(ProjectAuditAttributes.OpeningSpendToDateSar, intake.OpeningSpendToDateSar.Amount),
+            .. Changes(null, project),
+        ]);
+
+    /// <summary>
     /// WF-09's ACTIVE → SUSPENDED or SUSPENDED → ACTIVE (edge 7), by whoever effected the request — a person, or WF-09's service
     /// principal — naming the request effected.
     /// </summary>

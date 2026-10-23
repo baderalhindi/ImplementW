@@ -1,11 +1,12 @@
 using System.Globalization;
 using System.IO.Compression;
-using System.Security;
 using System.Text;
 using PMPlatform.Application.Features.Reports;
 using PMPlatform.Application.Features.Reports.Contracts;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.Reports;
+using PMPlatform.Infrastructure.Spreadsheets;
+using static PMPlatform.Infrastructure.Spreadsheets.SpreadsheetXml;
 
 namespace PMPlatform.Infrastructure.Reports.Rendering;
 
@@ -17,9 +18,6 @@ namespace PMPlatform.Infrastructure.Reports.Rendering;
 /// </summary>
 internal sealed class XlsxReportRenderer : IReportRenderer
 {
-    private const string Main = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
-    private const string Relationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
-
     // Cell styles (cellXfs order in Styles): default, header, quote-prefixed text, SAR, percent, integer, no value.
     private const int StyleHeader = 1;
     private const int StyleQuoted = 2;
@@ -74,7 +72,7 @@ internal sealed class XlsxReportRenderer : IReportRenderer
             Part(zip, "xl/worksheets/sheet2.xml", Sheet(context, rtl, freezeHeader: false));
         }
 
-        return new RenderedReport(buffer.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx", neutralized);
+        return new RenderedReport(buffer.ToArray(), SpreadsheetXml.MediaType, "xlsx", neutralized);
     }
 
     /// <summary>A typed cell: a number as a number with its format; a value with no number as words; no value as its reason, styled apart.</summary>
@@ -153,29 +151,6 @@ internal sealed class XlsxReportRenderer : IReportRenderer
 
     private static string ContentTypes() =>
         """<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>""";
-
-    private static void Part(ZipArchive zip, string name, string xml)
-    {
-        ZipArchiveEntry entry = zip.CreateEntry(name, CompressionLevel.Optimal);
-        using Stream stream = entry.Open();
-        byte[] bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(xml);
-        stream.Write(bytes);
-    }
-
-    /// <summary>XML text: escaped, and without the characters XML 1.0 cannot hold.</summary>
-    private static string Escape(string text) =>
-        SecurityElement.Escape(new string([.. text.Where(c => c is '\t' or '\n' or '\r' || (!char.IsControl(c) && c != '￾' && c != '￿'))])) ?? string.Empty;
-
-    private static string ColumnName(int index)
-    {
-        string name = string.Empty;
-        for (int n = index + 1; n > 0; n = (n - 1) / 26)
-        {
-            name = (char)('A' + ((n - 1) % 26)) + name;
-        }
-
-        return name;
-    }
 
     private sealed record Cell(string Value, bool IsNumber, int Style);
 }

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Models.DocumentManagement;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.IdentityAccess;
 
@@ -11,9 +13,10 @@ namespace PMPlatform.Api.Controllers;
 /// <summary>ADM-013 Entities (TASK-031, ADR-013). Never deleted (RETAIN): ACTIVE ↔ SUSPENDED, then RETIRED, which is terminal.</summary>
 [Route(Collection)]
 [Tags("IdentityAccess")]
-public sealed class ExternalEntitiesController(IExternalEntityAdministrationService entities) : AdministrationControllerBase
+public sealed class ExternalEntitiesController(IExternalEntityAdministrationService entities, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/external-entities";
+    private const string ImportRegister = ImportRegisterCodes.ExternalEntity;
 
     /// <summary>Filters: <c>status</c> (set), <c>entityTypeItemId</c>, <c>q</c>. By code.</summary>
     [HttpGet]
@@ -29,6 +32,23 @@ public sealed class ExternalEntitiesController(IExternalEntityAdministrationServ
             QueryParameters.EnumSet<ExternalEntityStatus>(status, "status", errors), entityTypeItemId, q, QueryParameters.Page(page, pageSize, errors));
         return errors.Count > 0 ? ValidationFailed(errors) : Respond(await entities.ListAsync(CallerId, query, cancellationToken));
     }
+
+    /// <summary>TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.</summary>
+    [HttpGet("import-template/content")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK, "application/octet-stream")]
+    [EndpointName("IdentityAccess_DownloadExternalEntityImportTemplate")]
+    public Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken) => ImportTemplateAsync(imports, ImportRegister, cancellationToken);
+
+    /// <summary>TASK-102: validates the workbook in part <c>file</c>, or with <c>commit=true</c> imports it, all rows or none.</summary>
+    [HttpPost("imports")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [SensitiveWrite]
+    [DisableFormValueModelBinding]
+    [ProducesResponseType<ImportReport>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_ImportExternalEntities")]
+    public Task<IActionResult> Import([FromQuery] bool? commit, CancellationToken cancellationToken) =>
+        ImportAsync(imports, ImportRegister, commit == true, cancellationToken);
 
     [HttpGet("{externalEntityId:guid}")]
     [RequirePermission(PermissionCatalogue.OrganizationView)]

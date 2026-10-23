@@ -1,11 +1,11 @@
-using System.Text.RegularExpressions;
 using PMPlatform.Api.Errors;
+using PMPlatform.Application.Common.Validation;
 using PMPlatform.Domain.Common;
 
 namespace PMPlatform.Api.Models.IdentityAccess;
 
 /// <summary>Shape validation of request strings (T-3: shape here, meaning in the module).</summary>
-internal static partial class RequestValidation
+internal static class RequestValidation
 {
     public const int CodeLength = 50;
     public const int NameLength = 200;
@@ -61,7 +61,7 @@ internal static partial class RequestValidation
     public static void Email(string? value, string field, List<FieldError> errors)
     {
         RequireText(value, field, NameLength, errors);
-        if (!string.IsNullOrWhiteSpace(value) && value.Length <= NameLength && !EmailShape().IsMatch(value))
+        if (!string.IsNullOrWhiteSpace(value) && value.Length <= NameLength && !TextShape.IsEmail(value))
         {
             errors.Add(new FieldError(field, FieldError.Malformed));
         }
@@ -70,7 +70,7 @@ internal static partial class RequestValidation
     /// <summary>ADR-004: E.164, a plus sign and up to fifteen digits, the first not zero. The database checks the same pattern.</summary>
     public static void MobileNumber(string? value, string field, List<FieldError> errors)
     {
-        if (value is not null && !E164().IsMatch(value))
+        if (value is not null && !TextShape.IsE164(value))
         {
             errors.Add(new FieldError(field, FieldError.Malformed));
         }
@@ -80,7 +80,7 @@ internal static partial class RequestValidation
     public static void Code(string? value, string field, List<FieldError> errors)
     {
         RequireText(value, field, CodeLength, errors);
-        if (!string.IsNullOrWhiteSpace(value) && value.Length <= CodeLength && !CodeShape().IsMatch(value))
+        if (!string.IsNullOrWhiteSpace(value) && value.Length <= CodeLength && !TextShape.IsCode(value))
         {
             errors.Add(new FieldError(field, FieldError.Malformed));
         }
@@ -118,13 +118,4 @@ internal static partial class RequestValidation
                 return default;
         }
     }
-
-    [GeneratedRegex(@"^\+[1-9][0-9]{1,14}$", RegexOptions.CultureInvariant)]
-    private static partial Regex E164();
-
-    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.CultureInvariant)]
-    private static partial Regex EmailShape();
-
-    [GeneratedRegex("^[A-Z0-9][A-Z0-9_-]*$", RegexOptions.CultureInvariant)]
-    private static partial Regex CodeShape();
 }

@@ -1,6 +1,7 @@
 import { type SyntheticEvent, type ReactElement, useCallback, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
@@ -99,15 +100,22 @@ export function ExternalEntityListPage(): ReactElement {
         title={t('identityAccess.entities.title')}
         description={t('identityAccess.entities.description')}
         actions={
-          <button
-            type="button"
-            className="button button--primary"
-            onClick={() => {
-              setEditing({ mode: 'create' });
-            }}
-          >
-            {t('identityAccess.entities.create')}
-          </button>
+          <>
+            <ImportAction
+              collectionPath="/external-entities"
+              registerName={t('identityAccess.entities.title')}
+              onImported={entities.reload}
+            />
+            <button
+              type="button"
+              className="button button--primary"
+              onClick={() => {
+                setEditing({ mode: 'create' });
+              }}
+            >
+              {t('identityAccess.entities.create')}
+            </button>
+          </>
         }
       />
 

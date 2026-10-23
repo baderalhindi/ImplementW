@@ -220,8 +220,9 @@ ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 -- amendment to TASK-073, to R08 at ENTITY: an entity sees its own activity history (audit-activity.md F-2). The five FG-05 permissions
 -- (TASK-075) — INTEGRATION_VIEW, INTEGRATION_LOG_VIEW, INTEGRATION_OPERATE, INTEGRATION_ALERT_MANAGE, INTEGRATION_CONFIGURE — go to R01 at ALL
 -- by delivery-team decision, as FG-04's and WF-15's did: integrations are platform-wide. FG-05's Integration Operator is an assignment AHDA
--- has not named (TBC-INT-19), and R08 holds none (integration-monitoring.md F-2). Blueprint Appendix A, the rest of the matrix, is not in
--- the repository (record F-1).
+-- has not named (TBC-INT-19), and R08 holds none (integration-monitoring.md F-2). DATA_IMPORT (TASK-102), the migration workbook load, goes
+-- to R01 at ALL by delivery-team decision: platform-wide, each batch audited in the administration category (data-import.md D-2).
+-- Blueprint Appendix A, the rest of the matrix, is not in the repository (record F-1).
 --
 -- The grants go into version 1 because no environment has run this seed with version 1 in use (none is provisioned).
 -- Once one has, a change to the shipped grants is a new version and a migration of the assignments (TASK-110), not
@@ -318,7 +319,8 @@ FROM (VALUES
     ('INTEGRATION_LOG_VIEW',        'عرض سجلات التكامل',    'View integration logs',       'INTEGRATION_MONITORING', false),
     ('INTEGRATION_OPERATE',         'تشغيل عمليات التكامل', 'Operate integrations',        'INTEGRATION_MONITORING', true),
     ('INTEGRATION_ALERT_MANAGE',    'معالجة التنبيهات التشغيلية', 'Handle operational alerts', 'INTEGRATION_MONITORING', true),
-    ('INTEGRATION_CONFIGURE',       'تفعيل مراقبة التكاملات وإيقافها', 'Enable and disable integration monitoring', 'INTEGRATION_MONITORING', true)
+    ('INTEGRATION_CONFIGURE',       'تفعيل مراقبة التكاملات وإيقافها', 'Enable and disable integration monitoring', 'INTEGRATION_MONITORING', true),
+    ('DATA_IMPORT',                 'استيراد بيانات الترحيل', 'Import migration data',     'DATA_IMPORT', true)
 ) AS v (code, name_ar, name_en, permission_group, is_privileged)
 ON CONFLICT (code) DO UPDATE SET
     permission_group = EXCLUDED.permission_group,
@@ -419,7 +421,8 @@ FROM (VALUES
     ('R01', 'INTEGRATION_LOG_VIEW',        'ALL'),
     ('R01', 'INTEGRATION_OPERATE',         'ALL'),
     ('R01', 'INTEGRATION_ALERT_MANAGE',    'ALL'),
-    ('R01', 'INTEGRATION_CONFIGURE',       'ALL')
+    ('R01', 'INTEGRATION_CONFIGURE',       'ALL'),
+    ('R01', 'DATA_IMPORT',                 'ALL')
 ) AS g (role_code, permission_code, data_scope)
 JOIN identity_access.role r ON r.code = g.role_code
 JOIN identity_access.permission_profile pp ON pp.base_role_id = r.id AND pp.code = r.code || '-DEFAULT'

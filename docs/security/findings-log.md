@@ -4,7 +4,7 @@
 | --- | --- |
 | Task | TASK-081 — Conduct Threat Modeling & Security Review for Sensitive Features |
 | Reviewed code | `dev` at `6f19809`, 2026-10-16 |
-| Models | `threat-model-authentication.md`, `threat-model-authorization.md`, `threat-model-documents.md`, `threat-model-external-participation.md`, `threat-model-nafath.md`, `threat-model-sms-delivery-receipt.md` |
+| Models | `threat-model-authentication.md`, `threat-model-authorization.md`, `threat-model-documents.md`, `threat-model-external-participation.md`, `threat-model-nafath.md`, `threat-model-sms-delivery-receipt.md`, `threat-model-data-import.md` |
 | Rules | `README.md` §3 (rating), §4 (when a finding is raised, dispositions), §5 (the gate) |
 | Check | `python3 docs/security/findings-log-check.py [--gate [--verify-prs]]` |
 
@@ -14,10 +14,10 @@ The Release Checklist's "Security Review & Threat Modeling Signed Off" needs eve
 
 | | Count |
 | --- | --- |
-| Findings | 77 |
-| High or Critical | 35 |
+| Findings | 80 |
+| High or Critical | 37 |
 | — closed by merged PRs (`Mitigated`) | 27 |
-| — **open** | **8**: SR-10, SR-13, SR-26, SR-38, SR-41, SR-53, SR-74, SR-75 |
+| — **open** | **10**: SR-10, SR-13, SR-26, SR-38, SR-41, SR-53, SR-74, SR-75, SR-78, SR-80 |
 | Risk acceptances signed by AHDA | 0 of 3 requested (`risk-acceptances.md`) |
 
 **The gate is not green.** Each open High needs one of the following:
@@ -31,6 +31,8 @@ The Release Checklist's "Security Review & Threat Modeling Signed Off" needs eve
 | SR-41 No malware scanner selected | Provider selected (in-Kingdom, no retention) and its adapter merged | Security Lead |
 | SR-53 Nafath does not bind the person to the account | An expected identity captured at onboarding and compared with `sub` (a fix PR, after OQ-007); or RA-03 signed | AHDA Cybersecurity, FG-03 owner |
 | SR-74, SR-75 SMS receipt callback | TASK-103 merges with requirements R-1 to R-10 of its model; or the callback is out of the UAT release and the models say so | TASK-103 owner |
+| SR-78 Workbook XML from an upload | The PR that merges TASK-102's import (controls and tests already on `dev`) | Backend lead |
+| SR-80 The import's authority outlives the cutover | AHDA accepts it for the cutover window, and `DATA_IMPORT` is withdrawn from R01 afterwards | AHDA Cybersecurity; PMO |
 
 **Recommended before UAT, though Medium:** SR-27. REV-IAM-002 is marked Closed in FG-03, CTL-43 asks this review to verify it, and it does not hold: an R01 can sign in as any business user (RBAC-T07). The fix is small: make `directory_subject_id` directory-authoritative once set, as the job title already is, and put `IdentityAccess_UpdateUser` on the step-up list.
 
@@ -117,6 +119,9 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | SR-75 | SMS-T03, SMS-T04 | High | A receipt must never mean read, and must be idempotent and monotonic; the guard allows READ on SMS | TASK-103 owner | Open | TASK-103 ships R-3 and R-4, including the tightened `guard_notification_delivery` |
 | SR-76 | SMS-T06, SMS-T10 | Medium | Receipt contact data in logs; receipts untraceable | TASK-103 owner | Open | R-7, R-9 |
 | SR-77 | SMS-T08 | Medium | A provider that only sends form or GET receipts would need a CSRF exemption | TASK-103 owner; Security Lead | Open | R-8: choose a provider whose receipts pass `CsrfProtection` unchanged |
+| SR-78 | DI-T02 | High | Workbook XML parsed from an untrusted upload (XXE, entity expansion) | Backend lead | Open | Controls built on `dev` (commit `e3cb86b`: DTDs prohibited, nothing resolved, parts capped, `XlsxImportWorkbookTests`); closed as Mitigated by the PR that merges TASK-102 |
+| SR-79 | DI-T04 | Medium | A full-size import's transaction and register lock have not been measured | Backend lead | Open | Time a 5,000-row import of each register on representative volume before the cutover rehearsal |
+| SR-80 | DI-T05 | High | `DATA_IMPORT` loads records around approval workflows, and stays granted after the cutover | AHDA Cybersecurity; PMO | Open | Each row is held to its module's rules and audited, governed rows land DRAFT; AHDA to accept the import's authority for the cutover window and withdraw `DATA_IMPORT` from R01 once it closes (a new profile version, TASK-110) |
 
 ## 3. Not threats: process and record items
 
@@ -132,3 +137,4 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | Date | Change |
 | --- | --- |
 | 2026-10-16 | First log (TASK-081): 77 findings, 8 open High |
+| 2026-10-23 | TASK-102: `threat-model-data-import.md` added; SR-78 to SR-80 |

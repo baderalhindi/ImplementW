@@ -38,8 +38,9 @@
   --space-4: 1rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
+  /* IBM Plex Sans has no Arabic glyphs, so Arabic text falls through to IBM Plex Sans Arabic. */
   --font-family:
-    'Segoe UI', 'Noto Sans Arabic', 'Noto Sans', Tahoma, 'Geeza Pro', system-ui, sans-serif;
+    'IBM Plex Sans', 'IBM Plex Sans Arabic', Tahoma, 'Geeza Pro', system-ui, sans-serif;
 }
 
 *,
@@ -650,6 +651,11 @@ h3 {
 
 .app__main > * {
   max-inline-size: 90rem;
+}
+
+/* With the rail collapsed, every page takes the full width of the window. */
+.app--collapsed .app__main > * {
+  max-inline-size: none;
 }
 
 /* A narrow window: the rail becomes a drawer over the page, opened from the top bar; the Create and Language labels go. */
@@ -1472,6 +1478,23 @@ select.field__input {
   color: var(--color-text-muted);
 }
 
+/* TASK-102: the migration import's three steps, each a titled block. */
+.import__step {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.import__step h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.import__step .table-container,
+.import__step .notice {
+  justify-self: stretch;
+}
+
 .dialog .form {
   max-inline-size: none;
 }
@@ -1728,6 +1751,13 @@ select.field__input {
   border: 0;
   background: none;
   cursor: pointer;
+}
+
+.sign-in__forgot {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  text-align: end;
 }
 
 .sign-in__footer {
@@ -3850,4 +3880,259 @@ select.field__input {
 .connection-results__failure {
   flex-basis: 100%;
   margin: 0;
+}
+
+/* ------------------------------------------------------------------------------------------- KPI register (SCR-072) */
+
+.kpi-register {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.kpi-register > * {
+  min-inline-size: 0;
+}
+
+.kpi-register > .section {
+  margin-block-start: 0;
+}
+
+/* This period at a glance: one card per rating, each the list's filter, the pressed one outlined in its colour. */
+.kpi-summary__title {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+}
+
+.kpi-summary__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+}
+
+.kpi-summary__card {
+  --kpi-tone: var(--color-text-muted);
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-inline-start: 4px solid var(--kpi-tone);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.kpi-summary__card:hover {
+  background: var(--color-surface);
+}
+
+.kpi-summary__card[aria-pressed='true'] {
+  border-color: var(--kpi-tone);
+  background: var(--color-primary-tint);
+}
+
+.kpi-summary__card--all {
+  --kpi-tone: var(--color-primary);
+}
+
+.kpi-summary__card--green {
+  --kpi-tone: var(--color-positive);
+}
+
+.kpi-summary__card--amber {
+  --kpi-tone: var(--color-warning);
+}
+
+.kpi-summary__card--red {
+  --kpi-tone: var(--color-danger);
+}
+
+.kpi-summary__label {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.kpi-summary__count {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Across projects: one card per KPI, as many to a row as fit. */
+.kpi-aggregates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A card here is not a dashboard widget on the twelve-column grid: it takes one track of the list's own grid. */
+.kpi-aggregate {
+  grid-column: auto;
+  box-shadow: var(--shadow-card);
+}
+
+.kpi-aggregate .widget__title {
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.kpi-aggregate__mean {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.kpi-aggregate__label {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.kpi-aggregate__value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.kpi-aggregate__value .figure {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.kpi-aggregate__unit {
+  color: var(--color-text-muted);
+}
+
+.kpi-aggregate__note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* The ratings of the projects that carry the KPI, side by side in proportion; the legend under it gives the counts. */
+.kpi-aggregate__bar {
+  display: flex;
+  gap: 2px;
+  block-size: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-neutral-surface);
+}
+
+.kpi-aggregate__segment {
+  flex-basis: 0;
+  background: var(--color-border);
+}
+
+.kpi-aggregate__segment--green {
+  background: var(--color-positive);
+}
+
+.kpi-aggregate__segment--amber {
+  background: var(--color-warning);
+}
+
+.kpi-aggregate__segment--red {
+  background: var(--color-danger);
+}
+
+.kpi-aggregate__segment--notApplicable {
+  background: var(--color-border-subtle);
+}
+
+.kpi-aggregate__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  list-style: none;
+}
+
+.kpi-aggregate__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.kpi-aggregate__key::before {
+  content: '';
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.kpi-aggregate__key--green::before {
+  background: var(--color-positive);
+}
+
+.kpi-aggregate__key--amber::before {
+  background: var(--color-warning);
+}
+
+.kpi-aggregate__key--red::before {
+  background: var(--color-danger);
+}
+
+.kpi-aggregate__key--notApplicable::before {
+  background: var(--color-border-subtle);
+}
+
+.kpi-aggregate__count {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.kpi-aggregate__excluded {
+  margin-block-start: auto;
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border-subtle);
+  font-size: 0.875rem;
+}
+
+.kpi-aggregate__excluded summary {
+  color: var(--color-warning);
+  cursor: pointer;
+}
+
+.kpi-aggregate__excluded .reason-list {
+  margin-block: var(--space-2) 0;
+}
+
+/* KPIs by project: the search sits beside the heading; a published period stays on one line. */
+.kpi-register__list-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-block-end: var(--space-3);
+}
+
+.kpi-register__list-header h2 {
+  margin: 0;
+}
+
+.kpi-register__list-header .field {
+  inline-size: min(100%, 22rem);
+  margin: 0;
+}
+
+.kpi-register .figure-stack .details__aside {
+  white-space: nowrap;
 }
