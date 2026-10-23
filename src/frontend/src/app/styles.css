@@ -38,8 +38,9 @@
   --space-4: 1rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
+  /* IBM Plex Sans has no Arabic glyphs, so Arabic text falls through to IBM Plex Sans Arabic. */
   --font-family:
-    'Segoe UI', 'Noto Sans Arabic', 'Noto Sans', Tahoma, 'Geeza Pro', system-ui, sans-serif;
+    'IBM Plex Sans', 'IBM Plex Sans Arabic', Tahoma, 'Geeza Pro', system-ui, sans-serif;
 }
 
 *,
