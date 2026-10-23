@@ -34,7 +34,7 @@ const FORECAST = '12400000.00';
 const COLUMNS = [
   'Project ID',
   'Project',
-  'Department',
+  'Sector',
   'Published Overall Project Health',
   'Actual expenditure to date (published)',
   'Forecast at completion (published)',
@@ -171,7 +171,7 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
       const row = data[0] ?? [];
       expect(at(header, row, 'Project ID')).toBe(formalId);
       expect(at(header, row, 'Project')).toBe(title);
-      expect(at(header, row, 'Department')).toBe('E2E Journeys Department');
+      expect(at(header, row, 'Sector')).toBe('E2E Journeys Department');
       expect(at(header, row, 'Actual expenditure to date (published)')).toBe('RESTRICTED');
       expect(at(header, row, 'Forecast at completion (published)')).toBe('RESTRICTED');
       expect(at(header, row, 'Published Overall Project Health')).toBe('GREEN');
@@ -245,18 +245,18 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
 
   await test.step("scope across the department: the register export holds the department's projects only", async () => {
     await page.goto('/reports/department/PROJECT_REGISTER');
-    await reportParameter(page, 'Department').selectOption({ label: 'E2E Journeys Department' });
+    await reportParameter(page, 'Sector').selectOption({ label: 'E2E Journeys Department' });
     await page.getByRole('button', { name: 'Run report' }).click();
     await expectText(
       page.getByRole('region', { name: 'Active filters' }),
-      'Department: E2E Journeys Department',
+      'Sector: E2E Journeys Department',
     );
     const [header = [], ...rows] = csvRows((await exportThroughTheDialog(page, 'CSV')).bytes);
     expect(rows.map((row) => at(header, row, 'Project ID'))).toContain(formalId);
     expect(rows.map((row) => at(header, row, 'Project ID'))).not.toContain(
       String(theirs.formalProjectId),
     );
-    expect(new Set(rows.map((row) => at(header, row, 'Department')))).toEqual(
+    expect(new Set(rows.map((row) => at(header, row, 'Sector')))).toEqual(
       new Set(['E2E Journeys Department']),
     );
   });

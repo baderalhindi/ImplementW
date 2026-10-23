@@ -213,7 +213,7 @@ test('UJ-010 missing, stale, Unknown and N/A stay distinguishable from a genuine
 
   await test.step('FG-02 keeps the same meanings apart: the KPI Performance report, row by row', async () => {
     await page.goto('/reports/financial/KPI_PERFORMANCE');
-    await reportParameter(page, 'Department').selectOption({ label: 'E2E Journeys Department' });
+    await reportParameter(page, 'Sector').selectOption({ label: 'E2E Journeys Department' });
     // The newest projects first, so this run's five are on the first page whoever else is reporting.
     await page.getByRole('button', { name: 'Choose columns' }).click();
     const columns = page.getByRole('dialog', { name: 'Select columns and filters' });

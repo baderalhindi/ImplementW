@@ -306,7 +306,7 @@ describe("acceptance criterion 3: another user's views are seen only when shared
     expect(within(present(own, 'own')).getByText(en('common.people.you'))).toBeTruthy();
     expect(
       within(present(own, 'own')).getByText(
-        en('reports.savedViews.sharedWith', { roles: 'Department Managers' }),
+        en('reports.savedViews.sharedWith', { roles: 'Sector Managers' }),
       ),
     ).toBeTruthy();
     expect(
@@ -383,7 +383,7 @@ describe("acceptance criterion 3: another user's views are seen only when shared
     await userEvent.click(within(own).getByRole('button', { name: /^Change sharing/ }));
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Executives' }));
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Department Managers' }));
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Sector Managers' }));
     await userEvent.click(
       within(dialog).getByRole('button', { name: en('reports.saveView.save') }),
     );

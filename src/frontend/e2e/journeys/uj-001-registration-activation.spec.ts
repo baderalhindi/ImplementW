@@ -33,7 +33,7 @@ test('UJ-001 registration and activation follow Project-master governance', asyn
     await page.getByLabel('Governance profile (required)').selectOption({ label: 'Standard' });
     await page.getByRole('radio', { name: 'Managed by AHDA' }).check();
     await page
-      .getByLabel('Owning department (required)')
+      .getByLabel('Owning sector (required)')
       .selectOption({ label: 'E2E Journeys Department' });
     await page.getByLabel('Registration budget (SAR)').fill('8500000');
     await page.getByLabel('Planned start date').fill(utcDate(7));

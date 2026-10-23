@@ -401,7 +401,7 @@ export function withConcerns(
               {
                 id: DM_ROLE_ID,
                 code: 'R03',
-                name: { en: 'Department Manager', ar: 'مدير الإدارة' },
+                name: { en: 'Sector Manager', ar: 'مدير القطاع' },
                 isSystem: true,
                 isExternalEligible: false,
               },

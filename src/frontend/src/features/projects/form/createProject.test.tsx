@@ -46,7 +46,7 @@ async function fillRequired(user: UserEvent) {
   await user.selectOptions(await screen.findByLabelText(/Classification/), CLASSIFICATION_ID);
   await user.selectOptions(screen.getByLabelText(/Governance profile/), LIGHT_PROFILE_ID);
   await user.click(screen.getByLabelText(en('projects.participationMode.AHDA_MANAGED')));
-  await user.selectOptions(screen.getByLabelText(/Owning department/), DEPARTMENT_ID);
+  await user.selectOptions(screen.getByLabelText(/Owning sector/), DEPARTMENT_ID);
 }
 
 describe('SCR-033 Create Project', () => {
@@ -58,7 +58,7 @@ describe('SCR-033 Create Project', () => {
     expect(createButton()).toHaveProperty('disabled', true);
     const note = document.getElementById(createButton().getAttribute('aria-describedby') ?? '');
     expect(note?.textContent).toContain('Project title');
-    expect(note?.textContent).toContain('Owning department');
+    expect(note?.textContent).toContain('Owning sector');
 
     await user.type(screen.getByLabelText(/Project title/), 'Coastal road upgrade');
     expect(createButton()).toHaveProperty('disabled', true);
@@ -180,7 +180,7 @@ describe('SCR-033 Create Project', () => {
     await user.type(screen.getByLabelText(/Project title/), 'Entity depot');
     await user.selectOptions(await screen.findByLabelText(/Classification/), CLASSIFICATION_ID);
     await user.selectOptions(screen.getByLabelText(/Governance profile/), LIGHT_PROFILE_ID);
-    await user.selectOptions(screen.getByLabelText(/Owning department/), DEPARTMENT_ID);
+    await user.selectOptions(screen.getByLabelText(/Owning sector/), DEPARTMENT_ID);
 
     // The entity is theirs and fixed; the mode starts as entity-managed.
     expect(screen.queryByRole('combobox', { name: /External entity/ })).toBeNull();
