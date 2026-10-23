@@ -315,13 +315,15 @@ function Rail({
 
   return (
     <>
-      <Link className="rail__brand" to="/">
+      {/* The link carries the name, so it has one whichever image the rail's width shows. */}
+      <Link className="rail__brand" to="/" aria-label={t('common.organizationName')}>
+        <img className="rail__logo" src="/brand/ahda-logo.png" alt="" width="596" height="232" />
         <img
-          className="rail__logo"
-          src="/brand/ahda-logo.png"
-          alt={t('common.organizationName')}
-          width="596"
-          height="232"
+          className="rail__emblem"
+          src="/brand/ahda-emblem.png"
+          alt=""
+          width="196"
+          height="196"
         />
       </Link>
       <nav className="rail__nav" aria-label={t('common.menu.label')}>

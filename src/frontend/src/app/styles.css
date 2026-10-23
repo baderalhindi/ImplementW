@@ -332,20 +332,30 @@ h3 {
   padding: var(--space-4);
 }
 
-/* The gold logo drawn white on the teal. Collapsed, only its emblem (the square at its end) shows. */
-.rail__logo {
+/* The gold logo drawn white on the teal. Collapsed, the emblem cut from it shows instead, with none of the wordmark. */
+.rail__logo,
+.rail__emblem {
   display: block;
-  inline-size: 100%;
-  max-inline-size: 10.5rem;
   block-size: auto;
   filter: brightness(0) invert(1);
 }
 
-.rail--collapsed .rail__logo {
+.rail__logo {
+  inline-size: 100%;
+  max-inline-size: 10.5rem;
+}
+
+.rail__emblem {
+  display: none;
   inline-size: 2.75rem;
-  block-size: 2.75rem;
-  object-fit: cover;
-  object-position: right center;
+}
+
+.rail--collapsed .rail__logo {
+  display: none;
+}
+
+.rail--collapsed .rail__emblem {
+  display: block;
 }
 
 .rail__nav {
