@@ -59,15 +59,17 @@ them, so they are stated. The retention period has not been approved and is TBC 
 
 | Role | Who | Does |
 | --- | --- | --- |
-| **On-call owner** | **DevOps/Platform Lead** — named individual: **TBC at environment handover**, recorded here and in AHDA's on-call rota | Declares the recovery, starts the RTO clock, runs §5, owns the decision to reopen writes |
+| **On-call owner** | **DevOps/Platform Lead** — named individual: **TBC at environment handover**, recorded in the on-call roster in AHDA's on-call tool ([`on-call-runbook.md`](on-call-runbook.md) §3), not in this public repository | Declares the recovery, starts the RTO clock, runs §5, owns the decision to reopen writes |
 | Database approver | Backend Lead | Confirms the restore point for §5.1 and signs §6.1 for application data |
 | Audit custodian | Security Lead, with AHDA Cybersecurity | Signs §5.6: the restored chain, and any gap against the SIEM |
 | Tenancy and region | AHDA IT | Project undelete (§4, S-3), anything the delivery team's IAM cannot do, and every region-loss decision (S-7) |
 | Change authority | AHDA change process | A PROD restore is a production change; in an outage the record is written after the fact |
 
 The role is named because the sheet names it; the person is not, because no individual has been
-designated and inventing one would put a name on a rota nobody agreed to. Filling that cell is a
-precondition of the first PROD apply (BR-6).
+designated and inventing one would put a name on a rota nobody agreed to. Staffing the roster is a
+precondition of the first PROD apply (BR-6). A declared recovery is a P1 incident (P1-3 in
+[`incident-severity-classification.md`](incident-severity-classification.md)): the on-call runbook's
+§2.2 says who else is engaged and its §6 how AHDA is told.
 
 ## 4. Declare, decide, freeze
 
@@ -414,6 +416,7 @@ history (§5.5) for the second.
 
 | Date | Change | By |
 | --- | --- | --- |
+| 2026-10-23 | §3: the named on-call individual goes in the on-call roster, kept outside this public repository; a declared recovery is a P1 incident (TASK-093 `on-call-runbook.md`, `incident-severity-classification.md`). | Observability (TASK-093) |
 | 2026-09-25 | V-4 names the history table and query: `common."__EFMigrationsHistory"`, column `migration_id` (TASK-024). The fingerprint needs no change: it covers every table in every non-system schema, and a migrated database fingerprints `table|common.__EFMigrationsHistory|<rows>|<md5>` (`database-migrations.md` §4). | Database (TASK-024) |
 | 2026-09-25 | Validation cell executed locally: `run-restore-drill.sh` runs §8 against an isolated Docker environment with the application. PASS — 11 of 11 tables equal on rows and checksum, audit chain intact, application healthy on the restored database, time-to-restore 4 s against 4 h (evidence log E-3, raw evidence committed). Fixture moved to `drill-fixture.sql`; `verify-restore.sh report` added. The SIT drill is now E-4. | DevOps (TASK-023) |
 | 2026-09-25 | Initial runbook. Three stores, seven failure cases, six restore procedures with rollback, eight integrity checks, the drill with pass criteria from RPO 1 h / RTO 4–6 h. Document-store backup built (`infra/terraform/storage/backup.tf`: hourly transfer to `document-backups`). Verification tooling written and rehearsed locally: two restores matched, one control and nine faults reported as expected (evidence log E-1, E-2). Non-PROD drill owed. Eight findings. | DevOps (TASK-023) |
