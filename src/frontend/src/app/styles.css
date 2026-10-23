@@ -653,8 +653,8 @@ h3 {
   max-inline-size: 90rem;
 }
 
-/* With the rail collapsed, a dashboard page takes the full width of the window. */
-.app--collapsed .app__main:has(> .dashboard) > * {
+/* With the rail collapsed, every page takes the full width of the window. */
+.app--collapsed .app__main > * {
   max-inline-size: none;
 }
 
