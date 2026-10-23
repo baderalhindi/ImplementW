@@ -1736,6 +1736,13 @@ select.field__input {
   cursor: pointer;
 }
 
+.sign-in__forgot {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  text-align: end;
+}
+
 .sign-in__footer {
   padding: var(--space-6) 0;
   font-size: 0.875rem;
