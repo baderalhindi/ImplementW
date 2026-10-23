@@ -38,10 +38,10 @@ This runbook covers **unplanned** incidents. Planned changes go through change c
 | --- | --- | --- |
 | **Primary on-call engineer** | Delivery team | Receives every page. Acknowledges, classifies (§2 of the classification), opens the incident record, works the playbook. **Incident commander for P3 and P4**, and for P1/P2 until the commander below takes over |
 | **Secondary on-call engineer** | Delivery team | Takes the page when the primary does not acknowledge (§5.3); second pair of hands on P1/P2 |
-| **DevOps/Platform Lead** | Delivery team | **Incident commander for P1 and P2.** On-call owner of the DR runbook: declares a recovery and starts the RTO clock (`backup-restore-dr-runbook.md` §3, §4). Decides rollbacks and redeploys |
+| **DevOps/Platform Lead** | Delivery team | **Incident commander for P1 and P2**, except a security incident, where they carry out containment and recovery on the Security Lead's instruction. On-call owner of the DR runbook: declares a recovery and starts the RTO clock (`backup-restore-dr-runbook.md` §3, §4). Decides rollbacks and redeploys |
 | **Backend Lead** | Delivery team | Application and data diagnosis; confirms a restore point and signs the restored data (`backup-restore-dr-runbook.md` §3). Owns the fix of a backend defect |
 | **Frontend Lead** | Delivery team | Owns the fix of an SPA defect |
-| **Security Lead** | Delivery team | **Leads every security incident (P1-4, P2-6)** with AHDA Cybersecurity; the only role that lowers a security incident's tier (classification O-3); audit custodian on a restore |
+| **Security Lead** | Delivery team | **Incident commander for every security incident (P1-4, P2-6)**, working with AHDA Cybersecurity; the only role that lowers a security incident's tier (classification O-3); audit custodian on a restore |
 | **PMO Engagement Lead** | Delivery team | **The one voice to AHDA** for P1 and P2: sends the notices of §6, keeps AHDA's stakeholders informed, holds the contract view (SLA, credits) |
 | **AHDA IT service desk** | AHDA | Users' first contact. Logs a user's report and passes it to the primary on-call engineer (§4) |
 | **AHDA IT** | AHDA | The GCP tenancy and region, the network, the directory, SSO/MFA, the Exchange relay; project undelete; every region-loss decision (`backup-restore-dr-runbook.md` §3, S-3, S-7) |
@@ -57,11 +57,11 @@ and a phone number or a personal address in it would be published (F-2).
 
 | | P1 — Critical | P2 — High | P3 — Medium | P4 — Low |
 | --- | --- | --- | --- | --- |
-| **Paged** | Primary on-call; at once also the DevOps/Platform Lead | Primary on-call; at once also the DevOps/Platform Lead | Primary on-call | Nobody — logged for the next working day |
-| **Incident commander** | DevOps/Platform Lead | DevOps/Platform Lead | Primary on-call | Primary on-call |
-| **Engaged by the commander** | Backend Lead (always); Frontend Lead if the SPA; Secondary on-call | Backend or Frontend Lead for the area; Secondary on-call if needed | The lead for the area, in working hours | The lead for the area, when planned |
-| **Security incident** (P1-4, P2-6, by rule) | Security Lead leads, at once; AHDA Cybersecurity told at once | Security Lead assesses, at once; AHDA Cybersecurity told | — (a security incident is never P3/P4 until the Security Lead lowers it) | — |
-| **Tells AHDA** | PMO Engagement Lead → AHDA IT service desk, AHDA IT, AHDA Business Sponsor | PMO Engagement Lead → AHDA IT service desk, AHDA IT | Primary on-call → AHDA IT service desk, through the ticket | Primary on-call → the ticket |
+| **Paged by the primary** | DevOps/Platform Lead and PMO Engagement Lead, at once | DevOps/Platform Lead and PMO Engagement Lead, at once | — | Nobody — logged for the next working day |
+| **Incident commander** | DevOps/Platform Lead; Security Lead for a security incident | DevOps/Platform Lead; Security Lead for a security incident | Primary on-call | Primary on-call |
+| **Paged by the commander** | Backend Lead (always); Frontend Lead if the SPA; Secondary on-call | Backend or Frontend Lead for the area; Secondary on-call if needed | The lead for the area, in working hours | The lead for the area, when planned |
+| **Security incident** (P1-4, P2-6, by rule) | Primary pages the Security Lead at once (or the Security Lead pages the primary, §4); AHDA Cybersecurity told at once | The same; the Security Lead assesses | — (a security incident is never P3/P4 until the Security Lead lowers it) | — |
+| **Tells AHDA** | PMO Engagement Lead → AHDA IT service desk, AHDA IT, AHDA Business Sponsor; for a security incident only the recipients the Security Lead and AHDA Cybersecurity approve (§6) | PMO Engagement Lead → AHDA IT service desk, AHDA IT | Primary on-call → AHDA IT service desk, through the ticket | Primary on-call → the ticket |
 | **AHDA engaged** | AHDA IT (always: tenancy, region, network); AHDA Cybersecurity if security | AHDA IT if the cause is on AHDA's side (directory, Exchange, network) | AHDA IT if the cause is on AHDA's side | — |
 | **Post-incident review** | Required (§7) | Required (§7) | When the cause is not yet known or will recur | No |
 | **Targets** | TBC — OQ-009 (`incident-severity-classification.md` §4); restore within RTO 4–6 h, RPO 1 h | TBC — OQ-009 | TBC — OQ-009 | TBC — OQ-009 |
@@ -103,9 +103,9 @@ model allows (F-8).
 | Source | Arrives as | Lands at | Usually |
 | --- | --- | --- | --- |
 | **Uptime check** on `/health/ready`, every 60 s from three regions | `ahda-pmplatform-<env> readiness failing` (CRITICAL) | On-call channel | P1-1 in PROD; P3-6/P4 elsewhere |
-| **FG-05 operational alert** | `ahda-pmplatform-<env> operational alert raised` (WARNING), with type, severity and integration; and an in-app/e-mail notification to the `INTEGRATION_OPERATIONAL_ALERT` family's recipients | On-call channel; ADM-047 | §2.3 of the classification by integration — P1-2, P2-2, P2-3, P3-3, P3-4 |
+| **FG-05 operational alert** | `ahda-pmplatform-<env> operational alert raised` — always that title, and the Cloud Monitoring policy's own severity is WARNING; the FG-05 type, severity (CRITICAL or WARNING) and integration are in the notification, and are inputs to classification, not the tier (O-6); and an in-app/e-mail notification to the `INTEGRATION_OPERATIONAL_ALERT` family's recipients | On-call channel; ADM-047 | §2.3 of the classification by integration — P1-2, P2-2, P2-3, P3-3, P3-4 |
 | **A user** | A call or ticket to the AHDA IT service desk | The service desk passes it to the primary on-call: through the ticket for P3/P4, and **by phone** when the user's description matches a P1 or P2 rule | Any |
-| **AHDA Cybersecurity** | A SIEM finding or a report | The Security Lead, by phone | P1-4, P2-6 |
+| **AHDA Cybersecurity** | A SIEM finding or a report | The Security Lead, by phone. The Security Lead then pages the primary on-call — that counts as the page — and opens the incident record with them | P1-4, P2-6 |
 | **The delivery team itself** | A failed deployment, a drill finding, a dependency advisory, a penetration-test finding | The primary on-call | P2-6, P3, P4 |
 | **The SMS provider** | A status notice | The primary on-call | P3-3 (PB-5) |
 
@@ -121,12 +121,12 @@ for P3/P4 that is the primary on-call engineer throughout.
 
 | Step | Who | Do | Done when |
 | --- | --- | --- | --- |
-| **1. Detect and acknowledge** | Primary on-call | Acknowledge the page in the on-call tool, so the escalation timer (§5.3) stops. For a user report, call the reporter back or reply in the ticket to confirm it is being looked at | Page acknowledged; the time recorded |
+| **1. Detect and acknowledge** | Primary on-call | Acknowledge the page in the on-call tool, so the escalation timer (§5.3) stops. For a user report, call the reporter back or reply in the ticket to confirm it is being looked at. A page and a report about the same symptom are **one** incident | Page acknowledged; the time recorded |
 | **2. Classify** | Primary on-call | Run `incident-severity-classification.md` §2 top to bottom; the first matching rule gives the tier. Unsure between two: the higher (O-2). Anything that could be a breach: P2-6 at least, and call the Security Lead now (O-3) | A tier and the rule that gave it |
-| **3. Open the incident record** | Primary on-call | In AHDA's ticketing system (F-4): tier, rule, time detected, time acknowledged, environment, symptom, who is commander. **No secret, token, personal data or record content in it** — correlation ids, error codes and integration codes only | Record number exists |
-| **4. Escalate** | Primary on-call | Page whoever §2.2 names for the tier, now, not after a first look. For P1/P2 hand the commander role to the DevOps/Platform Lead when they join, by saying so in the record | Every role §2.2 lists for the tier is engaged or has been paged |
-| **5. Communicate** | P1/P2: PMO Engagement Lead. P3/P4: Primary on-call | Send the initial notice (§6.1) to the recipients §2.2 lists; then updates (§6.2) at the interval the SLA table sets (**TBC — OQ-009**; until then at every change of tier, cause or expected restore time); then the resolution notice (§6.3). Use a route that does not depend on the platform: the platform's own e-mail may be what is down | Notice sent; next update time written in the record |
-| **6. Mitigate, resolve, close** | Commander | Work the playbook (§5.2). **Restore service first, find the cause second**: a rollback, a redeploy or a restore that brings the service back comes before the root cause. Classify again when the facts change (O-5). Close when the symptom has gone and the rule that matched no longer does; record the time restored and the time closed. Then §7 | Resolution notice sent; record closed with times |
+| **3. Open the incident record** | Primary on-call (with the Security Lead for a security incident) | In AHDA's ticketing system (F-4): tier, rule, **started** (the earliest time any report, alert or log puts the fault, or "unknown"), **detected** (the first signal that reached the delivery team), **acknowledged**, environment, symptom, who is commander. **No secret, token, personal data or record content in it** — correlation ids, error codes and integration codes only | Record number exists |
+| **4. Escalate** | Primary on-call, then the commander | The primary pages the "Paged by the primary" row of §2.2 for the tier — and the Security Lead for a security incident — now, not after a first look, and hands the commander role over when the commander joins, by saying so in the record. The commander pages the "Paged by the commander" row. Whoever first learns that the cause is in AHDA's tenancy, network, directory or relay calls AHDA IT at once and records the time | Every role §2.2 lists for the tier has been paged |
+| **5. Communicate** | P1/P2: PMO Engagement Lead. P3/P4: Primary on-call | Send the initial notice (§6.1) to the recipients §2.2 lists; then updates (§6.2) at the interval the SLA table sets (**TBC — OQ-009**; until then at the interim interval IT-3, §5.3, and at every change of tier, cause or expected restore time, whichever is first); then the resolution notice (§6.3). Use a route that does not depend on the platform: the platform's own e-mail may be what is down | Notice sent; next update time written in the record |
+| **6. Mitigate, resolve, close** | Commander | Work the playbook (§5.2). **Restore service first, find the cause second**: a rollback, a redeploy or a restore that brings the service back comes before the root cause. Classify again when the facts change (O-5). Close when the symptom has gone and the rule that matched no longer does — a security incident when the Security Lead has recorded that it is contained, what it reached, and AHDA Cybersecurity's agreement to close; record the time restored and the time closed. Then §7 | Resolution notice sent; record closed with times |
 
 ### 5.2 Playbooks
 
@@ -137,9 +137,10 @@ for P3/P4 that is the primary on-call engineer throughout.
 | PB-3 | Security incident (P1-4, P2-6) | §5.2.3 |
 | PB-4 | E-mail not leaving the platform (P2-3) | §5.2.4 |
 | PB-5 | **SMS provider failure — fallback to e-mail and in-app** (P3-3; P2-3 if e-mail fails too) | §5.2.5 |
-| PB-6 | Any other FG-05 operational alert (P1-2, P2-2, P3-4) | `operational-dashboards.md` §7.2, by alert type; sign-in failures go to AHDA IT for `DIRECTORY`/`SSO`/`MFA` and to the Nafath integration's owner for `NAFATH` |
+| PB-6 | Any other FG-05 operational alert (P3-4) | `operational-dashboards.md` §7.2, by alert type |
 | PB-7 | A worker stalled — liveness failing (P2-5) | §5.2.6 |
 | PB-8 | A release caused it | Roll back by re-promoting the previous release through the pipeline (`cicd-pipeline.md` D-4) — with the PROD approval gate, which is not bypassed in an incident. A release that wrote bad data is PB-2 as well |
+| PB-9 | Sign-in failing (P1-2, P2-2) | §5.2.7 |
 
 #### 5.2.1 PB-1 — the platform is unavailable
 
@@ -201,22 +202,45 @@ for P3/P4 that is the primary on-call engineer throughout.
 
 #### 5.2.3 PB-3 — security incident
 
-The Security Lead leads, with AHDA Cybersecurity, under AHDA's policy CS-026-2025 (the policy is a
-scanned Arabic document; its steps are not transcribed here and prevail over this list — F-7).
+The Security Lead is the incident commander, with AHDA Cybersecurity, under AHDA's policy
+CS-026-2025 (the policy is a scanned Arabic document; its steps are not transcribed here and prevail
+over this list — F-7). The DevOps/Platform Lead carries out containment and recovery on the Security
+Lead's instruction.
+
+0. **Hand-off.** Whoever is told first — the primary on-call by a page, or the Security Lead by AHDA
+   Cybersecurity's call — pages the other at once. The two open the incident record together; the
+   Security Lead decides P1-4 or P2-6 (classification O-3, samples S-23, S-24).
 
 1. **Preserve before you change.** Do not redeploy, restore, delete or rotate anything that is evidence
    until the Security Lead says what to keep: a Cloud SQL on-demand backup or clone, the relevant Cloud
    Logging entries exported, the audit store untouched (it is append-only, CTL-24). Containment that
    cannot wait — cutting traffic with `--ingress=internal` (`backup-restore-dr-runbook.md` §4 step 3),
    disabling an account — is done and recorded with its time.
+
+   **Disabling an account:** an R01 holder with `USER_MANAGE`, on the user's detail screen (ADM-002–005)
+   → *Disable*, which asks for step-up MFA (`POST /api/v1/users/{id}/disable`;
+   `identity-access-administration.md` D-3, D-11). The platform refuses the user from their next request,
+   whatever token they hold, and sign-in refuses them; nothing they own or did is changed. Record the
+   time, then confirm in the audit trail that the disable is recorded. External entity users are disabled
+   the same way.
 2. **An exposed secret:** `secret-rotation-runbook.md` §6, emergency rotation — rotate, revoke at the
    source, disable every older version. A secret owned by AHDA IT is rotated by AHDA IT.
-3. **A user reaching records outside their scope:** disable the access path — the assignment, the
-   account, or the release (PB-8) — then establish from the audit store what was read or changed.
+3. **A user reaching records outside their scope.** Two causes, two actions:
+   - *The account is misused or its credential stolen:* disable the account (above); AHDA IT resets the
+     directory password of an internal user; for an external user, AHDA Cybersecurity decides who
+     contacts the entity.
+   - *The platform let a legitimate user see too much (a scope defect):* disable the access path — the
+     assignment, or the release (PB-8) — and fix the defect as P1.
+
+   Either way, establish what was read or changed from the audit trail, ADM-050 (`/admin/audit-trail`),
+   which needs an audit-viewing permission by category (`audit-activity-ui.md` D-3): the Security Lead,
+   as audit custodian, or an AHDA auditor. What is found goes to the Security Lead's evidence store, not
+   into the ticket.
 4. **Reporting outward** — to AHDA's leadership, to an authority, to affected people — is AHDA
    Cybersecurity's decision, not the delivery team's (G-6; F-7). The incident record and the review
    hold codes and references; the evidence itself stays where the Security Lead stores it, never in
-   this repository or its issues.
+   this repository or its issues. **The delivery team contacts neither the account holder nor their
+   entity** unless AHDA Cybersecurity asks it to.
 
 #### 5.2.4 PB-4 — e-mail not leaving the platform
 
@@ -282,6 +306,24 @@ call that never answers (an SMTP relay that accepts and never replies is the kno
 `health-checks-uptime-monitoring.md` D-3). Find the dependency in the APM or the log, and work that
 integration's playbook.
 
+#### 5.2.7 PB-9 — sign-in failing
+
+1. **Read the cause without signing in.** If sign-in is down, the on-call R01 account cannot open
+   ADM-047 either: read the API's log instead.
+
+   ```sh
+   gcloud logging read 'resource.type="cloud_run_revision" AND (textPayload:"Operational alert raised" OR httpRequest.requestUrl:"/api/v1/sessions")' \
+     --project=ahda-pmplatform-prod --freshness=1h --limit=20
+   ```
+
+2. **Did the delivery team change something?** A release in the last 24 hours: PB-8. A rotation of
+   `AD_BIND_PASSWORD` or another `AD_*` or SSO/MFA value: `secret-rotation-runbook.md` §5, rollback.
+3. **Otherwise the cause is on AHDA's side** — the directory, SSO, MFA (AHDA IT) or Nafath (the Nafath
+   integration's owner). Call AHDA IT now with the integration code, the time the alert was first raised
+   and the failure from the log; stay on the call, and keep sending updates. The delivery team does not
+   change the directory.
+4. Sign-in works again for your account and a second user: close by §5.1 step 6.
+
 ### 5.3 Escalation path and timers
 
 ```
@@ -304,6 +346,10 @@ and they are replaced by the SLA table's figures when it arrives (`incident-seve
 | IT-1 | by the primary | 15 min | 30 min | next working day | Page the secondary |
 | IT-2 | by the secondary | 15 min | 30 min | — | Call the DevOps/Platform Lead |
 
+| # | Interim internal practice | P1 | P2 | P3 |
+| --- | --- | --- | --- | --- |
+| IT-3 | Status update to AHDA at least every (written in the notice's "Next update") | 60 min | 2 h | with the ticket |
+
 The DevOps/Platform Lead escalates to AHDA IT whenever the cause, or the next action, is in AHDA's
 tenancy, network, directory or relay — at the moment that is known, not after a timer.
 
@@ -311,6 +357,10 @@ tenancy, network, directory or relay — at the moment that is known, not after 
 
 Plain text, sent by e-mail from the sender's own mailbox (not through the platform) and, for P1, also
 by phone. No secret, personal data or record content; correlation ids and codes only.
+
+**A security incident** is notified only to the recipients the Security Lead and AHDA Cybersecurity
+approve, with "Impact: under assessment" until they release more; the service desk is told only what
+they release.
 
 ### 6.1 Initial notice
 
@@ -350,7 +400,8 @@ Follow-up:  <post-incident review due — §7>
 
 ## 7. After the incident
 
-**A post-incident review is written for every P1 and P2**, and for a P3 whose cause is unknown or
+**A post-incident review is written for every P1 and P2** by the incident commander (the Security Lead
+for a security incident), and for a P3 whose cause is unknown or
 will recur. It is blameless and holds: the timeline from the incident record (detected, acknowledged,
 classified, escalated, restored, closed); the tier and every reclassification with its rule; the cause;
 what restored service; what the response did well and where it waited; the follow-up actions, each with
@@ -366,6 +417,8 @@ A gap found in this runbook or in the classification is fixed in the document, w
 entry.
 
 ## 8. The sample P1 incident, walked through
+
+### 8.1 The author's walk
 
 The workbook's validation check: "Walk a sample P1 incident scenario through the runbook and confirm
 every step (detect, classify, escalate, communicate) is unambiguous and actionable without further
@@ -383,7 +436,7 @@ the service desk begins receiving calls.
 | 3 | Classify | §2.3 top to bottom: P1-1 "the PROD readiness alert is open" matches → **P1** | Primary on-call | Yes. Matches sample S-01 of the classification |
 | 4 | Record | Open the incident in AHDA's ticketing system: P1, P1-1, 09:14 detected, 09:16 acknowledged, PROD, "readiness 503", commander: primary until the DevOps/Platform Lead joins (§5.1 step 3) | Primary on-call | Yes, once the system is named (**F-4**) |
 | 5 | Escalate | §2.2 P1 column: page the DevOps/Platform Lead (commander) now; the Lead engages the Backend Lead and the secondary; no security indicator, so not the Security Lead (§5.1 step 4) | Primary on-call → DevOps/Platform Lead | Yes |
-| 6 | Communicate | PMO Engagement Lead sends §6.1 to the AHDA IT service desk, AHDA IT and the Business Sponsor, by e-mail from their own mailbox and by phone; next update at each change of status (interval TBC — OQ-009) (§5.1 step 5) | PMO Engagement Lead | Yes. The update interval is TBC, and the interim rule (at each change of tier, cause or restore time) is stated |
+| 6 | Communicate | PMO Engagement Lead sends §6.1 to the AHDA IT service desk, AHDA IT and the Business Sponsor, by e-mail from their own mailbox and by phone; next update within 60 minutes (IT-3; the SLA's interval is TBC — OQ-009) (§5.1 step 5) | PMO Engagement Lead | Yes |
 | 7 | Diagnose | PB-1 step 1: live 200, ready 503 → database. Step 2: the log says `PostgreSQL unreachable`; the instance is not `RUNNABLE` and its last operation failed | Primary on-call, Backend Lead | Yes. **Depends on §3.1 access** being granted before the rota starts |
 | 8 | Decide | PB-1 step 2: not recovering → P1-3, PB-2. The DevOps/Platform Lead declares a recovery: T0 = the declaration, RTO clock running (`backup-restore-dr-runbook.md` §4, S-2: instance unusable, still listed → §5.2 from its newest backup, or §5.1 PITR) | DevOps/Platform Lead | Yes. **F-11**: whether AHDA's RTO counts from the declaration or from 09:12 is unconfirmed; the walk records both times |
 | 9 | Mitigate | Freeze writes, restore into a new instance by PITR (RPO 1 h), verify by §6.1 of the DR runbook, cut over (§5.7), reopen writes, stop the clock | DevOps/Platform Lead, Backend Lead, Security Lead (audit store) | Yes. **BR-1**: the §6.1 verification needs a path to the private IP that does not exist yet |
@@ -395,6 +448,57 @@ answered to proceed. The walk found five things the runbook depends on that do n
 staffed roster (F-2), a named on-call tool (F-3), a ticketing system (F-4), the on-call access of §3.1
 including the database path (BR-1), and AHDA's reading of when the RTO starts (F-11). They are
 preconditions of the Release Checklist row (§9), not ambiguities in the steps.
+
+### 8.2 The independent walk
+
+The same check, run again by a reader who had not written the runbook: given only this document, the
+classification and the files they link — not §8.1 — and asked to act as the primary on-call engineer
+and flag every step as actionable, ambiguous, or dependent on something that does not exist yet. Two
+new P1 scenarios, chosen to take other paths than §8.1's:
+
+- **A — internal sign-in down.** Tuesday 07:40, PROD. `/health/ready` 200, no readiness alert; the
+  service desk phones that every internal sign-in has failed since about 07:25; FG-05 AVAILABILITY
+  CRITICAL on `DIRECTORY`; Nafath users unaffected. (Classification S-22.)
+- **B — suspected exfiltration.** Wednesday 14:05. AHDA Cybersecurity phones the Security Lead: the SIEM
+  shows an external entity's PM downloaded 300 documents in 10 minutes, including other entities';
+  the account is active. (Classification S-23.)
+
+**First result, 2026-10-23.** A: P1 was reached, but only through O-2; escalation, communication and
+the directory-specific mitigation were thin. B: not runnable from the text — the first hand-off (SIEM →
+Security Lead → primary and commander) was undefined, and so were the commander, the notice's audience,
+how to disable an account, where to read the audit and when to close. 21 ambiguities in all.
+
+**What changed**, each from one of them:
+
+| Gap | Now |
+| --- | --- |
+| Alert severity shown as WARNING in §4 and CRITICAL in PB-5 | §4: the policy is WARNING, the FG-05 severity inside it an input (O-6) |
+| A page and a phone report — one incident or two; "detected" undefined; no "started" | §5.1 steps 1 and 3 |
+| "Fails for everyone" seemed to need the engineer to watch 10 minutes; P1-2 "usually with an alert"; P2-2 "one group" overlapping P1-2 | Classification §2.1, P1-2, P2-2 |
+| Who pages whom: primary or commander; PMO paged by nobody; who calls AHDA IT | §2.2 rows "Paged by the primary" / "Paged by the commander"; §5.1 step 4 |
+| "Next update" could not be filled in | IT-3 interim interval (§5.3) |
+| Sign-in playbook was a pointer; R01 cannot sign in to read ADM-047 when sign-in is down | PB-9 (§5.2.7) |
+| Security: who is told first, who opens the record, two commanders | §4, PB-3 step 0; §2.1: the Security Lead commands |
+| SIEM finding: evidence or report; O-2 against O-3 | Classification §2.1 "security evidence", O-3; S-23, S-24 |
+| Notices to the service desk during a breach; contacting the entity | §6; PB-3 step 4 |
+| How to disable an account and whether it ends access; where to read the audit; stolen credential versus scope defect | PB-3 step 1 and step 3 |
+| A security incident's rule never stops matching, so it could never close | §5.1 step 6 |
+| Who writes the review | §7 |
+
+**After the changes**, both scenarios read through each step to an owner, an action and a done-when,
+with no question to ask:
+
+| Step | A — sign-in down | B — suspected exfiltration |
+| --- | --- | --- |
+| Detect | Service desk call and FG-05 notice → one incident; started 07:25, detected 07:40 | Security Lead called by AHDA Cybersecurity; pages the primary (PB-3 step 0) |
+| Classify | P1-2: own attempt fails now, failure began 15 min ago by the reporter, service desk reports everyone (S-22) | P1-4: SIEM shows records outside the account's scope (S-23) |
+| Escalate | Primary pages DevOps/Platform Lead and PMO; commander pages Backend Lead and secondary; primary calls AHDA IT at once (cause is the directory) | Security Lead commands; primary pages DevOps/Platform Lead and PMO; AHDA Cybersecurity already engaged |
+| Communicate | §6.1 by the PMO, next update within 60 min (IT-3) | §6.1 only to approved recipients, "Impact: under assessment" |
+| Mitigate | PB-9: log read; no release or AD rotation in 24 h; AHDA IT fixes the directory | PB-3: preserve; disable the account (ADM-002–005, step-up); audit trail ADM-050; no contact with the entity |
+| Close | Sign-in works for two users | Contained, scope assessed, AHDA Cybersecurity agrees |
+
+What the walk still depends on is §8.1's list — roster, on-call tool, ticketing system, access — plus
+the SLA table for the real update interval.
 
 The walk is owed again **live** on SIT, combined with the database-outage drill
 (`infra/environments/drill-database-outage.sh`, `health-checks-uptime-monitoring.md` §7.3), once SIT
@@ -439,4 +543,5 @@ The gate is **not met** until RC-5 to RC-8 are.
 
 | Date | Change | By |
 | --- | --- | --- |
-| 2026-10-23 | Initial record: support model, 12 roles and who is engaged at each tier, the rotation and its access, sources of incidents, the six-step procedure, eight playbooks including SMS provider failure and its fallback (ADR-004), the escalation path with interim internal timers, three notices, post-incident review, the sample P1 walk-through, the release-gate readiness list, 11 findings. | Observability (TASK-093) |
+| 2026-10-23 | Initial record: support model, 12 roles and who is engaged at each tier, the rotation and its access, sources of incidents, the six-step procedure, eight playbooks including SMS provider failure and its fallback (ADR-004), the escalation path with interim internal timers, three notices, post-incident review, the sample P1 walk-through, the release-gate readiness list, 11 findings. |
+| 2026-10-23 | Independent P1 walk (§8.2) on two new scenarios: the security incident's hand-off, commander, notice audience, account disable, audit trail and closure written into PB-3, §2, §4–§7; PB-9 for sign-in failures; who pages whom split between the primary and the commander; started/detected times; IT-3 interim update interval. | Observability (TASK-093) | Observability (TASK-093) |

@@ -37,11 +37,11 @@ Work down the table. **The first rule that matches gives the severity**; do not 
 | --- | --- |
 | PROD | The production environment, `ahda-pmplatform-prod`. SIT, UAT and DEV are non-PROD |
 | Core function | One of C-1 to C-8 (§2.2) |
-| Fails for everyone | The function fails at every attempt over **CP-1** (§3) for the on-call engineer's own account **and** for at least one other user in a different role (a second report, or a second account the engineer holds), no attempt in that time succeeds, and no other route reaches the same result. For a group the engineer cannot join (external entity users), two users of that group in place of the engineer's account |
+| Fails for everyone | The function fails at every attempt over **CP-1** (§3) for the on-call engineer's own account **and** for at least one other user in a different role (a second report, or a second account the engineer holds), no attempt in that time succeeds, and no other route reaches the same result. The engineer need not watch for CP-1 themselves: their own attempt failing now counts when an open alert, a log or the reporter's stated start time shows the failure began at least CP-1 ago. A service-desk report that "every user" fails, or naming two users in different roles, counts as the second report. For a group the engineer cannot join (external entity users), two users of that group in place of the engineer's account |
 | Readiness alert | Cloud Monitoring's `ahda-pmplatform-<env> readiness failing` (CRITICAL): `/health/ready` failing from 2 of 3 checker regions for 60 s (`health-checks-uptime-monitoring.md` D-7) |
 | Operational alert | An FG-05 alert — AVAILABILITY, FRESHNESS, QUEUE_BACKLOG, DEAD_LETTER, RECONCILIATION_MISMATCH, DELIVERY_RATE — on an integration code (`DIRECTORY`, `SSO`, `MFA`, `NAFATH`, `EXCHANGE_EMAIL`, `SMS`), shown on ADM-047 and sent to the on-call channel as `ahda-pmplatform-<env> operational alert raised` (`operational-dashboards.md` D-8, D-9) |
 | Recovery point | The newest point the database can be restored to: the end of the point-in-time-recovery log, or the newest automated backup (`backup-restore-dr-runbook.md` §1) |
-| Security evidence | An audit record, log line, alert or finding that shows access, change or disclosure actually happened, or a reproduction of it on the release PROD runs, in any environment — as opposed to a report that it might have |
+| Security evidence | An audit record, log line, alert or finding that shows access, change or disclosure actually happened, or a reproduction of it on the release PROD runs, in any environment — as opposed to a report that it might have. A SIEM or audit finding that shows an account reaching records outside its scope is evidence; one that shows only unusual volume or timing within the account's scope is a report |
 
 ### 2.2 Core functions
 
@@ -66,7 +66,7 @@ delivery team; AHDA confirms or amends the list with the SLA table (F-2).**
 | Rule | Condition | How it is observed |
 | --- | --- | --- |
 | P1-1 | **The platform is unavailable** | The PROD readiness alert is open; or the platform's address gives no page, or 5xx for every request, over CP-1 |
-| P1-2 | **No internal user can sign in** | C-1 fails for everyone signing in through the directory — usually with an open AVAILABILITY alert on `DIRECTORY`, `SSO` or `MFA` |
+| P1-2 | **No internal user can sign in** | C-1 fails for everyone signing in through the directory, with or without an open AVAILABILITY alert on `DIRECTORY`, `SSO` or `MFA` |
 | P1-3 | **Data is lost or wrong, or a store is unusable** | One of the DR runbook's scenarios S-1 to S-7 applies, whether it is then fixed by a restore or by a corrective change (`backup-restore-dr-runbook.md` §4 step 2): bad data written by a release or a bulk mistake, an instance unusable or deleted, documents lost, a zone or region down |
 | P1-4 | **A security breach with evidence** | Security evidence that someone read, changed or took PROD data they are not entitled to; that a user can open or change a record outside their scope; that a PROD secret is outside the secret store; that the audit chain fails verification; or that a file served by the document store is malicious |
 
@@ -75,7 +75,7 @@ delivery team; AHDA confirms or amends the list with the SLA table (F-2).**
 | Rule | Condition | How it is observed |
 | --- | --- | --- |
 | P2-1 | **A core function fails for everyone**, while sign-in works | One of C-2 to C-8 fails for everyone |
-| P2-2 | **One group of users cannot sign in** | C-1 fails for everyone in one group — external entity users (`NAFATH` AVAILABILITY), or every user of one department or entity — while others sign in |
+| P2-2 | **One group of users cannot sign in** | C-1 fails for everyone in a group smaller than all internal users — all external entity users (`NAFATH` AVAILABILITY), or every user of one department or entity — while others sign in |
 | P2-3 | **No notification leaves the platform by e-mail, or none is created in-app** | An AVAILABILITY alert open, or a DEAD_LETTER raised, on `EXCHANGE_EMAIL`; or notification intents stay RECEIVED and nothing new reaches an inbox over CP-1 (`GET /notification-intents`). E-mail is the only channel that reaches a person outside the platform while no SMS provider exists (UGV-10) |
 | P2-4 | **The RPO is breached** | The recovery point is older than **1 hour** (RPO), and nothing has been lost yet; once data is lost it is P1-3 |
 | P2-5 | **A background worker has stalled** | `/health/live` answers 503 naming a worker, or Cloud Run restarts instances on liveness two or more times within CP-1 (`health-checks-uptime-monitoring.md` D-3) |
@@ -101,7 +101,7 @@ workaround; a question; a documentation error; a non-PROD problem that blocks no
 | --- | --- |
 | O-1 | **First match wins**, in the order P1-1 … P3-6. A condition that matches two rules takes the higher |
 | O-2 | **When unsure between two tiers, take the higher.** Lower it only by running §2 again with the missing fact found, and record that fact and the time in the incident record. A security incident is lowered only under O-3 |
-| O-3 | **A security report is P2 (P2-6) until the Security Lead assesses it.** With security evidence it becomes P1 (P1-4); ruled out, it is closed or classified again on what remains. Nobody but the Security Lead lowers it |
+| O-3 | **A security report is P2 (P2-6) until the Security Lead assesses it.** With security evidence it becomes P1 (P1-4); ruled out, it is closed or classified again on what remains. Nobody but the Security Lead lowers it. If you cannot tell whether a finding is evidence or a report, page it as P1-4 (O-2) and let the Security Lead decide |
 | O-4 | **Non-PROD is never above P3**, except a security incident that involves PROD data, a PROD credential, or a weakness in the release PROD runs: that is classified as PROD wherever it was found (a PROD secret pasted into a SIT ticket is P1-4) |
 | O-5 | **Classify again whenever the facts change**, and record the new tier, the rule and the time. An incident's tier is the highest it has held for reporting; its current tier drives who is engaged |
 | O-6 | **An alert's own severity is not the incident's.** Cloud Monitoring's CRITICAL/WARNING and FG-05's severities are facts used in the rules, not answers |
@@ -147,8 +147,8 @@ What is known, and is not a service level:
 | Configured detection of an operational alert: threshold crossed to on-call channel and recipients | ≤ 5 minutes | `operational-dashboards.md` D-10 |
 | Drill pass mark for a restore | ≤ 4 h passes; 4–6 h is a finding; > 6 h fails | `backup-restore-dr-runbook.md` §2 |
 
-The on-call runbook's interim escalation timers (`on-call-runbook.md` §5.3) are the delivery team's
-internal working values for paging the next person. They are not offered to AHDA as response targets
+The on-call runbook's interim escalation timers and update interval (`on-call-runbook.md` §5.3,
+IT-1 to IT-3) are the delivery team's internal working values. They are not offered to AHDA as response targets
 and are replaced by whatever the SLA table sets.
 
 ## 5. Sample incidents — the test of these definitions
@@ -180,6 +180,9 @@ the row.
 | S-19 | During an agreed maintenance window, PROD is unavailable as planned | **No incident** | O-7 | — |
 | S-20 | The same maintenance overruns its window by 30 minutes and PROD is still unavailable | **P1** | P1-1 (O-7: past the window) | — |
 | S-21 | Five minutes after a PROD deployment, sign-in failed for everyone for about 40 seconds, then recovered by itself; no alert is open | **P4** | O-8 | Shorter than CP-1, so not "fails for everyone" |
+| S-22 | 07:40 Tuesday. The service desk phones: since about 07:25 every internal user who tries to sign in gets an error. `/health/ready` is 200; a `DIRECTORY` AVAILABILITY alert is open; Nafath users sign in | **P1** | P1-2 | — |
+| S-23 | AHDA Cybersecurity reports that the SIEM shows an external entity's Project Manager downloaded 300 documents in 10 minutes, including documents of other entities' projects; the account is active | **P1** | P1-4 (records outside the account's scope: ADR-013 limits an external user to their own entity) | — |
+| S-24 | AHDA Cybersecurity reports that the SIEM shows an internal user downloaded 300 documents in 10 minutes, all from projects they are assigned to | **P2** | P2-6 (volume within scope is a report) | No access outside scope shown |
 
 ## 6. When AHDA's SLA table arrives
 
@@ -208,4 +211,5 @@ the row.
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-10-23 | Initial record: four tiers, 16 rules (P1-1 to P3-6) and the P4 remainder, 7 overrides, 2 classification parameters, response targets TBC on OQ-009 with RPO/RTO fixed, 20 sample incidents. |
-| 2026-10-23 | Blind test: a reader given §2 to §4 without §5 classified the 20 samples and 8 new incidents; all 28 tiers matched. Wording it found open to two readings tightened: "fails for everyone" excludes a workaround and covers groups the engineer cannot join; security evidence includes a reproduction on the PROD release; P1-3 covers a store fixed without a restore; P2-4 and P2-5 given cut-offs; O-2 defers to O-3; O-4 covers a weakness in the PROD release; O-8 added for a failure that cleared itself within CP-1, with sample S-21. | Observability (TASK-093) | Observability (TASK-093) |
+| 2026-10-23 | Blind test: a reader given §2 to §4 without §5 classified the 20 samples and 8 new incidents; all 28 tiers matched. Wording it found open to two readings tightened: "fails for everyone" excludes a workaround and covers groups the engineer cannot join; security evidence includes a reproduction on the PROD release; P1-3 covers a store fixed without a restore; P2-4 and P2-5 given cut-offs; O-2 defers to O-3; O-4 covers a weakness in the PROD release; O-8 added for a failure that cleared itself within CP-1, with sample S-21. |
+| 2026-10-23 | Independent P1 walk of the on-call runbook (`on-call-runbook.md` §8.2): "fails for everyone" counts a failure begun CP-1 ago by alert, log or reporter; P1-2 needs no alert and P2-2 is a group smaller than all internal users; a finding of access outside an account's scope is evidence, volume alone a report; an unclear security finding is paged as P1-4; samples S-22 to S-24. | Observability (TASK-093) | Observability (TASK-093) | Observability (TASK-093) |
