@@ -3196,8 +3196,8 @@ select.field__input {
 
 .widget__figures {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: var(--space-3) var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3) var(--space-6);
   margin: 0;
 }
 
@@ -3221,6 +3221,14 @@ select.field__input {
 .widget__figure .figure {
   font-size: 1.25rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* A figure is left-to-right so its digits never reorder; sized to its content, it sits under its label at the inline
+   start in either direction instead of stretching across the cell and aligning to its own left edge. */
+.widget__figure dd > .figure,
+.widget__distribution .widget__count {
+  justify-self: start;
 }
 
 /* A progress card leads with its first percentage, large, as the design's "Physical progress 47.2 %". */
