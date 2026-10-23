@@ -90,7 +90,7 @@ function column(
 export const FINANCIAL_COLUMNS: ReportColumnView[] = [
   column('PROJECT', 'FORMAL_PROJECT_ID', 'Project ID', 'رقم المشروع', 'TEXT'),
   column('PROJECT', 'TITLE', 'Project', 'اسم المشروع', 'TEXT'),
-  column('PROJECT', 'DEPARTMENT', 'Department', 'الإدارة', 'REFERENCE'),
+  column('PROJECT', 'DEPARTMENT', 'Sector', 'القطاع', 'REFERENCE'),
   column(
     'FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT',
     'FINANCIAL_STATUS',
@@ -142,7 +142,7 @@ export function reportView(overrides: Partial<ReportView> = {}): ReportView {
     parameters: [
       {
         code: 'DEPARTMENT',
-        label: label('Department', 'الإدارة'),
+        label: label('Sector', 'القطاع'),
         dataType: 'DEPARTMENT',
         isRequired: false,
         options: [

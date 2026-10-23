@@ -96,9 +96,9 @@ export async function signInThroughTheForm(
 ): Promise<void> {
   const credential = credentialOf(persona);
   await page.goto('/sign-in');
-  await page.getByLabel('Username').fill(credential.username);
-  await page.getByLabel('Password').fill(credential.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByLabel('Username', { exact: true }).fill(credential.username);
+  await page.getByLabel('Password', { exact: true }).fill(credential.password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   if (credential.mfaCode !== undefined) {
     await page.getByLabel('Verification code').fill(credential.mfaCode);
     await page.getByRole('button', { name: 'Verify' }).click();

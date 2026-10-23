@@ -104,7 +104,7 @@ function role(code: string, en: string, ar: string, isExternalEligible = false):
 
 export const roles: RoleSummary[] = [
   role('R01', 'System Administrator', 'مدير النظام'),
-  role('R03', 'Department Manager', 'مدير الإدارة'),
+  role('R03', 'Sector Manager', 'مدير القطاع'),
   role('R04', 'Project Manager', 'مدير المشروع', true),
 ];
 

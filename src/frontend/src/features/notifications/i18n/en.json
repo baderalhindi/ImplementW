@@ -8,7 +8,6 @@
     "preferences": "Notification preferences"
   },
   "bell": {
-    "text": "Notifications",
     "unread": "{count} unread"
   },
   "all": {

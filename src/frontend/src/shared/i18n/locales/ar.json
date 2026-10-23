@@ -1,7 +1,9 @@
 {
   "appName": "PMPlatform",
+  "organizationName": "هيئة تطوير الأحساء",
   "skipToContent": "الانتقال إلى المحتوى الرئيسي",
   "signOut": "تسجيل الخروج",
+  "language": "اللغة",
   "languages": {
     "ar": "العربية",
     "en": "الإنجليزية"
@@ -85,5 +87,30 @@
     "title": "تعذّر عرض هذه الصفحة",
     "description": "حدث خطأ أثناء عرض هذه الصفحة، وتم الإبلاغ عنه. أعد تحميل الصفحة أو انتقل إلى الصفحة الرئيسية.",
     "reload": "إعادة تحميل الصفحة"
+  },
+  "menu": {
+    "label": "القائمة الرئيسية",
+    "home": "الرئيسية",
+    "portfolio": "المحفظة",
+    "projects": "المشاريع",
+    "myWork": "أعمالي",
+    "risksIssues": "المخاطر والمشكلات",
+    "requestsApprovals": "الطلبات والاعتمادات",
+    "documents": "المستندات",
+    "dashboardsReports": "اللوحات والتقارير",
+    "notifications": "التنبيهات",
+    "administration": "الإدارة",
+    "administrationHidden": "الإدارة مخفية لهذا الدور",
+    "awaitingDecision": "{count} بانتظار قرارك",
+    "collapse": "طي القائمة",
+    "expand": "توسيع القائمة",
+    "open": "فتح القائمة",
+    "close": "إغلاق القائمة"
+  },
+  "shell": {
+    "breadcrumb": "مسار التنقل",
+    "create": "إنشاء",
+    "createChangeRequest": "طلب تغيير",
+    "account": "الحساب"
   }
 }

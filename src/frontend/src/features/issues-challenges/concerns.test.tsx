@@ -589,7 +589,7 @@ describe('SCR-087 Escalations (acceptance criterion 2)', () => {
     expect(rows.map((row) => row.dataset.escalation)).toEqual([CULVERT_OPEN_ESCALATION_ID]);
     const openRow = escalationRow(table, CULVERT_OPEN_ESCALATION_ID);
     expect(within(openRow).getByText(en('issuesChallenges.escalationStatus.OPEN'))).toBeTruthy();
-    expect(within(openRow).getByText('Department Manager (R03)')).toBeTruthy();
+    expect(within(openRow).getByText('Sector Manager (R03)')).toBeTruthy();
     expect(within(table).queryByText(en('issuesChallenges.escalationStatus.RESOLVED'))).toBeNull();
     expect(
       screen.getByText(en('issuesChallenges.escalations.showing.open', { count: 1 })),

@@ -111,7 +111,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     owningDepartment = plain(
       await page
         .getByRole('term')
-        .filter({ hasText: /^Owning department$/ })
+        .filter({ hasText: /^Owning sector$/ })
         .locator('xpath=following-sibling::dd[1]')
         .textContent(),
     );
@@ -120,18 +120,18 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
 
   await test.step("the Project Dashboard projects the same record, naming each value's source and its own freshness point", async () => {
     const lifecycle = widget(page, 'Lifecycle state');
-    await expectText(lifecycle, 'Source WF-01');
+    await expectText(lifecycle, 'Owned by WF-01');
     await expect(lifecycle.getByText('Active', { exact: true })).toBeVisible();
 
     const risks = widget(page, 'Open risks by rating');
     await expectText(risks, 'Current · live');
-    await expectText(risks, 'Source WF-06');
+    await expectText(risks, 'Owned by WF-06');
     await expect(risks.getByRole('definition').first()).toHaveText('1');
 
     // The KPI condition is dated by the measurement's own as-of, not by when the dashboard was assembled.
     const kpi = widget(page, 'KPI condition');
     await expectText(kpi, 'Published · official');
-    await expectText(kpi, 'Source WF-14');
+    await expectText(kpi, 'Owned by WF-14');
     await expectText(kpi, `As of ${dayOf(measuredOn)}`);
     await expect(kpi.getByRole('row', { name: 'Green 1' })).toBeVisible();
 
@@ -144,9 +144,9 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
 
   await test.step("the Home: the department filter offers only the consumer's scope; refresh, switch and layout change nothing at source", async () => {
     await page.goto('/');
-    const filter = page.getByRole('combobox', { name: 'Department' });
+    const filter = page.getByRole('combobox', { name: 'Sector' });
     await expect(filter.getByRole('option')).toHaveText([
-      'All your departments',
+      'All your sectors',
       'E2E Journeys Department',
     ]);
     await filter.selectOption({ label: 'E2E Journeys Department' });
@@ -198,7 +198,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     expect([
       cell('Project ID'),
       cell('Project'),
-      cell('Department'),
+      cell('Sector'),
       cell('Lifecycle state'),
       cell('Open risks'),
       cell('KPIs green'),
@@ -213,7 +213,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     const [csvHeader = [], csvRow = []] = csvRows(
       (await exportThroughTheDialog(page, 'CSV')).bytes,
     );
-    expect(csvRow[csvHeader.indexOf('Department')]).toBe(owningDepartment);
+    expect(csvRow[csvHeader.indexOf('Sector')]).toBe(owningDepartment);
     expect(csvRow[csvHeader.indexOf('Open risks')]).toBe('1');
     await page.getByRole('button', { name: 'Save view' }).click();
     const save = page.getByRole('dialog', { name: 'Save report view' });
@@ -229,7 +229,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     const shown = compose
       .getByRole('group', { name: 'Shown columns, in order' })
       .getByRole('checkbox');
-    for (const [index, field] of ['Project ID', 'Project', 'Department', 'Open risks'].entries()) {
+    for (const [index, field] of ['Project ID', 'Project', 'Sector', 'Open risks'].entries()) {
       // Ticking a field moves it to the shown columns.
       await compose
         .getByRole('group', { name: 'Fields you can add' })
@@ -282,10 +282,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     );
     const ours = await departmentId(portfolio.api, DATA_SET.department);
     await outsider.page.goto(`/?department=${ours}`);
-    await expectText(
-      outsider.page.getByRole('main'),
-      'That department is not one you may filter by.',
-    );
+    await expectText(outsider.page.getByRole('main'), 'That sector is not one you may filter by.');
     const filtered = await outsider.api.send('GET', `/dashboards/PORTFOLIO?departmentId=${ours}`);
     expect([filtered.status, filtered.code]).toEqual([422, 'DASHBOARD_FILTER_VALUE_UNAUTHORIZED']);
     const dashboard = await outsider.api.send('GET', `/dashboards/PROJECT?projectId=${project.id}`);

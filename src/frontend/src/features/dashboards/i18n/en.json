@@ -14,7 +14,7 @@
   "landing": {
     "R01": "Administration Dashboard",
     "R02": "Portfolio Dashboard",
-    "R03": "Department Dashboard",
+    "R03": "Sector Dashboard",
     "R04": "My Work / Project Manager Dashboard",
     "R05": "My Actions Dashboard",
     "R06": "Read-Only Dashboard",
@@ -39,8 +39,8 @@
     "refresh": "Refresh"
   },
   "filter": {
-    "department": "Department",
-    "allDepartments": "All your departments"
+    "department": "Sector",
+    "allDepartments": "All your sectors"
   },
   "semanticState": {
     "CURRENT_LIVE": "Current · live",
@@ -56,7 +56,7 @@
     "at": "As of {date}",
     "none": "No as-of date: there is no value to date"
   },
-  "source": "Source {source} · projection version {version}",
+  "source": "Owned by {source} · version {version}",
   "coverage": {
     "counted": "{included} of {eligible} projects counted",
     "leftOut": "left out: {reasons}",
@@ -154,7 +154,7 @@
   },
   "problems": {
     "notFound": "This dashboard is not available to you.",
-    "filterValueUnauthorized": "That department is not one you may filter by. Show all your departments instead.",
+    "filterValueUnauthorized": "That sector is not one you may filter by. Show all your sectors instead.",
     "contextInvalid": "This dashboard cannot be opened here.",
     "personalizationInvalid": "Only the optional widgets of this dashboard can be customised.",
     "permissionDenied": "Your role cannot customise this dashboard."

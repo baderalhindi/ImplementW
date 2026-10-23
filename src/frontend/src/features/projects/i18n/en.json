@@ -43,7 +43,7 @@
     "classification": "Classification",
     "governanceProfile": "Governance profile",
     "participation": "Participation",
-    "department": "Owning department",
+    "department": "Owning sector",
     "externalEntity": "External entity",
     "projectManager": "Project Manager",
     "registrationBudget": "Registration budget (SAR)",
@@ -73,7 +73,7 @@
     "title": "Project register",
     "description": "Every project your role can see, at any stage.",
     "emptyForRole": "Your role does not give you access to any project yet.",
-    "emptyForRoleDescription": "You see the projects your role assignments reach: those of your department, your entity or the projects you are assigned to. When a project in that scope is registered, it appears here. If you expected to see projects, ask your administrator to check your role assignments."
+    "emptyForRoleDescription": "You see the projects your role assignments reach: those of your sector, your entity or the projects you are assigned to. When a project in that scope is registered, it appears here. If you expected to see projects, ask your administrator to check your role assignments."
   },
   "mine": {
     "title": "My projects",
@@ -106,7 +106,7 @@
     "nonePublished": "No classification is published yet. An administrator must publish one before a project can be registered.",
     "governanceProfileHint": "The profile sets which fields the project must have before it is submitted. AHDA confirms or changes it at review.",
     "participationHint": "Who delivers the project. An entity-managed project names its entity.",
-    "departmentHint": "The AHDA department that owns the project.",
+    "departmentHint": "The AHDA sector that owns the project.",
     "ownEntity": "Your entity",
     "budgetHint": "An amount such as 1500000 or 1500000.50.",
     "latitudeHint": "Decimal degrees, from -90 to 90.",
@@ -114,7 +114,7 @@
     "unreadable": {
       "title": "Your account cannot read some of the lists this form needs, so the project cannot be created here. Ask your administrator.",
       "catalogues": "Classifications, governance profiles, regions and cities.",
-      "organization": "Departments and external entities."
+      "organization": "Sectors and external entities."
     }
   },
   "workspace": {
@@ -224,7 +224,7 @@
     "activated": "The project is now active."
   },
   "problems": {
-    "referenceInvalid": "One of the chosen values is no longer available: a classification, profile, region or city that is not published, an inactive department or entity, or a city outside the chosen region. Choose again.",
+    "referenceInvalid": "One of the chosen values is no longer available: a classification, profile, region or city that is not published, an inactive sector or entity, or a city outside the chosen region. Choose again.",
     "participationInvalid": "An entity-managed project must name its external entity.",
     "incomplete": "The registration budget and both planned dates are needed before the project can be submitted.",
     "managerInvalid": "This person cannot be the Project Manager: they must hold the Project Manager role over this project now.",

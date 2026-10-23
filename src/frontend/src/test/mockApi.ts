@@ -30,8 +30,26 @@ interface Route {
 
 export interface MockApi {
   on: (method: string, pattern: RegExp, handler: Handler | MockReply) => MockApi;
+  /** Every request but the shell's approval count (see SHELL_INBOX_COUNT). */
   requests: RecordedRequest[];
   requestsTo: (method: string, pattern: RegExp) => RecordedRequest[];
+  /** The shell's approval-count reads. */
+  shellInboxCountReads: RecordedRequest[];
+}
+
+/**
+ * The shell's Requests and Approvals count reads the inbox's total with `GET /approval-tasks?pageSize=1` on every
+ * screen. It is routed by this pattern, not by a screen's `/^\/approval-tasks$/` handler, so a test's inbox reads stay
+ * its own; with no handler for it the count is 0. It is kept out of `requests` for the same reason.
+ */
+export const SHELL_INBOX_COUNT = /^\/approval-tasks\?pageSize=1$/;
+
+function isShellInboxCount(method: string, url: URL): boolean {
+  return (
+    method === 'GET' &&
+    url.pathname === '/api/v1/approval-tasks' &&
+    url.searchParams.get('pageSize') === '1'
+  );
 }
 
 export function problem(
@@ -68,6 +86,7 @@ const UPLOAD_TOTAL_BYTES = 1000;
 export function mockApi(): MockApi {
   const routes: Route[] = [];
   const requests: RecordedRequest[] = [];
+  const shellInboxCountReads: RecordedRequest[] = [];
 
   const answer = async (
     method: string,
@@ -83,14 +102,16 @@ export function mockApi(): MockApi {
       headers,
       body,
     };
-    requests.push(recorded);
+    const shellCount = isShellInboxCount(method, url);
+    (shellCount ? shellInboxCountReads : requests).push(recorded);
+    const routed = shellCount ? '/approval-tasks?pageSize=1' : recorded.path;
     const route = [...routes]
       .reverse()
-      .find((candidate) => candidate.method === method && candidate.pattern.test(recorded.path));
-    if (route === undefined) {
+      .find((candidate) => candidate.method === method && candidate.pattern.test(routed));
+    if (route === undefined && !shellCount) {
       throw new Error(`No mock for ${method} ${recorded.path}`);
     }
-    const reply = await route.handler(recorded);
+    const reply = route === undefined ? { body: page([], 1) } : await route.handler(recorded);
     const status = reply.status ?? 200;
     if (reply.body instanceof Blob) {
       // The bytes, not the Blob: Node's Response does not recognise jsdom's Blob.
@@ -188,6 +209,7 @@ export function mockApi(): MockApi {
       return api;
     },
     requests,
+    shellInboxCountReads,
     requestsTo: (method, pattern) =>
       requests.filter((request) => request.method === method && pattern.test(request.path)),
   };

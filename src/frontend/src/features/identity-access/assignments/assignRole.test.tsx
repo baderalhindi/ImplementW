@@ -57,7 +57,7 @@ describe('MOD-081 and MOD-082 assign role', () => {
       within(dialog).getByRole('heading', { name: en('identityAccess.assignScope.title') }),
     ).toBeTruthy();
     await user.selectOptions(
-      within(dialog).getByRole('combobox', { name: /Department/ }),
+      within(dialog).getByRole('combobox', { name: /Sector/ }),
       DEPARTMENT_ID,
     );
     await user.click(
@@ -111,7 +111,7 @@ describe('MOD-081 and MOD-082 assign role', () => {
     await within(dialog).findByRole('combobox', { name: /Profile version/ });
     await user.click(within(dialog).getByRole('button', { name: en('common.actions.next') }));
 
-    expect(within(dialog).queryByRole('combobox', { name: /Department/ })).toBeNull();
+    expect(within(dialog).queryByRole('combobox', { name: /Sector/ })).toBeNull();
     expect(within(dialog).getByText('Contractor A')).toBeTruthy();
     await user.type(within(dialog).getByRole('textbox', { name: /Project ID/ }), PROJECT_ID);
     await user.click(

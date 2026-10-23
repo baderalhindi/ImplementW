@@ -7,6 +7,7 @@ import { translate } from '@/shared/i18n/i18n.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { findMainMenu, openMenuNames } from '@/test/shell.ts';
 import {
   ALLOWLIST,
   COLLEAGUE_ID,
@@ -305,7 +306,7 @@ describe("acceptance criterion 3: another user's views are seen only when shared
     expect(within(present(own, 'own')).getByText(en('common.people.you'))).toBeTruthy();
     expect(
       within(present(own, 'own')).getByText(
-        en('reports.savedViews.sharedWith', { roles: 'Department Managers' }),
+        en('reports.savedViews.sharedWith', { roles: 'Sector Managers' }),
       ),
     ).toBeTruthy();
     expect(
@@ -382,7 +383,7 @@ describe("acceptance criterion 3: another user's views are seen only when shared
     await userEvent.click(within(own).getByRole('button', { name: /^Change sharing/ }));
     const dialog = await screen.findByRole('dialog');
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Executives' }));
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Department Managers' }));
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Sector Managers' }));
     await userEvent.click(
       within(dialog).getByRole('button', { name: en('reports.saveView.save') }),
     );
@@ -612,12 +613,11 @@ describe('MOD-060 Export Report', () => {
 describe('navigation, accessibility and language', () => {
   test('the builder and saved views are offered to ADR-019’s composers, the export history to everyone', async () => {
     at('/reports', sessionFor(['R06']));
-    const nav = await screen.findByRole('navigation', { name: en('reports.nav.label') });
-    expect(
-      within(nav)
-        .getAllByRole('link')
-        .map((link) => link.textContent),
-    ).toEqual([en('reports.nav.center'), en('reports.nav.exports')]);
+    await findMainMenu();
+    expect(openMenuNames('common.menu.dashboardsReports')).toEqual([
+      en('reports.nav.center'),
+      en('reports.nav.exports'),
+    ]);
   });
 
   test.each([

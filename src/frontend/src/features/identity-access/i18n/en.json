@@ -6,7 +6,7 @@
     "permissionMatrix": "Permission matrix",
     "roleAssignments": "Role assignments",
     "organization": "Organization structure",
-    "departments": "Departments",
+    "departments": "Sectors",
     "entities": "External entities"
   },
   "codeHint": "Capital letters, digits, hyphens and underscores, for example FIN-OPS. The code cannot be changed later.",
@@ -44,7 +44,7 @@
   },
   "dataScope": {
     "ALL": "All",
-    "DEPT": "Department",
+    "DEPT": "Sector",
     "OWN": "Own",
     "ASSIGNED": "Assigned",
     "ENTITY": "Entity",
@@ -61,15 +61,15 @@
   "problems": {
     "duplicateKey": "A value you entered is already used by another record. See the highlighted field.",
     "alreadyAssigned": "The user already holds this assignment.",
-    "referenceInvalid": "A selected user, sponsor, department, entity, project or profile version does not exist or cannot be used. See the highlighted field.",
+    "referenceInvalid": "A selected user, sponsor, sector, entity, project or profile version does not exist or cannot be used. See the highlighted field.",
     "externalGrantInvalid": "This assignment does not meet the rules for external users. See the highlighted fields.",
     "profileVersionNotPublished": "Only a published profile version can be assigned.",
     "projectClosed": "The project is closed and cannot take new assignments.",
     "selfAdministration": "You cannot change your own status or assignments. Ask another system administrator.",
     "servicePrincipal": "Service accounts are not managed here.",
-    "directoryAuthoritative": "An internal user's department, manager and job title come from the directory and cannot be changed here.",
+    "directoryAuthoritative": "An internal user's sector, manager and job title come from the directory and cannot be changed here.",
     "invalidPeriod": "An assignment cannot start in the past, and must end after it starts.",
-    "departmentCycle": "A department cannot be placed under itself or one of its sub-departments."
+    "departmentCycle": "A sector cannot be placed under itself or one of its sub-sectors."
   },
   "userPicker": {
     "searchLabel": "Search by name, username or email",
@@ -85,9 +85,9 @@
       "mobileNumber": "Mobile number",
       "userType": "User type",
       "status": "Status",
-      "department": "Department",
+      "department": "Sector",
       "externalEntity": "External entity",
-      "organization": "Department or entity",
+      "organization": "Sector or entity",
       "jobTitle": "Job title",
       "directorySubjectId": "Directory identifier",
       "preferredLanguage": "Preferred language",
@@ -120,7 +120,7 @@
       "externalEntityHint": "The entity the person works for. It cannot be changed after the user is created.",
       "mobileNumberHint": "International format, for example +966501234567. The user confirms the number themselves with a code.",
       "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognise them.",
-      "directoryAttributesNote": "The department, manager and job title of an internal user are read from the AHDA directory each time they sign in."
+      "directoryAttributesNote": "The sector, manager and job title of an internal user are read from the AHDA directory each time they sign in."
     },
     "detail": {
       "description": "Profile, status and role assignments.",
@@ -165,8 +165,8 @@
     "endsAtHint": "Leave empty for no end date."
   },
   "assignScope": {
-    "title": "Assign department/entity",
-    "internalNote": "Optionally limit the assignment to a department, an external entity or a project.",
+    "title": "Assign sector/entity",
+    "internalNote": "Optionally limit the assignment to a sector, an external entity or a project.",
     "externalNote": "An external user is assigned within their own entity, normally for one project, with a named AHDA sponsor.",
     "noAnchor": "Not limited",
     "projectId": "Project ID",
@@ -234,33 +234,33 @@
   },
   "organization": {
     "title": "Organization structure",
-    "description": "AHDA's departments and the external entities that take part in projects.",
+    "description": "AHDA's sectors and the external entities that take part in projects.",
     "manage": "Manage"
   },
   "departments": {
-    "title": "Departments",
-    "description": "AHDA's departments. A department linked to a directory reference is assigned to staff automatically at sign-in.",
-    "create": "Create department",
-    "createTitle": "Create department",
-    "editTitle": "Edit department",
+    "title": "Sectors",
+    "description": "AHDA's sectors. A sector linked to a directory reference is assigned to staff automatically at sign-in.",
+    "create": "Create sector",
+    "createTitle": "Create sector",
+    "editTitle": "Edit sector",
     "search": "Search by code or name",
     "code": "Code",
     "name": "Name",
     "nameAr": "Name in Arabic",
     "nameEn": "Name in English",
-    "parent": "Parent department",
+    "parent": "Parent sector",
     "noParent": "None (top level)",
     "directoryReference": "Directory reference",
-    "directoryReferenceHint": "The department's value in the AHDA directory, if staff should be placed in it automatically.",
+    "directoryReferenceHint": "The sector's value in the AHDA directory, if staff should be placed in it automatically.",
     "status": "Status",
     "active": "Active",
     "inactive": "Inactive",
-    "empty": "No departments have been created yet.",
-    "emptyFiltered": "No departments match these filters.",
+    "empty": "No sectors have been created yet.",
+    "emptyFiltered": "No sectors match these filters.",
     "activate": "Activate",
     "deactivate": "Deactivate",
-    "activateTitle": "Activate department",
-    "deactivateTitle": "Deactivate department",
+    "activateTitle": "Activate sector",
+    "deactivateTitle": "Deactivate sector",
     "activateBody": "{name} will be available again for new assignments.",
     "deactivateBody": "{name} will no longer be offered for new assignments. Existing records keep it."
   },
@@ -301,7 +301,7 @@
     }
   },
   "signIn": {
-    "title": "Sign in",
+    "title": "Sign in to the platform",
     "username": "Username",
     "password": "Password",
     "submit": "Sign in",
@@ -311,7 +311,32 @@
     "provisioningUri": "Authenticator key",
     "code": "Verification code",
     "verify": "Verify",
-    "verifying": "Verifying…"
+    "verifying": "Verifying…",
+    "chooseMethod": "Choose how to sign in",
+    "tabs": {
+      "microsoft": "Microsoft account",
+      "directory": "Regular account"
+    },
+    "microsoft": {
+      "submit": "Sign in with Microsoft",
+      "hint": "Single sign-on with your Microsoft account"
+    },
+    "directoryTitle": "Sign in with a regular account",
+    "showPassword": "Show password",
+    "or": "or",
+    "comingSoon": "Coming soon",
+    "nafath": {
+      "name": "Nafath",
+      "instructions": "Users inside the Kingdom of Saudi Arabia sign in through the National Single Sign-On (Nafath)",
+      "submit": "Sign in with Nafath"
+    },
+    "biometric": {
+      "instructions": "If you cannot use the Nafath app, you can sign in with biometric verification",
+      "nationalId": "National ID / Iqama number",
+      "nationalIdPlaceholder": "Enter your national ID or Iqama number",
+      "submit": "Sign in with biometrics"
+    },
+    "copyright": "© {year} Al Ahsa Development Authority. All rights reserved."
   },
   "stepUp": {
     "title": "Confirm it is you",

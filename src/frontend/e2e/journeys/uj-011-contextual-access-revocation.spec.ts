@@ -102,11 +102,11 @@ test('UJ-011 a revoked context denies the operation, direct link, download and e
     const dialog = admin.getByRole('dialog', { name: 'Assign role' });
     await dialog
       .getByLabel('Role and permission profile')
-      .selectOption({ label: 'R03 — E2E test authority — Department Manager' });
+      .selectOption({ label: 'R03 — E2E test authority — Sector Manager' });
     await dialog.getByLabel('Profile version').selectOption(profileVersion);
     await dialog.getByRole('button', { name: 'Next' }).click();
     await dialog
-      .getByLabel('Department', { exact: true })
+      .getByLabel('Sector', { exact: true })
       .selectOption({ label: 'E2E Journeys Department' });
     await dialog.getByLabel('Project ID').fill(project.id);
     await dialog.getByRole('button', { name: 'Assign role' }).click();

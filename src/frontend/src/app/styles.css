@@ -24,7 +24,14 @@
   --color-warning: #7a4100;
   --color-warning-surface: #fdf0dc;
   --color-focus: #1f5fbf;
+  /* The content area's ground: cards (filters, tables, form sections, widgets) sit on it in --color-background. */
+  --color-canvas: #f5f7f9;
+  --color-primary-tint: #e3eeeb;
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 8%);
   --radius: 6px;
+  --radius-card: 10px;
+  /* One line of header: its block padding plus a 2.75rem control. The sidebar sticks below it. */
+  --header-block-size: 4.25rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -47,6 +54,8 @@ html {
   line-height: 1.6;
   color: var(--color-text);
   background: var(--color-background);
+  /* Keeps a focused or scrolled-to element clear of the sticky header (WCAG 2.4.11). */
+  scroll-padding-block-start: 5rem;
 }
 
 body {
@@ -118,7 +127,7 @@ h3 {
   background: var(--color-primary);
   color: var(--color-on-primary);
   border-radius: var(--radius);
-  z-index: 10;
+  z-index: 30;
 }
 
 .skip-link:focus {
@@ -126,7 +135,14 @@ h3 {
   color: var(--color-on-primary);
 }
 
+/*
+ * Signed out (the sign-in page): the header stays in view while the page scrolls and, once it has scrolled, floats
+ * as a translucent pill. The floating state changes no block size, so toggling it never moves the scroll position.
+ */
 .shell__header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -134,96 +150,563 @@ h3 {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-background);
+  color: var(--color-text);
+  transition-property:
+    inset-block-start, margin-inline, padding-inline, border-radius, background-color, box-shadow;
+  transition-duration: 0.4s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shell__header--floating {
+  inset-block-start: var(--space-3);
+  margin-inline: max(var(--space-4), calc((100% - 56rem) / 2));
+  padding-inline: var(--space-6);
+  border-block-end: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-background) 85%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__header {
+    transition: none;
+  }
 }
 
 .shell__brand {
-  font-weight: 700;
-  font-size: 1.15rem;
-  text-decoration: none;
-  color: var(--color-text);
-}
-
-.shell__session {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
 }
 
-.shell__user {
-  color: var(--color-text-muted);
+.shell__logo {
+  display: block;
+  block-size: 2.75rem;
+  inline-size: auto;
 }
 
-.shell__body {
-  display: flex;
-  flex-direction: column;
+.shell__header .button--quiet {
+  background: transparent;
+  font-weight: 400;
 }
 
-.shell__sidebar {
-  border-block-end: 1px solid var(--color-border-subtle);
+.shell__header .button--quiet:hover {
   background: var(--color-surface);
 }
 
-/* Approvals for everyone signed in, then administration for R01: one list per landmark. */
-.shell__nav + .shell__nav {
-  border-block-start: 1px solid var(--color-border-subtle);
-}
-
-.shell__nav ul {
+/* Signed out (the sign-in page): one ground colour from the top of the window to its bottom, however short the page. */
+.shell {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  margin: 0;
-  padding: var(--space-2) var(--space-4);
-  list-style: none;
-}
-
-.shell__nav a {
-  display: block;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius);
-  color: var(--color-text);
-  text-decoration: none;
-}
-
-.shell__nav a:hover {
-  background: var(--color-neutral-surface);
-}
-
-.shell__nav a[aria-current='page'] {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  flex-direction: column;
+  min-block-size: 100vh;
+  min-block-size: 100dvh;
+  background: var(--color-canvas);
 }
 
 .shell__main {
   flex: 1;
-  min-inline-size: 0;
   padding: var(--space-4);
+  background: var(--color-canvas);
 }
 
-.shell__main:focus {
+.shell__main:focus,
+.app__main:focus {
   outline: none;
 }
 
-@media (min-width: 60rem) {
-  .shell__body {
-    flex-direction: row;
-    min-block-size: calc(100vh - 4rem);
+.shell-icon {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+/* An icon that points along the reading direction (collapse, expand) turns round in Arabic. */
+[dir='rtl'] .shell-icon--mirrored {
+  transform: scaleX(-1);
+}
+
+/* A button's drop-down (Language, Create, the account): a small list under the button, at its end edge. */
+.popover {
+  position: relative;
+}
+
+.language-switch__button {
+  inline-size: 2.75rem;
+  padding: 0;
+}
+
+.language-switch__icon {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.popover__menu {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: 20;
+  min-inline-size: 12rem;
+  margin: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: 0 8px 24px rgb(16 24 40 / 16%);
+  list-style: none;
+}
+
+.popover__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.popover__option:hover {
+  background: var(--color-neutral-surface);
+  color: var(--color-text);
+}
+
+.popover__option[aria-pressed='true'] {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.popover__check {
+  inline-size: 1rem;
+}
+
+.popover__name {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-block-end: 1px solid var(--color-border-subtle);
+  font-weight: 600;
+}
+
+/*
+ * Signed in: the master navigation (Blueprint §20.1). The rail is the authority's dark teal; the open menu has a
+ * lighter ground and a sand bar on its leading edge, so the position survives grayscale and forced-colors mode. Rail
+ * text is at least 6:1 on its ground; the counts are dark on sand.
+ */
+.app {
+  --color-rail: #1c4245;
+  --color-rail-hover: #24504f;
+  --color-rail-open: #2e5c5d;
+  --color-rail-text: #eef4f3;
+  --color-rail-muted: #b3c6c4;
+  --color-sand: #cdb98a;
+  --color-on-sand: #1f2a2a;
+  --rail-inline-size: 15rem;
+  --topbar-block-size: 3.5rem;
+  display: flex;
+  min-block-size: 100vh;
+  background: var(--color-canvas);
+}
+
+.app--collapsed {
+  --rail-inline-size: 4.5rem;
+}
+
+.rail {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 15;
+  display: flex;
+  flex: 0 0 var(--rail-inline-size);
+  flex-direction: column;
+  inline-size: var(--rail-inline-size);
+  block-size: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-rail);
+  color: var(--color-rail-text);
+}
+
+.rail__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 5.5rem;
+  padding: var(--space-4);
+}
+
+/* The gold logo drawn white on the teal. Collapsed, the emblem cut from it shows instead, with none of the wordmark. */
+.rail__logo,
+.rail__emblem {
+  display: block;
+  block-size: auto;
+  filter: brightness(0) invert(1);
+}
+
+.rail__logo {
+  inline-size: 100%;
+  max-inline-size: 10.5rem;
+}
+
+.rail__emblem {
+  display: none;
+  inline-size: 2.75rem;
+}
+
+.rail--collapsed .rail__logo {
+  display: none;
+}
+
+.rail--collapsed .rail__emblem {
+  display: block;
+}
+
+.rail__nav {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+}
+
+.rail__nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rail__nav > ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rail__menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-rail-text);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.rail__menu:hover {
+  background: var(--color-rail-hover);
+  color: var(--color-rail-text);
+}
+
+.rail__menu--open {
+  background: var(--color-rail-open);
+  box-shadow: inset 3px 0 0 var(--color-sand);
+  font-weight: 600;
+}
+
+[dir='rtl'] .rail__menu--open {
+  box-shadow: inset -3px 0 0 var(--color-sand);
+}
+
+.rail :focus-visible {
+  outline-color: var(--color-sand);
+}
+
+.rail__label {
+  flex: 1;
+}
+
+.rail__count {
+  min-inline-size: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--color-sand);
+  color: var(--color-on-sand);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.5rem;
+  text-align: center;
+}
+
+.rail__nav .rail__items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-block: var(--space-1) var(--space-2);
+  padding-inline-start: 2.75rem;
+}
+
+.rail__item {
+  display: block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius);
+  color: var(--color-rail-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+.rail__item:hover {
+  background: var(--color-rail-hover);
+  color: var(--color-rail-text);
+}
+
+.rail__item[aria-current='page'] {
+  color: var(--color-rail-text);
+  font-weight: 600;
+}
+
+.rail__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-block-start: 1px solid rgb(255 255 255 / 12%);
+}
+
+.rail__note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-rail-muted);
+  font-size: 0.8rem;
+}
+
+.rail__toggle {
+  color: var(--color-rail-muted);
+  font-size: 0.875rem;
+}
+
+/* Collapsed: icons only, each name kept for screen readers and as the tooltip; a count sits on its icon's corner. */
+.rail--collapsed .rail__nav,
+.rail--collapsed .rail__footer {
+  padding-inline: var(--space-2);
+}
+
+.rail--collapsed .rail__menu {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.rail--collapsed .rail__label {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.rail--collapsed .rail__count {
+  position: absolute;
+  inset-block-start: 0.15rem;
+  inset-inline-end: 0.35rem;
+  min-inline-size: 1.1rem;
+  padding: 0 0.25rem;
+  font-size: 0.65rem;
+  line-height: 1.1rem;
+}
+
+.rail__backdrop {
+  display: none;
+}
+
+.app__column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--topbar-block-size);
+  padding: var(--space-2) var(--space-6);
+  border-block-end: 1px solid var(--color-border-subtle);
+  background: var(--color-background);
+}
+
+.topbar .topbar__drawer {
+  display: none;
+  inline-size: 2.75rem;
+  padding: 0;
+  background: transparent;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+.topbar .topbar__control {
+  gap: var(--space-2);
+  background: transparent;
+  font-weight: 400;
+}
+
+.topbar .topbar__control:hover {
+  background: var(--color-surface);
+}
+
+.topbar__chevron {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.topbar .topbar__create {
+  gap: var(--space-2);
+  background: var(--color-rail);
+  border-color: var(--color-rail);
+}
+
+.topbar .topbar__create:hover {
+  background: var(--color-rail-hover);
+  border-color: var(--color-rail-hover);
+}
+
+.topbar__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.topbar__avatar:hover {
+  background: var(--color-neutral-surface);
+}
+
+.breadcrumb {
+  min-inline-size: 0;
+}
+
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.breadcrumb li + li::before {
+  content: '/';
+  margin-inline-end: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.breadcrumb a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.breadcrumb [aria-current='page'] {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.app__main {
+  flex: 1;
+  min-inline-size: 0;
+  padding: var(--space-6) var(--space-8) var(--space-8);
+}
+
+.app__main > * {
+  max-inline-size: 90rem;
+}
+
+/* A narrow window: the rail becomes a drawer over the page, opened from the top bar; the Create and Language labels go. */
+@media (max-width: 59.99rem) {
+  .rail {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: 25;
+    inline-size: 16rem;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    visibility: hidden;
   }
 
-  .shell__sidebar {
-    flex: 0 0 15rem;
-    border-block-end: 0;
-    border-inline-end: 1px solid var(--color-border-subtle);
+  [dir='rtl'] .rail {
+    transform: translateX(100%);
   }
 
-  .shell__nav ul {
-    flex-direction: column;
-    padding: var(--space-4) var(--space-3);
+  .rail.rail--drawer-open {
+    transform: none;
+    visibility: visible;
   }
 
-  .shell__main {
-    padding: var(--space-6) var(--space-8);
+  .rail__toggle {
+    display: none;
+  }
+
+  .rail__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: block;
+    border: 0;
+    background: rgb(0 0 0 / 40%);
+  }
+
+  .topbar {
+    padding-inline: var(--space-3);
+  }
+
+  .topbar .topbar__drawer {
+    display: inline-flex;
+  }
+
+  .breadcrumb {
+    display: none;
+  }
+
+  .app__main {
+    padding: var(--space-4);
+  }
+}
+
+@media (max-width: 59.99rem) and (prefers-reduced-motion: reduce) {
+  .rail {
+    transition: none;
   }
 }
 
@@ -235,11 +718,18 @@ h3 {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-block-end: var(--space-4);
+  margin-block-end: var(--space-6);
 }
 
 .page-header__title {
   margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[lang='ar'] .page-header__title {
+  letter-spacing: normal;
 }
 
 .page-header__description {
@@ -358,9 +848,10 @@ h3 {
 /* ---------------------------------------------------------------------------------------------- states */
 
 .state {
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-8) var(--space-4);
   border: 1px dashed var(--color-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
   text-align: center;
   color: var(--color-text-muted);
 }
@@ -440,12 +931,17 @@ h3 {
   min-block-size: 2.75rem;
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: 8px;
   background: var(--color-background);
   color: var(--color-text);
   font: inherit;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .button:hover {
@@ -555,6 +1051,24 @@ textarea.field__input {
   resize: vertical;
 }
 
+/*
+ * Safari draws a native select at its own fixed height, ignoring min-block-size and padding, so it came out shorter
+ * than the text inputs beside it. Without the native appearance it takes the same box; the chevron is drawn here, at
+ * the inline end.
+ */
+select.field__input {
+  appearance: none;
+  padding-inline-end: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234a5561' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 1rem;
+}
+
+[dir='rtl'] select.field__input {
+  background-position: left var(--space-3) center;
+}
+
 /* A value the form shows but does not take (a server-computed severity): a dashed edge on the neutral ground, and the
    field's hint says why. */
 .field__input--readonly {
@@ -599,13 +1113,15 @@ textarea.field__input {
 
 .filters {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
   align-items: end;
-  gap: var(--space-3);
-  margin-block-end: var(--space-4);
-  padding: var(--space-4);
-  border-radius: var(--radius);
-  background: var(--color-surface);
+  gap: var(--space-4);
+  margin-block-end: var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
 }
 
 .filters > .form-alert {
@@ -649,7 +1165,9 @@ textarea.field__input {
   position: relative;
   overflow-x: auto;
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
 }
 
 .table {
@@ -659,7 +1177,7 @@ textarea.field__input {
 
 .table th,
 .table td {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-block-end: 1px solid var(--color-border-subtle);
   text-align: start;
   vertical-align: top;
@@ -667,7 +1185,22 @@ textarea.field__input {
 
 .table thead th {
   background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.table-container .table tbody tr:last-child > * {
+  border-block-end: 0;
+}
+
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+  background: var(--color-canvas);
 }
 
 .cell--ltr {
@@ -872,33 +1405,6 @@ textarea.field__input {
 
 /* ---------------------------------------------------------------------------------------------- notifications */
 
-/* The header link to SCR-150 with the unread count (TASK-040). */
-.bell {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius);
-  color: var(--color-text);
-  text-decoration: none;
-}
-
-.bell:hover {
-  background: var(--color-neutral-surface);
-}
-
-/* The number on the badge, white on the primary colour (the pair the active navigation link uses). */
-.bell__count {
-  min-inline-size: 1.5rem;
-  padding: 0 var(--space-2);
-  border-radius: 999px;
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-size: 0.875rem;
-  font-weight: 700;
-  text-align: center;
-}
-
 /* An unread notification reads heavier as well as saying "Unread". */
 .row--unread .button--link {
   font-weight: 700;
@@ -972,10 +1478,263 @@ textarea.field__input {
 
 /* ---------------------------------------------------------------------------------------------- sign-in */
 
+/*
+ * The AHDA sign-in mockup: one card split into Nafath (start side) and the account card (end side), a rule between
+ * them. The account card comes first in the source, so on a narrow screen the working form is on top; Nafath moves to
+ * the start column only on a wide one, and every control in it is disabled, so the focus order is unaffected.
+ */
 .sign-in {
-  max-inline-size: 28rem;
-  margin-inline: auto;
-  padding-block-start: var(--space-8);
+  max-inline-size: 72rem;
+  margin: var(--space-6) auto 0;
+}
+
+/* No bold text on the sign-in page: headings, labels, buttons and badges are all regular weight. */
+.sign-in :is(h1, h2, .button, .badge, .field__label, .field__error) {
+  font-weight: 400;
+}
+
+.sign-in__card {
+  display: grid;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-6);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
+}
+
+@media (min-width: 56rem) {
+  .sign-in__card {
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .sign-in__nafath {
+    order: -1;
+    padding-inline-end: var(--space-8);
+    border-inline-end: 1px solid var(--color-border-subtle);
+  }
+
+  .sign-in__account {
+    padding-inline-start: var(--space-8);
+  }
+}
+
+.sign-in__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.sign-in__panel > * {
+  inline-size: 100%;
+  max-inline-size: 26rem;
+}
+
+.sign-in__icon {
+  flex: none;
+}
+
+.sign-in__wide {
+  inline-size: 100%;
+}
+
+.sign-in__soon {
+  inline-size: auto;
+  background: var(--color-neutral-surface);
+  color: var(--color-text-muted);
+}
+
+.sign-in__nafath-mark {
+  display: block;
+  width: 10rem;
+  height: auto;
+  margin: var(--space-6) auto 0;
+}
+
+.sign-in__note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: 0;
+  text-align: center;
+}
+
+/* "or", centred on a rule. */
+.sign-in__divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.sign-in__divider::before,
+.sign-in__divider::after {
+  content: '';
+  flex: 1;
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.sign-in__avatar {
+  display: flex;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.sign-in__avatar .sign-in__icon {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  padding: var(--space-2);
+  border: 2px solid currentcolor;
+  border-radius: 50%;
+}
+
+.sign-in__account .page-header {
+  justify-content: center;
+  margin: 0;
+  text-align: center;
+}
+
+.sign-in__account .page-header__title {
+  font-size: 1.35rem;
+}
+
+.sign-in__tabs {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.sign-in__tablist {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.sign-in__tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  border: 0;
+  border-block-end: 3px solid transparent;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.sign-in__tab[aria-selected='true'] {
+  border-block-end-color: var(--color-primary);
+}
+
+.sign-in__tabpanel {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.sign-in__provider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius);
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  text-align: center;
+}
+
+.sign-in__provider:disabled {
+  cursor: not-allowed;
+}
+
+.sign-in__microsoft-mark {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.sign-in__tabpanel > .sign-in__provider .sign-in__microsoft-mark {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+}
+
+.sign-in__provider-text {
+  display: grid;
+  flex: 1;
+  gap: var(--space-1);
+}
+
+.sign-in__provider-hint {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.sign-in__subtitle {
+  margin: 0;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.sign-in__form {
+  max-inline-size: none;
+}
+
+/*
+ * The mockup's input: the icon sits inside it, at the page's end. The input is left-to-right for a Latin username, so
+ * both sides keep the icon's room; empty, it follows the page so an Arabic placeholder starts on the right.
+ */
+.sign-in__input {
+  position: relative;
+}
+
+.sign-in__input .field__input {
+  padding-inline: 2.75rem;
+}
+
+[dir='rtl'] .sign-in__input .field__input:placeholder-shown {
+  direction: rtl;
+}
+
+.sign-in__input > .sign-in__icon,
+.sign-in__reveal {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: 2.75rem;
+  margin: auto;
+  color: var(--color-text-muted);
+}
+
+.sign-in__input > .sign-in__icon {
+  block-size: 1.25rem;
+  padding-inline: var(--space-3);
+  box-sizing: content-box;
+  inline-size: 1.25rem;
+}
+
+.sign-in__reveal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.sign-in__footer {
+  padding: var(--space-6) 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 /* ---------------------------------------------------------------------------------------------- projects (TASK-042) */
@@ -995,19 +1754,50 @@ textarea.field__input {
   color: var(--color-text-muted);
 }
 
-/* A form in titled groups: each fieldset is a column of fields under its legend. */
-.form__section {
-  display: grid;
-  gap: var(--space-4);
-  margin: 0;
-  padding: var(--space-4);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
+/*
+ * A form in titled groups: each fieldset is a card, its legend the card's heading. On a wide screen the fields sit in
+ * two aligned columns; a text area, an option group and anything that is not a single field take the whole row.
+ */
+.form:has(> .form__section) {
+  max-inline-size: 60rem;
+  gap: var(--space-6);
 }
 
+.form__section {
+  display: grid;
+  gap: var(--space-4) var(--space-6);
+  align-items: start;
+  margin: 0;
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
+}
+
+/* Floated, the legend is laid out as a grid item inside the card instead of on its border. */
 .form__section > legend {
-  padding-inline: var(--space-2);
+  float: inline-start;
+  grid-column: 1 / -1;
+  inline-size: 100%;
+  margin: 0;
+  padding: 0 0 var(--space-3);
+  border-block-end: 1px solid var(--color-border-subtle);
+  font-size: 1.05rem;
   font-weight: 600;
+}
+
+@media (min-width: 48rem) {
+  .form__section {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form__section > :not(.field),
+  .form__section > .field--group,
+  .form__section > .field:has(textarea),
+  .form__section > .field:has(+ :not(.field), + .field--group, + .field textarea) {
+    grid-column: 1 / -1;
+  }
 }
 
 .workspace__status {
@@ -2288,12 +3078,17 @@ textarea.field__input {
   }
 }
 
+/*
+ * A widget is a card in the AHDA Global Navigation design: its title as a small label with the semantic state and any
+ * Stale flag beside it, the value large with an icon in its tone, and a footer saying which source owns it and when it
+ * was current. The value's colour is only in its icon and bar; the words carry it (WCAG 1.4.1).
+ */
 .widget {
-  display: grid;
-  align-content: start;
-  gap: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   min-inline-size: 0;
-  padding: var(--space-4);
+  padding: var(--space-6);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius);
   background: var(--color-background);
@@ -2301,20 +3096,25 @@ textarea.field__input {
 
 /* A stale value is framed in the warning colour along its inline-start edge; the "Stale" flag says so in words. */
 .widget--stale {
-  border-inline-start: 6px solid var(--color-warning);
+  border-inline-start: 4px solid var(--color-warning);
 }
 
 .widget__header {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--space-2);
 }
 
 .widget__title {
+  flex: 1 1 auto;
   margin: 0;
-  font-size: 1.05rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  text-transform: uppercase;
 }
 
 .widget__status {
@@ -2322,21 +3122,53 @@ textarea.field__input {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
+  font-size: 0.8rem;
 }
 
-.widget__coverage,
+/* The semantic state as a light tag: solid for published, dashed for live, dotted for history. */
+.widget .badge {
+  padding: 0.05rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+
+.widget .badge--official {
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-neutral-surface);
+  color: var(--color-text);
+}
+
+.widget .badge--live {
+  border: 1px dashed var(--color-text-muted);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.widget .badge--historical {
+  border: 2px dotted var(--color-text-muted);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.widget__drill {
+  font-size: 0.85rem;
+}
+
 .widget__explanation {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--color-text-muted);
 }
 
 .widget__unknown {
   display: grid;
   gap: var(--space-1);
-  padding-block: var(--space-2);
+}
+
+.widget__unknown [data-value-state] {
+  font-size: 1.1rem;
+  font-weight: 400;
 }
 
 .widget__body {
@@ -2351,29 +3183,104 @@ textarea.field__input {
   align-items: center;
   gap: var(--space-2);
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.625rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.widget__icon {
+  flex: none;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+
+.widget__icon--positive {
+  color: var(--color-positive);
+}
+
+.widget__icon--warning {
+  color: var(--color-warning);
+}
+
+.widget__icon--negative {
+  color: var(--color-danger);
+}
+
+.widget__icon--info {
+  color: var(--color-info);
+}
+
+.widget__icon--neutral {
+  color: var(--color-text-muted);
 }
 
 .widget__figures {
   display: grid;
-  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3) var(--space-6);
   margin: 0;
 }
 
 .widget__figure {
   display: grid;
+  align-content: start;
   gap: var(--space-1);
 }
 
 .widget__figure dt {
   color: var(--color-text-muted);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .widget__figure dd {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-2);
   margin: 0;
+}
+
+.widget__figure .figure {
+  font-size: 1.125rem;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+/* A figure is left-to-right so its digits never reorder; sized to its content, it sits under its label at the inline
+   start in either direction instead of stretching across the cell and aligning to its own left edge. */
+.widget__figure dd > .figure,
+.widget__distribution .widget__count {
+  justify-self: start;
+}
+
+/* A progress card leads with its first percentage, large, as the design's "Physical progress 47.2 %". */
+.widget__figures--progress {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.widget__figures--progress .widget__figure:first-child .figure {
+  font-size: 2.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.widget__figures--progress .widget__figure:first-child .widget__bar-track {
+  block-size: 0.5rem;
+}
+
+.widget__footer {
+  display: grid;
+  gap: var(--space-1);
+  margin-block-start: auto;
+  padding-block-start: var(--space-2);
+}
+
+.widget__coverage,
+.widget__origin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
 }
 
 .widget__distribution {
@@ -2383,28 +3290,48 @@ textarea.field__input {
 
 .widget__distribution th,
 .widget__distribution td {
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-1);
   border-block-end: 1px solid var(--color-border-subtle);
   text-align: start;
 }
 
+.widget__distribution tbody tr:last-child th,
+.widget__distribution tbody tr:last-child td {
+  border-block-end: 0;
+}
+
 .widget__distribution thead th {
+  padding-block-start: 0;
   color: var(--color-text-muted);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .widget__distribution td {
   display: grid;
-  grid-template-columns: 3ch minmax(0, 1fr);
+  grid-template-columns: 4ch minmax(0, 1fr);
   align-items: center;
   gap: var(--space-2);
+}
+
+.widget__count {
+  font-weight: 400;
+}
+
+/* Only a card's title, its table's column headings and its one leading value are bold; everything else reads at body
+   weight. */
+.widget__distribution tbody th,
+.widget .value-state,
+.widget td .figure {
+  font-weight: 400;
 }
 
 /* A bar only repeats the number beside it. */
 .widget__bar-track {
   display: block;
-  block-size: 0.5rem;
+  block-size: 0.375rem;
   border-radius: 999px;
   background: var(--color-neutral-surface);
 }

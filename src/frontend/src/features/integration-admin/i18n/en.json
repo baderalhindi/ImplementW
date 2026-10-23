@@ -166,7 +166,7 @@
     "usernameAttribute": "Username attribute",
     "subjectAttribute": "Subject attribute",
     "jobTitleAttribute": "Job title attribute",
-    "departmentAttribute": "Department attribute",
+    "departmentAttribute": "Sector attribute",
     "managerAttribute": "Manager attribute",
     "authority": "Authority",
     "clientId": "Client ID",
@@ -310,7 +310,7 @@
   },
   "reconcile": {
     "title": "Run a reconciliation?",
-    "body": "The directory is compared with the platform's copy of each person's job title, department and manager. Differences are raised as an alert; nothing is changed."
+    "body": "The directory is compared with the platform's copy of each person's job title, sector and manager. Differences are raised as an alert; nothing is changed."
   },
   "activation": {
     "enableTitle": "Enable monitoring of {name}?",

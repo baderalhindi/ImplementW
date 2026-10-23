@@ -16,8 +16,8 @@
       "description": "The projects in your portfolio scope, with the safeguards that keep unlike figures apart."
     },
     "DEPARTMENT": {
-      "label": "Department Reports",
-      "description": "Reports over the projects of the departments you may see."
+      "label": "Sector Reports",
+      "description": "Reports over the projects of the sectors you may see."
     },
     "PROJECT": {
       "label": "Project Reports",
@@ -195,7 +195,7 @@
     "noFilters": "No filter.",
     "closed": "The custom report builder is not available yet",
     "closedDescription": "No report rules are published, so no field may be explored. It opens once AHDA publishes them.",
-    "notForRole": "The custom report builder is for Portfolio Managers, Department Managers and Executives."
+    "notForRole": "The custom report builder is for Portfolio Managers, Sector Managers and Executives."
   },
   "saveView": {
     "title": "Save report view",
@@ -230,7 +230,7 @@
   "savedViews": {
     "title": "Saved views",
     "description": "Your saved views and those shared with your roles. A view holds choices, not data: it runs with the opener's access.",
-    "notForRole": "Saved views are for Portfolio Managers, Department Managers and Executives.",
+    "notForRole": "Saved views are for Portfolio Managers, Sector Managers and Executives.",
     "empty": "No saved view yet.",
     "name": "Name",
     "runs": "Report",
@@ -258,7 +258,7 @@
   },
   "roles": {
     "R02": "Portfolio Managers",
-    "R03": "Department Managers",
+    "R03": "Sector Managers",
     "R07": "Executives"
   },
   "history": {
@@ -293,7 +293,7 @@
     "sortNotSupported": "That sort is not allowed.",
     "parameterInvalid": "A parameter value is not valid.",
     "parameterRequired": "Choose the required parameters.",
-    "parameterUnauthorized": "A chosen project or department is not one you may report on.",
+    "parameterUnauthorized": "A chosen project or sector is not one you may report on.",
     "savedViewNotAllowed": "This view cannot be saved: the report does not allow it, a role cannot receive it, or your role cannot save views.",
     "savedViewIncompatible": "This saved view no longer fits the report or the report rules in force.",
     "duplicateRequest": "This export was already requested with different choices. Start it again.",
