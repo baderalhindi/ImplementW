@@ -23,9 +23,10 @@ public sealed class MasterDataEndpointTests(MasterDataConfigTestHost host)
             .Where(e => e.Metadata.GetMetadata<IEndpointNameMetadata>()?.EndpointName.StartsWith("MasterDataConfig_", StringComparison.Ordinal) == true)
             .ToDictionary(e => e.Metadata.GetMetadata<IEndpointNameMetadata>()!.EndpointName, EndpointAuthorization.DeclarationOf);
 
-        Assert.Equal(26, declarations.Count);
+        Assert.Equal(30, declarations.Count);
         Assert.All(declarations, d => Assert.Equal(
-            d.Key.Contains("Configuration", StringComparison.Ordinal)
+            d.Key.Contains("Import", StringComparison.Ordinal) ? "permission:DATA_IMPORT" // TASK-102's migration import
+            : d.Key.Contains("Configuration", StringComparison.Ordinal)
                 ? d.Key.StartsWith("MasterDataConfig_List", StringComparison.Ordinal) || d.Key.StartsWith("MasterDataConfig_Get", StringComparison.Ordinal)
 
                     ? "permission:CONFIGURATION_VIEW"

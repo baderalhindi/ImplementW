@@ -35,6 +35,16 @@ type AccountTab = 'microsoft' | 'directory';
 
 const accountTabs: readonly AccountTab[] = ['microsoft', 'directory'];
 
+/**
+ * The directory owns passwords, so the platform neither resets nor changes one: it links to AHDA's reset page when the
+ * build names it, and otherwise says where to go. Only an absolute https URL is used, so the link can never carry
+ * javascript: or a relative path (TASK-077).
+ */
+function passwordResetUrl(): string | null {
+  const value = import.meta.env.VITE_PASSWORD_RESET_URL ?? '';
+  return URL.canParse(value) && new URL(value).protocol === 'https:' ? new URL(value).href : null;
+}
+
 function redirectTarget(state: unknown): string {
   const from = (state as { from?: unknown } | null)?.from;
   return isAppPath(from) ? from : '/';
@@ -228,6 +238,7 @@ export function SignInPage(): ReactElement {
   const [secondFactor, setSecondFactor] = useState<PendingSecondFactor | null>(null);
   const [tab, setTab] = useState<AccountTab>('microsoft');
 
+  const resetUrl = passwordResetUrl();
   const target = redirectTarget(location.state);
   if (session !== null) {
     return <Navigate to={target} replace />;
@@ -338,6 +349,15 @@ export function SignInPage(): ReactElement {
           </button>
         }
       />
+      <p className="sign-in__forgot">
+        {resetUrl === null ? (
+          t('identityAccess.signIn.forgotPasswordContact')
+        ) : (
+          // The one bound link: a build-time https URL checked by passwordResetUrl, never data.
+          // eslint-disable-next-line no-restricted-syntax
+          <a href={resetUrl}>{t('identityAccess.signIn.forgotPassword')}</a>
+        )}
+      </p>
       <button type="submit" className="button button--primary sign-in__wide" disabled={save.saving}>
         {save.saving ? t('identityAccess.signIn.signingIn') : t('identityAccess.signIn.submit')}
       </button>

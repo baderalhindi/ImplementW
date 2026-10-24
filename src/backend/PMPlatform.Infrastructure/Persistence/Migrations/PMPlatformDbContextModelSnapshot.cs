@@ -1577,6 +1577,133 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Common.ImportBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("CreatedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_count");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("FileSha256")
+                        .IsRequired()
+                        .HasColumnType("char(64)")
+                        .HasColumnName("file_sha256");
+
+                    b.Property<string>("RegisterCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("register_code");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_count");
+
+                    b.Property<int>("SkippedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("skipped_count");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_import_batch");
+
+                    b.HasIndex("RegisterCode", "CreatedAt")
+                        .HasDatabaseName("ix_import_batch_register_code_created_at");
+
+                    b.ToTable("import_batch", "common", t =>
+                        {
+                            t.HasCheckConstraint("ck_import_batch_append_only", "updated_at = created_at AND updated_by = created_by");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Common.ImportedRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<Guid>("ImportBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("import_batch_id");
+
+                    b.Property<string>("LegacyId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("legacy_id");
+
+                    b.Property<string>("RegisterCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("register_code");
+
+                    b.Property<int>("RowNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_number");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_imported_record");
+
+                    b.HasIndex("ImportBatchId")
+                        .HasDatabaseName("ix_imported_record_import_batch_id");
+
+                    b.HasIndex("RegisterCode", "LegacyId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_imported_record_register_code_legacy_id");
+
+                    b.ToTable("imported_record", "common", t =>
+                        {
+                            t.HasCheckConstraint("ck_imported_record_append_only", "updated_at = created_at AND updated_by = created_by");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Common.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11952,6 +12079,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("WaivedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_readiness_check_user_waived_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Common.ImportedRecord", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Common.ImportBatch", null)
+                        .WithMany()
+                        .HasForeignKey("ImportBatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_imported_record_import_batch_import_batch_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Dashboards.DashboardAudienceRole", b =>

@@ -33,6 +33,12 @@ public static class ProjectAuditEvents
     /// <summary>LIFECYCLE_TRANSITION: APPROVED_PLANNED → ACTIVE, by the activation command.</summary>
     public const string ProjectActivated = "Project.ProjectActivated";
 
+    /// <summary>
+    /// LIFECYCLE_TRANSITION: a project already under way taken in ACTIVE with its Declared Baseline and opening position (ADR-014), by the
+    /// migration import (TASK-102). Publishes <see cref="ProjectIntakeRecorded"/>.
+    /// </summary>
+    public const string ProjectTakenIn = "Project.ProjectTakenIn";
+
     /// <summary>LIFECYCLE_TRANSITION: ACTIVE → SUSPENDED, as WF-09 effects an approved suspension request (TASK-062, edge 7).</summary>
     public const string ProjectSuspended = "Project.ProjectSuspended";
 

@@ -1,6 +1,7 @@
 import { type SyntheticEvent, type ReactElement, useCallback, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
@@ -201,9 +202,16 @@ export function UserListPage(): ReactElement {
         title={t('identityAccess.users.list.title')}
         description={t('identityAccess.users.list.description')}
         actions={
-          <Link className="button button--primary" to="/admin/users/new">
-            {t('identityAccess.users.list.create')}
-          </Link>
+          <>
+            <ImportAction
+              collectionPath="/users"
+              registerName={t('identityAccess.users.list.title')}
+              onImported={users.reload}
+            />
+            <Link className="button button--primary" to="/admin/users/new">
+              {t('identityAccess.users.list.create')}
+            </Link>
+          </>
         }
       />
 

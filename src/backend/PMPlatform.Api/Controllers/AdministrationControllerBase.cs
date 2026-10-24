@@ -2,6 +2,9 @@ using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Models.DocumentManagement;
+using PMPlatform.Application.Common.DataImport;
+using PMPlatform.Application.Common.Validation;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.Reports.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
@@ -93,6 +96,51 @@ public abstract class AdministrationControllerBase : ControllerBase
     /// <summary>R-8 for a report job's output (TASK-071): authorised at download time by the module, then sent as a document's bytes are.</summary>
     private protected IActionResult Attachment(AdministrationResult<ReportOutputDownload> result) =>
         result.Succeeded ? Attachment(result.Value.Content, result.Value.FileName) : Failure(result.Error);
+
+    /// <summary>TASK-102: the register's migration workbook template, as an attachment (R-8).</summary>
+    private protected async Task<IActionResult> ImportTemplateAsync(IDataImportService imports, string registerCode, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(imports);
+        DataImportResult<byte[]> template = await imports.TemplateAsync(CallerId, registerCode, cancellationToken);
+        return template.Value is { } content
+            ? Attachment(new MemoryStream(content), $"{registerCode.ToLowerInvariant()}-import-template.xlsx")
+            : ImportRefused(template.Refusal);
+    }
+
+    /// <summary>
+    /// TASK-102: the workbook in part <c>file</c> (R-8), validated, or imported with <paramref name="commit"/>. A report with issues is still 200:
+    /// it is the answer asked for, and nothing was written.
+    /// </summary>
+    private protected async Task<IActionResult> ImportAsync(IDataImportService imports, string registerCode, bool commit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(imports);
+        (IFormCollection? form, DocumentUploadForm.Refusal refusal) = await DocumentUploadForm.ReadAsync(HttpContext, ImportLimits.MaxFileBytes, cancellationToken);
+        if (refusal != DocumentUploadForm.Refusal.None)
+        {
+            return Failure(refusal == DocumentUploadForm.Refusal.TooLarge ? AdministrationError.PayloadTooLarge : AdministrationError.UnsupportedMediaType);
+        }
+
+        IFormFile? file = form!.Files.GetFile(DocumentUploadForm.FilePart);
+        string? fileIssue = file is null || file.Length == 0 ? FieldError.Required
+            : TextInput.Violation(file.FileName) ?? (file.FileName.Length > 255 ? FieldError.MaxLength : null);
+        if (fileIssue is not null)
+        {
+            return ValidationFailed([new FieldError(DocumentUploadForm.FilePart, fileIssue)]);
+        }
+
+        await using Stream content = file!.OpenReadStream();
+        DataImportResult<ImportReport> result = await imports.ImportAsync(CallerId, registerCode, new ImportUpload(file.FileName, content), commit, cancellationToken);
+        return result.Value is { } report ? Ok(report) : ImportRefused(result.Refusal);
+    }
+
+    private IActionResult ImportRefused(DataImportRefusal refusal) => refusal switch
+    {
+        DataImportRefusal.NotFound => Failure(AdministrationError.NotFound),
+        DataImportRefusal.Forbidden => Failure(AdministrationError.Forbidden),
+        DataImportRefusal.NotWorkbook => Failure(AdministrationError.UnsupportedMediaType),
+        DataImportRefusal.TooManyRows => Failure(AdministrationError.PayloadTooLarge),
+        DataImportRefusal.None or _ => throw new InvalidOperationException($"Not an import refusal: {refusal}."),
+    };
 
     private FileStreamResult Attachment(Stream content, string fileName)
     {

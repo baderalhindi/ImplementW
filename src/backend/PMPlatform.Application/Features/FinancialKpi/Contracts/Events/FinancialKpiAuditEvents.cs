@@ -47,6 +47,12 @@ public static class FinancialKpiAuditEvents
     /// <summary>DATA_CHANGE: a period's financial update was opened (DRAFT).</summary>
     public const string UpdateStarted = "FinancialKpi.UpdateStarted";
 
+    /// <summary>DATA_CHANGE: ADR-014's DECLARED_BUDGET, born ACTIVE from a legacy intake (TASK-102).</summary>
+    public const string DeclaredBudgetRecorded = "FinancialKpi.DeclaredBudgetRecorded";
+
+    /// <summary>DATA_CHANGE: ADR-014's opening spend to date, the intake period's SUBMITTED update (TASK-102).</summary>
+    public const string OpeningSpendRecorded = "FinancialKpi.OpeningSpendRecorded";
+
     /// <summary>DATA_CHANGE: a DRAFT update's figures changed (the narrative withheld).</summary>
     public const string UpdateChanged = "FinancialKpi.UpdateChanged";
 

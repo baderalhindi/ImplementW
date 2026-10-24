@@ -10,6 +10,8 @@ namespace PMPlatform.Tests.Integration.Project;
 /// </summary>
 internal sealed class DocumentedResponses(OpenApiDocument document)
 {
+    private const string BinaryMediaType = "application/octet-stream";
+
     private readonly Dictionary<string, IReadOnlyList<string>> _checked = [];
 
     /// <summary>The operations checked so far, as <c>METHOD path</c>.</summary>
@@ -28,6 +30,13 @@ internal sealed class DocumentedResponses(OpenApiDocument document)
         string status = ((int)response.StatusCode).ToString(CultureInfo.InvariantCulture);
         JsonObject? documented = document.Operation(template, method)?["responses"]?[status] as JsonObject;
         Assert.True(documented is not null, $"{name} answered {status}, which it does not document: {await response.Content.ReadAsStringAsync()}");
+        if (response.Content.Headers.ContentType?.MediaType == BinaryMediaType)
+        {
+            // R-8's download: bytes, documented as such, with no schema to hold them to.
+            _checked[name] = documented["content"]?[BinaryMediaType] is null ? [$"{name} {status}: a binary body, documented without one"] : [];
+            return null;
+        }
+
         JsonObject? body = response.Content.Headers.ContentLength == 0 ? null : await response.ReadObjectAsync();
         _checked[name] = body is null
             ? documented["content"] is null ? [] : [$"{name} {status}: no body, documented with one"]

@@ -41,4 +41,5 @@ public static class FinancialKpiAuditAttributes
     public const string PeriodStart = "period_start";
     public const string MeasuredValue = "measured_value";
     public const string RagStatus = "rag_status";
+    public const string ProjectIntakeId = "project_intake_id";
 }

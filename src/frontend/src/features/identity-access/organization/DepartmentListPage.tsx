@@ -1,6 +1,7 @@
 import { type SyntheticEvent, type ReactElement, useCallback, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
@@ -88,15 +89,22 @@ export function DepartmentListPage(): ReactElement {
         title={t('identityAccess.departments.title')}
         description={t('identityAccess.departments.description')}
         actions={
-          <button
-            type="button"
-            className="button button--primary"
-            onClick={() => {
-              setEditing({ mode: 'create' });
-            }}
-          >
-            {t('identityAccess.departments.create')}
-          </button>
+          <>
+            <ImportAction
+              collectionPath="/departments"
+              registerName={t('identityAccess.departments.title')}
+              onImported={departments.reload}
+            />
+            <button
+              type="button"
+              className="button button--primary"
+              onClick={() => {
+                setEditing({ mode: 'create' });
+              }}
+            >
+              {t('identityAccess.departments.create')}
+            </button>
+          </>
         }
       />
 

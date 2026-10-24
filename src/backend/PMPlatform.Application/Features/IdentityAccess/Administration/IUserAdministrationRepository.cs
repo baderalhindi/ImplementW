@@ -13,6 +13,8 @@ public interface IUserAdministrationRepository
     /// <summary>The user, tracked. With <paramref name="expectedVersion"/>, saving fails as a concurrency conflict if the row has moved on from it.</summary>
     public Task<User?> FindForUpdateAsync(Guid userId, uint? expectedVersion, CancellationToken cancellationToken);
 
+    public Task<Guid?> FindIdByUsernameAsync(string username, CancellationToken cancellationToken);
+
     public void Add(User user);
 
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken);

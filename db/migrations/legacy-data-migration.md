@@ -73,6 +73,7 @@ When the block lifts, these parts exist and do not need to be designed again:
 | A rehearsal database at volume, and a comparison of two states | `db/migrations/validation/` builds a PostgreSQL 17 database at the TASK-026 volume through the release image, and fingerprints every table, row count and column. A rehearsed legacy load can be added as one more SQL file in the load chain |
 | Rollback before cutover | Restore from the pre-cutover backup, following the TASK-023 runbook (`docs/operations/backup-restore-dr-runbook.md`). A data load is not a migration, so rolling back a schema migration does not undo it |
 | Projects already under way | ADR-014 intake path (TASK-104, not built) |
+| A load path for each register, and its format | The migration import (`docs/architecture/data-import.md`, 2026-10-23): one XLSX template per register with its required columns, a validation that writes nothing, an all-or-nothing import through each module's own rules, and legacy-ID lineage (`common.imported_record`) that makes a re-run skip what was loaded. Q-3 is answered on the platform side: AHDA delivers the extract as these workbooks, whatever the source |
 
 ## 5. What lifts the block, and what follows
 
@@ -90,3 +91,4 @@ Until then the Release Checklist row "Data Migration Cutover Rehearsed" cannot c
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-10-19 | Initial record: logged as Blocked on OQ-008. Twelve questions for AHDA; the controlled requirements the plan must satisfy; what the platform already provides for it | Testing (TASK-089) |
+| 2026-10-23 | §4: the migration import (`data-import.md`) gives every reference register a template and a load path. The plan stays Blocked: the source, scope, history and mapping sign-off are still AHDA's (Q-1, Q-2, Q-4 to Q-12) | Backend (TASK-102) |

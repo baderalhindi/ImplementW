@@ -52,6 +52,40 @@ export function underPath(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+/** Whether a link leads to the page shown: a link with a query names one rendering of its path, so it must match whole. */
+export function isCurrent(to: string, pathname: string, search: string): boolean {
+  return to.includes('?') ? `${pathname}${search}` === to : pathname === to;
+}
+
+/**
+ * The Portfolio Dashboard's audience (dashboards.md D-2): R02, R03, R06 and R07 land on it and see the portfolio
+ * reports. The session carries roles, not permissions, so this is navigation, not protection.
+ */
+const PORTFOLIO_ROLES: readonly string[] = ['R02', 'R03', 'R06', 'R07'];
+
+/**
+ * Blueprint §20.1's Portfolio menu as far as it is built: the Portfolio Dashboard, which has no route of its own and is
+ * the Home's rendering of it (dashboards-ui.md D-1), the portfolio report family (SCR-132), and the KPI register.
+ */
+function portfolioNavigation(user: SessionUser): NavigationItem[] {
+  const audience =
+    user.userType !== 'EXTERNAL' &&
+    user.roleAssignments.some((assignment) => PORTFOLIO_ROLES.includes(assignment.roleCode));
+  return [
+    ...(audience
+      ? [
+          {
+            to: '/?dashboard=PORTFOLIO',
+            label: 'common.menu.portfolioDashboard',
+            end: true,
+          } as const,
+          { to: '/reports/portfolio', label: 'common.menu.portfolioReports' } as const,
+        ]
+      : []),
+    ...kpiNavigation,
+  ];
+}
+
 function menu(
   id: MenuId,
   label: TranslationKey,
@@ -65,7 +99,12 @@ function menu(
 export function menusFor(user: SessionUser, administration: NavigationItem[]): Menu[] {
   const menus = [
     { id: 'home', label: 'common.menu.home', to: '/', prefixes: [], items: [] } satisfies Menu,
-    menu('portfolio', 'common.menu.portfolio', ['/kpis'], kpiNavigation),
+    menu(
+      'portfolio',
+      'common.menu.portfolio',
+      ['/kpis', '/reports/portfolio'],
+      portfolioNavigation(user),
+    ),
     menu('projects', 'common.menu.projects', ['/projects'], projectNavigation),
     menu(
       'myWork',
@@ -113,8 +152,17 @@ export function menusFor(user: SessionUser, administration: NavigationItem[]): M
   return menus.filter((candidate) => candidate.id === 'home' || candidate.items.length > 0);
 }
 
-/** The menu the page belongs to: Home for `/`, otherwise the menu owning the longest matching prefix. */
-export function activeMenu(menus: Menu[], pathname: string): Menu | undefined {
+/**
+ * The menu the page belongs to: the menu of an item naming this exact rendering (a link with a query), else Home for
+ * `/`, otherwise the menu owning the longest matching prefix.
+ */
+export function activeMenu(menus: Menu[], pathname: string, search = ''): Menu | undefined {
+  const rendering = menus.find((candidate) =>
+    candidate.items.some((item) => item.to.includes('?') && isCurrent(item.to, pathname, search)),
+  );
+  if (rendering !== undefined) {
+    return rendering;
+  }
   if (pathname === '/') {
     return menus.find((candidate) => candidate.id === 'home');
   }
@@ -130,10 +178,17 @@ export function activeMenu(menus: Menu[], pathname: string): Menu | undefined {
 }
 
 /** The menu item the page sits under: the longest item path matching it, honouring an item's exact-match flag. */
-export function activeItem(menu: Menu | undefined, pathname: string): NavigationItem | undefined {
+export function activeItem(
+  menu: Menu | undefined,
+  pathname: string,
+  search = '',
+): NavigationItem | undefined {
   let best: NavigationItem | undefined;
   for (const item of menu?.items ?? []) {
-    const matches = item.end === true ? pathname === item.to : underPath(pathname, item.to);
+    const matches =
+      item.end === true || item.to.includes('?')
+        ? isCurrent(item.to, pathname, search)
+        : underPath(pathname, item.to);
     if (matches && item.to.length > (best?.to.length ?? 0)) {
       best = item;
     }

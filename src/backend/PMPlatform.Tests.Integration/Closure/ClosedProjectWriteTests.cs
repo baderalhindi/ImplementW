@@ -26,6 +26,7 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
     private static readonly Dictionary<string, string> NotOfAProject = new(StringComparer.Ordinal)
     {
         ["POST /api/v1/projects"] = "registers a new project",
+        ["POST /api/v1/projects/imports"] = "takes new projects in from a migration workbook (TASK-102); it names no existing project",
         ["POST /api/v1/approval-delegations"] = "a person's delegation, of no project",
         ["POST /api/v1/approval-delegations/{delegationId}/revoke"] = "a person's delegation, of no project",
         ["POST /api/v1/change-requests/{changeRequestId}/preview-materiality"] = "a read sent as POST (CHANGE_REQUEST_VIEW): it computes a preview and writes nothing",

@@ -29,4 +29,10 @@ internal sealed class FakeExternalEntityRepository : FakeStore<ExternalEntity>, 
 
     public Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyDictionary<Guid, BilingualLabel>>(Rows.Values.Where(r => ids.Contains(r.Id)).ToDictionary(r => r.Id, r => r.Name));
+
+    public Task<Guid?> FindIdByCodeAsync(string code, CancellationToken cancellationToken) =>
+        Task.FromResult(Rows.Values.Where(r => r.Code == code).Select(r => (Guid?)r.Id).SingleOrDefault());
+
+    public Task<IReadOnlyList<OrganizationCode>> ListActiveCodesAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<OrganizationCode>>([.. Rows.Values.Where(r => r.Status == ExternalEntityStatus.Active).OrderBy(r => r.Code, StringComparer.Ordinal).Select(r => new OrganizationCode(r.Code, r.Name))]);
 }

@@ -15,4 +15,14 @@ internal sealed class OrganizationDirectory(IDepartmentRepository departments, I
     public async Task<OrganizationNames> ListNamesAsync(IReadOnlyCollection<Guid> departmentIds, IReadOnlyCollection<Guid> externalEntityIds, CancellationToken cancellationToken) =>
         new(await departments.ListNamesAsync(departmentIds, cancellationToken).ConfigureAwait(false),
             await entities.ListNamesAsync(externalEntityIds, cancellationToken).ConfigureAwait(false));
+
+    public Task<Guid?> FindDepartmentIdAsync(string code, CancellationToken cancellationToken) => departments.FindIdByCodeAsync(code, cancellationToken);
+
+    public Task<Guid?> FindExternalEntityIdAsync(string code, CancellationToken cancellationToken) => entities.FindIdByCodeAsync(code, cancellationToken);
+
+    public Task<IReadOnlyList<OrganizationCode>> ListActiveDepartmentCodesAsync(CancellationToken cancellationToken) =>
+        departments.ListActiveCodesAsync(cancellationToken);
+
+    public Task<IReadOnlyList<OrganizationCode>> ListActiveExternalEntityCodesAsync(CancellationToken cancellationToken) =>
+        entities.ListActiveCodesAsync(cancellationToken);
 }

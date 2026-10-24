@@ -1,6 +1,7 @@
 import { type SyntheticEvent, type ReactElement, useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
@@ -56,15 +57,22 @@ export function RoleAssignmentPage(): ReactElement {
         title={t('identityAccess.assignments.title')}
         description={t('identityAccess.assignments.description')}
         actions={
-          <button
-            type="button"
-            className="button button--primary"
-            onClick={() => {
-              setAssignDialogOpen(true);
-            }}
-          >
-            {t('identityAccess.assignRole.open')}
-          </button>
+          <>
+            <ImportAction
+              collectionPath="/access-relationships"
+              registerName={t('identityAccess.assignments.title')}
+              onImported={assignments.reload}
+            />
+            <button
+              type="button"
+              className="button button--primary"
+              onClick={() => {
+                setAssignDialogOpen(true);
+              }}
+            >
+              {t('identityAccess.assignRole.open')}
+            </button>
+          </>
         }
       />
       {notice !== null && (

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using PMPlatform.Application.Features.Approval.Contracts;
+using PMPlatform.Tests.Integration.DataImport;
 using PMPlatform.Tests.Integration.Identity;
 using PMPlatform.Tests.Integration.Schedule;
 
@@ -50,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(9, built["paths"]!.AsObject().Count);
+        Assert.Equal(11, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -112,6 +113,16 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         using HttpResponseMessage deleted = await client.DeleteProjectAsync(draft, sessions.Entity);
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
         await responses.CheckAsync("DELETE", item, deleted);
+
+        // TASK-102: the migration template and a validation, as the one holder of DATA_IMPORT calls them.
+        string administrator = (await client.SignInOrFailAsync(1)).AccessToken;
+        using HttpResponseMessage template = await client.TemplateAsync(ProjectDriver.Projects, administrator);
+        Assert.Equal(HttpStatusCode.OK, template.StatusCode);
+        await responses.CheckAsync("GET", $"{ProjectDriver.Projects}/import-template/content", template);
+        using HttpResponseMessage validated = await client.UploadAsync(ProjectDriver.Projects, administrator,
+            ImportApi.Workbook(["legacy_id", "title"], ["CONTRACT-1", "Contract check"]), commit: false);
+        Assert.Equal(HttpStatusCode.OK, validated.StatusCode);
+        await responses.CheckAsync("POST", $"{ProjectDriver.Projects}/imports", validated);
 
         Assert.Equal(document.Operations(Tag).Select(o => o.Name).Order(), responses.Operations.Order());
         Assert.Empty(responses.Violations);

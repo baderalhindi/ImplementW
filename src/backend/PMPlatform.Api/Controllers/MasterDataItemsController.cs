@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Models.DocumentManagement;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Api.Models.MasterDataConfig;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Domain.Common;
 
@@ -15,9 +17,10 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route(Collection)]
 [Tags("MasterDataConfig")]
-public sealed class MasterDataItemsController(IMasterDataAdministrationService masterData) : AdministrationControllerBase
+public sealed class MasterDataItemsController(IMasterDataAdministrationService masterData, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/master-data-items";
+    private const string ImportRegister = ImportRegisterCodes.MasterDataItem;
 
     /// <summary>Filters: <c>catalogueId</c>, <c>lifecycleState</c> (a set), <c>parentItemId</c>, <c>q</c>. In display order.</summary>
     [HttpGet]
@@ -34,6 +37,23 @@ public sealed class MasterDataItemsController(IMasterDataAdministrationService m
             QueryParameters.Page(page, pageSize, errors));
         return errors.Count > 0 ? ValidationFailed(errors) : Respond(await masterData.ListItemsAsync(query, cancellationToken));
     }
+
+    /// <summary>TASK-102: the migration workbook template, with the columns a row must fill and the codes a reference may name.</summary>
+    [HttpGet("import-template/content")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK, "application/octet-stream")]
+    [EndpointName("MasterDataConfig_DownloadMasterDataItemImportTemplate")]
+    public Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken) => ImportTemplateAsync(imports, ImportRegister, cancellationToken);
+
+    /// <summary>TASK-102: validates the workbook in part <c>file</c>, or with <c>commit=true</c> imports it, all rows or none.</summary>
+    [HttpPost("imports")]
+    [RequirePermission(PermissionCatalogue.DataImport)]
+    [SensitiveWrite]
+    [DisableFormValueModelBinding]
+    [ProducesResponseType<ImportReport>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("MasterDataConfig_ImportMasterDataItems")]
+    public Task<IActionResult> Import([FromQuery] bool? commit, CancellationToken cancellationToken) =>
+        ImportAsync(imports, ImportRegister, commit == true, cancellationToken);
 
     [HttpGet("{itemId:guid}")]
     [RequirePermission(PermissionCatalogue.MasterDataView)]

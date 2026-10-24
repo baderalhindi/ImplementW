@@ -26,4 +26,7 @@ internal sealed class FakeUserAdministrationRepository : FakeStore<User>, IUserA
 
     public Task<User?> FindForUpdateAsync(Guid userId, uint? expectedVersion, CancellationToken cancellationToken) =>
         Task.FromResult(Track(userId, expectedVersion));
+
+    public Task<Guid?> FindIdByUsernameAsync(string username, CancellationToken cancellationToken) =>
+        Task.FromResult(Rows.Values.Where(u => u.Username == username).Select(u => (Guid?)u.Id).SingleOrDefault());
 }

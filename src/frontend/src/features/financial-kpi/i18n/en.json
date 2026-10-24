@@ -292,18 +292,20 @@
     "description": "Every KPI of the projects you can see, with where each stands this period.",
     "listTitle": "KPIs by project",
     "caption": "KPIs of every project you can see",
+    "summaryTitle": "This period",
     "filter": "Show",
     "filters": {
       "all": "All KPIs",
-      "noData": "No data this period",
-      "red": "Red this period",
-      "amber": "Amber this period",
-      "green": "Green this period"
+      "noData": "No data",
+      "red": "Red",
+      "amber": "Amber",
+      "green": "Green"
     },
+    "search": "Find a project or KPI",
     "empty": "No KPIs to show",
     "emptyBody": "KPIs appear here once AHDA assigns them to a project you can see.",
     "filteredEmpty": "No KPI matches this choice",
-    "filteredEmptyBody": "Choose \"All KPIs\" to see every KPI again."
+    "filteredEmptyBody": "Choose \"All KPIs\" or clear the search to see every KPI again."
   },
   "aggregate": {
     "title": "Across projects",
@@ -313,11 +315,11 @@
       "PARTIAL": "Partial",
       "NONE": "Nothing counted"
     },
-    "mean": "Average {value} {unit} over {count} projects",
+    "average": "Average",
+    "over": "over {count} projects",
     "noMean": "No average: no project has a published measured value.",
     "unitsDiffer": "Not combined: the projects measure this KPI in different units.",
-    "ragCounts": "Green {green} · Amber {amber} · Red {red} · Not rated {unknown} · Not applicable {notApplicable}",
-    "partial": "Left out:",
+    "partial": "Left out ({count})",
     "exclusion": "{project}: {reason}",
     "reason": {
       "NOT_AVAILABLE": "not visible to you",
