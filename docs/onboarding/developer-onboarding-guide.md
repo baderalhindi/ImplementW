@@ -6,7 +6,7 @@
 | Depends on | TASK-007 — module boundaries (`docs/architecture/solution-architecture.md`); TASK-014 — local stack (`docs/architecture/local-development-environment.md`) |
 | Also draws on | TASK-012 — branching and PRs (`docs/architecture/branching-strategy.md`); TASK-001 — controlled sources (`docs/baseline/controlled-source-baseline.md`) |
 | Record date | 2026-10-24 |
-| Status | **WRITTEN — NOT YET VALIDATED.** Every command was run from a fresh clone of `dev` (§9). The acceptance criterion needs a dry run by a developer new to the codebase, which has not happened yet (§9) |
+| Status | **DRY-RUN BY A STAND-IN; A HUMAN DRY RUN IS STILL OWED.** The workbook's validation was run from a fresh clone with cold images by an AI agent with no prior knowledge of the codebase, following only this guide. It took 240s to signed in, all checks passed, and it logged 13 steps that needed outside help, all fixed here (§9). The acceptance criterion names one developer new to the codebase, and no person has done that run yet (§9.3) |
 | Branch | `docs/task-095-developer-onboarding-guide` |
 
 This guide takes you from no checkout to a running local stack and a merged first pull request. Do the sections in
@@ -44,7 +44,16 @@ container, which has the pinned Node 24 toolchain.
 The stack publishes four ports: `5432` (PostgreSQL), `3389` (test directory), `5080` (API) and `5173` (frontend).
 If one is taken, set `PMPLATFORM_POSTGRES_PORT`, `PMPLATFORM_LDAP_PORT`, `PMPLATFORM_API_PORT` or
 `PMPLATFORM_FRONTEND_PORT` before `up`. If you move the frontend off 5173, the API refuses the browser's origin
-(`CORS_ALLOWED_ORIGINS` is `http://localhost:5173`), so prefer moving the others.
+(`CORS_ALLOWED_ORIGINS` is `http://localhost:5173`), so prefer moving the others. Export the variable in every
+shell that runs `up` (or put it in your shell profile). A shell without it binds the default port again:
+
+```sh
+export PMPLATFORM_POSTGRES_PORT=15432 PMPLATFORM_LDAP_PORT=13389   # example values
+```
+
+If you move PostgreSQL or LDAP, the integration tests (§5.3) need the same ports: use `Port=15432` in their
+`DB_CONNECTION_STRING`, and set `AD_LDAP_URL=ldap://localhost:13389/dc=pmplatform,dc=local`. That URL is the default
+the tests use when the variable is unset, with port 3389.
 
 The stack was verified on macOS with Docker Desktop and podman. Windows (WSL2) and Linux Docker Engine are not yet
 verified (`local-development-environment.md` F-6). If you are on one of them, your dry-run entry is the first
@@ -83,8 +92,15 @@ EF Core migration and exits. The one-shot `seed` container then loads the platfo
 and the data-integrity check, all in one transaction, and exits. `api` starts after that, and `frontend` starts
 alongside. `--wait` returns once everything is healthy, not just started.
 
+The compose file sets the project name `ahda`. Its containers are `AHDA-postgres`, `AHDA-ldap`, `AHDA-migrate`,
+`AHDA-seed`, `AHDA-api` and `AHDA-frontend`, and its volumes are `ahda_*`. To run a second copy beside an existing
+one, add `-p <other-name>` to every compose command. You also need an override file that gives the containers other
+names, because the names are fixed in the compose file. Then substitute your container names wherever this guide
+says `AHDA-…`.
+
 How long it takes: the first build pulls base images and restores packages with empty caches, and took 160s on a
-clean Docker Desktop (108s build, 52s to healthy). Later starts take 10–40s.
+clean Docker Desktop (108s build, 52s to healthy). The §9 dry run took 240s from `git clone` to signed in. Later
+starts take 10–60s.
 
 ### 3.2 Check it
 
@@ -94,14 +110,16 @@ open http://localhost:5173             # the frontend (use xdg-open on Linux)
 ```
 
 `/health` answers 200 only when the API can query PostgreSQL; a stopped database turns it to 503. The API's
-reference docs are in Swagger UI at http://localhost:5080/api-docs (`docs/api/README.md`).
+reference docs are in Swagger UI at http://localhost:5080/api-docs/ (`docs/api/README.md`). That address redirects
+to `/api-docs/index.html`, so `curl` without `-L` shows only a 301.
 
 ### 3.3 Sign in
 
 The seed creates one user per canonical role. Each one signs in through the test directory `AHDA-ldap`, which
-stands in for AHDA's Active Directory. Every person shares one local default password: the `userPassword` of the
-`uid=local.r0n` entries in `infra/docker/ldap/directory.ldif`. It is a non-secret local value that is valid only on this
-stack. Never reuse it anywhere else, and never paste it into a fixture, a log or a screenshot.
+stands in for AHDA's Active Directory. Every person shares one local default password: the `userPassword` of any
+`uid=local.r01` … `uid=local.r08` entry in `infra/docker/ldap/directory.ldif`. The file's header comment also names
+it. It is a non-secret local value that is valid only on this stack. Never reuse it anywhere else, and never paste
+it into a fixture, a log or a screenshot.
 
 | Username | Role | Notes |
 | --- | --- | --- |
@@ -117,20 +135,21 @@ stack. Never reuse it anywhere else, and never paste it into a fixture, a log or
 The local database holds no projects. Most domain screens open to an empty register until you create data.
 
 **Check:** you are signed in at http://localhost:5173 as `local.r02`. From a terminal, the same sign-in through the
-frontend's proxy answers `201`:
+frontend's proxy answers `201`. Reading the password from the file keeps it out of your shell history:
 
 ```sh
+P=$(awk '/^dn: uid=local.r02,/{f=1} f&&/^userPassword:/{print $2;exit}' infra/docker/ldap/directory.ldif)
 curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:5173/api/v1/sessions \
-  -H 'Content-Type: application/json' -d '{"username":"local.r02","password":"<the local default password>"}'
+  -H 'Content-Type: application/json' -d "{\"username\":\"local.r02\",\"password\":\"$P\"}"
 ```
 
 ### 3.4 Day to day
 
 | To | Run |
 | --- | --- |
-| Stop the stack, keeping its data | `docker compose -f infra/docker/docker-compose.yml stop` |
+| Stop the stack, keeping its data | `docker compose -f infra/docker/docker-compose.yml stop`. Afterwards `docker ps -a` shows `AHDA-frontend` as `Exited (1)`: the dev server was killed, which is not a fault |
 | Start it again | the `up --build --wait` command of §3.1 (`--build` picks up backend changes) |
-| Reset to a freshly seeded database | `docker compose -f infra/docker/docker-compose.yml down -v`, then `up` |
+| Reset to a freshly seeded database | `docker compose -f infra/docker/docker-compose.yml down -v`, then the §3.1 `up --build --wait` command |
 | Run the stack's acceptance check | `infra/docker/smoke-test.sh`. **It starts with `down --volumes --remove-orphans`**: it deletes your local data and any extra container in the `ahda` project |
 
 Frontend edits hot-reload: `src/frontend` is bind-mounted into `AHDA-frontend`. Backend edits need a rebuild of the
@@ -167,8 +186,8 @@ React SPA (src/frontend)  ──HTTPS/JSON──▶  ASP.NET Core API (src/backe
 - Controllers hold no business rule. They bind, call and map. Validation of *meaning* belongs to the module (T-3).
 - Authorization is decided on the server for every request. Hiding a button in the SPA is presentation, never a
   control (T-4).
-- A screen may combine several modules by making several calls. A rule that spans two modules lives in the API,
-  never in the SPA (T-6).
+- A screen may combine several modules by making several calls. A rule that spans two modules lives in the
+  backend, in an application service, never in the SPA (T-6).
 
 ### 4.2 Four backend projects
 
@@ -200,7 +219,9 @@ The module's group decides what it may call:
 | Participation channel | ExternalParticipation | Applies external contributions through one typed adapter, never by writing another module's data |
 | Read side and sinks | Dashboards, Reports, Notifications, IntegrationMonitoring | Read or receive; never write domain data, never recompute a fact another module owns |
 
-The call rules you will meet first (`solution-architecture.md` §6):
+The module boundaries are architecture decision ADR-003. Its full record is
+`docs/architecture/solution-architecture.md`; the PR template's "ADR-003 §8.2" means §8.2 of that file. The call
+rules you will meet first are in its §6:
 
 - **One owner per fact.** Only the owning module's code writes its tables (M-1).
 - **Another module's public surface is `Features/<Module>/Contracts` and nothing else.** Commands, queries, DTOs
@@ -214,6 +235,15 @@ The call rules you will meet first (`solution-architecture.md` §6):
 - **One PostgreSQL schema per module.** A module's migrations touch only its schema (M-13).
 - **Shared code in `Application/Common` and `Domain/Common` is domain-neutral** (M-10). If a type means something
   to one domain, it belongs to that domain's module.
+
+A module's query and command services are the `I…Reader`, `I…Service` and `I…Commands` interfaces in its
+`Contracts/` folder. For example, Project's read surface is `Features/Project/Contracts/IProjectFactsReader.cs`.
+Before you add a call from module X to module Y, find the X → Y row in the edge table of `solution-architecture.md`
+§8.2. If the row exists with the mechanism you need, no register change is needed. If it does not, §4.4 applies.
+
+Worked example: to let Risk read a project's status, Risk's application service calls `IProjectFactsReader` (edge
+Risk → Project in §8.2) and keeps the `ProjectId` as an id. It never touches Project's repository, entities,
+`DbSet` or tables.
 
 ### 4.4 What enforces it
 
@@ -265,8 +295,16 @@ The PR cannot merge until the required checks pass (§6.2). Run the relevant sub
 | `backend` (build, analyzers, unit and architecture tests) | `dotnet build src/backend -warnaserror && dotnet test src/backend/PMPlatform.Tests.Unit --no-build` | Any backend change |
 | integration jobs (`backend-*`) | `docker compose -f infra/docker/docker-compose.yml up -d --wait postgres ldap`, then `DB_CONNECTION_STRING="Host=localhost;Port=5432;Database=postgres;Username=pmplatform;Password=pmplatform" dotnet test src/backend/PMPlatform.Tests.Integration` | Backend change touching persistence, an API or a module's behaviour. Both containers must be up: without `ldap` about 120 tests fail at sign-in with 503 |
 | `frontend` | `docker exec -w /repo/src/frontend AHDA-frontend sh -c 'npm run lint && npm run format:check && npm run typecheck && npm test'` | Any frontend change |
-| `repo-checks` | each `python3 docs/…-check.py` line listed under `repo-checks` in `.github/workflows/ci-quality-gates.yml` | Any change to `docs/`, `infra/` or a record a check reads |
+| `repo-checks` | the command below this table: the job's 19 Python scripts plus the forward-only migration check, about 5s | Every PR; it is cheap |
 | `api-documentation` | regenerate `docs/api/openapi.v1.json` as `CONTRIBUTING.md` "Build and verify" shows | Any API contract change |
+
+The `repo-checks` job, run locally. The command reads the job's own `run:` lines, so it stays current when a
+script is added:
+
+```sh
+sed -n '/^  repo-checks:/,/^  terraform:/s/^ *run: \(python3 .*\)/\1/p' .github/workflows/ci-quality-gates.yml | sh -e \
+  && BASE_REF=origin/dev .github/scripts/migration-forward-only.sh
+```
 
 Notes from the dry run (§9):
 
@@ -292,22 +330,27 @@ PRs go from your task branch into **`dev`**, which is the repository's default, 
 ```sh
 git push -u origin <your-branch>
 mkdir -p artifacts && cp .github/PULL_REQUEST_TEMPLATE.md artifacts/pr-body.md   # artifacts/ is git-ignored; fill this copy in
-gh pr create --base dev --title "docs: TASK-nnn <what changed>" --body-file artifacts/pr-body.md
+gh pr create --base dev --title "docs: TASK-nnn <what changed>" --body-file artifacts/pr-body.md   # title form of PRs #120, #121
 gh pr edit <number> --body-file artifacts/pr-body.md         # after any later change to the body
 gh pr checks <number> --watch
 ```
 
 Fill every section of `.github/PULL_REQUEST_TEMPLATE.md`:
 
-- **Title and `## Task`**: the `TASK-nnn`. GitHub's auto-title from a branch name (`Docs/task 095 …`) does not
-  count.
+- **Title and `## Task`**: the `TASK-nnn`. PR titles put it after the type, `docs: TASK-094 publish …`. Commit
+  subjects put it at the end, `docs: publish … (TASK-094)`. GitHub's auto-title from a branch name
+  (`Docs/task 095 …`) does not count.
 - **`## Description`**: what changed and why, naming the record or ADR section it implements.
-- **`## Test evidence`**: the commands you actually ran and their summary lines. On a docs-only or infra-only
-  PR, write `n/a — no backend or frontend code changed` for the dotnet and npm lines, and list the checks you did
-  run.
+- **`## Test evidence`**: the template's sample lines (`dotnet test src/backend ->` and so on) and its
+  "n/a — no code" are placeholders. Replace them with the §5.3 commands you actually ran and their summary lines.
+  On a docs-only or infra-only PR, write `n/a — no backend or frontend code changed` for the dotnet and npm lines,
+  and list the checks you did run.
 - **`## Security checklist`**: each item is worded so that it is either satisfied or does not apply. Tick a box
   only after checking your diff for it. If one cannot honestly be ticked, leave it unticked and say why. Never tick
-  a box to make the PR look complete.
+  a box to make the PR look complete. The template's comments say every box must be ticked; that is the goal for a
+  mergeable PR, not permission to tick one that is untrue. The first box requires `secret-scan` to be green, which
+  you only know after CI runs. Open the PR with that box unticked, then tick it with `gh pr edit` once the check
+  passes.
 
 No automated check reads the description. The template is enforced by the author and the reviewer
 (`branching-strategy.md` §5.1), which is why the rules above are strict.
@@ -320,7 +363,8 @@ The ruleset on `dev`, `main` and `stage` requires these 11 checks, green on a br
 All of them run on every PR, docs-only ones included, and take about ten minutes; `backend` is the
 longest. `e2e-journeys` also reports on a PR but is not required. Every review thread must be resolved, and there is no
 force-push and no bypass. The required approval count is zero while only one account has write access
-(`branching-strategy.md` §7 S-4). The repository owner merges, squash by default.
+(`branching-strategy.md` §7 S-4). The repository owner merges. In practice that has been a merge commit
+(`Merge pull request #121 …`), although `branching-strategy.md` §2 names squash as the default.
 
 If `dev` moves while your PR is open, merge `dev` into your branch (or rebase) and push. A stale branch cannot
 merge.
@@ -394,7 +438,8 @@ revision of a spec, it outranks the one in the package; record it in the baselin
 Your first PR is your dry run of this guide. It proves you have a working stack, and it fixes the guide for the
 next person.
 
-1. Do §1 to §3 on a clean machine. Time it from `git clone` to signed in, and write down every step where you
+1. Do §1 to §3 on a clean machine. Time it from the start of `git clone` to the §3.3 `curl` answering `201`, and
+   write down every step where you
    needed something this guide did not tell you.
 2. Branch `docs/task-095-onboarding-dry-run-<your-github-login>` off `dev`.
 3. Add one row to the dry-run log in §9.2. For each step that needed outside help, fix the section that should have
@@ -425,22 +470,34 @@ compose project, container names and ports, with fresh volumes; the commands wer
 Found in the dry run and fixed in this guide: an existing database whose rows fail the integrity check stops `up`
 at `seed` with exit 3 (§3.5); R01 cannot sign in (§3.3); the Vitest load sensitivity (§5.3).
 
-This was a rehearsal by someone who knows the codebase. **It does not meet the acceptance criterion**, which needs
-a developer new to the codebase, starting from a clean machine (no images, no caches) and with no verbal handover.
+That was a rehearsal by the author. The workbook's validation, a dry run by someone unfamiliar with the
+codebase, is the first row of §9.2.
 
 ### 9.2 Dry-run log
 
-One row per developer who follows the guide for the first time (§8).
+One row per developer who follows the guide for the first time (§8). Time runs from the start of `git clone` to
+the §3.3 `curl` answering `201`.
 
 | Date | Developer | Machine / engine | Clone → signed in | Steps that needed outside help | Fixed in |
 | --- | --- | --- | --- | --- | --- |
-| — | *(first new developer)* | | | | |
+| 2026-10-24 | AI agent with no prior context of the codebase, following only this guide (a **stand-in**, not a person) | macOS Darwin 27 arm64, Docker Desktop 29.8.0 / Compose 5.5.1. Images built cold (`build --no-cache --pull`), empty volumes, own compose project beside an existing stack, PostgreSQL/LDAP moved to 15432/13389 | **240s** (clone 26s, cold build 138s, `up --wait` 53s); stop→up 17s; `down -v`→up 56s | 13, none blocking. §1.2: port variables need `export`, and the integration tests need the moved ports. §3.1: project name `ahda` and how to run beside it. §3.2: `/api-docs` answers 301. §3.3: password location ambiguous, password typed into shell history. §3.4: frontend `Exited (1)` after `stop`; reset's "then `up`" ambiguous. §4.1: T-6 "the API" ambiguous. §4.3: `solution-architecture.md` not tied to "ADR-003"; query service unnamed; how to check §8.2 unstated. §5.3: repo-checks are not all `*-check.py` and include `migration-forward-only.sh`. §6.2: template placeholders, the "tick every box" comment, and the secret-scan box before CI; PR-title form. §8: end point of the timing | this revision (§10) |
 
-The acceptance criterion is MET when a row from a developer new to the codebase records zero steps that needed
-outside help, or when every step listed has been fixed in the guide and their first PR has passed and merged.
+Results of the stand-in run: §1 checks all answered. `/health` → 200; frontend → 200; `local.r02` → 201;
+`local.r01` → 503. Backend: 0 warnings, 2017 of 2017 unit tests passed. Frontend: lint, format and typecheck exit 0;
+Vitest lost 7 tests to timeouts on the first run (the maintainer's stack was running), then passed 1052 of 1052
+twice. The 19 repo-checks scripts and `migration-forward-only.sh` all exit 0. Integration tests and the push were
+out of scope for the run.
+
+### 9.3 Acceptance
+
+| Criterion | Status |
+| --- | --- |
+| A new developer following only this guide reaches a running local environment and submits a passing first PR without verbal handover, validated by a dry run with one developer new to the codebase | **PARTIAL.** The stand-in reached a running environment from cold images in 240s, using this guide only. Every gap it logged is fixed, and it prepared its first PR up to `git push`. It is not a person, and it did not push a PR or watch CI. The criterion reads MET when a developer new to the codebase adds a §9.2 row by following §8, with no step needing outside help (or with every step they list fixed in the same PR), and that PR passes the 11 checks and merges |
+| Validation: follow the guide from a clean machine, time it, log every step that needed outside help, fix the guide | **DONE with the stand-in** (§9.2 row 1): the time is logged and all 13 steps are fixed. To repeat it with a person, follow §8 |
 
 ## 10. Change log
 
 | Date | Change | Author |
 | --- | --- | --- |
+| 2026-10-24 | Validation dry run by a stand-in with no prior context, from cold images (§9.2 row 1, 240s). Its 13 outside-help steps are fixed: port export and integration-test ports (§1.2); compose project `ahda` and how to run beside it (§3.1); `/api-docs/` redirect (§3.2); password read from the file, not typed (§3.3); `Exited (1)` after stop and the reset command (§3.4); T-6 wording (§4.1); ADR-003 = `solution-architecture.md`, query interfaces, how to check §8.2, a worked example (§4.3); a repo-checks command that reads the job (§5.3); template placeholders, checkbox honesty, the secret-scan box, title form, merge-commit practice (§6); timing end point (§8). Acceptance recorded as PARTIAL until a person does the run (§9.3). | Documentation (TASK-095) |
 | 2026-10-24 | Initial guide: access and prerequisites, local stack, module boundaries, branching and PRs into `dev`, controlled sources and where the files are, first-PR procedure, author's rehearsal (§9.1). Dry run by a new developer pending. | Documentation (TASK-095) |
