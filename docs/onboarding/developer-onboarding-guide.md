@@ -6,7 +6,7 @@
 | Depends on | TASK-007 — module boundaries (`docs/architecture/solution-architecture.md`); TASK-014 — local stack (`docs/architecture/local-development-environment.md`) |
 | Also draws on | TASK-012 — branching and PRs (`docs/architecture/branching-strategy.md`); TASK-001 — controlled sources (`docs/baseline/controlled-source-baseline.md`) |
 | Record date | 2026-10-24 |
-| Status | **DRY-RUN BY A STAND-IN; A HUMAN DRY RUN IS STILL OWED.** The workbook's validation was run from a fresh clone with cold images by an AI agent with no prior knowledge of the codebase, following only this guide. It took 240s to signed in, all checks passed, and it logged 13 steps that needed outside help, all fixed here (§9). The acceptance criterion names one developer new to the codebase, and no person has done that run yet (§9.3) |
+| Status | **DRY-RUN BY A STAND-IN; A HUMAN DRY RUN IS STILL OWED.** The workbook's validation was run from a fresh clone with cold images by an AI agent with no prior knowledge of the codebase, following only this guide. Run 1 took 240s to signed in and logged 13 steps that needed outside help. Run 2, on the revised guide, took 225s and logged 3. All 16 are fixed, and every check passed in both runs (§9). The acceptance criterion names one developer new to the codebase, and no person has done that run yet (§9.3) |
 | Branch | `docs/task-095-developer-onboarding-guide` |
 
 This guide takes you from no checkout to a running local stack and a merged first pull request. Do the sections in
@@ -95,8 +95,22 @@ alongside. `--wait` returns once everything is healthy, not just started.
 The compose file sets the project name `ahda`. Its containers are `AHDA-postgres`, `AHDA-ldap`, `AHDA-migrate`,
 `AHDA-seed`, `AHDA-api` and `AHDA-frontend`, and its volumes are `ahda_*`. To run a second copy beside an existing
 one, add `-p <other-name>` to every compose command. You also need an override file that gives the containers other
-names, because the names are fixed in the compose file. Then substitute your container names wherever this guide
-says `AHDA-…`.
+names, because the names are fixed in the compose file. Save one outside the checkout, for example as
+`../ahda2.override.yml`:
+
+```yaml
+services:
+  postgres: {container_name: AHDA2-postgres}
+  ldap: {container_name: AHDA2-ldap}
+  migrate: {container_name: AHDA2-migrate}
+  seed: {container_name: AHDA2-seed}
+  api: {container_name: AHDA2-api}
+  frontend: {container_name: AHDA2-frontend}
+```
+
+Then run every compose command as `docker compose -p ahda2 -f infra/docker/docker-compose.yml -f
+../ahda2.override.yml …`. Your volumes become `ahda2_*` and your images `ahda2-*`. The published ports still clash,
+so also move them (§1.2). Wherever this guide says `AHDA-…`, use your container names.
 
 How long it takes: the first build pulls base images and restores packages with empty caches, and took 160s on a
 clean Docker Desktop (108s build, 52s to healthy). The §9 dry run took 240s from `git clone` to signed in. Later
@@ -150,7 +164,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST http://localhost:5173/api/v1/se
 | Stop the stack, keeping its data | `docker compose -f infra/docker/docker-compose.yml stop`. Afterwards `docker ps -a` shows `AHDA-frontend` as `Exited (1)`: the dev server was killed, which is not a fault |
 | Start it again | the `up --build --wait` command of §3.1 (`--build` picks up backend changes) |
 | Reset to a freshly seeded database | `docker compose -f infra/docker/docker-compose.yml down -v`, then the §3.1 `up --build --wait` command |
-| Run the stack's acceptance check | `infra/docker/smoke-test.sh`. **It starts with `down --volumes --remove-orphans`**: it deletes your local data and any extra container in the `ahda` project |
+| Run the stack's acceptance check | `infra/docker/smoke-test.sh`. **It starts with `down --volumes --remove-orphans`**: it deletes your local data and any extra container in the `ahda` project. It takes no `-p` and no override, so it always acts on the default `ahda` stack. Never run it while an `ahda` stack you need is up |
 
 Frontend edits hot-reload: `src/frontend` is bind-mounted into `AHDA-frontend`. Backend edits need a rebuild of the
 `api` image, which `up --build` does.
@@ -293,7 +307,7 @@ The PR cannot merge until the required checks pass (§6.2). Run the relevant sub
 | CI job | Local command | When |
 | --- | --- | --- |
 | `backend` (build, analyzers, unit and architecture tests) | `dotnet build src/backend -warnaserror && dotnet test src/backend/PMPlatform.Tests.Unit --no-build` | Any backend change |
-| integration jobs (`backend-*`) | `docker compose -f infra/docker/docker-compose.yml up -d --wait postgres ldap`, then `DB_CONNECTION_STRING="Host=localhost;Port=5432;Database=postgres;Username=pmplatform;Password=pmplatform" dotnet test src/backend/PMPlatform.Tests.Integration` | Backend change touching persistence, an API or a module's behaviour. Both containers must be up: without `ldap` about 120 tests fail at sign-in with 503 |
+| integration jobs (`backend-*`) | `docker compose -f infra/docker/docker-compose.yml up -d --wait postgres ldap`, then `DB_CONNECTION_STRING="Host=localhost;Port=5432;Database=postgres;Username=pmplatform;Password=pmplatform" dotnet test src/backend/PMPlatform.Tests.Integration` | Backend change touching persistence, an API or a module's behaviour. Both containers must be up: without `ldap` about 120 tests fail at sign-in with 503. **If you moved the ports (§1.2), change the command too**: put your `PMPLATFORM_POSTGRES_PORT` in place of `Port=5432`, and set `AD_LDAP_URL=ldap://localhost:<your PMPLATFORM_LDAP_PORT>/dc=pmplatform,dc=local`. As printed, the command reaches whatever owns 5432 and 3389, which may be another stack's database. If you run a second copy (§3.1), add your `-p` and override to the `up` |
 | `frontend` | `docker exec -w /repo/src/frontend AHDA-frontend sh -c 'npm run lint && npm run format:check && npm run typecheck && npm test'` | Any frontend change |
 | `repo-checks` | the command below this table: the job's 19 Python scripts plus the forward-only migration check, about 5s | Every PR; it is cheap |
 | `api-documentation` | regenerate `docs/api/openapi.v1.json` as `CONTRIBUTING.md` "Build and verify" shows | Any API contract change |
@@ -481,8 +495,18 @@ the §3.3 `curl` answering `201`.
 | Date | Developer | Machine / engine | Clone → signed in | Steps that needed outside help | Fixed in |
 | --- | --- | --- | --- | --- | --- |
 | 2026-10-24 | AI agent with no prior context of the codebase, following only this guide (a **stand-in**, not a person) | macOS Darwin 27 arm64, Docker Desktop 29.8.0 / Compose 5.5.1. Images built cold (`build --no-cache --pull`), empty volumes, own compose project beside an existing stack, PostgreSQL/LDAP moved to 15432/13389 | **240s** (clone 26s, cold build 138s, `up --wait` 53s); stop→up 17s; `down -v`→up 56s | 13, none blocking. §1.2: port variables need `export`, and the integration tests need the moved ports. §3.1: project name `ahda` and how to run beside it. §3.2: `/api-docs` answers 301. §3.3: password location ambiguous, password typed into shell history. §3.4: frontend `Exited (1)` after `stop`; reset's "then `up`" ambiguous. §4.1: T-6 "the API" ambiguous. §4.3: `solution-architecture.md` not tied to "ADR-003"; query service unnamed; how to check §8.2 unstated. §5.3: repo-checks are not all `*-check.py` and include `migration-forward-only.sh`. §6.2: template placeholders, the "tick every box" comment, and the secret-scan box before CI; PR-title form. §8: end point of the timing | this revision (§10) |
+| 2026-10-24 | Second AI stand-in with no prior context and no sight of run 1, following the revised guide only (a **stand-in**, not a person) | macOS arm64, Docker Desktop (engine 29.8.x, Compose 5.5.1). Images built cold (`build --no-cache --pull`), empty volumes, **empty NuGet cache**, own compose project beside a running `ahda` stack, PostgreSQL/LDAP on 15432/13389 | **225s** (clone 9s, cold build 138s, `up --wait` 60s); stop→up 18s; `down -v`→up 26s; cold-NuGet backend build 136s | 3, none blocking. §3.1: no example override or full command for running a second copy. §5.3: the integration command hard-codes `Port=5432` without `AD_LDAP_URL` and does not point to §1.2; the §1.2 values themselves worked. §3.4: does `smoke-test.sh` honour `-p`? | this revision (§10) |
 
-Results of the stand-in run: §1 checks all answered. `/health` → 200; frontend → 200; `local.r02` → 201;
+Results of run 2: `/health` → 200; `/api-docs/` → 301 → 200; frontend → 200; `local.r02` → 201, before and after
+the reset. Backend: 0 warnings, 2017 of 2017 unit tests passed. Frontend: lint, format and typecheck clean, Vitest
+1052 of 1052 on the first run. Integration slice `…Integration.Identity` on the moved ports: 122 of 122 passed,
+against the run's own PostgreSQL (checked in `pg_stat_database`). repo-checks: exit 0. Both §4 questions
+(where Risk's project-status read goes; whether a new cross-module call needs an architecture change) were answered
+correctly from the guide alone. The PR body was drafted from the template following §6.2. The run was interrupted
+once when the Docker engine stopped answering; that was the machine, and the step was redone after a Docker Desktop
+restart.
+
+Results of run 1: §1 checks all answered. `/health` → 200; frontend → 200; `local.r02` → 201;
 `local.r01` → 503. Backend: 0 warnings, 2017 of 2017 unit tests passed. Frontend: lint, format and typecheck exit 0;
 Vitest lost 7 tests to timeouts on the first run (the maintainer's stack was running), then passed 1052 of 1052
 twice. The 19 repo-checks scripts and `migration-forward-only.sh` all exit 0. Integration tests and the push were
@@ -493,11 +517,12 @@ out of scope for the run.
 | Criterion | Status |
 | --- | --- |
 | A new developer following only this guide reaches a running local environment and submits a passing first PR without verbal handover, validated by a dry run with one developer new to the codebase | **PARTIAL.** The stand-in reached a running environment from cold images in 240s, using this guide only. Every gap it logged is fixed, and it prepared its first PR up to `git push`. It is not a person, and it did not push a PR or watch CI. The criterion reads MET when a developer new to the codebase adds a §9.2 row by following §8, with no step needing outside help (or with every step they list fixed in the same PR), and that PR passes the 11 checks and merges |
-| Validation: follow the guide from a clean machine, time it, log every step that needed outside help, fix the guide | **DONE with the stand-in** (§9.2 row 1): the time is logged and all 13 steps are fixed. To repeat it with a person, follow §8 |
+| Validation: follow the guide from a clean machine, time it, log every step that needed outside help, fix the guide | **DONE with stand-ins, two iterations** (§9.2). Run 1: 240s, 13 steps fixed. Run 2, on the revised guide with a colder machine: 225s, 3 steps, all fixed, none blocking, and every check including an integration slice green. To repeat it with a person, follow §8 |
 
 ## 10. Change log
 
 | Date | Change | Author |
 | --- | --- | --- |
+| 2026-10-24 | Second validation dry run on the revised guide (§9.2 row 2, 225s, cold NuGet as well as cold images). Its 3 outside-help steps are fixed: an example override file and full command for running a second copy (§3.1); `smoke-test.sh` always acts on the default `ahda` stack (§3.4); the integration command must take the moved ports, or it reaches another stack's database (§5.3). | Documentation (TASK-095) |
 | 2026-10-24 | Validation dry run by a stand-in with no prior context, from cold images (§9.2 row 1, 240s). Its 13 outside-help steps are fixed: port export and integration-test ports (§1.2); compose project `ahda` and how to run beside it (§3.1); `/api-docs/` redirect (§3.2); password read from the file, not typed (§3.3); `Exited (1)` after stop and the reset command (§3.4); T-6 wording (§4.1); ADR-003 = `solution-architecture.md`, query interfaces, how to check §8.2, a worked example (§4.3); a repo-checks command that reads the job (§5.3); template placeholders, checkbox honesty, the secret-scan box, title form, merge-commit practice (§6); timing end point (§8). Acceptance recorded as PARTIAL until a person does the run (§9.3). | Documentation (TASK-095) |
 | 2026-10-24 | Initial guide: access and prerequisites, local stack, module boundaries, branching and PRs into `dev`, controlled sources and where the files are, first-PR procedure, author's rehearsal (§9.1). Dry run by a new developer pending. | Documentation (TASK-095) |
