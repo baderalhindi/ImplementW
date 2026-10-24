@@ -181,7 +181,7 @@ The gate passes on the test of one build. A fix merged after the final retest is
 | --- | --- | --- |
 | F-1 | **Ask the provider question now.** PRE-1 is not in the workbook's Open Questions sheet. Propose a new OQ: "Who performs the pre-launch penetration test, with what accreditation, and what is its lead time?" (Guide §15) | PMO Engagement Lead |
 | F-2 | **The hosting confirmation blocks this task as well as the infrastructure tasks.** No UAT means no test (PRE-2). The written confirmation, the tenancy (UGV-07) and the DNS zone are on this task's critical path to go-live, and the plan should show it | Delivery Lead |
-| F-3 | **The next test date** follows the criticality decision (PRE-6): six months after go-live if critical, twelve if not. It belongs in the operations calendar handed over in TASK-097 | AHDA Cybersecurity; TASK-097 |
+| F-3 | **The next test date** follows the criticality decision (PRE-6): six months after go-live if critical, twelve if not. It is row C-5 of the operations calendar handed over in TASK-097 (`docs/handover/README.md` §6) | AHDA Cybersecurity; TASK-097 |
 | F-4 | **No Security Lead review exists in this repository** (`findings-log.md` P-1). It applies here too: the Security Lead owns the Release Checklist row this record decides | Maintainer; Security Lead |
 
 ## 9. Change log
