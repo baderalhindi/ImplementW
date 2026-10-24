@@ -20,6 +20,8 @@ namespace PMPlatform.Api.Controllers;
 /// verification Nafath declined is a 422, and one Nafath could not complete a 503 with <c>Retry-After</c>: never a
 /// session, and never a refusal that blames the person. Every anonymous endpoint here is rate-limited per client address
 /// (TASK-078): past the limit it answers 429 <c>RATE_LIMITED</c> with <c>Retry-After</c> and does not reach the directory or a provider.
+/// The sign-ins declare their 200 as <see cref="MfaPendingDetail"/>: OpenAPI keys a response by status, so the identity verification
+/// token's 200 (<see cref="IdentityVerificationPendingDetail"/>, Nafath only) cannot be declared beside it (docs/api/README.md F-2).
 /// </summary>
 [ApiController]
 [Route("api/v1/sessions")]
@@ -33,6 +35,8 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateSession")]
+    [ProducesResponseType<SessionDetail>(StatusCodes.Status201Created, "application/json")]
+    [ProducesResponseType<MfaPendingDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Create(SessionCreateRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -50,6 +54,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_GetSsoAuthorization")]
+    [ProducesResponseType<SsoAuthorizationDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> GetSsoAuthorization(CancellationToken cancellationToken)
     {
         SsoAuthorizationResult result = await authentication.BeginSsoSignInAsync(cancellationToken);
@@ -64,6 +69,8 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateSsoSession")]
+    [ProducesResponseType<SessionDetail>(StatusCodes.Status201Created, "application/json")]
+    [ProducesResponseType<MfaPendingDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> CreateSso(SsoSessionCreateRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -81,6 +88,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateMfaChallenge")]
+    [ProducesResponseType<MfaChallengeDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> CreateMfaChallenge(MfaChallengeCreateRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -98,6 +106,8 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateMfaSession")]
+    [ProducesResponseType<SessionDetail>(StatusCodes.Status201Created, "application/json")]
+    [ProducesResponseType<MfaPendingDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> CreateMfa(MfaSessionCreateRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -118,6 +128,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateIdentityVerificationAuthorization")]
+    [ProducesResponseType<IdentityVerificationAuthorizationDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> CreateIdentityVerificationAuthorization(IdentityVerificationAuthorizationCreateRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -138,6 +149,8 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateIdentityVerificationSession")]
+    [ProducesResponseType<SessionDetail>(StatusCodes.Status201Created, "application/json")]
+    [ProducesResponseType<MfaPendingDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> CreateIdentityVerificationSession(IdentityVerificationSessionCreateRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -161,6 +174,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [HttpGet("current")]
     [AllowAnyAuthenticatedUser]
     [EndpointName("IdentityAccess_GetCurrentSession")]
+    [ProducesResponseType<CurrentSessionDetail>(StatusCodes.Status200OK, "application/json")]
     public IActionResult GetCurrent()
     {
         ClaimsPrincipal user = User;
@@ -184,6 +198,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SessionRefresh)]
     [EndpointName("IdentityAccess_RefreshSession")]
+    [ProducesResponseType<SessionDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Refresh(SessionRefreshCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -204,6 +219,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreateStepUpChallenge")]
+    [ProducesResponseType<MfaChallengeDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> CreateStepUpChallenge(StepUpChallengeCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -221,6 +237,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_StepUpSession")]
+    [ProducesResponseType<SessionDetail>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> StepUp(StepUpCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

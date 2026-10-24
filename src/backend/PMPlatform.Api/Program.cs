@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Options;
+using PMPlatform.Api.ApiDocumentation;
 using PMPlatform.Api.Auditing;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Correlation;
@@ -58,6 +59,8 @@ builder.Services.AddControllers(options => options.Filters.Add<RequestTextValida
 // converters; Money's converter is opaque to it, so its schema is declared (R-16).
 builder.Services.ConfigureHttpJsonOptions(options => AddWireConverters(options.SerializerOptions));
 builder.Services.AddOpenApi(options => options.AddSchemaTransformer<MoneySarSchemaTransformer>());
+// TASK-094: whether this environment serves the document and its docs UI (DEV and SIT do; ApiDocumentationOptions).
+builder.Services.AddOptions<ApiDocumentationOptions>().Bind(builder.Configuration.GetSection(ApiDocumentationOptions.Section));
 builder.Services.AddHealthChecks();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -171,10 +174,9 @@ app.UseExceptionHandler(handler => handler.Run(context =>
         ? ApiProblem.WriteAsync(context, StatusCodes.Status422UnprocessableEntity, ErrorCodes.ConfigurationMissing, "Configuration missing.")
         : ApiProblem.WriteAsync(context, StatusCodes.Status500InternalServerError, ErrorCodes.InternalError, "Internal error.")));
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi().AllowAnonymous();
-}
+// TASK-094: the OpenAPI document, and the docs UI where enabled. Ahead of the origin, CSRF and authentication middleware: both are
+// anonymous reads.
+app.UseApiDocumentation();
 
 app.UseHttpsRedirection();
 app.UseMiddleware<OriginAllowlist>();
@@ -194,6 +196,14 @@ app.MapControllers();
 app.MapApmDiagnostics();
 app.RequireKnownStepUpOperations();
 app.RequireEndpointAuthorization();
+
+// TASK-094: `openapi <file>` writes the generated OpenAPI document and exits without serving. After every endpoint is mapped, so the
+// document is the one the API serves; CI publishes it from every build of main (R-49).
+if (args is [ApiDocumentationEndpoints.Command, string documentFile])
+{
+    Environment.ExitCode = await RunToCompletionAsync(args[0], () => app.Services.WriteDocumentAsync(documentFile)).ConfigureAwait(false);
+    return;
+}
 
 await app.RunAsync().ConfigureAwait(false);
 

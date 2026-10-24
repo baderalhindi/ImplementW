@@ -121,6 +121,17 @@ UPDATE_OPENAPI_SNAPSHOT=1 DB_CONNECTION_STRING="…" \
   --filter "FullyQualifiedName~ProjectContractTests|FullyQualifiedName~ExecutionContractTests|FullyQualifiedName~RiskIssueContractTests|FullyQualifiedName~GovernanceContractTests"
 ```
 
+The whole snapshot can also be rewritten without a database or a test run (TASK-094): the API's `openapi` command writes the
+document it serves. The `api-documentation` check fails a PR whose snapshot differs from it by a byte, and publishes the
+document as the `openapi-v1` artifact. The local stack serves it in Swagger UI at http://localhost:5080/api-docs
+(`docs/api/README.md`):
+
+```sh
+dotnet build src/backend/PMPlatform.Api --configuration Release
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/backend/PMPlatform.Api --configuration Release --no-build \
+  --no-launch-profile -- openapi "$PWD/docs/api/openapi.v1.json"
+```
+
 Frontend:
 
 ```sh

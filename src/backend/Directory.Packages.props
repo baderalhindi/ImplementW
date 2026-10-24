@@ -41,6 +41,8 @@
     <!-- TASK-090: APM and error tracking. The SDK speaks the Sentry protocol, which a self-hosted Sentry or GlitchTip in the named
          region ingests (CTL-28); the destination is APM_DSN. -->
     <PackageVersion Include="Sentry.AspNetCore" Version="6.12.0" />
+    <!-- TASK-094: the hosted docs UI (DEV and SIT). Swagger UI's own assets, served by the API; nothing is loaded from another origin. -->
+    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />

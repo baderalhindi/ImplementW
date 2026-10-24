@@ -52,6 +52,13 @@ resource "terraform_data" "preflight" {
       error_message = "alert_notification_channel is empty for ${var.environment}, which has uptime monitoring. The on-call channel is created by its secret's owner with infra/environments/route-alerts.sh ${var.environment}, and the pipeline passes its name as TF_VAR_alert_notification_channel."
     }
 
+    # TASK-094: the docs UI is for the people building and testing against the API. UAT is AHDA's acceptance
+    # environment and PROD its service; neither publishes the API's description at an anonymous path.
+    precondition {
+      condition     = !var.api_documentation || contains(["dev", "sit"], var.environment)
+      error_message = "api_documentation is true for ${var.environment}. The hosted API docs are DEV and SIT only (docs/api/README.md); UAT and PROD do not serve them."
+    }
+
     # Cloud SQL's automated backups are deleted with the instance they belong to, so an environment
     # whose only copy is on the instance has no answer to the instance being deleted. This is not an
     # AHDA value to be supplied — it is the difference between a backup and a snapshot (TASK-020).

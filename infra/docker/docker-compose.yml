@@ -124,6 +124,8 @@ services:
       # TASK-037: WF-12's store is a directory on a named volume here; every environment uses its Cloud Storage bucket
       # (gs://…). No malware-scanning provider is selected, so nothing uploaded here is ever scanned CLEAN (fail closed).
       DOCUMENT_STORAGE_CONNECTION_STRING: file:///var/lib/pmplatform/documents
+      # TASK-094: the docs UI, as DEV and SIT serve it: http://localhost:5080/api-docs (docs/api/README.md).
+      ApiDocumentation__Enabled: "true"
     volumes:
       - document-store:/var/lib/pmplatform/documents
     ports:

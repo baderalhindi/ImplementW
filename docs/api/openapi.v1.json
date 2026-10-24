@@ -15649,8 +15649,25 @@
           "required": true
         },
         "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaPendingDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15664,7 +15681,14 @@
         "operationId": "IdentityAccess_GetSsoAuthorization",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SsoAuthorizationDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15697,8 +15721,25 @@
           "required": true
         },
         "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaPendingDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15732,7 +15773,14 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaChallengeDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15765,8 +15813,25 @@
           "required": true
         },
         "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaPendingDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15800,7 +15865,14 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityVerificationAuthorizationDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15833,8 +15905,25 @@
           "required": true
         },
         "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaPendingDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15848,7 +15937,14 @@
         "operationId": "IdentityAccess_GetCurrentSession",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentSessionDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15882,7 +15978,14 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15916,7 +16019,14 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaChallengeDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -15950,7 +16060,14 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
           }
         }
       }
@@ -19083,6 +19200,13 @@
         ],
         "description": "How the audited occurrence ended (ERD `audit_event.outcome`)."
       },
+      "AuthenticationMethod": {
+        "enum": [
+          "DIRECTORY",
+          "SINGLE_SIGN_ON"
+        ],
+        "description": "How the session's user proved their identity."
+      },
       "BaselineActivityDetail": {
         "required": [
           "scheduleActivityId",
@@ -22049,6 +22173,63 @@
           "INCOMPATIBLE"
         ],
         "description": "Why an eligible project is left out of an aggregate (FG-01 §7.4 ExclusionReasonSummary)."
+      },
+      "CurrentSessionDetail": {
+        "required": [
+          "userId",
+          "sessionId",
+          "userType",
+          "authenticationMethod",
+          "multiFactorAuthenticated",
+          "authenticatedAt",
+          "roles",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userType": {
+            "$ref": "#/components/schemas/UserType"
+          },
+          "authenticationMethod": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AuthenticationMethod"
+              }
+            ]
+          },
+          "multiFactorAuthenticated": {
+            "type": "boolean"
+          },
+          "authenticatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "What the presented access token asserts. `authenticatedAt` tells the client how long before a step-up\noperation will answer `STEP_UP_REQUIRED`."
       },
       "DashboardAudienceDetail": {
         "required": [
@@ -26246,6 +26427,23 @@
         },
         "description": "Starts the Nafath identity verification with the token the sign-in returned."
       },
+      "IdentityVerificationAuthorizationDetail": {
+        "required": [
+          "authorizationUrl",
+          "transaction"
+        ],
+        "type": "object",
+        "properties": {
+          "authorizationUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "transaction": {
+            "type": "string"
+          }
+        },
+        "description": "Where to send the browser for Nafath, and the sealed transaction to keep (in session storage) until it comes back to `NAFATH_CALLBACK_URL`."
+      },
       "IdentityVerificationIntegrationStatus": {
         "required": [
           "isEnabled",
@@ -29033,6 +29231,54 @@
           }
         },
         "description": "Starts the second factor of a sign-in with the MFA token the first factor returned."
+      },
+      "MfaChallengeDetail": {
+        "required": [
+          "challengeId",
+          "expiresAt",
+          "provisioningUri"
+        ],
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "provisioningUri": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A second-factor challenge. `provisioningUri` is set for an enrolment only: what the person loads into their\nauthenticator, as the MFA provider returns it."
+      },
+      "MfaPendingDetail": {
+        "required": [
+          "mfaToken",
+          "mfaTokenExpiresAt",
+          "enrolmentRequired"
+        ],
+        "type": "object",
+        "properties": {
+          "mfaToken": {
+            "type": "string"
+          },
+          "mfaTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "enrolmentRequired": {
+            "type": "boolean"
+          }
+        },
+        "description": "The first factor passed; no session yet (TASK-029). The client starts the second factor with `mfaToken`\n(`POST /api/v1/sessions/mfa-challenge`) and completes it (`POST /api/v1/sessions/mfa`). The token opens\nnothing else: every other endpoint refuses it. `enrolmentRequired` is true when the person has no factor yet\nand enrols one on this sign-in."
       },
       "MfaSessionCreateRequest": {
         "required": [
@@ -37130,6 +37376,47 @@
         ],
         "description": "ERD `risk_treatment_action.action_type`. Accepting a risk is not an action: it is a RiskAcceptance."
       },
+      "RoleAssignmentSummary": {
+        "required": [
+          "roleCode",
+          "permissionProfileVersionId",
+          "departmentId",
+          "externalEntityId",
+          "projectId"
+        ],
+        "type": "object",
+        "properties": {
+          "roleCode": {
+            "type": "string"
+          },
+          "permissionProfileVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "externalEntityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "A role the session holds: the canonical role code, the profile version it is bound to (ADR-018) and its scope anchors."
+      },
       "RoleDetail": {
         "required": [
           "id",
@@ -38273,6 +38560,45 @@
         },
         "description": "Sign-in with directory credentials."
       },
+      "SessionDetail": {
+        "required": [
+          "tokenType",
+          "accessToken",
+          "accessTokenExpiresAt",
+          "refreshToken",
+          "refreshTokenExpiresAt",
+          "sessionExpiresAt",
+          "user"
+        ],
+        "type": "object",
+        "properties": {
+          "tokenType": {
+            "type": "string"
+          },
+          "accessToken": {
+            "type": "string"
+          },
+          "accessTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "refreshTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sessionExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/SessionUserDetail"
+          }
+        },
+        "description": "An issued session. The access token goes in `Authorization: Bearer` (R-46); the refresh token only to the refresh command."
+      },
       "SessionRefreshCommand": {
         "required": [
           "refreshToken"
@@ -38284,6 +38610,54 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "SessionUserDetail": {
+        "required": [
+          "id",
+          "userType",
+          "username",
+          "displayName",
+          "preferredLanguage",
+          "authenticationMethod",
+          "multiFactorAuthenticated",
+          "authenticatedAt",
+          "roleAssignments"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userType": {
+            "$ref": "#/components/schemas/UserType"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "preferredLanguage": {
+            "type": "string"
+          },
+          "authenticationMethod": {
+            "$ref": "#/components/schemas/AuthenticationMethod"
+          },
+          "multiFactorAuthenticated": {
+            "type": "boolean"
+          },
+          "authenticatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "roleAssignments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleAssignmentSummary"
+            }
           }
         }
       },
@@ -38545,6 +38919,23 @@
           "HYBRID"
         ],
         "description": "ERD `financial_source_mode.source_mode` (ADR-008 gate): MANUAL at launch; INTEGRATED and HYBRID are built and left\nunconnected. A field that is INTEGRATED takes no manual figure, and never goes back to MANUAL: manual substitution during\na source outage is not permitted."
+      },
+      "SsoAuthorizationDetail": {
+        "required": [
+          "authorizationUrl",
+          "transaction"
+        ],
+        "type": "object",
+        "properties": {
+          "authorizationUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "transaction": {
+            "type": "string"
+          }
+        },
+        "description": "Where to send the browser, and the sealed transaction to keep (in session storage) until the redirect back."
       },
       "SsoSessionCreateRequest": {
         "required": [

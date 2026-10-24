@@ -141,3 +141,9 @@ variable "integration_alert_thresholds" {
     error_message = "Each key of integration_alert_thresholds is a threshold of docs/operations/alert-thresholds.json for one integration code, e.g. FreshnessWindows__DIRECTORY or QueueBacklogThresholds__SMS__Depth."
   }
 }
+
+variable "api_documentation" {
+  description = "Whether the API serves its OpenAPI document at /openapi/v1.json and the Swagger UI docs UI at /api-docs, anonymously (TASK-094, docs/api/README.md). True in DEV and SIT, the environments the acceptance criterion names; refused for UAT and PROD (guards.tf)."
+  type        = bool
+  default     = false
+}

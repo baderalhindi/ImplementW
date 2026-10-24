@@ -51,3 +51,6 @@ uptime_monitoring = true
 # freshness, delivery-rate or backlog alert. A non-PROD drill sets a test value here for its run only
 # (operational-dashboards.md §7.3).
 integration_alert_thresholds = {}
+
+# TASK-094: the OpenAPI document at /openapi/v1.json and the Swagger UI at /api-docs (docs/api/README.md).
+api_documentation = true

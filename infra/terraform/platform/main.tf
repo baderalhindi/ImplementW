@@ -134,6 +134,7 @@ module "compute" {
   # TASK-092: FG-05's alert thresholds, as the API reads them (IntegrationMonitoring:Policy). They are
   # AHDA's values (PTBC-037), registered in docs/operations/alert-thresholds.json; each environment's
   # terraform.tfvars holds the ones set for it, none until AHDA confirms them.
+  # TASK-094: the OpenAPI document and its docs UI, where the environment serves them (DEV, SIT; guards.tf).
   plain_environment = merge(
     {
       APP_BASE_URL          = local.app_base_url
@@ -141,6 +142,7 @@ module "compute" {
       SECRET_STORE_ENDPOINT = local.secret_store_endpoint
     },
     { for setting, value in var.integration_alert_thresholds : "IntegrationMonitoring__Policy__${setting}" => value },
+    var.api_documentation ? { ApiDocumentation__Enabled = "true" } : {},
   )
 }
 

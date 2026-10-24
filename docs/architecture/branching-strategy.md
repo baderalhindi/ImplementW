@@ -117,7 +117,7 @@ The 21 module folders under `Application/Features/`, `Domain/`, `Infrastructure/
 | `deletion` | branch cannot be deleted | — |
 | `non_fast_forward` | no force-push | `monorepo-bootstrap.md` S-3 |
 | `pull_request` | required; **0 approving reviews** and code-owner review off while one account holds write access (S-4); stale reviews dismissed on push; every review thread resolved. Set back to 1 and `true` when a second maintainer joins | "at least 1 approving review" — **not met** until then |
-| `required_status_checks` | **`backend`, `backend-risk-governance`, `backend-endpoint-hardening`, `backend-platform-services`, `coverage`, `frontend`, `repo-checks`, `terraform`, `secret-scan`, `dependency-vuln-gate`**; strict (branch must be current with the target). `pr-policy` was removed on 2026-09-22 and the workflow itself on 2026-09-27 (§5.1) | "passing CI"; CTL-39 |
+| `required_status_checks` | **`backend`, `backend-risk-governance`, `backend-endpoint-hardening`, `backend-platform-services`, `api-documentation` (TASK-094), `coverage`, `frontend`, `repo-checks`, `terraform`, `secret-scan`, `dependency-vuln-gate`**; strict (branch must be current with the target). `pr-policy` was removed on 2026-09-22 and the workflow itself on 2026-09-27 (§5.1) | "passing CI"; CTL-39 |
 | `bypass_actors` | none — administrators included | CTL-38 verification: direct push rejected |
 | `enforcement` | `active` | — |
 
