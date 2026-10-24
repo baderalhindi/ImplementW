@@ -5,7 +5,7 @@
 | Task | TASK-096 — Author End-User Guide & FAQ (Arabic + English) (P17 - Documentation) |
 | Depends on | TASK-042 — Project Register & Creation UI (`project-registration-ui.md`); TASK-070 — Dashboards UI (`dashboards-ui.md`) |
 | Record date | 2026-10-24 |
-| Status | **BUILT; BILINGUAL REVIEW PENDING.** The User Guide, FAQ and Knowledge Base are written in both languages and served in the app under Help and Knowledge. Every role's §20.2 landing page has an article in both languages, enforced by a test. The second acceptance criterion needs a bilingual business reviewer's sign-off, which has not happened yet (§6) |
+| Status | **BUILT; BILINGUAL REVIEW PENDING.** The User Guide, FAQ and Knowledge Base are written in both languages and served in the app under Help and Knowledge. Every role's §20.2 landing page has an article in both languages, enforced by a test. The five sampled articles passed an independent bilingual pre-review, and its 27 findings are applied (§6.1). The second acceptance criterion needs a bilingual business reviewer's sign-off, which has not happened yet (§6.2) |
 | Branch | `docs/task-096-end-user-guide-faq` |
 | Deliverables | **Content (ar/en):** `src/frontend/src/content/help/{en,ar}/guide.json` (9 articles), `faq.json` (21 questions in 5 groups), `knowledge-base.json` (19 terms); `help.ts` (article metadata, the §20.2 landing map, the `[[key]]` label references). **Screens:** `src/frontend/src/app/help/` — SCR-011 User Guide, SCR-012/SCR-126 FAQ, SCR-125 Knowledge Base, and Blueprint §20.1 menu 11 Help and Knowledge (`menus.ts`). **Checks:** `content.test.ts`, `help.test.tsx`. This record |
 | Gate decision applied | **"Bilingual per ADR-012: interface and controlled content in Arabic and English."** Every article, question and term exists in both languages, each language written in its own file (D-5) |
@@ -69,10 +69,61 @@ follows approval authority, not a role grant).
 | # | Criterion | Status |
 | --- | --- | --- |
 | 1 | Every role's default landing workflow (Section 20.2) has at least one corresponding guide article in both languages | **MET** — §3; enforced by `content.test.ts` on every build |
-| 2 | A business reviewer confirms the Arabic content is not a machine-only translation of the English without review | **NOT YET MET** — the Arabic was written for Arabic readers (D-5), but no bilingual business reviewer has signed off. §6 is the sign-off sheet |
-| — | Validation: sample 5 guide articles per language and confirm a bilingual reviewer has signed off on accuracy and tone, not just literal translation | **PENDING** — sample in §6 |
+| 2 | A business reviewer confirms the Arabic content is not a machine-only translation of the English without review | **NOT YET MET** — the Arabic was written for Arabic readers (D-5), and an independent pre-review of the sample found no literal translation after its calques were fixed (§6.1), but no bilingual business reviewer has signed off. §6.2 is the sign-off sheet |
+| — | Validation: sample 5 guide articles per language and confirm a bilingual reviewer has signed off on accuracy and tone, not just literal translation | **PARTIAL** — the 5 articles were sampled and pre-reviewed in both languages, and every finding is fixed (§6.1). The bilingual reviewer's sign-off is still owed (§6.2) |
 
 ## 6. Bilingual review and sign-off
+
+### 6.1 Independent pre-review (2026-10-24) — not the sign-off
+
+The sample of five articles below was reviewed in both languages by a reviewer independent of the author: an AI
+reviewer given only the content files and the code, with no part in writing them. It checked three things. Accuracy:
+each statement against the built screens, access rules and the seed. Tone: formal register for government staff.
+Literalness: whether the Arabic was written for Arabic readers. **This is not the bilingual business reviewer's
+sign-off the acceptance criterion requires (§6.2); it was done so that the reviewer signs corrected text.**
+
+| Article | EN accuracy | EN tone | AR accuracy | AR tone | AR not literal |
+| --- | --- | --- | --- | --- | --- |
+| `getting-started` | issues → fixed | issues → fixed | issues → fixed | issues → fixed | minor calques → fixed |
+| `portfolio-dashboard` | issues → fixed | issues → fixed | issues → fixed | issues → fixed | calques → fixed |
+| `project-manager-home` | issues → fixed | pass | issues → fixed | issues → fixed | calques → fixed |
+| `external-contributor-home` | issues → fixed | pass | issues → fixed | issues → fixed | minor calques → fixed |
+| `register-a-project` | issues → fixed | pass | issues → fixed | issues → fixed | minor calques → fixed |
+
+The reviewer judged the Arabic "mostly written for Arabic readers, not word for word", and listed its calques
+sentence by sentence. 27 findings, all applied (`artifacts/task-096/review-fixes.py`, git-ignored):
+
+- **Accuracy (both languages):**
+  - The menus show every area to everyone, except Administration; access is decided by the platform. The same
+    error in the FAQ answer `missing-menu` was fixed too.
+  - The counts beside Requests and Approvals and beside Notifications were explained.
+  - Sign-in: multi-factor authentication can be required for roles other than R01, and the first sign-in shows an
+    enrolment key.
+  - Closing the tab ends the session.
+  - The Sector list offers the sectors of the projects you may see.
+  - Not every widget has Open.
+  - A widget's source is shown as a workflow code.
+  - The dashboard tabs have no visible "Your dashboards" label.
+  - Reporting completeness counts projects; it does not list them.
+  - Blocking a task asks for a reason, and open subtasks block completion.
+  - The external user's Project Dashboard also shows current figures, and only the named responder sees the form.
+  - Drafts are listed among an entity's responses.
+  - The person named as Project Manager must hold that role over the project.
+  - **Widgets read Restricted until the role is granted the view (F-9).** The same note was added to the unsampled
+    administrator and liaison articles, whose roles are affected in the same way.
+- **Arabic grammar and meaning:**
+  - «الأرقام اللاتينية» read as Roman numerals.
+  - «بنوعيها المنشورة والحالية» lacked agreement.
+  - «الإدارة التنفيذية» named a unit, not the R07 role «تنفيذي».
+  - «ما تستحقه مشاريعك» meant "what your projects deserve".
+  - «سمِّ … أنت» was in the wrong case.
+  - «لم يصدر بعد» had the project as its subject instead of its number.
+- **Arabic calques:** «تفتح الرئيسية على», «تبلغها أدواره», «لا يملك قيمة», «رفع التقدم», «قيمك السابقة», «تنقل
+  مراجعة الهيئة», «بوصفه مراجعة تالية».
+
+After the fixes, the reviewer's verdict is that English and Arabic are both ready for human sign-off.
+
+### 6.2 Bilingual business reviewer's sign-off
 
 The reviewer reads each sampled article in both languages, in the app (Help and Knowledge → User guide; the language
 switch is in the top bar), and records for each language: **accuracy** (it matches the screen), **tone** (natural,
@@ -101,9 +152,13 @@ JSON files and re-reviewed.
 | F-4 | **No dedicated message for a wrong password or a locked account** at sign-in: these fall to generic problems. The help does not describe them, because their wording is not fixed. | FG-03 UI |
 | F-5 | **The content must follow the screens.** D-6 catches a renamed or deleted label, but not a changed behaviour: a change to a documented workflow (statuses, required fields, who may act) needs its article updated in the same PR. | Every UI task's PR (reviewers) |
 | F-6 | **SCR-010 Help Center and §20.1's "support" are not built**: no support channel is defined in the sources. | AHDA service owner, then a follow-up task |
+| F-7 | **Arabic count agreement on dashboards.** `dashboards.coverage.counted` prints «احتُسب 10 من 10 مشروعًا»; Arabic needs the plural «مشاريع» for 3–10 (found by the pre-review). | Frontend (FG-01 UI) |
+| F-8 | **"Revision" is labelled «المراجعة» in Arabic** (`projects` `fields.revision`, and two `revision` strings), the same word as "review". The help says «نسخة» for revision to avoid the clash. | Frontend (WF-01 UI), with the bilingual reviewer |
+| F-9 | **The landing dashboards read Restricted for most roles as shipped.** R02, R06 and R07 hold no view grant on any dashboard source; R03's grants do not include them either; R05 holds none; R01 holds only CONFIGURATION_VIEW (`db/seed/seed-master-data.sql`; `dashboards.md` F-3). The help states this, so it stays true either way, but the §20.2 landing pages show little until the Blueprint Appendix A view grants are shipped. | PMO / TASK-110 (permission profiles) |
 
 ## 8. Change log
 
 | Date | Change | Author |
 | --- | --- | --- |
+| 2026-10-24 | Independent bilingual pre-review of the five sampled articles (§6.1); its 27 findings applied in both languages, plus the FAQ `missing-menu` answer and the Restricted note in the administrator and liaison articles. Findings F-7 to F-9. Human sign-off still open (§6.2). | Documentation (TASK-096) |
 | 2026-10-24 | Initial build: 9 guide articles, 21 FAQ entries, 19 knowledge-base terms in English and Arabic; SCR-011, SCR-012/SCR-126 and SCR-125 as read-only pages under the new Help and Knowledge menu; landing-page coverage and language-parity tests; bilingual review sheet pending. | Documentation (TASK-096) |

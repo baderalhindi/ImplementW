@@ -17,7 +17,7 @@
       "missing-menu": {
         "question": "A colleague has a menu or a screen that I do not see. Why?",
         "answer": [
-          "The menus show only what your roles allow, so they differ from person to person. If you need a screen for your work, ask your manager to request the role from the System Administrator."
+          "The menus list the platform's areas for everyone, but [[common.menu.administration]] appears only to those who administer the platform, and some screens inside a menu depend on your roles. If you need a screen or data for your work, ask your manager to request the role from the System Administrator."
         ]
       },
       "missing-project": {

@@ -6,15 +6,15 @@
       {
         "heading": "Sign in",
         "paragraphs": [
-          "Sign in with your AHDA username and password on the [[identityAccess.signIn.tabs.directory]] tab. The other sign-in options on that page are marked [[identityAccess.signIn.comingSoon]] and cannot be used yet.",
-          "The platform never resets passwords. If you have forgotten yours, contact the AHDA IT service desk."
+          "Sign in with your AHDA username and password. The form appears under the Microsoft tab and the [[identityAccess.signIn.tabs.directory]] tab alike. The other sign-in options are marked [[identityAccess.signIn.comingSoon]] and cannot be used yet.",
+          "The platform does not reset passwords itself. If you have forgotten yours, use the link or the contact shown under the password field."
         ],
-        "note": "If you hold the System Administrator role, the platform also asks for the verification code from your authenticator app each time you sign in."
+        "note": "If you hold the System Administrator role, or another role AHDA requires it for, the platform also asks for the verification code from your authenticator app each time you sign in; the first time, it shows a key to add to the app. Some administrative actions ask for a fresh code."
       },
       {
         "heading": "Choose your language",
         "paragraphs": [
-          "You can use the platform in Arabic or English. Your choice is remembered in this browser, and dates are shown in the Gregorian calendar with Latin digits in both languages, so they match what you type and what you see in exports."
+          "You can use the platform in Arabic or English. Your choice is remembered in this browser, and dates are shown in the Gregorian calendar with Western digits (0–9) in both languages, so they match what you type and what you see in exports."
         ],
         "steps": [
           "In the top bar, open [[common.language]].",
@@ -25,8 +25,8 @@
       {
         "heading": "Find your way around",
         "paragraphs": [
-          "The [[common.menu.label]] on the side lists only the areas your roles can use, so two colleagues may see different menus. Choosing a menu opens its first screen and lists its other screens underneath.",
-          "[[common.shell.create]] in the top bar starts a new [[projects.nav.create]] or [[common.shell.createChangeRequest]] from anywhere. A number next to [[common.menu.requestsApprovals]] or [[common.menu.notifications]] counts what is waiting for you.",
+          "The [[common.menu.label]] on the side lists the platform's areas. [[common.menu.administration]] appears only to those who administer the platform, and some screens inside a menu depend on your roles, so two colleagues may see different screens. Choosing a menu opens its first screen and lists its screens underneath. What you can actually open or change is always decided by the platform, whatever the menu shows.",
+          "[[common.shell.create]] in the top bar offers [[projects.nav.create]] and [[common.shell.createChangeRequest]] from any screen. The number next to [[common.menu.requestsApprovals]] counts the approvals awaiting your decision; the number next to [[common.menu.notifications]] counts your unread notifications.",
           "On a narrow screen the menu becomes a drawer: open it with the menu button at the top. On a wide screen [[common.menu.collapse]] at the foot of the menu leaves only its icons."
         ]
       },
@@ -36,7 +36,7 @@
           "Open [[common.shell.account]], the round button with your initials in the top bar.",
           "Choose [[common.signOut]]."
         ],
-        "note": "A session lasts a set time. When it ends, the platform asks you to sign in again. You are then taken back to the page you were on."
+        "note": "A session lasts a set time. When it ends, the platform asks you to sign in again and then takes you back to the page you were on. Closing the browser tab also ends it."
       }
     ]
   },
@@ -47,27 +47,28 @@
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] opens the Portfolio Dashboard. Its heading names it for your role: [[dashboards.landing.R02]], [[dashboards.landing.R03]], [[dashboards.landing.R06]] or [[dashboards.landing.R07]]. It is one dashboard shown within your scope: a Sector Manager sees the projects of their sectors, other roles the projects their roles reach.",
+          "[[common.menu.home]] opens the Portfolio Dashboard. Its heading names it for your role: [[dashboards.landing.R02]], [[dashboards.landing.R03]], [[dashboards.landing.R06]] or [[dashboards.landing.R07]]. It is one dashboard, shown within the scope your roles grant.",
           "It shows projects by lifecycle state, Published and Current Overall Project Health, current schedule health, reporting completeness, open risks by rating, KPI condition, and the published and current financial position."
-        ]
+        ],
+        "note": "Each widget reads from one source, such as projects, progress, risks or finance. Until AHDA grants your role permission to view a source, that source's widgets read [[dashboards.unknown.RESTRICTED.label]]."
       },
       {
         "heading": "Read a widget correctly",
         "paragraphs": [
-          "Each widget carries a badge saying what kind of figure it is. [[dashboards.semanticState.CURRENT_LIVE]] is the latest working figure and can still change. [[dashboards.semanticState.PUBLISHED_OFFICIAL]] is what AHDA has reviewed and published. [[dashboards.semanticState.HISTORICAL_SNAPSHOT]] is a figure as it stood on an earlier date.",
-          "The foot of a widget gives its as-of date and the module that owns the figure. A total also says how many projects it counts, for example \"8 of 10 projects counted\", and why the others were left out.",
+          "Each widget carries a badge saying what kind of figure it is. [[dashboards.semanticState.CURRENT_LIVE]] is the latest available value and can still change. [[dashboards.semanticState.PUBLISHED_OFFICIAL]] is what AHDA has reviewed and published. [[dashboards.semanticState.HISTORICAL_SNAPSHOT]] is a figure as it stood on an earlier date.",
+          "The foot of a widget gives its as-of date and its source, for example \"Owned by WF-02 · version 1\". A total also says how many projects it counts, for example \"8 of 10 projects counted\", and why the others were left out.",
           "[[dashboards.unknown.MISSING.label]] means the source has no value yet: it is not zero. [[dashboards.unknown.RESTRICTED.label]] means your role may not see that figure. [[dashboards.freshness.STALE]] means a later report is still outstanding, so the value is shown as it stood on its as-of date."
         ]
       },
       {
         "heading": "Narrow it down",
         "paragraphs": [
-          "If your roles give you more than one dashboard, [[dashboards.home.switch]] above the dashboard switches between them; your landing page is marked. Within a dashboard:"
+          "If your roles give you more than one dashboard, tabs above it, one per dashboard, switch between them; your landing page is marked as such. Within a dashboard:"
         ],
         "steps": [
-          "Choose a sector in [[dashboards.filter.department]]. Only the sectors of your own projects are offered.",
+          "Choose a sector from the [[dashboards.filter.department]] list. It offers only the sectors of the projects you may see, and appears only when there is one to offer.",
           "Choose [[dashboards.actions.refresh]] to read the figures again.",
-          "Choose [[dashboards.widget.open]] on a widget to go to the screen behind it, such as the risk register."
+          "Where a widget offers [[dashboards.widget.open]], choose it to go to the screen behind it, such as the risk register."
         ]
       },
       {
@@ -92,7 +93,7 @@
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] opens the Governance Dashboard under the heading [[dashboards.landing.R01]]. It shows reporting completeness, projects by lifecycle state, open risks and their reviews, KPI condition, and the dashboard configuration backlog: where the dashboard definitions you administer stand in their lifecycle."
+          "[[common.menu.home]] opens the Governance Dashboard under the heading [[dashboards.landing.R01]]. It shows reporting completeness, projects by lifecycle state, open risks and their reviews, KPI condition, and the dashboard configuration backlog: where the dashboard definitions you administer stand in their lifecycle. With the grants shipped today, a System Administrator may view only the configuration backlog among these sources; the other widgets read [[dashboards.unknown.RESTRICTED.label]] until AHDA grants the role permission to view them."
         ],
         "note": "Signing in as a System Administrator always needs the verification code from your authenticator app. Some administration actions ask you to confirm it again before they are carried out."
       },
@@ -123,12 +124,13 @@
   },
   "project-manager-home": {
     "title": "Your landing page as a Project Manager",
-    "summary": "The [[dashboards.landing.R04]]: what your projects owe, your tasks, and where to report.",
+    "summary": "The [[dashboards.landing.R04]]: the reports your projects owe, your tasks, and where to report progress.",
     "sections": [
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] opens the Governance Dashboard under the heading [[dashboards.landing.R04]]. Start with reporting completeness: it shows which of your projects have a progress report outstanding. Open risks and their reviews shows risks whose review is due, and KPI condition the state of your projects' indicators."
+          "[[common.menu.home]] opens the Governance Dashboard under the heading [[dashboards.landing.R04]]. Start with Reporting completeness: it counts your active projects whose progress reporting is up to date and those with a report overdue. Open risks and their reviews counts open risks by rating and how many are past their review date; KPI condition shows the state of your projects' indicators. Dashboard configuration backlog is for administrators and reads [[dashboards.unknown.RESTRICTED.label]] for you.",
+          "If you work for an external entity, your Home differs: see the guide for external entity users."
         ]
       },
       {
@@ -138,15 +140,15 @@
         ],
         "steps": [
           "Open [[tasks.nav.mine]] and choose a task.",
-          "Under [[tasks.detail.work]], choose [[tasks.commands.start]], [[tasks.commands.block]], [[tasks.commands.unblock]] or [[tasks.commands.complete]] as the work moves on.",
+          "Under [[tasks.detail.work]], choose [[tasks.commands.start]], [[tasks.commands.block]], [[tasks.commands.unblock]] or [[tasks.commands.complete]] as the work moves on. [[tasks.commands.block]] asks why the task is blocked.",
           "To record how far it has got, choose [[tasks.commands.reportProgress]], enter [[tasks.progress.percent]] and choose [[tasks.progress.confirm]]."
         ],
-        "note": "Tasks can be worked on only while the project is [[projects.status.ACTIVE]]. A blocked task must be unblocked before it can be completed, and progress is entered on a task without subtasks."
+        "note": "Tasks can be worked on only while the project is [[projects.status.ACTIVE]]. A blocked task must be unblocked, and its open subtasks completed, before it can be completed. Progress is entered only on a task without subtasks."
       },
       {
         "heading": "Your projects",
         "paragraphs": [
-          "[[projects.nav.mine]] under [[common.menu.projects]] lists the projects you manage. Opening one shows its workspace, with [[projects.workspace.tabs.overview]] first and a tab for each area: [[projects.workspace.tabs.progress]], [[projects.workspace.tabs.schedule]], [[projects.workspace.tabs.tasks]], [[projects.workspace.tabs.risks]] and more.",
+          "[[projects.nav.mine]] under [[common.menu.projects]] lists the projects you manage. Opening one shows its workspace, with [[projects.workspace.tabs.overview]] first and a tab for each area, such as [[projects.workspace.tabs.progress]], [[projects.workspace.tabs.schedule]], [[projects.workspace.tabs.tasks]] and [[projects.workspace.tabs.risks]].",
           "To report progress, see the guide on submitting a progress update."
         ]
       }
@@ -159,7 +161,7 @@
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] opens the Governance Dashboard under the heading [[dashboards.landing.R05]]. It shows the obligations that need following up across the projects you may see: reporting completeness, open risks and their reviews, and KPI condition."
+          "[[common.menu.home]] opens the Governance Dashboard under the heading [[dashboards.landing.R05]]. It shows the obligations that need following up across the projects you may see: reporting completeness, open risks and their reviews, and KPI condition. Each widget reads [[dashboards.unknown.RESTRICTED.label]] until AHDA grants your role permission to view its source."
         ]
       },
       {
@@ -186,7 +188,7 @@
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] lists [[dashboards.projectLanding.caption]]: the projects shared with your entity. Open a project to see its dashboard in [[projects.workspace.tabs.overview]]: health, progress and schedule health as AHDA published them, read only and within your entity's scope."
+          "[[common.menu.home]] lists [[dashboards.projectLanding.caption]]: the projects shared with your entity. Open a project to see its dashboard in [[projects.workspace.tabs.overview]], read only and within your entity's scope. Each widget's badge says whether a figure is published by AHDA or current; widgets your entity may not see read [[dashboards.unknown.RESTRICTED.label]]."
         ]
       },
       {
@@ -195,15 +197,15 @@
           "Open [[externalParticipation.nav.mine]] under [[common.menu.requestsApprovals]].",
           "Open the request. Its due date is marked [[externalParticipation.dueCondition.NOT_DUE]], [[externalParticipation.dueCondition.DUE]] or [[externalParticipation.dueCondition.OVERDUE]].",
           "In [[externalParticipation.response.title]], fill in the fields AHDA asked for. Choose [[externalParticipation.actions.saveDraft]] at any time to keep your work.",
-          "When the response is complete, choose [[externalParticipation.actions.submitResponse]]."
+          "When the response is complete, choose [[externalParticipation.actions.submitResponse]] and confirm."
         ],
-        "note": "Once submitted, a response cannot be changed. AHDA reviews it and may return it for correction."
+        "note": "Only the user AHDA named to respond sees the response form. Once submitted, a response cannot be changed; AHDA reviews it and may return it for correction."
       },
       {
         "heading": "Follow up your responses",
         "paragraphs": [
-          "[[externalParticipation.nav.contributions]] has two parts: [[externalParticipation.contributions.awaitingTitle]] lists the requests you have not started yet, and [[externalParticipation.contributions.historyTitle]] lists every response you have sent, with its outcome and, where AHDA returned or rejected it, AHDA's reason.",
-          "When AHDA returns a response, a new draft is opened for you with your previous values and AHDA's reason above the form. Correct it and submit it again."
+          "[[externalParticipation.nav.contributions]] has two parts: [[externalParticipation.contributions.awaitingTitle]] lists the requests you have not started yet, and [[externalParticipation.contributions.historyTitle]] lists each of your responses, drafts included, with its outcome and, where AHDA returned or rejected it, AHDA's reason.",
+          "When AHDA returns a response, a new draft is opened for you with the values you entered before and AHDA's reason above the form. Correct it and submit it again."
         ]
       }
     ]
@@ -215,25 +217,25 @@
       {
         "heading": "Create the draft",
         "paragraphs": [
-          "A new project starts as a draft. It gets its [[projects.fields.formalProjectId]] only when AHDA approves it; until then the register shows it as not issued yet."
+          "A new project starts as a draft. It gets its [[projects.fields.formalProjectId]] only when AHDA approves it; until then the register shows [[projects.formalProjectId.notIssued]] in its place."
         ],
         "steps": [
-          "Choose [[projects.nav.create]] under [[common.menu.projects]], or [[common.shell.create]] in the top bar.",
-          "Fill in [[projects.fields.title]], [[projects.fields.classification]], [[projects.fields.governanceProfile]], [[projects.fields.participation]] and [[projects.fields.department]]. For a project managed by an external entity, choose the entity as well.",
+          "Choose [[projects.nav.create]] under [[common.menu.projects]], or [[common.shell.create]] in the top bar and then [[projects.nav.create]].",
+          "Fill in [[projects.fields.title]], [[projects.fields.classification]], [[projects.fields.governanceProfile]], [[projects.fields.participation]] and [[projects.fields.department]]. For a project managed by an external entity, choose the entity as well. You can fill in the budget, dates and location now or later.",
           "Choose [[projects.create.submit]]. The project's workspace opens with the project in [[projects.status.DRAFT]]."
         ]
       },
       {
         "heading": "Complete it",
         "paragraphs": [
-          "Choose [[projects.actions.edit]] to add the rest. Before you can submit, the project needs [[projects.fields.registrationBudget]], [[projects.fields.plannedStartDate]] and [[projects.fields.plannedEndDate]]; the governance profile you chose may require more fields, which the form marks as needed before submitting."
+          "To add or change details later, choose [[projects.actions.edit]]. Before you can submit, the project needs [[projects.fields.registrationBudget]], [[projects.fields.plannedStartDate]] and [[projects.fields.plannedEndDate]]; the governance profile you chose may require more fields, which the form marks as needed before submitting."
         ]
       },
       {
         "heading": "Submit it for review",
         "steps": [
           "Choose [[projects.actions.submit]].",
-          "Name the Project Manager: yourself or someone else.",
+          "Name the Project Manager: yourself or someone else who holds the Project Manager role over this project.",
           "Confirm. The project becomes [[projects.status.SUBMITTED]] and goes to AHDA."
         ],
         "note": "You can withdraw a submission through [[projects.actions.changeStatus]] until AHDA starts its review."
@@ -241,7 +243,7 @@
       {
         "heading": "What happens next",
         "paragraphs": [
-          "AHDA's review moves the project to [[projects.status.UNDER_REVIEW]]. It ends either [[projects.status.APPROVED_PLANNED]], when the Formal Project ID is issued, or [[projects.status.RETURNED]]. A returned project can be edited and submitted again as its next revision. [[projects.workspace.tabs.overview]] always says what the next step is."
+          "When AHDA starts its review, the project becomes [[projects.status.UNDER_REVIEW]]. The review ends either with approval, when the project becomes [[projects.status.APPROVED_PLANNED]] and its [[projects.fields.formalProjectId]] is issued, or with the project [[projects.status.RETURNED]]. A returned project can be edited and submitted again as the next version of its registration. [[projects.workspace.tabs.overview]] always says what the next step is."
         ]
       }
     ]
