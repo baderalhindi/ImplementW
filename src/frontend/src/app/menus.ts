@@ -21,9 +21,11 @@ import { suspensionClosureNavigation } from '@/features/suspension-closure/route
 import { taskNavigation } from '@/features/tasks/routes.tsx';
 import { type TranslationKey } from '@/shared/i18n/i18n.ts';
 
+import { helpNavigation } from './help/routes.tsx';
+
 // The master navigation of Blueprint §20.1: eleven menus in the blueprint's order, each gathering the screens built so
-// far. Help and Knowledge has no screen yet, so it is not listed; Administration is left out for a session with no
-// administration or audit screen (§20: unauthorized modules are not shown; the API's check stays authoritative).
+// far. Administration is left out for a session with no administration or audit screen (§20: unauthorized modules are
+// not shown; the API's check stays authoritative). Help and Knowledge is every signed-in person's (TASK-096).
 
 export type MenuId =
   | 'home'
@@ -35,7 +37,8 @@ export type MenuId =
   | 'documents'
   | 'dashboardsReports'
   | 'notifications'
-  | 'administration';
+  | 'administration'
+  | 'help';
 
 export interface Menu {
   id: MenuId;
@@ -148,6 +151,7 @@ export function menusFor(user: SessionUser, administration: NavigationItem[]): M
     ),
     menu('notifications', 'common.menu.notifications', ['/notifications'], notificationNavigation),
     menu('administration', 'common.menu.administration', ['/admin'], administration),
+    menu('help', 'common.menu.help', ['/help'], helpNavigation),
   ];
   return menus.filter((candidate) => candidate.id === 'home' || candidate.items.length > 0);
 }

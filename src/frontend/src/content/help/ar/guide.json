@@ -1,0 +1,308 @@
+{
+  "getting-started": {
+    "title": "البدء باستخدام المنصة",
+    "summary": "تسجيل الدخول، واختيار اللغة، والتنقل بين القوائم، وتسجيل الخروج.",
+    "sections": [
+      {
+        "heading": "تسجيل الدخول",
+        "paragraphs": [
+          "سجّل الدخول باسم المستخدم وكلمة المرور الخاصين بك في الهيئة من تبويب [[identityAccess.signIn.tabs.directory]]. أما طرق الدخول الأخرى الظاهرة في الصفحة فعليها علامة [[identityAccess.signIn.comingSoon]] ولا يمكن استخدامها حاليًا.",
+          "لا تعيد المنصة تعيين كلمات المرور، فإن نسيت كلمة المرور فتواصل مع مكتب خدمة تقنية المعلومات في الهيئة."
+        ],
+        "note": "إذا كنت تحمل دور مدير النظام، تطلب منك المنصة كذلك رمز التحقق من تطبيق المصادقة في كل مرة تسجّل فيها الدخول."
+      },
+      {
+        "heading": "اختيار اللغة",
+        "paragraphs": [
+          "يمكنك استخدام المنصة بالعربية أو بالإنجليزية، ويحفظ هذا المتصفح اختيارك. وتُعرض التواريخ في اللغتين بالتقويم الميلادي وبالأرقام اللاتينية، لتطابق ما تُدخله وما تراه في الملفات المصدَّرة."
+        ],
+        "steps": [
+          "افتح [[common.language]] في الشريط العلوي.",
+          "اختر العربية أو English.",
+          "تتحول الصفحة كلها مباشرة، بما في ذلك اتجاهها؛ فالعربية تُعرض من اليمين إلى اليسار."
+        ]
+      },
+      {
+        "heading": "التنقل في المنصة",
+        "paragraphs": [
+          "لا تعرض [[common.menu.label]] الجانبية إلا المجالات التي تتيحها لك أدوارك، ولذلك قد تختلف القوائم من زميل إلى آخر. وعند اختيار قائمة تُفتح أولى شاشاتها وتُعرض بقية شاشاتها تحتها.",
+          "يتيح لك زر [[common.shell.create]] في الشريط العلوي بدء [[projects.nav.create]] أو [[common.shell.createChangeRequest]] من أي مكان. والرقم الظاهر بجانب [[common.menu.requestsApprovals]] أو [[common.menu.notifications]] يدل على عدد ما ينتظرك.",
+          "في الشاشات الضيقة تتحول القائمة إلى لوحة جانبية تفتحها من زر القائمة في الأعلى، وفي الشاشات الواسعة يُبقي زر [[common.menu.collapse]] أسفل القائمة على أيقوناتها فقط."
+        ]
+      },
+      {
+        "heading": "تسجيل الخروج",
+        "steps": [
+          "افتح [[common.shell.account]]، وهو الزر الدائري الذي يحمل الأحرف الأولى من اسمك في الشريط العلوي.",
+          "اختر [[common.signOut]]."
+        ],
+        "note": "للجلسة مدة محددة، فإذا انتهت طلبت منك المنصة تسجيل الدخول من جديد، ثم أعادتك إلى الصفحة التي كنت فيها."
+      }
+    ]
+  },
+  "portfolio-dashboard": {
+    "title": "صفحتك الافتراضية: لوحة المحفظة",
+    "summary": "نظرة شاملة على المحفظة: دورة حياة المشاريع وصحتها وجداولها الزمنية ومخاطرها ومؤشرات أدائها ووضعها المالي ضمن المشاريع المتاحة لك.",
+    "sections": [
+      {
+        "heading": "ما الذي تعرضه اللوحة",
+        "paragraphs": [
+          "تفتح [[common.menu.home]] على لوحة المحفظة، ويحمل عنوانها اسمًا بحسب دورك: [[dashboards.landing.R02]] أو [[dashboards.landing.R03]] أو [[dashboards.landing.R06]] أو [[dashboards.landing.R07]]. وهي لوحة واحدة تُعرض ضمن نطاقك؛ فمدير القطاع يرى مشاريع قطاعاته، وتعرض اللوحة لغيره المشاريع التي تبلغها أدواره.",
+          "وتعرض اللوحة المشاريع حسب حالة دورة الحياة، والصحة العامة للمشاريع بنوعيها المنشورة والحالية، وصحة الجدول الزمني الحالية، واكتمال التقارير، والمخاطر المفتوحة حسب التصنيف، وحالة مؤشرات الأداء، والوضع المالي المنشور والحالي."
+        ]
+      },
+      {
+        "heading": "كيف تقرأ كل عنصر في اللوحة",
+        "paragraphs": [
+          "يحمل كل عنصر شارة تبيّن طبيعة الرقم المعروض: فشارة [[dashboards.semanticState.CURRENT_LIVE]] تدل على أحدث رقم قيد العمل وقد يتغير، وشارة [[dashboards.semanticState.PUBLISHED_OFFICIAL]] تدل على ما راجعته الهيئة ونشرته، وشارة [[dashboards.semanticState.HISTORICAL_SNAPSHOT]] تدل على الرقم كما كان في تاريخ سابق.",
+          "ويبيّن أسفل العنصر تاريخ سريان الرقم والوحدة المالكة له. ويذكر الإجمالي كذلك عدد المشاريع التي احتُسبت فيه، مثل «احتُسب 8 من 10 مشاريع»، وسبب استبعاد البقية.",
+          "وعبارة [[dashboards.unknown.MISSING.label]] تعني أن المصدر لا يملك قيمة بعد، ولا تعني أن القيمة صفر. وعلامة [[dashboards.unknown.RESTRICTED.label]] تعني أن دورك لا يتيح لك الاطلاع على هذا الرقم. أما علامة [[dashboards.freshness.STALE]] فتعني أن تقريرًا لاحقًا لم يُرفع بعد، فتُعرض القيمة كما كانت في تاريخ سريانها."
+        ]
+      },
+      {
+        "heading": "تضييق نطاق العرض",
+        "paragraphs": [
+          "إذا أتاحت لك أدوارك أكثر من لوحة، يظهر فوق اللوحة شريط [[dashboards.home.switch]] للتبديل بينها، مع تمييز صفحتك الافتراضية. وداخل اللوحة الواحدة:"
+        ],
+        "steps": [
+          "اختر قطاعًا من [[dashboards.filter.department]]؛ ولا تظهر في القائمة إلا قطاعات مشاريعك.",
+          "اختر [[dashboards.actions.refresh]] لقراءة الأرقام من جديد.",
+          "اختر [[dashboards.widget.open]] في أي عنصر للانتقال إلى الشاشة التي يستند إليها، مثل سجل المخاطر."
+        ]
+      },
+      {
+        "heading": "ترتيب اللوحة على النحو الذي يناسبك",
+        "paragraphs": [
+          "يستطيع مدير المحفظة ومدير القطاع والإدارة التنفيذية اختيار [[dashboards.personalize.open]] لإخفاء العناصر الاختيارية أو إظهارها أو تغيير ترتيبها، ثم اختيار [[dashboards.personalize.save]]. ويعيد خيار [[dashboards.personalize.reset]] الترتيب الأصلي. أما العناصر الثابتة فتبقى دائمًا."
+        ],
+        "note": "تغيير الترتيب لا يغيّر الأرقام، ويحتفظ كل مستخدم بترتيبه الخاص."
+      },
+      {
+        "heading": "للاستزادة",
+        "paragraphs": [
+          "تضم قائمة [[common.menu.portfolio]] أيضًا [[common.menu.portfolioReports]] للاطلاع على القوائم التفصيلية، و[[financialKpi.nav.register]]."
+        ]
+      }
+    ]
+  },
+  "administrator-home": {
+    "title": "صفحتك الافتراضية بصفتك مدير النظام",
+    "summary": "[[dashboards.landing.R01]] وشاشات الإدارة: المستخدمون والأدوار والهيكل التنظيمي والتكاملات والتدقيق.",
+    "sections": [
+      {
+        "heading": "ما الذي تعرضه اللوحة",
+        "paragraphs": [
+          "تفتح [[common.menu.home]] على لوحة الحوكمة تحت عنوان [[dashboards.landing.R01]]، وتعرض اكتمال التقارير، والمشاريع حسب حالة دورة الحياة، والمخاطر المفتوحة ومراجعاتها، وحالة مؤشرات الأداء، وحالة إعداد لوحات المعلومات: أين تقف تعريفات اللوحات التي تديرها في دورة حياتها."
+        ],
+        "note": "يتطلب دخول مدير النظام دائمًا رمز التحقق من تطبيق المصادقة، وبعض الإجراءات الإدارية تطلب منك تأكيده مرة أخرى قبل تنفيذها."
+      },
+      {
+        "heading": "إدارة الصلاحيات والهيكل التنظيمي",
+        "paragraphs": [
+          "تضم قائمة [[common.menu.administration]] الشاشات التالية: [[identityAccess.nav.users]]، و[[identityAccess.nav.roles]]، و[[identityAccess.nav.permissionMatrix]]، و[[identityAccess.nav.roleAssignments]]، و[[identityAccess.nav.organization]]، و[[identityAccess.nav.departments]]، و[[identityAccess.nav.entities]]."
+        ],
+        "steps": [
+          "افتح [[common.menu.administration]] واختر [[identityAccess.nav.users]].",
+          "ابحث عن الشخص وافتح سجله.",
+          "امنح الصلاحية أو اسحبها من خلال [[identityAccess.nav.roleAssignments]]؛ إذ يسري كل دور ضمن نطاق محدد، كقطاع أو جهة خارجية."
+        ]
+      },
+      {
+        "heading": "متابعة التكاملات وسجل التدقيق",
+        "paragraphs": [
+          "تعرض [[integrationAdmin.nav.label]] حالة الدليل والبريد الإلكتروني وسائر الأنظمة المرتبطة بالمنصة مع سجلاتها، وتضم قائمة [[auditActivity.nav.label]] شاشة [[auditActivity.nav.auditTrail]]، وهو السجل الرسمي الذي لا يملك أحد تعديله."
+        ]
+      },
+      {
+        "heading": "ما لا يشمله هذا الدور",
+        "paragraphs": [
+          "دور مدير النظام ليس صلاحية مطلقة على أعمال المشاريع؛ فهو يدير الصلاحيات والإعدادات، ولا يعتمد بيانات المشاريع ولا يعدّلها ولا ينشرها، ولا تعرض لك شاشات المشاريع إلا ما تتيحه أدوارك الأخرى."
+        ]
+      }
+    ]
+  },
+  "project-manager-home": {
+    "title": "صفحتك الافتراضية بصفتك مدير مشروع",
+    "summary": "[[dashboards.landing.R04]]: ما تستحقه مشاريعك من تقارير، ومهامك، ومكان رفع التقدم.",
+    "sections": [
+      {
+        "heading": "ما الذي تعرضه اللوحة",
+        "paragraphs": [
+          "تفتح [[common.menu.home]] على لوحة الحوكمة تحت عنوان [[dashboards.landing.R04]]. ابدأ باكتمال التقارير، فهو يبيّن أيًّا من مشاريعك ما زال تقرير تقدمه مستحقًا. ويعرض عنصر المخاطر المفتوحة ومراجعاتها المخاطر التي حان موعد مراجعتها، ويعرض عنصر حالة مؤشرات الأداء وضع مؤشرات مشاريعك."
+        ]
+      },
+      {
+        "heading": "إنجاز مهامك",
+        "paragraphs": [
+          "تجمع قائمة [[common.menu.myWork]] شاشات [[tasks.nav.mine]] و[[tasks.nav.team]] و[[tasks.nav.overdue]] و[[tasks.nav.updates]]، إضافة إلى [[milestones.nav.register]]."
+        ],
+        "steps": [
+          "افتح [[tasks.nav.mine]] واختر مهمة.",
+          "من قسم [[tasks.detail.work]] اختر [[tasks.commands.start]] أو [[tasks.commands.block]] أو [[tasks.commands.unblock]] أو [[tasks.commands.complete]] بحسب تقدم العمل.",
+          "لتسجيل ما بلغه العمل اختر [[tasks.commands.reportProgress]]، وأدخل [[tasks.progress.percent]]، ثم اختر [[tasks.progress.confirm]]."
+        ],
+        "note": "لا يمكن العمل على المهام إلا والمشروع [[projects.status.ACTIVE]]. والمهمة المتوقفة يجب استئنافها قبل إكمالها، ونسبة الإنجاز تُدخل للمهمة التي ليست لها مهام فرعية."
+      },
+      {
+        "heading": "مشاريعك",
+        "paragraphs": [
+          "تعرض شاشة [[projects.nav.mine]] ضمن قائمة [[common.menu.projects]] المشاريع التي تديرها. وعند فتح مشروع تظهر مساحة عمله، وأول تبويباتها [[projects.workspace.tabs.overview]]، يليها تبويب لكل مجال: [[projects.workspace.tabs.progress]] و[[projects.workspace.tabs.schedule]] و[[projects.workspace.tabs.tasks]] و[[projects.workspace.tabs.risks]] وغيرها.",
+          "ولرفع التقدم راجع دليل تقديم تحديث التقدم."
+        ]
+      }
+    ]
+  },
+  "liaison-home": {
+    "title": "صفحتك الافتراضية بصفتك ضابط اتصال",
+    "summary": "[[dashboards.landing.R05]]: القرارات والمهام والإشعارات التي تنتظرك.",
+    "sections": [
+      {
+        "heading": "ما الذي تعرضه اللوحة",
+        "paragraphs": [
+          "تفتح [[common.menu.home]] على لوحة الحوكمة تحت عنوان [[dashboards.landing.R05]]، وتعرض الالتزامات التي تحتاج إلى متابعة في المشاريع المتاحة لك: اكتمال التقارير، والمخاطر المفتوحة ومراجعاتها، وحالة مؤشرات الأداء."
+        ]
+      },
+      {
+        "heading": "التعامل مع ما ينتظرك",
+        "steps": [
+          "انظر إلى الرقم الظاهر بجانب [[common.menu.requestsApprovals]]، فهو عدد الطلبات التي تنتظر قرارك.",
+          "افتح [[approvals.nav.inbox]] وقرّر في كل طلب، بدءًا بالأقرب استحقاقًا.",
+          "افتح [[tasks.nav.mine]] ضمن قائمة [[common.menu.myWork]] لتطّلع على المهام المسندة إليك.",
+          "افتح [[common.menu.notifications]] للاطلاع على التنبيهات والتصعيدات المتعلقة بما تتابعه."
+        ]
+      },
+      {
+        "heading": "المتابعة",
+        "paragraphs": [
+          "تعرض [[approvals.nav.requests]] الطلبات التي قدّمتها والمرحلة التي بلغها كل منها، ويعرض [[notifications.nav.history]] كل رسالة أرسلتها إليك المنصة والقناة التي وصلت عبرها."
+        ]
+      }
+    ]
+  },
+  "external-contributor-home": {
+    "title": "صفحتك الافتراضية بصفتك مستخدمًا من جهة خارجية",
+    "summary": "[[dashboards.landing.R08]]: مشاريع جهتك، وطلبات التحديث الواردة من الهيئة، وردودك عليها.",
+    "sections": [
+      {
+        "heading": "ما الذي تعرضه الصفحة",
+        "paragraphs": [
+          "تعرض [[common.menu.home]] قائمة [[dashboards.projectLanding.caption]]، وهي المشاريع المتاحة لجهتك. افتح المشروع لترى لوحته في تبويب [[projects.workspace.tabs.overview]]: الصحة والتقدم وصحة الجدول الزمني كما نشرتها الهيئة، للاطلاع فقط وضمن نطاق جهتك."
+        ]
+      },
+      {
+        "heading": "الرد على طلب تحديث",
+        "steps": [
+          "افتح [[externalParticipation.nav.mine]] ضمن قائمة [[common.menu.requestsApprovals]].",
+          "افتح الطلب، وستجد بجانب موعد استحقاقه إحدى العلامات: [[externalParticipation.dueCondition.NOT_DUE]] أو [[externalParticipation.dueCondition.DUE]] أو [[externalParticipation.dueCondition.OVERDUE]].",
+          "في قسم [[externalParticipation.response.title]] املأ الحقول التي طلبتها الهيئة، واختر [[externalParticipation.actions.saveDraft]] متى شئت لحفظ ما أنجزته.",
+          "حين يكتمل الرد اختر [[externalParticipation.actions.submitResponse]]."
+        ],
+        "note": "لا يمكن تعديل الرد بعد تقديمه؛ إذ تراجعه الهيئة وقد تعيده إليك للتصحيح."
+      },
+      {
+        "heading": "متابعة ردودك",
+        "paragraphs": [
+          "تتكوّن شاشة [[externalParticipation.nav.contributions]] من جزأين: [[externalParticipation.contributions.awaitingTitle]] ويضم الطلبات التي لم تبدأ الرد عليها بعد، و[[externalParticipation.contributions.historyTitle]] ويضم كل رد أرسلته مع نتيجته، وسبب الهيئة إن أعادته أو رفضته.",
+          "وإذا أعادت الهيئة ردًّا تُفتح لك مسودة جديدة تحمل قيمك السابقة، ويظهر سبب الإعادة فوق النموذج؛ فصحّحها ثم قدّمها من جديد."
+        ]
+      }
+    ]
+  },
+  "register-a-project": {
+    "title": "تسجيل مشروع",
+    "summary": "أنشئ المشروع مسودةً، وأكمل بياناته، ثم قدّمه إلى الهيئة للمراجعة.",
+    "sections": [
+      {
+        "heading": "إنشاء المسودة",
+        "paragraphs": [
+          "يبدأ المشروع الجديد مسودةً، ولا يحصل على [[projects.fields.formalProjectId]] إلا عند اعتماد الهيئة له، ويظهر في السجل إلى ذلك الحين بأنه لم يصدر بعد."
+        ],
+        "steps": [
+          "اختر [[projects.nav.create]] من قائمة [[common.menu.projects]]، أو زر [[common.shell.create]] في الشريط العلوي.",
+          "املأ [[projects.fields.title]] و[[projects.fields.classification]] و[[projects.fields.governanceProfile]] و[[projects.fields.participation]] و[[projects.fields.department]]. وإذا كانت تدير المشروع جهة خارجية فاختر الجهة أيضًا.",
+          "اختر [[projects.create.submit]]، فتُفتح مساحة عمل المشروع وحالته [[projects.status.DRAFT]]."
+        ]
+      },
+      {
+        "heading": "استكمال البيانات",
+        "paragraphs": [
+          "اختر [[projects.actions.edit]] لإضافة بقية البيانات. ولا يمكن تقديم المشروع قبل إدخال [[projects.fields.registrationBudget]] و[[projects.fields.plannedStartDate]] و[[projects.fields.plannedEndDate]]، وقد يشترط ملف الحوكمة الذي اخترته حقولًا أخرى يميّزها النموذج بأنها مطلوبة قبل التقديم."
+        ]
+      },
+      {
+        "heading": "التقديم للمراجعة",
+        "steps": [
+          "اختر [[projects.actions.submit]].",
+          "سمِّ مدير المشروع: أنت أو شخصًا آخر.",
+          "أكّد التقديم، فتصبح حالة المشروع [[projects.status.SUBMITTED]] ويُرسل إلى الهيئة."
+        ],
+        "note": "يمكنك سحب التقديم من خلال [[projects.actions.changeStatus]] ما دامت الهيئة لم تبدأ المراجعة."
+      },
+      {
+        "heading": "ما الذي يحدث بعد ذلك",
+        "paragraphs": [
+          "تنقل مراجعة الهيئة المشروع إلى حالة [[projects.status.UNDER_REVIEW]]، ثم تنتهي إما إلى [[projects.status.APPROVED_PLANNED]] ويصدر عندها رقم المشروع الرسمي، وإما إلى [[projects.status.RETURNED]]. والمشروع المُعاد يمكن تعديله وتقديمه من جديد بوصفه مراجعة تالية. ويبيّن تبويب [[projects.workspace.tabs.overview]] الخطوة التالية في كل حين."
+        ]
+      }
+    ]
+  },
+  "submit-a-progress-update": {
+    "title": "تقديم تحديث التقدم",
+    "summary": "ارفع تقدم المشروع إلى الهيئة وتابعه حتى يُنشر.",
+    "sections": [
+      {
+        "heading": "قبل البدء",
+        "paragraphs": [
+          "لا يرفع التقدم إلا مدير المشروع، ولا يكون ذلك إلا والمشروع [[projects.status.ACTIVE]]. افتح المشروع من [[projects.nav.mine]] واختر تبويب [[projects.workspace.tabs.progress]]."
+        ]
+      },
+      {
+        "heading": "إعداد التحديث وتقديمه",
+        "steps": [
+          "اختر [[progress.actions.start]].",
+          "راجع الأرقام المخططة والفعلية؛ فالمنصة تحتسبها من الجدول الزمني والمهام ولا يمكن كتابتها يدويًا.",
+          "أبقِ خيار [[progress.update.useCalculated]]، أو اختر [[progress.update.useOverride]] واذكر [[progress.update.overrideReason]].",
+          "أضف إن شئت [[progress.update.narrative]] يوضح ما تغيّر.",
+          "اختر [[progress.update.confirmSave]] لتكمل لاحقًا، أو [[progress.update.confirmSubmit]] حين يصبح التحديث جاهزًا."
+        ]
+      },
+      {
+        "heading": "المراجعة والنشر",
+        "paragraphs": [
+          "يتولى مراجع من الهيئة نشر التحديث أو إعادته مع ذكر السبب. والتحديث المُعاد يمكن تصحيحه وتقديمه من جديد. ولا يجوز لمن قدّم التحديث أن يراجعه.",
+          "يعرض التبويب [[progress.official.title]]، أي آخر الأرقام المنشورة، إلى جانب [[progress.live.title]]، أي أحدث الأرقام قيد العمل، ويعرض كلاهما [[progress.figures.overallHealth]]."
+        ],
+        "note": "تحتسب المنصة الحالة العامة للمشروع ولا تُدخل يدويًا، وتكون [[progress.health.GREEN]] أو [[progress.health.AMBER]] أو [[progress.health.RED]]، أو [[progress.health.UNKNOWN]] إذا تعذّر احتسابها."
+      }
+    ]
+  },
+  "decide-an-approval": {
+    "title": "اتخاذ قرار في طلب اعتماد",
+    "summary": "اعتمد الطلبات التي تنتظرك أو أعدها أو ارفضها، وتابع الطلبات التي قدّمتها.",
+    "sections": [
+      {
+        "heading": "الوصول إلى ما ينتظرك",
+        "paragraphs": [
+          "يعرض [[approvals.nav.inbox]] ضمن قائمة [[common.menu.requestsApprovals]] الطلبات التي تنتظر قرارك، بدءًا بالأقرب استحقاقًا. ولا يظهر فيه إلا ما يقع ضمن صلاحية الاعتماد المخوّلة لك أو المفوّضة إليك، ويبيّن الصف الذي تتصرف فيه نيابةً عن غيرك اسمَ من تنوب عنه."
+        ]
+      },
+      {
+        "heading": "اتخاذ القرار",
+        "steps": [
+          "افتح الطلب واقرأه، ويعرض لك [[approvals.viewHistory]] ما مرّ به من قبل.",
+          "اختر [[approvals.decision.approve.action]] أو [[approvals.decision.return.action]] أو [[approvals.decision.reject.action]].",
+          "اذكر سبب قرارك؛ فهو إلزامي عند الإعادة والرفض واختياري عند الاعتماد، ويطّلع عليه مقدّم الطلب.",
+          "أكّد القرار."
+        ],
+        "note": "الرفض ينهي الطلب نهائيًا. أما الإعادة فتنهي هذه الجولة وترسل الطلب إلى صاحبه، ليصحّحه ويقدّمه إصدارًا جديدًا."
+      },
+      {
+        "heading": "الطلبات التي قدّمتها",
+        "paragraphs": [
+          "تعرض [[approvals.nav.requests]] كل طلب قدّمته والمرحلة التي بلغها. ويمكنك سحب الطلب ما دام قيد الانتظار، كما يمكنك من سجله تصعيد قرار تأخر عن موعده.",
+          "وتعرض شاشة [[approvals.nav.delegations]] قسمين: [[approvals.delegations.given]] و[[approvals.delegations.received]]. ولا يقرّر المفوَّض إلا فيما كان يملك المفوِّض أن يقرّر فيه."
+        ]
+      }
+    ]
+  }
+}

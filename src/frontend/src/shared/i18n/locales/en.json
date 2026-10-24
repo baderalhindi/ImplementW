@@ -107,12 +107,36 @@
     "collapse": "Collapse menu",
     "expand": "Expand menu",
     "open": "Open menu",
-    "close": "Close menu"
+    "close": "Close menu",
+    "help": "Help and Knowledge"
   },
   "shell": {
     "breadcrumb": "Breadcrumb",
     "create": "Create",
     "createChangeRequest": "Change request",
     "account": "Account"
+  },
+  "help": {
+    "nav": {
+      "guide": "User guide",
+      "faq": "Frequently asked questions",
+      "knowledgeBase": "Knowledge base"
+    },
+    "guide": {
+      "title": "User guide",
+      "description": "Step-by-step guides to the platform’s screens, starting with the one you land on.",
+      "forYou": "For your role",
+      "others": "Other guides",
+      "back": "All guides",
+      "related": "Screens in this guide"
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "description": "Short answers to the questions people ask most about using the platform."
+    },
+    "knowledgeBase": {
+      "title": "Knowledge base",
+      "description": "The terms the platform’s screens use, and what each one means."
+    }
   }
 }
