@@ -750,6 +750,9 @@ jobs:
       - name: API documentation publication, DEV/SIT docs UI and audit sample (TASK-094)
         run: python3 docs/api/api-documentation-check.py
 
+      - name: Operational handover package index, links and statuses current (TASK-097)
+        run: python3 docs/handover/handover-package-check.py
+
       - name: Migrations are forward-only (TASK-024)
         if: github.event_name == 'pull_request'
         env:
