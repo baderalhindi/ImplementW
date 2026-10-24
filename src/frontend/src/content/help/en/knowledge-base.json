@@ -1,0 +1,78 @@
+{
+  "overall-project-health": {
+    "term": "[[progress.figures.overallHealth]]",
+    "definition": "One rating of a project's condition, calculated by the platform under AHDA's health rules: [[progress.health.GREEN]], [[progress.health.AMBER]], [[progress.health.RED]], or [[progress.health.UNKNOWN]] when it cannot be worked out. It is never entered by hand."
+  },
+  "current-live": {
+    "term": "[[dashboards.semanticState.CURRENT_LIVE]]",
+    "definition": "A figure as it stands now, from the latest work recorded. It can change at any time and has not been reviewed by AHDA."
+  },
+  "published-official": {
+    "term": "[[dashboards.semanticState.PUBLISHED_OFFICIAL]]",
+    "definition": "A figure AHDA has reviewed and published. It is the official value for its reporting cycle and changes only when the next cycle is published."
+  },
+  "historical-snapshot": {
+    "term": "[[dashboards.semanticState.HISTORICAL_SNAPSHOT]]",
+    "definition": "A figure as it stood on an earlier date, kept so that trends and past reports can be read as they were."
+  },
+  "stale": {
+    "term": "[[dashboards.freshness.STALE]]",
+    "definition": "A value whose source says a later report is still outstanding. It is shown as it stood on its as-of date."
+  },
+  "coverage": {
+    "term": "Coverage",
+    "definition": "For a total, how many of the eligible projects it counts, and why the others were left out: no data, restricted, or values that cannot be combined."
+  },
+  "as-of": {
+    "term": "As-of date",
+    "definition": "The date a figure describes. A figure without one has no value to date."
+  },
+  "formal-project-id": {
+    "term": "[[projects.fields.formalProjectId]]",
+    "definition": "The project's official number, issued when AHDA approves its registration. A draft or submitted project has none yet."
+  },
+  "governance-profile": {
+    "term": "[[projects.fields.governanceProfile]]",
+    "definition": "The set of rules a project is governed by, chosen at registration. It decides, for example, which fields must be filled in before submission."
+  },
+  "participation": {
+    "term": "[[projects.fields.participation]]",
+    "definition": "Who delivers the project: [[projects.participationMode.AHDA_MANAGED]] or [[projects.participationMode.ENTITY_MANAGED]]. An entity-managed project names the entity, whose users can then see it and answer AHDA's update requests."
+  },
+  "owning-sector": {
+    "term": "[[projects.fields.department]]",
+    "definition": "The AHDA sector a project belongs to. Sector Managers see and follow the projects of their sectors."
+  },
+  "project-workspace": {
+    "term": "Project workspace",
+    "definition": "The page a project opens on, with one tab per area: [[projects.workspace.tabs.overview]], [[projects.workspace.tabs.registration]], [[projects.workspace.tabs.progress]], [[projects.workspace.tabs.schedule]] and the others your roles allow."
+  },
+  "approval-authority": {
+    "term": "Approval authority",
+    "definition": "The decisions a person may take on requests, set by AHDA's approval routing. It can be delegated to someone else, who may then decide only what the person who delegated could decide."
+  },
+  "revision": {
+    "term": "Revision",
+    "definition": "A numbered version of something submitted for review. When a submission is returned, the corrected one is submitted as its next revision; earlier revisions are kept."
+  },
+  "reporting-completeness": {
+    "term": "Reporting completeness",
+    "definition": "Whether each project has submitted the progress report due for the current reporting cycle."
+  },
+  "update-request": {
+    "term": "Update request",
+    "definition": "AHDA's request to an external entity for specific information about one of its projects, such as task progress, with a due date."
+  },
+  "contribution": {
+    "term": "Contribution",
+    "definition": "An external entity's response to an update request. Once submitted it cannot be changed; AHDA accepts, rejects or returns it for correction."
+  },
+  "clean-file": {
+    "term": "[[documents.scanState.CLEAN]]",
+    "definition": "A file the malware check has cleared. Only a clean file can be downloaded or used as evidence."
+  },
+  "escalation": {
+    "term": "Escalation",
+    "definition": "Raising an overdue or unresolved item to the next level of authority, so that someone with more authority acts on it."
+  }
+}

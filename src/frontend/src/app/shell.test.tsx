@@ -26,6 +26,7 @@ const MENUS_IN_ORDER = [
   'common.menu.dashboardsReports',
   'common.menu.notifications',
   'common.menu.administration',
+  'common.menu.help',
 ];
 
 describe('the master navigation', () => {

@@ -1,0 +1,153 @@
+{
+  "access": {
+    "heading": "Signing in and access",
+    "entries": {
+      "forgot-password": {
+        "question": "I have forgotten my password. How do I reset it?",
+        "answer": [
+          "The platform does not reset passwords. Contact the AHDA IT service desk: your password is the one you use for your AHDA account."
+        ]
+      },
+      "session-ended": {
+        "question": "Why does it say \"Your session has ended\"?",
+        "answer": [
+          "For security, a session lasts a set time and then ends. Sign in again: the platform takes you back to the page you were on. Anything you had not saved is lost, so save drafts as you go."
+        ]
+      },
+      "missing-menu": {
+        "question": "A colleague has a menu or a screen that I do not see. Why?",
+        "answer": [
+          "The menus list the platform's areas for everyone, but [[common.menu.administration]] appears only to those who administer the platform, and some screens inside a menu depend on your roles. If you need a screen or data for your work, ask your manager to request the role from the System Administrator."
+        ]
+      },
+      "missing-project": {
+        "question": "I cannot find a project I work on.",
+        "answer": [
+          "You see a project only when one of your roles reaches it: for example as its Project Manager, through its owning sector, or through your entity. Search the [[projects.nav.register]] by title or Formal Project ID. If it is still not there, ask for the role assignment that covers it."
+        ]
+      },
+      "access-denied": {
+        "question": "What does \"[[common.forbidden.title]]\" mean?",
+        "answer": [
+          "The page you opened is not available to your roles. Nothing was changed. Go back to [[common.menu.home]] or choose another screen from the menu."
+        ]
+      },
+      "too-many-requests": {
+        "question": "It says I made too many requests. What should I do?",
+        "answer": [
+          "The platform limits how often the same action can be repeated in a short time. Wait a minute, then try again."
+        ]
+      }
+    }
+  },
+  "figures": {
+    "heading": "Dashboards and figures",
+    "entries": {
+      "no-data-vs-zero": {
+        "question": "A widget says \"[[dashboards.unknown.MISSING.label]]\". Is the value zero?",
+        "answer": [
+          "No. It means the source has not recorded a value yet, for example because no progress has been reported. The platform never shows a missing value as zero."
+        ]
+      },
+      "live-vs-published": {
+        "question": "Why do the current and published figures differ?",
+        "answer": [
+          "[[dashboards.semanticState.CURRENT_LIVE]] figures are the latest working values and change as work is recorded. [[dashboards.semanticState.PUBLISHED_OFFICIAL]] figures are the ones AHDA reviewed and published at the last reporting cycle. Use the published figures when you report officially."
+        ]
+      },
+      "stale": {
+        "question": "What does \"[[dashboards.freshness.STALE]]\" mean on a widget?",
+        "answer": [
+          "A later report is still outstanding, so the value is shown as it stood on its as-of date. It becomes current again once the outstanding report is published."
+        ]
+      },
+      "restricted": {
+        "question": "Why does a figure say \"[[dashboards.figure.restricted]]\"?",
+        "answer": [
+          "Your role may not see that figure, financial figures in particular. The rest of the dashboard is unaffected. A total that leaves restricted projects out says how many it counted."
+        ]
+      },
+      "health-entered": {
+        "question": "Can I set a project's health to green myself?",
+        "answer": [
+          "No. [[progress.figures.overallHealth]] is calculated by the platform under AHDA's health rules. It cannot be typed or overridden."
+        ]
+      }
+    }
+  },
+  "work": {
+    "heading": "Projects and everyday work",
+    "entries": {
+      "cannot-edit-project": {
+        "question": "Why can I no longer edit a project's registration?",
+        "answer": [
+          "The registration can be edited only while the project is [[projects.status.DRAFT]] or [[projects.status.RETURNED]]. Once it is submitted, changes go through AHDA's review; after approval, through a [[common.shell.createChangeRequest]]."
+        ]
+      },
+      "no-progress-button": {
+        "question": "I do not see [[progress.actions.start]] on a project.",
+        "answer": [
+          "Progress is reported by the project's Project Manager while the project is [[projects.status.ACTIVE]]. If you are not its Project Manager, or the project is not active yet, the button does not appear."
+        ]
+      },
+      "blocked-task": {
+        "question": "Why can I not complete a blocked task?",
+        "answer": [
+          "A blocked task must first be resumed with [[tasks.commands.unblock]]. It can then be completed."
+        ]
+      },
+      "change-submitted": {
+        "question": "Can I change something after I have submitted it?",
+        "answer": [
+          "Not directly. A project registration can be withdrawn until AHDA starts its review. A request you raised can be withdrawn while it is pending. An external response cannot be changed once submitted: if AHDA returns it, you correct it in a new draft."
+        ]
+      },
+      "return-or-reject": {
+        "question": "What is the difference between returning and rejecting a request?",
+        "answer": [
+          "Returning sends the request back to its author to correct and submit again as a new revision. Rejecting ends it for good. Both need a reason, which the author reads."
+        ]
+      }
+    }
+  },
+  "documents": {
+    "heading": "Documents",
+    "entries": {
+      "scanning": {
+        "question": "I uploaded a file, but I cannot download it yet.",
+        "answer": [
+          "Every file is checked for malware after it is received. While it is [[documents.scanState.SCAN_PENDING]] it cannot be downloaded or used as evidence. It becomes available once it is [[documents.scanState.CLEAN]]. You can close the window while the check runs."
+        ]
+      },
+      "quarantined": {
+        "question": "My file is [[documents.scanState.QUARANTINED]]. What now?",
+        "answer": [
+          "The check found a problem with the file, and it will never be served. Check the file on your own computer and upload a clean copy. A file whose scan failed stays unavailable until a document manager chooses [[documents.rescan.action]] or a new version replaces it."
+        ]
+      }
+    }
+  },
+  "notifications": {
+    "heading": "Notifications and language",
+    "entries": {
+      "turn-off": {
+        "question": "Can I stop receiving e-mail or SMS notifications?",
+        "answer": [
+          "Yes, for most families, in [[notifications.nav.preferences]]. In-app notifications are always on, and families marked [[notifications.preferences.mandatory]] cannot be turned off. Choose [[notifications.preferences.save]]; the change applies from the next notification sent."
+        ]
+      },
+      "mark-read": {
+        "question": "Can I mark a notification as unread again?",
+        "answer": [
+          "No. Opening a notification marks it read, and so does [[notifications.markAll.action]]. Neither can be undone. Every notification stays in [[notifications.nav.history]]."
+        ]
+      },
+      "language": {
+        "question": "How do I switch between Arabic and English?",
+        "answer": [
+          "Open [[common.language]] in the top bar and choose the language. The choice is remembered in this browser. Text that someone typed, such as a narrative or a comment, stays in the language it was written in."
+        ]
+      }
+    }
+  }
+}

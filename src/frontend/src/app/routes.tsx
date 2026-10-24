@@ -29,6 +29,7 @@ import { taskRoutes } from '@/features/tasks/routes.tsx';
 import { RouteErrorPage } from '@/shared/observability/RouteErrorPage.tsx';
 
 import { AppLayout } from './AppLayout.tsx';
+import { helpRoutes } from './help/routes.tsx';
 import { NotFoundPage } from './pages.tsx';
 
 export const appRoutes: RouteObject[] = [
@@ -201,6 +202,15 @@ export const appRoutes: RouteObject[] = [
           </RequireSession>
         ),
         children: notificationRoutes,
+      },
+      {
+        path: 'help',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: helpRoutes,
       },
       { path: '*', element: <NotFoundPage /> },
     ],
