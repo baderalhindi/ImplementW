@@ -214,7 +214,7 @@ The notification names the integration, the alert type and its severity, and lin
 | RECONCILIATION_MISMATCH | A reconciliation found more differences than tolerated; nothing was repaired | The run's detail names people and attributes, never values; the source's owner decides |
 | DELIVERY_RATE | The provider delivered less than its minimum share over the window | ADM-042's measures |
 
-Raising an alert changed no business record; acknowledging it does not claim recovery, and recovery does not close it (TASK-075 D-9). Severity tiers and response targets are TASK-093's.
+Raising an alert changed no business record; acknowledging it does not claim recovery, and recovery does not close it (TASK-075 D-9). The incident's tier comes from [`incident-severity-classification.md`](incident-severity-classification.md) §2 by integration and alert type, not from the alert's own severity; the response is [`on-call-runbook.md`](on-call-runbook.md) PB-4 to PB-6.
 
 ### 7.3 The drill (SIT or UAT)
 
@@ -255,3 +255,4 @@ The workbook's check, as §6.3 ran it: force a backlog and watch it arrive.
 | --- | --- | --- |
 | 2026-10-21 | Initial record. OD-1 and OD-2, the queue state, three new thresholds and QUEUE_BACKLOG, the route of each alert through WF-15 and to the on-call channel, the register and its check; 12 decisions, 8 findings. | Observability (TASK-092) |
 | 2026-10-21 | §6.3 re-run on the PR head with the dead-letter route asserted: 15 of 15 and 10 of 10. The root `.env.example` added (every key). | Observability (TASK-092) |
+| 2026-10-23 | §7.2 points to the incident tiers and the on-call playbooks (TASK-093). | Observability (TASK-093) |

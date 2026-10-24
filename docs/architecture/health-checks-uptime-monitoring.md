@@ -156,7 +156,7 @@ Cloud Monitoring cannot run outside a GCP project, and none exists (F-1). To run
 
 ### 7.2 When the alert fires
 
-`/health/ready` is 503 from at least two checker regions: the API cannot reach its database within 3 seconds. No answer at all means the load balancer, the certificate or the service itself. The API's log names the failing check (`Health check postgresql`). Instances are not restarted for a database outage (D-2), so they serve again as soon as the database answers; the alert closes itself 30 minutes after recovery. Escalation and severity are TASK-093's.
+`/health/ready` is 503 from at least two checker regions: the API cannot reach its database within 3 seconds. No answer at all means the load balancer, the certificate or the service itself. The API's log names the failing check (`Health check postgresql`). Instances are not restarted for a database outage (D-2), so they serve again as soon as the database answers; the alert closes itself 30 minutes after recovery. In PROD this is P1-1 ([`incident-severity-classification.md`](../operations/incident-severity-classification.md)); who is paged and what they do is [`on-call-runbook.md`](../operations/on-call-runbook.md) PB-1.
 
 ### 7.3 The drill (SIT or UAT)
 
