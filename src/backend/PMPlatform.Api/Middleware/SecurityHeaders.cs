@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
+using PMPlatform.Api.ApiDocumentation;
 
 namespace PMPlatform.Api.Middleware;
 
@@ -7,9 +9,10 @@ namespace PMPlatform.Api.Middleware;
 /// The security response headers (TASK-078, CTL-12) on every response the API writes — successes, refusals, 404s, 429s and the
 /// exception handler's 500 alike: the headers are set as the response starts, after anything that cleared it. The API serves
 /// JSON and files, never a page, so its Content-Security-Policy allows nothing to load and nothing to frame it; the SPA's own
-/// policy is set where the SPA is served (<c>endpoint-hardening.md</c> §3.2).
+/// policy is set where the SPA is served (<c>endpoint-hardening.md</c> §3.2). The one page the API serves is the docs UI where it is
+/// enabled (TASK-094), which is given <see cref="ApiDocumentationEndpoints.UiContentSecurityPolicy"/> instead.
 /// </summary>
-internal sealed class SecurityHeaders(RequestDelegate next)
+internal sealed class SecurityHeaders(RequestDelegate next, IOptions<ApiDocumentationOptions> documentation)
 {
     /// <summary>Header name and value, in the order a scanner lists them. The five the workbook names come first.</summary>
     public static readonly IReadOnlyList<KeyValuePair<string, StringValues>> Headers =
@@ -32,11 +35,17 @@ internal sealed class SecurityHeaders(RequestDelegate next)
 
     public Task InvokeAsync(HttpContext context)
     {
+        bool documentationUi = documentation.Value.Enabled && context.Request.Path.StartsWithSegments(ApiDocumentationEndpoints.UiPath);
         context.Response.OnStarting(() =>
         {
             foreach ((string name, StringValues value) in Headers)
             {
                 context.Response.Headers[name] = value;
+            }
+
+            if (documentationUi)
+            {
+                context.Response.Headers.ContentSecurityPolicy = ApiDocumentationEndpoints.UiContentSecurityPolicy;
             }
 
             return Task.CompletedTask;

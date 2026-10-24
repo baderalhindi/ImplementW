@@ -99,3 +99,9 @@ variable "integration_alert_thresholds" {
   type        = map(string)
   default     = {}
 }
+
+variable "api_documentation" {
+  description = "Whether the API serves the OpenAPI document and the docs UI (TASK-094). DEV and SIT only."
+  type        = bool
+  default     = false
+}

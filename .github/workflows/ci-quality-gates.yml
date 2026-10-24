@@ -593,6 +593,44 @@ jobs:
   # TASK-084: the business-logic coverage gate. Each backend job uploads the Cobertura reports of its own steps; this job merges them line
   # by line and fails if any Domain/Application module, or all of them together, is below docs/testing/coverage-thresholds.json
   # (test-strategy.md §5). It needs all four, so it gates on the same commit's full backend run and nothing less.
+  # TASK-094 (api-conventions R-49): the OpenAPI document, generated from the API as built — no database, no service — and
+  # published as the `openapi-v1` artifact. On a pull request it fails when docs/api/openapi.v1.json is not the API in the same
+  # commit; called by ci-cd-pipeline.yml it is the document of every merge to main, kept 90 days (docs/api/README.md).
+  api-documentation:
+    name: api-documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/backend/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Build the API
+        run: dotnet build src/backend/PMPlatform.Api --configuration Release
+
+      - name: Generate, compare with the snapshot and lint
+        run: .github/scripts/openapi-publish.sh
+
+      - name: Publish the document
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-v1
+          path: artifacts/api/
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'pull_request' && 7 || 90 }}
+
   coverage:
     name: coverage
     needs: [backend, backend-risk-governance, backend-endpoint-hardening, backend-platform-services]
@@ -708,6 +746,9 @@ jobs:
 
       - name: Network security (TASK-021)
         run: python3 docs/architecture/network-security-check.py
+
+      - name: API documentation publication, DEV/SIT docs UI and audit sample (TASK-094)
+        run: python3 docs/api/api-documentation-check.py
 
       - name: Migrations are forward-only (TASK-024)
         if: github.event_name == 'pull_request'

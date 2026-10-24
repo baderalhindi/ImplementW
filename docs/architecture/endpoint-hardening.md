@@ -57,6 +57,7 @@
 | `RateLimiting` (middleware), `RateLimitPolicy`, `[RateLimited]`, `RateLimitingOptions` | `PMPlatform.Api/Middleware/RateLimiting.cs`, `RateLimitPolicy.cs` |
 | `OriginAllowlist` (middleware, `Parse`, `Policy`), `AllowedOrigins` | `PMPlatform.Api/Middleware/OriginAllowlist.cs` |
 | `SecurityHeaders` (middleware and the header list) | `PMPlatform.Api/Middleware/SecurityHeaders.cs` |
+| The one page the API serves: TASK-094's docs UI at `/api-docs`, where `ApiDocumentation:Enabled` (DEV, SIT). Every header above but the Content-Security-Policy, which is `ApiDocumentationEndpoints.UiContentSecurityPolicy` there — `script-src`, `style-src`, `img-src` and `connect-src` `'self'` (images also `data:`), nothing inline, still `frame-ancestors 'none'` (`docs/api/README.md` D-4) | `SecurityHeaders.cs`, `PMPlatform.Api/ApiDocumentation/` |
 | `IRateLimitStore`, `RateLimitCount` | `PMPlatform.Application/Common/RateLimiting/IRateLimitStore.cs` |
 | `RedisRateLimitStore` (StackExchange.Redis 3.3.1), `InMemoryRateLimitStore` | `PMPlatform.Infrastructure/RateLimiting/` |
 | Pipeline order: forwarded headers → security headers → correlation id → exception handler → HTTPS redirection → origin allowlist → CORS → authentication → **rate limiting** → authorization → step-up | `PMPlatform.Api/Program.cs` |
@@ -182,3 +183,4 @@ Against SIT, with its publicly trusted certificate, all four are expected to pas
 | --- | --- |
 | 2026-10-14 | Built and verified (this record) |
 | 2026-10-20 | TASK-090 adds a fourth policy, `ClientErrorReport` (30 a minute per client address), for `POST /client-error-reports`, the eleventh anonymous action; `EveryAnonymousActionAndEverySensitiveWriteIsRateLimited` covers it (`apm-error-tracking.md` D-7) |
+| 2026-10-24 | TASK-094: `/api-docs` (the docs UI, DEV and SIT only) carries its own Content-Security-Policy; every other response keeps `default-src 'none'` (`ApiDocumentationTests`, `docs/api/README.md`) |

@@ -32,6 +32,7 @@
           { "context": "backend-risk-governance" },
           { "context": "backend-endpoint-hardening" },
           { "context": "backend-platform-services" },
+          { "context": "api-documentation" },
           { "context": "coverage" },
           { "context": "frontend" },
           { "context": "repo-checks" },

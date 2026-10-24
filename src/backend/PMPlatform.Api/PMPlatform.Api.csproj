@@ -10,6 +10,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <!-- TASK-090: APM and error tracking (Observability/). -->
     <PackageReference Include="Sentry.AspNetCore" />
+    <!-- TASK-094: the docs UI (ApiDocumentation/). -->
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="PMPlatform.Tests.Integration" />

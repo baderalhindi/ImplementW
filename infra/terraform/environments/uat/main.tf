@@ -59,4 +59,6 @@ module "platform" {
   alert_notification_channel = var.alert_notification_channel
 
   integration_alert_thresholds = var.integration_alert_thresholds
+
+  api_documentation = var.api_documentation
 }

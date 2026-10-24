@@ -1,0 +1,61 @@
+{
+  "description": "TASK-094's audit sample (README.md §5): eight endpoints of seven modules — two request bodies, a sign-in, a single resource, four paged collections with seeded or audit-trail content, and a write. Read-only but for the sign-in and one client error report. Any role with a session can read them except GET /projects (R04, R08 locally).",
+  "tokenProperty": "accessToken",
+  "samples": [
+    {
+      "operation": "POST /api/v1/sessions",
+      "signIn": true,
+      "body": {
+        "username": "${AUDIT_USERNAME}",
+        "password": "${AUDIT_PASSWORD}"
+      }
+    },
+    {
+      "operation": "GET /api/v1/sessions/current"
+    },
+    {
+      "operation": "GET /api/v1/dashboards",
+      "query": {
+        "page": "1",
+        "pageSize": "20"
+      }
+    },
+    {
+      "operation": "GET /api/v1/projects",
+      "query": {
+        "page": "1",
+        "pageSize": "20"
+      }
+    },
+    {
+      "operation": "GET /api/v1/notifications",
+      "query": {
+        "page": "1",
+        "pageSize": "20"
+      }
+    },
+    {
+      "operation": "GET /api/v1/reports",
+      "query": {
+        "page": "1",
+        "pageSize": "20"
+      }
+    },
+    {
+      "operation": "GET /api/v1/audit-events",
+      "query": {
+        "page": "1",
+        "pageSize": "20"
+      }
+    },
+    {
+      "operation": "POST /api/v1/client-error-reports",
+      "body": {
+        "source": "RENDER_ERROR",
+        "errorType": "SpecAudit",
+        "message": "TASK-094 published-spec audit: a deliberate report, not an error.",
+        "path": "/api-docs"
+      }
+    }
+  ]
+}
