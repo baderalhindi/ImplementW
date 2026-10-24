@@ -2,6 +2,7 @@
 
 Project-management platform for AHDA: a React SPA over an ASP.NET Core modular monolith on PostgreSQL (ADR-002), organised as 21 bounded modules (ADR-003).
 
+- [docs/onboarding/developer-onboarding-guide.md](docs/onboarding/developer-onboarding-guide.md) — start here: clone to running stack to first merged PR
 - [CONTRIBUTING.md](CONTRIBUTING.md) — repository layout, toolchain, build and quality gates
 - [docs/architecture/local-development-environment.md](docs/architecture/local-development-environment.md) — the local Docker Compose stack and its seed data
 - [docs/architecture/branching-strategy.md](docs/architecture/branching-strategy.md) — branches, pull requests, code owners, branch protection
