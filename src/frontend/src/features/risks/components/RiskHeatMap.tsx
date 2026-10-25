@@ -140,7 +140,11 @@ export function MatrixUnavailable({
     return state.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState message={riskProblemMessage(state.error, t)} onRetry={state.reload} />
+      <ErrorState
+        error={state.error}
+        message={riskProblemMessage(state.error, t)}
+        onRetry={state.reload}
+      />
     );
   }
   switch (state.data.kind) {

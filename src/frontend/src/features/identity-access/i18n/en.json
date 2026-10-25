@@ -63,13 +63,20 @@
     "alreadyAssigned": "The user already holds this assignment.",
     "referenceInvalid": "A selected user, sponsor, sector, entity, project or profile version does not exist or cannot be used. See the highlighted field.",
     "externalGrantInvalid": "This assignment does not meet the rules for external users. See the highlighted fields.",
+    "scopeAnchorInvalid": "This role needs a different scope: a Department Manager needs a department, a Liaison a project, a Viewer a department or a project, and an internal user no external entity. See the highlighted fields.",
     "profileVersionNotPublished": "Only a published profile version can be assigned.",
     "projectClosed": "The project is closed and cannot take new assignments.",
     "selfAdministration": "You cannot change your own status or assignments. Ask another system administrator.",
     "servicePrincipal": "Service accounts are not managed here.",
     "directoryAuthoritative": "An internal user's sector, manager and job title come from the directory and cannot be changed here.",
     "invalidPeriod": "An assignment cannot start in the past, and must end after it starts.",
-    "departmentCycle": "A sector cannot be placed under itself or one of its sub-sectors."
+    "departmentCycle": "A sector cannot be placed under itself or one of its sub-sectors.",
+    "profileGrantInvalid": "This profile names a permission that does not exist, names one twice, or gives its base role something it may never hold (for example business data to the System Administrator, or approvals and reports to an Entity Manager). See the highlighted permissions.",
+    "separationOfDuties": "Three different people prepare, validate and publish a profile version: its author edits it, someone else validates it, and a third person publishes it.",
+    "selfApproval": "You hold this profile, so you cannot approve a change to it. Ask an administrator who does not hold it.",
+    "profileVersionInUse": "This version cannot be withdrawn: people still hold it (move them to the newest version first), or it is the only published version of a shipped role profile.",
+    "profileDraftOpen": "This profile already has a version being prepared. Finish or abandon it first.",
+    "migrationTargetInvalid": "Assignments can only be moved to the profile's newest published version."
   },
   "userPicker": {
     "searchLabel": "Search by name, username or email",
@@ -220,7 +227,7 @@
   },
   "permissionMatrix": {
     "title": "Permission matrix",
-    "description": "Which permissions each permission profile grants, and at what scope. Read only.",
+    "description": "Which permissions each permission profile grants, and at what scope. Open a version to see who drafted, validated and published it, or to change it.",
     "caption": "Permissions granted by each permission profile",
     "profile": "Permission profile",
     "allProfiles": "All profiles",
@@ -230,7 +237,9 @@
     "permission": "Permission",
     "privileged": "Privileged",
     "notGranted": "Not granted",
-    "empty": "No permissions or profiles are available."
+    "empty": "No permissions or profiles are available.",
+    "open": "Open this version",
+    "openToEdit": "Open to review or change"
   },
   "organization": {
     "title": "Organization structure",
@@ -344,5 +353,52 @@
     "title": "Confirm it is you",
     "instructions": "This action needs a fresh verification code. Enter the code from your authenticator app.",
     "confirm": "Confirm"
+  },
+  "profiles": {
+    "create": {
+      "title": "New permission profile",
+      "description": "A profile is what an assignment grants. Start from an existing version to copy its permissions, then adjust them before it is validated and published.",
+      "submit": "Create draft"
+    },
+    "fields": {
+      "code": "Profile code",
+      "nameAr": "Name (Arabic)",
+      "nameEn": "Name (English)",
+      "source": "Copy permissions from",
+      "noSource": "Start with no permissions",
+      "sourceHint": "The new profile's first draft holds the same permissions at the same scopes.",
+      "baseRole": "Base role",
+      "chooseRole": "Choose a role",
+      "baseRoleHint": "The role the profile's holders act as. It also limits what the profile may grant.",
+      "author": "Prepared by",
+      "reviewer": "Validated by",
+      "publisher": "Published by",
+      "changeSummary": "Summary of the change"
+    },
+    "sourceLabel": "{profile}, version {version} ({state})",
+    "version": {
+      "description": "The permissions this version grants and the scope of each, beside the shipped default of its base role.",
+      "caption": "Permissions granted by this version",
+      "thisVersion": "This version",
+      "shippedDefault": "Shipped default",
+      "changed": "Differs from default",
+      "differencesOnly": "Show only the {count} permissions that differ from the shipped default",
+      "scopeOf": "Scope of {permission}",
+      "save": "Save changes",
+      "validate": "Validate",
+      "publish": "Publish",
+      "withdraw": "Withdraw",
+      "abandon": "Abandon draft",
+      "newVersion": "Start a new version",
+      "migrate": "Move holders to this version",
+      "clone": "Copy into a new profile",
+      "migrated": "{count} assignments now use this version.",
+      "next": {
+        "DRAFT": "Draft: its author may change it. Then another administrator validates it.",
+        "VALIDATED": "Validated: a third administrator, neither its author nor its reviewer, publishes it.",
+        "PUBLISHED": "Published: it can be assigned and never changes. To change it, start a new version.",
+        "RETIRED": "Retired: it can no longer be assigned."
+      }
+    }
   }
 }

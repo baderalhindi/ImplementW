@@ -32,6 +32,9 @@ internal sealed class FakeDepartmentRepository : FakeStore<Department>, IDepartm
     public Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyDictionary<Guid, BilingualLabel>>(Rows.Values.Where(r => ids.Contains(r.Id)).ToDictionary(r => r.Id, r => r.Name));
 
+    public Task<IReadOnlyList<OrganizationUnit>> ListUnitsAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<OrganizationUnit>>([.. Rows.Values.OrderBy(r => r.Code, StringComparer.Ordinal).Select(r => new OrganizationUnit(r.Id, r.Code, r.Name, r.IsActive))]);
+
     public Task<Guid?> FindIdByCodeAsync(string code, CancellationToken cancellationToken) =>
         Task.FromResult(Rows.Values.Where(r => r.Code == code).Select(r => (Guid?)r.Id).SingleOrDefault());
 

@@ -43,6 +43,7 @@ export function CataloguePage({
           <LoadingState />
         ) : (
           <ErrorState
+            error={catalogue.error}
             message={integrationProblemMessage(catalogue.error, t)}
             onRetry={catalogue.reload}
           />

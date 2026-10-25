@@ -124,6 +124,7 @@ export function SuspensionDetailPage(): ReactElement | null {
           <p className="state">{t('suspensionClosure.suspension.forbidden')}</p>
         ) : (
           <ErrorState
+            error={record.error}
             message={suspensionClosureProblemMessage(record.error, t)}
             onRetry={record.reload}
           />

@@ -200,9 +200,11 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
     const sources = context
       .filter(([label]) => label === 'Sources')
       .map(([, value]) => value ?? '');
+    // The consumer reads the financial source and is withheld its amounts (FINANCIAL_VIEW without FINANCIAL_VIEW_SENSITIVE,
+    // shipped-permission-matrix.md D-4): the source is stated as it is, and the amounts' cells read Restricted above.
     expect(sources).toContainEqual(
       expect.stringMatching(
-        /^FINANCIAL_KPI\.PUBLISHED_FINANCIAL_SNAPSHOT \(WF-14\): Published, Restricted/,
+        /^FINANCIAL_KPI\.PUBLISHED_FINANCIAL_SNAPSHOT \(WF-14\): Published, fresh/,
       ),
     );
     expect(sources).toContainEqual(
@@ -224,7 +226,7 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
     expect(texts).toContain('Rows: 1');
     expect(texts).toContainEqual(
       expect.stringMatching(
-        /^Sources: FINANCIAL_KPI\.PUBLISHED_FINANCIAL_SNAPSHOT \(WF-14\): Published, Restricted/,
+        /^Sources: FINANCIAL_KPI\.PUBLISHED_FINANCIAL_SNAPSHOT \(WF-14\): Published, fresh/,
       ),
     );
     // The table: the six headers, then the row, every value as on screen.

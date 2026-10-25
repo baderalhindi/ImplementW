@@ -6,6 +6,7 @@ using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
 using PMPlatform.Api.Middleware;
 using PMPlatform.Api.Models.IdentityAccess;
+using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Domain.IdentityAccess;
 
@@ -26,7 +27,8 @@ namespace PMPlatform.Api.Controllers;
 [ApiController]
 [Route("api/v1/sessions")]
 [Tags("IdentityAccess")]
-public sealed class SessionsController(IAuthenticationService authentication, IdentityVerificationPolicy identityVerificationPolicy) : ControllerBase
+public sealed class SessionsController(IAuthenticationService authentication, IdentityVerificationPolicy identityVerificationPolicy, IAuthorizationEngine engine)
+    : ControllerBase
 {
     private const string CurrentSessionPath = "/api/v1/sessions/current";
 
@@ -188,6 +190,25 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
             session?.AuthenticatedAt,
             [.. SessionPrincipal.Roles(user)],
             DateTimeOffset.FromUnixTimeSeconds(long.Parse(user.FindFirstValue(SessionTokenClaims.ExpiresAt)!, CultureInfo.InvariantCulture))));
+    }
+
+    /// <summary>
+    /// The permissions the caller holds now and at which scopes (review C3): what the SPA's menus, tabs and buttons are offered on. Read from
+    /// the engine, after the rules no profile overrides (GrantPolicy), so it never shows more than the API would allow. An inactive or
+    /// unknown user holds nothing.
+    /// </summary>
+    [HttpGet("current/permissions")]
+    [AllowAnyAuthenticatedUser]
+    [EndpointName("IdentityAccess_GetCurrentSessionPermissions")]
+    [ProducesResponseType<EffectivePermissionsDetail>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> GetCurrentPermissions(CancellationToken cancellationToken)
+    {
+        AuthorizationPrincipal? principal = await engine.GetPrincipalAsync(Guid.Parse(User.FindFirstValue(SessionTokenClaims.Subject)!), cancellationToken);
+        IEnumerable<EffectiveGrant> grants = principal is { IsActive: true } ? principal.Grants : [];
+        return Ok(new EffectivePermissionsDetail([.. grants
+            .GroupBy(g => g.PermissionCode, StringComparer.Ordinal)
+            .OrderBy(g => g.Key, StringComparer.Ordinal)
+            .Select(g => new EffectivePermissionDetail(g.Key, [.. g.Select(grant => grant.Scope).Distinct().Order()]))]));
     }
 
     /// <summary>

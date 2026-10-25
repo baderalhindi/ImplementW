@@ -48,7 +48,11 @@ export function ProjectDashboard({
           // R-47: not in the PROJECT audience, or no widget reaches this project. Nothing about it is disclosed.
           <p className="form__note">{t('dashboards.project.unavailable')}</p>
         ) : (
-          <ErrorState message={dashboardProblemMessage(view.error, t)} onRetry={view.reload} />
+          <ErrorState
+            error={view.error}
+            message={dashboardProblemMessage(view.error, t)}
+            onRetry={view.reload}
+          />
         )
       ) : (
         <>

@@ -10,7 +10,8 @@ import {
   externalRequestRoutes,
   myParticipationRoutes,
 } from '@/features/external-participation/routes.tsx';
-import { HomeDashboardPage } from '@/features/dashboards/HomeDashboardPage.tsx';
+import { dashboardRoutes } from '@/features/dashboards/routes.tsx';
+import { HomePage } from '@/features/home/HomePage.tsx';
 import { kpiRoutes } from '@/features/financial-kpi/routes.tsx';
 import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
 import { integrationAdminRoutes } from '@/features/integration-admin/routes.tsx';
@@ -38,7 +39,16 @@ export const appRoutes: RouteObject[] = [
     // TASK-090: a screen that throws is reported to the APM and replaced by an explanation.
     errorElement: <RouteErrorPage />,
     children: [
-      { index: true, element: <HomeDashboardPage /> }, // the role-aware Home: DSH-001–008, DSH-010–012
+      { index: true, element: <HomePage /> }, // the person's own work, or platform health for the administrator (review H2, M-1)
+      {
+        path: 'dashboards', // DSH-001–008, DSH-010–012
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: dashboardRoutes,
+      },
       { path: 'sign-in', element: <SignInPage /> },
       {
         path: 'admin',

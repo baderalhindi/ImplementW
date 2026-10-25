@@ -14,6 +14,8 @@ import externalParticipationAr from '@/features/external-participation/i18n/ar.j
 import externalParticipationEn from '@/features/external-participation/i18n/en.json';
 import financialKpiAr from '@/features/financial-kpi/i18n/ar.json';
 import financialKpiEn from '@/features/financial-kpi/i18n/en.json';
+import homeAr from '@/features/home/i18n/ar.json';
+import homeEn from '@/features/home/i18n/en.json';
 import identityAccessAr from '@/features/identity-access/i18n/ar.json';
 import identityAccessEn from '@/features/identity-access/i18n/en.json';
 import integrationAdminAr from '@/features/integration-admin/i18n/ar.json';
@@ -48,6 +50,7 @@ export type Language = 'ar' | 'en';
 const en = {
   common: commonEn,
   identityAccess: identityAccessEn,
+  home: homeEn,
   approvals: approvalsEn,
   documents: documentsEn,
   notifications: notificationsEn,
@@ -77,6 +80,7 @@ export const resources: Record<Language, Resources> = {
   ar: {
     common: commonAr,
     identityAccess: identityAccessAr,
+    home: homeAr,
     approvals: approvalsAr,
     documents: documentsAr,
     notifications: notificationsAr,

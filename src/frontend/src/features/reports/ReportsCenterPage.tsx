@@ -1,7 +1,7 @@
 import { type ReactElement, useCallback } from 'react';
 import { Link } from 'react-router';
 
-import { useSession } from '@/features/identity-access/session/useSession.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -13,7 +13,6 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { reportsApi } from './api/reportsApi.ts';
 import { type ReportCatalogueEntry } from './api/types.ts';
 import { ReportList } from './components/ReportList.tsx';
-import { canCompose } from './access.ts';
 import {
   entryLanguage,
   FAMILIES,
@@ -47,8 +46,7 @@ function matches(entry: ReportCatalogueEntry, query: string): boolean {
 
 function Recent({ catalogue }: { catalogue: ReportCatalogueEntry[] }): ReactElement | null {
   const { t, formatDateTime } = useI18n();
-  const { session } = useSession();
-  const compose = session !== null && canCompose(session.user);
+  const compose = useCan('REPORT_COMPOSE');
   const load = useCallback(
     async (signal: AbortSignal) => {
       const [jobs, views] = await Promise.all([
@@ -113,7 +111,7 @@ function Recent({ catalogue }: { catalogue: ReportCatalogueEntry[] }): ReactElem
 
 export function ReportsCenterPage(): ReactElement {
   const { t } = useI18n();
-  const { session } = useSession();
+  const compose = useCan('REPORT_COMPOSE');
   const { params, setFilter } = useListParams();
   const query = params.get('q') ?? '';
   const family = familyOfSlug(params.get('family') ?? undefined);
@@ -128,7 +126,7 @@ export function ReportsCenterPage(): ReactElement {
         title={t('reports.center.title')}
         description={t('reports.center.description')}
         actions={
-          session !== null && canCompose(session.user) ? (
+          compose ? (
             <Link className="button" to="/reports/explorer">
               {t('reports.nav.explorer')}
             </Link>
@@ -177,7 +175,11 @@ export function ReportsCenterPage(): ReactElement {
       {catalogue.loading ? (
         <LoadingState />
       ) : catalogue.error !== null ? (
-        <ErrorState message={reportProblemMessage(catalogue.error, t)} onRetry={catalogue.reload} />
+        <ErrorState
+          error={catalogue.error}
+          message={reportProblemMessage(catalogue.error, t)}
+          onRetry={catalogue.reload}
+        />
       ) : (catalogue.data ?? []).length === 0 ? (
         <EmptyState title={t('reports.center.none')} />
       ) : shown.length === 0 ? (

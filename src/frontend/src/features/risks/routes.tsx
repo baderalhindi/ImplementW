@@ -16,6 +16,6 @@ export const riskRoutes: RouteObject[] = [
 ];
 
 export const riskNavigation: NavigationItem[] = [
-  { to: '/risks', label: 'risks.nav.register', end: true },
-  { to: '/risks/critical', label: 'risks.nav.critical' },
+  { to: '/risks', label: 'risks.nav.register', end: true, permissions: ['RISK_VIEW'] },
+  { to: '/risks/critical', label: 'risks.nav.critical', permissions: ['RISK_VIEW'] },
 ];

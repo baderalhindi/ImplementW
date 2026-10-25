@@ -4,7 +4,7 @@ namespace PMPlatform.Application.Features.Reports;
 
 /// <summary>
 /// The ten delivered reports (ADR-006) and what is fixed about them by decision rather than configuration: the FG-02 catalogue entries each
-/// absorbs (ADR-006 MAPPED: twenty-six entries, ten definitions), the entity report set (ADR-013), who a report may be offered to, which must be
+/// absorbs (ADR-006 MAPPED: twenty-six entries, ten definitions), who a report may be offered to (ADR-019: no external user), which must be
 /// run for one project, and the export baseline (ADR-005).
 /// </summary>
 internal static class ReportCatalogue
@@ -44,17 +44,6 @@ internal static class ReportCatalogue
     /// </summary>
     public static IReadOnlyList<string> NotDelivered { get; } = ["RPT-DOC-001", "RPT-EXC-001", "RPT-AUD-001"];
 
-    /// <summary>ADR-013's amendment to TASK-071: the defined report set an entity may run and export on its own projects.</summary>
-    public static IReadOnlySet<ReportCode> EntityReports { get; } = new HashSet<ReportCode>
-    {
-        ReportCode.ProjectRegister,
-        ReportCode.ProjectReport,
-        ReportCode.ProgressReporting,
-        ReportCode.ProgressHistory,
-        ReportCode.FinancialPerformance,
-        ReportCode.KpiPerformance,
-    };
-
     /// <summary>
     /// ADR-019's saved-view roles — Portfolio Manager, Department Manager and Executive, <c>REPORT_COMPOSE</c>'s holders — and so the only roles a
     /// view may be shared with (TBC-RPT-20, enabled by TASK-072): a share with any other would reach no one who may open a view.
@@ -64,14 +53,13 @@ internal static class ReportCatalogue
     /// <summary>A report about one project: a formal Project report, a project's published history. Its PROJECT parameter is required.</summary>
     public static bool RequiresProject(ReportCode code) => code is ReportCode.ProjectReport or ReportCode.ProgressHistory;
 
-    /// <summary>R01 is offered no report; R08 only the entity report set.</summary>
-    public static bool MayBeOfferedTo(ReportCode code, string roleCode) =>
-        !string.Equals(roleCode, AdministratorRole, StringComparison.Ordinal)
-        && (EntityReports.Contains(code) || !string.Equals(roleCode, ExternalEntityRole, StringComparison.Ordinal));
+    /// <summary>R01 is offered no report (BR-RPT-011), and R08 none either (ADR-019: the Project Dashboard only, no reports).</summary>
+    public static bool MayBeOfferedTo(string roleCode) =>
+        !string.Equals(roleCode, AdministratorRole, StringComparison.Ordinal) && !string.Equals(roleCode, ExternalEntityRole, StringComparison.Ordinal);
 
     /// <summary>
-    /// ADR-013: an external entity's person — R08, or the entity Project Manager in R04 — runs the entity report set and nothing further, whatever
-    /// an audience lists.
+    /// ADR-019 (OD-S13), superseding ADR-013's entity report set: an external entity's person — R08, or the entity Project Manager in R04 — runs
+    /// no report, whatever an audience lists; every report route answers them 404 (ExternalUsersNotFoundAttribute).
     /// </summary>
-    public static bool MayRun(ReportCode code, bool isExternal) => !isExternal || EntityReports.Contains(code);
+    public static bool MayRun(bool isExternal) => !isExternal;
 }

@@ -40,7 +40,11 @@ export function ReportFamilyPage(): ReactElement {
       {catalogue.loading ? (
         <LoadingState />
       ) : catalogue.error !== null ? (
-        <ErrorState message={reportProblemMessage(catalogue.error, t)} onRetry={catalogue.reload} />
+        <ErrorState
+          error={catalogue.error}
+          message={reportProblemMessage(catalogue.error, t)}
+          onRetry={catalogue.reload}
+        />
       ) : entries.length === 0 ? (
         <EmptyState title={t('reports.family.none')} />
       ) : (

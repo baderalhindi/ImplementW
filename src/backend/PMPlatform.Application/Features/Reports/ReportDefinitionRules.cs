@@ -34,7 +34,7 @@ internal static partial class ReportDefinitionRules
             {
                 issues.Add(new FieldIssue($"audienceRoleCodes[{i}]", FieldIssue.Duplicate));
             }
-            else if (!ReportCatalogue.MayBeOfferedTo(code, role))
+            else if (!ReportCatalogue.MayBeOfferedTo(role))
             {
                 issues.Add(new FieldIssue($"audienceRoleCodes[{i}]", ReportIssueCodes.AudienceNotPermitted));
             }

@@ -18,20 +18,20 @@ public sealed class DocumentAuthorizationTests(DocumentTestHost host)
     {
         using HttpClient client = host.Api.CreateClient();
         string controller = (await client.SignInOrFailAsync(2)).AccessToken;
-        string member = (await client.SignInOrFailAsync(6)).AccessToken;
+        string administrator = (await client.SignInOrFailAsync(1)).AccessToken;
         string departmental = (await client.SignInOrFailAsync(3)).AccessToken;
         (Guid onEntityProject, Guid entityVersion) = await client.UploadOrFailAsync(controller, DocumentDriver.Text($"a {Guid.NewGuid()}"), DocumentTestHost.EntityProjectId);
         (Guid onOtherDepartment, _) = await client.UploadOrFailAsync(controller, DocumentDriver.Text($"b {Guid.NewGuid()}"), DocumentTestHost.OtherDepartmentProjectId);
         await host.Api.ScanAsync();
 
-        // local.r06 is on the entity project but holds no document permission: every document call is refused.
+        // local.r01 holds no document permission, and no profile can give it one (shipped-permission-matrix.md D-2): every document call is refused.
         foreach (string path in new[]
                  {
                      DocumentDriver.Documents, $"{DocumentDriver.Documents}/{onEntityProject}", $"{DocumentDriver.Documents}/{onEntityProject}/versions",
                      $"{DocumentDriver.Documents}/{onEntityProject}/versions/{entityVersion}/content",
                  })
         {
-            await AssertAnswerAsync(HttpStatusCode.Forbidden, "PERMISSION_DENIED", client.GetAsync(path, member));
+            await AssertAnswerAsync(HttpStatusCode.Forbidden, "PERMISSION_DENIED", client.GetAsync(path, administrator));
         }
 
         // local.r03 is on the other department's project too, but their document grant is DEPT: that project's document is

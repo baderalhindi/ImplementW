@@ -58,14 +58,14 @@ ON CONFLICT (id) DO UPDATE SET
     status = EXCLUDED.status, updated_at = now(), updated_by = EXCLUDED.updated_by;
 
 -- Assignments (ADR-018): each user is bound to version 1 of the shipped-default profile of role Rnn.
--- Scope anchors per Blueprint Section 10.1: R03 carries the DEPT anchor; R08 carries the ENTITY anchor and its
+-- Scope anchors per Blueprint Section 10.1: R03 and R06 carry the DEPT anchor (shipped-permission-matrix.md D-6); R08 carries the ENTITY anchor and its
 -- named AHDA sponsor (ADR-013). R04's per-project anchor waits for a project to exist (project_id stays null).
 INSERT INTO identity_access.access_relationship (id, user_id, permission_profile_version_id, department_id, external_entity_id, sponsor_user_id, starts_at, status, created_at, created_by, updated_at, updated_by)
 SELECT
     overlay(u.id::text placing '0011' from 10 for 4)::uuid,
     u.id,
     overlay(r.id::text placing '0002' from 10 for 4)::uuid,
-    CASE WHEN r.code = 'R03' THEN u.department_id END,
+    CASE WHEN r.code IN ('R03', 'R06') THEN u.department_id END,
     CASE WHEN r.code = 'R08' THEN u.external_entity_id END,
     CASE WHEN r.code = 'R08' THEN '00000000-0010-4000-8000-000000000002'::uuid END,
     now(),

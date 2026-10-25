@@ -142,8 +142,9 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     await expectText(kpi, `As of ${dayOf(measuredOn)}`);
   });
 
-  await test.step("the Home: the department filter offers only the consumer's scope; refresh, switch and layout change nothing at source", async () => {
-    await page.goto('/');
+  await test.step("the dashboards: the department filter offers only the consumer's scope; refresh, switch and layout change nothing at source", async () => {
+    // The dashboards are at /dashboards; the Home is the person's own work (home-and-portfolio.md D-1, D-2).
+    await page.goto('/dashboards');
     const filter = page.getByRole('combobox', { name: 'Sector' });
     await expect(filter.getByRole('option')).toHaveText([
       'All your sectors',
@@ -281,7 +282,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
       'The project was not found, or you do not have access to it.',
     );
     const ours = await departmentId(portfolio.api, DATA_SET.department);
-    await outsider.page.goto(`/?department=${ours}`);
+    await outsider.page.goto(`/dashboards?department=${ours}`);
     await expectText(outsider.page.getByRole('main'), 'That sector is not one you may filter by.');
     const filtered = await outsider.api.send('GET', `/dashboards/PORTFOLIO?departmentId=${ours}`);
     expect([filtered.status, filtered.code]).toEqual([422, 'DASHBOARD_FILTER_VALUE_UNAUTHORIZED']);

@@ -141,6 +141,7 @@ function profile(
     versions: [
       {
         id: `version-${roleSummary.code}-1`,
+        permissionProfileId: `profile-${roleSummary.code}`,
         versionNo: 1,
         lifecycleState: versionState,
         publishedAt: versionState === 'PUBLISHED' ? '2026-09-01T08:00:00Z' : null,
@@ -152,10 +153,17 @@ function profile(
                 { permissionId: 'p-user-manage', permissionCode: 'USER_MANAGE', dataScope: 'ALL' },
               ]
             : [],
+        changeSummary: null,
+        createdBy: SEED_PRINCIPAL_ID,
+        validatedByUserId: null,
+        publishedByUserId: null,
       },
     ],
   };
 }
+
+/** The seed's principal, author of every shipped version. */
+export const SEED_PRINCIPAL_ID = '00000000-0000-4000-8000-0000000000ff';
 
 export const profiles = roles.map((r) => profile(r, 'PUBLISHED'));
 

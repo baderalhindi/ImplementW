@@ -13,6 +13,7 @@ namespace PMPlatform.Api.Controllers;
 /// and every value in it — and refused 403 otherwise (TASK-071 acceptance criterion 2); an expired output is 409 <c>REPORT_OUTPUT_EXPIRED</c>.
 /// </summary>
 [Route(Collection)]
+[ExternalUsersNotFound]
 [Tags("Reports")]
 public sealed class ReportJobsController(IReportJobService jobs) : AdministrationControllerBase
 {

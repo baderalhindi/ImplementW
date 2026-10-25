@@ -55,8 +55,9 @@ internal sealed class ProjectService(
             return invalid;
         }
 
-        // ADR-013: an entity user registers a project of their own entity only; the engine's cross-entity isolation decides it.
-        if (await access.CheckAnchorsAsync(callerId, PermissionCatalogue.ProjectRegister, null, draft, null, cancellationToken).ConfigureAwait(false) is { } refused)
+        // ADR-013: an entity user registers a project of their own entity only; the engine's cross-entity isolation decides it. The caller
+        // will own the draft (ProjectAccess.OwnerOf), so OWN registers it.
+        if (await access.CheckAnchorsAsync(callerId, PermissionCatalogue.ProjectRegister, null, draft, callerId, cancellationToken).ConfigureAwait(false) is { } refused)
         {
             return refused;
         }
@@ -110,7 +111,7 @@ internal sealed class ProjectService(
         // Moving a project to another department or entity needs the permission there as well: no one moves a project out
         // of their own reach, or into an entity that is not theirs (ADR-013).
         if ((draft.DepartmentId, draft.ExternalEntityId) != (project.DepartmentId, project.ExternalEntityId)
-            && await access.CheckAnchorsAsync(callerId, PermissionCatalogue.ProjectRegister, project.Id, draft, project.ProjectManagerUserId, cancellationToken).ConfigureAwait(false) is { } moveRefused)
+            && await access.CheckAnchorsAsync(callerId, PermissionCatalogue.ProjectRegister, project.Id, draft, ProjectAccess.OwnerOf(project), cancellationToken).ConfigureAwait(false) is { } moveRefused)
         {
             return moveRefused;
         }

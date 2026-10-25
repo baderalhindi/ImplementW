@@ -27,6 +27,9 @@ internal sealed partial class AccessRelationshipService(
 {
     /// <summary>ADR-013: the entity Project Manager holds R04 scoped to their own project only.</summary>
     internal const string ProjectManagerRoleCode = "R04";
+    private const string DepartmentManagerRoleCode = "R03";
+    private const string LiaisonRoleCode = "R05";
+    private const string ViewerRoleCode = "R06";
 
     public async Task<AdministrationResult<AccessRelationshipPage>> ListAsync(Guid actorId, AccessRelationshipQuery query, CancellationToken cancellationToken)
     {
@@ -114,6 +117,11 @@ internal sealed partial class AccessRelationshipService(
         if (external && ExternalGrantIssues(user, version, draft, project) is { Length: > 0 } externalIssues)
         {
             return AdministrationError.Rule(IdentityAccessErrorCodes.ExternalGrantInvalid, externalIssues);
+        }
+
+        if (!external && InternalGrantIssues(version, draft) is { Length: > 0 } anchorIssues)
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.ScopeAnchorInvalid, anchorIssues);
         }
 
         if (project is { IsClosed: true })
@@ -293,6 +301,23 @@ internal sealed partial class AccessRelationshipService(
             draft.SponsorUserId is null ? new FieldIssue("sponsorUserId", FieldIssue.Required) : null,
             version.RoleCode == ProjectManagerRoleCode && draft.ProjectId is null ? new FieldIssue("projectId", FieldIssue.Required) : null,
             project is not null && project.ExternalEntityId != user.ExternalEntityId ? new FieldIssue("projectId", FieldIssue.OutsideEntity) : null,
+        ];
+        return [.. issues.OfType<FieldIssue>()];
+    }
+
+    /// <summary>
+    /// An internal user's assignment carries the anchor its role's scope needs (the 24 Oct 2026 review, M-6): no external entity, which is ADR-013's
+    /// anchor for external users only; a Department Manager's department; a Liaison's project, the projects ASSIGNED reaches; a Viewer's
+    /// department or project. Every rule the draft breaks, at once.
+    /// </summary>
+    private static FieldIssue[] InternalGrantIssues(ProfileVersionFacts version, AccessRelationshipDraft draft)
+    {
+        FieldIssue?[] issues =
+        [
+            draft.ExternalEntityId is null ? null : new FieldIssue("externalEntityId", FieldIssue.NotAllowed),
+            version.RoleCode == DepartmentManagerRoleCode && draft.DepartmentId is null ? new FieldIssue("departmentId", FieldIssue.Required) : null,
+            version.RoleCode == LiaisonRoleCode && draft.ProjectId is null ? new FieldIssue("projectId", FieldIssue.Required) : null,
+            version.RoleCode == ViewerRoleCode && draft.DepartmentId is null && draft.ProjectId is null ? new FieldIssue("departmentId", FieldIssue.Required) : null,
         ];
         return [.. issues.OfType<FieldIssue>()];
     }

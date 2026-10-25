@@ -139,6 +139,7 @@ function AttachForm({
       {candidates.loading && <LoadingState label={t('documents.attach.loading')} />}
       {candidates.error !== null && (
         <ErrorState
+          error={candidates.error}
           message={documentProblemMessage(candidates.error, t)}
           onRetry={candidates.reload}
         />

@@ -157,20 +157,26 @@ test('UJ-014 formal audit, activity and operational evidence stay distinct, corr
     expect(detail.attributes.length).toBeGreaterThan(0);
   });
 
-  await test.step('restricted: the Project Manager sees Activity but is refused the formal audit, in the page and at the API', async () => {
+  await test.step("in scope: the Project Manager reads its own project's formal audit beside Activity, in the page and at the API", async () => {
+    // The agreed matrix gives AUDIT_BUSINESS_VIEW to R02–R07 in their scope (shipped-permission-matrix.md, review H4): a Project
+    // Manager reads the business audit of the projects it manages. Another department and the administrator are refused below.
     const sections = page.getByRole('navigation', { name: 'Project sections' });
     await page.goto(`/projects/${project.id}/audit-history`);
-    await expectText(page.getByRole('main'), 'Formal audit history is not available to you');
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Formal audit history' }),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByRole('table', { name: "This project's audit events" })
+        .getByRole('row')
+        .filter({ hasText: 'ProjectTask.TaskCreated' }),
+    ).toHaveCount(1);
     await expect(sections.getByRole('link', { name: 'Activity history' })).toBeVisible();
-    await expect(sections.getByRole('link', { name: /Audit history/ })).toHaveCount(0);
 
-    const list = await manager.api.send(
-      'GET',
-      `/audit-events?category=BUSINESS&projectId=${project.id}`,
-    );
-    expect([list.status, list.code]).toEqual([403, 'PERMISSION_DENIED']);
-    const event = await manager.api.send('GET', `/audit-events/${auditEventId}`);
-    expect([event.status, event.code]).toEqual([404, 'NOT_FOUND']);
+    const list = await auditEvents(manager.api, `category=BUSINESS&projectId=${project.id}`);
+    expect(list.map((e) => e.id)).toContain(auditEventId);
+    const detail = await manager.api.get<AuditEventDetail>(`/audit-events/${auditEventId}`);
+    expect(detail.event.correlationId).toBe(correlationId);
   });
 
   await test.step('restricted: the administrator reads administration audit only, never this business record', async () => {
@@ -204,7 +210,8 @@ test('UJ-014 formal audit, activity and operational evidence stay distinct, corr
   });
 
   await test.step('QA operational evidence: refusals carry their own correlation id, and ADM-052 shows the pipeline, apart from audit', async () => {
-    const refused = await manager.api.send('GET', `/audit-events?category=BUSINESS`);
+    // The Project Manager reads business audit in its scope, but never the administration audit: a refusal.
+    const refused = await manager.api.send('GET', `/audit-events?category=ADMINISTRATION`);
     expect((refused.body as { correlationId?: string }).correlationId).toMatch(UUID);
 
     const operations = administrator.page;
@@ -228,11 +235,15 @@ test('UJ-014 formal audit, activity and operational evidence stay distinct, corr
   await test.step('denied scope: another department reaches neither the task, its Activity nor its audit', async () => {
     const record = await outsider.api.send('GET', `/projects/${project.id}`);
     expect([record.status, record.code]).toEqual([404, 'NOT_FOUND']);
-    // E2E-R03 holds no task or Activity permission at any scope: refused at the gate, before any record is read.
+    // E2E-R03 holds TASK_VIEW and ACTIVITY_VIEW at DEPT (the agreed matrix): another department's task is not found (R-47),
+    // and its Activity is a page of nothing — the projection is read on the projects the caller may see.
     const task = await outsider.api.send('GET', `/project-tasks/${taskId}`);
-    expect([task.status, task.code]).toEqual([403, 'PERMISSION_DENIED']);
-    const activity = await outsider.api.send('GET', `/activity-entries?projectId=${project.id}`);
-    expect([activity.status, activity.code]).toEqual([403, 'PERMISSION_DENIED']);
+    expect([task.status, task.code]).toEqual([404, 'NOT_FOUND']);
+    const activity = await outsider.api.send<{ totalCount: number }>(
+      'GET',
+      `/activity-entries?projectId=${project.id}`,
+    );
+    expect([activity.status, activity.body.totalCount]).toEqual([200, 0]);
     expect(
       (
         await outsider.api.get<{ totalCount: number }>(

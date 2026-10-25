@@ -69,7 +69,11 @@ function EditLoader(props: TreatmentActionDialogProps & { actionId: string }): R
     return action.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState message={riskProblemMessage(action.error, t)} onRetry={action.reload} />
+      <ErrorState
+        error={action.error}
+        message={riskProblemMessage(action.error, t)}
+        onRetry={action.reload}
+      />
     );
   }
   return <ActionForm {...props} editing={action.data} />;

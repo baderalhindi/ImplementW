@@ -15,8 +15,9 @@ public sealed class RiskLifecycleTests(RiskTestHost host)
 {
     /// <summary>
     /// TASK-055's acceptance criterion: reopening a closed risk requires the specific reopen permission and is captured in Audit.
-    /// local.r02 edits every risk (RISK_MANAGE at ALL) and is refused, as is the Project Manager who closed it; local.r03 holds
-    /// RISK_REOPEN for the department and reopens it, back to ASSESSED for review, with the audit event naming them.
+    /// The Project Manager who closed it edits its risks (RISK_MANAGE) and is refused; local.r03 holds RISK_REOPEN for the department and reopens
+    /// it, back to ASSESSED for review, with the audit event naming them. (local.r02 holds RISK_REOPEN at ALL since the shipped matrix of
+    /// shipped-permission-matrix.md; the engine-level case of general edit permission without reopen is ShippedGrantTests'.)
     /// </summary>
     [Fact]
     public async Task ReopeningAClosedRiskNeedsTheReopenPermissionAndIsAudited()
@@ -29,9 +30,8 @@ public sealed class RiskLifecycleTests(RiskTestHost host)
         JsonObject closed = await client.CommandOrFailAsync(sessions.EntityManager, riskId, "close", RiskDriver.Rationale("The contractor has mobilised."));
         Assert.Equal(("CLOSED", RiskDriver.Person(8).ToString()), (closed.Text("status"), closed.Text("closedByUserId")));
 
-        foreach (string token in new[] { sessions.Officer, sessions.EntityManager })
+        using (HttpResponseMessage refused = await client.CommandAsync(sessions.EntityManager, riskId, "reopen"))
         {
-            using HttpResponseMessage refused = await client.CommandAsync(token, riskId, "reopen");
             Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
         }
 

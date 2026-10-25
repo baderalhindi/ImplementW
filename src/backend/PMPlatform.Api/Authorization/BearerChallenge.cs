@@ -21,8 +21,11 @@ internal static class BearerChallenge
             await ApiProblem.WriteAsync(context.HttpContext, StatusCodes.Status401Unauthorized, ErrorCodes.AuthenticationRequired, "Authentication required.")
                 .ConfigureAwait(false);
         },
-        OnForbidden = context =>
-            ApiProblem.WriteAsync(context.HttpContext, StatusCodes.Status403Forbidden, ErrorCodes.PermissionDenied, "Permission denied."),
+        // ADR-019: on a route an external user may not know of, the gate's refusal is a 404, as the route's own actions answer them.
+        OnForbidden = async context =>
+            await (await ExternalUsersNotFoundAttribute.AppliesAsync(context.HttpContext).ConfigureAwait(false)
+                ? ApiProblem.WriteAsync(context.HttpContext, StatusCodes.Status404NotFound, ErrorCodes.NotFound, "Not found.")
+                : ApiProblem.WriteAsync(context.HttpContext, StatusCodes.Status403Forbidden, ErrorCodes.PermissionDenied, "Permission denied.")).ConfigureAwait(false),
         OnTokenValidated = MultiFactorTokenValidation.OnTokenValidated,
         OnAuthenticationFailed = context => context.HttpContext.RequestServices.GetRequiredService<IAccessAudit>().AccessTokenRejectedAsync(
             // The platform validates lifetime itself (SessionTokenValidation), so an expired token fails as an invalid lifetime.

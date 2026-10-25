@@ -292,7 +292,11 @@ export function UserEditPage(): ReactElement {
       <PageHeader title={t('identityAccess.users.edit.title')} />
       {user.loading && <LoadingState />}
       {user.error !== null && (
-        <ErrorState message={problemMessage(user.error, t)} onRetry={user.reload} />
+        <ErrorState
+          error={user.error}
+          message={problemMessage(user.error, t)}
+          onRetry={user.reload}
+        />
       )}
       {user.data !== undefined && (
         <UserForm existing={{ user: user.data.data, etag: user.data.etag }} />

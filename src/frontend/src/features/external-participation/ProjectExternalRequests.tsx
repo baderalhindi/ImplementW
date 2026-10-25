@@ -39,6 +39,7 @@ export function ProjectExternalRequests({
       <p className="state">{t('externalParticipation.forbidden')}</p>
     ) : (
       <ErrorState
+        error={requests.error}
         message={participationProblemMessage(requests.error, t)}
         onRetry={requests.reload}
       />

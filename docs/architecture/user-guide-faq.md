@@ -160,5 +160,7 @@ JSON files and re-reviewed.
 
 | Date | Change | Author |
 | --- | --- | --- |
+| 2026-10-25 | Guide (both languages): the five role paragraphs that said [[common.menu.home]] opens a dashboard now describe the Home as the reader's own work (platform health for the System Administrator), the dashboards as opened from Dashboards or Portfolio, and a widget the reader may not see as not shown (`home-and-portfolio.md`). | Delivery team |
+| 2026-10-25 | FAQ `missing-menu` (both languages): the menus are now offered on permissions, a menu with no screen open to the reader is not shown, and the "Administration hidden for this role" note is gone (`permission-driven-navigation.md`). | Delivery team |
 | 2026-10-24 | Independent bilingual pre-review of the five sampled articles (§6.1); its 27 findings applied in both languages, plus the FAQ `missing-menu` answer and the Restricted note in the administrator and liaison articles. Findings F-7 to F-9. Human sign-off still open (§6.2). | Documentation (TASK-096) |
 | 2026-10-24 | Initial build: 9 guide articles, 21 FAQ entries, 19 knowledge-base terms in English and Arabic; SCR-011, SCR-012/SCR-126 and SCR-125 as read-only pages under the new Help and Knowledge menu; landing-page coverage and language-parity tests; bilingual review sheet pending. | Documentation (TASK-096) |

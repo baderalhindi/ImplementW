@@ -128,7 +128,7 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | # | Item | Owner |
 | --- | --- | --- |
 | P-1 | **No Security Lead review has ever been requested.** Every feature record here carries the same finding: the CODEOWNERS teams do not exist on this personal-account repository, so the PR template's CTL-43 item could not be ticked (e.g. `sso-directory-integration.md` F-10, `authorization-engine.md` F-10). This review is not that review: it is the delivery team's threat model, and the Security Lead's sign-off of it is the gate | Maintainer; Security Lead |
-| P-2 | **Blueprint v2.0 §22 and Appendix A are available** in `Project Files.zip`. `cybersecurity-control-matrix.md` §2 records §22 as unavailable and `authorization-engine.md` F-1 says the same of Appendix A. §22 names CS references per control area (e.g. Files: CS-012/019/028), and the Cybersecurity Guide's Appendix A gives the CS-xxx register | Engagement Architect (TASK-010 record) |
+| P-2 | **Blueprint v2.0 §22 and Appendix A are available** in `Project Files.zip` (Appendix A applied 2026-10-25, `shipped-permission-matrix.md`; §22 still recorded as unavailable). `cybersecurity-control-matrix.md` §2 records §22 as unavailable and `authorization-engine.md` F-1 says the same of Appendix A. §22 names CS references per control area (e.g. Files: CS-012/019/028), and the Cybersecurity Guide's Appendix A gives the CS-xxx register | Engagement Architect (TASK-010 record) |
 | P-3 | **Stale claims in the feature records**, listed in each model's last section. The records are not edited here; each owner corrects theirs | Record owners |
 | P-4 | **ADR-018 and ADR-019 are not in the ADR register** (`sso-directory-integration.md` F-8; SR-73) | Engineering Architect |
 
@@ -138,3 +138,4 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | --- | --- |
 | 2026-10-16 | First log (TASK-081): 77 findings, 8 open High |
 | 2026-10-23 | TASK-102: `threat-model-data-import.md` added; SR-78 to SR-80 |
+| 2026-10-25 | Appendix A applied to the shipped profiles (`shipped-permission-matrix.md`); P-2's Appendix A half closed. No finding's status changes |

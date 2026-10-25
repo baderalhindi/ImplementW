@@ -49,7 +49,8 @@ public sealed class ConcernTestHost : IAsyncLifetime
         INSERT INTO identity_access.permission_profile_grant (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
         SELECT gen_random_uuid(), '{{{IdentityDatabase.ProfileVersionId(2)}}}', p.id, 'ALL', now(), '{{{Seed}}}', now(), '{{{Seed}}}'
         FROM identity_access.permission p
-        WHERE p.code IN ('CONCERN_VIEW', 'CONCERN_MANAGE', 'CONCERN_ESCALATE', 'CONCERN_ESCALATION_RESOLVE', 'APPROVAL_VIEW', 'APPROVAL_DECIDE', 'RISK_VIEW', 'RISK_ASSESS');
+        WHERE p.code IN ('CONCERN_VIEW', 'CONCERN_MANAGE', 'CONCERN_ESCALATE', 'CONCERN_ESCALATION_RESOLVE', 'APPROVAL_VIEW', 'APPROVAL_DECIDE', 'RISK_VIEW', 'RISK_ASSESS')
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
 
         INSERT INTO identity_access.access_relationship (id, user_id, permission_profile_version_id, external_entity_id, sponsor_user_id, starts_at, status, created_at, created_by, updated_at, updated_by)
         VALUES ('00000000-0570-4000-8000-000000000051', '{{{IdentityDatabase.UserId(5)}}}', '{{{IdentityDatabase.ProfileVersionId(4)}}}', NULL, NULL, now() - interval '1 day', 'ACTIVE', now(), '{{{Seed}}}', now(), '{{{Seed}}}'),

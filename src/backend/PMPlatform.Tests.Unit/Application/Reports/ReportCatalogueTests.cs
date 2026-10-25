@@ -27,17 +27,20 @@ public sealed class ReportCatalogueTests
         Assert.All(absorbed.Concat(ReportCatalogue.NotDelivered), e => Assert.Matches("^RPT-[A-Z]{3}-[0-9]{3}$", e));
     }
 
-    /// <summary>BR-RPT-011 and ADR-013: the System Administrator is offered no report; an entity's person only the entity set, whatever an audience lists.</summary>
+    private static readonly string[] InternalBusinessRoles = ["R02", "R03", "R04", "R05", "R06", "R07"];
+
+    /// <summary>
+    /// BR-RPT-011 and ADR-019: the System Administrator is offered no report, and neither is the External Entity User; an external entity's
+    /// person runs none, whatever an audience lists, while an internal caller may run any report it is in the audience of.
+    /// </summary>
     [Fact]
-    public void TheAdministratorIsOfferedNoReportAndAnEntityOnlyItsSet()
+    public void TheAdministratorAndEntityUsersAreOfferedNoReport()
     {
-        Assert.All(ReportCatalogue.Codes, code => Assert.False(ReportCatalogue.MayBeOfferedTo(code, "R01")));
-        Assert.All(ReportCatalogue.Codes, code => Assert.True(ReportCatalogue.MayBeOfferedTo(code, "R02")));
-        Assert.Equal(ReportCatalogue.EntityReports.Order(), ReportCatalogue.Codes.Where(c => ReportCatalogue.MayBeOfferedTo(c, "R08")).Order());
-        Assert.Equal(ReportCatalogue.EntityReports.Order(), ReportCatalogue.Codes.Where(c => ReportCatalogue.MayRun(c, isExternal: true)).Order());
-        Assert.All(ReportCatalogue.Codes, code => Assert.True(ReportCatalogue.MayRun(code, isExternal: false)));
-        Assert.DoesNotContain(ReportCode.PortfolioSummary, ReportCatalogue.EntityReports);
-        Assert.DoesNotContain(ReportCode.GovernanceChange, ReportCatalogue.EntityReports);
+        Assert.False(ReportCatalogue.MayBeOfferedTo("R01"));
+        Assert.False(ReportCatalogue.MayBeOfferedTo("R08"));
+        Assert.All(InternalBusinessRoles, role => Assert.True(ReportCatalogue.MayBeOfferedTo(role)));
+        Assert.False(ReportCatalogue.MayRun(isExternal: true));
+        Assert.True(ReportCatalogue.MayRun(isExternal: false));
     }
 
     [Fact]

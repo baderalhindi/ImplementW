@@ -6,7 +6,7 @@
 --      principal an audit event with no known user is attributed to (TASK-033);
 --   2. the eight canonical roles R01–R08, each with its shipped-default permission profile and that profile's
 --      PUBLISHED version 1 (ADR-018, TASK-110), and the permission catalogue with the grants of those versions
---      (TASK-030) — only the rows a controlled source fixes, since Blueprint Appendix A is not in the repository;
+--      (TASK-030): Blueprint v2.0 Appendix A as the 24 Oct 2026 prototype review applies it (shipped-permission-matrix.md);
 --   3. one master data catalogue for every master data reference in the ERD (ADM-020–029), with the items a
 --      controlled source fixes: the external entity types (ERD), the three governance profiles (ADR-015) and the
 --      four impact dimensions (ADR-011);
@@ -141,92 +141,16 @@ WHERE p.code = r.code || '-DEFAULT'
 ON CONFLICT (permission_profile_id, version_no) DO NOTHING;
 
 -- The permission catalogue (ERD F-081) and the grants of the shipped-default versions: PMPlatform.Application's
--- PermissionCatalogue, row for row (SeedDataTests checks it). Only rows a controlled source fixes for all eight roles:
--- ADM-041 is R01's (TASK-028); ADM-002–013 are R01's (TASK-032: "reachable only for R01 per RBAC", TASK-031); FG-04
--- master data and configuration are R01's by delivery-team decision, pending Appendix A (TASK-034 record F-1); ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07, OWN because
--- each acts on the holder's own layout or report definition. APPROVAL_VIEW and APPROVAL_DECIDE (TASK-035) are in the
--- catalogue with no grant: which roles decide approvals is Appendix A's (approval-framework.md F-1). DOCUMENT_VIEW and
--- DOCUMENT_UPLOAD go to R04 at ENTITY: ADR-013's amendment to TASK-037 lets an entity Project Manager upload, view and see
--- version history on their own project within classification rules; ENTITY reaches only a holder with an entity, and the
--- external holder's per-project assignment keeps it to that project. DOCUMENT_MANAGE and every other document grant wait
--- for Appendix A (document-management.md F-1). PROJECT_VIEW and PROJECT_REGISTER (TASK-041) go to R04 and R08 at ENTITY:
--- ADR-013's amendment to TASK-041 lets external entity users create a project draft for their own entity, and entities
--- see their own projects. PROJECT_REVIEW and PROJECT_ACTIVATE are AHDA's gates and wait for Appendix A
--- (project-registration.md F-1). PROGRESS_VIEW and PROGRESS_SUBMIT (TASK-044) go to R04 at OWN, and PROGRESS_VIEW to R08 at
--- ENTITY: ADR-013's amendment to TASK-044 lets an assigned entity Project Manager submit progress on their own project, and
--- lets entities see progress and health on their own projects; a project's owner is its Project Manager, so OWN reaches
--- exactly the projects the holder manages. PROGRESS_REVIEW is AHDA's gate and waits for Appendix A (progress-update.md
--- F-2). SCHEDULE_VIEW and SCHEDULE_EDIT (TASK-046) go to R04 at OWN: WF-03's functional specification §3 makes the Project
--- Manager the schedule's owner — building it, keeping its forecast, submitting its baselines — and OWN reaches exactly the
--- projects the holder manages, internal or entity (ADR-013). Baseline approval is WF-11's APPROVAL_DECIDE; the other roles'
--- schedule grants wait for Appendix A (schedule-baseline.md F-2). TASK_VIEW, TASK_UPDATE, TASK_MANAGE and TASK_REOPEN
--- (TASK-048) go to R04 at OWN: the Project Manager plans the project's tasks, may edit a task's actual percentage (ADR-009)
--- and holds the controlled reopen, on the projects the holder manages, internal or entity (ADR-013's amendment to
--- TASK-048). The task owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). MILESTONE_VIEW and MILESTONE_SUBMIT
--- (TASK-050) go to R04 at OWN: ADR-013's amendment to TASK-050 lets an entity Project Manager submit milestone achievement
--- claims on their own project, and OWN reaches the projects the holder manages, internal or entity. Acceptance stays with
--- WF-05, decided through WF-11's APPROVAL_DECIDE; the other roles' milestone grants wait for Appendix A
--- (milestone-achievement.md F-2). The five WF-06 permissions (TASK-055) — RISK_VIEW, RISK_MANAGE, RISK_ASSESS, RISK_ACCEPT,
--- RISK_REOPEN — ship with RISK_VIEW and RISK_MANAGE to R04 at OWN: ADR-013's amendment to TASK-055 lets entity Project
--- Managers register and update risks on their own project, and OWN reaches the projects the holder manages, internal or
--- entity. Rating and acceptance authority is unchanged — the application refuses RISK_ASSESS and RISK_ACCEPT to an external
--- user whatever they hold — and those grants, with the reopen, wait for Appendix A (risk-management.md F-2). The five WF-07
--- permissions (TASK-057) — CONCERN_VIEW, CONCERN_RAISE, CONCERN_MANAGE, CONCERN_ESCALATE, CONCERN_ESCALATION_RESOLVE — ship with
--- CONCERN_VIEW and CONCERN_RAISE to R08 at ENTITY and to R04 at OWN: ADR-013's amendment to TASK-057 lets entities raise a blocker or
--- an issue on their own project and see its status (intake and visibility, not escalation). WF-07's specification §3 makes the
--- Project Manager the primary manager of a project's issues and challenges, who escalates them: CONCERN_MANAGE and CONCERN_ESCALATE
--- go to R04 at OWN, and the application refuses both to an external user whatever they hold. §3 gives the Department Manager
--- escalation handling: CONCERN_VIEW and CONCERN_ESCALATION_RESOLVE go to R03 at DEPT. The rest wait for Appendix A
--- (management-concern.md F-2). The four WF-08 permissions (TASK-060) — CHANGE_REQUEST_VIEW, CHANGE_REQUEST_RAISE,
--- CHANGE_REQUEST_REVIEW, CHANGE_REQUEST_IMPLEMENT — ship with CHANGE_REQUEST_VIEW and CHANGE_REQUEST_RAISE to R04 at OWN: ADR-013's
--- amendment to TASK-060 lets entity Project Managers raise a change request, and OWN reaches the projects the holder manages, internal
--- or entity. Materiality, approval and implementation remain AHDA's: WF-08's specification §3 makes the Project Manager the
--- coordinator of a change's implementation, so CHANGE_REQUEST_IMPLEMENT goes to R04 at OWN and the application refuses it to an
--- external user whatever they hold; §3 makes the Department Manager the reviewer, so CHANGE_REQUEST_VIEW and CHANGE_REQUEST_REVIEW go
--- to R03 at DEPT. Approval is WF-11's APPROVAL_DECIDE. The rest wait for Appendix A (change-request.md F-2). The four WF-09
--- permissions (TASK-062) — SUSPENSION_VIEW, SUSPENSION_RAISE, SUSPENSION_REVIEW, SUSPENSION_ACTIVATE — ship with SUSPENSION_VIEW and
--- SUSPENSION_RAISE to R04 at OWN: WF-09's specification §3 makes the Project Manager the one who prepares and submits a suspension or
--- resumption request, and ADR-013 has the entity fill in the information and AHDA approve; OWN reaches the projects the holder
--- manages, internal or entity. §3 makes the Department Manager the reviewer, so SUSPENSION_VIEW and SUSPENSION_REVIEW go to R03 at
--- DEPT. Approval is WF-11's APPROVAL_DECIDE. Activation is WF-09's own service by default (§14), so SUSPENSION_ACTIVATE ships to no
--- role; it and the rest wait for Appendix A (suspension.md F-2). The five WF-10 permissions (TASK-063) — CLOSEOUT_VIEW,
--- CLOSEOUT_RAISE, CLOSEOUT_REVIEW, CLOSEOUT_WAIVE, CLOSEOUT_ACTIVATE — ship with CLOSEOUT_VIEW and CLOSEOUT_RAISE to R04 at OWN: WF-10's
--- specification makes the Project Manager the one who prepares completion and closure, and ADR-013 has the entity fill in the
--- information and AHDA approve. The Department Manager reviews the immutable submission and its readiness exceptions (US-CLO-DM-002
--- to -004), so CLOSEOUT_VIEW, CLOSEOUT_REVIEW and CLOSEOUT_WAIVE go to R03 at DEPT. Approval is WF-11's APPROVAL_DECIDE. Activation is
--- WF-10's own service by default (§13: "System/service"), so CLOSEOUT_ACTIVATE ships to no role; it and the rest wait for Appendix A
--- (closure.md F-2). The five WF-13 permissions (TASK-066) — EXTERNAL_REQUEST_VIEW, EXTERNAL_REQUEST_MANAGE,
--- EXTERNAL_CONTRIBUTION_RESPOND, EXTERNAL_CONTRIBUTION_REVIEW, EXTERNAL_CONTRIBUTION_APPLY — follow WF-13's specification §13: the
--- Project Manager requests, reviews when assigned and, as the source owner, applies accepted answers (US-EXT-PM-001, -012 to -017), at
--- OWN; the Department Manager requests and reviews when assigned (US-EXT-DM-003, -006, -009), at DEPT; the external entity user sees
--- its own entity's requests at ENTITY — the per-project assignment narrows it to that project — and answers only the requests it is
--- named on, at ASSIGNED (EXT-CC-03, EXT-CC-04). The application refuses requesting, reviewing and applying to an external user whatever
--- they hold: "AHDA issues update requests" and reviews them (TASK-066 gate decision; ADR-013). The same gate decision limits an
--- external contributor's direct source action to assigned tasks (WF-13 Path A): TASK_VIEW and TASK_UPDATE go to R08 at ASSIGNED, which
--- reaches the WF-04 tasks the holder owns and nothing else. The rest, with R05's liaison grants, wait for Appendix A
--- (external-participation.md F-2). The eight WF-14
--- permissions (TASK-052) — FINANCIAL_VIEW, FINANCIAL_SUBMIT,
--- FINANCIAL_REVIEW, FINANCIAL_SOURCE_MANAGE, KPI_VIEW, KPI_MANAGE, KPI_RECORD, KPI_REVIEW — ship with FINANCIAL_VIEW and KPI_VIEW
--- to R04 and R08 at ENTITY: ADR-013's amendment to TASK-052 lets an entity see budget, expenditure and KPI status for its own
--- project, masked by audience (ADR-010); ENTITY reaches only a holder with an entity. Entering, reviewing and source
--- configuration wait for Appendix A (financial-kpi.md F-2). The four WF-15 permissions (TASK-039) — notification templates and the
--- delivery operations view with dead-letter redrive — go to R01 at ALL by delivery-team decision, as FG-04 did
--- (notification-runtime.md F-1): templates and deliveries are platform-wide, with no record to scope. A person's own
--- inbox and preferences need no permission. The nine FG-06 permissions (TASK-073) keep audit access apart from administration
--- (BR-AUD-023): one read permission per audit category, each in a group of its own, plus request context, operations and the
--- Activity timeline. R01 reads the ADMINISTRATION category and operates the audit store at ALL, and nothing of the security,
--- business, financial, external or integration categories: those are Audit and Security Reviewer assignments AHDA has not named
--- (TBC-AUD-05 to -07, PTBC-011). ACTIVITY_VIEW goes to R04 at OWN (Appendix A: "V own history") and, by ADR-013's participation
--- amendment to TASK-073, to R08 at ENTITY: an entity sees its own activity history (audit-activity.md F-2). The five FG-05 permissions
--- (TASK-075) — INTEGRATION_VIEW, INTEGRATION_LOG_VIEW, INTEGRATION_OPERATE, INTEGRATION_ALERT_MANAGE, INTEGRATION_CONFIGURE — go to R01 at ALL
--- by delivery-team decision, as FG-04's and WF-15's did: integrations are platform-wide. FG-05's Integration Operator is an assignment AHDA
--- has not named (TBC-INT-19), and R08 holds none (integration-monitoring.md F-2). DATA_IMPORT (TASK-102), the migration workbook load, goes
--- to R01 at ALL by delivery-team decision: platform-wide, each batch audited in the administration category (data-import.md D-2).
--- Blueprint Appendix A, the rest of the matrix, is not in the repository (record F-1).
+-- PermissionCatalogue, row for row (SeedDataTests checks it). The grants are Blueprint v2.0 Appendix A as the 24 Oct 2026 prototype
+-- review applies it to the eight roles — R02 and R07 at ALL, R03 and R06 at DEPT, R04 at OWN, R05 at ASSIGNED, R08 at ENTITY — with every
+-- row's source and every departure from Appendix A in docs/architecture/shipped-permission-matrix.md. PermissionCatalogue's GrantPolicy
+-- bounds them in code: R01 never holds business data or approval authority, an external user never holds approval, the SAR amounts
+-- (FINANCIAL_VIEW_SENSITIVE), reports or integration monitoring.
 --
--- The grants go into version 1 because no environment has run this seed with version 1 in use (none is provisioned).
--- Once one has, a change to the shipped grants is a new version and a migration of the assignments (TASK-110), not
--- an edit here: a PUBLISHED version is immutable (seed record F-12).
+-- The grants go into version 1 because no shared environment has run this seed (seed record F-12; none is provisioned). The seed owns
+-- version 1's grants as structure: a re-run puts back a scope that drifted and removes a grant the matrix does not hold, so a local
+-- database re-seeded after a matrix change holds the matrix. Once a shared environment has run it, a change to the shipped grants is a
+-- new version and a migration of the assignments (TASK-110), not an edit here.
 INSERT INTO identity_access.permission AS p (id, code, name_ar, name_en, permission_group, is_privileged, created_at, created_by, updated_at, updated_by)
 SELECT md5('permission:' || v.code)::uuid, v.code, v.name_ar, v.name_en, v.permission_group, v.is_privileged,
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
@@ -304,6 +228,7 @@ FROM (VALUES
     ('EXTERNAL_CONTRIBUTION_REVIEW', 'مراجعة مساهمات الجهات الخارجية', 'Review external contributions', 'EXTERNAL_PARTICIPATION', false),
     ('EXTERNAL_CONTRIBUTION_APPLY', 'تطبيق المساهمات المقبولة', 'Apply accepted contributions', 'EXTERNAL_PARTICIPATION', false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
+    ('FINANCIAL_VIEW_SENSITIVE',    'عرض المبالغ المالية', 'View financial amounts',      'FINANCIAL',       false),
     ('FINANCIAL_SUBMIT',            'تقديم البيانات المالية', 'Submit financial figures',  'FINANCIAL',       false),
     ('FINANCIAL_REVIEW',            'مراجعة البيانات المالية', 'Review financial figures', 'FINANCIAL',       false),
     ('FINANCIAL_SOURCE_MANAGE',     'إدارة مصادر البيانات المالية', 'Manage financial sources', 'FINANCIAL', false),
@@ -329,106 +254,268 @@ ON CONFLICT (code) DO UPDATE SET
     updated_by = EXCLUDED.updated_by
 WHERE (p.permission_group, p.is_privileged) IS DISTINCT FROM (EXCLUDED.permission_group, EXCLUDED.is_privileged);
 
-INSERT INTO identity_access.permission_profile_grant (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
+DROP TABLE IF EXISTS shipped_grant;
+CREATE TEMPORARY TABLE shipped_grant (role_code text NOT NULL, permission_code text NOT NULL, data_scope text NOT NULL, PRIMARY KEY (role_code, permission_code));
+INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
+    ('R01', 'IDENTITY_INTEGRATION_MANAGE',   'ALL'),
+    ('R01', 'USER_VIEW',                     'ALL'),
+    ('R01', 'USER_MANAGE',                   'ALL'),
+    ('R01', 'ROLE_VIEW',                     'ALL'),
+    ('R01', 'ROLE_MANAGE',                   'ALL'),
+    ('R01', 'ROLE_ASSIGN',                   'ALL'),
+    ('R01', 'ORGANIZATION_VIEW',             'ALL'),
+    ('R01', 'ORGANIZATION_MANAGE',           'ALL'),
+    ('R01', 'MASTER_DATA_VIEW',              'ALL'),
+    ('R01', 'MASTER_DATA_MANAGE',            'ALL'),
+    ('R01', 'CONFIGURATION_VIEW',            'ALL'),
+    ('R01', 'CONFIGURATION_MANAGE',          'ALL'),
+    ('R01', 'NOTIFICATION_TEMPLATE_VIEW',    'ALL'),
+    ('R01', 'NOTIFICATION_TEMPLATE_MANAGE',  'ALL'),
+    ('R01', 'NOTIFICATION_DELIVERY_VIEW',    'ALL'),
+    ('R01', 'NOTIFICATION_DELIVERY_MANAGE',  'ALL'),
+    ('R01', 'AUDIT_ADMINISTRATION_VIEW',     'ALL'),
+    ('R01', 'AUDIT_OPERATIONS_MANAGE',       'ALL'),
+    ('R01', 'INTEGRATION_VIEW',              'ALL'),
+    ('R01', 'INTEGRATION_LOG_VIEW',          'ALL'),
+    ('R01', 'INTEGRATION_OPERATE',           'ALL'),
+    ('R01', 'INTEGRATION_ALERT_MANAGE',      'ALL'),
+    ('R01', 'INTEGRATION_CONFIGURE',         'ALL'),
+    ('R01', 'DATA_IMPORT',                   'ALL'),
+    ('R02', 'MASTER_DATA_VIEW',              'ALL'),
+    ('R02', 'CONFIGURATION_VIEW',            'ALL'),
+    ('R02', 'LAYOUT_PERSONALIZE',            'OWN'),
+    ('R02', 'REPORT_COMPOSE',                'OWN'),
+    ('R02', 'APPROVAL_VIEW',                 'ALL'),
+    ('R02', 'APPROVAL_DECIDE',               'ALL'),
+    ('R02', 'REPORT_EXPORT',                 'ALL'),
+    ('R02', 'PROJECT_VIEW',                  'ALL'),
+    ('R02', 'PROJECT_REGISTER',              'ALL'),
+    ('R02', 'PROJECT_REVIEW',                'ALL'),
+    ('R02', 'PROJECT_ACTIVATE',              'ALL'),
+    ('R02', 'PROGRESS_VIEW',                 'ALL'),
+    ('R02', 'PROGRESS_REVIEW',               'ALL'),
+    ('R02', 'SCHEDULE_VIEW',                 'ALL'),
+    ('R02', 'TASK_VIEW',                     'ALL'),
+    ('R02', 'MILESTONE_VIEW',                'ALL'),
+    ('R02', 'RISK_VIEW',                     'ALL'),
+    ('R02', 'RISK_MANAGE',                   'ALL'),
+    ('R02', 'RISK_ASSESS',                   'ALL'),
+    ('R02', 'RISK_ACCEPT',                   'ALL'),
+    ('R02', 'RISK_REOPEN',                   'ALL'),
+    ('R02', 'CONCERN_VIEW',                  'ALL'),
+    ('R02', 'CONCERN_RAISE',                 'ALL'),
+    ('R02', 'CONCERN_ESCALATION_RESOLVE',    'ALL'),
+    ('R02', 'CHANGE_REQUEST_VIEW',           'ALL'),
+    ('R02', 'CHANGE_REQUEST_RAISE',          'ALL'),
+    ('R02', 'CHANGE_REQUEST_REVIEW',         'ALL'),
+    ('R02', 'SUSPENSION_VIEW',               'ALL'),
+    ('R02', 'SUSPENSION_RAISE',              'ALL'),
+    ('R02', 'SUSPENSION_REVIEW',             'ALL'),
+    ('R02', 'CLOSEOUT_VIEW',                 'ALL'),
+    ('R02', 'CLOSEOUT_RAISE',                'ALL'),
+    ('R02', 'CLOSEOUT_REVIEW',               'ALL'),
+    ('R02', 'CLOSEOUT_WAIVE',                'ALL'),
+    ('R02', 'EXTERNAL_REQUEST_VIEW',         'ALL'),
+    ('R02', 'EXTERNAL_REQUEST_MANAGE',       'ALL'),
+    ('R02', 'EXTERNAL_CONTRIBUTION_REVIEW',  'ALL'),
+    ('R02', 'FINANCIAL_VIEW',                'ALL'),
+    ('R02', 'FINANCIAL_VIEW_SENSITIVE',      'ALL'),
+    ('R02', 'FINANCIAL_REVIEW',              'ALL'),
+    ('R02', 'KPI_VIEW',                      'ALL'),
+    ('R02', 'KPI_MANAGE',                    'ALL'),
+    ('R02', 'KPI_REVIEW',                    'ALL'),
+    ('R02', 'DOCUMENT_VIEW',                 'ALL'),
+    ('R02', 'DOCUMENT_UPLOAD',               'ALL'),
+    ('R02', 'DOCUMENT_MANAGE',               'ALL'),
+    ('R02', 'ACTIVITY_VIEW',                 'ALL'),
+    ('R02', 'AUDIT_BUSINESS_VIEW',           'ALL'),
+    ('R03', 'MASTER_DATA_VIEW',              'ALL'),
+    ('R03', 'CONFIGURATION_VIEW',            'ALL'),
+    ('R03', 'LAYOUT_PERSONALIZE',            'OWN'),
+    ('R03', 'REPORT_COMPOSE',                'OWN'),
+    ('R03', 'APPROVAL_VIEW',                 'DEPT'),
+    ('R03', 'APPROVAL_DECIDE',               'DEPT'),
+    ('R03', 'REPORT_EXPORT',                 'DEPT'),
+    ('R03', 'PROJECT_VIEW',                  'DEPT'),
+    ('R03', 'PROJECT_REGISTER',              'DEPT'),
+    ('R03', 'PROJECT_REVIEW',                'DEPT'),
+    ('R03', 'PROJECT_ACTIVATE',              'DEPT'),
+    ('R03', 'PROGRESS_VIEW',                 'DEPT'),
+    ('R03', 'PROGRESS_REVIEW',               'DEPT'),
+    ('R03', 'SCHEDULE_VIEW',                 'DEPT'),
+    ('R03', 'TASK_VIEW',                     'DEPT'),
+    ('R03', 'MILESTONE_VIEW',                'DEPT'),
+    ('R03', 'RISK_VIEW',                     'DEPT'),
+    ('R03', 'RISK_MANAGE',                   'DEPT'),
+    ('R03', 'RISK_ASSESS',                   'DEPT'),
+    ('R03', 'RISK_ACCEPT',                   'DEPT'),
+    ('R03', 'RISK_REOPEN',                   'DEPT'),
+    ('R03', 'CONCERN_VIEW',                  'DEPT'),
+    ('R03', 'CONCERN_RAISE',                 'DEPT'),
+    ('R03', 'CONCERN_ESCALATION_RESOLVE',    'DEPT'),
+    ('R03', 'CHANGE_REQUEST_VIEW',           'DEPT'),
+    ('R03', 'CHANGE_REQUEST_RAISE',          'DEPT'),
+    ('R03', 'CHANGE_REQUEST_REVIEW',         'DEPT'),
+    ('R03', 'SUSPENSION_VIEW',               'DEPT'),
+    ('R03', 'SUSPENSION_RAISE',              'DEPT'),
+    ('R03', 'SUSPENSION_REVIEW',             'DEPT'),
+    ('R03', 'CLOSEOUT_VIEW',                 'DEPT'),
+    ('R03', 'CLOSEOUT_RAISE',                'DEPT'),
+    ('R03', 'CLOSEOUT_REVIEW',               'DEPT'),
+    ('R03', 'CLOSEOUT_WAIVE',                'DEPT'),
+    ('R03', 'EXTERNAL_REQUEST_VIEW',         'DEPT'),
+    ('R03', 'EXTERNAL_REQUEST_MANAGE',       'DEPT'),
+    ('R03', 'EXTERNAL_CONTRIBUTION_REVIEW',  'DEPT'),
+    ('R03', 'FINANCIAL_VIEW',                'DEPT'),
+    ('R03', 'FINANCIAL_VIEW_SENSITIVE',      'DEPT'),
+    ('R03', 'FINANCIAL_REVIEW',              'DEPT'),
+    ('R03', 'KPI_VIEW',                      'DEPT'),
+    ('R03', 'KPI_MANAGE',                    'DEPT'),
+    ('R03', 'KPI_REVIEW',                    'DEPT'),
+    ('R03', 'DOCUMENT_VIEW',                 'DEPT'),
+    ('R03', 'DOCUMENT_UPLOAD',               'DEPT'),
+    ('R03', 'DOCUMENT_MANAGE',               'DEPT'),
+    ('R03', 'ACTIVITY_VIEW',                 'DEPT'),
+    ('R03', 'AUDIT_BUSINESS_VIEW',           'DEPT'),
+    ('R04', 'MASTER_DATA_VIEW',              'ALL'),
+    ('R04', 'APPROVAL_VIEW',                 'OWN'),
+    ('R04', 'REPORT_EXPORT',                 'OWN'),
+    ('R04', 'PROJECT_VIEW',                  'OWN'),
+    ('R04', 'PROJECT_REGISTER',              'OWN'),
+    ('R04', 'PROGRESS_VIEW',                 'OWN'),
+    ('R04', 'PROGRESS_SUBMIT',               'OWN'),
+    ('R04', 'SCHEDULE_VIEW',                 'OWN'),
+    ('R04', 'SCHEDULE_EDIT',                 'OWN'),
+    ('R04', 'TASK_VIEW',                     'OWN'),
+    ('R04', 'TASK_UPDATE',                   'OWN'),
+    ('R04', 'TASK_MANAGE',                   'OWN'),
+    ('R04', 'TASK_REOPEN',                   'OWN'),
+    ('R04', 'MILESTONE_VIEW',                'OWN'),
+    ('R04', 'MILESTONE_SUBMIT',              'OWN'),
+    ('R04', 'RISK_VIEW',                     'OWN'),
+    ('R04', 'RISK_MANAGE',                   'OWN'),
+    ('R04', 'CONCERN_VIEW',                  'OWN'),
+    ('R04', 'CONCERN_RAISE',                 'OWN'),
+    ('R04', 'CONCERN_MANAGE',                'OWN'),
+    ('R04', 'CONCERN_ESCALATE',              'OWN'),
+    ('R04', 'CHANGE_REQUEST_VIEW',           'OWN'),
+    ('R04', 'CHANGE_REQUEST_RAISE',          'OWN'),
+    ('R04', 'CHANGE_REQUEST_IMPLEMENT',      'OWN'),
+    ('R04', 'SUSPENSION_VIEW',               'OWN'),
+    ('R04', 'SUSPENSION_RAISE',              'OWN'),
+    ('R04', 'CLOSEOUT_VIEW',                 'OWN'),
+    ('R04', 'CLOSEOUT_RAISE',                'OWN'),
+    ('R04', 'EXTERNAL_REQUEST_VIEW',         'OWN'),
+    ('R04', 'EXTERNAL_REQUEST_MANAGE',       'OWN'),
+    ('R04', 'EXTERNAL_CONTRIBUTION_REVIEW',  'OWN'),
+    ('R04', 'EXTERNAL_CONTRIBUTION_APPLY',   'OWN'),
+    ('R04', 'FINANCIAL_VIEW',                'OWN'),
+    ('R04', 'FINANCIAL_VIEW_SENSITIVE',      'OWN'),
+    ('R04', 'FINANCIAL_SUBMIT',              'OWN'),
+    ('R04', 'KPI_VIEW',                      'OWN'),
+    ('R04', 'KPI_MANAGE',                    'OWN'),
+    ('R04', 'KPI_RECORD',                    'OWN'),
+    ('R04', 'DOCUMENT_VIEW',                 'OWN'),
+    ('R04', 'DOCUMENT_UPLOAD',               'OWN'),
+    ('R04', 'ACTIVITY_VIEW',                 'OWN'),
+    ('R04', 'AUDIT_BUSINESS_VIEW',           'OWN'),
+    ('R05', 'MASTER_DATA_VIEW',              'ALL'),
+    ('R05', 'REPORT_EXPORT',                 'ASSIGNED'),
+    ('R05', 'PROJECT_VIEW',                  'ASSIGNED'),
+    ('R05', 'PROGRESS_VIEW',                 'ASSIGNED'),
+    ('R05', 'SCHEDULE_VIEW',                 'ASSIGNED'),
+    ('R05', 'TASK_VIEW',                     'ASSIGNED'),
+    ('R05', 'MILESTONE_VIEW',                'ASSIGNED'),
+    ('R05', 'RISK_VIEW',                     'ASSIGNED'),
+    ('R05', 'CONCERN_VIEW',                  'ASSIGNED'),
+    ('R05', 'SUSPENSION_VIEW',               'ASSIGNED'),
+    ('R05', 'CLOSEOUT_VIEW',                 'ASSIGNED'),
+    ('R05', 'EXTERNAL_REQUEST_VIEW',         'ASSIGNED'),
+    ('R05', 'EXTERNAL_REQUEST_MANAGE',       'ASSIGNED'),
+    ('R05', 'EXTERNAL_CONTRIBUTION_REVIEW',  'ASSIGNED'),
+    ('R05', 'KPI_VIEW',                      'ASSIGNED'),
+    ('R05', 'DOCUMENT_VIEW',                 'ASSIGNED'),
+    ('R05', 'DOCUMENT_UPLOAD',               'ASSIGNED'),
+    ('R05', 'ACTIVITY_VIEW',                 'ASSIGNED'),
+    ('R05', 'AUDIT_BUSINESS_VIEW',           'ASSIGNED'),
+    ('R06', 'MASTER_DATA_VIEW',              'ALL'),
+    ('R06', 'PROJECT_VIEW',                  'DEPT'),
+    ('R06', 'PROGRESS_VIEW',                 'DEPT'),
+    ('R06', 'SCHEDULE_VIEW',                 'DEPT'),
+    ('R06', 'TASK_VIEW',                     'DEPT'),
+    ('R06', 'MILESTONE_VIEW',                'DEPT'),
+    ('R06', 'RISK_VIEW',                     'DEPT'),
+    ('R06', 'CONCERN_VIEW',                  'DEPT'),
+    ('R06', 'CHANGE_REQUEST_VIEW',           'DEPT'),
+    ('R06', 'SUSPENSION_VIEW',               'DEPT'),
+    ('R06', 'CLOSEOUT_VIEW',                 'DEPT'),
+    ('R06', 'FINANCIAL_VIEW',                'DEPT'),
+    ('R06', 'KPI_VIEW',                      'DEPT'),
+    ('R06', 'DOCUMENT_VIEW',                 'DEPT'),
+    ('R06', 'AUDIT_BUSINESS_VIEW',           'DEPT'),
+    ('R07', 'MASTER_DATA_VIEW',              'ALL'),
+    ('R07', 'CONFIGURATION_VIEW',            'ALL'),
+    ('R07', 'LAYOUT_PERSONALIZE',            'OWN'),
+    ('R07', 'REPORT_COMPOSE',                'OWN'),
+    ('R07', 'APPROVAL_VIEW',                 'ALL'),
+    ('R07', 'APPROVAL_DECIDE',               'ALL'),
+    ('R07', 'REPORT_EXPORT',                 'ALL'),
+    ('R07', 'PROJECT_VIEW',                  'ALL'),
+    ('R07', 'PROGRESS_VIEW',                 'ALL'),
+    ('R07', 'SCHEDULE_VIEW',                 'ALL'),
+    ('R07', 'TASK_VIEW',                     'ALL'),
+    ('R07', 'MILESTONE_VIEW',                'ALL'),
+    ('R07', 'RISK_VIEW',                     'ALL'),
+    ('R07', 'CONCERN_VIEW',                  'ALL'),
+    ('R07', 'CONCERN_ESCALATION_RESOLVE',    'ALL'),
+    ('R07', 'CHANGE_REQUEST_VIEW',           'ALL'),
+    ('R07', 'SUSPENSION_VIEW',               'ALL'),
+    ('R07', 'CLOSEOUT_VIEW',                 'ALL'),
+    ('R07', 'FINANCIAL_VIEW',                'ALL'),
+    ('R07', 'FINANCIAL_VIEW_SENSITIVE',      'ALL'),
+    ('R07', 'KPI_VIEW',                      'ALL'),
+    ('R07', 'DOCUMENT_VIEW',                 'ALL'),
+    ('R07', 'ACTIVITY_VIEW',                 'ALL'),
+    ('R07', 'AUDIT_BUSINESS_VIEW',           'ALL'),
+    ('R08', 'MASTER_DATA_VIEW',              'ALL'),
+    ('R08', 'PROJECT_VIEW',                  'ENTITY'),
+    ('R08', 'PROJECT_REGISTER',              'ENTITY'),
+    ('R08', 'PROGRESS_VIEW',                 'ENTITY'),
+    ('R08', 'RISK_VIEW',                     'ENTITY'),
+    ('R08', 'CONCERN_VIEW',                  'ENTITY'),
+    ('R08', 'CONCERN_RAISE',                 'ENTITY'),
+    ('R08', 'EXTERNAL_REQUEST_VIEW',         'ENTITY'),
+    ('R08', 'FINANCIAL_VIEW',                'ENTITY'),
+    ('R08', 'KPI_VIEW',                      'ENTITY'),
+    ('R08', 'ACTIVITY_VIEW',                 'ENTITY'),
+    ('R08', 'TASK_VIEW',                     'ASSIGNED'),
+    ('R08', 'TASK_UPDATE',                   'ASSIGNED'),
+    ('R08', 'EXTERNAL_CONTRIBUTION_RESPOND', 'ASSIGNED');
+
+INSERT INTO identity_access.permission_profile_grant AS pg (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
 SELECT md5('permission_profile_grant:' || g.role_code || ':' || g.permission_code)::uuid, v.id, p.id, g.data_scope,
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
-FROM (VALUES
-    ('R01', 'IDENTITY_INTEGRATION_MANAGE', 'ALL'),
-    ('R01', 'USER_VIEW',                   'ALL'),
-    ('R01', 'USER_MANAGE',                 'ALL'),
-    ('R01', 'ROLE_VIEW',                   'ALL'),
-    ('R01', 'ROLE_MANAGE',                 'ALL'),
-    ('R01', 'ROLE_ASSIGN',                 'ALL'),
-    ('R01', 'ORGANIZATION_VIEW',           'ALL'),
-    ('R01', 'ORGANIZATION_MANAGE',         'ALL'),
-    ('R01', 'MASTER_DATA_VIEW',            'ALL'),
-    ('R01', 'MASTER_DATA_MANAGE',          'ALL'),
-    ('R01', 'CONFIGURATION_VIEW',          'ALL'),
-    ('R01', 'CONFIGURATION_MANAGE',        'ALL'),
-    ('R01', 'NOTIFICATION_TEMPLATE_VIEW',  'ALL'),
-    ('R01', 'NOTIFICATION_TEMPLATE_MANAGE', 'ALL'),
-    ('R01', 'NOTIFICATION_DELIVERY_VIEW',  'ALL'),
-    ('R01', 'NOTIFICATION_DELIVERY_MANAGE', 'ALL'),
-    ('R02', 'LAYOUT_PERSONALIZE',          'OWN'),
-    ('R02', 'REPORT_COMPOSE',              'OWN'),
-    ('R04', 'DOCUMENT_VIEW',               'ENTITY'),
-    ('R04', 'DOCUMENT_UPLOAD',             'ENTITY'),
-    ('R04', 'PROJECT_VIEW',                'ENTITY'),
-    ('R04', 'PROJECT_REGISTER',            'ENTITY'),
-    ('R08', 'PROJECT_VIEW',                'ENTITY'),
-    ('R08', 'PROJECT_REGISTER',            'ENTITY'),
-    ('R04', 'PROGRESS_VIEW',               'OWN'),
-    ('R04', 'PROGRESS_SUBMIT',             'OWN'),
-    ('R08', 'PROGRESS_VIEW',               'ENTITY'),
-    ('R04', 'SCHEDULE_VIEW',               'OWN'),
-    ('R04', 'SCHEDULE_EDIT',               'OWN'),
-    ('R04', 'TASK_VIEW',                   'OWN'),
-    ('R04', 'TASK_UPDATE',                 'OWN'),
-    ('R04', 'TASK_MANAGE',                 'OWN'),
-    ('R04', 'TASK_REOPEN',                 'OWN'),
-    ('R04', 'MILESTONE_VIEW',              'OWN'),
-    ('R04', 'MILESTONE_SUBMIT',            'OWN'),
-    ('R04', 'RISK_VIEW',                   'OWN'),
-    ('R04', 'RISK_MANAGE',                 'OWN'),
-    ('R04', 'CONCERN_VIEW',                'OWN'),
-    ('R04', 'CONCERN_RAISE',               'OWN'),
-    ('R04', 'CONCERN_MANAGE',              'OWN'),
-    ('R04', 'CONCERN_ESCALATE',            'OWN'),
-    ('R08', 'CONCERN_VIEW',                'ENTITY'),
-    ('R08', 'CONCERN_RAISE',               'ENTITY'),
-    ('R03', 'CONCERN_VIEW',                'DEPT'),
-    ('R03', 'CONCERN_ESCALATION_RESOLVE',  'DEPT'),
-    ('R04', 'CHANGE_REQUEST_VIEW',         'OWN'),
-    ('R04', 'CHANGE_REQUEST_RAISE',        'OWN'),
-    ('R04', 'CHANGE_REQUEST_IMPLEMENT',    'OWN'),
-    ('R03', 'CHANGE_REQUEST_VIEW',         'DEPT'),
-    ('R03', 'CHANGE_REQUEST_REVIEW',       'DEPT'),
-    ('R04', 'SUSPENSION_VIEW',             'OWN'),
-    ('R04', 'SUSPENSION_RAISE',            'OWN'),
-    ('R03', 'SUSPENSION_VIEW',             'DEPT'),
-    ('R03', 'SUSPENSION_REVIEW',           'DEPT'),
-    ('R04', 'CLOSEOUT_VIEW',               'OWN'),
-    ('R04', 'CLOSEOUT_RAISE',              'OWN'),
-    ('R03', 'CLOSEOUT_VIEW',               'DEPT'),
-    ('R03', 'CLOSEOUT_REVIEW',             'DEPT'),
-    ('R03', 'CLOSEOUT_WAIVE',              'DEPT'),
-    ('R08', 'TASK_VIEW',                   'ASSIGNED'),
-    ('R08', 'TASK_UPDATE',                 'ASSIGNED'),
-    ('R04', 'EXTERNAL_REQUEST_VIEW',       'OWN'),
-    ('R04', 'EXTERNAL_REQUEST_MANAGE',     'OWN'),
-    ('R04', 'EXTERNAL_CONTRIBUTION_REVIEW', 'OWN'),
-    ('R04', 'EXTERNAL_CONTRIBUTION_APPLY', 'OWN'),
-    ('R03', 'EXTERNAL_REQUEST_VIEW',       'DEPT'),
-    ('R03', 'EXTERNAL_REQUEST_MANAGE',     'DEPT'),
-    ('R03', 'EXTERNAL_CONTRIBUTION_REVIEW', 'DEPT'),
-    ('R08', 'EXTERNAL_REQUEST_VIEW',       'ENTITY'),
-    ('R08', 'EXTERNAL_CONTRIBUTION_RESPOND', 'ASSIGNED'),
-    ('R04', 'FINANCIAL_VIEW',              'ENTITY'),
-    ('R08', 'FINANCIAL_VIEW',              'ENTITY'),
-    ('R04', 'KPI_VIEW',                    'ENTITY'),
-    ('R08', 'KPI_VIEW',                    'ENTITY'),
-    ('R04', 'REPORT_EXPORT',               'ENTITY'),
-    ('R08', 'REPORT_EXPORT',               'ENTITY'),
-    ('R03', 'LAYOUT_PERSONALIZE',          'OWN'),
-    ('R03', 'REPORT_COMPOSE',              'OWN'),
-    ('R07', 'LAYOUT_PERSONALIZE',          'OWN'),
-    ('R07', 'REPORT_COMPOSE',              'OWN'),
-    ('R01', 'AUDIT_ADMINISTRATION_VIEW',   'ALL'),
-    ('R01', 'AUDIT_OPERATIONS_MANAGE',     'ALL'),
-    ('R04', 'ACTIVITY_VIEW',               'OWN'),
-    ('R08', 'ACTIVITY_VIEW',               'ENTITY'),
-    ('R01', 'INTEGRATION_VIEW',            'ALL'),
-    ('R01', 'INTEGRATION_LOG_VIEW',        'ALL'),
-    ('R01', 'INTEGRATION_OPERATE',         'ALL'),
-    ('R01', 'INTEGRATION_ALERT_MANAGE',    'ALL'),
-    ('R01', 'INTEGRATION_CONFIGURE',       'ALL'),
-    ('R01', 'DATA_IMPORT',                 'ALL')
-) AS g (role_code, permission_code, data_scope)
+FROM shipped_grant g
 JOIN identity_access.role r ON r.code = g.role_code
 JOIN identity_access.permission_profile pp ON pp.base_role_id = r.id AND pp.code = r.code || '-DEFAULT'
 JOIN identity_access.permission_profile_version v ON v.permission_profile_id = pp.id AND v.version_no = 1
 JOIN identity_access.permission p ON p.code = g.permission_code
-ON CONFLICT (permission_profile_version_id, permission_id) DO NOTHING;
+ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET
+    data_scope = EXCLUDED.data_scope,
+    updated_at = EXCLUDED.updated_at,
+    updated_by = EXCLUDED.updated_by
+WHERE pg.data_scope IS DISTINCT FROM EXCLUDED.data_scope;
+
+-- A grant of a shipped version 1 that the matrix no longer holds (R08's report export, for one) is removed.
+DELETE FROM identity_access.permission_profile_grant pg
+USING identity_access.permission_profile_version v, identity_access.permission_profile pp, identity_access.role r, identity_access.permission p
+WHERE pg.permission_profile_version_id = v.id AND v.version_no = 1 AND v.permission_profile_id = pp.id
+  AND pp.base_role_id = r.id AND pp.code = r.code || '-DEFAULT' AND pp.is_shipped_default
+  AND r.code IN ('R01', 'R02', 'R03', 'R04', 'R05', 'R06', 'R07', 'R08')
+  AND p.id = pg.permission_id
+  AND NOT EXISTS (SELECT 1 FROM shipped_grant g WHERE g.role_code = r.code AND g.permission_code = p.code);
+
+DROP TABLE shipped_grant;
 
 -- 3. Master data catalogues: one per master data reference in the ERD. validate-data-integrity.sql checks that each
 -- reference column points at an item of its catalogue; the two files name the same codes.
@@ -625,8 +712,9 @@ ON CONFLICT (dashboard_definition_id, code) DO NOTHING;
 
 -- 7. The ten reports of ADR-006 (TASK-071), each a PUBLISHED version 1 with its audience, parameters, options and columns, every column a field of
 -- FG-01's register (PMPlatform.Application's DashboardProjections; ReportRuntimeTests.TheCatalogueIsTheTenReportsOfAdr006 checks every one). FG-02's twenty-three delivered catalogue
--- entries are absorbed as reports.md D-2 maps them: whole, as an audience, or as an option (whose catalogue_entry_reference names it). R08 is in
--- the audience of ADR-013's entity report set only; R01 of none (BR-RPT-011). Inserted once with their version, as the dashboards are: a change is
+-- entries are absorbed as reports.md D-2 maps them: whole, as an audience, or as an option (whose catalogue_entry_reference names it). R01 is
+-- in no audience (BR-RPT-011) and R08 in none (ADR-019: no reports); the portfolio summary is the portfolio audience's — R02, R03, R06, R07 —
+-- and the executive governance report R02's, R03's and R07's (shipped-permission-matrix.md D-7). Inserted once with their version, as the dashboards are: a change is
 -- a new version on ADM-037, never a re-seed. Generated by artifacts/task-071/seed/gen.py.
 INSERT INTO reports.report_definition (id, code, version_no, name_ar, name_en, description_ar, description_en, audience_family, primary_projection_code,
                                        allows_saved_views, lifecycle_state, published_at, created_at, created_by, updated_at, updated_by)
@@ -680,16 +768,16 @@ ON CONFLICT (code, version_no) DO NOTHING;
 INSERT INTO reports.report_audience_role (id, report_definition_id, role_id, created_at, created_by, updated_at, updated_by)
 SELECT md5('report_audience_role:' || v.code || ':1:' || v.role_code)::uuid, d.id, r.id, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
 FROM (VALUES
-    ('PORTFOLIO_SUMMARY', 'R02'), ('PORTFOLIO_SUMMARY', 'R03'), ('PORTFOLIO_SUMMARY', 'R04'), ('PORTFOLIO_SUMMARY', 'R05'), ('PORTFOLIO_SUMMARY', 'R06'), ('PORTFOLIO_SUMMARY', 'R07'),
-    ('PROJECT_REGISTER', 'R02'), ('PROJECT_REGISTER', 'R03'), ('PROJECT_REGISTER', 'R04'), ('PROJECT_REGISTER', 'R05'), ('PROJECT_REGISTER', 'R06'), ('PROJECT_REGISTER', 'R07'), ('PROJECT_REGISTER', 'R08'),
-    ('PROJECT_REPORT', 'R02'), ('PROJECT_REPORT', 'R03'), ('PROJECT_REPORT', 'R04'), ('PROJECT_REPORT', 'R05'), ('PROJECT_REPORT', 'R06'), ('PROJECT_REPORT', 'R07'), ('PROJECT_REPORT', 'R08'),
-    ('PROGRESS_REPORTING', 'R02'), ('PROGRESS_REPORTING', 'R03'), ('PROGRESS_REPORTING', 'R04'), ('PROGRESS_REPORTING', 'R05'), ('PROGRESS_REPORTING', 'R06'), ('PROGRESS_REPORTING', 'R07'), ('PROGRESS_REPORTING', 'R08'),
-    ('PROGRESS_HISTORY', 'R02'), ('PROGRESS_HISTORY', 'R03'), ('PROGRESS_HISTORY', 'R04'), ('PROGRESS_HISTORY', 'R05'), ('PROGRESS_HISTORY', 'R06'), ('PROGRESS_HISTORY', 'R07'), ('PROGRESS_HISTORY', 'R08'),
+    ('PORTFOLIO_SUMMARY', 'R02'), ('PORTFOLIO_SUMMARY', 'R03'), ('PORTFOLIO_SUMMARY', 'R06'), ('PORTFOLIO_SUMMARY', 'R07'),
+    ('PROJECT_REGISTER', 'R02'), ('PROJECT_REGISTER', 'R03'), ('PROJECT_REGISTER', 'R04'), ('PROJECT_REGISTER', 'R05'), ('PROJECT_REGISTER', 'R06'), ('PROJECT_REGISTER', 'R07'),
+    ('PROJECT_REPORT', 'R02'), ('PROJECT_REPORT', 'R03'), ('PROJECT_REPORT', 'R04'), ('PROJECT_REPORT', 'R05'), ('PROJECT_REPORT', 'R06'), ('PROJECT_REPORT', 'R07'),
+    ('PROGRESS_REPORTING', 'R02'), ('PROGRESS_REPORTING', 'R03'), ('PROGRESS_REPORTING', 'R04'), ('PROGRESS_REPORTING', 'R05'), ('PROGRESS_REPORTING', 'R06'), ('PROGRESS_REPORTING', 'R07'),
+    ('PROGRESS_HISTORY', 'R02'), ('PROGRESS_HISTORY', 'R03'), ('PROGRESS_HISTORY', 'R04'), ('PROGRESS_HISTORY', 'R05'), ('PROGRESS_HISTORY', 'R06'), ('PROGRESS_HISTORY', 'R07'),
     ('SCHEDULE_DELIVERY', 'R02'), ('SCHEDULE_DELIVERY', 'R03'), ('SCHEDULE_DELIVERY', 'R04'), ('SCHEDULE_DELIVERY', 'R05'), ('SCHEDULE_DELIVERY', 'R06'), ('SCHEDULE_DELIVERY', 'R07'),
     ('RISK_ISSUE', 'R02'), ('RISK_ISSUE', 'R03'), ('RISK_ISSUE', 'R04'), ('RISK_ISSUE', 'R05'), ('RISK_ISSUE', 'R06'), ('RISK_ISSUE', 'R07'),
-    ('FINANCIAL_PERFORMANCE', 'R02'), ('FINANCIAL_PERFORMANCE', 'R03'), ('FINANCIAL_PERFORMANCE', 'R04'), ('FINANCIAL_PERFORMANCE', 'R05'), ('FINANCIAL_PERFORMANCE', 'R06'), ('FINANCIAL_PERFORMANCE', 'R07'), ('FINANCIAL_PERFORMANCE', 'R08'),
-    ('KPI_PERFORMANCE', 'R02'), ('KPI_PERFORMANCE', 'R03'), ('KPI_PERFORMANCE', 'R04'), ('KPI_PERFORMANCE', 'R05'), ('KPI_PERFORMANCE', 'R06'), ('KPI_PERFORMANCE', 'R07'), ('KPI_PERFORMANCE', 'R08'),
-    ('GOVERNANCE_CHANGE', 'R02'), ('GOVERNANCE_CHANGE', 'R03'), ('GOVERNANCE_CHANGE', 'R04'), ('GOVERNANCE_CHANGE', 'R05'), ('GOVERNANCE_CHANGE', 'R06'), ('GOVERNANCE_CHANGE', 'R07')
+    ('FINANCIAL_PERFORMANCE', 'R02'), ('FINANCIAL_PERFORMANCE', 'R03'), ('FINANCIAL_PERFORMANCE', 'R04'), ('FINANCIAL_PERFORMANCE', 'R05'), ('FINANCIAL_PERFORMANCE', 'R06'), ('FINANCIAL_PERFORMANCE', 'R07'),
+    ('KPI_PERFORMANCE', 'R02'), ('KPI_PERFORMANCE', 'R03'), ('KPI_PERFORMANCE', 'R04'), ('KPI_PERFORMANCE', 'R05'), ('KPI_PERFORMANCE', 'R06'), ('KPI_PERFORMANCE', 'R07'),
+    ('GOVERNANCE_CHANGE', 'R02'), ('GOVERNANCE_CHANGE', 'R03'), ('GOVERNANCE_CHANGE', 'R07')
 ) AS v (code, role_code)
 JOIN reports.report_definition d ON d.code = v.code AND d.version_no = 1 AND d.created_by = '00000000-0000-4000-8000-0000000000ff'
 JOIN identity_access.role r ON r.code = v.role_code

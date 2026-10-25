@@ -12,6 +12,7 @@ internal sealed class PermissionProfileVersionConfiguration : IEntityTypeConfigu
         builder.HasIndex(e => new { e.PermissionProfileId, e.VersionNo }).IsUnique();
         builder.HasNarrative(e => e.ChangeSummary, "change_summary");
         builder.HasGovernedLifecycle();
+        builder.HasRowVersion();
 
         builder.HasOne<PermissionProfile>().WithMany().HasForeignKey(e => e.PermissionProfileId).OnDelete(DeleteBehavior.Restrict);
     }

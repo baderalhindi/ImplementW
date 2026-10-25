@@ -36,6 +36,7 @@ export function ProjectSuspension({
       <p className="state">{t('suspensionClosure.suspension.forbidden')}</p>
     ) : (
       <ErrorState
+        error={suspension.error}
         message={suspensionClosureProblemMessage(suspension.error, t)}
         onRetry={suspension.reload}
       />

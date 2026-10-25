@@ -38,7 +38,11 @@ export function ProjectRisks({
     return isForbidden(risks.error) ? (
       <p className="state">{t('risks.forbidden')}</p>
     ) : (
-      <ErrorState message={riskProblemMessage(risks.error, t)} onRetry={risks.reload} />
+      <ErrorState
+        error={risks.error}
+        message={riskProblemMessage(risks.error, t)}
+        onRetry={risks.reload}
+      />
     );
   }
 

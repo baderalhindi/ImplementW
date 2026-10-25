@@ -58,6 +58,7 @@ export function CreateSuspensionRequestPage(): ReactElement {
           <p className="state">{t('suspensionClosure.noProject')}</p>
         ) : (
           <ErrorState
+            error={project.error}
             message={suspensionClosureProblemMessage(project.error, t)}
             onRetry={project.reload}
           />
@@ -85,6 +86,7 @@ export function EditSuspensionRequestPage(): ReactElement {
           <p className="state">{t('suspensionClosure.suspension.forbidden')}</p>
         ) : (
           <ErrorState
+            error={record.error}
             message={suspensionClosureProblemMessage(record.error, t)}
             onRetry={record.reload}
           />

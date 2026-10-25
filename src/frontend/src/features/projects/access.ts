@@ -1,5 +1,7 @@
 import { canReadActivity, canReadProjectAudit } from '@/features/audit-activity/access.ts';
 import { type AuditAccessView } from '@/features/audit-activity/api/types.ts';
+import { type PermissionCode } from '@/features/identity-access/permissions/permissionCodes.ts';
+import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import {
   type SessionRoleAssignment,
   type SessionUser,
@@ -7,10 +9,10 @@ import {
 
 import { type ProjectDetail, type ProjectStatus } from './api/types.ts';
 
-// What the workspace offers a person, from the session's role assignments (TASK-030 scope anchors) and user type.
-// This is navigation, not protection: every read and command is decided again by the API (TASK-041 D-10), and a
-// refusal is shown as it comes. The session carries each assignment's anchors, not its permissions, so a tab or
-// command is offered on whether an assignment reaches the project and on ADR-013's internal/external line.
+// What the workspace offers a person, from the session's role assignments (TASK-030 scope anchors), user type and the
+// permissions the API reports they hold (GET /sessions/current/permissions). This is navigation, not protection: every
+// read and command is decided again by the API (TASK-041 D-10), and a refusal is shown as it comes. A tab is offered on
+// whether an assignment reaches the project, ADR-013's internal/external line, and the permission it reads under.
 
 /**
  * The assignments whose anchors reach the project: one with no anchor reaches every project; a department, entity or
@@ -77,6 +79,8 @@ export interface WorkspaceTab {
   /** Relative to /projects/:projectId; '' is the overview. */
   path: string;
   audience: TabAudience;
+  /** The permission the tab reads under: offered only to a holder (the 24 Oct 2026 review, M-12). */
+  permission?: PermissionCode;
 }
 
 /**
@@ -101,20 +105,35 @@ export const WORKSPACE_TABS: WorkspaceTab[] = [
   { key: 'overview', path: '', audience: 'anyone' },
   { key: 'registration', path: 'registration', audience: 'anyone' },
   { key: 'location', path: 'location', audience: 'anyone' },
-  { key: 'progress', path: 'progress', audience: 'reached' },
-  { key: 'schedule', path: 'schedule', audience: 'reached' },
-  { key: 'tasks', path: 'tasks', audience: 'reached' },
-  { key: 'milestones', path: 'milestones', audience: 'reached' },
-  { key: 'financials', path: 'financials', audience: 'reached' },
-  { key: 'kpis', path: 'kpis', audience: 'reached' },
-  { key: 'risks', path: 'risks', audience: 'reached' },
-  { key: 'issuesChallenges', path: 'issues-challenges', audience: 'reached' },
-  { key: 'changeRequests', path: 'change-requests', audience: 'reached' },
-  { key: 'suspension', path: 'suspension', audience: 'reached' },
-  { key: 'closeout', path: 'closeout', audience: 'reached' },
-  { key: 'externalRequests', path: 'external-requests', audience: 'reached' },
-  { key: 'reviews', path: 'reviews', audience: 'internalReached' },
-  { key: 'documents', path: 'documents', audience: 'reached' },
+  { key: 'progress', path: 'progress', audience: 'reached', permission: 'PROGRESS_VIEW' },
+  { key: 'schedule', path: 'schedule', audience: 'reached', permission: 'SCHEDULE_VIEW' },
+  { key: 'tasks', path: 'tasks', audience: 'reached', permission: 'TASK_VIEW' },
+  { key: 'milestones', path: 'milestones', audience: 'reached', permission: 'MILESTONE_VIEW' },
+  { key: 'financials', path: 'financials', audience: 'reached', permission: 'FINANCIAL_VIEW' },
+  { key: 'kpis', path: 'kpis', audience: 'reached', permission: 'KPI_VIEW' },
+  { key: 'risks', path: 'risks', audience: 'reached', permission: 'RISK_VIEW' },
+  {
+    key: 'issuesChallenges',
+    path: 'issues-challenges',
+    audience: 'reached',
+    permission: 'CONCERN_VIEW',
+  },
+  {
+    key: 'changeRequests',
+    path: 'change-requests',
+    audience: 'reached',
+    permission: 'CHANGE_REQUEST_VIEW',
+  },
+  { key: 'suspension', path: 'suspension', audience: 'reached', permission: 'SUSPENSION_VIEW' },
+  { key: 'closeout', path: 'closeout', audience: 'reached', permission: 'CLOSEOUT_VIEW' },
+  {
+    key: 'externalRequests',
+    path: 'external-requests',
+    audience: 'reached',
+    permission: 'EXTERNAL_REQUEST_VIEW',
+  },
+  { key: 'reviews', path: 'reviews', audience: 'internalReached', permission: 'APPROVAL_VIEW' },
+  { key: 'documents', path: 'documents', audience: 'reached', permission: 'DOCUMENT_VIEW' },
   { key: 'activity', path: 'activity-history', audience: 'activity' },
   { key: 'audit', path: 'audit-history', audience: 'projectAudit' },
 ];
@@ -129,13 +148,19 @@ export interface ProjectAccess {
   activity: boolean;
   /** An explicit project audit permission: SCR-058. R01 alone does not give it. */
   projectAudit: boolean;
+  /** What the person holds now: a tab is offered only to a holder of the permission it reads under. */
+  permissions: Permissions;
 }
 
-/** `audit` is the API's GET /audit-access, or null while it is unknown: no audit tab is offered until it says so. */
+/**
+ * `audit` is the API's GET /audit-access, or null while it is unknown: no audit tab is offered until it says so;
+ * `permissions` what GET /sessions/current/permissions reports.
+ */
 export function projectAccess(
   user: SessionUser,
   project: ProjectDetail,
-  audit: AuditAccessView | null = null,
+  audit: AuditAccessView | null,
+  permissions: Permissions,
 ): ProjectAccess {
   return {
     internal: isInternal(user),
@@ -143,11 +168,19 @@ export function projectAccess(
     creator: project.createdBy === user.id,
     activity: canReadActivity(audit),
     projectAudit: canReadProjectAudit(audit),
+    permissions,
   };
 }
 
 export function canSeeTab(tab: WorkspaceTab, access: ProjectAccess): boolean {
-  switch (tab.audience) {
+  return (
+    inAudience(tab.audience, access) &&
+    (tab.permission === undefined || access.permissions.can(tab.permission))
+  );
+}
+
+function inAudience(audience: TabAudience, access: ProjectAccess): boolean {
+  switch (audience) {
     case 'anyone':
       return true;
     case 'reached':

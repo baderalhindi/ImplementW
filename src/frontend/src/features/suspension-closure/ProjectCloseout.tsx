@@ -38,6 +38,7 @@ export function ProjectCloseout({
       <p className="state">{t('suspensionClosure.closeout.forbidden')}</p>
     ) : (
       <ErrorState
+        error={closeout.error}
         message={suspensionClosureProblemMessage(closeout.error, t)}
         onRetry={closeout.reload}
       />

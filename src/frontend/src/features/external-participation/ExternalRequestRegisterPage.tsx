@@ -67,6 +67,7 @@ export function ExternalRequestRegisterPage(): ReactElement | null {
           <LoadingState />
         ) : (
           <ErrorState
+            error={requests.error}
             message={participationProblemMessage(requests.error, t)}
             onRetry={requests.reload}
           />

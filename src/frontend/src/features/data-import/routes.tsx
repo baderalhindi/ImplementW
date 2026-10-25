@@ -10,5 +10,5 @@ export const dataImportRoutes: RouteObject[] = [
 ];
 
 export const dataImportNavigation: NavigationItem[] = [
-  { to: '/admin/data-migration', label: 'dataImport.nav' },
+  { to: '/admin/data-migration', label: 'dataImport.nav', permissions: ['DATA_IMPORT'] },
 ];

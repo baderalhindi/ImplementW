@@ -113,22 +113,26 @@ public sealed class AuditAccessTests(AuditActivityTestHost host)
         Assert.Equal("SECURITY", full["event"]!["category"]!.GetValue<string>());
     }
 
+    /// <summary>
+    /// The Viewer reads business audit in its department (shipped-permission-matrix.md, review H4) and nothing else of the store: no
+    /// administration event, no Activity timeline, no operations.
+    /// </summary>
     [Fact]
-    public async Task SomeoneWithoutAnAuditPermissionSeesNoEventAndNoActivity()
+    public async Task TheViewerSeesBusinessAuditOnlyAndNoActivityOrOperations()
     {
-        (Guid administration, Guid business, _) = await OneOfEachAsync();
+        (Guid administration, _, _) = await OneOfEachAsync();
         using HttpClient viewer = await host.ClientAsync(6);
 
-        JsonObject page = await (await viewer.GetAsync(AuditActivityApi.Events)).OkAsync();
+        JsonObject page = await (await viewer.GetAsync($"{AuditActivityApi.Events}?pageSize=200")).OkAsync();
         using HttpResponseMessage administrationEvent = await viewer.GetAsync($"{AuditActivityApi.Events}/{administration}");
-        using HttpResponseMessage businessEvent = await viewer.GetAsync($"{AuditActivityApi.Events}/{business}");
         using HttpResponseMessage activity = await viewer.GetAsync(AuditActivityApi.Activity);
         using HttpResponseMessage operations = await viewer.GetAsync(AuditActivityApi.Status);
 
-        Assert.Equal(0, page["totalCount"]!.GetValue<int>());
+        Assert.All(page["items"]!.AsArray(), item => Assert.Equal("BUSINESS", item!["category"]!.GetValue<string>()));
+        Assert.DoesNotContain(administration, page.Ids());
         Assert.Equal(
-            [HttpStatusCode.NotFound, HttpStatusCode.NotFound, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden],
-            [administrationEvent.StatusCode, businessEvent.StatusCode, activity.StatusCode, operations.StatusCode]);
+            [HttpStatusCode.NotFound, HttpStatusCode.Forbidden, HttpStatusCode.Forbidden],
+            [administrationEvent.StatusCode, activity.StatusCode, operations.StatusCode]);
     }
 
     /// <summary>

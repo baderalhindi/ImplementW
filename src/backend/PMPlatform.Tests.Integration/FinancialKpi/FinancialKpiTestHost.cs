@@ -63,7 +63,8 @@ public sealed class FinancialKpiTestHost : IAsyncLifetime
                      ('{IdentityDatabase.ProfileVersionId(4)}', 'KPI_MANAGE', 'OWN'), ('{IdentityDatabase.ProfileVersionId(4)}', 'KPI_RECORD', 'OWN'),
                      ('{IdentityDatabase.ProfileVersionId(4)}', 'KPI_REVIEW', 'ENTITY'))
              AS g (version_id, code, scope)
-        JOIN identity_access.permission p ON p.code = g.code;
+        JOIN identity_access.permission p ON p.code = g.code
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
 
         -- local.r08: R04 across their entity, beside the per-project one IdentityDatabase gives.
         INSERT INTO identity_access.access_relationship (id, user_id, permission_profile_version_id, external_entity_id, sponsor_user_id, starts_at, status, created_at, created_by, updated_at, updated_by)

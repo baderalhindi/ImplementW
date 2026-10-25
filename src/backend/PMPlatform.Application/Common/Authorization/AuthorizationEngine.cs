@@ -26,7 +26,7 @@ internal sealed partial class AuthorizationEngine(
     {
         if (!_principals.TryGetValue(userId, out AuthorizationPrincipal? principal))
         {
-            principal = await repository.FindPrincipalAsync(userId, cancellationToken).ConfigureAwait(false);
+            principal = Bounded(await repository.FindPrincipalAsync(userId, cancellationToken).ConfigureAwait(false));
             _principals[userId] = principal;
         }
 
@@ -81,6 +81,14 @@ internal sealed partial class AuthorizationEngine(
             .OfType<RecordScopeClause>()]);
     }
 
+    /// <summary>The principal without the grants <see cref="GrantPolicy"/> forbids: they take no effect, whatever the profile holds.</summary>
+    private AuthorizationPrincipal? Bounded(AuthorizationPrincipal? principal) =>
+        principal is null ? null : principal with
+        {
+            Grants = [.. principal.Grants.Where(g => !catalogue.Contains(g.PermissionCode)
+                                                     || GrantPolicy.Permits(g.RoleCode, principal.UserType, catalogue.Get(g.PermissionCode)))],
+        };
+
     /// <summary>
     /// <see cref="Covers"/> and <see cref="Clears"/> as conditions on the record's anchors. Null when the grant can reach
     /// nothing: an anchor its scope needs is missing, or ADR-013's isolation contradicts its entity.
@@ -117,7 +125,7 @@ internal sealed partial class AuthorizationEngine(
             case DataScope.Own:
                 return clause with { OwnerUserId = principal.UserId };
             case DataScope.Assigned:
-                return clause with { AssignedUserId = principal.UserId };
+                return AssignedToProject(principal, grant) ? clause : clause with { AssignedUserId = principal.UserId };
             case DataScope.Entity:
                 Guid? entity = grant.ExternalEntityId ?? principal.ExternalEntityId;
                 return entity is null || (isolatedTo is not null && isolatedTo != entity) ? null : clause with { ExternalEntityId = entity };
@@ -236,11 +244,19 @@ internal sealed partial class AuthorizationEngine(
             DataScope.All or DataScope.ReadOnly => true,
             DataScope.Dept => subject.DepartmentId is { } department && department == (grant.DepartmentId ?? principal.DepartmentId),
             DataScope.Own => subject.OwnerUserId == principal.UserId,
-            DataScope.Assigned => subject.AssignedUserIds.Contains(principal.UserId),
+            DataScope.Assigned => AssignedToProject(principal, grant) || subject.AssignedUserIds.Contains(principal.UserId),
             DataScope.Entity => subject.ExternalEntityId is { } entity && entity == (grant.ExternalEntityId ?? principal.ExternalEntityId),
             _ => false,
         };
     }
+
+    /// <summary>
+    /// D-4: ASSIGNED reaches the records the user is an assignee of, and — for an internal user whose assignment names a project, such as a
+    /// Liaison assigned to it — every record of that project (the project itself is checked by <see cref="Covers"/>). An external user's
+    /// per-project assignment is ADR-013's isolation, not an assignment to the project's records, so it keeps to the records they are named on.
+    /// </summary>
+    private static bool AssignedToProject(AuthorizationPrincipal principal, EffectiveGrant grant) =>
+        principal.UserType == UserType.Internal && grant.ProjectId is not null;
 
     /// <summary>
     /// Unclassified data is cleared for everyone. Classified data needs a clearance of equal or higher rank; an unknown

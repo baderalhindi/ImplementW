@@ -62,6 +62,7 @@ export function CreateChangeRequestPage(): ReactElement {
           <p className="state">{t('changeRequests.form.noProject')}</p>
         ) : (
           <ErrorState
+            error={project.error}
             message={changeRequestProblemMessage(project.error, t)}
             onRetry={project.reload}
           />
@@ -87,6 +88,7 @@ export function EditChangeRequestPage(): ReactElement {
           <p className="state">{t('changeRequests.forbidden')}</p>
         ) : (
           <ErrorState
+            error={record.error}
             message={changeRequestProblemMessage(record.error, t)}
             onRetry={record.reload}
           />

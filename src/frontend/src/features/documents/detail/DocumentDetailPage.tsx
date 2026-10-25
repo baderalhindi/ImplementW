@@ -50,7 +50,11 @@ export function DocumentDetailPage(): ReactElement {
     return (
       <>
         <PageHeader title={t('documents.detail.fallbackTitle')} />
-        <ErrorState message={documentProblemMessage(resource.error, t)} onRetry={resource.reload} />
+        <ErrorState
+          error={resource.error}
+          message={documentProblemMessage(resource.error, t)}
+          onRetry={resource.reload}
+        />
       </>
     );
   }

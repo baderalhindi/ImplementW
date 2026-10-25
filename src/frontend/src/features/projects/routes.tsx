@@ -252,7 +252,7 @@ export const projectRoutes: RouteObject[] = [
 ];
 
 export const projectNavigation: NavigationItem[] = [
-  { to: '/projects', label: 'projects.nav.register', end: true },
-  { to: '/projects/mine', label: 'projects.nav.mine' },
-  { to: '/projects/new', label: 'projects.nav.create' },
+  { to: '/projects', label: 'projects.nav.register', end: true, permissions: ['PROJECT_VIEW'] },
+  { to: '/projects/mine', label: 'projects.nav.mine', permissions: ['PROJECT_VIEW'] },
+  { to: '/projects/new', label: 'projects.nav.create', permissions: ['PROJECT_REGISTER'] },
 ];

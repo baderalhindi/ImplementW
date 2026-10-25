@@ -1,5 +1,9 @@
 import { vi } from 'vitest';
 
+import { sessionStore } from '@/features/identity-access/session/sessionStore.ts';
+
+import { shippedPermissions } from './permissionFixtures.ts';
+
 // A route table standing in for the API: each handler answers one method and path, and every request is recorded
 // with its headers and body so a test can assert what the SPA sent. JSON calls arrive through fetch, multipart uploads
 // through XMLHttpRequest (for their progress events); both are answered from the same routes.
@@ -35,6 +39,8 @@ export interface MockApi {
   requestsTo: (method: string, pattern: RegExp) => RecordedRequest[];
   /** The shell's approval-count reads. */
   shellInboxCountReads: RecordedRequest[];
+  /** The shell's permission reads (see SHELL_PERMISSIONS). */
+  shellPermissionReads: RecordedRequest[];
 }
 
 /**
@@ -50,6 +56,68 @@ function isShellInboxCount(method: string, url: URL): boolean {
     url.pathname === '/api/v1/approval-tasks' &&
     url.searchParams.get('pageSize') === '1'
   );
+}
+
+/**
+ * The shell reads what the signed-in person holds with `GET /sessions/current/permissions` once per sign-in. With no handler for
+ * it, it answers what the session's roles ship with (permissionFixtures.ts), so a test of a screen is offered what that role
+ * would be; a test of who is offered what registers its own answer. It is kept out of `requests`, as the approval count is.
+ */
+export const SHELL_PERMISSIONS = /^\/sessions\/current\/permissions$/;
+
+function isShellPermissions(method: string, url: URL): boolean {
+  return method === 'GET' && url.pathname === '/api/v1/sessions/current/permissions';
+}
+
+/**
+ * The names endpoints (the 24 Oct 2026 review, H1) answer from what a test has already mocked, unless the test registers its own
+ * answer: `GET /display-names` from the test's `GET /users/{id}` routes, and `GET /organization-units` from its `GET /departments`
+ * and `GET /external-entities` routes — so a fixture that names a person or a unit names it on every screen. A route that refuses
+ * names nothing. The routes consulted are not recorded as requests.
+ */
+async function emulatedNames(
+  find: (method: string, path: string) => Route | undefined,
+  request: RecordedRequest,
+): Promise<MockReply | undefined> {
+  const read = async (path: string): Promise<unknown> => {
+    const route = find('GET', path);
+    if (route === undefined) {
+      return undefined;
+    }
+    const reply = await route.handler({ ...request, path, query: new URLSearchParams() });
+    return (reply.status ?? 200) < 300 ? reply.body : undefined;
+  };
+  const items = (body: unknown): Record<string, unknown>[] =>
+    (body as { items?: Record<string, unknown>[] } | undefined)?.items ?? [];
+  if (request.path === '/display-names') {
+    const users = [];
+    for (const id of request.query.getAll('userId')) {
+      const user = (await read(`/users/${id}`)) as { displayName?: string } | undefined;
+      if (user?.displayName !== undefined) {
+        users.push({ id, displayName: user.displayName });
+      }
+    }
+    return { body: { users } };
+  }
+  if (request.path === '/organization-units') {
+    const unit = (row: Record<string, unknown>, isActive: boolean) => ({
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      isActive,
+    });
+    return {
+      body: {
+        departments: items(await read('/departments')).map((row) =>
+          unit(row, row.isActive !== false),
+        ),
+        externalEntities: items(await read('/external-entities')).map((row) =>
+          unit(row, row.status === 'ACTIVE'),
+        ),
+      },
+    };
+  }
+  return undefined;
 }
 
 export function problem(
@@ -87,6 +155,7 @@ export function mockApi(): MockApi {
   const routes: Route[] = [];
   const requests: RecordedRequest[] = [];
   const shellInboxCountReads: RecordedRequest[] = [];
+  const shellPermissionReads: RecordedRequest[] = [];
 
   const answer = async (
     method: string,
@@ -103,15 +172,28 @@ export function mockApi(): MockApi {
       body,
     };
     const shellCount = isShellInboxCount(method, url);
-    (shellCount ? shellInboxCountReads : requests).push(recorded);
+    const shellPermissions = isShellPermissions(method, url);
+    (shellCount ? shellInboxCountReads : shellPermissions ? shellPermissionReads : requests).push(
+      recorded,
+    );
     const routed = shellCount ? '/approval-tasks?pageSize=1' : recorded.path;
-    const route = [...routes]
-      .reverse()
-      .find((candidate) => candidate.method === method && candidate.pattern.test(routed));
-    if (route === undefined && !shellCount) {
+    const find = (wanted: string, path: string) =>
+      [...routes]
+        .reverse()
+        .find((candidate) => candidate.method === wanted && candidate.pattern.test(path));
+    const route = find(method, routed);
+    const emulated =
+      route === undefined && method === 'GET' ? await emulatedNames(find, recorded) : undefined;
+    if (route === undefined && emulated === undefined && !shellCount && !shellPermissions) {
       throw new Error(`No mock for ${method} ${recorded.path}`);
     }
-    const reply = route === undefined ? { body: page([], 1) } : await route.handler(recorded);
+    const reply =
+      route !== undefined
+        ? await route.handler(recorded)
+        : (emulated ??
+          (shellPermissions
+            ? { body: shippedPermissions(sessionStore.getSnapshot().session?.user) }
+            : { body: page([], 1) }));
     const status = reply.status ?? 200;
     if (reply.body instanceof Blob) {
       // The bytes, not the Blob: Node's Response does not recognise jsdom's Blob.
@@ -210,6 +292,7 @@ export function mockApi(): MockApi {
     },
     requests,
     shellInboxCountReads,
+    shellPermissionReads,
     requestsTo: (method, pattern) =>
       requests.filter((request) => request.method === method && pattern.test(request.path)),
   };

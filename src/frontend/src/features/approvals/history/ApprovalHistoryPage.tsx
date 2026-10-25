@@ -84,7 +84,11 @@ export function ApprovalHistoryPage(): ReactElement {
         {run.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState message={approvalProblemMessage(run.error, t)} onRetry={run.reload} />
+          <ErrorState
+            error={run.error}
+            message={approvalProblemMessage(run.error, t)}
+            onRetry={run.reload}
+          />
         )}
       </>
     );

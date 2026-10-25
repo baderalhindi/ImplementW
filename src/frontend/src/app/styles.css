@@ -478,16 +478,6 @@ h3 {
   border-block-start: 1px solid rgb(255 255 255 / 12%);
 }
 
-.rail__note {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  padding: var(--space-1) var(--space-3);
-  color: var(--color-rail-muted);
-  font-size: 0.8rem;
-}
-
 .rail__toggle {
   color: var(--color-rail-muted);
   font-size: 0.875rem;
@@ -4185,4 +4175,46 @@ select.field__input {
 .help-glossary dd {
   margin-inline-start: 0;
   color: var(--color-text-muted);
+}
+
+/* The Home (the 24 Oct 2026 review, H2 and M-1): cards of the person's own work, or of the platform's health. */
+.home__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-4);
+}
+
+.home__figure {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.home__list,
+.home__actions {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home__list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.home__aside,
+.home__empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.home__more {
+  margin-block-start: auto;
 }

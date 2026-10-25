@@ -18,6 +18,7 @@ namespace PMPlatform.Api.Controllers;
 /// report grants no business data (BR-RPT-048). The register of projections and fields a version may name is <c>GET /dashboard-projections</c>.
 /// </summary>
 [Route(Collection)]
+[ExternalUsersNotFound]
 [Tags("Reports")]
 public sealed class ReportDefinitionsController(IReportDefinitionService definitions) : AdministrationControllerBase
 {

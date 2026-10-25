@@ -3,29 +3,26 @@ import { useCallback } from 'react';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
-import { usersApi } from '../api/identityAccessApi.ts';
+import { MAX_NAMES_PER_CALL, namesApi } from '../names/namesApi.ts';
 import { useSession } from '../session/useSession.ts';
 
 /**
- * Display names for the user ids an assignment page shows (the assigned users and their sponsors). An assignment
- * carries ids only, and a page holds at most 25 rows, so each distinct id is read once.
+ * Display names for the user ids a screen shows, read in one call per hundred ids from `GET /display-names`, which every signed-in
+ * person may ask (the 24 Oct 2026 review, H1). An id the API does not name is left out, and shown by its short form.
  */
 export function useUserNames(ids: (string | null)[]): Map<string, string> {
   const key = [...new Set(ids.filter((id): id is string => id !== null))].sort().join(',');
   const load = useCallback(
     async (signal: AbortSignal) => {
       const unique = key === '' ? [] : key.split(',');
-      const users = await Promise.all(
-        unique.map((id) =>
-          usersApi.get(id, signal).then(
-            (response) => response.data,
-            () => null,
-          ),
-        ),
+      const batches = Array.from(
+        { length: Math.ceil(unique.length / MAX_NAMES_PER_CALL) },
+        (_, index) => unique.slice(index * MAX_NAMES_PER_CALL, (index + 1) * MAX_NAMES_PER_CALL),
       );
-      return new Map(
-        users.filter((user) => user !== null).map((user) => [user.id, user.displayName]),
-      );
+      const people = (
+        await Promise.all(batches.map((batch) => namesApi.people(batch, signal)))
+      ).flat();
+      return new Map(people.map((person) => [person.id, person.displayName]));
     },
     [key],
   );
@@ -35,8 +32,8 @@ export function useUserNames(ids: (string | null)[]): Map<string, string> {
 const SHORT_ID_LENGTH = 8;
 
 /**
- * A name for each person a screen shows by id. Reading a user needs USER_VIEW, which many callers do not hold: an id
- * that cannot be read is shown shortened ("User b2b2b2b2"), and the signed-in person is always "You".
+ * A name for each person a screen shows by id: an id the API does not name — a person the caller may not know of, as an
+ * external user may not know AHDA's — is shown shortened ("User b2b2b2b2"), and the signed-in person is always "You".
  */
 export function usePersonNames(ids: (string | null)[]): (id: string | null) => string {
   const { t } = useI18n();

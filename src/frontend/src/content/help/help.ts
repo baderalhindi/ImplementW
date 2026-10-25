@@ -1,3 +1,4 @@
+import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
 import { type Language } from '@/shared/i18n/i18n.ts';
 
 import faqAr from './ar/faq.json';
@@ -88,7 +89,7 @@ export const GUIDE_ARTICLES: readonly GuideArticleMeta[] = [
     id: 'portfolio-dashboard',
     audience: ['R02', 'R03', 'R06', 'R07'],
     related: [
-      { to: '/?dashboard=PORTFOLIO', label: 'common.menu.portfolioDashboard' },
+      { to: PORTFOLIO_DASHBOARD_PATH, label: 'common.menu.portfolioDashboard' },
       { to: '/reports/portfolio', label: 'common.menu.portfolioReports' },
     ],
   },

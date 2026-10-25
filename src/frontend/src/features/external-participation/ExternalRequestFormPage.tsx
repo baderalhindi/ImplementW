@@ -9,7 +9,7 @@ import {
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { useOptionalProject } from '@/features/change-requests/useChangeRequestData.ts';
-import { externalEntitiesApi } from '@/features/identity-access/api/identityAccessApi.ts';
+import { namesApi } from '@/features/identity-access/names/namesApi.ts';
 import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { isInternal } from '@/features/projects/access.ts';
@@ -67,6 +67,7 @@ export function CreateExternalRequestPage(): ReactElement {
           <p className="state">{t('externalParticipation.form.noProject')}</p>
         ) : (
           <ErrorState
+            error={project.error}
             message={participationProblemMessage(project.error, t)}
             onRetry={project.reload}
           />
@@ -92,6 +93,7 @@ export function EditExternalRequestPage(): ReactElement {
           <p className="state">{t('externalParticipation.detail.notFound')}</p>
         ) : (
           <ErrorState
+            error={record.error}
             message={participationProblemMessage(record.error, t)}
             onRetry={record.reload}
           />
@@ -138,18 +140,9 @@ async function readContributionTypes(signal: AbortSignal) {
   }
 }
 
-/** ACTIVE entities; null without ORGANIZATION_VIEW (R01 only). */
+/** ACTIVE entities, from GET /organization-units, which every signed-in person may read (the 24 Oct 2026 review, H1). */
 async function readActiveEntities(signal: AbortSignal) {
-  try {
-    return (await externalEntitiesApi.listAll(signal)).filter(
-      (entity) => entity.status === 'ACTIVE',
-    );
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 403) {
-      return null;
-    }
-    throw error;
-  }
+  return (await namesApi.units(signal)).externalEntities.filter((entity) => entity.isActive);
 }
 
 /** The project's live leaf tasks, the only ones that take a percentage; null when they cannot be read. */
@@ -307,7 +300,7 @@ function RequestForm({ project, projectId, existing }: RequestFormProps): ReactE
           label: `${item.label[language]} (${item.code})`,
         }));
   const entityOptions: SelectOption[] | null =
-    entities.data === undefined || entities.data === null
+    entities.data === undefined
       ? null
       : entities.data.map((entity) => ({ value: entity.id, label: entity.name[language] }));
   const taskOptions: SelectOption[] | null =

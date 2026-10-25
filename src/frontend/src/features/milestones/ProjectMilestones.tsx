@@ -41,7 +41,11 @@ export function ProjectMilestones({
     return isForbidden(data.error) ? (
       <p className="state">{t('milestones.forbidden')}</p>
     ) : (
-      <ErrorState message={milestoneProblemMessage(data.error, t)} onRetry={data.reload} />
+      <ErrorState
+        error={data.error}
+        message={milestoneProblemMessage(data.error, t)}
+        onRetry={data.reload}
+      />
     );
   }
 

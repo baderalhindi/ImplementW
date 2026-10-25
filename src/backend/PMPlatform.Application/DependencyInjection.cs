@@ -107,11 +107,13 @@ public static class DependencyInjection
         services.AddScoped<IAccessRelationshipService>(provider => provider.GetRequiredService<AccessRelationshipService>());
         services.AddScoped<IProjectAccessLifecycle>(provider => provider.GetRequiredService<AccessRelationshipService>());
         services.AddScoped<IRoleAdministrationService, RoleAdministrationService>();
+        services.AddScoped<IPermissionProfileAuthoringService, PermissionProfileAuthoringService>();
         services.AddScoped<IDepartmentAdministrationService, DepartmentAdministrationService>();
         services.AddScoped<IExternalEntityAdministrationService, ExternalEntityAdministrationService>();
         services.AddScoped<IRoleDirectory, RoleDirectory>();
         services.AddScoped<IUserRoleDirectory, UserRoleDirectory>();
         services.AddScoped<IOrganizationDirectory, OrganizationDirectory>();
+        services.AddScoped<IDisplayNameService, DisplayNameService>();
         services.AddScoped<IUserLookup, UserLookup>();
         services.AddScoped<IPermissionProfileDirectory, PermissionProfileDirectory>();
         services.AddScoped<IImportRegister, DepartmentImportRegister>();

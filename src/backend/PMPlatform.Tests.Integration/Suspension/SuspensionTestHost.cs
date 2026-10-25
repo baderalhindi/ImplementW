@@ -32,12 +32,14 @@ public sealed class SuspensionTestHost : IAsyncLifetime
         INSERT INTO identity_access.permission_profile_grant (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
         SELECT gen_random_uuid(), '{IdentityDatabase.ProfileVersionId(2)}', p.id, 'ALL', now(), '{Seed}', now(), '{Seed}'
         FROM identity_access.permission p
-        WHERE p.code IN ('SUSPENSION_VIEW', 'SUSPENSION_RAISE', 'SUSPENSION_REVIEW', 'SUSPENSION_ACTIVATE', 'APPROVAL_DECIDE', 'APPROVAL_VIEW', 'PROJECT_VIEW', 'SCHEDULE_VIEW');
+        WHERE p.code IN ('SUSPENSION_VIEW', 'SUSPENSION_RAISE', 'SUSPENSION_REVIEW', 'SUSPENSION_ACTIVATE', 'APPROVAL_DECIDE', 'APPROVAL_VIEW', 'PROJECT_VIEW', 'SCHEDULE_VIEW')
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
 
         -- R04 also holds review and activation here, so that what refuses them to an external Project Manager is ADR-013's check on the person.
         INSERT INTO identity_access.permission_profile_grant (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
         SELECT gen_random_uuid(), '{IdentityDatabase.ProfileVersionId(4)}', p.id, 'OWN', now(), '{Seed}', now(), '{Seed}'
-        FROM identity_access.permission p WHERE p.code IN ('SUSPENSION_REVIEW', 'SUSPENSION_ACTIVATE');
+        FROM identity_access.permission p WHERE p.code IN ('SUSPENSION_REVIEW', 'SUSPENSION_ACTIVATE')
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
 
         -- local.r08: R04 across their entity, beside the per-project one IdentityDatabase gives.
         INSERT INTO identity_access.access_relationship (id, user_id, permission_profile_version_id, external_entity_id, sponsor_user_id, starts_at, status, created_at, created_by, updated_at, updated_by)

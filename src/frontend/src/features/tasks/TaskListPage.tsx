@@ -102,7 +102,11 @@ export function TaskListPage({ list }: { list: TaskListKind }): ReactElement | n
         ) : isForbidden(portfolio.error) ? (
           <p className="state">{t('tasks.forbidden')}</p>
         ) : (
-          <ErrorState message={taskProblemMessage(portfolio.error, t)} onRetry={portfolio.reload} />
+          <ErrorState
+            error={portfolio.error}
+            message={taskProblemMessage(portfolio.error, t)}
+            onRetry={portfolio.reload}
+          />
         )}
       </>
     );

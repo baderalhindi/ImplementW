@@ -1,7 +1,4 @@
-import {
-  departmentsApi,
-  externalEntitiesApi,
-} from '@/features/identity-access/api/identityAccessApi.ts';
+import { namesApi } from '@/features/identity-access/names/namesApi.ts';
 import {
   isPublished,
   type MasterDataItemSummary,
@@ -33,12 +30,10 @@ function readCatalogues(signal: AbortSignal) {
   return readCatalogueItems(CATALOGUE_CODES, signal);
 }
 
+/** Every signed-in person may read the units a project names (GET /organization-units; the 24 Oct 2026 review, H1). */
 async function readOrganization(signal: AbortSignal) {
-  const [departments, entities] = await Promise.all([
-    departmentsApi.listAll(signal),
-    externalEntitiesApi.listAll(signal),
-  ]);
-  return { departments, entities };
+  const units = await namesApi.units(signal);
+  return { departments: units.departments, entities: units.externalEntities };
 }
 
 async function readProfiles(signal: AbortSignal): Promise<GovernanceProfileSettings[]> {
@@ -115,7 +110,7 @@ export function useProjectLookups(): ProjectLookups {
       .filter((department) => department.isActive)
       .map((department) => ({ value: department.id, label: department.name[language] })),
     entityOptions: (organization.data?.entities ?? [])
-      .filter((entity) => entity.status === 'ACTIVE')
+      .filter((entity) => entity.isActive)
       .map((entity) => ({ value: entity.id, label: entity.name[language] })),
     profiles: profiles.data,
     loading: catalogues.loading || organization.loading,

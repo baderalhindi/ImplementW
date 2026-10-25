@@ -156,6 +156,7 @@ export function ChangeRequestDetailPage(): ReactElement | null {
           <p className="state">{t('changeRequests.forbidden')}</p>
         ) : (
           <ErrorState
+            error={record.error}
             message={changeRequestProblemMessage(record.error, t)}
             onRetry={record.reload}
           />

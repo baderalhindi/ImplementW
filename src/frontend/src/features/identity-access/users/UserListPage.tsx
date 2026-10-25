@@ -219,7 +219,11 @@ export function UserListPage(): ReactElement {
 
       {users.loading && <LoadingState />}
       {users.error !== null && (
-        <ErrorState message={problemMessage(users.error, t)} onRetry={users.reload} />
+        <ErrorState
+          error={users.error}
+          message={problemMessage(users.error, t)}
+          onRetry={users.reload}
+        />
       )}
       {users.data !== undefined &&
         (users.data.items.length === 0 ? (

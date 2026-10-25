@@ -41,7 +41,8 @@ public sealed class RiskTestHost : IAsyncLifetime
                      ('{IdentityDatabase.ProfileVersionId(3)}', 'RISK_VIEW', 'DEPT'), ('{IdentityDatabase.ProfileVersionId(3)}', 'RISK_REOPEN', 'DEPT'),
                      ('{IdentityDatabase.ProfileVersionId(4)}', 'RISK_ASSESS', 'OWN'), ('{IdentityDatabase.ProfileVersionId(4)}', 'RISK_ACCEPT', 'OWN'))
              AS g (version_id, code, scope)
-        JOIN identity_access.permission p ON p.code = g.code;
+        JOIN identity_access.permission p ON p.code = g.code
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
 
         INSERT INTO identity_access.access_relationship (id, user_id, permission_profile_version_id, external_entity_id, sponsor_user_id, starts_at, status, created_at, created_by, updated_at, updated_by)
         VALUES ('00000000-0550-4000-8000-000000000051', '{IdentityDatabase.UserId(5)}', '{IdentityDatabase.ProfileVersionId(4)}', NULL, NULL, now() - interval '1 day', 'ACTIVE', now(), '{Seed}', now(), '{Seed}'),

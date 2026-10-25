@@ -171,7 +171,11 @@ export function ProjectActivityTab(): ReactElement {
       {activity.loading ? (
         <LoadingState />
       ) : activity.error !== null || activity.data === undefined ? (
-        <ErrorState message={auditProblemMessage(activity.error, t)} onRetry={activity.reload} />
+        <ErrorState
+          error={activity.error}
+          message={auditProblemMessage(activity.error, t)}
+          onRetry={activity.reload}
+        />
       ) : activity.data.items.length === 0 ? (
         <EmptyState title={t('auditActivity.activity.empty')} />
       ) : (

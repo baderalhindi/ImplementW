@@ -26,11 +26,11 @@ public sealed class AccessRelationshipServiceTests
     {
         AdministrationResult<AccessRelationshipDetail> draft = await CreateAsync(Draft(InternalUserId, DraftR06Version));
         AdministrationResult<AccessRelationshipDetail> missing = await CreateAsync(Draft(InternalUserId, Guid.NewGuid()));
-        AdministrationResult<AccessRelationshipDetail> published = await CreateAsync(Draft(InternalUserId, VersionOf(6)));
+        AdministrationResult<AccessRelationshipDetail> published = await CreateAsync(Draft(InternalUserId, VersionOf(7)));
 
         Assert.Equal(IdentityAccessErrorCodes.ProfileVersionNotPublished, draft.Error!.Code);
         Assert.Equal([new FieldIssue("permissionProfileVersionId", FieldIssue.NotFound)], missing.Error!.Fields);
-        Assert.Equal(("R06", AccessRelationshipStatus.Active, Now, AdministratorId), (published.Value!.RoleCode, published.Value.Status, published.Value.StartsAt, published.Value.CreatedBy));
+        Assert.Equal(("R07", AccessRelationshipStatus.Active, Now, AdministratorId), (published.Value!.RoleCode, published.Value.Status, published.Value.StartsAt, published.Value.CreatedBy));
     }
 
     /// <summary>ADR-013, the entity Project Manager: R04 on a project their entity delivers, with a named AHDA sponsor.</summary>
@@ -78,6 +78,47 @@ public sealed class AccessRelationshipServiceTests
         Assert.Empty(_fixture.Assignments.Rows);
     }
 
+    public static TheoryData<string, AccessRelationshipDraft, FieldIssue[]> ScopeAnchorViolations() => new()
+    {
+        { "a Department Manager without a department", Draft(InternalUserId, VersionOf(3)), [new("departmentId", FieldIssue.Required)] },
+        { "a Liaison without a project", Draft(InternalUserId, VersionOf(5)) with { DepartmentId = AdministrationFixture.DepartmentId }, [new("projectId", FieldIssue.Required)] },
+        { "a Viewer without a department or a project", Draft(InternalUserId, VersionOf(6)), [new("departmentId", FieldIssue.Required)] },
+        {
+            "an internal role bound to an external entity", Draft(InternalUserId, VersionOf(2)) with { ExternalEntityId = EntityId },
+            [new("externalEntityId", FieldIssue.NotAllowed)]
+        },
+        {
+            "everything at once", Draft(InternalUserId, VersionOf(5)) with { ExternalEntityId = EntityId },
+            [new("externalEntityId", FieldIssue.NotAllowed), new("projectId", FieldIssue.Required)]
+        },
+    };
+
+    /// <summary>
+    /// The 24 Oct 2026 review, M-6: an internal assignment carries the anchor its role's scope needs, and never an external entity, so a
+    /// Department Manager or Viewer cannot be left unrestricted and a Liaison reaches only the projects it is assigned to.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ScopeAnchorViolations))]
+    public async Task AnInternalAssignmentWithoutItsScopeAnchorIsRefusedWithEveryRuleItBreaks(string because, AccessRelationshipDraft draft, FieldIssue[] issues)
+    {
+        AdministrationResult<AccessRelationshipDetail> result = await CreateAsync(draft);
+
+        Assert.True(result.Error is not null, because);
+        Assert.Equal(IdentityAccessErrorCodes.ScopeAnchorInvalid, result.Error.Code);
+        Assert.Equal(issues, result.Error.Fields);
+        Assert.Empty(_fixture.Assignments.Rows);
+    }
+
+    /// <summary>M-6: each role with its anchor is assigned — a Department Manager and a Viewer on a department, a Liaison and a Viewer on a project.</summary>
+    [Fact]
+    public async Task AnInternalAssignmentWithItsScopeAnchorIsAssigned()
+    {
+        Assert.Equal("R03", (await CreateAsync(Draft(InternalUserId, VersionOf(3)) with { DepartmentId = AdministrationFixture.DepartmentId })).Value!.RoleCode);
+        Assert.Equal("R05", (await CreateAsync(Draft(InternalUserId, VersionOf(5)) with { ProjectId = ProjectId })).Value!.RoleCode);
+        Assert.Equal("R06", (await CreateAsync(Draft(InternalUserId, VersionOf(6)) with { DepartmentId = AdministrationFixture.DepartmentId })).Value!.RoleCode);
+        Assert.Equal("R06", (await CreateAsync(Draft(InternalUserId, VersionOf(6)) with { ProjectId = ProjectId })).Value!.RoleCode);
+    }
+
     /// <summary>ADR-013: the sponsor is a named AHDA person, so an active internal user.</summary>
     [Fact]
     public async Task TheSponsorIsAnActiveInternalUser()
@@ -114,9 +155,9 @@ public sealed class AccessRelationshipServiceTests
     [Fact]
     public async Task AnIdenticalActiveAssignmentIsAConflict()
     {
-        await CreateAsync(Draft(InternalUserId, VersionOf(6)));
+        await CreateAsync(Draft(InternalUserId, VersionOf(7)));
 
-        AdministrationResult<AccessRelationshipDetail> again = await CreateAsync(Draft(InternalUserId, VersionOf(6)));
+        AdministrationResult<AccessRelationshipDetail> again = await CreateAsync(Draft(InternalUserId, VersionOf(7)));
 
         Assert.Equal((AdministrationErrorKind.Conflict, IdentityAccessErrorCodes.AlreadyAssigned), (again.Error!.Kind, again.Error.Code));
         Assert.Single(_fixture.Assignments.Rows);
@@ -149,9 +190,9 @@ public sealed class AccessRelationshipServiceTests
     [Fact]
     public async Task AnAssignmentStartsNoEarlierThanNowAndEndsAfterItStarts()
     {
-        AdministrationResult<AccessRelationshipDetail> backdated = await CreateAsync(Draft(InternalUserId, VersionOf(6)) with { StartsAt = Now.AddDays(-1) });
-        AdministrationResult<AccessRelationshipDetail> empty = await CreateAsync(Draft(InternalUserId, VersionOf(6)) with { StartsAt = Now, EndsAt = Now });
-        AdministrationResult<AccessRelationshipDetail> future = await CreateAsync(Draft(InternalUserId, VersionOf(6)) with { StartsAt = Now.AddDays(1), EndsAt = Now.AddDays(2) });
+        AdministrationResult<AccessRelationshipDetail> backdated = await CreateAsync(Draft(InternalUserId, VersionOf(7)) with { StartsAt = Now.AddDays(-1) });
+        AdministrationResult<AccessRelationshipDetail> empty = await CreateAsync(Draft(InternalUserId, VersionOf(7)) with { StartsAt = Now, EndsAt = Now });
+        AdministrationResult<AccessRelationshipDetail> future = await CreateAsync(Draft(InternalUserId, VersionOf(7)) with { StartsAt = Now.AddDays(1), EndsAt = Now.AddDays(2) });
 
         Assert.Equal((IdentityAccessErrorCodes.InvalidPeriod, new FieldIssue("startsAt", FieldIssue.NotAllowed)), (backdated.Error!.Code, backdated.Error.Fields.Single()));
         Assert.Equal((IdentityAccessErrorCodes.InvalidPeriod, new FieldIssue("endsAt", FieldIssue.BeforeStart)), (empty.Error!.Code, empty.Error.Fields.Single()));
@@ -161,7 +202,7 @@ public sealed class AccessRelationshipServiceTests
     [Fact]
     public async Task EndingAnAssignmentKeepsItAsEndedAndOnlyOnce()
     {
-        Guid id = (await CreateAsync(Draft(InternalUserId, VersionOf(6)))).Value!.Id;
+        Guid id = (await CreateAsync(Draft(InternalUserId, VersionOf(7)))).Value!.Id;
 
         AdministrationResult<AccessRelationshipDetail> ended = await _fixture.AssignmentService().EndAsync(AdministratorId, id, CancellationToken.None);
         AdministrationResult<AccessRelationshipDetail> again = await _fixture.AssignmentService().EndAsync(AdministratorId, id, CancellationToken.None);
@@ -196,7 +237,7 @@ public sealed class AccessRelationshipServiceTests
     {
         Guid onProject = (await CreateAsync(Draft(ExternalUserId, VersionOf(4)) with { ProjectId = ProjectId, SponsorUserId = SponsorId })).Value!.Id;
         Guid internalOnProject = (await CreateAsync(Draft(InternalUserId, VersionOf(4)) with { ProjectId = ProjectId })).Value!.Id;
-        Guid elsewhere = (await CreateAsync(Draft(InternalUserId, VersionOf(6)))).Value!.Id;
+        Guid elsewhere = (await CreateAsync(Draft(InternalUserId, VersionOf(7)))).Value!.Id;
 
         int ended = await _fixture.AssignmentService().EndAccessForClosedProjectAsync(ProjectId, AdministratorId, CancellationToken.None);
 

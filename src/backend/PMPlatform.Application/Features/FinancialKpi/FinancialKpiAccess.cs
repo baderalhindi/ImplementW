@@ -58,9 +58,20 @@ internal sealed class FinancialKpiAccess(IAuthorizationEngine engine, IAuditTrai
         return AdministrationError.Forbidden;
     }
 
-    /// <summary>What the caller's audience may not see of the entity's fields when reading it under <paramref name="permissionCode"/> (ADR-010).</summary>
-    public Task<FieldMask> MaskAsync(Guid callerId, string permissionCode, string entityCode, CancellationToken cancellationToken) =>
-        engine.GetFieldMaskAsync(callerId, permissionCode, entityCode, cancellationToken);
+    /// <summary>
+    /// What the caller's audience may not see of the entity's fields when reading it under <paramref name="permissionCode"/> (ADR-010): the
+    /// configured classification, and the SAR amounts unless the caller holds <c>FINANCIAL_VIEW_SENSITIVE</c>. The sensitive grant goes with the
+    /// view grant at the same scope (shipped-permission-matrix.md D-4), so holding it is decided once for the audience, as the mask is.
+    /// </summary>
+    public async Task<FieldMask> MaskAsync(Guid callerId, string permissionCode, string entityCode, CancellationToken cancellationToken)
+    {
+        FieldMask mask = await engine.GetFieldMaskAsync(callerId, permissionCode, entityCode, cancellationToken).ConfigureAwait(false);
+        return permissionCode == PermissionCatalogue.FinancialView
+               && FinancialKpiMasking.SensitiveAmounts.TryGetValue(entityCode, out IReadOnlyList<string>? amounts)
+               && !(await engine.EvaluateAsync(callerId, new AuthorizationRequest(PermissionCatalogue.FinancialViewSensitive), cancellationToken).ConfigureAwait(false)).IsAllowed
+            ? mask.Withholding(amounts)
+            : mask;
+    }
 
     /// <summary>Whether the user exists and is active: a KPI's owner must be.</summary>
     public async Task<bool> IsActiveUserAsync(Guid userId, CancellationToken cancellationToken) =>

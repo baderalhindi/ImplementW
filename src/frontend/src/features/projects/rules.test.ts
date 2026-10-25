@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
+import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
+import { allPermissions } from '@/test/permissionFixtures.ts';
 import {
   DEPARTMENT_ID,
   entitySession,
@@ -30,8 +32,13 @@ import {
   type RegistrationValues,
 } from './registration.ts';
 
-// No audit permission: FG-06's two history tabs follow GET /audit-access (audit-activity/rules.test.ts).
-const noHistory = { activity: false, projectAudit: false };
+// No audit permission: FG-06's two history tabs follow GET /audit-access (audit-activity/rules.test.ts). Every other
+// permission, so these cases are about reach and the internal/external line; the permission rule has its own test.
+const noHistory = {
+  activity: false,
+  projectAudit: false,
+  permissions: permissionsOf(allPermissions()),
+};
 const internalReached: ProjectAccess = {
   internal: true,
   reached: true,
@@ -86,6 +93,23 @@ describe('scope reach (access.ts)', () => {
   test('an external user registers for their one entity; an internal user for none', () => {
     expect(ownEntityId(entitySession().user)).toBe(ENTITY_ID);
     expect(ownEntityId(reviewerSession().user)).toBeNull();
+  });
+
+  test('a tab is offered only to a holder of the permission it reads under (the 24 Oct 2026 review, M-12)', () => {
+    const withoutFinancials = permissionsOf({
+      permissions: allPermissions().permissions.filter(
+        (permission) => permission.code !== 'FINANCIAL_VIEW' && permission.code !== 'APPROVAL_VIEW',
+      ),
+    });
+    const keys = visibleTabs({ ...internalReached, permissions: withoutFinancials }).map(
+      (tab) => tab.key,
+    );
+    expect(keys).not.toContain('financials');
+    expect(keys).not.toContain('reviews');
+    expect(keys).toContain('progress');
+    expect(
+      visibleTabs({ ...internalReached, permissions: permissionsOf(null) }).map((tab) => tab.key),
+    ).toEqual(['overview', 'registration', 'location']);
   });
 
   test('tabs: review history is AHDA’s, progress, schedule, tasks, milestones, financials, KPIs, risks, issues & challenges, change requests, suspension, closeout, external requests and documents need reach, the rest are for anyone the API showed the project', () => {

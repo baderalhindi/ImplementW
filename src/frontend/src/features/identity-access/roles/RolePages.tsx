@@ -35,7 +35,11 @@ export function RoleListPage(): ReactElement {
       />
       {roles.loading && <LoadingState />}
       {roles.error !== null && (
-        <ErrorState message={problemMessage(roles.error, t)} onRetry={roles.reload} />
+        <ErrorState
+          error={roles.error}
+          message={problemMessage(roles.error, t)}
+          onRetry={roles.reload}
+        />
       )}
       {roles.data !== undefined &&
         (roles.data.length === 0 ? (
@@ -79,7 +83,13 @@ export function RoleDetailPage(): ReactElement {
     return <LoadingState />;
   }
   if (role.error !== null || role.data === undefined) {
-    return <ErrorState message={problemMessage(role.error, t)} onRetry={role.reload} />;
+    return (
+      <ErrorState
+        error={role.error}
+        message={problemMessage(role.error, t)}
+        onRetry={role.reload}
+      />
+    );
   }
   const detail = role.data.data;
 
@@ -153,7 +163,11 @@ export function RoleEditPage(): ReactElement {
       />
       {role.loading && <LoadingState />}
       {role.error !== null && (
-        <ErrorState message={problemMessage(role.error, t)} onRetry={role.reload} />
+        <ErrorState
+          error={role.error}
+          message={problemMessage(role.error, t)}
+          onRetry={role.reload}
+        />
       )}
       {role.data !== undefined && <RoleNameForm role={role.data.data} etag={role.data.etag} />}
     </>

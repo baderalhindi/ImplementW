@@ -1,3 +1,4 @@
+import { ApiError } from '@/shared/api/httpClient.ts';
 import { type ReactElement, type ReactNode } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -28,14 +29,17 @@ export function EmptyState({ title, children }: EmptyStateProps): ReactElement {
 interface ErrorStateProps {
   message: string;
   onRetry?: () => void;
+  /** The failure: a refused permission (403) is not offered Retry, which would only be refused again (the review, L3). */
+  error?: unknown;
 }
 
-export function ErrorState({ message, onRetry }: ErrorStateProps): ReactElement {
+export function ErrorState({ message, onRetry, error }: ErrorStateProps): ReactElement {
   const { t } = useI18n();
+  const refused = error instanceof ApiError && error.status === 403;
   return (
     <div className="state state--error" role="alert">
       <p className="state__title">{message}</p>
-      {onRetry !== undefined && (
+      {onRetry !== undefined && !refused && (
         <button type="button" className="button" onClick={onRetry}>
           {t('common.actions.retry')}
         </button>

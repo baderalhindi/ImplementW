@@ -107,6 +107,7 @@ export function ProjectFinancials({
       <p className="state">{t('financialKpi.financials.forbidden')}</p>
     ) : (
       <ErrorState
+        error={overview.error}
         message={financialKpiProblemMessage(overview.error, t)}
         onRetry={overview.reload}
       />

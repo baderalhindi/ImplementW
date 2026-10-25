@@ -77,7 +77,11 @@ function EditLoader(props: TaskFormDialogProps & { taskId: string }): ReactEleme
     return task.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState message={taskProblemMessage(task.error, t)} onRetry={task.reload} />
+      <ErrorState
+        error={task.error}
+        message={taskProblemMessage(task.error, t)}
+        onRetry={task.reload}
+      />
     );
   }
   return <TaskForm {...props} editing={task.data} />;

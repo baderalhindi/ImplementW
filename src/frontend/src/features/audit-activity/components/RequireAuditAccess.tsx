@@ -41,7 +41,13 @@ function AuditAccessGate({
     return <LoadingState />;
   }
   if (access.error !== null || access.data === undefined || access.data === null) {
-    return <ErrorState message={auditProblemMessage(access.error, t)} onRetry={access.reload} />;
+    return (
+      <ErrorState
+        error={access.error}
+        message={auditProblemMessage(access.error, t)}
+        onRetry={access.reload}
+      />
+    );
   }
   if (!allows(access.data)) {
     return (

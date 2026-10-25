@@ -54,7 +54,7 @@ function present<T>(value: T | null | undefined, what: string): T {
 function homeAs(session: Session, state: DashboardState = {}): MockApi {
   const api = withDashboards(mockApi(), state);
   api.on('GET', /^\/departments$/, { body: page([]) });
-  renderApp({ path: '/', session });
+  renderApp({ path: '/dashboards', session });
   return api;
 }
 
@@ -199,7 +199,6 @@ const pmSession = () => sessionFor(['R04']);
 
 describe('acceptance criterion 1: DSH-009 has no standalone route', () => {
   test.each([
-    '/dashboards',
     '/dashboards/PROJECT',
     `/dashboards/PROJECT?projectId=${PROJECT_ID}`,
     '/dashboards/project',
@@ -215,10 +214,10 @@ describe('acceptance criterion 1: DSH-009 has no standalone route', () => {
     expect(api.requestsTo('GET', /^\/dashboards/)).toHaveLength(0);
   });
 
-  test('the Home never renders the Project Dashboard, whatever the address asks for', async () => {
+  test('the dashboards page never renders the Project Dashboard, whatever the address asks for', async () => {
     const api = withDashboards(mockApi());
     api.on('GET', /^\/departments$/, { body: page([]) });
-    renderApp({ path: '/?dashboard=PROJECT', session: sessionFor(['R02']) });
+    renderApp({ path: '/dashboards?dashboard=PROJECT', session: sessionFor(['R02']) });
 
     expect(
       await screen.findByRole('heading', { level: 1, name: en('dashboards.landing.R02') }),
@@ -261,7 +260,10 @@ describe('acceptance criterion 2: every widget states its semantic state and its
   test('each widget carries its semantic state in words, and its as-of and source', async () => {
     overviewAs(pmSession(), projectState());
 
-    for (const expected of PROJECT_WIDGETS) {
+    // A widget restricted outright is not drawn (the review, M-5): every drawn one carries its state.
+    for (const expected of PROJECT_WIDGETS.filter(
+      (candidate) => !(candidate.unknownReason === 'RESTRICTED' && candidate.data === null),
+    )) {
       const region = await widgetRegion(expected.title.en);
       expect(region.getAttribute('data-semantic-state')).toBe(expected.projection.semanticState);
       const badge = within(region).getByText(
@@ -320,9 +322,15 @@ describe('acceptance criterion 2: every widget states its semantic state and its
     ).toBeNull();
   });
 
+  test('a widget the person may not see at all is not drawn, rather than drawn as restricted (the review, M-5)', async () => {
+    overviewAs(pmSession(), projectState());
+
+    await widgetRegion('Current schedule health');
+    expect(screen.queryByRole('region', { name: 'Open risks by rating' })).toBeNull();
+  });
+
   test.each([
     ['Current schedule health', 'MISSING'],
-    ['Open risks by rating', 'RESTRICTED'],
     ['KPI condition', 'SOURCE_UNAVAILABLE'],
     ['Reporting completeness', 'NOT_APPLICABLE'],
   ])('%s with no data reads %s in words, with no number and no colour', async (title, reason) => {
@@ -488,14 +496,14 @@ describe('acceptance criterion 2: every widget states its semantic state and its
     ).toBe('/risks');
   });
 
-  test("in SCR-040 a widget drills to the project's own screen; a restricted one drills nowhere", async () => {
+  test("in SCR-040 a widget drills to the project's own screen; a restricted one is not drawn to drill from", async () => {
     overviewAs(pmSession(), projectState());
 
     const financials = await widgetRegion('Current financial position');
     expect(within(financials).getByRole('link').getAttribute('href')).toBe(
       `/projects/${PROJECT_ID}/financials`,
     );
-    expect(within(await widgetRegion('Open risks by rating')).queryByRole('link')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Open risks by rating' })).toBeNull();
   });
 });
 
@@ -518,12 +526,12 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
     expect(
       screen.getByText(
         en('dashboards.home.rendering', {
-          dashboardId: dsh,
           dashboard: catalogueFor([role]).find((entry) => entry.isDefaultLanding)?.name.en ?? '',
-          version: 1,
         }),
       ),
     ).toBeTruthy();
+    // The review, M-4: no specification code is shown to the person.
+    expect(screen.queryByText(new RegExp(dsh))).toBeNull();
     await waitFor(() => {
       expect(api.requestsTo('GET', new RegExp(`^/dashboards/${code}$`))).toHaveLength(1);
     });
@@ -533,7 +541,7 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
   test('R08 lands on the External Contributor Dashboard: its projects, each opening SCR-040', async () => {
     const api = withDashboards(mockApi(), { catalogue: catalogueFor(['R08'], true) });
     api.on('GET', /^\/projects$/, { body: page([projectSummary({ status: 'ACTIVE' })]) });
-    renderApp({ path: '/', session: entitySession() });
+    renderApp({ path: '/dashboards', session: entitySession() });
 
     expect(
       await screen.findByRole('heading', { level: 1, name: en('dashboards.landing.R08') }),
@@ -572,7 +580,10 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
     ).toBeTruthy();
     const switcher = screen.getByRole('navigation', { name: en('dashboards.home.switch') });
     const links = within(switcher).getAllByRole('link');
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/', '/?dashboard=GOVERNANCE']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/dashboards',
+      '/dashboards?dashboard=GOVERNANCE',
+    ]);
     expect(links[0]?.getAttribute('aria-current')).toBe('page');
 
     await userEvent.click(present(links[1], 'Governance link'));
@@ -612,7 +623,7 @@ describe('the department filter narrows the population and never widens it', () 
         },
       ]),
     });
-    renderApp({ path: '/', session: sessionFor(['R03']) });
+    renderApp({ path: '/dashboards', session: sessionFor(['R03']) });
 
     const select = await screen.findByRole('combobox', {
       name: en('dashboards.filter.department'),
@@ -646,7 +657,7 @@ describe('the department filter narrows the population and never widens it', () 
       },
     });
     api.on('GET', /^\/departments$/, problem(403, 'PERMISSION_DENIED'));
-    renderApp({ path: `/?department=${DEPARTMENT_B}`, session: sessionFor(['R02']) });
+    renderApp({ path: `/dashboards?department=${DEPARTMENT_B}`, session: sessionFor(['R02']) });
 
     const alert = await screen.findByRole('alert');
     expect(within(alert).getByText(en('dashboards.problems.filterValueUnauthorized'))).toBeTruthy();
@@ -781,7 +792,7 @@ describe('ADR-019: the Portfolio Dashboard alone is personalised, by the roles t
 describe('bilingual and accessible (ADR-012)', () => {
   test('in Arabic the landing, the dashboard and its widgets read in Arabic, right to left', async () => {
     withDashboards(mockApi()).on('GET', /^\/departments$/, { body: page([]) });
-    renderApp({ path: '/', language: 'ar', session: sessionFor(['R03']) });
+    renderApp({ path: '/dashboards', language: 'ar', session: sessionFor(['R03']) });
 
     expect(
       await screen.findByRole('heading', { level: 1, name: ar('dashboards.landing.R03') }),

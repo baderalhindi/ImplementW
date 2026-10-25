@@ -53,18 +53,20 @@ public sealed class RiskRegisterTests(RiskTestHost host)
         }
 
         Guid othersProject = await host.ProjectAsync(projectManager: 5);
+        // Another project of its own entity: it sees that project's risks as R08 (RISK_VIEW at ENTITY), so the refusal is 403, not 404 (R-47).
         using (HttpResponseMessage elsewhere = await client.PostAsync(RiskDriver.Risks, sessions.EntityManager, RiskDriver.RiskBody(othersProject)))
         {
-            Assert.Equal(HttpStatusCode.NotFound, elsewhere.StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, elsewhere.StatusCode);
         }
 
+        // It reads that project's risk as its entity's (R08), and changes nothing on a project it does not manage.
         Guid othersRisk = await client.RiskAsync(sessions.InternalManager, othersProject);
-        using (HttpResponseMessage hidden = await client.GetAsync($"{RiskDriver.Risks}/{othersRisk}", sessions.EntityManager))
+        using (HttpResponseMessage notManaged = await client.PutAsync($"{RiskDriver.Risks}/{othersRisk}", sessions.EntityManager, RiskDriver.RiskBody(othersProject),
+                   await client.ETagAsync(sessions.EntityManager, othersRisk)))
         {
-            Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, notManaged.StatusCode);
         }
 
-        Assert.Empty((await client.GetOrFailAsync(sessions.EntityManager, $"{RiskDriver.Risks}?projectId={othersProject}"))["items"]!.AsArray());
         Assert.Equal(["Risk.RiskRegistered", "Risk.RiskChanged"], await host.AuditEventsAsync(riskId));
     }
 

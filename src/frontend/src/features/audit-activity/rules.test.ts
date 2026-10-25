@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'vitest';
 
+import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
 import { projectAccess, visibleTabs } from '@/features/projects/access.ts';
+import { allPermissions } from '@/test/permissionFixtures.ts';
 import {
   AUDIT_REVIEWER_ACCESS,
   INTEGRATION_REVIEWER_ACCESS,
@@ -82,7 +84,14 @@ describe('who reaches which FG-06 screen (access.ts)', () => {
 
   test('the workspace offers Activity and Audit as two tabs, each on its own permission (acceptance criterion 1)', () => {
     const tabs = (access: Parameters<typeof projectAccess>[2]) =>
-      visibleTabs(projectAccess(reviewerSession().user, projectDetail(), access))
+      visibleTabs(
+        projectAccess(
+          reviewerSession().user,
+          projectDetail(),
+          access,
+          permissionsOf(allPermissions()),
+        ),
+      )
         .map((tab) => tab.key)
         .filter((key) => key === 'activity' || key === 'audit');
     expect(tabs(AUDIT_REVIEWER_ACCESS)).toEqual(['activity', 'audit']);

@@ -97,6 +97,17 @@ describe('SCR-025 Project Register', () => {
     expect(within(museum as HTMLElement).getByText(en('projects.legacyIntake'))).toBeTruthy();
   });
 
+  test('names people and departments through the names lookups every signed-in person may read, never the administration lists (the 24 Oct 2026 review, H1)', async () => {
+    const api = openRegister('/projects', reviewerSession());
+
+    const table = await screen.findByRole('table', { name: en('projects.register.title') });
+    expect(await within(table).findAllByText('Roads Department')).not.toHaveLength(0);
+    expect(api.requestsTo('GET', /^\/organization-units$/)).not.toHaveLength(0);
+    expect(api.requestsTo('GET', /^\/departments$/)).toHaveLength(0);
+    expect(api.requestsTo('GET', /^\/external-entities$/)).toHaveLength(0);
+    expect(api.requestsTo('GET', /^\/users\//)).toHaveLength(0);
+  });
+
   test('filters by status, department and text in the request and the URL, and returns to page 1', async () => {
     const user = userEvent.setup();
     const api = openRegister('/projects?page=2', reviewerSession(), PROJECTS, 60);

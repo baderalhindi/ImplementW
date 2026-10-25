@@ -12,7 +12,8 @@ public sealed class ScheduleEndpointTests(ScheduleTestHost host)
     {
         using HttpClient client = host.Api.CreateClient();
         Guid projectId = await host.ProjectAsync();
-        string viewer = (await client.SignInOrFailAsync(6)).AccessToken;
+        // The System Administrator holds no schedule permission, and no profile can give it one (shipped-permission-matrix.md D-2).
+        string administrator = (await client.SignInOrFailAsync(1)).AccessToken;
 
         using (HttpResponseMessage anonymous = await client.GetAsync($"{ScheduleDriver.Activities}?projectId={projectId}"))
         {
@@ -21,7 +22,7 @@ public sealed class ScheduleEndpointTests(ScheduleTestHost host)
 
         foreach (string collection in new[] { ScheduleDriver.Schedules, ScheduleDriver.Activities, ScheduleDriver.Dependencies, ScheduleDriver.Baselines, ScheduleDriver.HealthStatuses })
         {
-            using HttpResponseMessage refused = await client.GetAsync($"{collection}?projectId={projectId}", viewer);
+            using HttpResponseMessage refused = await client.GetAsync($"{collection}?projectId={projectId}", administrator);
             Assert.True(refused.StatusCode == HttpStatusCode.Forbidden, $"{collection}: {(int)refused.StatusCode}");
         }
     }

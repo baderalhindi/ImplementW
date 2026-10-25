@@ -4592,6 +4592,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("version_no");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "ChangeSummary", "PMPlatform.Domain.IdentityAccess.PermissionProfileVersion.ChangeSummary#NarrativeText", b1 =>
                         {
                             b1.Property<string>("Language")

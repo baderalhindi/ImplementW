@@ -9,8 +9,8 @@ namespace PMPlatform.Tests.Integration.Reports;
 /// <summary>
 /// TASK-071's acceptance criteria and validation checks against the API: SCR-138's query surface is the REPORT_RULES allowlist — a field outside it,
 /// asked for directly, is refused before anything is read; and a report job's output is authorised at download time on the same rules as the data
-/// it holds, not only when it was generated. Beside them, the participation amendment (ADR-013): an entity runs and exports its report set on its
-/// own projects, financial fields masked, nothing of another entity.
+/// it holds, not only when it was generated. Beside them, ADR-019: an external entity user is given no report; and the amounts a viewer does not
+/// hold are withheld (shipped-permission-matrix.md D-4, D-7).
 /// </summary>
 [Collection(ReportSuite.Name)]
 public sealed class ReportAcceptanceTests(ReportTestHost host)
@@ -190,62 +190,67 @@ public sealed class ReportAcceptanceTests(ReportTestHost host)
     }
 
     /// <summary>
-    /// ADR-013's amendment: an entity runs and exports its defined report set on its own projects, financial fields masked, and sees nothing of another
-    /// entity — on screen, in the file, and in what it is offered.
+    /// Build Pack 06 §A item 6 and ADR-019 (superseding ADR-013's entity report set): an external entity user is given no report — the catalogue,
+    /// a report, its run and export, the jobs, the explorer, the allowlist and the definitions all answer 404, as if the routes did not exist —
+    /// the gate's refusal included (shipped-permission-matrix.md D-7).
     /// </summary>
     [Fact]
-    public async Task AnEntityRunsAndExportsItsReportSetOnItsOwnProjectsWithFinancialsMasked()
+    public async Task AnEntityUserIsGivenNoReport()
     {
         using HttpClient client = host.Api.CreateClient();
         string entity = (await client.SignInOrFailAsync(8)).AccessToken;
-        Guid own = await host.ReportProjectAsync(title: "Entity's own project");
-        Guid other = await host.ReportProjectAsync(entityId: ReportTestHost.OtherEntityId, title: "Another entity's project");
+        await host.ReportProjectAsync(title: "Entity's own project");
+
+        foreach (HttpResponseMessage response in new[]
+                 {
+                     await client.GetAsync(ReportDriver.Reports, entity),
+                     await client.GetAsync($"{ReportDriver.Reports}/PROJECT_REGISTER", entity),
+                     await client.RunAsync(entity, "PROJECT_REGISTER", new { }),
+                     await client.ExportAsync(entity, $"{ReportDriver.Reports}/PROJECT_REGISTER/export", new { format = "CSV", language = "en" }),
+                     await client.GetAsync(ReportDriver.Jobs, entity),
+                     await client.PostAsync($"{ReportDriver.Explorer}/run", entity, new { columns = new[] { Field("PROJECT", "TITLE") } }),
+                     await client.GetAsync(ReportDriver.Allowlist, entity),
+                     await client.GetAsync(ReportDriver.Definitions, entity),
+                 })
+        {
+            using (response)
+            {
+                Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Review C2 (shipped-permission-matrix.md D-4): the Viewer sees its department's financial condition with every amount withheld, and no other
+    /// department's project; the Portfolio Manager, who holds the amounts, sees them.
+    /// </summary>
+    [Fact]
+    public async Task TheViewerSeesTheFinancialConditionOfItsDepartmentWithTheAmountsWithheld()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string viewer = (await client.SignInOrFailAsync(6)).AccessToken;
+        string portfolio = (await client.SignInOrFailAsync(2)).AccessToken;
+        Guid own = await host.ReportProjectAsync(title: "Viewer's department project");
+        Guid other = await host.ReportProjectAsync(departmentId: ReportTestHost.OtherDepartmentId, title: "Another department's project");
         foreach (Guid project in new[] { own, other })
         {
             Guid cycle = await host.ReportingPeriodAsync(project, ReportDriver.Today.AddDays(-14), ReportDriver.Today.AddDays(-7), "CLOSED");
             await host.PublishedFinancialsAsync(project, cycle, "1000000.00", "400000.00", "990000.00");
         }
 
-        // Offered the entity report set only; any other report does not exist for it, and the explorer is not its.
-        using (HttpResponseMessage catalogue = await client.GetAsync(ReportDriver.Reports, entity))
-        {
-            Assert.Equal(
-                ["FINANCIAL_PERFORMANCE", "KPI_PERFORMANCE", "PROGRESS_HISTORY", "PROGRESS_REPORTING", "PROJECT_REGISTER", "PROJECT_REPORT"],
-                (await catalogue.ReadObjectAsync())["items"]!.AsArray().Select(i => i!["code"]!.GetValue<string>()).Order(StringComparer.Ordinal));
-        }
-
-        using (HttpResponseMessage portfolio = await client.RunAsync(entity, "PORTFOLIO_SUMMARY", new { }))
-        {
-            Assert.Equal(HttpStatusCode.NotFound, portfolio.StatusCode);
-        }
-
-        using (HttpResponseMessage explorer = await client.PostAsync($"{ReportDriver.Explorer}/run", entity, new { columns = new[] { Field("PROJECT", "TITLE") } }))
-        {
-            Assert.Equal(HttpStatusCode.Forbidden, explorer.StatusCode);
-        }
-
-        // Its own project only, the financial condition shown and every amount withheld (ADR-010 by ADR-013's rule), whatever WF-14 would reveal.
-        JsonObject result = await client.RunOrFailAsync(entity, "FINANCIAL_PERFORMANCE", new { });
-        Assert.Contains(own, result.ProjectIds());
-        Assert.DoesNotContain(other, result.ProjectIds());
-        Assert.Equal("GREEN", result.Cell(own, "FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT", "FINANCIAL_CONDITION")["value"]!.GetValue<string>());
+        JsonObject seen = await client.RunOrFailAsync(viewer, "FINANCIAL_PERFORMANCE", new { });
+        Assert.Contains(own, seen.ProjectIds());
+        Assert.DoesNotContain(other, seen.ProjectIds());
+        Assert.Equal("GREEN", seen.Cell(own, "FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT", "FINANCIAL_CONDITION")["value"]!.GetValue<string>());
         foreach (string amount in new[] { "APPROVED_BUDGET", "ACTUAL_EXPENDITURE_TO_DATE", "FORECAST_AT_COMPLETION" })
         {
-            JsonObject cell = result.Cell(own, "FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT", amount);
+            JsonObject cell = seen.Cell(own, "FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT", amount);
             Assert.Equal((true, "RESTRICTED"), (cell["isMasked"]!.GetValue<bool>(), cell["unknownReason"]!.GetValue<string>()));
             Assert.Null(cell["value"]);
         }
 
-        // The same in the file it exports: its project, the amounts withheld by name, and nothing of the other entity.
-        Guid jobId = await client.ExportOrFailAsync(entity, $"{ReportDriver.Reports}/FINANCIAL_PERFORMANCE/export", new { format = "CSV", language = "en" });
-        await host.RunJobsAsync();
-        Assert.Equal("COMPLETED", (await client.JobOrFailAsync(entity, jobId))["status"]!.GetValue<string>());
-        using HttpResponseMessage download = await client.DownloadAsync(entity, jobId);
-        string csv = await download.Content.ReadAsStringAsync();
-        Assert.Contains("Entity's own project", csv, StringComparison.Ordinal);
-        Assert.DoesNotContain("Another entity", csv, StringComparison.Ordinal);
-        Assert.DoesNotContain("1000000.00", csv, StringComparison.Ordinal);
-        Assert.Contains("RESTRICTED", csv, StringComparison.Ordinal);
+        JsonObject revealed = await client.RunOrFailAsync(portfolio, "FINANCIAL_PERFORMANCE", new { });
+        Assert.Equal("1000000.00", revealed.Cell(own, "FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT", "APPROVED_BUDGET")["value"]!.GetValue<string>());
     }
 
     private static object Field(string entity, string field) => new { sourceEntityCode = entity, fieldCode = field };

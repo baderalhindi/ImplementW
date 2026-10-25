@@ -34,6 +34,13 @@ public static class IdentityAccessAuditEvents
     public const string UserActivated = "IdentityAccess.UserActivated";
     public const string UserDisabled = "IdentityAccess.UserDisabled";
     public const string RoleRenamed = "IdentityAccess.RoleRenamed";
+    public const string PermissionProfileCreated = "IdentityAccess.PermissionProfileCreated";
+    public const string PermissionProfileVersionDrafted = "IdentityAccess.PermissionProfileVersionDrafted";
+    public const string PermissionProfileGrantsChanged = "IdentityAccess.PermissionProfileGrantsChanged";
+    public const string PermissionProfileVersionValidated = "IdentityAccess.PermissionProfileVersionValidated";
+    public const string PermissionProfileVersionPublished = "IdentityAccess.PermissionProfileVersionPublished";
+    public const string PermissionProfileVersionRetired = "IdentityAccess.PermissionProfileVersionRetired";
+    public const string PermissionProfileAssignmentsMigrated = "IdentityAccess.PermissionProfileAssignmentsMigrated";
     public const string DepartmentCreated = "IdentityAccess.DepartmentCreated";
     public const string DepartmentUpdated = "IdentityAccess.DepartmentUpdated";
     public const string DepartmentActivated = "IdentityAccess.DepartmentActivated";

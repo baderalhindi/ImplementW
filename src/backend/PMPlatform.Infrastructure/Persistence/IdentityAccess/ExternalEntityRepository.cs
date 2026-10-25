@@ -88,6 +88,10 @@ internal sealed class ExternalEntityRepository(PMPlatformDbContext context) : IE
             ? []
             : await context.Set<ExternalEntity>().AsNoTracking().Where(e => ids.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.Name, cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<OrganizationUnit>> ListUnitsAsync(CancellationToken cancellationToken) =>
+        await context.Set<ExternalEntity>().AsNoTracking().OrderBy(e => e.Code)
+            .Select(e => new OrganizationUnit(e.Id, e.Code, e.Name, e.Status == ExternalEntityStatus.Active)).ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public Task<Guid?> FindIdByCodeAsync(string code, CancellationToken cancellationToken) =>
         context.Set<ExternalEntity>().AsNoTracking().Where(e => e.Code == code).Select(e => (Guid?)e.Id).SingleOrDefaultAsync(cancellationToken);
 

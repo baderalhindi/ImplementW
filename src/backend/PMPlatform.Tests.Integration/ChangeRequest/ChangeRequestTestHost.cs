@@ -55,7 +55,8 @@ public sealed class ChangeRequestTestHost : IAsyncLifetime
                      ('{IdentityDatabase.ProfileVersionId(3)}', 'APPROVAL_DECIDE', 'DEPT'), ('{IdentityDatabase.ProfileVersionId(3)}', 'APPROVAL_VIEW', 'DEPT'),
                      ('{IdentityDatabase.ProfileVersionId(4)}', 'FINANCIAL_SUBMIT', 'OWN'))
              AS g (version_id, code, scope)
-        JOIN identity_access.permission p ON p.code = g.code;
+        JOIN identity_access.permission p ON p.code = g.code
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
 
         -- local.r08: R04 across their entity, beside the per-project one IdentityDatabase gives; local.r05: an internal R04.
         INSERT INTO identity_access.access_relationship (id, user_id, permission_profile_version_id, external_entity_id, sponsor_user_id, starts_at, status, created_at, created_by, updated_at, updated_by)

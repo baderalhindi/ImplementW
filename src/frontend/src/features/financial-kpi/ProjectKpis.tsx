@@ -66,7 +66,11 @@ export function ProjectKpis({
     ) : isForbidden(kpis.error) ? (
       <p className="state">{t('financialKpi.kpis.forbidden')}</p>
     ) : (
-      <ErrorState message={financialKpiProblemMessage(kpis.error, t)} onRetry={kpis.reload} />
+      <ErrorState
+        error={kpis.error}
+        message={financialKpiProblemMessage(kpis.error, t)}
+        onRetry={kpis.reload}
+      />
     );
   }
 

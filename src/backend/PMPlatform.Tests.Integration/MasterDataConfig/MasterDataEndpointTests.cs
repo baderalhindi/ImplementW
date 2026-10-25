@@ -37,23 +37,31 @@ public sealed class MasterDataEndpointTests(MasterDataConfigTestHost host)
             d.Value));
     }
 
+    /// <summary>
+    /// Appendix A "Master data: V" for every role (shipped-permission-matrix.md): the Viewer reads the master data catalogues, items and KPI
+    /// definitions, and neither writes them nor reads configuration, which it holds no grant of.
+    /// </summary>
     [Fact]
-    public async Task ARoleWithoutAnFg04GrantIsRefused()
+    public async Task AViewerReadsMasterDataAndNeitherChangesItNorReadsConfiguration()
     {
         using HttpClient client = host.Api.CreateClient();
         string viewer = (await client.SignInOrFailAsync(MasterDataConfigTestHost.Viewer)).AccessToken;
 
-        HttpStatusCode[] statuses =
+        HttpStatusCode[] reads =
         [
             await StatusAsync(client.GetAsync(ConfigurationApi.Catalogues, viewer)),
             await StatusAsync(client.GetAsync(ConfigurationApi.Items, viewer)),
-            await StatusAsync(client.PostAsync(ConfigurationApi.Items, viewer, new { catalogueId = Guid.NewGuid(), code = "X", label = new { ar = "س", en = "X" } })),
             await StatusAsync(client.GetAsync(ConfigurationApi.KpiDefinitions, viewer)),
+        ];
+        HttpStatusCode[] refused =
+        [
+            await StatusAsync(client.PostAsync(ConfigurationApi.Items, viewer, new { catalogueId = Guid.NewGuid(), code = "X", label = new { ar = "س", en = "X" } })),
             await StatusAsync(client.GetAsync(ConfigurationApi.Versions, viewer)),
             await StatusAsync(client.GetAsync(ConfigurationApi.Resolution("RISK_MATRIX"), viewer)),
         ];
 
-        Assert.All(statuses, status => Assert.Equal(HttpStatusCode.Forbidden, status));
+        Assert.All(reads, status => Assert.Equal(HttpStatusCode.OK, status));
+        Assert.All(refused, status => Assert.Equal(HttpStatusCode.Forbidden, status));
     }
 
     /// <summary>

@@ -133,7 +133,11 @@ function ProviderMeasures({ integration }: { integration: IntegrationSummary }):
       {detail.loading ? (
         <LoadingState />
       ) : detail.error !== null || detail.data === undefined ? (
-        <ErrorState message={integrationProblemMessage(detail.error, t)} onRetry={detail.reload} />
+        <ErrorState
+          error={detail.error}
+          message={integrationProblemMessage(detail.error, t)}
+          onRetry={detail.reload}
+        />
       ) : (
         <MetricsPanel
           metrics={detail.data.data.metrics}

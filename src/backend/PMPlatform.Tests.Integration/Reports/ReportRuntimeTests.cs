@@ -438,24 +438,36 @@ public sealed class ReportRuntimeTests(ReportTestHost host)
             """);
         object risks = new { columns = new[] { new { sourceEntityCode = "PROJECT", fieldCode = "TITLE" }, new { sourceEntityCode = "RISK_RISK_EXPOSURE", fieldCode = "OPEN_RISKS" } } };
 
-        // R03 views projects in its department but not risks: the count is RESTRICTED, not 1 and not 0.
-        using (HttpResponseMessage shown = await client.PostAsync($"{ReportDriver.Explorer}/run?pageSize=200", department, risks))
+        // R03 views projects in its department; its risk view narrowed to the projects it manages (none here) for this test, the count is
+        // RESTRICTED, not 1 and not 0. The shipped R03 reads its department's risks (shipped-permission-matrix.md).
+        string riskGrant = $"""
+            permission_profile_version_id = '{IdentityDatabase.ProfileVersionId(3)}' AND permission_id = (SELECT id FROM identity_access.permission WHERE code = 'RISK_VIEW')
+            """;
+        await host.Database.ExecuteAsync($"BEGIN; SET LOCAL session_replication_role = replica; UPDATE identity_access.permission_profile_grant SET data_scope = 'OWN' WHERE {riskGrant}; COMMIT;");
+        try
         {
-            JsonObject result = await shown.ReadObjectAsync();
-            JsonObject cell = result.Cell(projectId, "RISK_RISK_EXPOSURE", "OPEN_RISKS");
-            Assert.Equal("RESTRICTED", cell["unknownReason"]!.GetValue<string>());
-            Assert.Null(cell["value"]);
-        }
-
-        // Filtering on it yields nothing, whatever the bound: a restricted value matches no filter.
-        foreach (string op in new[] { "GTE", "LT" })
-        {
-            using HttpResponseMessage filtered = await client.PostAsync($"{ReportDriver.Explorer}/run?pageSize=200", department, new
+            using (HttpResponseMessage shown = await client.PostAsync($"{ReportDriver.Explorer}/run?pageSize=200", department, risks))
             {
-                columns = new[] { new { sourceEntityCode = "PROJECT", fieldCode = "TITLE" } },
-                filters = new[] { new { sourceEntityCode = "RISK_RISK_EXPOSURE", fieldCode = "OPEN_RISKS", @operator = op, value = "1" } },
-            });
-            Assert.DoesNotContain(projectId, (await filtered.ReadObjectAsync()).ProjectIds());
+                JsonObject result = await shown.ReadObjectAsync();
+                JsonObject cell = result.Cell(projectId, "RISK_RISK_EXPOSURE", "OPEN_RISKS");
+                Assert.Equal("RESTRICTED", cell["unknownReason"]!.GetValue<string>());
+                Assert.Null(cell["value"]);
+            }
+
+            // Filtering on it yields nothing, whatever the bound: a restricted value matches no filter.
+            foreach (string op in new[] { "GTE", "LT" })
+            {
+                using HttpResponseMessage filtered = await client.PostAsync($"{ReportDriver.Explorer}/run?pageSize=200", department, new
+                {
+                    columns = new[] { new { sourceEntityCode = "PROJECT", fieldCode = "TITLE" } },
+                    filters = new[] { new { sourceEntityCode = "RISK_RISK_EXPOSURE", fieldCode = "OPEN_RISKS", @operator = op, value = "1" } },
+                });
+                Assert.DoesNotContain(projectId, (await filtered.ReadObjectAsync()).ProjectIds());
+            }
+        }
+        finally
+        {
+            await host.Database.ExecuteAsync($"BEGIN; SET LOCAL session_replication_role = replica; UPDATE identity_access.permission_profile_grant SET data_scope = 'DEPT' WHERE {riskGrant}; COMMIT;");
         }
     }
 

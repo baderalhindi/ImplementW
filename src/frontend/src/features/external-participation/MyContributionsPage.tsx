@@ -45,7 +45,11 @@ export function MyContributionsPage(): ReactElement | null {
         mine.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState message={participationProblemMessage(mine.error, t)} onRetry={mine.reload} />
+          <ErrorState
+            error={mine.error}
+            message={participationProblemMessage(mine.error, t)}
+            onRetry={mine.reload}
+          />
         )
       ) : (
         <>
