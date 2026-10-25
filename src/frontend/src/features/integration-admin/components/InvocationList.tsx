@@ -53,7 +53,7 @@ export function InvocationList({
   }
   if (invocations.error !== null || invocations.data === undefined) {
     return (
-      <ErrorState
+      <ErrorState error={invocations.error}
         message={integrationProblemMessage(invocations.error, t)}
         onRetry={invocations.reload}
       />

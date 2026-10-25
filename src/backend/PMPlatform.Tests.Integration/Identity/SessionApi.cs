@@ -10,6 +10,7 @@ internal static class SessionApi
 {
     public const string Sessions = "/api/v1/sessions";
     public const string Current = "/api/v1/sessions/current";
+    public const string CurrentPermissions = "/api/v1/sessions/current/permissions";
     public const string Refresh = "/api/v1/sessions/current/refresh";
     public const string SsoAuthorization = "/api/v1/sessions/sso-authorization";
     public const string SsoSessions = "/api/v1/sessions/sso";

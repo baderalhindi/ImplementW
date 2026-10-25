@@ -99,7 +99,7 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
         ) : data !== undefined ? (
           <p className="state">{t('issuesChallenges.detail.notFound')}</p>
         ) : (
-          <ErrorState message={concernProblemMessage(record.error, t)} onRetry={record.reload} />
+          <ErrorState error={record.error} message={concernProblemMessage(record.error, t)} onRetry={record.reload} />
         )}
       </>
     );

@@ -11,7 +11,8 @@ import { accessibilityViolations, describeViolations, renderApp } from '@/test/r
 import { findMainMenu, findOpenMenu, mainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
 
 // The master navigation of Blueprint §20.1 (the AHDA Global Navigation design): eleven menus in order, the open menu's
-// screens only, counts on Requests and Approvals and on Notifications only, Administration hidden from a role without it.
+// screens only, counts on Requests and Approvals and on Notifications only, and every screen offered on the permission it
+// needs, so a role sees the menus its permissions open and no other (the 24 Oct 2026 review, C3).
 
 const en = (key: string, params?: Record<string, string | number>) => translate('en', key, params);
 
@@ -30,9 +31,9 @@ const MENUS_IN_ORDER = [
 ];
 
 describe('the master navigation', () => {
-  test('lists the menus in the blueprint’s order, Administration included for R01', async () => {
-    withDashboards(mockApi(), { catalogue: catalogueFor(['R01']) });
-    renderApp({ path: '/', session: sessionFor(['R01']) });
+  test('lists the menus in the blueprint’s order for a session whose roles open every one', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R02']) });
+    renderApp({ path: '/', session: sessionFor(['R01', 'R02', 'R04']) });
 
     await findMainMenu();
     // On Home no menu is open, so every link of the rail is a menu.
@@ -44,13 +45,69 @@ describe('the master navigation', () => {
     expect(menuLink('common.menu.home')?.getAttribute('aria-current')).toBe('page');
   });
 
-  test('a role without administration screens is not shown Administration, and is told so', async () => {
-    withDashboards(mockApi(), { catalogue: catalogueFor(['R02']) });
-    renderApp({ path: '/', session: sessionFor(['R02']) });
+  test.each([
+    ['R01', ['home', 'notifications', 'administration', 'help']],
+    [
+      'R02',
+      ['home', 'portfolio', 'projects', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help'],
+    ],
+    [
+      'R04',
+      ['home', 'projects', 'myWork', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help'],
+    ],
+    ['R05', ['home', 'projects', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help']],
+    [
+      'R06',
+      ['home', 'portfolio', 'projects', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help'],
+    ],
+    ['R07', ['home', 'portfolio', 'projects', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help']],
+  ])('%s is shown the menus its shipped permissions open, and no other (review: “What each role should see”)', async (role, menus) => {
+    withDashboards(mockApi(), { catalogue: catalogueFor([role]) });
+    renderApp({ path: '/', session: sessionFor([role]) });
 
     await findMainMenu();
-    expect(menuLink('common.menu.administration')).toBeNull();
-    expect(screen.getByText(en('common.menu.administrationHidden'))).toBeTruthy();
+    await waitFor(() => {
+      expect(
+        within(mainMenu())
+          .getAllByRole('link')
+          .map((link) => link.textContent),
+      ).toEqual(menus.map((menu) => en(`common.menu.${menu}`)));
+    });
+  });
+
+  test('an external entity user is shown its projects, its tasks, its requests and nothing of AHDA’s portfolio, approvals or reports', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R08']) });
+    renderApp({ path: '/', session: { ...sessionFor(['R08']), user: { ...sessionFor(['R08']).user, userType: 'EXTERNAL' } } });
+
+    await findMainMenu();
+    await waitFor(() => {
+      expect(
+        within(mainMenu())
+          .getAllByRole('link')
+          .map((link) => link.textContent),
+      ).toEqual(
+        ['home', 'projects', 'myWork', 'risksIssues', 'requestsApprovals', 'notifications', 'help'].map((menu) =>
+          en(`common.menu.${menu}`),
+        ),
+      );
+    });
+    expect(screen.queryByRole('button', { name: en('common.shell.create') })).toBeTruthy();
+  });
+
+  test('Create offers only what the person may start, and is not there for someone who may start nothing', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R06']) });
+    const viewer = renderApp({ path: '/', session: sessionFor(['R06']) });
+    await findMainMenu();
+    expect(screen.queryByRole('button', { name: en('common.shell.create') })).toBeNull();
+    viewer.unmount();
+    cleanup();
+
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) });
+    renderApp({ path: '/', session: sessionFor(['R04']) });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: en('common.shell.create') }));
+    expect(screen.getByRole('link', { name: en('projects.nav.create') })).toBeTruthy();
+    expect(screen.getByRole('link', { name: en('common.shell.createChangeRequest') })).toBeTruthy();
   });
 
   test('only the open menu lists its screens, and the breadcrumb names the menu and the screen', async () => {
@@ -97,12 +154,15 @@ describe('the master navigation', () => {
     ).toBe('page');
   });
 
-  test('a role outside the Portfolio Dashboard’s audience keeps the KPI register alone', async () => {
+  test('a Project Manager is given no Portfolio menu: its KPIs are its projects’ (the review, finding 1b)', async () => {
     withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) });
-    renderApp({ path: '/kpis', session: sessionFor(['R04']) });
+    renderApp({ path: '/', session: sessionFor(['R04']) });
 
-    await findOpenMenu('common.menu.portfolio');
-    expect(openMenuTargets('common.menu.portfolio')).toEqual(['/kpis']);
+    await findMainMenu();
+    await waitFor(() => {
+      expect(menuLink('common.menu.projects')).toBeTruthy();
+    });
+    expect(menuLink('common.menu.portfolio')).toBeNull();
   });
 
   test('Requests and Approvals carries the number of approvals awaiting the person, read from the inbox total', async () => {

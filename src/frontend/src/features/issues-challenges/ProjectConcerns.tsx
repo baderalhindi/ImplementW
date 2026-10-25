@@ -64,7 +64,7 @@ export function ProjectConcerns({
     return isForbidden(concerns.error) ? (
       <p className="state">{t('issuesChallenges.forbidden')}</p>
     ) : (
-      <ErrorState message={concernProblemMessage(concerns.error, t)} onRetry={concerns.reload} />
+      <ErrorState error={concerns.error} message={concernProblemMessage(concerns.error, t)} onRetry={concerns.reload} />
     );
   }
 

@@ -202,7 +202,7 @@ function SystemEvents(): ReactElement {
           status.loading ? (
             <LoadingState />
           ) : (
-            <ErrorState message={auditProblemMessage(status.error, t)} onRetry={status.reload} />
+            <ErrorState error={status.error} message={auditProblemMessage(status.error, t)} onRetry={status.reload} />
           )
         ) : (
           <PipelineStatus status={status.data} />

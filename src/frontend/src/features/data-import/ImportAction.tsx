@@ -1,10 +1,7 @@
 import { type ReactElement, useId, useState } from 'react';
 
 import { problemMessage, type Translate } from '@/features/identity-access/problems.ts';
-import {
-  SYSTEM_ADMINISTRATOR_ROLE,
-  useHasRole,
-} from '@/features/identity-access/session/useSession.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { ApiError } from '@/shared/api/httpClient.ts';
 import { saveFile } from '@/shared/api/saveFile.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -60,7 +57,7 @@ export function ImportAction({
   onImported,
 }: ImportActionProps): ReactElement | null {
   const { t } = useI18n();
-  const allowed = useHasRole(SYSTEM_ADMINISTRATOR_ROLE);
+  const allowed = useCan('DATA_IMPORT');
   const [open, setOpen] = useState(false);
   if (!allowed) {
     return null;

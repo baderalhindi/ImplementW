@@ -94,7 +94,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
         <ProjectListEmpty filtered={false} mine={mine} basePath={basePath} />
       )}
       {projects.error !== null && !isForbidden(projects.error) && (
-        <ErrorState message={projectProblemMessage(projects.error, t)} onRetry={projects.reload} />
+        <ErrorState error={projects.error} message={projectProblemMessage(projects.error, t)} onRetry={projects.reload} />
       )}
       {projects.data !== undefined &&
         (projects.data.items.length === 0 ? (

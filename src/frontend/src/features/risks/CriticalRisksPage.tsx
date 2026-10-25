@@ -60,7 +60,7 @@ export function CriticalRisksPage(): ReactElement {
         ) : isForbidden(portfolio.error) ? (
           <p className="state">{t('risks.forbidden')}</p>
         ) : (
-          <ErrorState message={riskProblemMessage(portfolio.error, t)} onRetry={portfolio.reload} />
+          <ErrorState error={portfolio.error} message={riskProblemMessage(portfolio.error, t)} onRetry={portfolio.reload} />
         )}
       </>
     );

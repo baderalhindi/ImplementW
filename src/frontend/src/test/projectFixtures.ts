@@ -64,6 +64,21 @@ export function entitySession(): Session {
   );
 }
 
+/**
+ * ADR-013's entity Project Manager: the entity user who manages the project — R08 over their entity and R04 on the project
+ * (as the e2e personas hold them), so offered the Project Manager's tabs on it.
+ */
+export function entityManagerSession(): Session {
+  return withUser(
+    sessionFor([]),
+    { id: ENTITY_USER_ID, userType: 'EXTERNAL', displayName: 'Huda Contractor' },
+    [
+      assignment({ roleCode: 'R08', externalEntityId: ENTITY_ID }),
+      assignment({ roleCode: 'R04', externalEntityId: ENTITY_ID, projectId: PROJECT_ID }),
+    ],
+  );
+}
+
 /** An AHDA department manager (R03) over the projects' department: internal and reached. */
 export function reviewerSession(departmentId = DEPARTMENT_ID): Session {
   return withUser(

@@ -56,7 +56,7 @@ function ReforecastLoader(props: ReforecastDialogProps & { activityId: string })
   }
   if (activity.data === undefined) {
     return (
-      <ErrorState message={scheduleProblemMessage(activity.error, t)} onRetry={activity.reload} />
+      <ErrorState error={activity.error} message={scheduleProblemMessage(activity.error, t)} onRetry={activity.reload} />
     );
   }
   return <ReforecastForm {...props} activity={activity.data.data} etag={activity.data.etag} />;

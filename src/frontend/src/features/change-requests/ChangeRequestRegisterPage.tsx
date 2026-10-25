@@ -26,7 +26,7 @@ export function ChangeRequestRegisterPage(): ReactElement {
         portfolio.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState
+          <ErrorState error={portfolio.error}
             message={changeRequestProblemMessage(portfolio.error, t)}
             onRetry={portfolio.reload}
           />

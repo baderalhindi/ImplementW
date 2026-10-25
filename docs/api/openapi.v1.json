@@ -15949,6 +15949,27 @@
         }
       }
     },
+    "/api/v1/sessions/current/permissions": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The permissions the caller holds now and at which scopes (review C3): what the SPA's menus, tabs and buttons are offered on. Read from\nthe engine, after the rules no profile overrides (GrantPolicy), so it never shows more than the API would allow. An inactive or\nunknown user holds nothing.",
+        "operationId": "IdentityAccess_GetCurrentSessionPermissions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EffectivePermissionsDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sessions/current/refresh": {
       "post": {
         "tags": [
@@ -23804,6 +23825,40 @@
           }
         },
         "description": "One version (SCR-124). Its content is served only while ScanState DocumentVersionDetail.ScanState is CLEAN. The storage key is never\npart of any representation."
+      },
+      "EffectivePermissionDetail": {
+        "required": [
+          "code",
+          "scopes"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataScope"
+            }
+          }
+        },
+        "description": "One held permission and the scopes of the grants holding it, in their declared order."
+      },
+      "EffectivePermissionsDetail": {
+        "required": [
+          "permissions"
+        ],
+        "type": "object",
+        "properties": {
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EffectivePermissionDetail"
+            }
+          }
+        },
+        "description": "The permissions the caller holds now, each with the scopes it is held at, for the SPA to decide which menus, tabs and buttons to offer\n(review C3). Read from the engine on every call, so a changed grant shows without a new sign-in. This is navigation, not protection:\nevery operation is decided again by the API."
       },
       "EntityTagHeaderValue": {
         "type": "object",

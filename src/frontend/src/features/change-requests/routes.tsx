@@ -19,5 +19,5 @@ export const changeRequestRoutes: RouteObject[] = [
 ];
 
 export const changeRequestNavigation: NavigationItem[] = [
-  { to: '/change-requests', label: 'changeRequests.nav.register', end: true },
+  { to: '/change-requests', label: 'changeRequests.nav.register', end: true, permissions: ['CHANGE_REQUEST_VIEW'] },
 ];

@@ -54,7 +54,7 @@ export function EditProjectPage(): ReactElement | null {
   }
   if (project.data === undefined) {
     return (
-      <ErrorState message={projectProblemMessage(project.error, t)} onRetry={project.reload} />
+      <ErrorState error={project.error} message={projectProblemMessage(project.error, t)} onRetry={project.reload} />
     );
   }
   const detail = project.data.data;

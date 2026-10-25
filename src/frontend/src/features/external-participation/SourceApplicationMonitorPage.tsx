@@ -97,7 +97,7 @@ export function SourceApplicationMonitorPage(): ReactElement | null {
         cases.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState
+          <ErrorState error={cases.error}
             message={participationProblemMessage(cases.error, t)}
             onRetry={cases.reload}
           />

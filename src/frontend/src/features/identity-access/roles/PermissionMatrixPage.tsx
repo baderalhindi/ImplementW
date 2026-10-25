@@ -92,7 +92,7 @@ export function PermissionMatrixPage(): ReactElement {
     return (
       <>
         {header}
-        <ErrorState message={problemMessage(matrix.error, t)} onRetry={matrix.reload} />
+        <ErrorState error={matrix.error} message={problemMessage(matrix.error, t)} onRetry={matrix.reload} />
       </>
     );
   }

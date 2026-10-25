@@ -14,5 +14,5 @@ export const kpiRoutes: RouteObject[] = [
 ];
 
 export const kpiNavigation: NavigationItem[] = [
-  { to: '/kpis', label: 'financialKpi.nav.register', end: true },
+  { to: '/kpis', label: 'financialKpi.nav.register', end: true, permissions: ['KPI_VIEW'] },
 ];

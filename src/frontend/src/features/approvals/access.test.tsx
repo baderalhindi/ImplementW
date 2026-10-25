@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
@@ -10,7 +10,8 @@ import { findMainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
 
 import { approvalNavigation } from './routes.tsx';
 
-// The WF-11 screens are for anyone signed in; what each person may see or decide is the API's answer (TASK-035).
+// The WF-11 screens are offered on the approval permissions — the inbox and delegations to a decider, the requests to whoever
+// views approvals (the 24 Oct 2026 review, C1 and C3); what each person may see or decide is the API's answer (TASK-035).
 
 const en = (key: string) => translate('en', key);
 
@@ -29,9 +30,9 @@ describe('approval routes', () => {
     },
   );
 
-  test('any signed-in role gets the approvals navigation, and only R01 the administration one', async () => {
+  test('a decider gets the whole approvals navigation, and no administration one', async () => {
     withApprovalNames(mockApi()).on('GET', /^\/approval-tasks$/, { body: page([]) });
-    renderApp({ path: '/approvals', session: sessionAs(APPROVER_ID, ['R05']) });
+    renderApp({ path: '/approvals', session: sessionAs(APPROVER_ID, ['R02']) });
 
     expect(
       await screen.findByRole('heading', { level: 1, name: en('approvals.inbox.title') }),
@@ -42,14 +43,32 @@ describe('approval routes', () => {
     expect(menuLink('common.menu.administration')).toBeNull();
   });
 
-  test('from the home page, the shell links to the inbox for everyone', async () => {
-    withDashboards(mockApi(), { catalogue: catalogueFor(['R05']) });
-    renderApp({ path: '/', session: sessionAs(APPROVER_ID, ['R05']) });
+  test('from the home page, the shell links a decider to the inbox, and a Project Manager to its requests', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R02']) });
+    const decider = renderApp({ path: '/', session: sessionAs(APPROVER_ID, ['R02']) });
+    await findMainMenu();
+    await waitFor(() => {
+      expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe('/approvals/inbox');
+    });
+    decider.unmount();
+    cleanup();
+
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) });
+    renderApp({ path: '/', session: sessionAs(APPROVER_ID, ['R04']) });
+    await findMainMenu();
+    await waitFor(() => {
+      expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe('/approvals/requests');
+    });
+  });
+
+  test('a role with no approval permission is offered none of the approval screens (the review, C3)', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R06']) });
+    renderApp({ path: '/', session: sessionAs(APPROVER_ID, ['R06']) });
 
     await findMainMenu();
-    expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe(
-      '/approvals/inbox',
-    );
-    expect(menuLink('common.menu.administration')).toBeNull();
+    await waitFor(() => {
+      expect(menuLink('common.menu.projects')).toBeTruthy();
+    });
+    expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe('/change-requests');
   });
 });

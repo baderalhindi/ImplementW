@@ -16,8 +16,8 @@ export const taskRoutes: RouteObject[] = [
 ];
 
 export const taskNavigation: NavigationItem[] = [
-  { to: '/tasks', label: 'tasks.nav.mine', end: true },
-  { to: '/tasks/team', label: 'tasks.nav.team' },
-  { to: '/tasks/overdue', label: 'tasks.nav.overdue' },
-  { to: '/tasks/updates', label: 'tasks.nav.updates' },
+  { to: '/tasks', label: 'tasks.nav.mine', end: true, permissions: ['TASK_UPDATE'] },
+  { to: '/tasks/team', label: 'tasks.nav.team', permissions: ['TASK_UPDATE'] },
+  { to: '/tasks/overdue', label: 'tasks.nav.overdue', permissions: ['TASK_UPDATE'] },
+  { to: '/tasks/updates', label: 'tasks.nav.updates', permissions: ['TASK_UPDATE'] },
 ];

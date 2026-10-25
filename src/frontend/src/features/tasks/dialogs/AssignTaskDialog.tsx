@@ -45,7 +45,7 @@ export function AssignTaskDialog(props: AssignTaskDialogProps): ReactElement {
         task.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState message={taskProblemMessage(task.error, t)} onRetry={task.reload} />
+          <ErrorState error={task.error} message={taskProblemMessage(task.error, t)} onRetry={task.reload} />
         )
       ) : (
         <AssignForm {...props} task={task.data} />

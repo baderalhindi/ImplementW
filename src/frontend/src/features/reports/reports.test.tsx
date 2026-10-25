@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 
@@ -611,8 +611,13 @@ describe('MOD-060 Export Report', () => {
 });
 
 describe('navigation, accessibility and language', () => {
-  test('the builder and saved views are offered to ADR-019’s composers, the export history to everyone', async () => {
+  test('the builder and saved views are offered to ADR-019’s composers, the export history to whoever may export (the review, H3)', async () => {
     at('/reports', sessionFor(['R06']));
+    await findMainMenu();
+    expect(openMenuNames('common.menu.dashboardsReports')).toEqual([en('reports.nav.center')]);
+    cleanup();
+
+    at('/reports', sessionFor(['R04']));
     await findMainMenu();
     expect(openMenuNames('common.menu.dashboardsReports')).toEqual([
       en('reports.nav.center'),

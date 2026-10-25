@@ -48,7 +48,7 @@ export function SyncRunList({
     return <LoadingState />;
   }
   if (runs.error !== null || runs.data === undefined) {
-    return <ErrorState message={integrationProblemMessage(runs.error, t)} onRetry={runs.reload} />;
+    return <ErrorState error={runs.error} message={integrationProblemMessage(runs.error, t)} onRetry={runs.reload} />;
   }
   if (runs.data.items.length === 0) {
     return <EmptyState title={t('integrationAdmin.syncRuns.empty')} />;

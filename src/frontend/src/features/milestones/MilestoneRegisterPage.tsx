@@ -57,7 +57,7 @@ export function MilestoneRegisterPage(): ReactElement | null {
         ) : isForbidden(portfolio.error) ? (
           <p className="state">{t('milestones.forbidden')}</p>
         ) : (
-          <ErrorState
+          <ErrorState error={portfolio.error}
             message={milestoneProblemMessage(portfolio.error, t)}
             onRetry={portfolio.reload}
           />

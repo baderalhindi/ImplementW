@@ -22,7 +22,7 @@ export const issuesChallengesRoutes: RouteObject[] = [
 ];
 
 export const issuesChallengesNavigation: NavigationItem[] = [
-  { to: '/issues-challenges', label: 'issuesChallenges.nav.issues', end: true },
-  { to: '/issues-challenges/challenges', label: 'issuesChallenges.nav.challenges' },
-  { to: '/issues-challenges/escalations', label: 'issuesChallenges.nav.escalations' },
+  { to: '/issues-challenges', label: 'issuesChallenges.nav.issues', end: true, permissions: ['CONCERN_VIEW'] },
+  { to: '/issues-challenges/challenges', label: 'issuesChallenges.nav.challenges', permissions: ['CONCERN_VIEW'] },
+  { to: '/issues-challenges/escalations', label: 'issuesChallenges.nav.escalations', permissions: ['CONCERN_ESCALATE', 'CONCERN_ESCALATION_RESOLVE'] },
 ];

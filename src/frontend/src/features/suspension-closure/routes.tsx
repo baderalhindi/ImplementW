@@ -34,6 +34,6 @@ export const closeoutRoutes: RouteObject[] = [
 ];
 
 export const suspensionClosureNavigation: NavigationItem[] = [
-  { to: '/suspension-requests', label: 'suspensionClosure.nav.suspension', end: true },
-  { to: '/closure-requests', label: 'suspensionClosure.nav.closeout', end: true },
+  { to: '/suspension-requests', label: 'suspensionClosure.nav.suspension', end: true, permissions: ['SUSPENSION_VIEW'] },
+  { to: '/closure-requests', label: 'suspensionClosure.nav.closeout', end: true, permissions: ['CLOSEOUT_VIEW'] },
 ];

@@ -59,7 +59,7 @@ export function KpiHistory({
         ) : entry.data !== undefined ? (
           <p className="state">{t('financialKpi.trend.notFound')}</p>
         ) : (
-          <ErrorState message={financialKpiProblemMessage(entry.error, t)} onRetry={entry.reload} />
+          <ErrorState error={entry.error} message={financialKpiProblemMessage(entry.error, t)} onRetry={entry.reload} />
         )}
       </>
     );

@@ -33,7 +33,7 @@ export function ReviewsTab(): ReactElement {
     return isForbidden(reviews.error) ? (
       <p className="state">{t('projects.reviews.forbidden')}</p>
     ) : (
-      <ErrorState message={projectProblemMessage(reviews.error, t)} onRetry={reviews.reload} />
+      <ErrorState error={reviews.error} message={projectProblemMessage(reviews.error, t)} onRetry={reviews.reload} />
     );
   }
   const runs = reviews.data?.items ?? [];

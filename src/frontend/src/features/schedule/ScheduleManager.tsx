@@ -96,7 +96,7 @@ export function ScheduleManager({
     return isForbidden(view.error) ? (
       <p className="state">{t('schedule.forbidden')}</p>
     ) : (
-      <ErrorState message={scheduleProblemMessage(view.error, t)} onRetry={view.reload} />
+      <ErrorState error={view.error} message={scheduleProblemMessage(view.error, t)} onRetry={view.reload} />
     );
   }
 

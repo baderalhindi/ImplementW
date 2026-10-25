@@ -52,7 +52,7 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
         ) : isForbidden(overview.error) ? (
           <p className="state">{t('financialKpi.financials.forbidden')}</p>
         ) : (
-          <ErrorState
+          <ErrorState error={overview.error}
             message={financialKpiProblemMessage(overview.error, t)}
             onRetry={overview.reload}
           />

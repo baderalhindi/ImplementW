@@ -102,7 +102,7 @@ export function SavedViewsPage(): ReactElement {
       {loading && data === undefined ? (
         <LoadingState />
       ) : error !== null || data === undefined ? (
-        <ErrorState message={reportProblemMessage(error, t)} onRetry={reload} />
+        <ErrorState error={error} message={reportProblemMessage(error, t)} onRetry={reload} />
       ) : data.views.items.length === 0 ? (
         <EmptyState title={t('reports.savedViews.empty')} />
       ) : (

@@ -55,7 +55,7 @@ function DraftResponse(props: ResponseFormProps & { draftId: string }): ReactEle
     return record.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState message={participationProblemMessage(record.error, t)} onRetry={record.reload} />
+      <ErrorState error={record.error} message={participationProblemMessage(record.error, t)} onRetry={record.reload} />
     );
   }
   return (

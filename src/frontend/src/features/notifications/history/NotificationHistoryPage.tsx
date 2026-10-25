@@ -92,7 +92,7 @@ export function NotificationHistoryPage(): ReactElement {
 
       {history.loading && <LoadingState label={t('notifications.history.loading')} />}
       {history.error !== null && (
-        <ErrorState
+        <ErrorState error={history.error}
           message={notificationProblemMessage(history.error, t)}
           onRetry={history.reload}
         />

@@ -93,7 +93,7 @@ export function KpiRegisterPage(): ReactElement {
         ) : isForbidden(portfolio.error) ? (
           <p className="state">{t('financialKpi.kpis.forbidden')}</p>
         ) : (
-          <ErrorState
+          <ErrorState error={portfolio.error}
             message={financialKpiProblemMessage(portfolio.error, t)}
             onRetry={portfolio.reload}
           />

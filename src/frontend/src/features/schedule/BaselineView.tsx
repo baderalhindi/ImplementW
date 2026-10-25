@@ -94,7 +94,7 @@ export function BaselineView({
     return isForbidden(view.error) ? (
       <p className="state">{t('schedule.forbidden')}</p>
     ) : (
-      <ErrorState message={scheduleProblemMessage(view.error, t)} onRetry={view.reload} />
+      <ErrorState error={view.error} message={scheduleProblemMessage(view.error, t)} onRetry={view.reload} />
     );
   }
 
@@ -365,7 +365,7 @@ function SelectedBaseline({
       ) : copy.loading ? (
         <LoadingState />
       ) : copy.data === undefined || copy.data === null ? (
-        <ErrorState message={scheduleProblemMessage(copy.error, t)} onRetry={copy.reload} />
+        <ErrorState error={copy.error} message={scheduleProblemMessage(copy.error, t)} onRetry={copy.reload} />
       ) : (
         <>
           <h3>{t('schedule.baselines.copyTitle')}</h3>

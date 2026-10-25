@@ -34,7 +34,7 @@ export function ProjectChangeRequests({
     return isForbidden(requests.error) ? (
       <p className="state">{t('changeRequests.forbidden')}</p>
     ) : (
-      <ErrorState
+      <ErrorState error={requests.error}
         message={changeRequestProblemMessage(requests.error, t)}
         onRetry={requests.reload}
       />

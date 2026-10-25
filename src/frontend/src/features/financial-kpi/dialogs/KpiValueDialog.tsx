@@ -89,7 +89,7 @@ function DraftLoader(props: KpiValueDialogProps & { measurementId: string }): Re
     return draft.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState message={financialKpiProblemMessage(draft.error, t)} onRetry={draft.reload} />
+      <ErrorState error={draft.error} message={financialKpiProblemMessage(draft.error, t)} onRetry={draft.reload} />
     );
   }
   return <KpiValueForm {...props} measurement={draft.data.data} etag={draft.data.etag} />;

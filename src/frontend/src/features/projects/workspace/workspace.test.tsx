@@ -8,6 +8,7 @@ import { translate } from '@/shared/i18n/i18n.ts';
 import { type MockApi, mockApi, page, problem } from '@/test/mockApi.ts';
 import {
   ENTITY_USER_ID,
+  entityManagerSession,
   entitySession,
   ETAG,
   FULL_PROFILE_ID,
@@ -111,8 +112,8 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
     ]);
   });
 
-  test('an external entity user reaching the project sees no review history (ADR-013; TASK-035 F-8)', async () => {
-    openWorkspace(projectDetail(), entitySession());
+  test('the entity Project Manager sees every tab of the project it manages but review history (ADR-013; TASK-035 F-8)', async () => {
+    openWorkspace(projectDetail(), entityManagerSession());
     await screen.findByRole('heading', { level: 1 });
 
     expect(tabNames()).toEqual([
@@ -132,6 +133,24 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
       TAB.closeout,
       TAB.externalRequests,
       TAB.documents,
+    ]);
+  });
+
+  test('an entity contributor sees the tabs its R08 permissions read, and no schedule, governance request or document (the review, M-12)', async () => {
+    openWorkspace(projectDetail(), entitySession());
+    await screen.findByRole('heading', { level: 1 });
+
+    expect(tabNames()).toEqual([
+      TAB.overview,
+      TAB.registration,
+      TAB.location,
+      TAB.progress,
+      TAB.tasks,
+      TAB.financials,
+      TAB.kpis,
+      TAB.risks,
+      TAB.issuesChallenges,
+      TAB.externalRequests,
     ]);
   });
 
@@ -174,7 +193,7 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
   test('SCR-043 lists the project’s documents inside the workspace', async () => {
     const api = openWorkspace(
       projectDetail(),
-      entitySession(),
+      entityManagerSession(),
       `/projects/${PROJECT_ID}/documents`,
     );
 

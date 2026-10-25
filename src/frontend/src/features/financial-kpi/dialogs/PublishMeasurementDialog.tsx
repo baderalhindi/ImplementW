@@ -58,7 +58,7 @@ function PublishBody({
     return measurement.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState
+      <ErrorState error={measurement.error}
         message={financialKpiProblemMessage(measurement.error, t)}
         onRetry={measurement.reload}
       />

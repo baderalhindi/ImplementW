@@ -2,6 +2,7 @@ import { type ReactElement, type ReactNode, useCallback, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 
 import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { LifecycleBanner } from '@/features/suspension-closure/components/LifecycleBanner.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -79,6 +80,7 @@ export function ProjectWorkspace(): ReactElement | null {
   );
   const project = useApiResource(load);
   const auditAccess = useAuditAccess();
+  const permissions = usePermissions();
   const lookups = useProjectLookups();
   const arrival = (location.state as { notice?: string } | null)?.notice;
   const arrivalKey = arrival === undefined ? undefined : ARRIVAL_NOTICES[arrival];
@@ -94,7 +96,7 @@ export function ProjectWorkspace(): ReactElement | null {
     return project.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState message={projectProblemMessage(project.error, t)} onRetry={project.reload} />
+      <ErrorState error={project.error} message={projectProblemMessage(project.error, t)} onRetry={project.reload} />
     );
   }
 
@@ -102,7 +104,7 @@ export function ProjectWorkspace(): ReactElement | null {
   const etag = project.data.etag;
   // A failed GET /audit-access offers no history tab: audit permissions are never assumed.
   const audit = auditAccess.data ?? null;
-  const access = projectAccess(session.user, detail, audit);
+  const access = projectAccess(session.user, detail, audit, permissions);
   const editable = access.reached && isEditable(detail.status);
   const commands = statusCommands(detail.status, access);
   const context: WorkspaceContext = {

@@ -21,6 +21,6 @@ export const documentRoutes: RouteObject[] = [
 ];
 
 export const documentNavigation: NavigationItem[] = [
-  { to: '/documents', label: 'documents.nav.library', end: true },
-  { to: '/documents/recent', label: 'documents.nav.recent' },
+  { to: '/documents', label: 'documents.nav.library', end: true, permissions: ['DOCUMENT_VIEW'] },
+  { to: '/documents/recent', label: 'documents.nav.recent', permissions: ['DOCUMENT_VIEW'] },
 ];

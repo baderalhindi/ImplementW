@@ -85,7 +85,7 @@ export function RoleAssignmentPage(): ReactElement {
 
       {assignments.loading && <LoadingState />}
       {assignments.error !== null && (
-        <ErrorState message={problemMessage(assignments.error, t)} onRetry={assignments.reload} />
+        <ErrorState error={assignments.error} message={problemMessage(assignments.error, t)} onRetry={assignments.reload} />
       )}
       {assignments.data !== undefined &&
         (items.length === 0 ? (

@@ -66,7 +66,7 @@ export function CreateExternalRequestPage(): ReactElement {
         {projectId === '' ? (
           <p className="state">{t('externalParticipation.form.noProject')}</p>
         ) : (
-          <ErrorState
+          <ErrorState error={project.error}
             message={participationProblemMessage(project.error, t)}
             onRetry={project.reload}
           />
@@ -91,7 +91,7 @@ export function EditExternalRequestPage(): ReactElement {
         {isNotFound(record.error) ? (
           <p className="state">{t('externalParticipation.detail.notFound')}</p>
         ) : (
-          <ErrorState
+          <ErrorState error={record.error}
             message={participationProblemMessage(record.error, t)}
             onRetry={record.reload}
           />

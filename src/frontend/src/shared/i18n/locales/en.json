@@ -102,7 +102,6 @@
     "dashboardsReports": "Dashboards and Reports",
     "notifications": "Notifications",
     "administration": "Administration",
-    "administrationHidden": "Administration hidden for this role",
     "awaitingDecision": "{count} awaiting your decision",
     "collapse": "Collapse menu",
     "expand": "Expand menu",

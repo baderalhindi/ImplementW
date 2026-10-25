@@ -26,7 +26,7 @@ export function SuspensionRegisterPage(): ReactElement {
         portfolio.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState
+          <ErrorState error={portfolio.error}
             message={suspensionClosureProblemMessage(portfolio.error, t)}
             onRetry={portfolio.reload}
           />

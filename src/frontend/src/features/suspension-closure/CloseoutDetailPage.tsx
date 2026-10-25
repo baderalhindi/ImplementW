@@ -153,7 +153,7 @@ function CloseoutDetail({
         ) : isForbidden(record.error) ? (
           <p className="state">{t('suspensionClosure.closeout.forbidden')}</p>
         ) : (
-          <ErrorState
+          <ErrorState error={record.error}
             message={suspensionClosureProblemMessage(record.error, t)}
             onRetry={record.reload}
           />

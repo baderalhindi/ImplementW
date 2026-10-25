@@ -3,7 +3,7 @@ import { type RouteObject } from 'react-router';
 import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 
-import { canCompose } from './access.ts';
+import { isInternal } from '@/features/projects/access.ts';
 import { ExplorerPage } from './ExplorerPage.tsx';
 import { ExportHistoryPage } from './ExportHistoryPage.tsx';
 import { ReportFamilyPage } from './ReportFamilyPage.tsx';
@@ -25,16 +25,22 @@ export const reportRoutes: RouteObject[] = [
   { path: ':family/:reportCode', element: <ReportPage /> }, // SCR-131 to SCR-137, MOD-060, MOD-061, MOD-062
 ];
 
-/** The Reports group: the explorer and saved views for ADR-019's composers only (navigation, not protection). */
+/**
+ * The Reports group (navigation, not protection): the centre for AHDA's business roles — a report's rows are projects, so a
+ * holder of PROJECT_VIEW — and none for an external user (ADR-019: no reports); the explorer and saved views for ADR-019's
+ * composers; the exports for those who may export.
+ */
 export function reportNavigation(user: SessionUser): NavigationItem[] {
-  return [
-    { to: '/reports', label: 'reports.nav.center', end: true },
-    ...(canCompose(user)
-      ? [
-          { to: '/reports/explorer', label: 'reports.nav.explorer' } as const,
-          { to: '/reports/saved-views', label: 'reports.nav.savedViews' } as const,
-        ]
-      : []),
-    { to: '/reports/exports', label: 'reports.nav.exports' },
-  ];
+  return isInternal(user)
+    ? [
+        { to: '/reports', label: 'reports.nav.center', end: true, permissions: ['PROJECT_VIEW'] },
+        { to: '/reports/explorer', label: 'reports.nav.explorer', permissions: ['REPORT_COMPOSE'] },
+        {
+          to: '/reports/saved-views',
+          label: 'reports.nav.savedViews',
+          permissions: ['REPORT_COMPOSE'],
+        },
+        { to: '/reports/exports', label: 'reports.nav.exports', permissions: ['REPORT_EXPORT'] },
+      ]
+    : [];
 }

@@ -37,7 +37,7 @@ export function ParticipationMonitorPage(): ReactElement {
         requests.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState
+          <ErrorState error={requests.error}
             message={participationProblemMessage(requests.error, t)}
             onRetry={requests.reload}
           />

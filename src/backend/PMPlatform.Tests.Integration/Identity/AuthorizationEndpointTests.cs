@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using PMPlatform.Api.Authorization;
@@ -28,6 +29,7 @@ public sealed class AuthorizationEndpointTests(IdentityTestHost host)
         Assert.Equal("permission:IDENTITY_INTEGRATION_MANAGE", declarations["IdentityAccess_GetIdentityIntegration"]);
         Assert.Equal("permission:IDENTITY_INTEGRATION_MANAGE", declarations["IdentityAccess_TestIdentityIntegration"]);
         Assert.Equal("session", declarations["IdentityAccess_GetCurrentSession"]);
+        Assert.Equal("session", declarations["IdentityAccess_GetCurrentSessionPermissions"]);
         Assert.Equal("anonymous", declarations["IdentityAccess_CreateSession"]);
     }
 
@@ -186,6 +188,42 @@ public sealed class AuthorizationEndpointTests(IdentityTestHost host)
         }
     }
 
+    /// <summary>
+    /// Review C3: the current session's permissions are the grants held now, with their scopes, after the rules no profile overrides — the
+    /// Portfolio Manager decides approvals across the portfolio; the external entity user holds its entity's projects and no approval, report
+    /// or amount, although it also holds R01 in this database, which an external user never may; and a changed grant shows on the next call.
+    /// </summary>
+    [Fact]
+    public async Task TheCurrentSessionsPermissionsAreTheGrantsHeldNow()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Dictionary<string, string[]> portfolio = await PermissionsAsync(client, await client.SignInOrFailAsync(2));
+        Dictionary<string, string[]> entity = await PermissionsAsync(client, await client.SignInOrFailAsync(8));
+        Session viewer = await client.SignInOrFailAsync(6);
+
+        Assert.Equal(["ALL"], portfolio[PermissionCatalogue.ApprovalDecide]);
+        Assert.Equal(["OWN"], portfolio[PermissionCatalogue.LayoutPersonalize]);
+        Assert.Contains("ENTITY", entity[PermissionCatalogue.ProjectView]);
+        Assert.DoesNotContain(entity.Keys, code => code.StartsWith("APPROVAL_", StringComparison.Ordinal) || code.StartsWith("REPORT_", StringComparison.Ordinal)
+                                                   || code == PermissionCatalogue.FinancialViewSensitive || code == PermissionCatalogue.UserManage);
+        Assert.False((await PermissionsAsync(client, viewer)).ContainsKey(PermissionCatalogue.IdentityIntegrationManage));
+
+        const string grantId = "00000000-0003-4000-8000-000000001002";
+        try
+        {
+            await host.Database.ExecuteAsync($"""
+                INSERT INTO identity_access.permission_profile_grant (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
+                SELECT '{grantId}', '{IdentityDatabase.ProfileVersionId(6)}', p.id, 'ALL', now(), '{IdentityDatabase.SeedPrincipalId}', now(), '{IdentityDatabase.SeedPrincipalId}'
+                FROM identity_access.permission p WHERE p.code = 'IDENTITY_INTEGRATION_MANAGE'
+                """);
+            Assert.Equal(["ALL"], (await PermissionsAsync(client, viewer))[PermissionCatalogue.IdentityIntegrationManage]);
+        }
+        finally
+        {
+            await host.Database.ExecuteAsync($"DELETE FROM identity_access.permission_profile_grant WHERE id = '{grantId}'");
+        }
+    }
+
     /// <summary>ADR-018: a profile, not a role, carries the permission; granting it to another profile needs no code change or new sign-in.</summary>
     [Fact]
     public async Task APermissionGrantedToAnotherProfileAppliesOnTheNextRequest()
@@ -216,4 +254,12 @@ public sealed class AuthorizationEndpointTests(IdentityTestHost host)
 
     private Task RebindAsync(string assignmentId, string profileVersionId) =>
         host.Database.ExecuteAsync($"UPDATE identity_access.access_relationship SET permission_profile_version_id = '{profileVersionId}' WHERE id = '{assignmentId}'");
+
+    private static async Task<Dictionary<string, string[]>> PermissionsAsync(HttpClient client, Session session)
+    {
+        using HttpResponseMessage response = await client.GetWithTokenAsync(SessionApi.CurrentPermissions, session.AccessToken);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonArray permissions = (await response.ReadObjectAsync())["permissions"]!.AsArray();
+        return permissions.ToDictionary(p => p!["code"]!.GetValue<string>(), p => p!["scopes"]!.AsArray().Select(s => s!.GetValue<string>()).ToArray());
+    }
 }

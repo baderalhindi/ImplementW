@@ -54,7 +54,7 @@ export function AuditEventList({
     return <LoadingState />;
   }
   if (events.error !== null || events.data === undefined) {
-    return <ErrorState message={auditProblemMessage(events.error, t)} onRetry={events.reload} />;
+    return <ErrorState error={events.error} message={auditProblemMessage(events.error, t)} onRetry={events.reload} />;
   }
   if (events.data.items.length === 0) {
     return <EmptyState title={emptyTitle} />;

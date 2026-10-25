@@ -2,6 +2,7 @@ import { type ReactElement, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
@@ -9,13 +10,14 @@ import { PageNotice } from '@/shared/ui/PageNotice.tsx';
 
 import { ProjectList } from './ProjectList.tsx';
 
-function CreateProjectLink(): ReactElement {
+/** Offered to a holder of PROJECT_REGISTER only (the 24 Oct 2026 review, C3: no "Create project" for a role that cannot). */
+function CreateProjectLink(): ReactElement | null {
   const { t } = useI18n();
-  return (
+  return useCan('PROJECT_REGISTER') ? (
     <Link className="button button--primary" to="/projects/new">
       {t('projects.create.action')}
     </Link>
-  );
+  ) : null;
 }
 
 /** SCR-025 Project Register (All Projects). MOD-001 returns here after deleting a draft. */

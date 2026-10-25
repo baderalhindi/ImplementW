@@ -41,7 +41,7 @@ export function HomeDashboardPage(): ReactElement {
         {catalogue.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState
+          <ErrorState error={catalogue.error}
             message={dashboardProblemMessage(catalogue.error, t)}
             onRetry={catalogue.reload}
           />

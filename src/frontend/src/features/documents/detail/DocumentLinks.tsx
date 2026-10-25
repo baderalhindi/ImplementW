@@ -37,7 +37,7 @@ export function DocumentLinks({
       <h2 id="document-links">{t('documents.links.title')}</h2>
       {links.loading && <LoadingState label={t('documents.links.loading')} />}
       {links.error !== null && (
-        <ErrorState message={documentProblemMessage(links.error, t)} onRetry={links.reload} />
+        <ErrorState error={links.error} message={documentProblemMessage(links.error, t)} onRetry={links.reload} />
       )}
       {links.data !== undefined &&
         (links.data.length === 0 ? (

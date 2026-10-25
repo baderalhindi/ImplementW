@@ -74,7 +74,7 @@ function EditActivity(props: ActivityDialogProps & { activityId: string }): Reac
   }
   if (activity.data === undefined) {
     return (
-      <ErrorState message={scheduleProblemMessage(activity.error, t)} onRetry={activity.reload} />
+      <ErrorState error={activity.error} message={scheduleProblemMessage(activity.error, t)} onRetry={activity.reload} />
     );
   }
   return <ActivityForm {...props} existing={activity.data.data} etag={activity.data.etag} />;

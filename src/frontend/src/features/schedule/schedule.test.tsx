@@ -9,7 +9,7 @@ import { TASK_ID } from '@/test/approvalFixtures.ts';
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
 import {
   ENTITY_USER_ID,
-  entitySession,
+  entityManagerSession,
   OTHER_PERSON_ID,
   projectDetail,
   PROJECT_ID,
@@ -111,7 +111,7 @@ const labelled = (dialog: HTMLElement, key: string) =>
 
 describe('SCR-060 Schedule Manager', () => {
   test('lists the work breakdown with plan, Current Forecast, Approved Baseline and the API’s variance side by side', async () => {
-    open(entitySession());
+    open(entityManagerSession());
 
     const table = await screen.findByRole('region', { name: en('schedule.activities.caption') });
     const rows = within(table).getAllByRole('row');
@@ -136,7 +136,7 @@ describe('SCR-060 Schedule Manager', () => {
   });
 
   test('before a baseline nothing is measured, and the summary says the forecast follows the plan', async () => {
-    open(entitySession(), PLANNING);
+    open(entityManagerSession(), PLANNING);
 
     expect(await screen.findByText(en('schedule.summary.noActiveBaseline'))).toBeTruthy();
     expect(screen.getByText(en('schedule.summary.forecastFollowsPlan'))).toBeTruthy();
@@ -146,7 +146,7 @@ describe('SCR-060 Schedule Manager', () => {
   });
 
   test('the Project Manager sets up a schedule; anyone else is told who will', async () => {
-    const api = open(entitySession(), {
+    const api = open(entityManagerSession(), {
       schedule: null,
       activities: [],
       dependencies: [],
@@ -172,7 +172,7 @@ describe('SCR-060 Schedule Manager', () => {
   });
 
   test('while a candidate is with AHDA the plan is frozen: no activity or dependency change is offered, forecasts still are', async () => {
-    open(entitySession(), { baselines: [candidate({ status: 'SUBMITTED' }), baseline()] });
+    open(entityManagerSession(), { baselines: [candidate({ status: 'SUBMITTED' }), baseline()] });
 
     expect(await screen.findByText(en('schedule.summary.frozen'))).toBeTruthy();
     expect(screen.queryByRole('button', { name: en('schedule.actions.addActivity') })).toBeNull();
@@ -182,7 +182,7 @@ describe('SCR-060 Schedule Manager', () => {
   });
 
   test('adds an activity: the inputs are sent, never a calculated date', async () => {
-    const api = open(entitySession(), PLANNING);
+    const api = open(entityManagerSession(), PLANNING);
     api.on('POST', /^\/schedule-activities$/, { status: 201, body: activity() });
 
     const dialog = await openDialog(
@@ -215,7 +215,7 @@ describe('SCR-060 Schedule Manager', () => {
   });
 
   test('edits an activity with the ETag it read, and a WBS code taken lands as the API says', async () => {
-    const api = open(entitySession(), PLANNING);
+    const api = open(entityManagerSession(), PLANNING);
     api.on('PUT', /^\/schedule-activities\/[^/]+$/, problem(409, 'SCHEDULE_WBS_CODE_EXISTS'));
 
     const dialog = await openDialog(editName('1.1 · Survey'), 'schedule.activity.editTitle');
@@ -233,7 +233,7 @@ describe('SCR-060 Schedule Manager', () => {
   });
 
   test('a reforecast before the predecessor’s forecast allows is refused on the field and not sent', async () => {
-    const api = open(entitySession());
+    const api = open(entityManagerSession());
     api.on('POST', /^\/schedule-activities\/[^/]+\/reforecast$/, { body: activity() });
 
     const dialog = await openDialog(reforecastName('2 · Paving'), 'schedule.reforecast.title');
@@ -275,7 +275,7 @@ describe('SCR-060 Schedule Manager', () => {
   });
 
   test('has no axe violation', async () => {
-    open(entitySession());
+    open(entityManagerSession());
     await screen.findByRole('region', { name: en('schedule.activities.caption') });
     const violations = await accessibilityViolations();
     expect(violations, describeViolations(violations)).toEqual([]);
@@ -284,7 +284,7 @@ describe('SCR-060 Schedule Manager', () => {
 
 describe('MOD-015 Add Dependency refuses a cycle before the API is called (acceptance criterion 2)', () => {
   async function openAddDependency(state: ScheduleState = PLANNING) {
-    const api = open(entitySession(), state);
+    const api = open(entityManagerSession(), state);
     api.on('POST', /^\/schedule-dependencies$/, { status: 201, body: dependency() });
     const dialog = await openDialog(
       en('schedule.actions.addDependency'),
@@ -455,7 +455,7 @@ describe('SCR-045 Gantt View tells the Approved Baseline from the Current Foreca
   });
 
   test.each<Language>(['en', 'ar'])('has no axe violation (%s)', async (language) => {
-    open(entitySession(), {}, { path: GANTT_PATH, language });
+    open(entityManagerSession(), {}, { path: GANTT_PATH, language });
     await screen.findByTestId('forecast-bar-1.1');
     const violations = await accessibilityViolations();
     expect(violations, describeViolations(violations)).toEqual([]);
@@ -464,7 +464,7 @@ describe('SCR-045 Gantt View tells the Approved Baseline from the Current Foreca
 
 describe('SCR-045 drag-adjustment is held to the dependency rules', () => {
   test('before a baseline, moving a bar with the keyboard moves the plan: the requested start is PUT with the ETag', async () => {
-    const api = open(entitySession(), PLANNING, { path: GANTT_PATH });
+    const api = open(entityManagerSession(), PLANNING, { path: GANTT_PATH });
     api.on('PUT', /^\/schedule-activities\/[^/]+$/, { body: activity() });
 
     const bar = await screen.findByRole('slider', { name: moveName('1.1 · Survey') });
@@ -498,7 +498,7 @@ describe('SCR-045 drag-adjustment is held to the dependency rules', () => {
   });
 
   test('a move before the predecessor allows is held at the earliest start and explained; nothing is sent', async () => {
-    const api = open(entitySession(), PLANNING, { path: GANTT_PATH });
+    const api = open(entityManagerSession(), PLANNING, { path: GANTT_PATH });
 
     const bar = await screen.findByRole('slider', { name: moveName('1.2 · Excavation') });
     bar.focus();
@@ -522,7 +522,7 @@ describe('SCR-045 drag-adjustment is held to the dependency rules', () => {
   });
 
   test('after a baseline, dragging a bar with the pointer reforecasts it; the baseline bar does not move', async () => {
-    const api = open(entitySession(), {}, { path: GANTT_PATH });
+    const api = open(entityManagerSession(), {}, { path: GANTT_PATH });
     api.on('POST', /^\/schedule-activities\/[^/]+\/reforecast$/, { body: activity() });
 
     const bar = await screen.findByRole('slider', { name: moveName('2 · Paving') });
@@ -559,7 +559,7 @@ describe('SCR-045 drag-adjustment is held to the dependency rules', () => {
   });
 
   test('in Arabic the timeline mirrors: the left arrow moves a bar later', async () => {
-    const api = open(entitySession(), PLANNING, { path: GANTT_PATH, language: 'ar' });
+    const api = open(entityManagerSession(), PLANNING, { path: GANTT_PATH, language: 'ar' });
     api.on('PUT', /^\/schedule-activities\/[^/]+$/, { body: activity() });
 
     const bar = await screen.findByRole('slider', {
@@ -577,7 +577,7 @@ describe('SCR-045 drag-adjustment is held to the dependency rules', () => {
   });
 
   test('an activity changed since the chart was drawn is not overwritten: nothing is sent and the chart is read again', async () => {
-    const api = open(entitySession(), PLANNING, { path: GANTT_PATH });
+    const api = open(entityManagerSession(), PLANNING, { path: GANTT_PATH });
     api.on('GET', new RegExp(`^/schedule-activities/${SURVEY_ID}$`), {
       body: { ...plannedActivities()[1], updatedAt: '2026-10-03T09:00:00Z' },
       headers: { ETag: '"32"' },
@@ -592,7 +592,7 @@ describe('SCR-045 drag-adjustment is held to the dependency rules', () => {
   });
 
   test('Escape cancels a move without sending anything', async () => {
-    const api = open(entitySession(), PLANNING, { path: GANTT_PATH });
+    const api = open(entityManagerSession(), PLANNING, { path: GANTT_PATH });
     const bar = await screen.findByRole('slider', { name: moveName('1.1 · Survey') });
     bar.focus();
     await userEvent.keyboard('{ArrowRight}{Escape}');
@@ -605,7 +605,7 @@ describe('SCR-045 drag-adjustment is held to the dependency rules', () => {
 
   test('while a candidate is under review, the plan’s bars cannot be moved and the person is told why', async () => {
     open(
-      entitySession(),
+      entityManagerSession(),
       { ...PLANNING, baselines: [candidate({ status: 'SUBMITTED' })] },
       { path: GANTT_PATH },
     );
@@ -616,7 +616,7 @@ describe('SCR-045 drag-adjustment is held to the dependency rules', () => {
 
 describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Baseline', () => {
   test('lists the baselines and shows the ACTIVE one’s frozen copy with the API’s variance', async () => {
-    open(entitySession(), { baselines: [candidate(), baseline()] }, { path: BASELINES_PATH });
+    open(entityManagerSession(), { baselines: [candidate(), baseline()] }, { path: BASELINES_PATH });
 
     const list = await screen.findByRole('region', { name: en('schedule.baselines.caption') });
     expect(within(list).getAllByRole('row')).toHaveLength(3);
@@ -639,7 +639,7 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
 
   test('a candidate has no frozen copy until it activates, and says so', async () => {
     open(
-      entitySession(),
+      entityManagerSession(),
       { baselines: [candidate(), baseline()] },
       {
         path: `${BASELINES_PATH}?baselineId=${CANDIDATE_ID}`,
@@ -649,7 +649,7 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
   });
 
   test('the Project Manager creates a candidate from the working schedule', async () => {
-    const api = open(entitySession(), { baselines: [baseline()] }, { path: BASELINES_PATH });
+    const api = open(entityManagerSession(), { baselines: [baseline()] }, { path: BASELINES_PATH });
     api.on('POST', /^\/project-baselines$/, { status: 201, body: candidate() });
 
     await userEvent.click(
@@ -664,7 +664,7 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
 
   test('MOD-017 submits the first baseline without a change authorisation and says what happens', async () => {
     const api = open(
-      entitySession(),
+      entityManagerSession(),
       { ...PLANNING, baselines: [candidate({ versionNo: 1 })] },
       {
         path: BASELINES_PATH,
@@ -690,7 +690,7 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
 
   test('MOD-017: a rebaseline needs the change authorisation’s ID; under a Light profile it activates at once', async () => {
     const api = open(
-      entitySession(),
+      entityManagerSession(),
       { baselines: [candidate(), baseline()] },
       { path: BASELINES_PATH },
     );
@@ -719,7 +719,7 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
 
   test('MOD-017: an unconfigured approval route is explained, and the candidate stays a draft', async () => {
     const api = open(
-      entitySession(),
+      entityManagerSession(),
       { ...PLANNING, baselines: [candidate({ versionNo: 1 })] },
       {
         path: BASELINES_PATH,
@@ -790,7 +790,7 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
 
   test('MOD-018 is never offered to the person who submitted the baseline (ADR-013)', async () => {
     open(
-      entitySession(),
+      entityManagerSession(),
       { baselines: [candidate({ status: 'SUBMITTED' }), baseline()], runs: [scheduleRun()] },
       { path: BASELINES_PATH },
     );
@@ -858,7 +858,7 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
 
 describe('the Schedule tab sits in the workspace', () => {
   test('its three views are linked from each other, the current one marked', async () => {
-    open(entitySession(), {}, { path: GANTT_PATH });
+    open(entityManagerSession(), {}, { path: GANTT_PATH });
     const nav = await screen.findByRole('navigation', { name: en('schedule.nav.label') });
     expect(
       within(nav)
@@ -880,7 +880,7 @@ describe('the Schedule tab sits in the workspace', () => {
   test('a read refused for want of SCHEDULE_VIEW says so instead of failing', async () => {
     const api = withSchedule(withProject(withProjectLookups(mockApi()), activeProject()));
     api.on('GET', /^\/schedule-activities$/, problem(403, 'PERMISSION_DENIED'));
-    renderApp({ path: SCHEDULE_PATH, session: entitySession() });
+    renderApp({ path: SCHEDULE_PATH, session: entityManagerSession() });
 
     expect(await screen.findByText(en('schedule.forbidden'))).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();

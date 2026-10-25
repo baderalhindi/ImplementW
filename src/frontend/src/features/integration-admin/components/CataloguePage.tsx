@@ -42,7 +42,7 @@ export function CataloguePage({
         catalogue.error === null ? (
           <LoadingState />
         ) : (
-          <ErrorState
+          <ErrorState error={catalogue.error}
             message={integrationProblemMessage(catalogue.error, t)}
             onRetry={catalogue.reload}
           />

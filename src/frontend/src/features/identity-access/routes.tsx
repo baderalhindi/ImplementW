@@ -11,6 +11,7 @@ import { RoleDetailPage, RoleEditPage, RoleListPage } from './roles/RolePages.ts
 import { UserDetailPage } from './users/UserDetailPage.tsx';
 import { UserCreatePage, UserEditPage } from './users/UserFormPage.tsx';
 import { UserListPage } from './users/UserListPage.tsx';
+import { type PermissionCode } from './permissions/permissionCodes.ts';
 
 /** FG-03 administration, mounted under /admin behind the R01 guard (TASK-032 acceptance criterion 1). */
 export const identityAccessRoutes: RouteObject[] = [
@@ -33,14 +34,37 @@ export interface NavigationItem {
   label: TranslationKey;
   /** Exact match only, so /admin/organization is not highlighted on its sub-pages. */
   end?: boolean;
+  /** Offered only to a holder of one of these (the 24 Oct 2026 review, C3); none: to everyone the menu is shown to. */
+  permissions?: readonly PermissionCode[];
 }
 
 export const identityAccessNavigation: NavigationItem[] = [
-  { to: '/admin/users', label: 'identityAccess.nav.users' },
-  { to: '/admin/roles', label: 'identityAccess.nav.roles' },
-  { to: '/admin/permission-matrix', label: 'identityAccess.nav.permissionMatrix' },
-  { to: '/admin/role-assignments', label: 'identityAccess.nav.roleAssignments' },
-  { to: '/admin/organization', label: 'identityAccess.nav.organization', end: true },
-  { to: '/admin/organization/departments', label: 'identityAccess.nav.departments' },
-  { to: '/admin/organization/entities', label: 'identityAccess.nav.entities' },
+  { to: '/admin/users', label: 'identityAccess.nav.users', permissions: ['USER_VIEW'] },
+  { to: '/admin/roles', label: 'identityAccess.nav.roles', permissions: ['ROLE_VIEW'] },
+  {
+    to: '/admin/permission-matrix',
+    label: 'identityAccess.nav.permissionMatrix',
+    permissions: ['ROLE_VIEW'],
+  },
+  {
+    to: '/admin/role-assignments',
+    label: 'identityAccess.nav.roleAssignments',
+    permissions: ['ROLE_ASSIGN'],
+  },
+  {
+    to: '/admin/organization',
+    label: 'identityAccess.nav.organization',
+    end: true,
+    permissions: ['ORGANIZATION_VIEW'],
+  },
+  {
+    to: '/admin/organization/departments',
+    label: 'identityAccess.nav.departments',
+    permissions: ['ORGANIZATION_VIEW'],
+  },
+  {
+    to: '/admin/organization/entities',
+    label: 'identityAccess.nav.entities',
+    permissions: ['ORGANIZATION_VIEW'],
+  },
 ];

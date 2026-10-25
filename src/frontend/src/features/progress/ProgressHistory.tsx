@@ -75,7 +75,7 @@ export function ProgressHistory({ project }: { project: ProjectDetail }): ReactE
         {isForbidden(error) ? (
           <p className="state">{t('progress.forbidden')}</p>
         ) : (
-          <ErrorState message={progressProblemMessage(error, t)} onRetry={reload} />
+          <ErrorState error={error} message={progressProblemMessage(error, t)} onRetry={reload} />
         )}
       </>
     );

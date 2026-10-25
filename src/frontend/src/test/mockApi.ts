@@ -1,5 +1,9 @@
 import { vi } from 'vitest';
 
+import { sessionStore } from '@/features/identity-access/session/sessionStore.ts';
+
+import { shippedPermissions } from './permissionFixtures.ts';
+
 // A route table standing in for the API: each handler answers one method and path, and every request is recorded
 // with its headers and body so a test can assert what the SPA sent. JSON calls arrive through fetch, multipart uploads
 // through XMLHttpRequest (for their progress events); both are answered from the same routes.
@@ -35,6 +39,8 @@ export interface MockApi {
   requestsTo: (method: string, pattern: RegExp) => RecordedRequest[];
   /** The shell's approval-count reads. */
   shellInboxCountReads: RecordedRequest[];
+  /** The shell's permission reads (see SHELL_PERMISSIONS). */
+  shellPermissionReads: RecordedRequest[];
 }
 
 /**
@@ -50,6 +56,17 @@ function isShellInboxCount(method: string, url: URL): boolean {
     url.pathname === '/api/v1/approval-tasks' &&
     url.searchParams.get('pageSize') === '1'
   );
+}
+
+/**
+ * The shell reads what the signed-in person holds with `GET /sessions/current/permissions` once per sign-in. With no handler for
+ * it, it answers what the session's roles ship with (permissionFixtures.ts), so a test of a screen is offered what that role
+ * would be; a test of who is offered what registers its own answer. It is kept out of `requests`, as the approval count is.
+ */
+export const SHELL_PERMISSIONS = /^\/sessions\/current\/permissions$/;
+
+function isShellPermissions(method: string, url: URL): boolean {
+  return method === 'GET' && url.pathname === '/api/v1/sessions/current/permissions';
 }
 
 export function problem(
@@ -87,6 +104,7 @@ export function mockApi(): MockApi {
   const routes: Route[] = [];
   const requests: RecordedRequest[] = [];
   const shellInboxCountReads: RecordedRequest[] = [];
+  const shellPermissionReads: RecordedRequest[] = [];
 
   const answer = async (
     method: string,
@@ -103,15 +121,23 @@ export function mockApi(): MockApi {
       body,
     };
     const shellCount = isShellInboxCount(method, url);
-    (shellCount ? shellInboxCountReads : requests).push(recorded);
+    const shellPermissions = isShellPermissions(method, url);
+    (shellCount ? shellInboxCountReads : shellPermissions ? shellPermissionReads : requests).push(
+      recorded,
+    );
     const routed = shellCount ? '/approval-tasks?pageSize=1' : recorded.path;
     const route = [...routes]
       .reverse()
       .find((candidate) => candidate.method === method && candidate.pattern.test(routed));
-    if (route === undefined && !shellCount) {
+    if (route === undefined && !shellCount && !shellPermissions) {
       throw new Error(`No mock for ${method} ${recorded.path}`);
     }
-    const reply = route === undefined ? { body: page([], 1) } : await route.handler(recorded);
+    const reply =
+      route !== undefined
+        ? await route.handler(recorded)
+        : shellPermissions
+          ? { body: shippedPermissions(sessionStore.getSnapshot().session?.user) }
+          : { body: page([], 1) };
     const status = reply.status ?? 200;
     if (reply.body instanceof Blob) {
       // The bytes, not the Blob: Node's Response does not recognise jsdom's Blob.
@@ -210,6 +236,7 @@ export function mockApi(): MockApi {
     },
     requests,
     shellInboxCountReads,
+    shellPermissionReads,
     requestsTo: (method, pattern) =>
       requests.filter((request) => request.method === method && pattern.test(request.path)),
   };

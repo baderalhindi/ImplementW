@@ -1,4 +1,6 @@
 import { approvalNavigation } from '@/features/approvals/routes.tsx';
+import { AUDIT_TRAIL_PATH, auditNavigation } from '@/features/audit-activity/access.ts';
+import { type AuditAccessView } from '@/features/audit-activity/api/types.ts';
 import { changeRequestNavigation } from '@/features/change-requests/routes.tsx';
 import { documentNavigation } from '@/features/documents/routes.tsx';
 import { externalParticipationNavigation } from '@/features/external-participation/routes.tsx';
@@ -9,8 +11,11 @@ import {
   MY_EXTERNAL_REQUESTS_PATH,
 } from '@/features/external-participation/paths.ts';
 import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
-import { type NavigationItem } from '@/features/identity-access/routes.tsx';
+import { dataImportNavigation } from '@/features/data-import/routes.tsx';
+import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
+import { identityAccessNavigation, type NavigationItem } from '@/features/identity-access/routes.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
+import { integrationAdminNavigation } from '@/features/integration-admin/catalogue.ts';
 import { issuesChallengesNavigation } from '@/features/issues-challenges/routes.tsx';
 import { milestoneNavigation } from '@/features/milestones/routes.tsx';
 import { notificationNavigation } from '@/features/notifications/routes.tsx';
@@ -24,8 +29,9 @@ import { type TranslationKey } from '@/shared/i18n/i18n.ts';
 import { helpNavigation } from './help/routes.tsx';
 
 // The master navigation of Blueprint §20.1: eleven menus in the blueprint's order, each gathering the screens built so
-// far. Administration is left out for a session with no administration or audit screen (§20: unauthorized modules are
-// not shown; the API's check stays authoritative). Help and Knowledge is every signed-in person's (TASK-096).
+// far. A screen is offered only to a holder of the permission it needs, and a menu with no screen left is not shown (§20:
+// unauthorized modules are not shown; the 24 Oct 2026 review, C3). The API's check stays authoritative. Help and Knowledge
+// is every signed-in person's (TASK-096).
 
 export type MenuId =
   | 'home'
@@ -62,32 +68,34 @@ export function isCurrent(to: string, pathname: string, search: string): boolean
 
 /**
  * The Portfolio Dashboard's audience (dashboards.md D-2): R02, R03, R06 and R07 land on it and see the portfolio
- * reports. The session carries roles, not permissions, so this is navigation, not protection.
+ * reports. A dashboard's audience is its roles (ADR-006), not a permission.
  */
 const PORTFOLIO_ROLES: readonly string[] = ['R02', 'R03', 'R06', 'R07'];
 
 /**
  * Blueprint §20.1's Portfolio menu as far as it is built: the Portfolio Dashboard, which has no route of its own and is
- * the Home's rendering of it (dashboards-ui.md D-1), the portfolio report family (SCR-132), and the KPI register.
+ * the Home's rendering of it (dashboards-ui.md D-1), the portfolio report family (SCR-132), and the KPI register — all
+ * of it the portfolio audience's only, so a Project Manager is not given a Portfolio menu (the review, finding 1b).
  */
 function portfolioNavigation(user: SessionUser): NavigationItem[] {
   const audience =
     user.userType !== 'EXTERNAL' &&
     user.roleAssignments.some((assignment) => PORTFOLIO_ROLES.includes(assignment.roleCode));
-  return [
-    ...(audience
-      ? [
-          {
-            to: '/?dashboard=PORTFOLIO',
-            label: 'common.menu.portfolioDashboard',
-            end: true,
-          } as const,
-          { to: '/reports/portfolio', label: 'common.menu.portfolioReports' } as const,
-        ]
-      : []),
-    ...kpiNavigation,
-  ];
+  return audience
+    ? [
+        { to: '/?dashboard=PORTFOLIO', label: 'common.menu.portfolioDashboard', end: true },
+        {
+          to: '/reports/portfolio',
+          label: 'common.menu.portfolioReports',
+          permissions: ['PROJECT_VIEW'],
+        },
+        ...kpiNavigation,
+      ]
+    : [];
 }
+
+/** The audit categories that are platform evidence (FG-06 §7.2): their holders read the audit trail under Administration. */
+const ADMINISTRATIVE_AUDIT: readonly string[] = ['ADMINISTRATION', 'SECURITY', 'INTEGRATION'];
 
 function menu(
   id: MenuId,
@@ -98,8 +106,21 @@ function menu(
   return { id, label, to: items[0]?.to ?? prefixes[0] ?? '/', prefixes, items };
 }
 
-/** The menus this session sees. `administration` is the administration and audit screens the session may open. */
-export function menusFor(user: SessionUser, administration: NavigationItem[]): Menu[] {
+/**
+ * The menus this session sees: every screen whose permission `permissions` holds, in the menus left with one. `audit` is
+ * GET /audit-access: the audit trail sits under Administration for a holder of an administrative audit category and under
+ * Projects for one who reads business audit only, so a business role is never given an Administration menu.
+ */
+export function menusFor(user: SessionUser, permissions: Permissions, audit: AuditAccessView | null): Menu[] {
+  const auditItems = auditNavigation(audit);
+  const administrative = audit?.categories.some((category) => ADMINISTRATIVE_AUDIT.includes(category)) ?? false;
+  const businessAudit = administrative ? [] : auditItems.filter((item) => item.to === AUDIT_TRAIL_PATH);
+  const administration = [
+    ...identityAccessNavigation,
+    ...integrationAdminNavigation,
+    ...dataImportNavigation,
+    ...(administrative ? auditItems : auditItems.filter((item) => item.to !== AUDIT_TRAIL_PATH)),
+  ];
   const menus = [
     { id: 'home', label: 'common.menu.home', to: '/', prefixes: [], items: [] } satisfies Menu,
     menu(
@@ -108,7 +129,12 @@ export function menusFor(user: SessionUser, administration: NavigationItem[]): M
       ['/kpis', '/reports/portfolio'],
       portfolioNavigation(user),
     ),
-    menu('projects', 'common.menu.projects', ['/projects'], projectNavigation),
+    menu(
+      'projects',
+      'common.menu.projects',
+      ['/projects', ...businessAudit.map((item) => item.to)],
+      [...projectNavigation, ...businessAudit],
+    ),
     menu(
       'myWork',
       'common.menu.myWork',
@@ -152,7 +178,10 @@ export function menusFor(user: SessionUser, administration: NavigationItem[]): M
     menu('notifications', 'common.menu.notifications', ['/notifications'], notificationNavigation),
     menu('administration', 'common.menu.administration', ['/admin'], administration),
     menu('help', 'common.menu.help', ['/help'], helpNavigation),
-  ];
+  ].map((candidate) => {
+    const items = candidate.items.filter((item) => permissions.can(...(item.permissions ?? [])));
+    return { ...candidate, to: items[0]?.to ?? candidate.to, items };
+  });
   return menus.filter((candidate) => candidate.id === 'home' || candidate.items.length > 0);
 }
 

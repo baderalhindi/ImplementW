@@ -26,7 +26,7 @@ import {
 } from '@/test/milestoneFixtures.ts';
 import {
   ENTITY_USER_ID,
-  entitySession,
+  entityManagerSession,
   projectDetail,
   PROJECT_ID,
   reviewerSession,
@@ -62,7 +62,7 @@ function open(
   path: string,
   state: MilestoneState = {},
   {
-    session = entitySession(),
+    session = entityManagerSession(),
     project = activeProject(),
     language = 'en',
   }: { session?: Session; project?: ProjectDetail; language?: Language } = {},

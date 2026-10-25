@@ -2,19 +2,13 @@ import { type ReactElement, type RefObject, useEffect, useId, useRef, useState }
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
 import { useInboxCount } from '@/features/approvals/useInboxCount.ts';
-import { auditNavigation } from '@/features/audit-activity/access.ts';
 import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
-import { dataImportNavigation } from '@/features/data-import/routes.tsx';
-import { identityAccessNavigation } from '@/features/identity-access/routes.tsx';
-import { integrationAdminNavigation } from '@/features/integration-admin/catalogue.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
+import { PermissionsProvider } from '@/features/identity-access/permissions/PermissionsProvider.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { sessionStore } from '@/features/identity-access/session/sessionStore.ts';
 import { StepUpDialog } from '@/features/identity-access/session/StepUpDialog.tsx';
-import {
-  SYSTEM_ADMINISTRATOR_ROLE,
-  useHasRole,
-  useSession,
-} from '@/features/identity-access/session/useSession.ts';
+import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { unreadCountStore, useUnreadCount } from '@/features/notifications/unreadCount.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
@@ -124,13 +118,22 @@ function LanguageSwitch({ labelled = false }: { labelled?: boolean }): ReactElem
   );
 }
 
-/** The top bar's Create: the records that can be started from anywhere, without a project chosen first. */
-function CreateMenu(): ReactElement {
+/**
+ * The top bar's Create: the records that can be started from anywhere, without a project chosen first — each offered only to
+ * whoever may start it, and the button not at all to someone who may start neither (the review, C3).
+ */
+function CreateMenu(): ReactElement | null {
   const { t } = useI18n();
+  const { can } = usePermissions();
   const { open, setOpen, containerRef, buttonRef, menuId } = usePopover();
   const close = (): void => {
     setOpen(false);
   };
+  const project = can('PROJECT_REGISTER');
+  const changeRequest = can('CHANGE_REQUEST_RAISE');
+  if (!project && !changeRequest) {
+    return null;
+  }
 
   return (
     <div className="popover" ref={containerRef}>
@@ -148,16 +151,20 @@ function CreateMenu(): ReactElement {
         {t('common.shell.create')}
       </button>
       <ul className="popover__menu" id={menuId} hidden={!open}>
-        <li>
-          <Link className="popover__option" to="/projects/new" onClick={close}>
-            {t('projects.nav.create')}
-          </Link>
-        </li>
-        <li>
-          <Link className="popover__option" to="/change-requests/new" onClick={close}>
-            {t('common.shell.createChangeRequest')}
-          </Link>
-        </li>
+        {project && (
+          <li>
+            <Link className="popover__option" to="/projects/new" onClick={close}>
+              {t('projects.nav.create')}
+            </Link>
+          </li>
+        )}
+        {changeRequest && (
+          <li>
+            <Link className="popover__option" to="/change-requests/new" onClick={close}>
+              {t('common.shell.createChangeRequest')}
+            </Link>
+          </li>
+        )}
       </ul>
     </div>
   );
@@ -287,14 +294,12 @@ function Rail({
   current,
   pathname,
   collapsed,
-  administrationShown,
   onToggleCollapsed,
 }: {
   menus: Menu[];
   current: Menu | undefined;
   pathname: string;
   collapsed: boolean;
-  administrationShown: boolean;
   onToggleCollapsed: () => void;
 }): ReactElement {
   const { t } = useI18n();
@@ -362,12 +367,6 @@ function Rail({
         </ul>
       </nav>
       <div className="rail__footer">
-        {!administrationShown && !collapsed && (
-          <p className="rail__note">
-            <ShellIcon name="administration" />
-            {t('common.menu.administrationHidden')}
-          </p>
-        )}
         <button
           type="button"
           className="rail__menu rail__toggle"
@@ -439,14 +438,7 @@ function SignedOutLayout(): ReactElement {
 function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
   const { t } = useI18n();
   const { pathname, search } = useLocation();
-  const administrator = useHasRole(SYSTEM_ADMINISTRATOR_ROLE);
-  const auditItems = auditNavigation(useAuditAccess().data ?? null);
-  const menus = menusFor(user, [
-    ...(administrator
-      ? [...identityAccessNavigation, ...integrationAdminNavigation, ...dataImportNavigation]
-      : []),
-    ...auditItems,
-  ]);
+  const menus = menusFor(user, usePermissions(), useAuditAccess().data ?? null);
   const current = activeMenu(menus, pathname, search);
   const [collapsed, setCollapsed] = useState(readCollapsed);
   // The drawer is open on the page it was opened on, so choosing a screen closes it.
@@ -494,7 +486,6 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
           current={current}
           pathname={pathname}
           collapsed={railCollapsed}
-          administrationShown={menus.some((menu) => menu.id === 'administration')}
           onToggleCollapsed={() => {
             setCollapsed((value) => {
               writeCollapsed(!value);
@@ -549,5 +540,11 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
 /** The application shell: the sign-in page's header while signed out, the master navigation once signed in. */
 export function AppLayout(): ReactElement {
   const { session } = useSession();
-  return session === null ? <SignedOutLayout /> : <SignedInLayout user={session.user} />;
+  return session === null ? (
+    <SignedOutLayout />
+  ) : (
+    <PermissionsProvider>
+      <SignedInLayout user={session.user} />
+    </PermissionsProvider>
+  );
 }

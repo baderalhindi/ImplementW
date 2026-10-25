@@ -57,7 +57,7 @@ export function CreateCloseoutCasePage(): ReactElement {
         {projectId === '' ? (
           <p className="state">{t('suspensionClosure.noProject')}</p>
         ) : (
-          <ErrorState
+          <ErrorState error={project.error}
             message={suspensionClosureProblemMessage(project.error, t)}
             onRetry={project.reload}
           />
@@ -99,7 +99,7 @@ function EditCloseoutCase({
         {isForbidden(record.error) ? (
           <p className="state">{t('suspensionClosure.closeout.forbidden')}</p>
         ) : (
-          <ErrorState
+          <ErrorState error={record.error}
             message={suspensionClosureProblemMessage(record.error, t)}
             onRetry={record.reload}
           />
