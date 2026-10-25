@@ -210,7 +210,8 @@ test('UJ-014 formal audit, activity and operational evidence stay distinct, corr
   });
 
   await test.step('QA operational evidence: refusals carry their own correlation id, and ADM-052 shows the pipeline, apart from audit', async () => {
-    const refused = await manager.api.send('GET', `/audit-events?category=BUSINESS`);
+    // The Project Manager reads business audit in its scope, but never the administration audit: a refusal.
+    const refused = await manager.api.send('GET', `/audit-events?category=ADMINISTRATION`);
     expect((refused.body as { correlationId?: string }).correlationId).toMatch(UUID);
 
     const operations = administrator.page;
