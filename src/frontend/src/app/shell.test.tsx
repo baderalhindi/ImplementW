@@ -95,15 +95,16 @@ describe('the master navigation', () => {
   });
 
   test('Create offers only what the person may start, and is not there for someone who may start nothing', async () => {
-    withDashboards(mockApi(), { catalogue: catalogueFor(['R06']) });
-    const viewer = renderApp({ path: '/', session: sessionFor(['R06']) });
+    withInbox(withDashboards(mockApi(), { catalogue: catalogueFor(['R06']) }));
+    // On a screen of its own, so the Home's quick actions do not stand beside the menu's.
+    const viewer = renderApp({ path: '/notifications', session: sessionFor(['R06']) });
     await findMainMenu();
     expect(screen.queryByRole('button', { name: en('common.shell.create') })).toBeNull();
     viewer.unmount();
     cleanup();
 
-    withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) });
-    renderApp({ path: '/', session: sessionFor(['R04']) });
+    withInbox(withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) }));
+    renderApp({ path: '/notifications', session: sessionFor(['R04']) });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: en('common.shell.create') }));
     expect(screen.getByRole('link', { name: en('projects.nav.create') })).toBeTruthy();
@@ -131,11 +132,11 @@ describe('the master navigation', () => {
 
   test('a Portfolio Manager’s Portfolio menu leads to the Portfolio Dashboard, the portfolio reports and the KPI register', async () => {
     withDashboards(mockApi(), { catalogue: catalogueFor(['R02']) });
-    renderApp({ path: '/?dashboard=PORTFOLIO', session: sessionFor(['R02']) });
+    renderApp({ path: '/dashboards?dashboard=PORTFOLIO', session: sessionFor(['R02']) });
 
     await findOpenMenu('common.menu.portfolio');
     expect(openMenuTargets('common.menu.portfolio')).toEqual([
-      '/?dashboard=PORTFOLIO',
+      '/dashboards?dashboard=PORTFOLIO',
       '/reports/portfolio',
       '/kpis',
     ]);

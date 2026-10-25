@@ -11,6 +11,7 @@ import { dashboardsApi } from './api/dashboardsApi.ts';
 import { type DashboardCatalogueEntry } from './api/types.ts';
 import { HostedDashboard } from './HostedDashboard.tsx';
 import { hostedEntries, landingRole, ROLE_LANDINGS, selectedEntry } from './landing.ts';
+import { DASHBOARDS_PATH } from './paths.ts';
 import { dashboardProblemMessage } from './problems.ts';
 import { ProjectLanding } from './ProjectLanding.tsx';
 
@@ -18,14 +19,14 @@ const DASHBOARD_PARAM = 'dashboard';
 const DEPARTMENT_PARAM = 'department';
 
 /**
- * The role-aware Home (FG-01 §5.1; Blueprint §20.1 "Home: my/role dashboard"). It has no screen id and no dashboard
- * route of its own: Step 16 binds DSH-001 to DSH-008 and DSH-010 to DSH-012 to the authorised shell, and they are
- * renderings of ADR-006's three dashboards (TASK-069 D-2). The person lands on the dashboard the API marks as their
- * landing, named as Blueprint §20.2 names it for their role; the other dashboards their roles may open are one link
- * away. A landing on the Project Dashboard (DSH-008) lists the person's projects, each opening SCR-040, where DSH-009
- * renders — never here.
+ * The role dashboards (FG-01 §5.1), at /dashboards since the Home became the person's own work (the 24 Oct 2026 review, H2:
+ * "Home and Portfolio need distinct jobs"). Step 16 binds DSH-001 to DSH-008 and DSH-010 to DSH-012 to the authorised shell, and
+ * they are renderings of ADR-006's three dashboards (TASK-069 D-2). The person opens on the dashboard the API marks as their
+ * landing, named as Blueprint §20.2 names it for their role; the other dashboards their roles may open are one link away — the
+ * Portfolio Dashboard among them for its audience, the Portfolio menu's analysis. A landing on the Project Dashboard (DSH-008)
+ * lists the person's projects, each opening SCR-040, where DSH-009 renders — never here.
  */
-export function HomeDashboardPage(): ReactElement {
+export function DashboardsPage(): ReactElement {
   const { t, language } = useI18n();
   const { session } = useSession();
   const [params, setParams] = useSearchParams();
@@ -87,11 +88,7 @@ export function HomeDashboardPage(): ReactElement {
         description={
           rendering === undefined
             ? entry.description?.[language]
-            : t('dashboards.home.rendering', {
-                dashboardId: rendering.dashboardId,
-                dashboard: entry.name[language],
-                version: entry.versionNo,
-              })
+            : t('dashboards.home.rendering', { dashboard: entry.name[language] })
         }
       />
       {others.length > 1 && <DashboardSwitch entries={others} current={entry} />}
@@ -129,7 +126,11 @@ function DashboardSwitch({
           .map((candidate) => (
             <li key={candidate.code}>
               <Link
-                to={candidate.isDefaultLanding ? '/' : `/?${DASHBOARD_PARAM}=${candidate.code}`}
+                to={
+                  candidate.isDefaultLanding
+                    ? DASHBOARDS_PATH
+                    : `${DASHBOARDS_PATH}?${DASHBOARD_PARAM}=${candidate.code}`
+                }
                 aria-current={candidate.code === current.code ? 'page' : undefined}
               >
                 {candidate.name[language]}

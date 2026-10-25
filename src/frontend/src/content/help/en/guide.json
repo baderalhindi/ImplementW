@@ -47,7 +47,7 @@
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] opens the Portfolio Dashboard. Its heading names it for your role: [[dashboards.landing.R02]], [[dashboards.landing.R03]], [[dashboards.landing.R06]] or [[dashboards.landing.R07]]. It is one dashboard, shown within the scope your roles grant.",
+          "[[common.menu.home]] lists your own work: decisions waiting for you, your requests in approval, what is due and what is new. The Portfolio Dashboard opens from [[common.menu.portfolio]] or from [[common.menu.dashboards]]; its heading names it for your role: [[dashboards.landing.R02]], [[dashboards.landing.R03]], [[dashboards.landing.R06]] or [[dashboards.landing.R07]]. It is one dashboard, shown within the scope your roles grant.",
           "It shows projects by lifecycle state, Published and Current Overall Project Health, current schedule health, reporting completeness, open risks by rating, KPI condition, and the published and current financial position."
         ],
         "note": "Each widget reads from one source, such as projects, progress, risks or finance. Until AHDA grants your role permission to view a source, that source's widgets read [[dashboards.unknown.RESTRICTED.label]]."
@@ -93,7 +93,7 @@
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] opens the Governance Dashboard under the heading [[dashboards.landing.R01]]. It shows reporting completeness, projects by lifecycle state, open risks and their reviews, KPI condition, and the dashboard configuration backlog: where the dashboard definitions you administer stand in their lifecycle. With the grants shipped today, a System Administrator may view only the configuration backlog among these sources; the other widgets read [[dashboards.unknown.RESTRICTED.label]] until AHDA grants the role permission to view them."
+          "[[common.menu.home]] shows the platform's health: integrations that are down, audit messages that are failing and the people the platform holds, each leading to the screen where you act on it, with the administration you may start from there. A System Administrator holds no business data, so the business dashboards are not offered to you."
         ],
         "note": "Signing in as a System Administrator always needs the verification code from your authenticator app. Some administration actions ask you to confirm it again before they are carried out."
       },
@@ -129,7 +129,7 @@
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] opens the Governance Dashboard under the heading [[dashboards.landing.R04]]. Start with Reporting completeness: it counts your active projects whose progress reporting is up to date and those with a report overdue. Open risks and their reviews counts open risks by rating and how many are past their review date; KPI condition shows the state of your projects' indicators. Dashboard configuration backlog is for administrators and reads [[dashboards.unknown.RESTRICTED.label]] for you.",
+          "[[common.menu.home]] lists your own work: your open tasks and what is due this week, your requests in approval and what is new. [[common.menu.dashboards]], under [[common.menu.dashboardsReports]], opens the Governance Dashboard under the heading [[dashboards.landing.R04]]. Start with Reporting completeness: it counts your active projects whose progress reporting is up to date and those with a report overdue. Open risks and their reviews counts open risks by rating and how many are past their review date; KPI condition shows the state of your projects' indicators. A widget you may not see is not shown.",
           "If you work for an external entity, your Home differs: see the guide for external entity users."
         ]
       },
@@ -161,7 +161,7 @@
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] opens the Governance Dashboard under the heading [[dashboards.landing.R05]]. It shows the obligations that need following up across the projects you may see: reporting completeness, open risks and their reviews, and KPI condition. Each widget reads [[dashboards.unknown.RESTRICTED.label]] until AHDA grants your role permission to view its source."
+          "[[common.menu.home]] lists what is new for you and what you may start. [[common.menu.dashboards]], under [[common.menu.dashboardsReports]], opens the Governance Dashboard under the heading [[dashboards.landing.R05]]. It shows the obligations that need following up across the projects you are assigned to: reporting completeness, open risks and their reviews, and KPI condition. A widget you may not see is not shown."
         ]
       },
       {
@@ -188,7 +188,7 @@
       {
         "heading": "What you see",
         "paragraphs": [
-          "[[common.menu.home]] lists [[dashboards.projectLanding.caption]]: the projects shared with your entity. Open a project to see its dashboard in [[projects.workspace.tabs.overview]], read only and within your entity's scope. Each widget's badge says whether a figure is published by AHDA or current; widgets your entity may not see read [[dashboards.unknown.RESTRICTED.label]]."
+          "[[common.menu.home]] lists the update requests waiting for your answer, your tasks and what is new. Your entity's projects are under [[common.menu.projects]]: open one to see its dashboard in [[projects.workspace.tabs.overview]], read only and within your entity's scope. Each widget's badge says whether a figure is published by AHDA or current; a widget your entity may not see is not shown."
         ]
       },
       {

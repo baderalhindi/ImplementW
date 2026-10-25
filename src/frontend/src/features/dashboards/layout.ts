@@ -23,6 +23,12 @@ export function arrangedWidgets(widgets: DashboardWidgetResult[]): DashboardWidg
 }
 
 /** The widgets the dashboard shows. */
+/**
+ * The widgets the canvas draws: not hidden by the person, and not restricted outright — a widget the person may not see at all is left
+ * out rather than drawn as "restricted" (the 24 Oct 2026 review, M-5). One that shows part of its data, with the rest masked, stays.
+ */
 export function visibleWidgets(widgets: DashboardWidgetResult[]): DashboardWidgetResult[] {
-  return arrangedWidgets(widgets).filter((widget) => !widget.isHidden);
+  return arrangedWidgets(widgets).filter(
+    (widget) => !widget.isHidden && !(widget.unknownReason === 'RESTRICTED' && widget.data === null),
+  );
 }

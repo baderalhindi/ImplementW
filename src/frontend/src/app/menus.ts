@@ -11,6 +11,8 @@ import {
   MY_EXTERNAL_REQUESTS_PATH,
 } from '@/features/external-participation/paths.ts';
 import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
+import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
+import { dashboardNavigation } from '@/features/dashboards/routes.tsx';
 import { dataImportNavigation } from '@/features/data-import/routes.tsx';
 import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import { identityAccessNavigation, type NavigationItem } from '@/features/identity-access/routes.tsx';
@@ -83,7 +85,7 @@ function portfolioNavigation(user: SessionUser): NavigationItem[] {
     user.roleAssignments.some((assignment) => PORTFOLIO_ROLES.includes(assignment.roleCode));
   return audience
     ? [
-        { to: '/?dashboard=PORTFOLIO', label: 'common.menu.portfolioDashboard', end: true },
+        { to: PORTFOLIO_DASHBOARD_PATH, label: 'common.menu.portfolioDashboard', end: true },
         {
           to: '/reports/portfolio',
           label: 'common.menu.portfolioReports',
@@ -172,8 +174,8 @@ export function menusFor(user: SessionUser, permissions: Permissions, audit: Aud
     menu(
       'dashboardsReports',
       'common.menu.dashboardsReports',
-      ['/reports'],
-      reportNavigation(user),
+      ['/dashboards', '/reports'],
+      [...(user.userType === 'EXTERNAL' ? [] : dashboardNavigation), ...reportNavigation(user)],
     ),
     menu('notifications', 'common.menu.notifications', ['/notifications'], notificationNavigation),
     menu('administration', 'common.menu.administration', ['/admin'], administration),

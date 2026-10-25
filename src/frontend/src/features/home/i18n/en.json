@@ -1,0 +1,60 @@
+{
+  "title": "My work",
+  "description": "What is waiting for you, {name}: decisions, your requests, what is due and what is new.",
+  "unavailable": "This list cannot be shown now. Open it from the menu to try again.",
+  "dueAt": "Due {date}",
+  "dueOn": "Due {date}",
+  "actions": {
+    "title": "Start or open"
+  },
+  "approvals": {
+    "title": "Waiting for your decision",
+    "all": "Open your approvals inbox",
+    "none": "Nothing is waiting for your decision."
+  },
+  "requests": {
+    "title": "Your requests in approval",
+    "all": "See all your requests",
+    "none": "None of your requests is waiting for a decision.",
+    "submitted": "Submitted {date}"
+  },
+  "tasks": {
+    "title": "Your open tasks",
+    "all": "See all your tasks",
+    "none": "You have no open task.",
+    "summary": "{overdue} overdue · {week} due within a week"
+  },
+  "externalRequests": {
+    "title": "Requests waiting for your answer",
+    "all": "See your update requests",
+    "none": "No update request is waiting for your answer."
+  },
+  "notifications": {
+    "title": "Unread notifications",
+    "all": "See all notifications",
+    "none": "You have read everything."
+  },
+  "health": {
+    "title": "Platform health",
+    "description": "The state of the platform's integrations, audit pipeline and people, and the administration you may start from here.",
+    "createUser": "Create a user",
+    "integrations": {
+      "title": "Integrations down",
+      "all": "Open the integrations overview",
+      "allUp": "Every enabled integration is up.",
+      "counts": "{down} down · {stale} with stale data · {alerts} open alerts"
+    },
+    "audit": {
+      "title": "Audit messages failing",
+      "all": "Open the system event logs",
+      "healthy": "No audit message is failing.",
+      "backlog": "{pending} waiting · Activity {lag} behind"
+    },
+    "people": {
+      "title": "Active people",
+      "all": "Open the users list",
+      "none": "No active person yet.",
+      "counts": "{internal} internal · {external} external · {disabled} disabled"
+    }
+  }
+}

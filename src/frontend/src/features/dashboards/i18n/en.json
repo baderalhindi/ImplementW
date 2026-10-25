@@ -7,7 +7,7 @@
     "title": "Dashboard",
     "none": "No dashboard is published for your roles",
     "noneHint": "Your roles open no dashboard yet. Use the menu to reach the registers you can see.",
-    "rendering": "{dashboardId} · shown by the {dashboard}, version {version}",
+    "rendering": "Shown by the {dashboard}",
     "switch": "Your dashboards",
     "landingMarker": " (your landing page)"
   },
