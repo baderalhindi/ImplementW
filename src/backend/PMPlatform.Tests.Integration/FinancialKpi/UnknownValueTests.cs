@@ -25,7 +25,7 @@ public sealed class UnknownValueTests(FinancialKpiTestHost host)
         // A new update presumes nothing: every figure is null and MISSING.
         JsonObject started = await client.CreatedOrFailAsync(sessions.ProjectManager, FinancialKpiDriver.Updates, new { projectId });
         Guid id = AdministrationApi.IdOf(started);
-        AssertNull(started, "actualExpenditureToDateSar", "forecastAtCompletionSar");
+        AssertNull(await client.GetOrFailAsync(sessions.Portfolio, $"{FinancialKpiDriver.Updates}/{id}"), "actualExpenditureToDateSar", "forecastAtCompletionSar");
         Assert.Equal("MISSING", started.Text("valueStatus"));
 
         // A figure is present exactly when MEASURED: "0.00" is not a way to say "unknown", and MEASURED needs the figure.

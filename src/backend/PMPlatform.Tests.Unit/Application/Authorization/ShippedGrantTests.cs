@@ -6,7 +6,7 @@ namespace PMPlatform.Tests.Unit.Application.Authorization;
 
 /// <summary>
 /// The shipped-default grants against the platform catalogue: every role × every permission. A granted cell has an allow
-/// and a deny case; a withheld cell is denied, 403 at the gate and 404 on a record. Only the source-backed rows are shipped (seed record F-1).
+/// and a deny case; a withheld cell is denied, 403 at the gate and 404 on a record. The rows are the agreed matrix (shipped-permission-matrix.md).
 /// </summary>
 public sealed class ShippedGrantTests
 {
@@ -64,11 +64,11 @@ public sealed class ShippedGrantTests
         switch (scope)
         {
             // Another user's layout or report definition, or a project someone else manages on the entity Project Manager's
-            // own assignment: not visible, so 404 (R-47).
+            // own assignment: out of scope — 404, or 403 where another grant of the group lets the holder see it (R-47).
             case DataScope.Own:
-                Assert.Equal(outOfScope, await scenario.AuthorizeAsync(permission, IsEntityProjectManager(role)
+                Assert.Equal(AuthorizationDenial.OutOfScope, (await scenario.AuthorizeAsync(permission, IsEntityProjectManager(role)
                     ? new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId, OwnerUserId = OtherUserId }
-                    : new AuthorizationSubject { OwnerUserId = OtherUserId }));
+                    : new AuthorizationSubject { OwnerUserId = OtherUserId })).Denial);
                 break;
 
             // ALL leaves nothing out of scope; the same holder, disabled, holds nothing.
@@ -92,12 +92,17 @@ public sealed class ShippedGrantTests
                 break;
 
             // TASK-066: a record of the holder's own entity and project assigned to someone else is out of scope — 403 where another
-            // grant lets them see it (R-47), else 404 — and one assigned to them but of another entity is out of reach (ADR-013).
+            // grant lets them see it (R-47), else 404 — and, for an external holder, one assigned to them but of another entity is out of
+            // reach (ADR-013). An internal holder with no project on its assignment reaches only the records it is named on (D-4).
             case DataScope.Assigned:
                 Assert.Equal(AuthorizationDenial.OutOfScope, (await scenario.AuthorizeAsync(permission,
                     new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = EntityId, OwnerUserId = OtherUserId, AssignedUserIds = [OtherUserId] })).Denial);
-                Assert.Equal(outOfScope, await scenario.AuthorizeAsync(permission,
-                    new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = OtherEntityId, OwnerUserId = OtherUserId, AssignedUserIds = [UserId] }));
+                if (IsEntityProjectManager(role))
+                {
+                    Assert.Equal(outOfScope, await scenario.AuthorizeAsync(permission,
+                        new AuthorizationSubject { ProjectId = ProjectId, ExternalEntityId = OtherEntityId, OwnerUserId = OtherUserId, AssignedUserIds = [UserId] }));
+                }
+
                 break;
 
             // No shipped grant has another scope yet; the one that first does adds its deny case here.
@@ -126,6 +131,21 @@ public sealed class ShippedGrantTests
             (await scenario.AuthorizeAsync(permission, new AuthorizationSubject { OwnerUserId = UserId })).Outcome);
     }
 
+    /// <summary>
+    /// The agreed matrix, stated a second time and independently of the catalogue: every permission of the platform with the roles that hold
+    /// it and at what scope — Blueprint v2.0 Appendix A as the 24 Oct 2026 review applies it (shipped-permission-matrix.md §3). A grant added,
+    /// removed or re-scoped anywhere but here fails, so a re-seed cannot regress the matrix (review C2).
+    /// </summary>
+    [Fact]
+    public void TheShippedGrantsAreTheAgreedMatrix()
+    {
+        Assert.Equal(PermissionCatalogue.Platform.Definitions.Select(d => d.Code).Order(StringComparer.Ordinal), AgreedMatrix.Keys.Order(StringComparer.Ordinal));
+        Assert.All(AgreedMatrix, row => Assert.Equal(
+            row.Value,
+            string.Join(' ', PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode == row.Key)
+                .Select(g => $"{g.RoleCode}:{ScopeCode(g.Scope)}").Order(StringComparer.Ordinal))));
+    }
+
     /// <summary>ADR-019, verbatim: granted to R02, R03 and R07 and withheld from R04, R05, R06 and R08.</summary>
     [Theory]
     [InlineData(PermissionCatalogue.LayoutPersonalize)]
@@ -150,34 +170,6 @@ public sealed class ShippedGrantTests
     }
 
     /// <summary>
-    /// ADR-013's amendment to TASK-037, verbatim: entity Project Managers may upload, view and see version history on their own
-    /// project. R04 at ENTITY, and nothing else: managing documents waits for Appendix A (document-management.md F-1).
-    /// </summary>
-    [Fact]
-    public void DocumentViewAndUploadGoToTheEntityProjectManagerOnly()
-    {
-        Assert.Equal(
-            [("R04", PermissionCatalogue.DocumentView, DataScope.Entity), ("R04", PermissionCatalogue.DocumentUpload, DataScope.Entity)],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("DOCUMENT_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
-    }
-
-    /// <summary>
-    /// ADR-013's amendment to TASK-041, verbatim: external entity users may create a project draft for their own entity, and
-    /// entities see their own projects. R04 and R08 view and register at ENTITY; AHDA's review and activation gates ship to
-    /// no one until Appendix A (project-registration.md F-1).
-    /// </summary>
-    [Fact]
-    public void ProjectViewAndRegisterGoToEntityUsersOnly()
-    {
-        Assert.Equal(
-            [
-                ("R04", PermissionCatalogue.ProjectView, DataScope.Entity), ("R04", PermissionCatalogue.ProjectRegister, DataScope.Entity),
-                ("R08", PermissionCatalogue.ProjectView, DataScope.Entity), ("R08", PermissionCatalogue.ProjectRegister, DataScope.Entity),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("PROJECT_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
-    }
-
-    /// <summary>
     /// ADR-013: an External Entity User (R08, an entity-wide assignment) registers a new project of their own entity, and no
     /// other entity's, nor one with no entity at all.
     /// </summary>
@@ -190,22 +182,6 @@ public sealed class ShippedGrantTests
         Assert.Equal(AuthorizationDecision.Allowed, await scenario.AuthorizeAsync(PermissionCatalogue.ProjectRegister, new AuthorizationSubject { DepartmentId = DepartmentId, ExternalEntityId = EntityId }));
         Assert.False((await scenario.AuthorizeAsync(PermissionCatalogue.ProjectRegister, new AuthorizationSubject { DepartmentId = DepartmentId, ExternalEntityId = OtherEntityId })).IsAllowed);
         Assert.False((await scenario.AuthorizeAsync(PermissionCatalogue.ProjectRegister, new AuthorizationSubject { DepartmentId = DepartmentId })).IsAllowed);
-    }
-
-    /// <summary>
-    /// ADR-013's amendment to TASK-044, verbatim: an assigned entity Project Manager submits progress on their own project, and
-    /// entities see progress and health on their own projects. R04 views and submits at OWN — the projects they manage — and
-    /// R08 views at ENTITY; review ships to no one until Appendix A (progress-update.md F-2).
-    /// </summary>
-    [Fact]
-    public void ProgressGoesToTheProjectManagerAndTheEntityOnly()
-    {
-        Assert.Equal(
-            [
-                ("R04", PermissionCatalogue.ProgressView, DataScope.Own), ("R04", PermissionCatalogue.ProgressSubmit, DataScope.Own),
-                ("R08", PermissionCatalogue.ProgressView, DataScope.Entity),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("PROGRESS_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
     }
 
     /// <summary>
@@ -228,19 +204,6 @@ public sealed class ShippedGrantTests
         Assert.False((await internalManager.AuthorizeAsync(PermissionCatalogue.ProgressSubmit, Managed(OtherProjectId, null, OtherUserId))).IsAllowed);
     }
 
-    /// <summary>
-    /// WF-03's specification §3: the Project Manager owns the schedule — builds it, keeps its forecast, submits its baselines.
-    /// R04 views and edits at OWN, the projects they manage; baseline approval is WF-11's APPROVAL_DECIDE, and the other roles'
-    /// schedule grants wait for Appendix A (schedule-baseline.md F-2).
-    /// </summary>
-    [Fact]
-    public void ScheduleGoesToTheProjectManagerOnly()
-    {
-        Assert.Equal(
-            [("R04", PermissionCatalogue.ScheduleView, DataScope.Own), ("R04", PermissionCatalogue.ScheduleEdit, DataScope.Own)],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("SCHEDULE_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
-    }
-
     /// <summary>ADR-013: an entity Project Manager edits the schedule of the project they manage and of no other, as an internal one does.</summary>
     [Fact]
     public async Task OnlyTheProjectsOwnManagerEditsItsSchedule()
@@ -251,24 +214,6 @@ public sealed class ShippedGrantTests
         Assert.Equal(AuthorizationDecision.Allowed, await entityManager.AuthorizeAsync(PermissionCatalogue.ScheduleEdit, Managed(ProjectId, EntityId, UserId)));
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ScheduleEdit, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ScheduleEdit, Managed(OtherProjectId, EntityId, UserId))).IsAllowed);
-    }
-
-    /// <summary>
-    /// TASK-048: the Project Manager plans the tasks, may edit a task's actual percentage (ADR-009) and holds the controlled
-    /// reopen, at OWN — the projects they manage. TASK-066's gate decision limits an external contributor's direct source action to
-    /// assigned tasks (WF-13 Path A): R08 views and updates the tasks it owns, at ASSIGNED, and neither plans nor reopens. The other
-    /// owners' ASSIGNED grants wait for Appendix A (project-task.md F-2).
-    /// </summary>
-    [Fact]
-    public void TasksGoToTheProjectManagerAndToEntityUsersOnTheTasksTheyOwn()
-    {
-        Assert.Equal(
-            [
-                ("R04", PermissionCatalogue.TaskView, DataScope.Own), ("R04", PermissionCatalogue.TaskUpdate, DataScope.Own),
-                ("R04", PermissionCatalogue.TaskManage, DataScope.Own), ("R04", PermissionCatalogue.TaskReopen, DataScope.Own),
-                ("R08", PermissionCatalogue.TaskView, DataScope.Assigned), ("R08", PermissionCatalogue.TaskUpdate, DataScope.Assigned),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("TASK_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
     }
 
     /// <summary>ADR-013's amendment to TASK-048: an assigned entity Project Manager acts directly on the tasks of their own project, and of no other.</summary>
@@ -303,18 +248,6 @@ public sealed class ShippedGrantTests
         Assert.Equal(AuthorizationDecision.Allowed, await reopener.AuthorizeAsync(PermissionCatalogue.TaskReopen, task));
     }
 
-    /// <summary>
-    /// TASK-050: the Project Manager views and submits milestone achievement claims at OWN — the projects they manage. Acceptance is
-    /// WF-11's APPROVAL_DECIDE, not a milestone permission; the other roles' grants wait for Appendix A (milestone-achievement.md F-2).
-    /// </summary>
-    [Fact]
-    public void MilestoneAchievementsGoToTheProjectManagerOnly()
-    {
-        Assert.Equal(
-            [("R04", PermissionCatalogue.MilestoneView, DataScope.Own), ("R04", PermissionCatalogue.MilestoneSubmit, DataScope.Own)],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("MILESTONE_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
-    }
-
     /// <summary>ADR-013's amendment to TASK-050: an entity Project Manager submits achievement claims on their own project, and on no other.</summary>
     [Fact]
     public async Task OnlyTheProjectsOwnManagerSubmitsItsAchievementClaims()
@@ -327,23 +260,6 @@ public sealed class ShippedGrantTests
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.MilestoneSubmit, Managed(OtherProjectId, EntityId, UserId))).IsAllowed);
     }
 
-    /// <summary>
-    /// TASK-052, ADR-013's amendment: an entity sees budget, expenditure and KPI status for its own project — R04 and R08 view
-    /// financials and KPIs at ENTITY. Entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2).
-    /// </summary>
-    [Fact]
-    public void FinancialsAndKpisAreSeenByTheEntityOnly()
-    {
-        Assert.Equal(
-            [
-                ("R04", PermissionCatalogue.FinancialView, DataScope.Entity), ("R08", PermissionCatalogue.FinancialView, DataScope.Entity),
-                ("R04", PermissionCatalogue.KpiView, DataScope.Entity), ("R08", PermissionCatalogue.KpiView, DataScope.Entity),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants
-                .Where(g => g.PermissionCode.StartsWith("FINANCIAL_", StringComparison.Ordinal) || g.PermissionCode.StartsWith("KPI_", StringComparison.Ordinal))
-                .Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
-    }
-
     /// <summary>ADR-013's amendment to TASK-052: an entity user sees the financials of its own entity's projects and of no other entity's.</summary>
     [Fact]
     public async Task AnEntitySeesTheFinancialsOfItsOwnProjectsOnly()
@@ -354,18 +270,6 @@ public sealed class ShippedGrantTests
         Assert.Equal(AuthorizationDecision.Allowed, await entityUser.AuthorizeAsync(PermissionCatalogue.FinancialView, Managed(ProjectId, EntityId, OtherUserId)));
         Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.FinancialView, Managed(OtherProjectId, OtherEntityId, OtherUserId))).IsAllowed);
         Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.FinancialSubmit, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
-    }
-
-    /// <summary>
-    /// TASK-055, ADR-013's amendment: entity Project Managers register and update risks on their own project — R04 views and manages
-    /// risks at OWN. Rating, acceptance and the reopen wait for Appendix A (risk-management.md F-2).
-    /// </summary>
-    [Fact]
-    public void RisksAreRegisteredAndUpdatedByTheProjectManagerOnly()
-    {
-        Assert.Equal(
-            [("R04", PermissionCatalogue.RiskView, DataScope.Own), ("R04", PermissionCatalogue.RiskManage, DataScope.Own)],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("RISK_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
     }
 
     /// <summary>ADR-013's amendment to TASK-055: an entity Project Manager manages the risks of their own project, and of no other.</summary>
@@ -398,24 +302,6 @@ public sealed class ShippedGrantTests
         Assert.Equal(AuthorizationDecision.Allowed, await reopener.AuthorizeAsync(PermissionCatalogue.RiskReopen, risk));
     }
 
-    /// <summary>
-    /// TASK-057, ADR-013's amendment: entities raise a blocker or an issue on their own project and see its status — R08 at ENTITY and
-    /// R04 at OWN view and raise. WF-07 §3: the Project Manager manages and escalates (R04 at OWN; the application refuses an external
-    /// holder both); the Department Manager handles escalations (R03 at DEPT). The rest wait for Appendix A (management-concern.md F-2).
-    /// </summary>
-    [Fact]
-    public void ConcernsAreRaisedByEntitiesManagedByTheProjectManagerAndTheirEscalationsResolvedByTheDepartmentManager()
-    {
-        Assert.Equal(
-            [
-                ("R04", PermissionCatalogue.ConcernView, DataScope.Own), ("R04", PermissionCatalogue.ConcernRaise, DataScope.Own),
-                ("R04", PermissionCatalogue.ConcernManage, DataScope.Own), ("R04", PermissionCatalogue.ConcernEscalate, DataScope.Own),
-                ("R08", PermissionCatalogue.ConcernView, DataScope.Entity), ("R08", PermissionCatalogue.ConcernRaise, DataScope.Entity),
-                ("R03", PermissionCatalogue.ConcernView, DataScope.Dept), ("R03", PermissionCatalogue.ConcernEscalationResolve, DataScope.Dept),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("CONCERN_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
-    }
-
     /// <summary>ADR-013's amendment to TASK-057: an entity user raises concerns on its own entity's projects and on no other entity's.</summary>
     [Fact]
     public async Task AnEntityRaisesConcernsOnItsOwnProjectsOnly()
@@ -445,21 +331,6 @@ public sealed class ShippedGrantTests
             UserId, new AuthorizationRequest(PermissionCatalogue.ConcernEscalationResolve, concern) { RoleCode = "R02" }, CancellationToken.None)).IsAllowed);
     }
 
-    /// <summary>
-    /// TASK-060, ADR-013's amendment: entity Project Managers may raise a change request — R04 views and raises at OWN, the projects the
-    /// holder manages. WF-08 §3: the Project Manager coordinates implementation (R04 at OWN; the application refuses an external holder),
-    /// the Department Manager reviews (R03 at DEPT). Approval is WF-11's; the rest wait for Appendix A (change-request.md F-2).
-    /// </summary>
-    [Fact]
-    public void ChangeRequestsAreRaisedByTheProjectManagerAndReviewedByTheDepartmentManager() =>
-        Assert.Equal(
-            [
-                ("R04", PermissionCatalogue.ChangeRequestView, DataScope.Own), ("R04", PermissionCatalogue.ChangeRequestRaise, DataScope.Own),
-                ("R04", PermissionCatalogue.ChangeRequestImplement, DataScope.Own),
-                ("R03", PermissionCatalogue.ChangeRequestView, DataScope.Dept), ("R03", PermissionCatalogue.ChangeRequestReview, DataScope.Dept),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("CHANGE_REQUEST_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
-
     /// <summary>ADR-013's amendment to TASK-060: an entity Project Manager raises change requests on the project they manage, and on no other.</summary>
     [Fact]
     public async Task OnlyTheProjectsOwnManagerRaisesItsChangeRequests()
@@ -471,19 +342,6 @@ public sealed class ShippedGrantTests
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ChangeRequestRaise, Managed(ProjectId, EntityId, OtherUserId))).IsAllowed);
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.ChangeRequestReview, Managed(ProjectId, EntityId, UserId))).IsAllowed);
     }
-
-    /// <summary>
-    /// WF-09 §3 and ADR-013 (TASK-062): the Project Manager raises suspension and resumption requests (R04 at OWN) and the Department
-    /// Manager reviews them (R03 at DEPT). Activation is WF-09's own service, so SUSPENSION_ACTIVATE ships to no role (suspension.md F-2).
-    /// </summary>
-    [Fact]
-    public void SuspensionsAreRaisedByTheProjectManagerReviewedByTheDepartmentManagerAndActivatedByNoRole() =>
-        Assert.Equal(
-            [
-                ("R04", PermissionCatalogue.SuspensionView, DataScope.Own), ("R04", PermissionCatalogue.SuspensionRaise, DataScope.Own),
-                ("R03", PermissionCatalogue.SuspensionView, DataScope.Dept), ("R03", PermissionCatalogue.SuspensionReview, DataScope.Dept),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("SUSPENSION_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
 
     /// <summary>ADR-013: an entity Project Manager raises suspension requests on the project they manage, and on no other; review stays AHDA's.</summary>
     [Fact]
@@ -497,20 +355,6 @@ public sealed class ShippedGrantTests
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.SuspensionReview, Managed(ProjectId, EntityId, UserId))).IsAllowed);
         Assert.False((await entityManager.AuthorizeAsync(PermissionCatalogue.SuspensionActivate, Managed(ProjectId, EntityId, UserId))).IsAllowed);
     }
-
-    /// <summary>
-    /// WF-10 and ADR-013 (TASK-063): the Project Manager raises completion and closure cases (R04 at OWN) and the Department Manager reviews
-    /// them and accepts readiness exceptions (R03 at DEPT). Activation is WF-10's own service, so CLOSEOUT_ACTIVATE ships to no role (closure.md F-2).
-    /// </summary>
-    [Fact]
-    public void CloseoutIsRaisedByTheProjectManagerReviewedByTheDepartmentManagerAndActivatedByNoRole() =>
-        Assert.Equal(
-            [
-                ("R04", PermissionCatalogue.CloseoutView, DataScope.Own), ("R04", PermissionCatalogue.CloseoutRaise, DataScope.Own),
-                ("R03", PermissionCatalogue.CloseoutView, DataScope.Dept), ("R03", PermissionCatalogue.CloseoutReview, DataScope.Dept),
-                ("R03", PermissionCatalogue.CloseoutWaive, DataScope.Dept),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("CLOSEOUT_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
 
     /// <summary>ADR-013: an entity Project Manager raises completion and closure cases on the project they manage, and on no other; review stays AHDA's.</summary>
     [Fact]
@@ -543,23 +387,6 @@ public sealed class ShippedGrantTests
         Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.TaskManage, ownTask)).IsAllowed);
         Assert.False((await entityUser.AuthorizeAsync(PermissionCatalogue.TaskReopen, ownTask)).IsAllowed);
     }
-
-    /// <summary>
-    /// WF-13 §13 (TASK-066): the Project Manager requests, reviews when assigned and applies (R04 at OWN); the Department Manager requests and
-    /// reviews when assigned (R03 at DEPT); the external entity user sees its entity's requests (R08 at ENTITY) and answers those it is named
-    /// on (R08 at ASSIGNED). The application refuses requesting, reviewing and applying to an external holder (external-participation.md F-2).
-    /// </summary>
-    [Fact]
-    public void ExternalUpdateRequestsAreRaisedByAhdaAndAnsweredByTheNamedEntityUser() =>
-        Assert.Equal(
-            [
-                ("R04", PermissionCatalogue.ExternalRequestView, DataScope.Own), ("R04", PermissionCatalogue.ExternalRequestManage, DataScope.Own),
-                ("R04", PermissionCatalogue.ExternalContributionReview, DataScope.Own), ("R04", PermissionCatalogue.ExternalContributionApply, DataScope.Own),
-                ("R03", PermissionCatalogue.ExternalRequestView, DataScope.Dept), ("R03", PermissionCatalogue.ExternalRequestManage, DataScope.Dept),
-                ("R03", PermissionCatalogue.ExternalContributionReview, DataScope.Dept),
-                ("R08", PermissionCatalogue.ExternalRequestView, DataScope.Entity), ("R08", PermissionCatalogue.ExternalContributionRespond, DataScope.Assigned),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("EXTERNAL_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
 
     /// <summary>
     /// TASK-066 acceptance criterion 1, at the engine: an entity user whose assignment covers one project reaches its own entity's requests on
@@ -603,22 +430,6 @@ public sealed class ShippedGrantTests
             PermissionCatalogue.ShippedDefaultGrants.Where(g => g.PermissionCode.StartsWith("NOTIFICATION_", StringComparison.Ordinal)).Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
     }
 
-    /// <summary>
-    /// TASK-073 (BR-AUD-023; Appendix A "Audit / activity"): R01 reads administration audit and operates the audit store; R04 reads the
-    /// Activity of the projects it manages and R08 its entity's (ADR-013). No role ships with security, business, financial, external or
-    /// integration audit, nor request context: the reviewers are AHDA's to name (audit-activity.md F-2).
-    /// </summary>
-    [Fact]
-    public void AuditAndActivityGoToTheirShippedHoldersOnly() =>
-        Assert.Equal(
-            [
-                ("R01", PermissionCatalogue.AuditAdministrationView, DataScope.All), ("R01", PermissionCatalogue.AuditOperationsManage, DataScope.All),
-                ("R04", PermissionCatalogue.ActivityView, DataScope.Own), ("R08", PermissionCatalogue.ActivityView, DataScope.Entity),
-            ],
-            PermissionCatalogue.ShippedDefaultGrants
-                .Where(g => g.PermissionCode.StartsWith("AUDIT_", StringComparison.Ordinal) || g.PermissionCode == PermissionCatalogue.ActivityView)
-                .Select(g => (g.RoleCode, g.PermissionCode, g.Scope)));
-
     /// <summary>ADR-013's participation amendment to TASK-073: an entity user reads the Activity of its own entity's projects and of no other entity's.</summary>
     [Fact]
     public async Task AnEntitySeesTheActivityOfItsOwnProjectsOnly()
@@ -649,6 +460,112 @@ public sealed class ShippedGrantTests
             Assert.True(PermissionCatalogue.Platform.Contains(grant.PermissionCode), grant.PermissionCode);
             Assert.Contains(grant.RoleCode, RoleCodes);
         });
+
+    private static readonly Dictionary<string, string> AgreedMatrix = new(StringComparer.Ordinal)
+    {
+        [PermissionCatalogue.IdentityIntegrationManage] = "R01:ALL",
+        [PermissionCatalogue.UserView] = "R01:ALL",
+        [PermissionCatalogue.UserManage] = "R01:ALL",
+        [PermissionCatalogue.RoleView] = "R01:ALL",
+        [PermissionCatalogue.RoleManage] = "R01:ALL",
+        [PermissionCatalogue.RoleAssign] = "R01:ALL",
+        [PermissionCatalogue.OrganizationView] = "R01:ALL",
+        [PermissionCatalogue.OrganizationManage] = "R01:ALL",
+        [PermissionCatalogue.MasterDataView] = "R01:ALL R02:ALL R03:ALL R04:ALL R05:ALL R06:ALL R07:ALL R08:ALL",
+        [PermissionCatalogue.MasterDataManage] = "R01:ALL",
+        [PermissionCatalogue.ConfigurationView] = "R01:ALL R02:ALL R03:ALL R07:ALL",
+        [PermissionCatalogue.ConfigurationManage] = "R01:ALL",
+        [PermissionCatalogue.ApprovalView] = "R02:ALL R03:DEPT R04:OWN R07:ALL",
+        [PermissionCatalogue.ApprovalDecide] = "R02:ALL R03:DEPT R07:ALL",
+        [PermissionCatalogue.DocumentView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL",
+        [PermissionCatalogue.DocumentUpload] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED",
+        [PermissionCatalogue.DocumentManage] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.ProjectView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL R08:ENTITY",
+        [PermissionCatalogue.ProjectRegister] = "R02:ALL R03:DEPT R04:OWN R08:ENTITY",
+        [PermissionCatalogue.ProjectReview] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.ProjectActivate] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.ProgressView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL R08:ENTITY",
+        [PermissionCatalogue.ProgressSubmit] = "R04:OWN",
+        [PermissionCatalogue.ProgressReview] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.ScheduleView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL",
+        [PermissionCatalogue.ScheduleEdit] = "R04:OWN",
+        [PermissionCatalogue.TaskView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL R08:ASSIGNED",
+        [PermissionCatalogue.TaskUpdate] = "R04:OWN R08:ASSIGNED",
+        [PermissionCatalogue.TaskManage] = "R04:OWN",
+        [PermissionCatalogue.TaskReopen] = "R04:OWN",
+        [PermissionCatalogue.MilestoneView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL",
+        [PermissionCatalogue.MilestoneSubmit] = "R04:OWN",
+        [PermissionCatalogue.RiskView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL R08:ENTITY",
+        [PermissionCatalogue.RiskManage] = "R02:ALL R03:DEPT R04:OWN",
+        [PermissionCatalogue.RiskAssess] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.RiskAccept] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.RiskReopen] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.ConcernView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL R08:ENTITY",
+        [PermissionCatalogue.ConcernRaise] = "R02:ALL R03:DEPT R04:OWN R08:ENTITY",
+        [PermissionCatalogue.ConcernManage] = "R04:OWN",
+        [PermissionCatalogue.ConcernEscalate] = "R04:OWN",
+        [PermissionCatalogue.ConcernEscalationResolve] = "R02:ALL R03:DEPT R07:ALL",
+        [PermissionCatalogue.ChangeRequestView] = "R02:ALL R03:DEPT R04:OWN R06:DEPT R07:ALL",
+        [PermissionCatalogue.ChangeRequestRaise] = "R02:ALL R03:DEPT R04:OWN",
+        [PermissionCatalogue.ChangeRequestReview] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.ChangeRequestImplement] = "R04:OWN",
+        [PermissionCatalogue.SuspensionView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL",
+        [PermissionCatalogue.SuspensionRaise] = "R02:ALL R03:DEPT R04:OWN",
+        [PermissionCatalogue.SuspensionReview] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.SuspensionActivate] = "",
+        [PermissionCatalogue.CloseoutView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL",
+        [PermissionCatalogue.CloseoutRaise] = "R02:ALL R03:DEPT R04:OWN",
+        [PermissionCatalogue.CloseoutReview] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.CloseoutWaive] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.CloseoutActivate] = "",
+        [PermissionCatalogue.ExternalRequestView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R08:ENTITY",
+        [PermissionCatalogue.ExternalRequestManage] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED",
+        [PermissionCatalogue.ExternalContributionRespond] = "R08:ASSIGNED",
+        [PermissionCatalogue.ExternalContributionReview] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED",
+        [PermissionCatalogue.ExternalContributionApply] = "R04:OWN",
+        [PermissionCatalogue.FinancialView] = "R02:ALL R03:DEPT R04:OWN R06:DEPT R07:ALL R08:ENTITY",
+        [PermissionCatalogue.FinancialViewSensitive] = "R02:ALL R03:DEPT R04:OWN R07:ALL",
+        [PermissionCatalogue.FinancialSubmit] = "R04:OWN",
+        [PermissionCatalogue.FinancialReview] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.FinancialSourceManage] = "",
+        [PermissionCatalogue.KpiView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL R08:ENTITY",
+        [PermissionCatalogue.KpiManage] = "R02:ALL R03:DEPT R04:OWN",
+        [PermissionCatalogue.KpiRecord] = "R04:OWN",
+        [PermissionCatalogue.KpiReview] = "R02:ALL R03:DEPT",
+        [PermissionCatalogue.NotificationTemplateView] = "R01:ALL",
+        [PermissionCatalogue.NotificationTemplateManage] = "R01:ALL",
+        [PermissionCatalogue.NotificationDeliveryView] = "R01:ALL",
+        [PermissionCatalogue.NotificationDeliveryManage] = "R01:ALL",
+        [PermissionCatalogue.LayoutPersonalize] = "R02:OWN R03:OWN R07:OWN",
+        [PermissionCatalogue.ReportCompose] = "R02:OWN R03:OWN R07:OWN",
+        [PermissionCatalogue.ReportExport] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R07:ALL",
+        [PermissionCatalogue.ActivityView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R07:ALL R08:ENTITY",
+        [PermissionCatalogue.AuditSecurityView] = "",
+        [PermissionCatalogue.AuditAdministrationView] = "R01:ALL",
+        [PermissionCatalogue.AuditIntegrationView] = "",
+        [PermissionCatalogue.AuditFinancialView] = "",
+        [PermissionCatalogue.AuditExternalView] = "",
+        [PermissionCatalogue.AuditBusinessView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL",
+        [PermissionCatalogue.AuditContextView] = "",
+        [PermissionCatalogue.AuditOperationsManage] = "R01:ALL",
+        [PermissionCatalogue.IntegrationView] = "R01:ALL",
+        [PermissionCatalogue.IntegrationLogView] = "R01:ALL",
+        [PermissionCatalogue.IntegrationOperate] = "R01:ALL",
+        [PermissionCatalogue.IntegrationAlertManage] = "R01:ALL",
+        [PermissionCatalogue.IntegrationConfigure] = "R01:ALL",
+        [PermissionCatalogue.DataImport] = "R01:ALL",
+    };
+
+    private static string ScopeCode(DataScope scope) => scope switch
+    {
+        DataScope.All => "ALL",
+        DataScope.Dept => "DEPT",
+        DataScope.Own => "OWN",
+        DataScope.Assigned => "ASSIGNED",
+        DataScope.Entity => "ENTITY",
+        DataScope.ReadOnly => "READ_ONLY",
+        _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, null),
+    };
 
     private static AuthorizationSubject Managed(Guid projectId, Guid? entityId, Guid projectManagerId) =>
         new() { ProjectId = projectId, DepartmentId = DepartmentId, ExternalEntityId = entityId, OwnerUserId = projectManagerId };

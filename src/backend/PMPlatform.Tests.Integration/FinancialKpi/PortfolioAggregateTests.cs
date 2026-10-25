@@ -39,8 +39,9 @@ public sealed class PortfolioAggregateTests(FinancialKpiTestHost host)
 
         // The entity Project Manager names a project of another entity: it is not theirs to see, so it is left out, and nothing is counted from it.
         JsonObject entity = await client.GetOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.FinancialAggregates}?projectId={measured}&projectId={unrelated}");
-        Assert.Equal((true, 1), (entity["isPartial"]!.GetValue<bool>(), entity["includedProjectCount"]!.GetValue<int>()));
-        Assert.Equal([(unrelated.ToString(), "NOT_AVAILABLE")], Exclusions(entity));
+        // An external user holds no SAR amount (shipped-permission-matrix.md D-4): its own project is left out as MASKED, the other as NOT_AVAILABLE.
+        Assert.Equal((true, 0), (entity["isPartial"]!.GetValue<bool>(), entity["includedProjectCount"]!.GetValue<int>()));
+        Assert.Equal(new[] { (measured.ToString(), "MASKED"), (unrelated.ToString(), "NOT_AVAILABLE") }.Order(), Exclusions(entity).Order());
 
         // Nothing counted: every total is null, never "0.00".
         JsonObject none = await client.GetOrFailAsync(sessions.Portfolio, $"{FinancialKpiDriver.FinancialAggregates}?projectId={missing}&semanticState=CURRENT_LIVE");

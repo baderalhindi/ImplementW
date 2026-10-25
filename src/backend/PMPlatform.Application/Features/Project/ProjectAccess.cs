@@ -22,14 +22,14 @@ internal sealed class ProjectAccess(IAuthorizationEngine engine, IAuditTrail aud
     /// Forbidden, whatever the engine's R-47 answer.
     /// </summary>
     public async Task<AdministrationError?> CheckAnchorsAsync(
-        Guid callerId, string permissionCode, Guid? projectId, ProjectDraft draft, Guid? projectManagerUserId, CancellationToken cancellationToken)
+        Guid callerId, string permissionCode, Guid? projectId, ProjectDraft draft, Guid ownerUserId, CancellationToken cancellationToken)
     {
         AuthorizationSubject subject = new()
         {
             ProjectId = projectId,
             DepartmentId = draft.DepartmentId,
             ExternalEntityId = draft.ExternalEntityId,
-            OwnerUserId = projectManagerUserId,
+            OwnerUserId = ownerUserId,
         };
         return (await engine.AuthorizeAsync(callerId, new AuthorizationRequest(permissionCode, subject), cancellationToken).ConfigureAwait(false)).IsAllowed
             ? null
@@ -62,8 +62,18 @@ internal sealed class ProjectAccess(IAuthorizationEngine engine, IAuditTrail aud
         ProjectId = project.Id,
         DepartmentId = project.DepartmentId,
         ExternalEntityId = project.ExternalEntityId,
-        OwnerUserId = project.ProjectManagerUserId,
+        OwnerUserId = OwnerOf(project),
     };
+
+    /// <summary>
+    /// The project's owner for OWN scope: its Project Manager, or — while it has none, as a DRAFT never has (ERD) — the person who registered it,
+    /// so a Project Manager edits and submits the drafts they register (shipped-permission-matrix.md D-5).
+    /// </summary>
+    public static Guid OwnerOf(ProjectEntity project)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        return project.ProjectManagerUserId ?? project.CreatedBy;
+    }
 
     private static AdministrationError? Refusal(AuthorizationDecision decision) => decision.Outcome switch
     {

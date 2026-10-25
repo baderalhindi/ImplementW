@@ -137,7 +137,8 @@ public sealed class NotificationTestHost : IAsyncLifetime
         FROM (VALUES ('{IdentityDatabase.ProfileVersionId(2)}', 'NOTIFICATION_TEMPLATE_VIEW'), ('{IdentityDatabase.ProfileVersionId(2)}', 'NOTIFICATION_TEMPLATE_MANAGE'),
                      ('{IdentityDatabase.ProfileVersionId(3)}', 'NOTIFICATION_TEMPLATE_VIEW'), ('{IdentityDatabase.ProfileVersionId(3)}', 'NOTIFICATION_TEMPLATE_MANAGE'))
              AS g (version_id, code)
-        JOIN identity_access.permission p ON p.code = g.code;
+        JOIN identity_access.permission p ON p.code = g.code
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
 
         INSERT INTO project.project (id, title, title_lang, classification_item_id, department_id, external_entity_id, lifecycle_state,
                                      governance_profile_item_id, participation_mode, created_at, created_by, updated_at, updated_by)

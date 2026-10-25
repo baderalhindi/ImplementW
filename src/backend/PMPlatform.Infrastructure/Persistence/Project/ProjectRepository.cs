@@ -117,8 +117,9 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
 
     /// <summary>
     /// <see cref="RecordScope"/> as SQL: the OR of its clauses, each the AND of its conditions on the project's own anchors. A
-    /// project's owner is its Project Manager (indexing-strategy I-04). A project has no assignees, so an ASSIGNED clause
-    /// reaches none; it carries no classification, so every clause clears it.
+    /// project's owner is its Project Manager (indexing-strategy I-04), or its registrant while it has none (ProjectAccess.OwnerOf). A project
+    /// has no assignees, so an ASSIGNED clause reaches none unless the engine bound it to a project; it carries no classification, so every
+    /// clause clears it.
     /// </summary>
     private static Expression<Func<ProjectEntity, bool>> Reached(RecordScope scope) =>
         PredicateComposition.AnyOf(scope.Clauses.Where(c => c.AssignedUserId is null).Select(ClauseOf));
@@ -132,6 +133,6 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
         return p => (project == null || p.Id == project)
                     && (entity == null || p.ExternalEntityId == entity)
                     && (department == null || p.DepartmentId == department)
-                    && (owner == null || p.ProjectManagerUserId == owner);
+                    && (owner == null || p.ProjectManagerUserId == owner || (p.ProjectManagerUserId == null && p.CreatedBy == owner));
     }
 }

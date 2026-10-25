@@ -26,6 +26,7 @@ const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   IDENTITY_ACCESS_ALREADY_ASSIGNED: 'identityAccess.problems.alreadyAssigned',
   IDENTITY_ACCESS_REFERENCE_INVALID: 'identityAccess.problems.referenceInvalid',
   IDENTITY_ACCESS_EXTERNAL_GRANT_INVALID: 'identityAccess.problems.externalGrantInvalid',
+  IDENTITY_ACCESS_SCOPE_ANCHOR_INVALID: 'identityAccess.problems.scopeAnchorInvalid',
   IDENTITY_ACCESS_PROFILE_VERSION_NOT_PUBLISHED:
     'identityAccess.problems.profileVersionNotPublished',
   IDENTITY_ACCESS_PROJECT_CLOSED: 'identityAccess.problems.projectClosed',

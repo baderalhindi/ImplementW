@@ -15,6 +15,8 @@ namespace PMPlatform.Tests.Integration.FinancialKpi;
 [Collection(FinancialKpiSuite.Name)]
 public sealed class FinancialProgressTests(FinancialKpiTestHost host)
 {
+    private static readonly string[] SnapshotAmounts = ["actualExpenditureToDateSar", "approvedBudgetSar", "forecastAtCompletionSar"];
+
     /// <summary>
     /// Attaching and withdrawing a budget version's referenced document are commands on the version, and honour <c>If-Match</c>
     /// when it is sent (R-21): a caller who read the version before another change is refused 412 and nothing changes. TASK-085
@@ -108,8 +110,9 @@ public sealed class FinancialProgressTests(FinancialKpiTestHost host)
         Assert.Equal(("SUBMITTED", 2), (resubmitted.Text("status"), resubmitted["revisionNo"]!.GetValue<int>()));
         await host.DecideAndDeliverAsync(FinancialKpiApprovalRouting.CommitmentType, second, ApprovalTaskDecision.Approve);
 
-        JsonObject active = await client.GetOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{second}");
-        JsonObject superseded = await client.GetOrFailAsync(sessions.ProjectManager, $"{FinancialKpiDriver.Commitments}/{first}");
+        // Read by AHDA: the entity Project Manager sees no SAR amount (shipped-permission-matrix.md D-4).
+        JsonObject active = await client.GetOrFailAsync(sessions.Portfolio, $"{FinancialKpiDriver.Commitments}/{second}");
+        JsonObject superseded = await client.GetOrFailAsync(sessions.Portfolio, $"{FinancialKpiDriver.Commitments}/{first}");
         Assert.Equal(("ACTIVE", true, "1150000.00", authorization.ToString()),
             (active.Text("status"), active["isCurrent"]!.GetValue<bool>(), active.Text("amountSar"), active.Text("changeAuthorizationId")));
         Assert.Equal(("SUPERSEDED", false, second.ToString(), "1000000.00"),
@@ -215,7 +218,7 @@ public sealed class FinancialProgressTests(FinancialKpiTestHost host)
             new { reason = new { text = "Add the forecast", language = "en" } });
 
         Assert.Equal(("RETURNED", "Add the forecast"), (returned.Text("status"), returned["returnReason"]!.Text("text")));
-        JsonObject next = (await client.ItemsAsync(sessions.ProjectManager, FinancialKpiDriver.Updates, $"projectId={projectId}"))[0]!.AsObject();
+        JsonObject next = (await client.ItemsAsync(sessions.Portfolio, FinancialKpiDriver.Updates, $"projectId={projectId}"))[0]!.AsObject();
         Assert.Equal(("DRAFT", 2, "10000.00"), (next.Text("status"), next["revisionNo"]!.GetValue<int>(), next.Text("actualExpenditureToDateSar")));
     }
 
@@ -301,10 +304,12 @@ public sealed class FinancialProgressTests(FinancialKpiTestHost host)
                 UPDATE identity_access.permission SET data_classification_item_id = '{FinancialKpiTestHost.Internal}' WHERE code = 'FINANCIAL_VIEW';
                 """);
 
+            // Every SAR amount is withheld from an external user (shipped-permission-matrix.md D-4), the classified field among them; the
+            // financial condition is not.
             JsonObject masked = Assert.Single(await client.ItemsAsync(entityUser, FinancialKpiDriver.Snapshots, $"projectId={own}"))!.AsObject();
-            Assert.False(masked.ContainsKey("actualExpenditureToDateSar"));
-            Assert.Equal(["actualExpenditureToDateSar"], masked["maskedFields"]!.AsArray().Select(f => f!.GetValue<string>()));
-            Assert.Equal("2000000.00", masked.Text("approvedBudgetSar"));
+            Assert.All(SnapshotAmounts, amount => Assert.False(masked.ContainsKey(amount)));
+            Assert.Equal(SnapshotAmounts, masked["maskedFields"]!.AsArray().Select(f => f!.GetValue<string>()));
+            Assert.NotNull(masked["financialStatus"]);
 
             JsonObject aggregate = await client.GetOrFailAsync(entityUser, $"{FinancialKpiDriver.FinancialAggregates}?projectId={own}");
             Assert.Equal((true, "NONE"), (aggregate["isPartial"]!.GetValue<bool>(), aggregate.Text("coverage")));

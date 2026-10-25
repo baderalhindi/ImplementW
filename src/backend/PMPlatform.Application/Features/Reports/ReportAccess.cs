@@ -8,8 +8,8 @@ namespace PMPlatform.Application.Features.Reports;
 internal sealed record ReportParts(IReadOnlyList<ReportColumn> Columns, IReadOnlyList<(ReportParameter Parameter, IReadOnlyList<ReportParameterOption> Options)> Parameters);
 
 /// <summary>
-/// Who may run what (FG-02 §8.1): a caller's roles select the PUBLISHED reports whose audience they are in — an external entity's person only the
-/// entity report set (ADR-013) — and select nothing else; the data is authorised cell by cell. Whether a caller holds a permission at all — the
+/// Who may run what (FG-02 §8.1): a caller's roles select the PUBLISHED reports whose audience they are in — an external entity's person none (ADR-019)
+/// — and select nothing else; the data is authorised cell by cell. Whether a caller holds a permission at all — the
 /// export permission, the explorer's — is the authorization engine's answer, read now, never the token's.
 /// </summary>
 internal sealed class ReportAccess(IReportRepository repository, IUserRoleDirectory userRoles, IRoleDirectory roles, IAuthorizationEngine engine)
@@ -28,7 +28,7 @@ internal sealed class ReportAccess(IReportRepository repository, IUserRoleDirect
     {
         ArgumentNullException.ThrowIfNull(definition);
         UserRoles caller = await CallerAsync(callerId, cancellationToken).ConfigureAwait(false);
-        if (!ReportCatalogue.MayRun(definition.Code, caller.IsExternal))
+        if (!ReportCatalogue.MayRun(caller.IsExternal))
         {
             return false;
         }

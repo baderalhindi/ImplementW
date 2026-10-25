@@ -23,7 +23,7 @@ internal sealed class DocumentRepository(PMPlatformDbContext context) : IDocumen
     public Task<DocumentAnchors?> FindProjectAnchorsAsync(Guid projectId, CancellationToken cancellationToken) =>
         context.Set<ProjectEntity>().AsNoTracking()
             .Where(p => p.Id == projectId)
-            .Select(p => new DocumentAnchors(p.Id, p.DepartmentId, p.ExternalEntityId, p.LifecycleState == ProjectLifecycleState.Closed))
+            .Select(p => new DocumentAnchors(p.Id, p.DepartmentId, p.ExternalEntityId, p.LifecycleState == ProjectLifecycleState.Closed, p.ProjectManagerUserId ?? p.CreatedBy))
             .SingleOrDefaultAsync(cancellationToken);
 
     public async Task<Document?> FindDocumentAsync(Guid documentId, uint? expectedVersion, CancellationToken cancellationToken)
@@ -49,7 +49,13 @@ internal sealed class DocumentRepository(PMPlatformDbContext context) : IDocumen
             from d in context.Set<Document>().AsNoTracking()
             join p in context.Set<ProjectEntity>() on d.ProjectId equals p.Id into projects
             from p in projects.DefaultIfEmpty()
-            select new AnchoredDocument { Document = d, DepartmentId = (Guid?)p.DepartmentId, ExternalEntityId = p.ExternalEntityId };
+            select new AnchoredDocument
+            {
+                Document = d,
+                DepartmentId = (Guid?)p.DepartmentId,
+                ExternalEntityId = p.ExternalEntityId,
+                OwnerUserId = p == null ? d.OwnerUserId : p.ProjectManagerUserId ?? p.CreatedBy,
+            };
 
         rows = rows.Where(Reached(scope));
         if (query.ProjectId is { } projectId)
@@ -226,7 +232,8 @@ internal sealed class DocumentRepository(PMPlatformDbContext context) : IDocumen
 
     /// <summary>
     /// <see cref="RecordScope"/> as SQL: the OR of its clauses, each the AND of its conditions on the document and its
-    /// project's anchors. A document has no assignees, so an ASSIGNED clause reaches none. Every document is classified
+    /// project's anchors; its owner is its project's (DocumentAccess.SubjectOfAsync), or its uploader's for a library document. A document has no
+    /// assignees, so an ASSIGNED clause reaches none unless the engine bound it to a project. Every document is classified
     /// (the column is NOT NULL), so each clause requires a cleared classification.
     /// </summary>
     private static Expression<Func<AnchoredDocument, bool>> Reached(RecordScope scope) =>
@@ -242,7 +249,7 @@ internal sealed class DocumentRepository(PMPlatformDbContext context) : IDocumen
         return r => (project == null || r.Document.ProjectId == project)
                     && (entity == null || r.ExternalEntityId == entity)
                     && (department == null || r.DepartmentId == department)
-                    && (owner == null || r.Document.OwnerUserId == owner)
+                    && (owner == null || r.OwnerUserId == owner)
                     && cleared.Contains(r.Document.DataClassificationItemId);
     }
 
@@ -254,5 +261,7 @@ internal sealed class DocumentRepository(PMPlatformDbContext context) : IDocumen
         public Guid? DepartmentId { get; init; }
 
         public Guid? ExternalEntityId { get; init; }
+
+        public Guid OwnerUserId { get; init; }
     }
 }

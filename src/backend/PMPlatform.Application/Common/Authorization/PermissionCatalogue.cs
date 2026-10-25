@@ -7,8 +7,8 @@ namespace PMPlatform.Application.Common.Authorization;
 /// writes both to <c>identity_access</c>, and a seed test fails if the two disagree.
 /// </summary>
 /// <remarks>
-/// Blueprint Appendix A, the full matrix, is not in the repository (controlled-source-baseline.md §5.1, seed record
-/// F-1). Only rows a controlled source fixes for all eight roles are here; the rest are added from Appendix A.
+/// The shipped grants are Blueprint v2.0 Appendix A as the 24 Oct 2026 prototype review applies it to the eight roles
+/// (docs/architecture/shipped-permission-matrix.md). <see cref="GrantPolicy"/> bounds every grant, shipped or authored.
 /// </remarks>
 public sealed class PermissionCatalogue
 {
@@ -277,6 +277,13 @@ public sealed class PermissionCatalogue
     /// </summary>
     public const string FinancialView = "FINANCIAL_VIEW";
 
+    /// <summary>
+    /// WF-14 (ADR-010): the SAR amounts of the financial records <see cref="FinancialView"/> reaches — budget, expenditure, forecast — on the
+    /// records the grant's scope covers. Without it a holder of <see cref="FinancialView"/> sees the financial condition and its dates, and
+    /// every amount is withheld (shipped-permission-matrix.md D-4). Never held by an external user (<see cref="GrantPolicy"/>).
+    /// </summary>
+    public const string FinancialViewSensitive = "FINANCIAL_VIEW_SENSITIVE";
+
     /// <summary>WF-14 (TASK-052): open and edit an Approved Budget version, attach its referenced document, submit it to WF-11; enter and submit a period's actuals and forecast.</summary>
     public const string FinancialSubmit = "FINANCIAL_SUBMIT";
 
@@ -445,6 +452,7 @@ public sealed class PermissionCatalogue
             new(ExternalContributionReview, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(ExternalContributionApply, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
+            new(FinancialViewSensitive, "FINANCIAL", AccessMode.Read),
             new(FinancialSubmit, "FINANCIAL", AccessMode.Write),
             new(FinancialReview, "FINANCIAL", AccessMode.Write),
             new(FinancialSourceManage, "FINANCIAL", AccessMode.Write),
@@ -477,85 +485,33 @@ public sealed class PermissionCatalogue
         ]);
 
     /// <summary>
-    /// ADM-002–013 are R01's alone: TASK-032's acceptance criterion has every FG-03 administration screen "reachable only
-    /// for R01 per RBAC". ALL, because an administrator administers every user and structure. FG-04 (ADM-020–029 and
-    /// configuration) goes to R01 at ALL too, as a delivery-team decision no controlled source states yet (TASK-034 F-1).
-    /// Master data and configuration are platform-wide, with no record to scope. ADR-019 grants Personalize Layout and Compose Report to R02, R03 and R07 and withholds them from R04, R05, R06 and
-    /// R08; each acts on the holder's own layout or report definition, hence OWN (the ADR names no scope). The report's
-    /// data is authorised independently for every viewer (CTL-15). ADR-013's participation amendment to TASK-037 lets an
-    /// entity Project Manager upload, view and see the version history of documents on their own project within
-    /// classification rules: R04 at ENTITY. The scope reaches only a holder with an entity, so an internal R04 gains
-    /// nothing from it, and an external holder's per-project assignment keeps it to that project (ADR-013). The other
-    /// document grants wait for Appendix A (document-management.md F-1). ADR-013's amendment to TASK-041 lets external entity
-    /// users create a project draft for their own entity, and lets entities see their own projects: R08 (External Entity
-    /// User) and R04 (the entity Project Manager) view and register at ENTITY, which reaches only a holder with an entity.
-    /// AHDA's review and activation gates are internal-only and wait for Appendix A (project-registration.md F-1). ADR-013's
-    /// amendment to TASK-044 lets an assigned entity Project Manager submit progress on their own project, and lets entities
-    /// see progress and health on their own projects: R04 views and submits at OWN — a project's owner is its Project Manager,
-    /// so OWN reaches exactly the projects the holder manages, internal or external, R04 being employer-neutral — and R08
-    /// views at ENTITY. Progress review is AHDA's gate and waits for Appendix A (progress-update.md F-2). WF-03's functional
-    /// specification §3 makes the Project Manager (R04) the schedule's owner — building it, keeping its forecast, submitting its
-    /// baselines — so R04 views and edits schedules at OWN, the projects the holder manages, internal or entity alike (ADR-013);
-    /// the other roles' schedule grants wait for Appendix A (schedule-baseline.md F-2). WF-04's four task permissions go to R04
-    /// at OWN: the Project Manager plans the project's tasks, may edit a task's actual percentage (ADR-009) and holds the
-    /// controlled reopen, on the projects the holder manages, internal or entity (ADR-013's amendment to TASK-048); the task
-    /// owners' ASSIGNED grants wait for Appendix A (project-task.md F-2). WF-05's view and submit go to R04 at OWN: ADR-013's
-    /// amendment to TASK-050 lets an entity Project Manager submit achievement claims on their own project, and OWN reaches the
-    /// projects the holder manages, internal or entity; acceptance is WF-11's and the other roles' milestone grants wait for
-    /// Appendix A (milestone-achievement.md F-2). ADR-013's amendment to TASK-055 lets entity Project Managers register and update risks on
-    /// their own project: R04 views and manages risks at OWN, the projects the holder manages, internal or entity. Rating and
-    /// acceptance authority is unchanged — RISK_ASSESS and RISK_ACCEPT are refused to an external user whatever they hold — and
-    /// those grants, with the reopen, wait for Appendix A (risk-management.md F-2). ADR-013's amendment to TASK-057 lets entities raise a
-    /// blocker or an issue on their own project and see its status — intake and visibility, not escalation: R08 views and raises concerns
-    /// at ENTITY, and R04 at OWN, the projects the holder manages, internal or entity. WF-07's specification §3 makes the Project Manager
-    /// the primary manager of a project's issues and challenges, who assesses, assigns, plans resolution and escalates: R04 manages and
-    /// escalates at OWN, and the application refuses both to an external user whatever they hold. §3 gives the Department Manager
-    /// "escalation handling": R03 views concerns and resolves escalations at DEPT, through the role an escalation is addressed to. The
-    /// other roles' concern grants wait for Appendix A (management-concern.md F-2). ADR-013's amendment to TASK-060 lets entity Project
-    /// Managers raise a change request, and keeps materiality, approval and implementation AHDA's: R04 views and raises change requests
-    /// at OWN, the projects the holder manages, internal or entity. WF-08's specification §3 makes the Project Manager the coordinator of
-    /// a change's implementation and the Department Manager its reviewer: R04 implements at OWN — the application refuses an external
-    /// holder — and R03 views and starts reviews at DEPT. Approval is WF-11's APPROVAL_DECIDE; the other roles' grants wait for Appendix A
-    /// (change-request.md F-2). WF-09's specification §3 makes the Project Manager the one who prepares and submits a suspension or
-    /// resumption request and the Department Manager its reviewer; ADR-013 has the entity fill in the information and AHDA approve: R04
-    /// views and raises requests at OWN, the projects the holder manages, internal or entity, and R03 views and starts reviews at DEPT.
-    /// Approval is WF-11's APPROVAL_DECIDE. Activation is WF-09's own service by default (§14), so SUSPENSION_ACTIVATE ships to no role;
-    /// it and the other roles' grants wait for Appendix A (suspension.md F-2). WF-10's specification §11 and §13 make the Project Manager
-    /// the one who prepares completion and closure, and the Department Manager the reviewer of the immutable submission and its readiness
-    /// exceptions (US-CLO-DM-002 to -004); ADR-013 has the entity fill in the information and AHDA approve: R04 views and raises cases at
-    /// OWN, internal or entity, and R03 views, starts reviews and waives criteria at DEPT. Approval is WF-11's APPROVAL_DECIDE.
-    /// Activation is WF-10's own service by default (§13 Completion.Activate: "System/service"), so CLOSEOUT_ACTIVATE ships to no role; it
-    /// and the other roles' grants wait for Appendix A (closure.md F-2). WF-13's specification §13 (TASK-066) makes the
-    /// Project Manager the one who requests information from an entity, reviews the answer when assigned and, as the source owner, applies it
-    /// (US-EXT-PM-001, -012 to -017): R04 views, manages, reviews and applies external update requests at OWN. The Department Manager requests
-    /// and reviews when assigned (US-EXT-DM-003, -006, -009): R03 views, manages and reviews at DEPT. The external entity user sees its own
-    /// entity's requests at ENTITY — a per-project assignment narrows it to that project — and answers only those it is named on, at ASSIGNED
-    /// (EXT-CC-03, EXT-CC-04). Requesting, reviewing and applying are refused to an external user whatever they hold: AHDA issues update
-    /// requests and reviews them (TASK-066 gate decision; ADR-013). The same gate decision limits an external contributor's direct source
-    /// action to assigned tasks (WF-13 Path A): R08 views and updates WF-04 tasks at ASSIGNED, which reaches the tasks the holder owns and
-    /// nothing else. The rest, R05's liaison grants among them, wait for Appendix A (external-participation.md F-2). ADR-013's amendment to
-    /// TASK-052 lets an entity see budget, expenditure and KPI
-    /// status for its own project, masked by audience per ADR-010: R08 and R04 view financials and KPIs at ENTITY, which reaches
-    /// only a holder with an entity; entering, reviewing and source configuration wait for Appendix A (financial-kpi.md F-2). WF-15's
-    /// notification templates and delivery operations go to R01 at ALL, as a delivery-team decision like FG-04's
-    /// (notification-runtime.md F-1): they are platform-wide. ADR-013's amendment to TASK-071 lets an entity run and export a
-    /// defined report set on its own projects, financial fields masked: R08 and R04 export reports at ENTITY, which reaches only
-    /// a holder with an entity. FG-02 §18 makes export Conditional for every internal role: those grants wait for Appendix A
-    /// (reports.md F-3). FG-06 (TASK-073) separates audit access from administration (BR-AUD-023, §6.3): R01 reads the administration
-    /// audit category and operates the audit store, both at ALL, as Appendix A's "V technical, immutable" for R01 — and nothing of the
-    /// security, business, financial, external or integration categories, nor any request context. Those are Audit Reviewer and
-    /// Security Reviewer assignments AHDA has not named (TBC-AUD-05 to -07, PTBC-011) and ship to no role. Appendix A's "V own history"
-    /// gives R04 the Activity timeline at OWN, the projects the holder manages, internal or entity alike; ADR-013's participation
-    /// amendment to TASK-073 lets an entity see its own activity history: R08 at ENTITY. The other Activity cells are asterisked and
-    /// wait for Appendix A (audit-activity.md F-2). FG-05's five permissions (TASK-075) go to R01 at ALL by delivery-team decision, as FG-04's
-    /// and WF-15's did: integrations are platform-wide, with no record to scope, and FG-05 §15 makes the System Administrator their viewer.
-    /// The Integration Operator of FG-05 §12 is an assignment AHDA has not named (TBC-INT-19); no other role ships with any of them, and R08
-    /// never does (BR-INT-022). R01 sees no payload by holding them, because FG-05 stores none (integration-monitoring.md D-11).
-    /// DATA_IMPORT (TASK-102) goes to R01 at ALL by delivery-team decision: the migration load is an administrator's operation, platform-wide,
-    /// and each batch is audited in the administration category (data-import.md D-2).
+    /// What the Portfolio and Department Managers hold, at the role's scope: Appendix A's "V/C/E/S/A*" over projects, schedules, progress,
+    /// risks, requests and documents, the WF-11 inbox (C1) and the business audit trail (H4). Master data, configuration, layout and
+    /// composition are added at their own scopes.
+    /// </summary>
+    private static readonly string[] ManagerPermissions =
+    [
+        ApprovalView, ApprovalDecide, ReportExport, ProjectView, ProjectRegister, ProjectReview, ProjectActivate, ProgressView, ProgressReview,
+        ScheduleView, TaskView, MilestoneView, RiskView, RiskManage, RiskAssess, RiskAccept, RiskReopen,
+        ConcernView, ConcernRaise, ConcernEscalationResolve, ChangeRequestView, ChangeRequestRaise, ChangeRequestReview,
+        SuspensionView, SuspensionRaise, SuspensionReview, CloseoutView, CloseoutRaise, CloseoutReview, CloseoutWaive,
+        ExternalRequestView, ExternalRequestManage, ExternalContributionReview,
+        FinancialView, FinancialViewSensitive, FinancialReview, KpiView, KpiManage, KpiReview,
+        DocumentView, DocumentUpload, DocumentManage, ActivityView, AuditBusinessView,
+    ];
+
+    /// <summary>
+    /// The grants of the R01–R08 shipped-default profiles: Blueprint v2.0 Appendix A as the 24 Oct 2026 prototype review applies it, each
+    /// role's scope the review's (C1, C2, H3, H4) — R02 and R07 ALL, R03 and R06 DEPT, R04 OWN, R05 ASSIGNED, R08 ENTITY — and every row's
+    /// source and every departure from Appendix A in docs/architecture/shipped-permission-matrix.md. R01 administers and reads no business
+    /// data (Appendix A.1). Approval and review authority goes to the Portfolio and Department Managers, decisions to the Executive too; the
+    /// Project Manager prepares and submits. Master data and configuration are platform-wide, so their views are ALL; Personalize Layout and
+    /// Compose Report act on the holder's own layout or definition, so OWN (ADR-019). Activation of approved suspensions and closures is the
+    /// workflows' own service and ships to no role. <see cref="GrantPolicy"/> bounds every grant whatever a profile holds.
     /// </summary>
     public static IReadOnlyList<ShippedGrant> ShippedDefaultGrants { get; } =
     [
+        // R01 System Administrator: administration, configuration, operations; no business data, no approval (Appendix A.1).
         new("R01", IdentityIntegrationManage, DataScope.All),
         new("R01", UserView, DataScope.All),
         new("R01", UserManage, DataScope.All),
@@ -572,81 +528,83 @@ public sealed class PermissionCatalogue
         new("R01", NotificationTemplateManage, DataScope.All),
         new("R01", NotificationDeliveryView, DataScope.All),
         new("R01", NotificationDeliveryManage, DataScope.All),
-        new("R04", DocumentView, DataScope.Entity),
-        new("R04", DocumentUpload, DataScope.Entity),
-        new("R04", ProjectView, DataScope.Entity),
-        new("R04", ProjectRegister, DataScope.Entity),
-        new("R08", ProjectView, DataScope.Entity),
-        new("R08", ProjectRegister, DataScope.Entity),
-        new("R04", ProgressView, DataScope.Own),
-        new("R04", ProgressSubmit, DataScope.Own),
-        new("R08", ProgressView, DataScope.Entity),
-        new("R04", ScheduleView, DataScope.Own),
-        new("R04", ScheduleEdit, DataScope.Own),
-        new("R04", TaskView, DataScope.Own),
-        new("R04", TaskUpdate, DataScope.Own),
-        new("R04", TaskManage, DataScope.Own),
-        new("R04", TaskReopen, DataScope.Own),
-        new("R04", MilestoneView, DataScope.Own),
-        new("R04", MilestoneSubmit, DataScope.Own),
-        new("R04", RiskView, DataScope.Own),
-        new("R04", RiskManage, DataScope.Own),
-        new("R04", ConcernView, DataScope.Own),
-        new("R04", ConcernRaise, DataScope.Own),
-        new("R04", ConcernManage, DataScope.Own),
-        new("R04", ConcernEscalate, DataScope.Own),
-        new("R08", ConcernView, DataScope.Entity),
-        new("R08", ConcernRaise, DataScope.Entity),
-        new("R03", ConcernView, DataScope.Dept),
-        new("R03", ConcernEscalationResolve, DataScope.Dept),
-        new("R04", ChangeRequestView, DataScope.Own),
-        new("R04", ChangeRequestRaise, DataScope.Own),
-        new("R04", ChangeRequestImplement, DataScope.Own),
-        new("R03", ChangeRequestView, DataScope.Dept),
-        new("R03", ChangeRequestReview, DataScope.Dept),
-        new("R04", SuspensionView, DataScope.Own),
-        new("R04", SuspensionRaise, DataScope.Own),
-        new("R03", SuspensionView, DataScope.Dept),
-        new("R03", SuspensionReview, DataScope.Dept),
-        new("R04", CloseoutView, DataScope.Own),
-        new("R04", CloseoutRaise, DataScope.Own),
-        new("R03", CloseoutView, DataScope.Dept),
-        new("R03", CloseoutReview, DataScope.Dept),
-        new("R03", CloseoutWaive, DataScope.Dept),
-        new("R08", TaskView, DataScope.Assigned),
-        new("R08", TaskUpdate, DataScope.Assigned),
-        new("R04", ExternalRequestView, DataScope.Own),
-        new("R04", ExternalRequestManage, DataScope.Own),
-        new("R04", ExternalContributionReview, DataScope.Own),
-        new("R04", ExternalContributionApply, DataScope.Own),
-        new("R03", ExternalRequestView, DataScope.Dept),
-        new("R03", ExternalRequestManage, DataScope.Dept),
-        new("R03", ExternalContributionReview, DataScope.Dept),
-        new("R08", ExternalRequestView, DataScope.Entity),
-        new("R08", ExternalContributionRespond, DataScope.Assigned),
-        new("R04", FinancialView, DataScope.Entity),
-        new("R08", FinancialView, DataScope.Entity),
-        new("R04", KpiView, DataScope.Entity),
-        new("R08", KpiView, DataScope.Entity),
-        new("R02", LayoutPersonalize, DataScope.Own),
-        new("R02", ReportCompose, DataScope.Own),
-        new("R03", LayoutPersonalize, DataScope.Own),
-        new("R03", ReportCompose, DataScope.Own),
-        new("R07", LayoutPersonalize, DataScope.Own),
-        new("R07", ReportCompose, DataScope.Own),
-        new("R04", ReportExport, DataScope.Entity),
-        new("R08", ReportExport, DataScope.Entity),
         new("R01", AuditAdministrationView, DataScope.All),
         new("R01", AuditOperationsManage, DataScope.All),
-        new("R04", ActivityView, DataScope.Own),
-        new("R08", ActivityView, DataScope.Entity),
         new("R01", IntegrationView, DataScope.All),
         new("R01", IntegrationLogView, DataScope.All),
         new("R01", IntegrationOperate, DataScope.All),
         new("R01", IntegrationAlertManage, DataScope.All),
         new("R01", IntegrationConfigure, DataScope.All),
         new("R01", DataImport, DataScope.All),
+
+        // R02 Portfolio Manager: the whole portfolio; registers, reviews, approves and activates.
+        new("R02", MasterDataView, DataScope.All),
+        new("R02", ConfigurationView, DataScope.All),
+        new("R02", LayoutPersonalize, DataScope.Own),
+        new("R02", ReportCompose, DataScope.Own),
+        .. Role("R02", DataScope.All, ManagerPermissions),
+
+        // R03 Department Manager: the same authority over its own department.
+        new("R03", MasterDataView, DataScope.All),
+        new("R03", ConfigurationView, DataScope.All),
+        new("R03", LayoutPersonalize, DataScope.Own),
+        new("R03", ReportCompose, DataScope.Own),
+        .. Role("R03", DataScope.Dept, ManagerPermissions),
+
+        // R04 Project Manager: the projects it manages — prepares, submits and runs them.
+        new("R04", MasterDataView, DataScope.All),
+        .. Role("R04", DataScope.Own,
+        [
+            ApprovalView, ReportExport, ProjectView, ProjectRegister, ProgressView, ProgressSubmit, ScheduleView, ScheduleEdit,
+            TaskView, TaskUpdate, TaskManage, TaskReopen, MilestoneView, MilestoneSubmit, RiskView, RiskManage,
+            ConcernView, ConcernRaise, ConcernManage, ConcernEscalate, ChangeRequestView, ChangeRequestRaise, ChangeRequestImplement,
+            SuspensionView, SuspensionRaise, CloseoutView, CloseoutRaise,
+            ExternalRequestView, ExternalRequestManage, ExternalContributionReview, ExternalContributionApply,
+            FinancialView, FinancialViewSensitive, FinancialSubmit, KpiView, KpiManage, KpiRecord,
+            DocumentView, DocumentUpload, ActivityView, AuditBusinessView,
+        ]),
+
+        // R05 Liaison: the projects it is assigned to — issues and monitors external update requests; no financials, no approvals.
+        new("R05", MasterDataView, DataScope.All),
+        .. Role("R05", DataScope.Assigned,
+        [
+            ReportExport, ProjectView, ProgressView, ScheduleView, TaskView, MilestoneView, RiskView, ConcernView, SuspensionView, CloseoutView,
+            ExternalRequestView, ExternalRequestManage, ExternalContributionReview, KpiView, DocumentView, DocumentUpload, ActivityView, AuditBusinessView,
+        ]),
+
+        // R06 Viewer: its department, read only, amounts withheld.
+        new("R06", MasterDataView, DataScope.All),
+        .. Role("R06", DataScope.Dept,
+        [
+            ProjectView, ProgressView, ScheduleView, TaskView, MilestoneView, RiskView, ConcernView, ChangeRequestView, SuspensionView, CloseoutView,
+            FinancialView, KpiView, DocumentView, AuditBusinessView,
+        ]),
+
+        // R07 Executive: the whole portfolio, read and decide; no operational editing.
+        new("R07", MasterDataView, DataScope.All),
+        new("R07", ConfigurationView, DataScope.All),
+        new("R07", LayoutPersonalize, DataScope.Own),
+        new("R07", ReportCompose, DataScope.Own),
+        .. Role("R07", DataScope.All,
+        [
+            ApprovalView, ApprovalDecide, ReportExport, ProjectView, ProgressView, ScheduleView, TaskView, MilestoneView, RiskView,
+            ConcernView, ConcernEscalationResolve, ChangeRequestView, SuspensionView, CloseoutView,
+            FinancialView, FinancialViewSensitive, KpiView, DocumentView, ActivityView, AuditBusinessView,
+        ]),
+
+        // R08 External Entity User: its own entity's projects (ADR-013), the Project Dashboard and no reports (ADR-019), amounts withheld.
+        new("R08", MasterDataView, DataScope.All),
+        .. Role("R08", DataScope.Entity,
+        [
+            ProjectView, ProjectRegister, ProgressView, RiskView, ConcernView, ConcernRaise, ExternalRequestView, FinancialView, KpiView, ActivityView,
+        ]),
+        new("R08", TaskView, DataScope.Assigned),
+        new("R08", TaskUpdate, DataScope.Assigned),
+        new("R08", ExternalContributionRespond, DataScope.Assigned),
     ];
+
+    private static IEnumerable<ShippedGrant> Role(string roleCode, DataScope scope, IEnumerable<string> permissions) =>
+        permissions.Select(p => new ShippedGrant(roleCode, p, scope));
 
     private readonly Dictionary<string, PermissionDefinition> _definitions;
 

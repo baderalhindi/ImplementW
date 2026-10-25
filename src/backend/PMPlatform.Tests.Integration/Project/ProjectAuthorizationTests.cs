@@ -167,10 +167,11 @@ public sealed class ProjectAuthorizationTests(ProjectTestHost host)
     public async Task ARoleWithoutAProjectPermissionIsRefusedAtTheGate()
     {
         using HttpClient client = host.Api.CreateClient();
-        string viewer = (await client.SignInOrFailAsync(6)).AccessToken;
+        // The System Administrator holds no project permission, and no profile can give it one (shipped-permission-matrix.md D-2).
+        string administrator = (await client.SignInOrFailAsync(1)).AccessToken;
 
-        using HttpResponseMessage list = await client.GetAsync(ProjectDriver.Projects, viewer);
-        using HttpResponseMessage create = await client.PostAsync(ProjectDriver.Projects, viewer, host.Registration());
+        using HttpResponseMessage list = await client.GetAsync(ProjectDriver.Projects, administrator);
+        using HttpResponseMessage create = await client.PostAsync(ProjectDriver.Projects, administrator, host.Registration());
 
         Assert.Equal((HttpStatusCode.Forbidden, HttpStatusCode.Forbidden), (list.StatusCode, create.StatusCode));
     }

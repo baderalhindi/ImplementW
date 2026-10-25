@@ -17,6 +17,7 @@ namespace PMPlatform.Api.Controllers;
 /// again when it is downloaded.
 /// </summary>
 [Route(Collection)]
+[ExternalUsersNotFound]
 [Tags("Reports")]
 public sealed class ReportsController(IReportService reports) : ReportExportControllerBase
 {

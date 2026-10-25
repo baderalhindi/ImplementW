@@ -83,7 +83,8 @@ public sealed class DocumentTestHost : IAsyncLifetime
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'DOCUMENT_MANAGE', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(3)}', 'DOCUMENT_VIEW', 'DEPT'), ('{IdentityDatabase.ProfileVersionId(3)}', 'DOCUMENT_UPLOAD', 'DEPT'))
              AS g (version_id, code, scope)
-        JOIN identity_access.permission p ON p.code = g.code;
+        JOIN identity_access.permission p ON p.code = g.code
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
 
         INSERT INTO identity_access.department (id, code, name_ar, name_en, directory_reference, created_at, created_by, updated_at, updated_by)
         VALUES ('{OtherDepartmentId}', 'DEPT-DOCUMENT-TEST', 'إدارة أخرى', 'Other test department', 'DEPT-DOCUMENT-OTHER', now(), '{Seed}', now(), '{Seed}');

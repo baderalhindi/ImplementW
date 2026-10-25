@@ -135,7 +135,13 @@ public sealed class ReviewTests(ProgressTestHost host)
         Assert.Single(await client.ItemsAsync(sessions.ProjectManager, ProgressDriver.Submissions, notManaged));
         Assert.Empty(await client.ItemsAsync(sessions.ProjectManager, ProgressDriver.Submissions, ahdaProject));
 
-        using HttpResponseMessage noPermission = await client.GetAsync($"{ProgressDriver.Submissions}?projectId={managed}", viewer);
+        // The Viewer reads its department's progress and starts nothing (shipped-permission-matrix.md: R06 reads at DEPT, writes nothing).
+        using (HttpResponseMessage read = await client.GetAsync($"{ProgressDriver.Submissions}?projectId={managed}", viewer))
+        {
+            Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+        }
+
+        using HttpResponseMessage noPermission = await client.StartAsync(viewer, ahdaProject);
         Assert.Equal(HttpStatusCode.Forbidden, noPermission.StatusCode);
     }
 }

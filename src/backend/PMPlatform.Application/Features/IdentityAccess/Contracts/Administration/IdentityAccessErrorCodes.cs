@@ -15,6 +15,12 @@ public static class IdentityAccessErrorCodes
     /// <summary>422: an assignment to an external user breaks an ADR-013 rule; <c>errors[]</c> names the field and the rule.</summary>
     public const string ExternalGrantInvalid = "IDENTITY_ACCESS_EXTERNAL_GRANT_INVALID";
 
+    /// <summary>
+    /// 422: an assignment to an internal user lacks the anchor its role's scope needs, or names an external entity; <c>errors[]</c> names the
+    /// field and the rule (shipped-permission-matrix.md D-6).
+    /// </summary>
+    public const string ScopeAnchorInvalid = "IDENTITY_ACCESS_SCOPE_ANCHOR_INVALID";
+
     /// <summary>422: only a PUBLISHED profile version may be assigned (ADR-018).</summary>
     public const string ProfileVersionNotPublished = "IDENTITY_ACCESS_PROFILE_VERSION_NOT_PUBLISHED";
 

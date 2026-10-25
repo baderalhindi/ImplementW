@@ -20,4 +20,17 @@ public sealed class FieldMask(IReadOnlyDictionary<string, MaskingRule> restricte
 
     /// <summary>The field codes this audience does not see, in ordinal order: the R-20 <c>maskedFields</c> list.</summary>
     public IReadOnlyList<string> MaskedFields { get; } = [.. restricted.Keys.Order(StringComparer.Ordinal)];
+
+    /// <summary>This mask with <paramref name="fieldCodes"/> withheld as well: a rule decided in code adds to the configured ones, never relaxes them.</summary>
+    public FieldMask Withholding(IEnumerable<string> fieldCodes)
+    {
+        ArgumentNullException.ThrowIfNull(fieldCodes);
+        Dictionary<string, MaskingRule> rules = new(restricted, StringComparer.Ordinal);
+        foreach (string fieldCode in fieldCodes)
+        {
+            rules.TryAdd(fieldCode, MaskingRule.Withhold);
+        }
+
+        return new FieldMask(rules);
+    }
 }

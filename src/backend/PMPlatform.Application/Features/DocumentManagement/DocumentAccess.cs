@@ -46,7 +46,9 @@ internal sealed class DocumentAccess(IAuthorizationEngine engine, IDocumentRepos
             ProjectId = anchors.ProjectId,
             DepartmentId = anchors.DepartmentId,
             ExternalEntityId = anchors.ExternalEntityId,
-            OwnerUserId = ownerUserId,
+            // OWN on a project's document is the projects the holder manages, as in every other module (shipped-permission-matrix.md D-5);
+            // a library document is its uploader's.
+            OwnerUserId = anchors.ProjectOwnerUserId ?? ownerUserId,
             DataClassificationItemId = classificationItemId,
         };
     }

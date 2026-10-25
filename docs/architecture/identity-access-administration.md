@@ -86,6 +86,7 @@ Module codes (`IdentityAccessErrorCodes`, R-27). `errors[]` names each field wit
 | `IDENTITY_ACCESS_ALREADY_ASSIGNED` | 409 | The same active assignment exists |
 | `IDENTITY_ACCESS_REFERENCE_INVALID` | 422 | A referenced user, sponsor, department, entity, entity type, project or profile version does not exist or may not be used |
 | `IDENTITY_ACCESS_EXTERNAL_GRANT_INVALID` | 422 | An ADR-013 rule (D-6); `errors[]` lists every rule broken |
+| `IDENTITY_ACCESS_SCOPE_ANCHOR_INVALID` | 422 | An internal assignment without the anchor its role's scope needs — R03 a department, R05 a project, R06 a department or a project — or with an external entity (`shipped-permission-matrix.md` D-6); `errors[]` lists every rule broken |
 | `IDENTITY_ACCESS_PROFILE_VERSION_NOT_PUBLISHED` | 422 | The version is not PUBLISHED |
 | `IDENTITY_ACCESS_PROJECT_CLOSED` | 422 | A new assignment on a CLOSED project |
 | `IDENTITY_ACCESS_SELF_ADMINISTRATION` | 422 | D-7 |

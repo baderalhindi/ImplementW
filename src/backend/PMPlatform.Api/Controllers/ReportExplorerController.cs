@@ -16,6 +16,7 @@ namespace PMPlatform.Api.Controllers;
 /// read; with no REPORT_RULES version in force the explorer is 422 <c>CONFIGURATION_MISSING</c>. Under <c>REPORT_COMPOSE</c> (R02, R03, R07).
 /// </summary>
 [Route(Collection)]
+[ExternalUsersNotFound]
 [Tags("Reports")]
 public sealed class ReportExplorerController(IReportExplorerService explorer) : ReportExportControllerBase
 {
@@ -54,6 +55,7 @@ public sealed class ReportExplorerController(IReportExplorerService explorer) : 
 
 /// <summary>MOD-061: the allowlist in force, as the explorer offers it — each field's type, its operators when filterable, its values, its source's semantic state.</summary>
 [Route(Collection)]
+[ExternalUsersNotFound]
 [Tags("Reports")]
 public sealed class ReportAllowlistEntriesController(IReportExplorerService explorer) : AdministrationControllerBase
 {

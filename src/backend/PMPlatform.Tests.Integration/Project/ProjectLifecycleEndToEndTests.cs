@@ -151,8 +151,8 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
     /// itself audited as an authorization denial (CTL-25).
     /// </summary>
     [Theory]
-    [InlineData(6, "submit", "DRAFT", Placement.Own, HttpStatusCode.Forbidden)] // a role with no project permission
-    [InlineData(3, "activate", "APPROVED_PLANNED", Placement.Own, HttpStatusCode.Forbidden)] // an AHDA reviewer, who may not activate
+    [InlineData(6, "submit", "DRAFT", Placement.Own, HttpStatusCode.Forbidden)] // a viewer, who sees the project and registers nothing
+    [InlineData(6, "activate", "APPROVED_PLANNED", Placement.Own, HttpStatusCode.Forbidden)] // a viewer, who may not activate
     [InlineData(8, "start-review", "SUBMITTED", Placement.Own, HttpStatusCode.Forbidden)] // ADR-013: an entity user, granted review
     [InlineData(8, "activate", "APPROVED_PLANNED", Placement.Own, HttpStatusCode.Forbidden)] // ADR-013: an entity user, granted activation
     [InlineData(3, "start-review", "SUBMITTED", Placement.OtherDepartment, HttpStatusCode.NotFound)] // a reviewer of another department

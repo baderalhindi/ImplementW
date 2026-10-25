@@ -36,7 +36,8 @@ public sealed class ApprovalTestHost : IAsyncLifetime
                      ('{IdentityDatabase.ProfileVersionId(3)}', 'APPROVAL_DECIDE', 'DEPT'), ('{IdentityDatabase.ProfileVersionId(3)}', 'APPROVAL_VIEW', 'DEPT'),
                      ('{IdentityDatabase.ProfileVersionId(4)}', 'APPROVAL_DECIDE', 'ALL'), ('{IdentityDatabase.ProfileVersionId(6)}', 'APPROVAL_VIEW', 'OWN'))
              AS g (version_id, code, scope)
-        JOIN identity_access.permission p ON p.code = g.code;
+        JOIN identity_access.permission p ON p.code = g.code
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
         """;
 
     private static string Configuration => $"""

@@ -63,6 +63,7 @@
     "alreadyAssigned": "The user already holds this assignment.",
     "referenceInvalid": "A selected user, sponsor, sector, entity, project or profile version does not exist or cannot be used. See the highlighted field.",
     "externalGrantInvalid": "This assignment does not meet the rules for external users. See the highlighted fields.",
+    "scopeAnchorInvalid": "This role needs a different scope: a Department Manager needs a department, a Liaison a project, a Viewer a department or a project, and an internal user no external entity. See the highlighted fields.",
     "profileVersionNotPublished": "Only a published profile version can be assigned.",
     "projectClosed": "The project is closed and cannot take new assignments.",
     "selfAdministration": "You cannot change your own status or assignments. Ask another system administrator.",

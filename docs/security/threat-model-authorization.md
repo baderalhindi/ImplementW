@@ -102,7 +102,7 @@ CTL-43 asks this review to verify that REV-IAM-002 remains closed. FG-03 §24 ma
 
 | Record | Claim | On `dev` |
 | --- | --- | --- |
-| `authorization-engine.md` status, F-1 | Blueprint Appendix A is unavailable; 3 permissions and 7 grants ship | Appendix A is in Blueprint v2.0 (`Project Files.zip`), as an indicative matrix; about 90 permissions and 90 shipped grants |
+| `authorization-engine.md` status, F-1 | Blueprint Appendix A is unavailable; 3 permissions and 7 grants ship | Appendix A is in Blueprint v2.0 (`Project Files.zip`), as an indicative matrix; about 90 permissions and 90 shipped grants. **Corrected 2026-10-25**: F-1 resolved, 91 permissions and 234 grants (`shipped-permission-matrix.md`) |
 | `authorization-engine.md` D-12, F-6; `identity-access-administration.md` D-12, F-5 | Denials and administration changes are logged, not audited | Both audited since TASK-033 |
 | `authorization-engine.md` F-8 | No endpoint acts on a business record; no collection filter | `RecordScope` is used by Project, Documents, Audit, WF-13 and Dashboards |
 | `identity-access-administration.md` F-7 | Project closure does not end access | `CloseoutActivation.cs:85` ends it |
@@ -113,3 +113,4 @@ CTL-43 asks this review to verify that REV-IAM-002 remains closed. FG-03 §24 ma
 | Date | Change |
 | --- | --- |
 | 2026-10-16 | First review (TASK-081) |
+| 2026-10-25 | The 24 Oct 2026 review (`shipped-permission-matrix.md`): Appendix A shipped; `GrantPolicy` adds a control no profile can override — R01 holds no business or approval permission, an external user (or R08) no approval, report, integration or SAR-amount permission (D-2) — and ASSIGNED gains the project-bound internal case (D-4). No threat's rating changes in this record; the Security Lead's review of the new grants is P-1's |

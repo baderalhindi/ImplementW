@@ -22,6 +22,17 @@ internal static class FinancialKpiMasking
     public const string ForecastAtCompletionSar = "forecastAtCompletionSar";
     public const string MeasuredValue = "measuredValue";
 
+    /// <summary>
+    /// The SAR amounts of each financial entity: withheld from a caller holding no <c>FINANCIAL_VIEW_SENSITIVE</c>, whatever FIELD_CLASSIFICATION
+    /// says, so a viewer and an entity see the financial condition without the figures (shipped-permission-matrix.md D-4).
+    /// </summary>
+    public static IReadOnlyDictionary<string, IReadOnlyList<string>> SensitiveAmounts { get; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
+    {
+        [Commitment] = [AmountSar],
+        [Update] = [ActualExpenditureToDateSar, ForecastAtCompletionSar],
+        [Snapshot] = [ApprovedBudgetSar, ActualExpenditureToDateSar, ForecastAtCompletionSar],
+    };
+
     public static Money? Apply(FieldMask mask, string fieldCode, Money? value) => mask.Reveals(fieldCode) ? value : null;
 
     public static decimal? Apply(FieldMask mask, string fieldCode, decimal? value) => mask.Reveals(fieldCode) ? value : null;

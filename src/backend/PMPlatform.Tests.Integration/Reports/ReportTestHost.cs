@@ -41,7 +41,8 @@ public sealed class ReportTestHost : IAsyncLifetime
                      {Grants(3, "DEPT", "PROJECT_VIEW", "PROGRESS_VIEW", "REPORT_EXPORT")},
                      {Grants(3, "ALL", "CONFIGURATION_VIEW", "CONFIGURATION_MANAGE")})
              AS g (version_id, code, scope)
-        JOIN identity_access.permission p ON p.code = g.code;
+        JOIN identity_access.permission p ON p.code = g.code
+        ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
 
         -- The test allowlist: version 2 of REPORT_RULES, PUBLISHED by SQL (the seed's version 1 stays the DRAFT proposal). Every project-grain field
         -- of the seed's proposal but the live Approved Budget.

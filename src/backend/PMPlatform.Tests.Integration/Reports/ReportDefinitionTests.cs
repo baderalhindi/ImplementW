@@ -139,8 +139,10 @@ public sealed class ReportDefinitionTests(ReportTestHost host)
         using HttpResponseMessage retired = await client.PostAsync($"{ReportDriver.Definitions}/{id}/retire", author);
         Assert.Equal("RETIRED", (await retired.ReadObjectAsync())["lifecycleState"]!.GetValue<string>());
 
-        using HttpResponseMessage refused = await client.PostAsync(ReportDriver.Definitions, (await client.SignInOrFailAsync(8)).AccessToken, new { code = "RISK_ISSUE" });
-        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+        // The Viewer manages no configuration; an external user does not know the route exists (ADR-019).
+        using HttpResponseMessage refused = await client.PostAsync(ReportDriver.Definitions, (await client.SignInOrFailAsync(6)).AccessToken, new { code = "RISK_ISSUE" });
+        using HttpResponseMessage unknown = await client.PostAsync(ReportDriver.Definitions, (await client.SignInOrFailAsync(8)).AccessToken, new { code = "RISK_ISSUE" });
+        Assert.Equal((HttpStatusCode.Forbidden, HttpStatusCode.NotFound), (refused.StatusCode, unknown.StatusCode));
     }
 
     /// <summary>The guard of TASK-071 migration 3, for any writer: a PUBLISHED report does not change, nothing is deleted or truncated, and two versions of one report are never both in force.</summary>

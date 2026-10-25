@@ -167,7 +167,8 @@ public sealed class AuthorizationEndpointTests(IdentityTestHost host)
                 WHERE p.code = 'R01-DEFAULT';
                 INSERT INTO identity_access.permission_profile_grant (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
                 SELECT gen_random_uuid(), '{draftWith}', p.id, 'ALL', now(), '{IdentityDatabase.SeedPrincipalId}', now(), '{IdentityDatabase.SeedPrincipalId}'
-                FROM identity_access.permission p WHERE p.code = 'IDENTITY_INTEGRATION_MANAGE';
+                FROM identity_access.permission p WHERE p.code = 'IDENTITY_INTEGRATION_MANAGE'
+                ON CONFLICT (permission_profile_version_id, permission_id) DO UPDATE SET data_scope = EXCLUDED.data_scope;
                 """);
 
             await RebindAsync(SystemAdministratorAssignmentId, publishedWithout);

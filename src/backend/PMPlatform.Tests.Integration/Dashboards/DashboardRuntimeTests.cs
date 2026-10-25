@@ -225,8 +225,8 @@ public sealed class DashboardRuntimeTests(DashboardTestHost host)
     }
 
     /// <summary>
-    /// DSH-008 (ADR-013, ADR-019): an entity user's Project Dashboard is its own project's, with progress, schedule status and health, and every
-    /// internal widget restricted; another entity's project does not exist for it (R-47, DSH-CC-21).
+    /// DSH-008 (ADR-013, ADR-019): an entity user's Project Dashboard is its own project's, with progress, schedule status, health and risks, and
+    /// the internal schedule detail restricted; another entity's project does not exist for it (R-47, DSH-CC-21).
     /// </summary>
     [Fact]
     public async Task AnEntityUserSeesItsOwnProjectsProgressScheduleStatusAndHealthAndNothingInternal()
@@ -245,13 +245,12 @@ public sealed class DashboardRuntimeTests(DashboardTestHost host)
         Assert.Equal("AMBER", dashboard.Widget("PUBLISHED_HEALTH")["data"]!["state"]!.GetValue<string>());
         Assert.Equal("RED", dashboard.Widget("PUBLISHED_SCHEDULE")["data"]!["state"]!.GetValue<string>());
         Assert.Equal("AMBER", dashboard.Widget("CURRENT_HEALTH")["data"]!["state"]!.GetValue<string>());
-        foreach (string code in new[] { "SCHEDULE_HEALTH", "RISK_EXPOSURE" })
-        {
-            JsonObject widget = dashboard.Widget(code);
-            Assert.Equal(("UNKNOWN", "RESTRICTED"), (widget.Meta("freshness"), widget.Reason()));
-            Assert.Null(widget["data"]);
-            Assert.Null(widget["drillTargetScreenId"]);
-        }
+        // The entity reads its own project's risks (shipped-permission-matrix.md: R08 RISK_VIEW at ENTITY); the schedule detail stays internal.
+        Assert.Equal("FRESH", dashboard.Widget("RISK_EXPOSURE").Meta("freshness"));
+        JsonObject schedule = dashboard.Widget("SCHEDULE_HEALTH");
+        Assert.Equal(("UNKNOWN", "RESTRICTED"), (schedule.Meta("freshness"), schedule.Reason()));
+        Assert.Null(schedule["data"]);
+        Assert.Null(schedule["drillTargetScreenId"]);
 
         Guid otherEntity = await host.DashboardProjectAsync(entityId: DashboardTestHost.OtherEntityId);
         using HttpResponseMessage hidden = await client.GetAsync($"{DashboardDriver.Dashboards}/PROJECT?projectId={otherEntity}", entityUser);
@@ -275,18 +274,15 @@ public sealed class DashboardRuntimeTests(DashboardTestHost host)
         using HttpResponseMessage widened = await client.GetAsync($"{DashboardDriver.Dashboards}/PORTFOLIO?departmentId={DashboardTestHost.OtherDepartmentId}", department);
         Assert.Equal((HttpStatusCode.UnprocessableEntity, "DASHBOARD_FILTER_VALUE_UNAUTHORIZED"), await widened.DashboardRefusalAsync());
 
-        // R03 holds no schedule, risk, financial or KPI view: those widgets are restricted, whatever R02 could see of the same projects.
-        Assert.Equal("RESTRICTED", own.Widget("SCHEDULE_HEALTH").Reason());
+        // R03 sees its department's schedule as R02 sees the portfolio's (shipped-permission-matrix.md): not restricted, the source's own word.
+        Assert.NotEqual("RESTRICTED", own.Widget("SCHEDULE_HEALTH").Reason());
         Assert.Equal("FRESH", (await client.DashboardOrFailAsync(portfolio, "PORTFOLIO")).Widget("PROJECTS_BY_LIFECYCLE").Meta("freshness"));
 
-        // R06 holds no grant: the Viewer's dashboard opens, and every widget is restricted with nothing disclosed.
-        JsonObject nothing = await client.DashboardOrFailAsync(viewer, "PORTFOLIO");
-        Assert.Empty(nothing["departmentOptions"]!.AsArray());
-        Assert.All(nothing["widgets"]!.AsArray().Select(w => w!.AsObject()), w =>
-        {
-            Assert.Equal("RESTRICTED", w.Reason());
-            Assert.Null(w["data"]);
-        });
+        // R06 reads its own department and no other: the same option, and the same refusal when it asks for another.
+        JsonObject viewed = await client.DashboardOrFailAsync(viewer, "PORTFOLIO");
+        Assert.Equal([DashboardTestHost.DepartmentId.ToString()], viewed["departmentOptions"]!.AsArray().Select(d => d!.GetValue<string>()));
+        using HttpResponseMessage viewerWidened = await client.GetAsync($"{DashboardDriver.Dashboards}/PORTFOLIO?departmentId={DashboardTestHost.OtherDepartmentId}", viewer);
+        Assert.Equal((HttpStatusCode.UnprocessableEntity, "DASHBOARD_FILTER_VALUE_UNAUTHORIZED"), await viewerWidened.DashboardRefusalAsync());
 
         // The Project Dashboard is bound to a project; the others take none (DSH-CC-18). An unknown dashboard does not exist.
         using HttpResponseMessage unbound = await client.GetAsync($"{DashboardDriver.Dashboards}/PROJECT", portfolio);
