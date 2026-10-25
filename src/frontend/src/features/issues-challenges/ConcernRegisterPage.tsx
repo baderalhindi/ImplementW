@@ -50,7 +50,8 @@ export function ConcernRegisterPage({ concernType }: { concernType: ConcernType 
         ) : isForbidden(portfolio.error) ? (
           <p className="state">{t('issuesChallenges.forbidden')}</p>
         ) : (
-          <ErrorState error={portfolio.error}
+          <ErrorState
+            error={portfolio.error}
             message={concernProblemMessage(portfolio.error, t)}
             onRetry={portfolio.reload}
           />

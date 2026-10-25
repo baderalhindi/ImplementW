@@ -68,7 +68,8 @@ function EditLoader(props: MilestoneFormDialogProps & { milestoneId: string }): 
     return milestone.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState error={milestone.error}
+      <ErrorState
+        error={milestone.error}
         message={milestoneProblemMessage(milestone.error, t)}
         onRetry={milestone.reload}
       />

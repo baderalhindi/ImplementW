@@ -86,7 +86,8 @@ export function ContributionReviewPage(): ReactElement | null {
         ) : isNotFound(record.error) ? (
           <p className="state">{t('externalParticipation.review.notFound')}</p>
         ) : (
-          <ErrorState error={record.error}
+          <ErrorState
+            error={record.error}
             message={participationProblemMessage(record.error, t)}
             onRetry={record.reload}
           />
@@ -131,7 +132,8 @@ function RevisionReview({
         {requestRecord.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState error={requestRecord.error}
+          <ErrorState
+            error={requestRecord.error}
             message={participationProblemMessage(requestRecord.error, t)}
             onRetry={requestRecord.reload}
           />

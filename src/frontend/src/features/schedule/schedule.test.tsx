@@ -616,7 +616,11 @@ describe('SCR-045 drag-adjustment is held to the dependency rules', () => {
 
 describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Baseline', () => {
   test('lists the baselines and shows the ACTIVE one’s frozen copy with the API’s variance', async () => {
-    open(entityManagerSession(), { baselines: [candidate(), baseline()] }, { path: BASELINES_PATH });
+    open(
+      entityManagerSession(),
+      { baselines: [candidate(), baseline()] },
+      { path: BASELINES_PATH },
+    );
 
     const list = await screen.findByRole('region', { name: en('schedule.baselines.caption') });
     expect(within(list).getAllByRole('row')).toHaveLength(3);

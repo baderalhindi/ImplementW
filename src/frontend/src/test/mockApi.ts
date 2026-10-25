@@ -88,7 +88,7 @@ async function emulatedNames(
     return (reply.status ?? 200) < 300 ? reply.body : undefined;
   };
   const items = (body: unknown): Record<string, unknown>[] =>
-    ((body as { items?: Record<string, unknown>[] } | undefined)?.items ?? []);
+    (body as { items?: Record<string, unknown>[] } | undefined)?.items ?? [];
   if (request.path === '/display-names') {
     const users = [];
     for (const id of request.query.getAll('userId')) {
@@ -100,11 +100,20 @@ async function emulatedNames(
     return { body: { users } };
   }
   if (request.path === '/organization-units') {
-    const unit = (row: Record<string, unknown>, isActive: boolean) => ({ id: row.id, code: row.code, name: row.name, isActive });
+    const unit = (row: Record<string, unknown>, isActive: boolean) => ({
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      isActive,
+    });
     return {
       body: {
-        departments: items(await read('/departments')).map((row) => unit(row, row.isActive !== false)),
-        externalEntities: items(await read('/external-entities')).map((row) => unit(row, row.status === 'ACTIVE')),
+        departments: items(await read('/departments')).map((row) =>
+          unit(row, row.isActive !== false),
+        ),
+        externalEntities: items(await read('/external-entities')).map((row) =>
+          unit(row, row.status === 'ACTIVE'),
+        ),
       },
     };
   }
@@ -169,7 +178,9 @@ export function mockApi(): MockApi {
     );
     const routed = shellCount ? '/approval-tasks?pageSize=1' : recorded.path;
     const find = (wanted: string, path: string) =>
-      [...routes].reverse().find((candidate) => candidate.method === wanted && candidate.pattern.test(path));
+      [...routes]
+        .reverse()
+        .find((candidate) => candidate.method === wanted && candidate.pattern.test(path));
     const route = find(method, routed);
     const emulated =
       route === undefined && method === 'GET' ? await emulatedNames(find, recorded) : undefined;

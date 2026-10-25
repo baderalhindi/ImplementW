@@ -66,7 +66,11 @@ export function EscalationDetail(): ReactElement | null {
         ) : isForbidden(record.error) ? (
           <p className="state">{t('issuesChallenges.forbidden')}</p>
         ) : (
-          <ErrorState error={record.error} message={concernProblemMessage(record.error, t)} onRetry={record.reload} />
+          <ErrorState
+            error={record.error}
+            message={concernProblemMessage(record.error, t)}
+            onRetry={record.reload}
+          />
         )}
       </>
     );

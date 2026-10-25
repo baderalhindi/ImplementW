@@ -78,7 +78,11 @@ export function AlertList({
       alerts.error === null ? (
         <LoadingState />
       ) : (
-        <ErrorState error={alerts.error} message={integrationProblemMessage(alerts.error, t)} onRetry={alerts.reload} />
+        <ErrorState
+          error={alerts.error}
+          message={integrationProblemMessage(alerts.error, t)}
+          onRetry={alerts.reload}
+        />
       );
   } else if (alerts.data.items.length === 0) {
     content = <EmptyState title={emptyTitle} />;

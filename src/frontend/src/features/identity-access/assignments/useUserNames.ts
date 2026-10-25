@@ -15,10 +15,13 @@ export function useUserNames(ids: (string | null)[]): Map<string, string> {
   const load = useCallback(
     async (signal: AbortSignal) => {
       const unique = key === '' ? [] : key.split(',');
-      const batches = Array.from({ length: Math.ceil(unique.length / MAX_NAMES_PER_CALL) }, (_, index) =>
-        unique.slice(index * MAX_NAMES_PER_CALL, (index + 1) * MAX_NAMES_PER_CALL),
+      const batches = Array.from(
+        { length: Math.ceil(unique.length / MAX_NAMES_PER_CALL) },
+        (_, index) => unique.slice(index * MAX_NAMES_PER_CALL, (index + 1) * MAX_NAMES_PER_CALL),
       );
-      const people = (await Promise.all(batches.map((batch) => namesApi.people(batch, signal)))).flat();
+      const people = (
+        await Promise.all(batches.map((batch) => namesApi.people(batch, signal)))
+      ).flat();
       return new Map(people.map((person) => [person.id, person.displayName]));
     },
     [key],

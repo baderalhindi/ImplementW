@@ -40,7 +40,11 @@ export function GanttView({
     return isForbidden(view.error) ? (
       <p className="state">{t('schedule.forbidden')}</p>
     ) : (
-      <ErrorState error={view.error} message={scheduleProblemMessage(view.error, t)} onRetry={view.reload} />
+      <ErrorState
+        error={view.error}
+        message={scheduleProblemMessage(view.error, t)}
+        onRetry={view.reload}
+      />
     );
   }
 

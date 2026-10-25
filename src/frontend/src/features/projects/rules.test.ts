@@ -34,7 +34,11 @@ import {
 
 // No audit permission: FG-06's two history tabs follow GET /audit-access (audit-activity/rules.test.ts). Every other
 // permission, so these cases are about reach and the internal/external line; the permission rule has its own test.
-const noHistory = { activity: false, projectAudit: false, permissions: permissionsOf(allPermissions()) };
+const noHistory = {
+  activity: false,
+  projectAudit: false,
+  permissions: permissionsOf(allPermissions()),
+};
 const internalReached: ProjectAccess = {
   internal: true,
   reached: true,
@@ -97,15 +101,15 @@ describe('scope reach (access.ts)', () => {
         (permission) => permission.code !== 'FINANCIAL_VIEW' && permission.code !== 'APPROVAL_VIEW',
       ),
     });
-    const keys = visibleTabs({ ...internalReached, permissions: withoutFinancials }).map((tab) => tab.key);
+    const keys = visibleTabs({ ...internalReached, permissions: withoutFinancials }).map(
+      (tab) => tab.key,
+    );
     expect(keys).not.toContain('financials');
     expect(keys).not.toContain('reviews');
     expect(keys).toContain('progress');
-    expect(visibleTabs({ ...internalReached, permissions: permissionsOf(null) }).map((tab) => tab.key)).toEqual([
-      'overview',
-      'registration',
-      'location',
-    ]);
+    expect(
+      visibleTabs({ ...internalReached, permissions: permissionsOf(null) }).map((tab) => tab.key),
+    ).toEqual(['overview', 'registration', 'location']);
   });
 
   test('tabs: review history is AHDA’s, progress, schedule, tasks, milestones, financials, KPIs, risks, issues & challenges, change requests, suspension, closeout, external requests and documents need reach, the rest are for anyone the API showed the project', () => {

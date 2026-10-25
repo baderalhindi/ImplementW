@@ -213,7 +213,8 @@ export function InvocationDetailPage(): ReactElement {
           detail.error === null ? (
             <LoadingState />
           ) : (
-            <ErrorState error={detail.error}
+            <ErrorState
+              error={detail.error}
               message={integrationProblemMessage(detail.error, t)}
               onRetry={detail.reload}
             />

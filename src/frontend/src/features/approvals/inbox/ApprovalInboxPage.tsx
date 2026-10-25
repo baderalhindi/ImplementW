@@ -61,7 +61,11 @@ export function ApprovalInboxPage(): ReactElement {
 
       {inbox.loading && <LoadingState label={t('approvals.inbox.loading')} />}
       {inbox.error !== null && (
-        <ErrorState error={inbox.error} message={approvalProblemMessage(inbox.error, t)} onRetry={inbox.reload} />
+        <ErrorState
+          error={inbox.error}
+          message={approvalProblemMessage(inbox.error, t)}
+          onRetry={inbox.reload}
+        />
       )}
       {inbox.data !== undefined &&
         (inbox.data.items.length === 0 ? (

@@ -147,7 +147,11 @@ export function ExternalEntityListPage(): ReactElement {
 
       {entities.loading && <LoadingState />}
       {entities.error !== null && (
-        <ErrorState error={entities.error} message={problemMessage(entities.error, t)} onRetry={entities.reload} />
+        <ErrorState
+          error={entities.error}
+          message={problemMessage(entities.error, t)}
+          onRetry={entities.reload}
+        />
       )}
       {entities.data !== undefined &&
         (entities.data.items.length === 0 ? (
@@ -309,7 +313,13 @@ function ExternalEntityForm({ editing, onClose, onSaved }: ExternalEntityFormPro
     return <LoadingState />;
   }
   if (existing.error !== null) {
-    return <ErrorState error={existing.error} message={problemMessage(existing.error, t)} onRetry={existing.reload} />;
+    return (
+      <ErrorState
+        error={existing.error}
+        message={problemMessage(existing.error, t)}
+        onRetry={existing.reload}
+      />
+    );
   }
   return (
     <ExternalEntityFields
