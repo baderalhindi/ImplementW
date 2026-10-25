@@ -96,7 +96,11 @@ distinct_wanted AS (
 INSERT INTO identity_access.permission_profile_grant (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
 SELECT md5('e2e-grant:' || w.version_id || ':' || w.permission_code)::uuid, w.version_id::uuid, p.id, w.data_scope,
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
-FROM distinct_wanted w JOIN identity_access.permission p ON p.code = w.permission_code;
+FROM distinct_wanted w JOIN identity_access.permission p ON p.code = w.permission_code
+-- E2E-R03 leaves out FINANCIAL_VIEW_SENSITIVE, which the agreed matrix ships to R03 at DEPT (shipped-permission-matrix.md D-4):
+-- UJ-015 needs a consumer who runs and exports a department's reports without the SAR amounts, and the agreed matrix gives
+-- REPORT_EXPORT without the amounts to no shipped role that reads financials. A profile like this is one AHDA may now author (TASK-110).
+WHERE NOT (w.version_id = '00000000-e2e7-4000-8000-000000000003' AND w.permission_code = 'FINANCIAL_VIEW_SENSITIVE');
 
 -- Assignments. Shipped profile versions are 00000000-0002-4000-8000-0000000000nn for Rnn; the e2e ones are kind e2e7.
 INSERT INTO identity_access.access_relationship (id, user_id, permission_profile_version_id, department_id, external_entity_id, sponsor_user_id, starts_at, status, created_at, created_by, updated_at, updated_by)
