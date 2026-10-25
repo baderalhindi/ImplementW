@@ -281,7 +281,8 @@ export function withProjectLookups(
           ? problem(404, 'NOT_FOUND')
           : { body: { id, displayName, username: 'x', userType: 'INTERNAL' } };
     });
-  return api;
+  // mockApi answers GET /organization-units from the two lists above; a test of the read failing makes it fail too.
+  return organization ? api : api.on('GET', /^\/organization-units$/, forbidden);
 }
 
 /** GET /projects/{id} answering the project with its ETag. */

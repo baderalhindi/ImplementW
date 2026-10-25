@@ -86,6 +86,10 @@ internal sealed class DepartmentRepository(PMPlatformDbContext context) : IDepar
             ? []
             : await context.Set<Department>().AsNoTracking().Where(e => ids.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.Name, cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<OrganizationUnit>> ListUnitsAsync(CancellationToken cancellationToken) =>
+        await context.Set<Department>().AsNoTracking().OrderBy(e => e.Code)
+            .Select(e => new OrganizationUnit(e.Id, e.Code, e.Name, e.IsActive)).ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public Task<Guid?> FindIdByCodeAsync(string code, CancellationToken cancellationToken) =>
         context.Set<Department>().AsNoTracking().Where(e => e.Code == code).Select(e => (Guid?)e.Id).SingleOrDefaultAsync(cancellationToken);
 

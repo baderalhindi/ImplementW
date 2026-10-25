@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import { externalEntitiesApi } from '@/features/identity-access/api/identityAccessApi.ts';
+import { namesApi } from '@/features/identity-access/names/namesApi.ts';
 import { shortId } from '@/features/projects/presentation.ts';
 import { tasksApi } from '@/features/tasks/api/tasksApi.ts';
 import { type ProjectTaskDetail } from '@/features/tasks/api/types.ts';
@@ -210,15 +210,8 @@ export function useMyContributions(userId: string): ApiResource<MyContributions>
 async function readEntityNames(
   signal: AbortSignal,
 ): Promise<Map<string, { ar: string; en: string }>> {
-  try {
-    const entities = await externalEntitiesApi.listAll(signal);
-    return new Map(entities.map((entity) => [entity.id, entity.name]));
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 403) {
-      return new Map();
-    }
-    throw error;
-  }
+  const units = await namesApi.units(signal);
+  return new Map(units.externalEntities.map((entity) => [entity.id, entity.name]));
 }
 
 async function readNoEntityNames(): Promise<Map<string, { ar: string; en: string }>> {
@@ -226,8 +219,9 @@ async function readNoEntityNames(): Promise<Map<string, { ar: string; en: string
 }
 
 /**
- * An entity's name for AHDA's screens, or "Entity 6f6f6f6f" when it cannot be read: ORGANIZATION_VIEW ships to R01 only
- * (TASK-038 F-1). An external view passes `enabled` false and reads nothing: the entity is the person's own.
+ * An entity's name for AHDA's screens (GET /organization-units, which every signed-in person may read; the 24 Oct 2026 review,
+ * H1), or "Entity 6f6f6f6f" when the API does not name it. An external view passes `enabled` false and reads nothing: the entity
+ * is the person's own.
  */
 export function useEntityNames(enabled = true): (id: string) => string {
   const { t, language } = useI18n();

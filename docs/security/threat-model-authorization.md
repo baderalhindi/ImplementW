@@ -114,3 +114,4 @@ CTL-43 asks this review to verify that REV-IAM-002 remains closed. FG-03 §24 ma
 | --- | --- |
 | 2026-10-16 | First review (TASK-081) |
 | 2026-10-25 | The 24 Oct 2026 review (`shipped-permission-matrix.md`): Appendix A shipped; `GrantPolicy` adds a control no profile can override — R01 holds no business or approval permission, an external user (or R08) no approval, report, integration or SAR-amount permission (D-2) — and ASSIGNED gains the project-bound internal case (D-4). No threat's rating changes in this record; the Security Lead's review of the new grants is P-1's |
+| 2026-10-25 | `GET /display-names` and `GET /organization-units` (`name-lookups.md`): a name, a code and an active flag for any signed-in user, no other attribute; an external user is told its own entity's names alone (ADR-013), and ids are UUIDs a caller cannot enumerate. No threat's rating changes; the Security Lead's review is P-1's |

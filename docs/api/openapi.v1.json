@@ -4082,6 +4082,61 @@
         }
       }
     },
+    "/api/v1/display-names": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The display names of the people named (`userId`, repeated, up to 100), in the order asked for.",
+        "operationId": "IdentityAccess_ListDisplayNames",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisplayNames"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organization-units": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The departments and external entities by code, with their names and whether each is active: what screens name and forms offer.",
+        "operationId": "IdentityAccess_ListOrganizationUnits",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationUnits"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/documents": {
       "get": {
         "tags": [
@@ -23505,6 +23560,21 @@
         },
         "description": "The directory settings, secrets reduced to whether they are set. The attribute names are the directory-to-platform\nmapping ADR-007 allows: the subject that identifies the person, and the three attributes the directory is\nauthoritative for. There is no group-to-role mapping: platform roles are assigned in the platform."
       },
+      "DisplayNames": {
+        "required": [
+          "users"
+        ],
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonName"
+            }
+          }
+        },
+        "description": "The names the caller may be told, in the order of the ids asked for; an id that names nobody, or nobody the caller may know, is left out."
+      },
       "DocumentDetail": {
         "required": [
           "id",
@@ -31069,6 +31139,53 @@
         },
         "description": "An operational alert (FG-05 §10): the condition, where it was found, and the operator's handling, apart from the integration's health."
       },
+      "OrganizationUnit": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "description": "A department or an external entity as a screen names and offers it: its code, its bilingual name and whether it is active."
+      },
+      "OrganizationUnits": {
+        "required": [
+          "departments",
+          "externalEntities"
+        ],
+        "type": "object",
+        "properties": {
+          "departments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationUnit"
+            }
+          },
+          "externalEntities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationUnit"
+            }
+          }
+        },
+        "description": "The departments and external entities the caller may be told of, by code."
+      },
       "OutputSensitivity": {
         "enum": [
           "STANDARD",
@@ -31365,6 +31482,22 @@
           }
         },
         "description": "An entry of the protected permission catalogue. Guid? PermissionSummary.DataClassificationItemId is its clearance (ADR-010)."
+      },
+      "PersonName": {
+        "required": [
+          "id",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
       },
       "PostProjectObligationCreateRequest": {
         "required": [

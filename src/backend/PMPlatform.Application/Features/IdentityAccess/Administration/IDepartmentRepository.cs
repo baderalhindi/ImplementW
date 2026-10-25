@@ -24,6 +24,9 @@ public interface IDepartmentRepository
     /// <summary>The names of the departments named, by id; an id that names nothing is left out.</summary>
     public Task<IReadOnlyDictionary<Guid, BilingualLabel>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
+    /// <summary>Every department's code, name and activity, by code: what a screen names and a form offers (review H1).</summary>
+    public Task<IReadOnlyList<OrganizationUnit>> ListUnitsAsync(CancellationToken cancellationToken);
+
     public Task<Guid?> FindIdByCodeAsync(string code, CancellationToken cancellationToken);
 
     /// <summary>The active department codes and names, by code.</summary>

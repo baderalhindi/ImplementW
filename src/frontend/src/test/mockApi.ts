@@ -69,6 +69,48 @@ function isShellPermissions(method: string, url: URL): boolean {
   return method === 'GET' && url.pathname === '/api/v1/sessions/current/permissions';
 }
 
+/**
+ * The names endpoints (the 24 Oct 2026 review, H1) answer from what a test has already mocked, unless the test registers its own
+ * answer: `GET /display-names` from the test's `GET /users/{id}` routes, and `GET /organization-units` from its `GET /departments`
+ * and `GET /external-entities` routes — so a fixture that names a person or a unit names it on every screen. A route that refuses
+ * names nothing. The routes consulted are not recorded as requests.
+ */
+async function emulatedNames(
+  find: (method: string, path: string) => Route | undefined,
+  request: RecordedRequest,
+): Promise<MockReply | undefined> {
+  const read = async (path: string): Promise<unknown> => {
+    const route = find('GET', path);
+    if (route === undefined) {
+      return undefined;
+    }
+    const reply = await route.handler({ ...request, path, query: new URLSearchParams() });
+    return (reply.status ?? 200) < 300 ? reply.body : undefined;
+  };
+  const items = (body: unknown): Record<string, unknown>[] =>
+    ((body as { items?: Record<string, unknown>[] } | undefined)?.items ?? []);
+  if (request.path === '/display-names') {
+    const users = [];
+    for (const id of request.query.getAll('userId')) {
+      const user = (await read(`/users/${id}`)) as { displayName?: string } | undefined;
+      if (user?.displayName !== undefined) {
+        users.push({ id, displayName: user.displayName });
+      }
+    }
+    return { body: { users } };
+  }
+  if (request.path === '/organization-units') {
+    const unit = (row: Record<string, unknown>, isActive: boolean) => ({ id: row.id, code: row.code, name: row.name, isActive });
+    return {
+      body: {
+        departments: items(await read('/departments')).map((row) => unit(row, row.isActive !== false)),
+        externalEntities: items(await read('/external-entities')).map((row) => unit(row, row.status === 'ACTIVE')),
+      },
+    };
+  }
+  return undefined;
+}
+
 export function problem(
   status: number,
   code: string,
@@ -126,18 +168,21 @@ export function mockApi(): MockApi {
       recorded,
     );
     const routed = shellCount ? '/approval-tasks?pageSize=1' : recorded.path;
-    const route = [...routes]
-      .reverse()
-      .find((candidate) => candidate.method === method && candidate.pattern.test(routed));
-    if (route === undefined && !shellCount && !shellPermissions) {
+    const find = (wanted: string, path: string) =>
+      [...routes].reverse().find((candidate) => candidate.method === wanted && candidate.pattern.test(path));
+    const route = find(method, routed);
+    const emulated =
+      route === undefined && method === 'GET' ? await emulatedNames(find, recorded) : undefined;
+    if (route === undefined && emulated === undefined && !shellCount && !shellPermissions) {
       throw new Error(`No mock for ${method} ${recorded.path}`);
     }
     const reply =
       route !== undefined
         ? await route.handler(recorded)
-        : shellPermissions
-          ? { body: shippedPermissions(sessionStore.getSnapshot().session?.user) }
-          : { body: page([], 1) };
+        : (emulated ??
+          (shellPermissions
+            ? { body: shippedPermissions(sessionStore.getSnapshot().session?.user) }
+            : { body: page([], 1) }));
     const status = reply.status ?? 200;
     if (reply.body instanceof Blob) {
       // The bytes, not the Blob: Node's Response does not recognise jsdom's Blob.
