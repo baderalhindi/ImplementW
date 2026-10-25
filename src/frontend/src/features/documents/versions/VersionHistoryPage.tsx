@@ -54,7 +54,11 @@ export function VersionHistoryPage(): ReactElement {
       <PageNotice notice={notice} />
       {history.loading && <LoadingState label={t('documents.versions.loading')} />}
       {history.error !== null && (
-        <ErrorState error={history.error} message={documentProblemMessage(history.error, t)} onRetry={history.reload} />
+        <ErrorState
+          error={history.error}
+          message={documentProblemMessage(history.error, t)}
+          onRetry={history.reload}
+        />
       )}
       {history.data !== undefined &&
         (history.data.versions.length === 0 ? (

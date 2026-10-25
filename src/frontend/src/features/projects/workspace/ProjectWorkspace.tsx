@@ -96,7 +96,11 @@ export function ProjectWorkspace(): ReactElement | null {
     return project.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState error={project.error} message={projectProblemMessage(project.error, t)} onRetry={project.reload} />
+      <ErrorState
+        error={project.error}
+        message={projectProblemMessage(project.error, t)}
+        onRetry={project.reload}
+      />
     );
   }
 

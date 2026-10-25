@@ -238,7 +238,11 @@ function ExplorerWorkspace({
       ) : result.loading && result.data === undefined ? (
         <LoadingState label={t('reports.result.running')} />
       ) : result.error !== null ? (
-        <ErrorState error={result.error} message={reportProblemMessage(result.error, t)} onRetry={result.reload} />
+        <ErrorState
+          error={result.error}
+          message={reportProblemMessage(result.error, t)}
+          onRetry={result.reload}
+        />
       ) : result.data === null || result.data === undefined ? null : (
         <ResultGrid result={result.data} caption={title} onPageChange={setPage} />
       )}
@@ -321,7 +325,11 @@ export function ExplorerPage(): ReactElement {
   }
   if (allowlist.error !== null || allowlist.data === undefined) {
     return (
-      <ErrorState error={allowlist.error} message={reportProblemMessage(allowlist.error, t)} onRetry={allowlist.reload} />
+      <ErrorState
+        error={allowlist.error}
+        message={reportProblemMessage(allowlist.error, t)}
+        onRetry={allowlist.reload}
+      />
     );
   }
   const view =

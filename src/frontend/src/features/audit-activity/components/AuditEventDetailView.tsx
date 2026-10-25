@@ -56,7 +56,13 @@ export function AuditEventDetailView({ auditEventId }: { auditEventId: string })
     return <LoadingState />;
   }
   if (detail.error !== null || detail.data === undefined) {
-    return <ErrorState error={detail.error} message={auditProblemMessage(detail.error, t)} onRetry={detail.reload} />;
+    return (
+      <ErrorState
+        error={detail.error}
+        message={auditProblemMessage(detail.error, t)}
+        onRetry={detail.reload}
+      />
+    );
   }
   return <EventDetail detail={detail.data} />;
 }

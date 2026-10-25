@@ -136,7 +136,11 @@ export function DepartmentListPage(): ReactElement {
 
       {departments.loading && <LoadingState />}
       {departments.error !== null && (
-        <ErrorState error={departments.error} message={problemMessage(departments.error, t)} onRetry={departments.reload} />
+        <ErrorState
+          error={departments.error}
+          message={problemMessage(departments.error, t)}
+          onRetry={departments.reload}
+        />
       )}
       {departments.data !== undefined &&
         (departments.data.items.length === 0 ? (
@@ -289,7 +293,13 @@ function DepartmentForm({
     return <LoadingState />;
   }
   if (existing.error !== null) {
-    return <ErrorState error={existing.error} message={problemMessage(existing.error, t)} onRetry={existing.reload} />;
+    return (
+      <ErrorState
+        error={existing.error}
+        message={problemMessage(existing.error, t)}
+        onRetry={existing.reload}
+      />
+    );
   }
   return (
     <DepartmentFields

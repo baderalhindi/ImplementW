@@ -84,7 +84,11 @@ export function AchievementDialog(props: AchievementDialogProps): ReactElement {
         record.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState error={record.error} message={milestoneProblemMessage(record.error, t)} onRetry={record.reload} />
+          <ErrorState
+            error={record.error}
+            message={milestoneProblemMessage(record.error, t)}
+            onRetry={record.reload}
+          />
         )
       ) : (
         <AchievementBody {...props} record={record.data} reload={record.reload} />

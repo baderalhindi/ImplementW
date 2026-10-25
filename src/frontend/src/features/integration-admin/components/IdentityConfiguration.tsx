@@ -66,7 +66,11 @@ export function IdentityConfiguration({
   }
   if (status.error !== null || status.data === undefined) {
     return (
-      <ErrorState error={status.error} message={integrationProblemMessage(status.error, t)} onRetry={status.reload} />
+      <ErrorState
+        error={status.error}
+        message={integrationProblemMessage(status.error, t)}
+        onRetry={status.reload}
+      />
     );
   }
   return <>{children(status.data)}</>;

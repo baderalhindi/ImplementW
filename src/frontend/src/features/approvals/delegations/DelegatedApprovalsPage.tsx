@@ -149,7 +149,8 @@ export function DelegatedApprovalsPage(): ReactElement {
 
       {delegations.loading && <LoadingState label={t('approvals.delegations.loading')} />}
       {delegations.error !== null && (
-        <ErrorState error={delegations.error}
+        <ErrorState
+          error={delegations.error}
           message={approvalProblemMessage(delegations.error, t)}
           onRetry={delegations.reload}
         />

@@ -32,7 +32,11 @@ export function ProjectLanding(): ReactElement {
     return projects.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState error={projects.error} message={dashboardProblemMessage(projects.error, t)} onRetry={projects.reload} />
+      <ErrorState
+        error={projects.error}
+        message={dashboardProblemMessage(projects.error, t)}
+        onRetry={projects.reload}
+      />
     );
   }
   if (projects.data.totalCount === 0) {

@@ -145,7 +145,8 @@ export function DocumentBrowser({
 
       {documents.loading && <LoadingState label={t('documents.list.loading')} />}
       {documents.error !== null && (
-        <ErrorState error={documents.error}
+        <ErrorState
+          error={documents.error}
           message={documentProblemMessage(documents.error, t)}
           onRetry={documents.reload}
         />

@@ -175,7 +175,11 @@ export function ReportsCenterPage(): ReactElement {
       {catalogue.loading ? (
         <LoadingState />
       ) : catalogue.error !== null ? (
-        <ErrorState error={catalogue.error} message={reportProblemMessage(catalogue.error, t)} onRetry={catalogue.reload} />
+        <ErrorState
+          error={catalogue.error}
+          message={reportProblemMessage(catalogue.error, t)}
+          onRetry={catalogue.reload}
+        />
       ) : (catalogue.data ?? []).length === 0 ? (
         <EmptyState title={t('reports.center.none')} />
       ) : shown.length === 0 ? (

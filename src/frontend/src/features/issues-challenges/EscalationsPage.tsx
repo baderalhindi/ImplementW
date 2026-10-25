@@ -94,7 +94,11 @@ export function EscalationsPage(): ReactElement {
         ) : isForbidden(queue.error) ? (
           <p className="state">{t('issuesChallenges.forbidden')}</p>
         ) : (
-          <ErrorState error={queue.error} message={concernProblemMessage(queue.error, t)} onRetry={queue.reload} />
+          <ErrorState
+            error={queue.error}
+            message={concernProblemMessage(queue.error, t)}
+            onRetry={queue.reload}
+          />
         )}
       </>
     );

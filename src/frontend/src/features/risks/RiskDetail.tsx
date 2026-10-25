@@ -94,7 +94,11 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
         ) : data !== undefined ? (
           <p className="state">{t('risks.detail.notFound')}</p>
         ) : (
-          <ErrorState error={record.error} message={riskProblemMessage(record.error, t)} onRetry={record.reload} />
+          <ErrorState
+            error={record.error}
+            message={riskProblemMessage(record.error, t)}
+            onRetry={record.reload}
+          />
         )}
       </>
     );

@@ -13,7 +13,10 @@ import {
 import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
 import { dataImportNavigation } from '@/features/data-import/routes.tsx';
 import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
-import { identityAccessNavigation, type NavigationItem } from '@/features/identity-access/routes.tsx';
+import {
+  identityAccessNavigation,
+  type NavigationItem,
+} from '@/features/identity-access/routes.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { integrationAdminNavigation } from '@/features/integration-admin/catalogue.ts';
 import { issuesChallengesNavigation } from '@/features/issues-challenges/routes.tsx';
@@ -111,10 +114,17 @@ function menu(
  * GET /audit-access: the audit trail sits under Administration for a holder of an administrative audit category and under
  * Projects for one who reads business audit only, so a business role is never given an Administration menu.
  */
-export function menusFor(user: SessionUser, permissions: Permissions, audit: AuditAccessView | null): Menu[] {
+export function menusFor(
+  user: SessionUser,
+  permissions: Permissions,
+  audit: AuditAccessView | null,
+): Menu[] {
   const auditItems = auditNavigation(audit);
-  const administrative = audit?.categories.some((category) => ADMINISTRATIVE_AUDIT.includes(category)) ?? false;
-  const businessAudit = administrative ? [] : auditItems.filter((item) => item.to === AUDIT_TRAIL_PATH);
+  const administrative =
+    audit?.categories.some((category) => ADMINISTRATIVE_AUDIT.includes(category)) ?? false;
+  const businessAudit = administrative
+    ? []
+    : auditItems.filter((item) => item.to === AUDIT_TRAIL_PATH);
   const administration = [
     ...identityAccessNavigation,
     ...integrationAdminNavigation,

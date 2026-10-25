@@ -22,5 +22,9 @@ export const approvalRoutes: RouteObject[] = [
 export const approvalNavigation: NavigationItem[] = [
   { to: '/approvals/inbox', label: 'approvals.nav.inbox', permissions: ['APPROVAL_DECIDE'] },
   { to: '/approvals/requests', label: 'approvals.nav.requests', permissions: ['APPROVAL_VIEW'] },
-  { to: '/approvals/delegations', label: 'approvals.nav.delegations', permissions: ['APPROVAL_DECIDE'] },
+  {
+    to: '/approvals/delegations',
+    label: 'approvals.nav.delegations',
+    permissions: ['APPROVAL_DECIDE'],
+  },
 ];
