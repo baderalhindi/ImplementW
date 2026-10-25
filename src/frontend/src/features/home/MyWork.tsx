@@ -69,7 +69,9 @@ export function MyWork({ user }: { user: SessionUser }): ReactElement {
             </li>
           )}
           {user.userType !== 'EXTERNAL' &&
-            user.roleAssignments.some((assignment) => PORTFOLIO_ROLES.includes(assignment.roleCode)) && (
+            user.roleAssignments.some((assignment) =>
+              PORTFOLIO_ROLES.includes(assignment.roleCode),
+            ) && (
               <li>
                 <Link to={PORTFOLIO_DASHBOARD_PATH}>{t('common.menu.portfolioDashboard')}</Link>
               </li>
@@ -105,7 +107,10 @@ function ApprovalsWaiting(): ReactElement {
         <ul className="home__list">
           {page.items.map((item) => (
             <li key={item.taskId}>
-              <SubjectSummary subject={item.instance.subject} routingKey={item.instance.routingKey} />
+              <SubjectSummary
+                subject={item.instance.subject}
+                routingKey={item.instance.routingKey}
+              />
               {item.dueAt !== null && (
                 <span className="home__aside">
                   {isOverdue(item.dueAt) ? (
@@ -127,7 +132,8 @@ function MyRequests(): ReactElement {
   const { t, formatDateTime } = useI18n();
   const mine = useApiResource(
     useCallback(
-      (signal: AbortSignal) => approvalInstancesApi.listMine({ status: 'PENDING', page: 1, pageSize: SHOWN }, signal),
+      (signal: AbortSignal) =>
+        approvalInstancesApi.listMine({ status: 'PENDING', page: 1, pageSize: SHOWN }, signal),
       [],
     ),
   );
@@ -164,7 +170,9 @@ function MyTasks({ userId }: { userId: string }): ReactElement {
     <HomeCard
       title={t('home.tasks.title')}
       resource={portfolio}
-      figure={({ entries }) => listEntries('mine', entries, userId, today).filter(({ task }) => isOpen(task)).length}
+      figure={({ entries }) =>
+        listEntries('mine', entries, userId, today).filter(({ task }) => isOpen(task)).length
+      }
       viewAll={{ to: '/tasks', label: t('home.tasks.all') }}
       empty={t('home.tasks.none')}
     >
@@ -176,7 +184,9 @@ function MyTasks({ userId }: { userId: string }): ReactElement {
           .sort((a, b) => a.task.plannedFinishDate.localeCompare(b.task.plannedFinishDate));
         return (
           <>
-            <p className="home__aside">{t('home.tasks.summary', { overdue, week: dueThisWeek.length })}</p>
+            <p className="home__aside">
+              {t('home.tasks.summary', { overdue, week: dueThisWeek.length })}
+            </p>
             <ul className="home__list">
               {dueThisWeek.slice(0, SHOWN).map(({ task, project }) => (
                 <li key={task.id}>
@@ -241,7 +251,8 @@ function UnreadNotifications(): ReactElement {
   const { t, formatDateTime } = useI18n();
   const unread = useApiResource(
     useCallback(
-      (signal: AbortSignal) => notificationsApi.list({ unread: true, page: 1, pageSize: SHOWN }, signal),
+      (signal: AbortSignal) =>
+        notificationsApi.list({ unread: true, page: 1, pageSize: SHOWN }, signal),
       [],
     ),
   );

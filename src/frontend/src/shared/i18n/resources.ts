@@ -80,7 +80,7 @@ export const resources: Record<Language, Resources> = {
   ar: {
     common: commonAr,
     identityAccess: identityAccessAr,
-  home: homeAr,
+    home: homeAr,
     approvals: approvalsAr,
     documents: documentsAr,
     notifications: notificationsAr,

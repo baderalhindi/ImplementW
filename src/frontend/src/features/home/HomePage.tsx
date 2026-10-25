@@ -32,7 +32,8 @@ export function HomePage(): ReactElement {
     );
   }
 
-  const administers = permissions.can('USER_VIEW', 'INTEGRATION_VIEW') && !permissions.can('PROJECT_VIEW');
+  const administers =
+    permissions.can('USER_VIEW', 'INTEGRATION_VIEW') && !permissions.can('PROJECT_VIEW');
   return administers ? (
     <>
       <PageHeader title={t('home.health.title')} description={t('home.health.description')} />

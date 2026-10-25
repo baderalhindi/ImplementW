@@ -57,12 +57,17 @@ export function PlatformHealth(): ReactElement {
 function Integrations(): ReactElement {
   const { t } = useI18n();
   const catalogue = useApiResource(integrationAdminApi.catalogue);
-  const instancesOf = (data: NonNullable<typeof catalogue.data>) => data.items.flatMap((item) => item.instances);
+  const instancesOf = (data: NonNullable<typeof catalogue.data>) =>
+    data.items.flatMap((item) => item.instances);
   return (
     <HomeCard
       title={t('home.health.integrations.title')}
       resource={catalogue}
-      figure={(data) => instancesOf(data).filter((instance) => instance.isEnabled && instance.availability === 'DOWN').length}
+      figure={(data) =>
+        instancesOf(data).filter(
+          (instance) => instance.isEnabled && instance.availability === 'DOWN',
+        ).length
+      }
       viewAll={{ to: INTEGRATIONS_OVERVIEW_PATH, label: t('home.health.integrations.all') }}
       empty={t('home.health.integrations.allUp')}
     >
@@ -95,7 +100,10 @@ function AuditPipeline(): ReactElement {
     >
       {(data) => (
         <p className="home__aside">
-          {t('home.health.audit.backlog', { pending: data.pendingMessages, lag: data.projectionLag })}
+          {t('home.health.audit.backlog', {
+            pending: data.pendingMessages,
+            lag: data.projectionLag,
+          })}
         </p>
       )}
     </HomeCard>
@@ -111,7 +119,11 @@ function People(): ReactElement {
         usersApi.list({ status: 'ACTIVE', userType: 'EXTERNAL', pageSize: 1 }, signal),
         usersApi.list({ status: 'DISABLED', pageSize: 1 }, signal),
       ]);
-      return { internal: internal.totalCount, external: external.totalCount, disabled: disabled.totalCount };
+      return {
+        internal: internal.totalCount,
+        external: external.totalCount,
+        disabled: disabled.totalCount,
+      };
     }, []),
   );
   return (
