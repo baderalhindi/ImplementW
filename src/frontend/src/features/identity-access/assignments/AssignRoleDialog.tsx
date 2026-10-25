@@ -173,7 +173,13 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
     return <LoadingState />;
   }
   if (catalogue.error !== null) {
-    return <ErrorState error={catalogue.error} message={problemMessage(catalogue.error, t)} onRetry={catalogue.reload} />;
+    return (
+      <ErrorState
+        error={catalogue.error}
+        message={problemMessage(catalogue.error, t)}
+        onRetry={catalogue.reload}
+      />
+    );
   }
 
   if (visibleStep === 'role') {

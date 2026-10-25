@@ -57,7 +57,13 @@ export function UserDetailPage(): ReactElement {
     return <LoadingState />;
   }
   if (user.error !== null || user.data === undefined) {
-    return <ErrorState error={user.error} message={problemMessage(user.error, t)} onRetry={user.reload} />;
+    return (
+      <ErrorState
+        error={user.error}
+        message={problemMessage(user.error, t)}
+        onRetry={user.reload}
+      />
+    );
   }
 
   const detail = user.data.data;
@@ -114,7 +120,11 @@ export function UserDetailPage(): ReactElement {
         </div>
         {assignments.loading && <LoadingState />}
         {assignments.error !== null && (
-          <ErrorState error={assignments.error} message={problemMessage(assignments.error, t)} onRetry={assignments.reload} />
+          <ErrorState
+            error={assignments.error}
+            message={problemMessage(assignments.error, t)}
+            onRetry={assignments.reload}
+          />
         )}
         {assignments.data !== undefined &&
           (assignments.data.items.length === 0 ? (

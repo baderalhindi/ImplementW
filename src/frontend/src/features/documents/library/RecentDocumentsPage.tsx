@@ -35,7 +35,11 @@ export function RecentDocumentsPage(): ReactElement {
       />
       {recent.loading && <LoadingState label={t('documents.list.loading')} />}
       {recent.error !== null && (
-        <ErrorState error={recent.error} message={documentProblemMessage(recent.error, t)} onRetry={recent.reload} />
+        <ErrorState
+          error={recent.error}
+          message={documentProblemMessage(recent.error, t)}
+          onRetry={recent.reload}
+        />
       )}
       {recent.data !== undefined &&
         (recent.data.items.length === 0 ? (

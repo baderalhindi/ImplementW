@@ -85,7 +85,12 @@ describe('who reaches which FG-06 screen (access.ts)', () => {
   test('the workspace offers Activity and Audit as two tabs, each on its own permission (acceptance criterion 1)', () => {
     const tabs = (access: Parameters<typeof projectAccess>[2]) =>
       visibleTabs(
-        projectAccess(reviewerSession().user, projectDetail(), access, permissionsOf(allPermissions())),
+        projectAccess(
+          reviewerSession().user,
+          projectDetail(),
+          access,
+          permissionsOf(allPermissions()),
+        ),
       )
         .map((tab) => tab.key)
         .filter((key) => key === 'activity' || key === 'audit');

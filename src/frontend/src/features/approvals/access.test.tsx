@@ -48,7 +48,9 @@ describe('approval routes', () => {
     const decider = renderApp({ path: '/', session: sessionAs(APPROVER_ID, ['R02']) });
     await findMainMenu();
     await waitFor(() => {
-      expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe('/approvals/inbox');
+      expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe(
+        '/approvals/inbox',
+      );
     });
     decider.unmount();
     cleanup();
@@ -57,7 +59,9 @@ describe('approval routes', () => {
     renderApp({ path: '/', session: sessionAs(APPROVER_ID, ['R04']) });
     await findMainMenu();
     await waitFor(() => {
-      expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe('/approvals/requests');
+      expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe(
+        '/approvals/requests',
+      );
     });
   });
 
@@ -69,6 +73,8 @@ describe('approval routes', () => {
     await waitFor(() => {
       expect(menuLink('common.menu.projects')).toBeTruthy();
     });
-    expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe('/change-requests');
+    expect(menuLink('common.menu.requestsApprovals')?.getAttribute('href')).toBe(
+      '/change-requests',
+    );
   });
 });

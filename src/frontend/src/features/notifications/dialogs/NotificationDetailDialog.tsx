@@ -66,7 +66,11 @@ function NotificationDetail({
     <>
       {detail.loading && <LoadingState label={t('notifications.detail.loading')} />}
       {detail.error !== null && (
-        <ErrorState error={detail.error} message={notificationProblemMessage(detail.error, t)} onRetry={detail.reload} />
+        <ErrorState
+          error={detail.error}
+          message={notificationProblemMessage(detail.error, t)}
+          onRetry={detail.reload}
+        />
       )}
       {notification !== undefined && (
         <article className="notification" lang={notification.language}>

@@ -101,7 +101,8 @@ export function HostedDashboard({
         view.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState error={view.error}
+          <ErrorState
+            error={view.error}
             message={dashboardProblemMessage(view.error, t)}
             onRetry={
               filterRefused

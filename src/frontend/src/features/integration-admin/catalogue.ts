@@ -89,14 +89,42 @@ export const INVOCATION_STATUSES: readonly InvocationStatus[] = [
 
 /** The sidebar's integration group, in the order an operator works: overview, monitoring, logs, then each kind. */
 export const integrationAdminNavigation: NavigationItem[] = [
-  { to: INTEGRATIONS_OVERVIEW_PATH, label: 'integrationAdmin.nav.overview', permissions: ['INTEGRATION_VIEW'] },
-  { to: INTEGRATION_MONITORING_PATH, label: 'integrationAdmin.nav.monitoring', permissions: ['INTEGRATION_VIEW'] },
-  { to: INTEGRATION_LOGS_PATH, label: 'integrationAdmin.nav.logs', permissions: ['INTEGRATION_LOG_VIEW'] },
-  { to: SSO_DIRECTORY_PATH, label: 'integrationAdmin.nav.ssoDirectory', permissions: ['IDENTITY_INTEGRATION_MANAGE'] },
-  { to: EMAIL_EXCHANGE_PATH, label: 'integrationAdmin.nav.emailExchange', permissions: ['INTEGRATION_VIEW'] },
+  {
+    to: INTEGRATIONS_OVERVIEW_PATH,
+    label: 'integrationAdmin.nav.overview',
+    permissions: ['INTEGRATION_VIEW'],
+  },
+  {
+    to: INTEGRATION_MONITORING_PATH,
+    label: 'integrationAdmin.nav.monitoring',
+    permissions: ['INTEGRATION_VIEW'],
+  },
+  {
+    to: INTEGRATION_LOGS_PATH,
+    label: 'integrationAdmin.nav.logs',
+    permissions: ['INTEGRATION_LOG_VIEW'],
+  },
+  {
+    to: SSO_DIRECTORY_PATH,
+    label: 'integrationAdmin.nav.ssoDirectory',
+    permissions: ['IDENTITY_INTEGRATION_MANAGE'],
+  },
+  {
+    to: EMAIL_EXCHANGE_PATH,
+    label: 'integrationAdmin.nav.emailExchange',
+    permissions: ['INTEGRATION_VIEW'],
+  },
   { to: NAFATH_PATH, label: 'integrationAdmin.nav.nafath', permissions: ['INTEGRATION_VIEW'] },
-  { to: INTERNAL_SYSTEMS_PATH, label: 'integrationAdmin.nav.internalSystems', permissions: ['INTEGRATION_VIEW'] },
-  { to: API_CATALOGUE_PATH, label: 'integrationAdmin.nav.apiCatalogue', permissions: ['INTEGRATION_VIEW'] },
+  {
+    to: INTERNAL_SYSTEMS_PATH,
+    label: 'integrationAdmin.nav.internalSystems',
+    permissions: ['INTEGRATION_VIEW'],
+  },
+  {
+    to: API_CATALOGUE_PATH,
+    label: 'integrationAdmin.nav.apiCatalogue',
+    permissions: ['INTEGRATION_VIEW'],
+  },
 ];
 
 const PLAIN_CODE = /^[A-Z][A-Z0-9_]{0,63}$/;

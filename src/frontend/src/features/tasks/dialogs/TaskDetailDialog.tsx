@@ -75,7 +75,11 @@ export function TaskDetailDialog(props: TaskDetailDialogProps): ReactElement {
         task.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState error={task.error} message={taskProblemMessage(task.error, t)} onRetry={task.reload} />
+          <ErrorState
+            error={task.error}
+            message={taskProblemMessage(task.error, t)}
+            onRetry={task.reload}
+          />
         )
       ) : (
         <TaskDetailBody {...props} task={task.data} reload={task.reload} />

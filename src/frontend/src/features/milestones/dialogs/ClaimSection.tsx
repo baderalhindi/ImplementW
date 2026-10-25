@@ -239,7 +239,11 @@ export function OpenRevision(props: OpenRevisionProps): ReactElement {
     return claim.loading ? (
       <LoadingState />
     ) : (
-      <ErrorState error={claim.error} message={milestoneProblemMessage(claim.error, t)} onRetry={claim.reload} />
+      <ErrorState
+        error={claim.error}
+        message={milestoneProblemMessage(claim.error, t)}
+        onRetry={claim.reload}
+      />
     );
   }
   return claim.data.revision.data.status === 'DRAFT' && props.editable ? (

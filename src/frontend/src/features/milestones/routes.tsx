@@ -14,5 +14,10 @@ export const milestoneRoutes: RouteObject[] = [
 ];
 
 export const milestoneNavigation: NavigationItem[] = [
-  { to: '/milestones', label: 'milestones.nav.register', end: true, permissions: ['MILESTONE_SUBMIT'] },
+  {
+    to: '/milestones',
+    label: 'milestones.nav.register',
+    end: true,
+    permissions: ['MILESTONE_SUBMIT'],
+  },
 ];
