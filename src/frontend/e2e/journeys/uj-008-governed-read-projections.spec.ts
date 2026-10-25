@@ -142,8 +142,9 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     await expectText(kpi, `As of ${dayOf(measuredOn)}`);
   });
 
-  await test.step("the Home: the department filter offers only the consumer's scope; refresh, switch and layout change nothing at source", async () => {
-    await page.goto('/');
+  await test.step("the dashboards: the department filter offers only the consumer's scope; refresh, switch and layout change nothing at source", async () => {
+    // The dashboards are at /dashboards; the Home is the person's own work (home-and-portfolio.md D-1, D-2).
+    await page.goto('/dashboards');
     const filter = page.getByRole('combobox', { name: 'Sector' });
     await expect(filter.getByRole('option')).toHaveText([
       'All your sectors',
