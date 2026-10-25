@@ -14,5 +14,10 @@ export const dashboardRoutes: RouteObject[] = [{ index: true, element: <Dashboar
 
 /** A dashboard's widgets read business projections, so the dashboards are offered to a holder of PROJECT_VIEW. */
 export const dashboardNavigation: NavigationItem[] = [
-  { to: DASHBOARDS_PATH, label: 'common.menu.dashboards', end: true, permissions: ['PROJECT_VIEW'] },
+  {
+    to: DASHBOARDS_PATH,
+    label: 'common.menu.dashboards',
+    end: true,
+    permissions: ['PROJECT_VIEW'],
+  },
 ];

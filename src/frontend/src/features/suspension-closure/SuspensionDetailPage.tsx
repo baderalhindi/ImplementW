@@ -123,7 +123,8 @@ export function SuspensionDetailPage(): ReactElement | null {
         ) : isForbidden(record.error) ? (
           <p className="state">{t('suspensionClosure.suspension.forbidden')}</p>
         ) : (
-          <ErrorState error={record.error}
+          <ErrorState
+            error={record.error}
             message={suspensionClosureProblemMessage(record.error, t)}
             onRetry={record.reload}
           />

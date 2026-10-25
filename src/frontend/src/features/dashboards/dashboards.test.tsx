@@ -580,7 +580,10 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
     ).toBeTruthy();
     const switcher = screen.getByRole('navigation', { name: en('dashboards.home.switch') });
     const links = within(switcher).getAllByRole('link');
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/dashboards', '/dashboards?dashboard=GOVERNANCE']);
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/dashboards',
+      '/dashboards?dashboard=GOVERNANCE',
+    ]);
     expect(links[0]?.getAttribute('aria-current')).toBe('page');
 
     await userEvent.click(present(links[1], 'Governance link'));

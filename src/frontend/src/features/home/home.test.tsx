@@ -16,7 +16,9 @@ const en = (key: string, params?: Record<string, string | number>) => translate(
 /** What the Home's cards read, answered empty unless a test says otherwise. */
 function homeApi(): MockApi {
   return mockApi()
-    .on('GET', /^\/approval-tasks$/, { body: page([inboxItem(), inboxItem({ taskId: 'second-task' })]) })
+    .on('GET', /^\/approval-tasks$/, {
+      body: page([inboxItem(), inboxItem({ taskId: 'second-task' })]),
+    })
     .on('GET', /^\/approval-instances$/, { body: page([]) })
     .on('GET', /^\/projects$/, { body: page([]) })
     .on('GET', /^\/notifications$/, { body: page([notification()]) })
@@ -54,10 +56,14 @@ describe('the Home', () => {
     // No task of its own to update: the tasks card is the doers'.
     expect(screen.queryByRole('region', { name: en('home.tasks.title') })).toBeNull();
     expect(
-      within(card(en('home.actions.title'))).getByRole('link', { name: en('common.menu.portfolioDashboard') }).getAttribute('href'),
+      within(card(en('home.actions.title')))
+        .getByRole('link', { name: en('common.menu.portfolioDashboard') })
+        .getAttribute('href'),
     ).toBe('/dashboards?dashboard=PORTFOLIO');
     // The Home is not a dashboard: it reads none.
-    expect(screen.queryByRole('heading', { level: 1, name: en('dashboards.landing.R02') })).toBeNull();
+    expect(
+      screen.queryByRole('heading', { level: 1, name: en('dashboards.landing.R02') }),
+    ).toBeNull();
   });
 
   test('a Project Manager sees its tasks and its requests, and nothing waits for a decision it cannot take', async () => {
@@ -65,21 +71,31 @@ describe('the Home', () => {
     renderApp({ path: '/', session: sessionFor(['R04']) });
 
     expect(await screen.findByRole('region', { name: en('home.tasks.title') })).toBeTruthy();
-    expect(await within(card(en('home.tasks.title'))).findByText(en('home.tasks.none'))).toBeTruthy();
+    expect(
+      await within(card(en('home.tasks.title'))).findByText(en('home.tasks.none')),
+    ).toBeTruthy();
     expect(card(en('home.requests.title'))).toBeTruthy();
     expect(screen.queryByRole('region', { name: en('home.approvals.title') })).toBeNull();
     expect(
-      within(card(en('home.actions.title'))).queryByRole('link', { name: en('common.menu.portfolioDashboard') }),
+      within(card(en('home.actions.title'))).queryByRole('link', {
+        name: en('common.menu.portfolioDashboard'),
+      }),
     ).toBeNull();
-    expect(within(card(en('home.actions.title'))).getByRole('link', { name: en('projects.nav.create') })).toBeTruthy();
+    expect(
+      within(card(en('home.actions.title'))).getByRole('link', { name: en('projects.nav.create') }),
+    ).toBeTruthy();
   });
 
   test('the System Administrator sees the platform’s health and no business work (the review, M-1)', async () => {
     homeApi();
     renderApp({ path: '/', session: sessionFor(['R01']) });
 
-    expect(await screen.findByRole('heading', { level: 1, name: en('home.health.title') })).toBeTruthy();
-    expect(await screen.findByRole('region', { name: en('home.health.integrations.title') })).toBeTruthy();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: en('home.health.title') }),
+    ).toBeTruthy();
+    expect(
+      await screen.findByRole('region', { name: en('home.health.integrations.title') }),
+    ).toBeTruthy();
     expect(card(en('home.health.audit.title'))).toBeTruthy();
     expect(await within(card(en('home.health.people.title'))).findByText('8')).toBeTruthy();
     expect(screen.queryByRole('region', { name: en('home.approvals.title') })).toBeNull();

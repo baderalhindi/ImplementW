@@ -41,7 +41,8 @@ export function MyExternalRequestsPage(): ReactElement | null {
         requests.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState error={requests.error}
+          <ErrorState
+            error={requests.error}
             message={participationProblemMessage(requests.error, t)}
             onRetry={requests.reload}
           />

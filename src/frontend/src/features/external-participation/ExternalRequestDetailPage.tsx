@@ -86,7 +86,8 @@ export function ExternalRequestDetailPage(): ReactElement | null {
         ) : isNotFound(record.error) ? (
           <p className="state">{t('externalParticipation.detail.notFound')}</p>
         ) : (
-          <ErrorState error={record.error}
+          <ErrorState
+            error={record.error}
             message={participationProblemMessage(record.error, t)}
             onRetry={record.reload}
           />
@@ -594,7 +595,8 @@ function InternalCase({
             attempts.loading ? (
               <LoadingState />
             ) : (
-              <ErrorState error={attempts.error}
+              <ErrorState
+                error={attempts.error}
                 message={participationProblemMessage(attempts.error, t)}
                 onRetry={attempts.reload}
               />

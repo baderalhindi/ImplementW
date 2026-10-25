@@ -84,7 +84,11 @@ function StepUpForm(): ReactElement {
   if (challenge.error !== null) {
     return (
       <>
-        <ErrorState error={challenge.error} message={problemMessage(challenge.error, t)} onRetry={challenge.reload} />
+        <ErrorState
+          error={challenge.error}
+          message={problemMessage(challenge.error, t)}
+          onRetry={challenge.reload}
+        />
         <div className="form__actions">{cancel}</div>
       </>
     );

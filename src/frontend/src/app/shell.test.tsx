@@ -49,35 +49,99 @@ describe('the master navigation', () => {
     ['R01', ['home', 'notifications', 'administration', 'help']],
     [
       'R02',
-      ['home', 'portfolio', 'projects', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help'],
+      [
+        'home',
+        'portfolio',
+        'projects',
+        'risksIssues',
+        'requestsApprovals',
+        'documents',
+        'dashboardsReports',
+        'notifications',
+        'help',
+      ],
     ],
     [
       'R04',
-      ['home', 'projects', 'myWork', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help'],
+      [
+        'home',
+        'projects',
+        'myWork',
+        'risksIssues',
+        'requestsApprovals',
+        'documents',
+        'dashboardsReports',
+        'notifications',
+        'help',
+      ],
     ],
-    ['R05', ['home', 'projects', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help']],
+    [
+      'R05',
+      [
+        'home',
+        'projects',
+        'risksIssues',
+        'requestsApprovals',
+        'documents',
+        'dashboardsReports',
+        'notifications',
+        'help',
+      ],
+    ],
     [
       'R06',
-      ['home', 'portfolio', 'projects', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help'],
+      [
+        'home',
+        'portfolio',
+        'projects',
+        'risksIssues',
+        'requestsApprovals',
+        'documents',
+        'dashboardsReports',
+        'notifications',
+        'help',
+      ],
     ],
-    ['R07', ['home', 'portfolio', 'projects', 'risksIssues', 'requestsApprovals', 'documents', 'dashboardsReports', 'notifications', 'help']],
-  ])('%s is shown the menus its shipped permissions open, and no other (review: “What each role should see”)', async (role, menus) => {
-    withDashboards(mockApi(), { catalogue: catalogueFor([role]) });
-    renderApp({ path: '/', session: sessionFor([role]) });
+    [
+      'R07',
+      [
+        'home',
+        'portfolio',
+        'projects',
+        'risksIssues',
+        'requestsApprovals',
+        'documents',
+        'dashboardsReports',
+        'notifications',
+        'help',
+      ],
+    ],
+  ])(
+    '%s is shown the menus its shipped permissions open, and no other (review: “What each role should see”)',
+    async (role, menus) => {
+      withDashboards(mockApi(), { catalogue: catalogueFor([role]) });
+      renderApp({ path: '/', session: sessionFor([role]) });
 
-    await findMainMenu();
-    await waitFor(() => {
-      expect(
-        within(mainMenu())
-          .getAllByRole('link')
-          .map((link) => link.textContent),
-      ).toEqual(menus.map((menu) => en(`common.menu.${menu}`)));
-    });
-  });
+      await findMainMenu();
+      await waitFor(() => {
+        expect(
+          within(mainMenu())
+            .getAllByRole('link')
+            .map((link) => link.textContent),
+        ).toEqual(menus.map((menu) => en(`common.menu.${menu}`)));
+      });
+    },
+  );
 
   test('an external entity user is shown its projects, its tasks, its requests and nothing of AHDA’s portfolio, approvals or reports', async () => {
     withDashboards(mockApi(), { catalogue: catalogueFor(['R08']) });
-    renderApp({ path: '/', session: { ...sessionFor(['R08']), user: { ...sessionFor(['R08']).user, userType: 'EXTERNAL' } } });
+    renderApp({
+      path: '/',
+      session: {
+        ...sessionFor(['R08']),
+        user: { ...sessionFor(['R08']).user, userType: 'EXTERNAL' },
+      },
+    });
 
     await findMainMenu();
     await waitFor(() => {
@@ -86,9 +150,15 @@ describe('the master navigation', () => {
           .getAllByRole('link')
           .map((link) => link.textContent),
       ).toEqual(
-        ['home', 'projects', 'myWork', 'risksIssues', 'requestsApprovals', 'notifications', 'help'].map((menu) =>
-          en(`common.menu.${menu}`),
-        ),
+        [
+          'home',
+          'projects',
+          'myWork',
+          'risksIssues',
+          'requestsApprovals',
+          'notifications',
+          'help',
+        ].map((menu) => en(`common.menu.${menu}`)),
       );
     });
     expect(screen.queryByRole('button', { name: en('common.shell.create') })).toBeTruthy();

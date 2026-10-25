@@ -29,6 +29,7 @@ export function arrangedWidgets(widgets: DashboardWidgetResult[]): DashboardWidg
  */
 export function visibleWidgets(widgets: DashboardWidgetResult[]): DashboardWidgetResult[] {
   return arrangedWidgets(widgets).filter(
-    (widget) => !widget.isHidden && !(widget.unknownReason === 'RESTRICTED' && widget.data === null),
+    (widget) =>
+      !widget.isHidden && !(widget.unknownReason === 'RESTRICTED' && widget.data === null),
   );
 }

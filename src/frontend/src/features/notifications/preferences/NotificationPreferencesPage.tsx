@@ -52,7 +52,8 @@ export function NotificationPreferencesPage(): ReactElement {
         (isConfigurationMissing(preferences.error) ? (
           <EmptyState title={t('notifications.preferences.notConfigured')} />
         ) : (
-          <ErrorState error={preferences.error}
+          <ErrorState
+            error={preferences.error}
             message={notificationProblemMessage(preferences.error, t)}
             onRetry={preferences.reload}
           />

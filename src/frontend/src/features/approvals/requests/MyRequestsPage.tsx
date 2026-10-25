@@ -66,7 +66,11 @@ export function MyRequestsPage(): ReactElement {
 
       {requests.loading && <LoadingState label={t('approvals.requests.loading')} />}
       {requests.error !== null && (
-        <ErrorState error={requests.error} message={approvalProblemMessage(requests.error, t)} onRetry={requests.reload} />
+        <ErrorState
+          error={requests.error}
+          message={approvalProblemMessage(requests.error, t)}
+          onRetry={requests.reload}
+        />
       )}
       {requests.data !== undefined &&
         (requests.data.items.length === 0 ? (

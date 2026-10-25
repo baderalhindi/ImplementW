@@ -95,7 +95,8 @@ export function NotificationInbox({
             (isConfigurationMissing(families.error) ? (
               <EmptyState title={t(`notifications.${kind}.noFamilies`)} />
             ) : (
-              <ErrorState error={families.error}
+              <ErrorState
+                error={families.error}
                 message={notificationProblemMessage(families.error, t)}
                 onRetry={families.reload}
               />
@@ -215,7 +216,8 @@ function NotificationList({
 
       {notifications.loading && <LoadingState label={t('notifications.list.loading')} />}
       {notifications.error !== null && (
-        <ErrorState error={notifications.error}
+        <ErrorState
+          error={notifications.error}
           message={notificationProblemMessage(notifications.error, t)}
           onRetry={notifications.reload}
         />

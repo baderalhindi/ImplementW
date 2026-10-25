@@ -302,7 +302,11 @@ function ReportWorkspace({
       ) : result.loading && result.data === undefined ? (
         <LoadingState label={t('reports.result.running')} />
       ) : result.error !== null ? (
-        <ErrorState error={result.error} message={reportProblemMessage(result.error, t)} onRetry={result.reload} />
+        <ErrorState
+          error={result.error}
+          message={reportProblemMessage(result.error, t)}
+          onRetry={result.reload}
+        />
       ) : result.data === null || result.data === undefined ? null : (
         <ResultGrid result={result.data} caption={name} onPageChange={setPage} />
       )}
@@ -396,7 +400,13 @@ export function ReportPage(): ReactElement {
     return <LoadingState />;
   }
   if (report.error !== null || report.data === null || report.data === undefined) {
-    return <ErrorState error={report.error} message={reportProblemMessage(report.error, t)} onRetry={report.reload} />;
+    return (
+      <ErrorState
+        error={report.error}
+        message={reportProblemMessage(report.error, t)}
+        onRetry={report.reload}
+      />
+    );
   }
   if (FAMILIES[report.data.audienceFamily].slug !== slug) {
     return (

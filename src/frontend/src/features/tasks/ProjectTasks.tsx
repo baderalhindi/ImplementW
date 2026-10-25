@@ -41,7 +41,11 @@ export function ProjectTasks({
     return isForbidden(board.error) ? (
       <p className="state">{t('tasks.forbidden')}</p>
     ) : (
-      <ErrorState error={board.error} message={taskProblemMessage(board.error, t)} onRetry={board.reload} />
+      <ErrorState
+        error={board.error}
+        message={taskProblemMessage(board.error, t)}
+        onRetry={board.reload}
+      />
     );
   }
 

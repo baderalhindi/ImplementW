@@ -26,7 +26,8 @@ export function CloseoutRegisterPage(): ReactElement {
         portfolio.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState error={portfolio.error}
+          <ErrorState
+            error={portfolio.error}
             message={suspensionClosureProblemMessage(portfolio.error, t)}
             onRetry={portfolio.reload}
           />

@@ -90,14 +90,35 @@ export const myParticipationRoutes: RouteObject[] = [
 ];
 
 const INTERNAL_NAVIGATION: NavigationItem[] = [
-  { to: EXTERNAL_REQUESTS_PATH, label: 'externalParticipation.nav.register', end: true, permissions: ['EXTERNAL_REQUEST_VIEW'] },
-  { to: APPLICATION_MONITOR_PATH, label: 'externalParticipation.nav.applications', permissions: ['EXTERNAL_CONTRIBUTION_APPLY'] },
-  { to: PARTICIPATION_MONITOR_PATH, label: 'externalParticipation.nav.monitor', permissions: ['EXTERNAL_REQUEST_MANAGE'] },
+  {
+    to: EXTERNAL_REQUESTS_PATH,
+    label: 'externalParticipation.nav.register',
+    end: true,
+    permissions: ['EXTERNAL_REQUEST_VIEW'],
+  },
+  {
+    to: APPLICATION_MONITOR_PATH,
+    label: 'externalParticipation.nav.applications',
+    permissions: ['EXTERNAL_CONTRIBUTION_APPLY'],
+  },
+  {
+    to: PARTICIPATION_MONITOR_PATH,
+    label: 'externalParticipation.nav.monitor',
+    permissions: ['EXTERNAL_REQUEST_MANAGE'],
+  },
 ];
 
 const EXTERNAL_NAVIGATION: NavigationItem[] = [
-  { to: MY_EXTERNAL_REQUESTS_PATH, label: 'externalParticipation.nav.mine', permissions: ['EXTERNAL_REQUEST_VIEW'] },
-  { to: MY_CONTRIBUTIONS_PATH, label: 'externalParticipation.nav.contributions', permissions: ['EXTERNAL_CONTRIBUTION_RESPOND'] },
+  {
+    to: MY_EXTERNAL_REQUESTS_PATH,
+    label: 'externalParticipation.nav.mine',
+    permissions: ['EXTERNAL_REQUEST_VIEW'],
+  },
+  {
+    to: MY_CONTRIBUTIONS_PATH,
+    label: 'externalParticipation.nav.contributions',
+    permissions: ['EXTERNAL_CONTRIBUTION_RESPOND'],
+  },
 ];
 
 /** AHDA's register and monitors, or an entity user's requests and contributions (WF-13 §12.2): never both. */

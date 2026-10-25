@@ -42,7 +42,8 @@ export function DashboardsPage(): ReactElement {
         {catalogue.loading ? (
           <LoadingState />
         ) : (
-          <ErrorState error={catalogue.error}
+          <ErrorState
+            error={catalogue.error}
             message={dashboardProblemMessage(catalogue.error, t)}
             onRetry={catalogue.reload}
           />
