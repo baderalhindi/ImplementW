@@ -47,4 +47,25 @@ public static class IdentityAccessErrorCodes
 
     /// <summary>422: the verification code was not accepted for the user's current number (ADR-004).</summary>
     public const string MobileVerificationFailed = "IDENTITY_ACCESS_MOBILE_VERIFICATION_FAILED";
+
+    /// <summary>
+    /// 422: a profile version's grants break a rule — a permission outside the catalogue, a permission twice, or one the profile's base
+    /// role may never hold (GrantPolicy); <c>errors[]</c> names each grant and the rule (TASK-110).
+    /// </summary>
+    public const string ProfileGrantInvalid = "IDENTITY_ACCESS_PROFILE_GRANT_INVALID";
+
+    /// <summary>422: the author, the reviewer and the publisher of a profile version must be three people (TASK-110; ERD D-12).</summary>
+    public const string SeparationOfDuties = "IDENTITY_ACCESS_SEPARATION_OF_DUTIES";
+
+    /// <summary>422: no one validates or publishes a profile they hold an assignment of (TASK-110: no self-approval).</summary>
+    public const string SelfApproval = "IDENTITY_ACCESS_SELF_APPROVAL";
+
+    /// <summary>422: the version is in use — an active assignment is bound to it — or is a shipped default's only published version (TASK-110).</summary>
+    public const string ProfileVersionInUse = "IDENTITY_ACCESS_PROFILE_VERSION_IN_USE";
+
+    /// <summary>409: the profile already has a version in DRAFT or VALIDATED; it is finished or retired first (TASK-110).</summary>
+    public const string ProfileDraftOpen = "IDENTITY_ACCESS_PROFILE_DRAFT_OPEN";
+
+    /// <summary>422: assignments move only to the newest PUBLISHED version of their own profile (TASK-110).</summary>
+    public const string MigrationTargetInvalid = "IDENTITY_ACCESS_MIGRATION_TARGET_INVALID";
 }

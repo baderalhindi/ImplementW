@@ -35,6 +35,12 @@ const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   IDENTITY_ACCESS_DIRECTORY_AUTHORITATIVE: 'identityAccess.problems.directoryAuthoritative',
   IDENTITY_ACCESS_INVALID_PERIOD: 'identityAccess.problems.invalidPeriod',
   IDENTITY_ACCESS_DEPARTMENT_CYCLE: 'identityAccess.problems.departmentCycle',
+  IDENTITY_ACCESS_PROFILE_GRANT_INVALID: 'identityAccess.problems.profileGrantInvalid',
+  IDENTITY_ACCESS_SEPARATION_OF_DUTIES: 'identityAccess.problems.separationOfDuties',
+  IDENTITY_ACCESS_SELF_APPROVAL: 'identityAccess.problems.selfApproval',
+  IDENTITY_ACCESS_PROFILE_VERSION_IN_USE: 'identityAccess.problems.profileVersionInUse',
+  IDENTITY_ACCESS_PROFILE_DRAFT_OPEN: 'identityAccess.problems.profileDraftOpen',
+  IDENTITY_ACCESS_MIGRATION_TARGET_INVALID: 'identityAccess.problems.migrationTargetInvalid',
 };
 
 const FIELD_MESSAGES: Record<string, TranslationKey> = {

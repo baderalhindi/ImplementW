@@ -17,8 +17,12 @@ import {
   type ExternalEntitySummary,
   type ExternalEntityUpdateRequest,
   type Page,
+  type PermissionGrantSetRequest,
+  type PermissionProfileCreateRequest,
   type PermissionProfileDetail,
+  type PermissionProfileMigration,
   type PermissionProfileSummary,
+  type PermissionProfileVersion,
   type PermissionSummary,
   type RoleDetail,
   type RoleSummary,
@@ -102,6 +106,42 @@ export const rolesApi = {
     readAll<PermissionProfileSummary>('/permission-profiles', {}, signal),
   getProfile: (id: string, signal?: AbortSignal) =>
     data(apiRequest<PermissionProfileDetail>(`/permission-profiles/${id}`, { signal })),
+};
+
+export type PermissionProfileTransition = 'validate' | 'publish' | 'retire';
+
+// ADM-008 permission profile authoring (TASK-110)
+export const permissionProfilesApi = {
+  create: (request: PermissionProfileCreateRequest) =>
+    data(
+      apiRequest<PermissionProfileVersion>('/permission-profiles', {
+        method: 'POST',
+        body: request,
+      }),
+    ),
+  createVersion: (profileId: string, sourceVersionId: string | null) =>
+    data(
+      apiRequest<PermissionProfileVersion>(`/permission-profiles/${profileId}/versions`, {
+        method: 'POST',
+        body: { sourceVersionId },
+      }),
+    ),
+  getVersion: (id: string, signal?: AbortSignal) =>
+    apiRequest<PermissionProfileVersion>(`/permission-profile-versions/${id}`, { signal }),
+  updateGrants: (id: string, request: PermissionGrantSetRequest, etag: string | null) =>
+    apiRequest<PermissionProfileVersion>(`/permission-profile-versions/${id}/grants`, {
+      method: 'PUT',
+      body: request,
+      ifMatch: etag,
+    }),
+  transition: (id: string, transition: PermissionProfileTransition, etag: string | null) =>
+    command<PermissionProfileVersion>(`/permission-profile-versions/${id}/${transition}`, etag),
+  migrateAssignments: (id: string) =>
+    data(
+      command<PermissionProfileMigration>(
+        `/permission-profile-versions/${id}/assignment-migrations`,
+      ),
+    ),
 };
 
 // ADM-011, ADM-012

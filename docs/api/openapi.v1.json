@@ -10690,6 +10690,45 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "A new profile on a canonical role; its version 1 is a DRAFT, copying `sourceVersionId`'s grants when given.",
+        "operationId": "IdentityAccess_CreatePermissionProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionProfileCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionProfileCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionProfileCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionProfileVersionDetail"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/permission-profiles/{permissionProfileId}": {
@@ -10717,6 +10756,289 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PermissionProfileDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/permission-profiles/{permissionProfileId}/versions": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The profile's next version, a DRAFT copying `sourceVersionId` or its newest PUBLISHED version. One open draft at a time.",
+        "operationId": "IdentityAccess_CreatePermissionProfileVersion",
+        "parameters": [
+          {
+            "name": "permissionProfileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PermissionProfileVersionCreateRequest"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PermissionProfileVersionCreateRequest"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PermissionProfileVersionCreateRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionProfileVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/permission-profile-versions/{versionId}": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The version with its grants and who drafted, validated and published it; the ETag is what `PUT` and the commands name.",
+        "operationId": "IdentityAccess_GetPermissionProfileVersion",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionProfileVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/permission-profile-versions/{versionId}/grants": {
+      "put": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Replaces a DRAFT's whole grid and change summary, by its author. Requires `If-Match` (R-21).",
+        "operationId": "IdentityAccess_UpdatePermissionProfileGrants",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionGrantSetRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionGrantSetRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionGrantSetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionProfileVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/permission-profile-versions/{versionId}/validate": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "operationId": "IdentityAccess_ValidatePermissionProfileVersion",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionProfileVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/permission-profile-versions/{versionId}/publish": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The version becomes assignable at once. Step-up (ADR-010).",
+        "operationId": "IdentityAccess_PublishPermissionProfileVersion",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionProfileVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/permission-profile-versions/{versionId}/retire": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Abandons a draft, or withdraws a PUBLISHED version no one holds. Step-up (ADR-010).",
+        "operationId": "IdentityAccess_RetirePermissionProfileVersion",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionProfileVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/permission-profile-versions/{versionId}/assignment-migrations": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Moves every active assignment of the profile's older versions onto this, its newest PUBLISHED version. Step-up (ADR-010).",
+        "operationId": "IdentityAccess_MigratePermissionProfileAssignments",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionProfileMigration"
                 }
               }
             }
@@ -31261,6 +31583,99 @@
           }
         }
       },
+      "PermissionGrantRequest": {
+        "required": [
+          "permissionCode",
+          "dataScope"
+        ],
+        "type": "object",
+        "properties": {
+          "permissionCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataScope": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "One cell of the grid: a permission and the scope it is held at (R-19 values, e.g. `READ_ONLY`)."
+      },
+      "PermissionGrantSetRequest": {
+        "required": [
+          "grants",
+          "changeSummary"
+        ],
+        "type": "object",
+        "properties": {
+          "grants": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PermissionGrantRequest"
+            }
+          },
+          "changeSummary": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "ADM-008 (TASK-110): a DRAFT's whole grid and its change summary. A permission left out is not held."
+      },
+      "PermissionProfileCreateRequest": {
+        "required": [
+          "code",
+          "name",
+          "baseRoleId",
+          "sourceVersionId"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "baseRoleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "sourceVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "ADM-008 (TASK-110): a new profile on a canonical role, its first DRAFT copying `sourceVersionId`'s grants when given."
+      },
       "PermissionProfileDetail": {
         "required": [
           "id",
@@ -31322,6 +31737,28 @@
           }
         },
         "description": "One cell of the matrix: a catalogue permission at a data scope."
+      },
+      "PermissionProfileMigration": {
+        "required": [
+          "permissionProfileVersionId",
+          "migratedAssignments"
+        ],
+        "type": "object",
+        "properties": {
+          "permissionProfileVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "migratedAssignments": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "How many active assignments moved to the version."
       },
       "PermissionProfilePage": {
         "required": [
@@ -31397,6 +31834,22 @@
           }
         }
       },
+      "PermissionProfileVersionCreateRequest": {
+        "required": [
+          "sourceVersionId"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "ADM-008 (TASK-110): a new DRAFT of a profile, copying `sourceVersionId`, or the newest PUBLISHED version when absent."
+      },
       "PermissionProfileVersionDetail": {
         "required": [
           "id",
@@ -31442,9 +31895,41 @@
             "items": {
               "$ref": "#/components/schemas/PermissionProfileGrantDetail"
             }
+          },
+          "permissionProfileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "changeSummary": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "validatedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "publishedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
-        "description": "A profile version and its grants; only a PUBLISHED version may be assigned (ADR-018)."
+        "description": "A profile version and its grants; only a PUBLISHED version may be assigned (ADR-018). Who authored, validated and published it is part\nof it: three different people (TASK-110)."
       },
       "PermissionSummary": {
         "required": [

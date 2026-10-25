@@ -86,10 +86,9 @@ internal sealed class RoleAdministrationRepository(PMPlatformDbContext context) 
             return null;
         }
 
-        var versions = await context.Set<PermissionProfileVersion>().AsNoTracking()
+        List<PermissionProfileVersion> versions = await context.Set<PermissionProfileVersion>().AsNoTracking()
             .Where(v => v.PermissionProfileId == profileId)
             .OrderByDescending(v => v.VersionNo)
-            .Select(v => new { v.Id, v.VersionNo, v.LifecycleState, v.PublishedAt, v.RetiredAt })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
         List<Guid> versionIds = [.. versions.Select(v => v.Id)];
         var grants = await (
@@ -103,8 +102,90 @@ internal sealed class RoleAdministrationRepository(PMPlatformDbContext context) 
 
         return new PermissionProfileDetail(
             profile.Id, profile.Code, profile.Name, profile.BaseRoleId, profile.BaseRoleCode, profile.IsShippedDefault,
-            [.. versions.Select(v => new PermissionProfileVersionDetail(v.Id, v.VersionNo, v.LifecycleState, v.PublishedAt, v.RetiredAt, [.. grantsByVersion[v.Id]]))]);
+            [.. versions.Select(v => DetailOf(v, [.. grantsByVersion[v.Id]]))]);
     }
+
+    public Task<PermissionProfile?> FindProfileForUpdateAsync(Guid profileId, CancellationToken cancellationToken) =>
+        context.Set<PermissionProfile>().SingleOrDefaultAsync(p => p.Id == profileId, cancellationToken);
+
+    public Task<bool> IsProfileCodeInUseAsync(string code, CancellationToken cancellationToken) =>
+        context.Set<PermissionProfile>().AsNoTracking().AnyAsync(p => p.Code == code, cancellationToken);
+
+    public async Task<PermissionProfileVersion?> FindVersionForUpdateAsync(Guid versionId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        PermissionProfileVersion? version = await context.Set<PermissionProfileVersion>().SingleOrDefaultAsync(v => v.Id == versionId, cancellationToken).ConfigureAwait(false);
+        if (version is not null && expectedVersion is { } expected)
+        {
+            AdministrationPersistence.ExpectVersion(context, version, expected);
+        }
+
+        return version;
+    }
+
+    public async Task<IReadOnlyList<PermissionProfileVersion>> ListVersionsAsync(Guid profileId, CancellationToken cancellationToken) =>
+        await context.Set<PermissionProfileVersion>().AsNoTracking().Where(v => v.PermissionProfileId == profileId).OrderByDescending(v => v.VersionNo)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<PermissionProfileGrant>> ListGrantsForUpdateAsync(Guid versionId, CancellationToken cancellationToken) =>
+        await context.Set<PermissionProfileGrant>().Where(g => g.PermissionProfileVersionId == versionId).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<Versioned<PermissionProfileVersionDetail>?> FindVersionDetailAsync(Guid versionId, CancellationToken cancellationToken)
+    {
+        PermissionProfileVersion? version = await context.Set<PermissionProfileVersion>().AsNoTracking()
+            .SingleOrDefaultAsync(v => v.Id == versionId, cancellationToken).ConfigureAwait(false);
+        if (version is null)
+        {
+            return null;
+        }
+
+        List<PermissionProfileGrantDetail> grants = await (
+                from grant in context.Set<PermissionProfileGrant>().AsNoTracking()
+                join permission in context.Set<Permission>() on grant.PermissionId equals permission.Id
+                where grant.PermissionProfileVersionId == versionId
+                orderby permission.Code
+                select new PermissionProfileGrantDetail(permission.Id, permission.Code, grant.DataScope))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        uint rowVersion = await context.Set<PermissionProfileVersion>().AsNoTracking().Where(v => v.Id == versionId)
+            .Select(v => EF.Property<uint>(v, EntityTypeBuilderExtensions.RowVersion)).SingleAsync(cancellationToken).ConfigureAwait(false);
+        return new Versioned<PermissionProfileVersionDetail>(DetailOf(version, grants), rowVersion);
+    }
+
+    public Task<int> CountActiveAssignmentsAsync(Guid versionId, CancellationToken cancellationToken) =>
+        context.Set<AccessRelationship>().AsNoTracking()
+            .CountAsync(a => a.PermissionProfileVersionId == versionId && a.Status == AccessRelationshipStatus.Active, cancellationToken);
+
+    public Task<bool> HoldsProfileAsync(Guid userId, Guid profileId, CancellationToken cancellationToken) =>
+        (from assignment in context.Set<AccessRelationship>().AsNoTracking()
+         join version in context.Set<PermissionProfileVersion>() on assignment.PermissionProfileVersionId equals version.Id
+         where assignment.UserId == userId && assignment.Status == AccessRelationshipStatus.Active && version.PermissionProfileId == profileId
+         select assignment.Id).AnyAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<AccessRelationship>> ListActiveAssignmentsForUpdateAsync(Guid profileId, Guid exceptVersionId, CancellationToken cancellationToken) =>
+        await (from assignment in context.Set<AccessRelationship>()
+               join version in context.Set<PermissionProfileVersion>() on assignment.PermissionProfileVersionId equals version.Id
+               where assignment.Status == AccessRelationshipStatus.Active && version.PermissionProfileId == profileId && version.Id != exceptVersionId
+               select assignment).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public void Add(PermissionProfile profile) => context.Set<PermissionProfile>().Add(profile);
+
+    public void Add(PermissionProfileVersion version) => context.Set<PermissionProfileVersion>().Add(version);
+
+    public void Add(PermissionProfileGrant grant) => context.Set<PermissionProfileGrant>().Add(grant);
+
+    public void Remove(PermissionProfileGrant grant) => context.Set<PermissionProfileGrant>().Remove(grant);
+
+    public uint RowVersionOf(PermissionProfileVersion version) =>
+        context.Entry(version).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
+
+    private static PermissionProfileVersionDetail DetailOf(PermissionProfileVersion v, IReadOnlyList<PermissionProfileGrantDetail> grants) =>
+        new(v.Id, v.VersionNo, v.LifecycleState, v.PublishedAt, v.RetiredAt, grants)
+        {
+            PermissionProfileId = v.PermissionProfileId,
+            ChangeSummary = v.ChangeSummary,
+            CreatedBy = v.CreatedBy,
+            ValidatedByUserId = v.ValidatedByUserId,
+            PublishedByUserId = v.PublishedByUserId,
+        };
 
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken) => AdministrationPersistence.SaveAsync(context, cancellationToken);
 

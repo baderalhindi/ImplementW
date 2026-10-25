@@ -115,11 +115,41 @@ export interface PermissionProfileGrant {
 
 export interface PermissionProfileVersion {
   id: string;
+  permissionProfileId: string;
   versionNo: number;
   lifecycleState: GovernedLifecycleState;
   publishedAt: string | null;
   retiredAt: string | null;
   grants: PermissionProfileGrant[];
+  changeSummary: NarrativeText | null;
+  /** The author: the only person who edits the version while DRAFT (TASK-110). */
+  createdBy: string;
+  validatedByUserId: string | null;
+  publishedByUserId: string | null;
+}
+
+export interface NarrativeText {
+  text: string;
+  language: LanguageCode;
+}
+
+/** ADM-008 (TASK-110): a new profile on a canonical role, its version 1 a DRAFT copying `sourceVersionId`. */
+export interface PermissionProfileCreateRequest {
+  code: string;
+  name: BilingualLabel;
+  baseRoleId: string;
+  sourceVersionId: string | null;
+}
+
+/** A DRAFT's whole grid: a permission left out is not held. */
+export interface PermissionGrantSetRequest {
+  grants: { permissionCode: string; dataScope: DataScope }[];
+  changeSummary: NarrativeText | null;
+}
+
+export interface PermissionProfileMigration {
+  permissionProfileVersionId: string;
+  migratedAssignments: number;
 }
 
 export interface PermissionProfileDetail {

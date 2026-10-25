@@ -1,5 +1,5 @@
 import { type ReactElement, useCallback } from 'react';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -8,13 +8,11 @@ import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { rolesApi } from '../api/identityAccessApi.ts';
-import {
-  type PermissionProfileDetail,
-  type PermissionProfileVersion,
-  type PermissionSummary,
-} from '../api/types.ts';
+import { type PermissionProfileDetail, type PermissionProfileVersion } from '../api/types.ts';
 import { labelOf } from '../lookups.ts';
+import { useCan } from '../permissions/permissions.ts';
 import { problemMessage } from '../problems.ts';
+import { groupByPermissionGroup, versionPath } from './profileGrid.ts';
 
 interface MatrixColumn {
   profile: PermissionProfileDetail;
@@ -30,23 +28,13 @@ function versionFor(profile: PermissionProfileDetail, versionId: string | null) 
   );
 }
 
-function groupByPermissionGroup(permissions: PermissionSummary[]): [string, PermissionSummary[]][] {
-  const groups = new Map<string, PermissionSummary[]>();
-  for (const permission of permissions) {
-    groups.set(permission.permissionGroup, [
-      ...(groups.get(permission.permissionGroup) ?? []),
-      permission,
-    ]);
-  }
-  return [...groups.entries()];
-}
-
 /**
  * ADM-009 Permission Matrix: catalogue permissions against permission profiles, each cell the data scope a profile
- * version grants. Read-only: profiles are authored, versioned and published elsewhere (record D-2, ADR-018).
+ * version grants. A holder of ROLE_MANAGE starts a profile here and opens a version to edit and govern it (ADM-008, TASK-110).
  */
 export function PermissionMatrixPage(): ReactElement {
   const { t, language } = useI18n();
+  const canManage = useCan('ROLE_MANAGE');
   const [params, setParams] = useSearchParams();
   const profileId = params.get('profileId');
   const versionId = params.get('versionId');
@@ -78,6 +66,13 @@ export function PermissionMatrixPage(): ReactElement {
     <PageHeader
       title={t('identityAccess.permissionMatrix.title')}
       description={t('identityAccess.permissionMatrix.description')}
+      actions={
+        canManage ? (
+          <Link className="button" to="/admin/permission-profiles/new">
+            {t('identityAccess.profiles.create.title')}
+          </Link>
+        ) : undefined
+      }
     />
   );
   if (matrix.loading) {
@@ -92,7 +87,11 @@ export function PermissionMatrixPage(): ReactElement {
     return (
       <>
         {header}
-        <ErrorState error={matrix.error} message={problemMessage(matrix.error, t)} onRetry={matrix.reload} />
+        <ErrorState
+          error={matrix.error}
+          message={problemMessage(matrix.error, t)}
+          onRetry={matrix.reload}
+        />
       </>
     );
   }
@@ -139,6 +138,13 @@ export function PermissionMatrixPage(): ReactElement {
               choose('versionId', value);
             }}
           />
+        )}
+        {selected !== undefined && columns[0]?.version !== undefined && (
+          <Link className="button" to={versionPath(columns[0].version.id)}>
+            {canManage
+              ? t('identityAccess.permissionMatrix.openToEdit')
+              : t('identityAccess.permissionMatrix.open')}
+          </Link>
         )}
       </div>
 

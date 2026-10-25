@@ -7,6 +7,10 @@ import { DepartmentListPage } from './organization/DepartmentListPage.tsx';
 import { ExternalEntityListPage } from './organization/ExternalEntityListPage.tsx';
 import { OrganizationStructurePage } from './organization/OrganizationStructurePage.tsx';
 import { PermissionMatrixPage } from './roles/PermissionMatrixPage.tsx';
+import {
+  PermissionProfileCreatePage,
+  PermissionProfileVersionPage,
+} from './roles/PermissionProfilePages.tsx';
 import { RoleDetailPage, RoleEditPage, RoleListPage } from './roles/RolePages.tsx';
 import { UserDetailPage } from './users/UserDetailPage.tsx';
 import { UserCreatePage, UserEditPage } from './users/UserFormPage.tsx';
@@ -23,6 +27,8 @@ export const identityAccessRoutes: RouteObject[] = [
   { path: 'roles/:roleId', element: <RoleDetailPage /> }, // ADM-007
   { path: 'roles/:roleId/edit', element: <RoleEditPage /> }, // ADM-008
   { path: 'permission-matrix', element: <PermissionMatrixPage /> }, // ADM-009
+  { path: 'permission-profiles/new', element: <PermissionProfileCreatePage /> }, // ADM-008 (TASK-110)
+  { path: 'permission-profile-versions/:versionId', element: <PermissionProfileVersionPage /> }, // ADM-008 (TASK-110)
   { path: 'role-assignments', element: <RoleAssignmentPage /> }, // ADM-010, MOD-081, MOD-082
   { path: 'organization', element: <OrganizationStructurePage /> }, // ADM-011
   { path: 'organization/departments', element: <DepartmentListPage /> }, // ADM-012

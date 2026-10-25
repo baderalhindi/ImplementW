@@ -100,7 +100,8 @@
       {
         "heading": "Administer access and organisation",
         "paragraphs": [
-          "[[common.menu.administration]] holds [[identityAccess.nav.users]], [[identityAccess.nav.roles]], [[identityAccess.nav.permissionMatrix]], [[identityAccess.nav.roleAssignments]], [[identityAccess.nav.organization]], [[identityAccess.nav.departments]] and [[identityAccess.nav.entities]]."
+          "[[common.menu.administration]] holds [[identityAccess.nav.users]], [[identityAccess.nav.roles]], [[identityAccess.nav.permissionMatrix]], [[identityAccess.nav.roleAssignments]], [[identityAccess.nav.organization]], [[identityAccess.nav.departments]] and [[identityAccess.nav.entities]].",
+          "What a role may do is its permission profile. To change it, open [[identityAccess.nav.permissionMatrix]], choose the profile and open a version: start a new version or copy one into a new profile, set the scope of each permission, and save. Three people take part: you prepare the change, another administrator validates it and a third publishes it, and none of them may hold the profile. People keep the version they were given until you move them to the new one."
         ],
         "steps": [
           "Open [[common.menu.administration]] and choose [[identityAccess.nav.users]].",

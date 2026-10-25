@@ -100,7 +100,8 @@
       {
         "heading": "إدارة الصلاحيات والهيكل التنظيمي",
         "paragraphs": [
-          "تضم قائمة [[common.menu.administration]] الشاشات التالية: [[identityAccess.nav.users]]، و[[identityAccess.nav.roles]]، و[[identityAccess.nav.permissionMatrix]]، و[[identityAccess.nav.roleAssignments]]، و[[identityAccess.nav.organization]]، و[[identityAccess.nav.departments]]، و[[identityAccess.nav.entities]]."
+          "تضم قائمة [[common.menu.administration]] الشاشات التالية: [[identityAccess.nav.users]]، و[[identityAccess.nav.roles]]، و[[identityAccess.nav.permissionMatrix]]، و[[identityAccess.nav.roleAssignments]]، و[[identityAccess.nav.organization]]، و[[identityAccess.nav.departments]]، و[[identityAccess.nav.entities]].",
+          "ما يحق للدور فعله هو ملف صلاحياته. لتغييره افتح [[identityAccess.nav.permissionMatrix]] واختر الملف وافتح أحد إصداراته: ابدأ إصداراً جديداً أو انسخه إلى ملف جديد، وحدد نطاق كل صلاحية ثم احفظ. يشارك في ذلك ثلاثة أشخاص: تُعد أنت التغيير، ويتحقق منه مسؤول آخر، وينشره ثالث، ولا يجوز لأي منهم أن يحمل الملف. ويحتفظ المستخدمون بالإصدار المسند إليهم حتى تنقلهم إلى الإصدار الجديد."
         ],
         "steps": [
           "افتح [[common.menu.administration]] واختر [[identityAccess.nav.users]].",
