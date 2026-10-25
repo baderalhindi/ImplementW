@@ -235,11 +235,15 @@ test('UJ-014 formal audit, activity and operational evidence stay distinct, corr
   await test.step('denied scope: another department reaches neither the task, its Activity nor its audit', async () => {
     const record = await outsider.api.send('GET', `/projects/${project.id}`);
     expect([record.status, record.code]).toEqual([404, 'NOT_FOUND']);
-    // E2E-R03 holds no task or Activity permission at any scope: refused at the gate, before any record is read.
+    // E2E-R03 holds TASK_VIEW and ACTIVITY_VIEW at DEPT (the agreed matrix): another department's task is not found (R-47),
+    // and its Activity is a page of nothing — the projection is read on the projects the caller may see.
     const task = await outsider.api.send('GET', `/project-tasks/${taskId}`);
-    expect([task.status, task.code]).toEqual([403, 'PERMISSION_DENIED']);
-    const activity = await outsider.api.send('GET', `/activity-entries?projectId=${project.id}`);
-    expect([activity.status, activity.code]).toEqual([403, 'PERMISSION_DENIED']);
+    expect([task.status, task.code]).toEqual([404, 'NOT_FOUND']);
+    const activity = await outsider.api.send<{ totalCount: number }>(
+      'GET',
+      `/activity-entries?projectId=${project.id}`,
+    );
+    expect([activity.status, activity.body.totalCount]).toEqual([200, 0]);
     expect(
       (
         await outsider.api.get<{ totalCount: number }>(
