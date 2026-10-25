@@ -234,9 +234,10 @@ test('UJ-003 schedule and achievement keep split authority over one shared miles
     );
     const read = await outsider.api.send('GET', `/project-milestones/${milestoneId}`);
     expect([read.status, read.code]).toEqual([404, 'NOT_FOUND']);
-    // A department manager holds no WF-05 permission at all (MILESTONE_VIEW ships to R04 only): refused before any record.
+    // A department manager holds MILESTONE_VIEW at DEPT (the agreed matrix, shipped-permission-matrix.md): the achievement of
+    // another department's project is out of scope, so it is not found (R-47), as the milestone is.
     const claimRead = await outsider.api.send('GET', `/milestone-achievements/${claimId}`);
-    expect([claimRead.status, claimRead.code]).toEqual([403, 'PERMISSION_DENIED']);
+    expect([claimRead.status, claimRead.code]).toEqual([404, 'NOT_FOUND']);
     const redate = await outsider.api.send(
       'PUT',
       `/project-milestones/${milestoneId}`,

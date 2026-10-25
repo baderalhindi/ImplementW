@@ -282,15 +282,15 @@ test('UJ-009 current, published and historical values stay distinguishable and h
     expect([history.status, history.code]).toEqual([422, 'REPORT_PARAMETER_UNAUTHORIZED']);
     const dashboard = await outsider.api.send('GET', `/dashboards/PROJECT?projectId=${project.id}`);
     expect([dashboard.status, dashboard.code]).toEqual([404, 'NOT_FOUND']);
-    // Holding no KPI_REVIEW in any scope, the outsider is refused before any record is looked up: the same answer as for an id
-    // that does not exist, so nothing is disclosed (R-47).
+    // The outsider holds KPI_REVIEW at DEPT only (the agreed matrix): another department's measurement is out of scope, so it is
+    // not found — the same answer as for an id that does not exist, so nothing is disclosed (R-47).
     const publish = await outsider.api.send('POST', `/kpi-measurements/${measurement}/publish`);
     const nothing = await outsider.api.send(
       'POST',
       `/kpi-measurements/${crypto.randomUUID()}/publish`,
     );
-    expect([publish.status, publish.code]).toEqual([403, 'PERMISSION_DENIED']);
-    expect([nothing.status, nothing.code]).toEqual([403, 'PERMISSION_DENIED']);
+    expect([publish.status, publish.code]).toEqual([404, 'NOT_FOUND']);
+    expect([nothing.status, nothing.code]).toEqual([404, 'NOT_FOUND']);
   });
 
   await test.step('a replayed publication and a re-forecast sent against the replaced version are refused and change nothing', async () => {

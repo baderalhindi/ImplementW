@@ -83,7 +83,7 @@ else ever sees it. The JSON maps each persona to `{ "username", "password" }`, p
 | --- | --- |
 | `administrator` | R01 |
 | `portfolioManager` | AHDA's reviewer, approver and activator (E2E-R02, ALL) |
-| `departmentManager`, `otherDepartmentManager` | E2E-R03 on DEPT-E2E and on DEPT-E2E-OTHER |
+| `departmentManager`, `otherDepartmentManager` | E2E-R03 on DEPT-E2E and on DEPT-E2E-OTHER: the shipped R03 grants and the journeys' additions, without `FINANCIAL_VIEW_SENSITIVE`, so UJ-015 has a consumer who exports a department's reports without the SAR amounts (`shipped-permission-matrix.md` D-4) |
 | `projectManager` | an internal Project Manager (E2E-R04) |
 | `executive`, `viewer` | shipped R07, R06 |
 | `entityProjectManager`, `entityContributor` | entity A: shipped R04 + R08, and R08 alone |
@@ -182,3 +182,4 @@ Run on this branch, 2026-10-17.
 | 9 | CI on PR #98 (`e2e-journeys` run 39030445653, the e2e stack built on a GitHub runner) | 16 passed, UJ-002 failed at the progress update (F-1); 5.0 min. Every required check green |
 | 10 | Validation drill, draft PR #99: this branch plus ADR-009's activation gate removed (`BaselineActivationPrecondition` always passing) | `e2e-journeys` run 39030492774 **failed UJ-001** at "activation is the Project-master command, and it needs the WF-03 baseline first", the step that journey owns; every other journey as on #98. `backend` failed `ActivationGateTests` (2). Closed, branch deleted |
 | 11 | UJ-002 under `test.fail` on a fresh stack | fails at the progress update as expected; Playwright exit 0; `e2e-summary.py` lists it EXPECTED FAIL with F-1's reason |
+| 12 | The agreed permission matrix (`shipped-permission-matrix.md`, 25 Oct 2026) restated four journeys: UJ-003 and UJ-009 — the other department's R03 now holds `MILESTONE_VIEW` and `KPI_REVIEW` at DEPT, so another department's record is 404, not 403 (R-47); UJ-014 — a Project Manager reads its own project's business audit (`AUDIT_BUSINESS_VIEW` OWN); UJ-015 — E2E-R03 without `FINANCIAL_VIEW_SENSITIVE` (§4). | CI on PR #125 and the PRs stacked on it |
