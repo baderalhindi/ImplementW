@@ -282,7 +282,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
       'The project was not found, or you do not have access to it.',
     );
     const ours = await departmentId(portfolio.api, DATA_SET.department);
-    await outsider.page.goto(`/?department=${ours}`);
+    await outsider.page.goto(`/dashboards?department=${ours}`);
     await expectText(outsider.page.getByRole('main'), 'That sector is not one you may filter by.');
     const filtered = await outsider.api.send('GET', `/dashboards/PORTFOLIO?departmentId=${ours}`);
     expect([filtered.status, filtered.code]).toEqual([422, 'DASHBOARD_FILTER_VALUE_UNAUTHORIZED']);
