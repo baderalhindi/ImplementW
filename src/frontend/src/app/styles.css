@@ -639,8 +639,10 @@ h3 {
   padding: var(--space-6) var(--space-8) var(--space-8);
 }
 
+/* Centred, so a window wider than the cap keeps an even margin on both sides instead of an empty band on one. */
 .app__main > * {
   max-inline-size: 90rem;
+  margin-inline: auto;
 }
 
 /* With the rail collapsed, every page takes the full width of the window. */
@@ -3132,8 +3134,12 @@ select.field__input {
   gap: var(--space-2);
 }
 
-.widget__title {
+/* In the header row the title takes the room its state and drill link leave; a card without a header keeps it its own height. */
+.widget__header > .widget__title {
   flex: 1 1 auto;
+}
+
+.widget__title {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.75rem;
@@ -3970,7 +3976,6 @@ select.field__input {
   list-style: none;
 }
 
-/* A card here is not a dashboard widget on the twelve-column grid: it takes one track of the list's own grid. */
 .kpi-aggregate {
   box-shadow: var(--shadow-card);
 }
@@ -4187,12 +4192,6 @@ select.field__input {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: var(--space-4);
-}
-
-/* The title keeps its own height in the card's column; the "view all" link takes up the slack, so a stretched card keeps
-   its figure under the title and the links of a row on one line. */
-.home__card .widget__title {
-  flex: none;
 }
 
 .home__figure {
