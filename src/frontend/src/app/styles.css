@@ -3093,7 +3093,8 @@ select.field__input {
     grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
-  .widget {
+  /* Only on the dashboard grid: a widget card in any other grid (the Home, the KPI register) takes one of its tracks. */
+  .dashboard__grid > .widget {
     grid-column: span var(--widget-span, 12);
   }
 }
@@ -3966,7 +3967,6 @@ select.field__input {
 
 /* A card here is not a dashboard widget on the twelve-column grid: it takes one track of the list's own grid. */
 .kpi-aggregate {
-  grid-column: auto;
   box-shadow: var(--shadow-card);
 }
 
@@ -4182,6 +4182,12 @@ select.field__input {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: var(--space-4);
+}
+
+/* The title keeps its own height in the card's column; the "view all" link takes up the slack, so a stretched card keeps
+   its figure under the title and the links of a row on one line. */
+.home__card .widget__title {
+  flex: none;
 }
 
 .home__figure {
