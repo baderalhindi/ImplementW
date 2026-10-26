@@ -639,8 +639,10 @@ h3 {
   padding: var(--space-6) var(--space-8) var(--space-8);
 }
 
+/* Centred, so a window wider than the cap keeps an even margin on both sides instead of an empty band on one. */
 .app__main > * {
   max-inline-size: 90rem;
+  margin-inline: auto;
 }
 
 /* With the rail collapsed, every page takes the full width of the window. */
@@ -1863,6 +1865,11 @@ select.field__input {
 
 .tabs__panel {
   padding-block-start: var(--space-4);
+}
+
+/* The dashboard switch has no panel around the dashboard below it, so it keeps the same gap itself. */
+.dashboard__switch {
+  margin-block-end: var(--space-4);
 }
 
 /* ---------------------------------------------------------------------------------------------- progress */
@@ -3093,7 +3100,8 @@ select.field__input {
     grid-template-columns: repeat(12, minmax(0, 1fr));
   }
 
-  .widget {
+  /* Only on the dashboard grid: a widget card in any other grid (the Home, the KPI register) takes one of its tracks. */
+  .dashboard__grid > .widget {
     grid-column: span var(--widget-span, 12);
   }
 }
@@ -3126,8 +3134,12 @@ select.field__input {
   gap: var(--space-2);
 }
 
-.widget__title {
+/* In the header row the title takes the room its state and drill link leave; a card without a header keeps it its own height. */
+.widget__header > .widget__title {
   flex: 1 1 auto;
+}
+
+.widget__title {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.75rem;
@@ -3964,9 +3976,7 @@ select.field__input {
   list-style: none;
 }
 
-/* A card here is not a dashboard widget on the twelve-column grid: it takes one track of the list's own grid. */
 .kpi-aggregate {
-  grid-column: auto;
   box-shadow: var(--shadow-card);
 }
 

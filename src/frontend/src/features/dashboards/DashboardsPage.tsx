@@ -120,7 +120,7 @@ function DashboardSwitch({
 }): ReactElement {
   const { t, language } = useI18n();
   return (
-    <nav className="tabs" aria-label={t('dashboards.home.switch')}>
+    <nav className="tabs dashboard__switch" aria-label={t('dashboards.home.switch')}>
       <ul>
         {[...entries]
           .sort((a, b) => Number(b.isDefaultLanding) - Number(a.isDefaultLanding))
