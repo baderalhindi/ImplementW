@@ -1865,6 +1865,11 @@ select.field__input {
   padding-block-start: var(--space-4);
 }
 
+/* The dashboard switch has no panel around the dashboard below it, so it keeps the same gap itself. */
+.dashboard__switch {
+  margin-block-end: var(--space-4);
+}
+
 /* ---------------------------------------------------------------------------------------------- progress */
 
 /* The two semantic states (M-12) differ in fill and border as well as colour: official is solid, live is dashed. */
