@@ -4,7 +4,16 @@ import { type MenuId } from './menus.ts';
 
 /** The shell's stroke icons: one per menu of the master navigation, and the controls of the rail and the top bar. */
 export type ShellIconName =
-  MenuId | 'create' | 'chevronDown' | 'globe' | 'collapse' | 'expand' | 'menu' | 'close';
+  | MenuId
+  | 'create'
+  | 'chevronDown'
+  | 'globe'
+  | 'moon'
+  | 'sun'
+  | 'collapse'
+  | 'expand'
+  | 'menu'
+  | 'close';
 
 const paths: Record<ShellIconName, ReactElement> = {
   home: <path d="M3 10.5 12 3l9 7.5M5.5 8.5V20h13V8.5M10 20v-5.5h4V20" />,
@@ -42,6 +51,13 @@ const paths: Record<ShellIconName, ReactElement> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M3 12h18M12 3c2.5 2.6 3.75 5.6 3.75 9S14.5 18.4 12 21c-2.5-2.6-3.75-5.6-3.75-9S9.5 5.6 12 3z" />
+    </>
+  ),
+  moon: <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" />,
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
     </>
   ),
   collapse: <path d="M4 5h16v14H4zM9 5v14M15 10l-2 2 2 2" />,

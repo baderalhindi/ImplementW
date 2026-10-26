@@ -15,6 +15,7 @@ afterEach(() => {
   cleanup();
   sessionStorage.clear();
   localStorage.clear();
+  delete document.documentElement.dataset.theme;
 });
 
 // jsdom has no pointer capture; the Gantt's drag (SCR-045) captures the pointer on its bar. The stub records which.

@@ -91,7 +91,8 @@
   },
   "distribution": {
     "value": "القيمة",
-    "empty": "لم يُحتسب أي شيء."
+    "empty": "لم يُحتسب أي شيء.",
+    "total": "الإجمالي"
   },
   "counted": {
     "projects": "المشاريع",
@@ -136,7 +137,8 @@
     "period": "الفترة",
     "health": "الصحة العامة",
     "publishedAt": "تاريخ النشر",
-    "table": "{title}: القيم حسب الفترة"
+    "table": "{title}: القيم حسب الفترة",
+    "showTable": "عرض القيم"
   },
   "widget": {
     "open": "فتح"

@@ -91,7 +91,8 @@
   },
   "distribution": {
     "value": "Value",
-    "empty": "Nothing was counted."
+    "empty": "Nothing was counted.",
+    "total": "Total"
   },
   "counted": {
     "projects": "Projects",
@@ -136,7 +137,8 @@
     "period": "Period",
     "health": "Overall health",
     "publishedAt": "Published",
-    "table": "{title}: the values by period"
+    "table": "{title}: the values by period",
+    "showTable": "Show the values"
   },
   "widget": {
     "open": "Open"

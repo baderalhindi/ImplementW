@@ -12,6 +12,10 @@ import './app/styles.css';
 
 import { App } from './App.tsx';
 import { installErrorReporting } from './shared/observability/errorReporting.ts';
+import { applyTheme, readStoredTheme } from './shared/theme/theme.ts';
+
+// Before the first render, so a dark-theme reader never sees a light flash.
+applyTheme(readStoredTheme());
 
 const container = document.getElementById('root');
 if (container === null) {

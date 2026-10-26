@@ -1,19 +1,23 @@
-import { type ReactElement } from 'react';
+import { type CSSProperties, type ReactElement, useState } from 'react';
 
 import { OverriddenBadge } from '@/features/progress/components/ProgressBadges.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
+import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 import { ValueStateFlag } from '@/shared/ui/ValueState.tsx';
 
-import { type WidgetData, type WidgetFigure } from '../api/types.ts';
+import { type DashboardWidgetType, type WidgetData, type WidgetFigure } from '../api/types.ts';
+import { bucketColors, type ChartBucket, chartForm } from '../charts.ts';
 import {
   countedKey,
   formatFigure,
   isOverridden,
+  isStatusScale,
   labelOfValue,
   measureLabel,
   shownFigures,
 } from '../presentation.ts';
+
+import { BarChart, ColumnChart, DonutChart, GaugeChart } from './Charts.tsx';
 
 // The allowlisted visualisations of FG-01 §10 (TASK-069 `DashboardWidgetType`). Each presents the source's values as
 // the source states them; none computes one. A figure with no value says why — "Restricted" when it is withheld
@@ -21,6 +25,7 @@ import {
 
 interface BodyProps {
   projectionCode: string;
+  widgetType: DashboardWidgetType;
   data: WidgetData;
   title: string;
 }
@@ -116,47 +121,90 @@ export function MetricBody({ projectionCode, data }: BodyProps): ReactElement {
 }
 
 /**
- * STATUS_DISTRIBUTION, BAR_COLUMN and DONUT_PIE: a count by a source-owned value, as a table whose bars only repeat
- * the counts (the table is the chart's text alternative and the chart). A source count of 0 is a count (F-13).
+ * STATUS_DISTRIBUTION, BAR_COLUMN and DONUT_PIE: a count by a source-owned value, drawn as a donut, columns or a bar
+ * list (`chartForm`) beside a table of the same counts. The table is the text alternative: the legend of a donut, and
+ * read only by assistive technology under columns and bars, which carry their own words. Hovering a
+ * value lifts it in both. A source count of 0 is a count (F-13).
  */
-export function DistributionBody({ projectionCode, data, title }: BodyProps): ReactElement {
+export function DistributionBody({
+  projectionCode,
+  widgetType,
+  data,
+  title,
+}: BodyProps): ReactElement {
   const { t, language } = useI18n();
-  const largest = Math.max(1, ...data.distribution.map((bucket) => bucket.count));
+  const [active, setActive] = useState<string | null>(null);
+  const labels = data.distribution.map((bucket) =>
+    labelOfValue(projectionCode, bucket.key, bucket.label, language, t),
+  );
+  const colors = bucketColors(
+    labels.map((label) => label.tone),
+    isStatusScale(projectionCode),
+  );
+  const buckets: ChartBucket[] = data.distribution.map((bucket, index) => ({
+    key: bucket.key,
+    count: bucket.count,
+    text: labels[index]?.text ?? bucket.key,
+    color: colors[index] ?? 'var(--chart-single)',
+  }));
+  const form = chartForm(widgetType, buckets.length);
+  const lift = (key: string) => (active === null ? '' : active === key ? 'is-active' : 'is-dimmed');
   return (
     <div className="widget__body">
-      {data.distribution.length > 0 && (
-        <table className="widget__distribution">
-          <caption className="visually-hidden">{title}</caption>
-          <thead>
-            <tr>
-              <th scope="col">{t('dashboards.distribution.value')}</th>
-              <th scope="col">{t(countedKey(projectionCode))}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.distribution.map((bucket) => {
-              const label = labelOfValue(projectionCode, bucket.key, bucket.label, language, t);
-              return (
-                <tr key={bucket.key} data-bucket={bucket.key}>
+      {buckets.length > 0 && (
+        <div className={`distribution distribution--${form}`}>
+          {form === 'donut' && (
+            <DonutChart
+              buckets={buckets}
+              active={active}
+              onActive={setActive}
+              totalLabel={t('dashboards.distribution.total')}
+            />
+          )}
+          {form === 'columns' && (
+            <ColumnChart buckets={buckets} active={active} onActive={setActive} />
+          )}
+          {form === 'bars' && <BarChart buckets={buckets} active={active} onActive={setActive} />}
+          <table
+            className={
+              form === 'donut' ? 'widget__distribution distribution__donut' : 'visually-hidden'
+            }
+          >
+            <caption className="visually-hidden">{title}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{t('dashboards.distribution.value')}</th>
+                <th scope="col">{t(countedKey(projectionCode))}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {buckets.map((bucket) => (
+                <tr
+                  key={bucket.key}
+                  data-bucket={bucket.key}
+                  className={lift(bucket.key)}
+                  style={{ '--chart-color': bucket.color } as CSSProperties}
+                  onPointerEnter={() => {
+                    setActive(bucket.key);
+                  }}
+                  onPointerLeave={() => {
+                    setActive(null);
+                  }}
+                >
                   <th scope="row">
-                    <StatusBadge label={label.text} tone={label.tone} />
+                    <span className="distribution__key" aria-hidden="true" />
+                    {bucket.text}
                   </th>
                   <td>
                     <span className="widget__count figure" dir="ltr">
                       {bucket.count}
                     </span>
-                    <span className="widget__bar-track" aria-hidden="true">
-                      <span
-                        className={`widget__bar widget__bar--${label.tone}`}
-                        style={{ inlineSize: `${String((bucket.count / largest) * 100)}%` }}
-                      />
-                    </span>
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       <Figures figures={data.figures} />
       {data.distribution.length === 0 && shownFigures(data.figures).length === 0 && (
@@ -166,33 +214,50 @@ export function DistributionBody({ projectionCode, data, title }: BodyProps): Re
   );
 }
 
-/** PROGRESS_INDICATOR: source-owned percentages only, each with a bar that repeats it (never an invented ratio). */
+const SERIES_COLOR = (measure: string) =>
+  measure === 'PLANNED_PERCENT' ? 'var(--series-planned)' : 'var(--series-actual)';
+
+/**
+ * PROGRESS_INDICATOR: source-owned percentages only (never an invented ratio), as concentric gauge rings — the first,
+ * actual, outermost and named in the centre — with each figure listed beside its ring's key.
+ */
 export function ProgressBody({ data }: BodyProps): ReactElement {
   const { t } = useI18n();
   const percentages = shownFigures(data.figures).filter((figure) => figure.unit === 'PERCENT');
+  const valueOf = (figure: WidgetFigure) =>
+    figure.value === null || figure.isMasked ? null : Number(figure.value);
+  const first = percentages[0];
   return (
     <div className="widget__body">
-      <dl className="widget__figures widget__figures--progress">
-        {percentages.map((figure) => {
-          const value = figure.value === null || figure.isMasked ? null : Number(figure.value);
-          return (
+      <div className="progress-gauge">
+        {percentages.some((figure) => valueOf(figure) !== null) && (
+          <GaugeChart
+            rings={percentages.map((figure) => ({
+              key: figure.measure,
+              value: valueOf(figure),
+              color: SERIES_COLOR(figure.measure),
+            }))}
+            lead={first === undefined ? null : formatFigure(first, t)}
+          />
+        )}
+        <dl className="widget__figures widget__figures--progress">
+          {percentages.map((figure) => (
             <div key={figure.measure} className="widget__figure">
-              <dt>{measureLabel(figure.measure, t)}</dt>
+              <dt>
+                <span
+                  className="distribution__key"
+                  aria-hidden="true"
+                  style={{ '--chart-color': SERIES_COLOR(figure.measure) } as CSSProperties}
+                />
+                {measureLabel(figure.measure, t)}
+              </dt>
               <dd>
                 <FigureValue figure={figure} />
-                {value !== null && (
-                  <span className="widget__bar-track" aria-hidden="true">
-                    <span
-                      className={`widget__bar widget__bar--${figure.measure === 'PLANNED_PERCENT' ? 'planned' : 'actual'}`}
-                      style={{ inlineSize: `${String(Math.min(100, Math.max(0, value)))}%` }}
-                    />
-                  </span>
-                )}
               </dd>
             </div>
-          );
-        })}
-      </dl>
+          ))}
+        </dl>
+      </div>
       {isOverridden(data.figures) && (
         <p className="widget__state">
           <OverriddenBadge />

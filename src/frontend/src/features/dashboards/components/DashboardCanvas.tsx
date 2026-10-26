@@ -5,7 +5,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 
 import { type DashboardView, type DashboardWidgetResult } from '../api/types.ts';
 import { drillPath } from '../drill.ts';
-import { visibleWidgets } from '../layout.ts';
+import { drawnSpan, filledSpans, visibleWidgets } from '../layout.ts';
 
 import {
   CoverageLine,
@@ -31,7 +31,12 @@ function WidgetBody({
   if (widget.data === null) {
     return <UnknownValue reason={widget.unknownReason ?? 'MISSING'} />;
   }
-  const props = { projectionCode: widget.projectionCode, data: widget.data, title };
+  const props = {
+    projectionCode: widget.projectionCode,
+    widgetType: widget.widgetType,
+    data: widget.data,
+    title,
+  };
   switch (widget.widgetType) {
     case 'METRIC_CARD':
       return <MetricBody {...props} />;
@@ -48,10 +53,13 @@ function WidgetBody({
 
 function WidgetCard({
   widget,
+  span,
   projectId,
   headingLevel,
 }: {
   widget: DashboardWidgetResult;
+  /** Columns it takes in the drawn order (`filledSpans`). */
+  span: number;
   projectId: string | null;
   headingLevel: 2 | 3;
 }): ReactElement {
@@ -63,13 +71,13 @@ function WidgetCard({
   const stale = widget.projection.freshness === 'STALE';
   return (
     <section
-      className={stale ? 'widget widget--stale' : 'widget'}
+      className="widget"
       aria-labelledby={titleId}
       data-widget={widget.code}
       data-widget-type={widget.widgetType}
       data-semantic-state={widget.projection.semanticState}
       data-freshness={widget.projection.freshness}
-      style={{ '--widget-span': widget.layoutSpan } as CSSProperties}
+      style={{ '--widget-span': span } as CSSProperties}
     >
       <div className="widget__header">
         <Heading id={titleId} className="widget__title">
@@ -82,13 +90,16 @@ function WidgetCard({
           </Link>
         )}
       </div>
-      {stale && (
-        <p className="widget__explanation">
-          {widget.coverageDetail === null
-            ? t('dashboards.freshness.staleValue')
-            : t('dashboards.freshness.staleAggregate')}
-        </p>
-      )}
+      {/* Always present, so the cards of a row keep the same four rows (header, notice, body, footer). */}
+      <div className="widget__notice">
+        {stale && (
+          <p className="widget__explanation">
+            {widget.coverageDetail === null
+              ? t('dashboards.freshness.staleValue')
+              : t('dashboards.freshness.staleAggregate')}
+          </p>
+        )}
+      </div>
       <WidgetBody widget={widget} title={title} />
       <div className="widget__footer">
         {widget.coverageDetail !== null && <CoverageLine coverage={widget.coverageDetail} />}
@@ -105,12 +116,15 @@ export function DashboardCanvas({
   view: DashboardView;
   headingLevel: 2 | 3;
 }): ReactElement {
+  const widgets = visibleWidgets(view.widgets);
+  const spans = filledSpans(widgets.map(drawnSpan));
   return (
     <div className="dashboard__grid">
-      {visibleWidgets(view.widgets).map((widget) => (
+      {widgets.map((widget, index) => (
         <WidgetCard
           key={widget.code}
           widget={widget}
+          span={spans[index] ?? widget.layoutSpan}
           projectId={view.projectId}
           headingLevel={headingLevel}
         />

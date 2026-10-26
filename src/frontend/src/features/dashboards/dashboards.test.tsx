@@ -309,7 +309,6 @@ describe('acceptance criterion 2: every widget states its semantic state and its
 
     const region = await widgetRegion('Published Overall Project Health');
     expect(region.getAttribute('data-freshness')).toBe('STALE');
-    expect(region.className).toBe('widget widget--stale');
     const flag = within(region).getByText(en('dashboards.freshness.STALE'));
     expect(flag.closest('[data-value-state]')?.getAttribute('data-value-state')).toBe('STALE');
     expect(within(region).getByText(en('dashboards.freshness.staleValue'))).toBeTruthy();

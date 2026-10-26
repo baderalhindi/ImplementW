@@ -41,6 +41,78 @@
   /* IBM Plex Sans has no Arabic glyphs, so Arabic text falls through to IBM Plex Sans Arabic. */
   --font-family:
     'IBM Plex Sans', 'IBM Plex Sans Arabic', Tahoma, 'Geeza Pro', system-ui, sans-serif;
+  color-scheme: light;
+}
+
+/*
+ * The dark theme (theme.ts sets <html data-theme>): the same tokens redrawn on a dark ground, at the same WCAG 2.1 AA
+ * contrast. Fills that carry text (primary, positive) turn light, so the text on them turns dark.
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-text: #e6eaee;
+  --color-text-muted: #a9b4bf;
+  --color-background: #1a2128;
+  --color-surface: #222b33;
+  --color-border: #6f7b87;
+  --color-border-subtle: #2f3a44;
+  --color-primary: #4fbf9f;
+  --color-primary-hover: #74d2b6;
+  --color-on-primary: #0b1f1a;
+  --color-danger: #f28b82;
+  --color-danger-surface: #3d1c1b;
+  --color-positive: #6fcf8f;
+  --color-positive-surface: #17321f;
+  --color-neutral-surface: #2a333c;
+  --color-info: #8ab4f0;
+  --color-info-surface: #1a2a40;
+  --color-warning: #f0b45c;
+  --color-warning-surface: #3a2a12;
+  --color-focus: #6ea8ff;
+  --color-canvas: #11161b;
+  --color-primary-tint: #17332c;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 1px 3px rgb(0 0 0 / 30%);
+  --risk-1-surface: #17321f;
+  --risk-1-text: #8fd9a8;
+  --risk-2-surface: #2c3214;
+  --risk-2-text: #d4de7a;
+  --risk-3-surface: #3a2a12;
+  --risk-3-text: #f0b45c;
+  --risk-4-surface: #3d2214;
+  --risk-4-text: #f39a63;
+  --risk-5-surface: #3d1c1b;
+  --risk-5-text: #f28b82;
+  --chart-negative: #e0564d;
+  --chart-info: #5d95da;
+  --chart-neutral-1: #6b7682;
+  --chart-neutral-2: #4f5a65;
+  --chart-neutral-3: #9aa5b1;
+  --chart-category-3: #5d95da;
+  --chart-category-5: #a882dd;
+  --chart-track: #2a333c;
+  --widget-border: #2a333c;
+  --shadow-widget: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 20px rgb(0 0 0 / 35%);
+  /* The trend tooltip inverts against the page, as it does in the light theme. */
+  --tooltip-surface: #e6eaee;
+  --tooltip-text: #12181d;
+  --tooltip-muted: #4a5561;
+}
+
+/* The rail's teal, a step darker so it does not glare beside the dark content. */
+:root[data-theme='dark'] .app {
+  --color-rail: #12302f;
+  --color-rail-hover: #1a3d3c;
+  --color-rail-open: #234b4a;
+}
+
+/* The teal-and-gold logo is lost on the dark ground, so the sign-in header draws it white, as the rail does. */
+:root[data-theme='dark'] .shell__logo {
+  filter: brightness(0) invert(1);
+}
+
+/* The select chevron is an image, so its stroke is redrawn in the dark theme's muted text colour. */
+:root[data-theme='dark'] select.field__input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a9b4bf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
 *,
@@ -232,12 +304,20 @@ h3 {
   position: relative;
 }
 
-.language-switch__button {
+.shell__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.language-switch__button,
+.theme-switch__button {
   inline-size: 2.75rem;
   padding: 0;
 }
 
-.language-switch__icon {
+.language-switch__icon,
+.theme-switch__icon {
   flex: none;
   inline-size: 1.25rem;
   block-size: 1.25rem;
@@ -570,11 +650,13 @@ h3 {
   gap: var(--space-2);
   background: var(--color-rail);
   border-color: var(--color-rail);
+  color: var(--color-rail-text);
 }
 
 .topbar .topbar__create:hover {
   background: var(--color-rail-hover);
   border-color: var(--color-rail-hover);
+  color: var(--color-rail-text);
 }
 
 .topbar__avatar {
@@ -1701,19 +1783,15 @@ select.field__input {
 }
 
 /*
- * The mockup's input: the icon sits inside it, at the page's end. The input is left-to-right for a Latin username, so
- * both sides keep the icon's room; empty, it follows the page so an Arabic placeholder starts on the right.
+ * The mockup's input: the icon sits inside it, at the page's end. The input follows the page direction, so text and
+ * placeholder start on the left in English and on the right in Arabic.
  */
 .sign-in__input {
   position: relative;
 }
 
 .sign-in__input .field__input {
-  padding-inline: 2.75rem;
-}
-
-[dir='rtl'] .sign-in__input .field__input:placeholder-shown {
-  direction: rtl;
+  padding-inline-end: 2.75rem;
 }
 
 .sign-in__input > .sign-in__icon,
@@ -1747,7 +1825,6 @@ select.field__input {
   margin: 0;
   font-size: 0.875rem;
   color: var(--color-text-muted);
-  text-align: end;
 }
 
 .sign-in__footer {
@@ -2574,29 +2651,42 @@ select.field__input {
  * matrix version's ratings: the version carries no colours (TBC-RSK-005). Each step pairs a light ground with a dark
  * text of at least 4.5:1, and the rating is always written out, so the colour only repeats it (WCAG 1.4.1).
  */
+:root {
+  --risk-1-surface: #e6f4ea;
+  --risk-1-text: #155b2f;
+  --risk-2-surface: #f1f5d6;
+  --risk-2-text: #3f4700;
+  --risk-3-surface: #fdf0dc;
+  --risk-3-text: #7a4100;
+  --risk-4-surface: #fbe2d0;
+  --risk-4-text: #873000;
+  --risk-5-surface: #fbeaea;
+  --risk-5-text: #a4221b;
+}
+
 .risk-rating--1 {
-  background-color: #e6f4ea;
-  color: #155b2f;
+  background-color: var(--risk-1-surface);
+  color: var(--risk-1-text);
 }
 
 .risk-rating--2 {
-  background-color: #f1f5d6;
-  color: #3f4700;
+  background-color: var(--risk-2-surface);
+  color: var(--risk-2-text);
 }
 
 .risk-rating--3 {
-  background-color: #fdf0dc;
-  color: #7a4100;
+  background-color: var(--risk-3-surface);
+  color: var(--risk-3-text);
 }
 
 .risk-rating--4 {
-  background-color: #fbe2d0;
-  color: #873000;
+  background-color: var(--risk-4-surface);
+  color: var(--risk-4-text);
 }
 
 .risk-rating--5 {
-  background-color: #fbeaea;
-  color: #a4221b;
+  background-color: var(--risk-5-surface);
+  color: var(--risk-5-text);
   font-weight: 700;
 }
 
@@ -2616,7 +2706,7 @@ select.field__input {
   padding: var(--space-3);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius);
-  background-color: var(--color-surface);
+  background-color: var(--color-background);
 }
 
 .risk-summary__card dt {
@@ -3050,6 +3140,31 @@ select.field__input {
 :root {
   --series-actual: #2a78d6;
   --series-planned: #eb6834;
+  /* Chart fills, validated with the dataviz palette checks (light surface). The status fills keep a source's RAG
+     meaning — red and green differ in lightness as well as hue for colour-vision deficiency; grey is "no data". The
+     categorical fills only tell values apart, in this fixed order, and include no status red or green. Amber and
+     orange sit under 3:1 on white, so every chart keeps its values in words beside it. */
+  --chart-positive: #3fb27f;
+  --chart-warning: #e2a12b;
+  --chart-negative: #b8322a;
+  --chart-info: #3b78c4;
+  --chart-neutral-1: #a7b1bc;
+  --chart-neutral-2: #c9d0d7;
+  --chart-neutral-3: #7d8894;
+  --chart-category-1: #1f8a70;
+  --chart-category-2: #e07b39;
+  --chart-category-3: #3b78c4;
+  --chart-category-4: #e2a12b;
+  --chart-category-5: #8a5cc9;
+  --chart-category-6: #c2557a;
+  --chart-single: #1f8a70;
+  --chart-track: #eef2f5;
+  --widget-border: #e7ebef;
+  --tooltip-surface: #1f2a33;
+  --tooltip-text: #f4f6f8;
+  --tooltip-muted: #c4ccd4;
+  --radius-widget: 16px;
+  --shadow-widget: 0 1px 2px rgb(16 24 40 / 4%), 0 6px 20px rgb(16 24 40 / 6%);
 }
 
 .dashboard {
@@ -3090,7 +3205,7 @@ select.field__input {
 .dashboard__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
+  gap: 1.25rem;
 }
 
 @media (min-width: 64rem) {
@@ -3105,24 +3220,47 @@ select.field__input {
 }
 
 /*
- * A widget is a card in the AHDA Global Navigation design: its title as a small label with the semantic state and any
- * Stale flag beside it, the value large with an icon in its tone, and a footer saying which source owns it and when it
- * was current. The value's colour is only in its icon and bar; the words carry it (WCAG 1.4.1).
+ * A widget is a rounded card: its title with the semantic state and any Stale flag beside it, then its chart or value,
+ * and a footer saying which source owns it and when it was current. The value's colour is only in its icon and chart;
+ * the words carry it (WCAG 1.4.1). The hairline border stays for forced-colors mode, where shadows are dropped.
  */
 .widget {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-inline-size: 0;
   padding: var(--space-6);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
+  border: 1px solid var(--widget-border);
+  border-radius: var(--radius-widget);
   background: var(--color-background);
+  box-shadow: var(--shadow-widget);
 }
 
-/* A stale value is framed in the warning colour along its inline-start edge; the "Stale" flag says so in words. */
-.widget--stale {
-  border-inline-start: 4px solid var(--color-warning);
+/* On the dashboard each card is four rows of the grid — header, notice, body, footer — shared with the cards beside it
+   (subgrid), so the charts of a row start on one line and their footers end on one, whatever wraps above them. */
+.dashboard__grid > .widget {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+}
+
+.dashboard__grid > .widget > .widget__header {
+  align-self: start;
+}
+
+.dashboard__grid > .widget > :nth-child(2):not(:empty) {
+  padding-block-start: var(--space-3);
+}
+
+.dashboard__grid > .widget > :nth-child(3) {
+  align-self: start;
+  padding-block: var(--space-4);
+}
+
+.dashboard__grid > .widget > .widget__footer {
+  align-self: end;
+  margin-block-start: 0;
 }
 
 .widget__header {
@@ -3135,12 +3273,10 @@ select.field__input {
 .widget__title {
   flex: 1 1 auto;
   margin: 0;
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 600;
   line-height: 1.4;
-  text-transform: uppercase;
 }
 
 .widget__status {
@@ -3153,8 +3289,8 @@ select.field__input {
 
 /* The semantic state as a light tag: solid for published, dashed for live, dotted for history. */
 .widget .badge {
-  padding: 0.05rem 0.45rem;
-  border-radius: 4px;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 400;
 }
@@ -3198,6 +3334,8 @@ select.field__input {
 }
 
 .widget__body {
+  /* The query container for its chart; on the body, as containment on the card would stop it being a subgrid. */
+  container: widget / inline-size;
   display: grid;
   gap: var(--space-3);
   min-inline-size: 0;
@@ -3214,26 +3352,34 @@ select.field__input {
   line-height: 1.25;
 }
 
+/* The state's icon on a soft round tile of its own tone. */
 .widget__icon {
   flex: none;
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  padding: 0.6rem;
+  border-radius: 50%;
+  background: var(--color-neutral-surface);
 }
 
 .widget__icon--positive {
   color: var(--color-positive);
+  background: var(--color-positive-surface);
 }
 
 .widget__icon--warning {
   color: var(--color-warning);
+  background: var(--color-warning-surface);
 }
 
 .widget__icon--negative {
   color: var(--color-danger);
+  background: var(--color-danger-surface);
 }
 
 .widget__icon--info {
   color: var(--color-info);
+  background: var(--color-info-surface);
 }
 
 .widget__icon--neutral {
@@ -3277,19 +3423,28 @@ select.field__input {
   justify-self: start;
 }
 
-/* A progress card leads with its first percentage, large, as the design's "Physical progress 47.2 %". */
+/* A progress card: its gauge, then each percentage under its ring's key. */
+.progress-gauge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-6);
+}
+
 .widget__figures--progress {
+  flex: 1 1 8rem;
   grid-template-columns: minmax(0, 1fr);
 }
 
-.widget__figures--progress .widget__figure:first-child .figure {
-  font-size: 2.5rem;
-  font-weight: 600;
-  line-height: 1.1;
+.widget__figures--progress dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.widget__figures--progress .widget__figure:first-child .widget__bar-track {
-  block-size: 0.5rem;
+.widget__figures--progress .figure {
+  font-size: 1.375rem;
+  font-weight: 600;
 }
 
 .widget__footer {
@@ -3309,89 +3464,391 @@ select.field__input {
   font-size: 0.78rem;
 }
 
+/* A distribution: a donut beside its legend, columns over their hidden table, or a bar list. Hovering a value lifts
+   it in the chart and the legend alike and dims the rest. */
+.distribution {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.distribution--donut {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4) var(--space-6);
+}
+
+/* In a narrow card (its body under 27rem) the legend goes under its donut, whatever the window's width. */
+@container widget (max-width: 27rem) {
+  .distribution--donut {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+}
+
 .widget__distribution {
   inline-size: 100%;
-  border-collapse: collapse;
-}
-
-.widget__distribution th,
-.widget__distribution td {
-  padding: var(--space-2) var(--space-1);
-  border-block-end: 1px solid var(--color-border-subtle);
-  text-align: start;
-}
-
-.widget__distribution tbody tr:last-child th,
-.widget__distribution tbody tr:last-child td {
-  border-block-end: 0;
+  border-collapse: separate;
+  border-spacing: 0 var(--space-1);
 }
 
 .widget__distribution thead th {
-  padding-block-start: 0;
+  padding: 0 var(--space-2) var(--space-1);
   color: var(--color-text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: start;
 }
 
-.widget__distribution td {
-  display: grid;
-  grid-template-columns: 4ch minmax(0, 1fr);
+.widget__distribution tbody th,
+.widget__distribution tbody td {
+  padding: var(--space-2);
+  text-align: start;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.widget__distribution tbody th {
+  display: flex;
   align-items: center;
   gap: var(--space-2);
+  border-start-start-radius: 10px;
+  border-end-start-radius: 10px;
+}
+
+.widget__distribution tbody td {
+  border-start-end-radius: 10px;
+  border-end-end-radius: 10px;
+}
+
+.widget__distribution tbody tr.is-active > * {
+  background: var(--color-surface);
+}
+
+.widget__distribution tbody tr.is-dimmed {
+  opacity: 0.45;
+}
+
+.distribution__donut {
+  max-inline-size: 22rem;
+}
+
+.distribution__donut td,
+.distribution__donut thead th:last-child {
+  text-align: end;
+}
+
+.distribution__donut td {
+  white-space: nowrap;
+}
+
+/* The bar list: each value's words at the start and its count at the end, its bar under them. */
+.bars {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bars__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  transition: opacity 0.15s ease;
+}
+
+.bars__item.is-dimmed {
+  opacity: 0.4;
+}
+
+.bars__label {
+  overflow: hidden;
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bars__value {
+  font-weight: 600;
+}
+
+.bars__item .widget__bar-track {
+  grid-column: 1 / -1;
+}
+
+/* A value's key: a rounded swatch of its fill beside its words. */
+.distribution__key {
+  flex: none;
+  display: inline-block;
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  border-radius: 4px;
+  background: var(--chart-color, var(--chart-single));
 }
 
 .widget__count {
-  font-weight: 400;
+  font-weight: 600;
 }
 
-/* Only a card's title, its table's column headings and its one leading value are bold; everything else reads at body
-   weight. */
+/* Only a card's title, its legend's counts and its one leading value are bold; everything else reads at body weight. */
 .widget__distribution tbody th,
-.widget .value-state,
-.widget td .figure {
+.widget .value-state {
   font-weight: 400;
 }
 
 /* A bar only repeats the number beside it. */
 .widget__bar-track {
   display: block;
-  block-size: 0.375rem;
+  block-size: 0.625rem;
   border-radius: 999px;
-  background: var(--color-neutral-surface);
+  background: var(--chart-track);
 }
 
 .widget__bar {
   display: block;
   block-size: 100%;
-  min-inline-size: 2px;
+  min-inline-size: 0.625rem;
   border-radius: 999px;
-  background: var(--color-text-muted);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--chart-color, var(--chart-single)) 70%, white),
+    var(--chart-color, var(--chart-single))
+  );
+  transform-origin: left center;
+  animation: chart-grow-inline 0.6s ease-out both;
 }
 
-.widget__bar--positive {
-  background: var(--color-positive);
+[dir='rtl'] .widget__bar {
+  background: linear-gradient(
+    270deg,
+    color-mix(in srgb, var(--chart-color, var(--chart-single)) 70%, white),
+    var(--chart-color, var(--chart-single))
+  );
+  transform-origin: right center;
 }
 
-.widget__bar--warning {
-  background: var(--color-warning);
+/* The donut: round-ended segments with a surface gap, its centre naming the hovered (or largest) value. */
+.donut {
+  position: relative;
+  inline-size: 10.5rem;
+  block-size: 10.5rem;
 }
 
-.widget__bar--negative {
-  background: var(--color-danger);
+.donut svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
 }
 
-.widget__bar--info {
-  background: var(--color-info);
+.donut__track,
+.gauge__track {
+  fill: none;
+  stroke: var(--chart-track);
 }
 
-.widget__bar--actual {
-  background: var(--series-actual);
+.donut__segment {
+  fill: none;
+  cursor: default;
+  transition:
+    opacity 0.15s ease,
+    stroke-width 0.15s ease;
+  animation: chart-sweep 0.8s ease-out both;
 }
 
-.widget__bar--planned {
-  background: var(--series-planned);
+.donut__segment.is-active {
+  stroke-width: 24px;
+}
+
+.donut__segment.is-dimmed {
+  opacity: 0.3;
+}
+
+.donut__centre,
+.gauge__centre {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  margin: 0;
+  padding: 2.25rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Hovered, the centre takes a soft tint of the value's colour behind its count. */
+.donut__centre {
+  isolation: isolate;
+}
+
+.donut__centre::before {
+  position: absolute;
+  inset: 1.75rem;
+  z-index: -1;
+  border-radius: 50%;
+  background: transparent;
+  content: '';
+  transition: background-color 0.15s ease;
+}
+
+.donut__centre.is-active::before {
+  background: color-mix(in srgb, var(--chart-color) 16%, transparent);
+}
+
+.donut__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.donut__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  overflow: hidden;
+  max-inline-size: 100%;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Columns: a light rounded track per value with the column inside it, its count on the cap and its words below. */
+.columns {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: var(--space-3);
+  min-block-size: 14rem;
+  padding-block-start: var(--space-2);
+}
+
+.columns__item {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: var(--space-2);
+  max-inline-size: 5.5rem;
+  min-inline-size: 0;
+  transition: opacity 0.15s ease;
+}
+
+.columns__item.is-dimmed {
+  opacity: 0.4;
+}
+
+.columns__track {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  inline-size: 100%;
+  max-inline-size: 3.25rem;
+  padding-block-start: 1.75rem;
+  border-radius: 14px;
+  background: var(--chart-track);
+}
+
+.columns__value {
+  position: absolute;
+  inset-block-start: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.columns__bar {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 0.75rem;
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--chart-color, var(--chart-single)) 65%, white),
+    var(--chart-color, var(--chart-single))
+  );
+  transform-origin: bottom center;
+  animation: chart-grow-block 0.6s ease-out both;
+  transition: filter 0.15s ease;
+}
+
+.columns__item.is-active .columns__bar {
+  filter: brightness(1.08) saturate(1.1);
+}
+
+.columns__label {
+  display: -webkit-box;
+  overflow: hidden;
+  max-inline-size: 100%;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  text-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* The gauge: concentric rounded rings, each track a light step of its own fill. */
+.gauge {
+  position: relative;
+  flex: none;
+  inline-size: 9.5rem;
+  block-size: 9.5rem;
+}
+
+.gauge svg {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.gauge__track {
+  opacity: 0.16;
+}
+
+.gauge__fill {
+  fill: none;
+  animation: chart-sweep 0.9s ease-out both;
+}
+
+.gauge__centre {
+  padding: 2.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+@keyframes chart-sweep {
+  from {
+    stroke-dasharray: 0 var(--dash-total, 1000);
+  }
+}
+
+@keyframes chart-grow-block {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes chart-grow-inline {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donut__segment,
+  .gauge__fill,
+  .columns__bar,
+  .widget__bar,
+  path.trend__line--ACTUAL_PERCENT,
+  .trend__area {
+    animation: none;
+  }
 }
 
 /* HISTORICAL/SNAPSHOT: dotted, beside published (solid) and live (dashed). */
@@ -3466,6 +3923,134 @@ select.field__input {
 .trend__chart .trend__end-label {
   fill: var(--color-text);
   font-weight: 600;
+}
+
+/* The trend's plot holds the chart and its hover readout; time runs left to right in both languages. */
+.trend__plot {
+  position: relative;
+  direction: ltr;
+  max-inline-size: 48rem;
+}
+
+/* The series' names at their last points may run into the card's padding rather than be cut off. */
+.trend__plot .trend__chart {
+  overflow: visible;
+}
+
+.trend__area {
+  stroke: none;
+  animation: chart-fade 0.8s ease-out both;
+}
+
+.trend__wash-top {
+  stop-color: var(--series-actual);
+  stop-opacity: 0.22;
+}
+
+.trend__wash-bottom {
+  stop-color: var(--series-actual);
+  stop-opacity: 0;
+}
+
+.trend__line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Only the chart's actual curve draws itself in (its path length is 1); the legend's key stays solid. */
+path.trend__line--ACTUAL_PERCENT {
+  stroke-width: 2.5;
+  stroke-dasharray: 1;
+  animation: chart-draw 1s ease-out both;
+}
+
+.trend__crosshair {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.trend__point.is-active {
+  r: 6px;
+}
+
+.trend__hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.trend__tooltip {
+  position: absolute;
+  inset-block-start: 0;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 11rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 12px;
+  background: var(--tooltip-surface);
+  color: var(--tooltip-text);
+  font-size: 0.8rem;
+  box-shadow: 0 8px 24px rgb(16 24 40 / 18%);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.trend__tooltip p {
+  margin: 0;
+}
+
+.trend__tooltip-period {
+  color: var(--tooltip-muted);
+}
+
+.trend__tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.trend__tooltip-row strong {
+  margin-inline-start: auto;
+}
+
+/* A series' key in the readout: a short stroke of its line, never a box. */
+.trend__key {
+  inline-size: 0.9rem;
+  block-size: 3px;
+  border-radius: 2px;
+  background: var(--series-actual);
+}
+
+.trend__key--PLANNED_PERCENT {
+  background: repeating-linear-gradient(90deg, var(--series-planned) 0 4px, transparent 4px 6px);
+}
+
+/* The trend's values, folded away under the chart until asked for. */
+.widget__data summary {
+  inline-size: fit-content;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.widget__data[open] summary {
+  margin-block-end: var(--space-2);
+}
+
+.widget .table td .figure {
+  font-weight: 400;
+}
+
+@keyframes chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes chart-fade {
+  from {
+    opacity: 0;
+  }
 }
 
 .personalize__list {
