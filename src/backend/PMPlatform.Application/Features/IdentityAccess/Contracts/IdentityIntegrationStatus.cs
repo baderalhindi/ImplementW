@@ -1,0 +1,4 @@
+namespace PMPlatform.Application.Features.IdentityAccess.Contracts;
+
+public sealed record IdentityIntegrationStatus(
+    DirectoryIntegrationStatus Directory, SingleSignOnIntegrationStatus SingleSignOn, IdentityVerificationIntegrationStatus IdentityVerification);

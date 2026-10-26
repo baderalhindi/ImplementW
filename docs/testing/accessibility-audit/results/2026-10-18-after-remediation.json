@@ -1,0 +1,2115 @@
+{
+ "run": "2026-10-18-after-remediation",
+ "note": "e2e stack built fresh from bcab00f (API and SPA, new database); A11Y-F-001 and A11Y-F-002 fixed; same harness and axe 4.13.0 as the before run",
+ "recordedAt": "2026-10-18T18:47:58+00:00",
+ "commit": "bcab00f",
+ "workingTreeClean": false,
+ "baseline": "WCAG 2.1 Level AA (working baseline, PTBC-040 / OQ-010)",
+ "screens": {
+  "A11Y-S01": {
+   "name": "Sign in",
+   "scr": "SCR-001",
+   "basis": "every session starts here",
+   "topTen": false,
+   "persona": null,
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S01",
+     "language": "ar",
+     "url": "/sign-in",
+     "title": "تسجيل الدخول · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 30,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 6,
+      "presses": 8,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    },
+    "en": {
+     "screen": "A11Y-S01",
+     "language": "en",
+     "url": "/sign-in",
+     "title": "Sign in · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 30,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 6,
+      "presses": 8,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S02": {
+   "name": "Home dashboard",
+   "scr": "DSH-002 (Home)",
+   "basis": "traffic rank 1 (index 1,360)",
+   "topTen": true,
+   "persona": "portfolioManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S02",
+     "language": "ar",
+     "url": "/",
+     "title": "لوحة المحفظة · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 48,
+      "presses": 50,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Portfolio Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S02",
+     "language": "en",
+     "url": "/",
+     "title": "Portfolio Dashboard · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 48,
+      "presses": 50,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S03": {
+   "name": "Project register",
+   "scr": "SCR-025",
+   "basis": "traffic rank 3 (index 730, with My projects)",
+   "topTen": true,
+   "persona": "portfolioManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S03",
+     "language": "ar",
+     "url": "/projects",
+     "title": "سجل المشاريع · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 50,
+      "presses": 52,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Portfolio Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S03",
+     "language": "en",
+     "url": "/projects",
+     "title": "Project register · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 50,
+      "presses": 52,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S04": {
+   "name": "Project workspace",
+   "scr": "SCR-040, DSH-009",
+   "basis": "traffic rank 2 (index 935)",
+   "topTen": true,
+   "persona": "projectManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S04",
+     "language": "ar",
+     "url": "/projects/{id}",
+     "title": "A11Y Riyadh metro depot 2026-10-18 18:45:26 3dp2 · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 61,
+      "presses": 63,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Project Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S04",
+     "language": "en",
+     "url": "/projects/{id}",
+     "title": "A11Y Riyadh metro depot 2026-10-18 18:45:26 3dp2 · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 61,
+      "presses": 63,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S05": {
+   "name": "Risk register",
+   "scr": "SCR-080",
+   "basis": "traffic rank 4 (index 390)",
+   "topTen": true,
+   "persona": "projectManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S05",
+     "language": "ar",
+     "url": "/risks",
+     "title": "سجل المخاطر · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 43,
+      "presses": 45,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Project Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S05",
+     "language": "en",
+     "url": "/risks",
+     "title": "Risk register · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 43,
+      "presses": 45,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S06": {
+   "name": "Issue register",
+   "scr": "SCR-083",
+   "basis": "traffic rank 7= (index 305)",
+   "topTen": true,
+   "persona": "projectManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S06",
+     "language": "ar",
+     "url": "/issues-challenges",
+     "title": "سجل القضايا · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 44,
+      "presses": 46,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Project Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S06",
+     "language": "en",
+     "url": "/issues-challenges",
+     "title": "Issue register · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 44,
+      "presses": 46,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S07": {
+   "name": "Approval inbox",
+   "scr": "SCR-100",
+   "basis": "traffic rank 9 (index 150)",
+   "topTen": true,
+   "persona": "portfolioManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S07",
+     "language": "ar",
+     "url": "/approvals/inbox",
+     "title": "صندوق الموافقات · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 46,
+      "presses": 48,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Portfolio Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S07",
+     "language": "en",
+     "url": "/approvals/inbox",
+     "title": "Approval inbox · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 46,
+      "presses": 48,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S08": {
+   "name": "Document library",
+   "scr": "SCR-120",
+   "basis": "traffic rank 7= (index 305); as a Department Manager, since the e2e Project Manager profile reads no documents and would see only the empty state",
+   "topTen": true,
+   "persona": "departmentManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S08",
+     "language": "ar",
+     "url": "/documents",
+     "title": "مكتبة المستندات · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 47,
+      "presses": 49,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Department Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S08",
+     "language": "en",
+     "url": "/documents",
+     "title": "Document library · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 47,
+      "presses": 49,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S09": {
+   "name": "Notifications",
+   "scr": "SCR-150",
+   "basis": "traffic rank 5 (index 345)",
+   "topTen": true,
+   "persona": "projectManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S09",
+     "language": "ar",
+     "url": "/notifications",
+     "title": "جميع الإشعارات · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 40,
+      "presses": 42,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Project Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S09",
+     "language": "en",
+     "url": "/notifications",
+     "title": "All notifications · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 40,
+      "presses": 42,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S10": {
+   "name": "Report run",
+   "scr": "SCR-133",
+   "basis": "traffic rank 6 (index 340)",
+   "topTen": true,
+   "persona": "departmentManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S10",
+     "language": "ar",
+     "url": "/reports/department/PROJECT_REGISTER",
+     "title": "سجل المشاريع · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 48,
+      "presses": 50,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Department Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      },
+      {
+       "text": "A11Y Riyadh metro depot 2026-10-18 18:45:26 3dp2",
+       "lang": "ar",
+       "element": "span"
+      },
+      {
+       "text": "A11Y Jeddah corniche 2026-10-18 18:45:34 ds50",
+       "lang": "ar",
+       "element": "span"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S10",
+     "language": "en",
+     "url": "/reports/department/PROJECT_REGISTER",
+     "title": "Project Register · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 48,
+      "presses": 50,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S11": {
+   "name": "Change requests",
+   "scr": "SCR-105",
+   "basis": "traffic rank 10 (index 140)",
+   "topTen": true,
+   "persona": "projectManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S11",
+     "language": "ar",
+     "url": "/change-requests",
+     "title": "طلبات التغيير · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 41,
+      "presses": 43,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Project Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S11",
+     "language": "en",
+     "url": "/change-requests",
+     "title": "Change requests · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 41,
+      "presses": 43,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S12": {
+   "name": "Reports centre",
+   "scr": "SCR-130",
+   "basis": "entry to rank 6",
+   "topTen": false,
+   "persona": "executive",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S12",
+     "language": "ar",
+     "url": "/reports",
+     "title": "مركز التقارير · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 62,
+      "presses": 64,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    },
+    "en": {
+     "screen": "A11Y-S12",
+     "language": "en",
+     "url": "/reports",
+     "title": "Reports Center · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 62,
+      "presses": 64,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S13": {
+   "name": "My projects",
+   "scr": "SCR-026",
+   "basis": "traffic rank 3, as Project Managers open it",
+   "topTen": false,
+   "persona": "projectManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S13",
+     "language": "ar",
+     "url": "/projects/mine",
+     "title": "مشاريعي · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 45,
+      "presses": 47,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Project Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S13",
+     "language": "en",
+     "url": "/projects/mine",
+     "title": "My projects · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 45,
+      "presses": 47,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S14": {
+   "name": "Register project (form)",
+   "scr": "SCR-033",
+   "basis": "WF-01 dependency",
+   "topTen": false,
+   "persona": "departmentManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S14",
+     "language": "ar",
+     "url": "/projects/new",
+     "title": "إنشاء مشروع · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 56,
+      "presses": 63,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Department Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S14",
+     "language": "en",
+     "url": "/projects/new",
+     "title": "Create project · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 56,
+      "presses": 63,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S15": {
+   "name": "Users",
+   "scr": "ADM-002",
+   "basis": "FG-03 dependency",
+   "topTen": false,
+   "persona": "administrator",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S15",
+     "language": "ar",
+     "url": "/admin/users",
+     "title": "المستخدمون · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 87,
+      "presses": 89,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "Approval workflow (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Audit capture (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Completion and closure activation (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Directory synchronisation (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Document malware scan (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Department Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Entity B Project Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Entity Project Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Other Department Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Portfolio Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Project Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Identity integration telemetry (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Integration monitoring (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Notification dispatch (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Outbox dispatch (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Platform seed (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Report generation (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Risk acceptance review (service principal)",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "Suspension activation (service principal)",
+       "lang": "ar",
+       "element": "a"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S15",
+     "language": "en",
+     "url": "/admin/users",
+     "title": "Users · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 87,
+      "presses": 89,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S16": {
+   "name": "User detail",
+   "scr": "ADM-003",
+   "basis": "FG-03 dependency",
+   "topTen": false,
+   "persona": "administrator",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S16",
+     "language": "ar",
+     "url": "/admin/users/{id}",
+     "title": "E2E Project Manager · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 43,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 60,
+      "presses": 62,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Project Manager",
+       "lang": "ar",
+       "element": "h1.page-header__title"
+      },
+      {
+       "text": "Project Manager",
+       "lang": "ar",
+       "element": "dd"
+      },
+      {
+       "text": "إسنادات أدوار E2E Project Manager",
+       "lang": "ar",
+       "element": "caption.visually-hidden"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S16",
+     "language": "en",
+     "url": "/admin/users/{id}",
+     "title": "E2E Project Manager · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 43,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 60,
+      "presses": 62,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S17": {
+   "name": "Create user (form)",
+   "scr": "ADM-004",
+   "basis": "FG-03 dependency",
+   "topTen": false,
+   "persona": "administrator",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S17",
+     "language": "ar",
+     "url": "/admin/users/new",
+     "title": "إنشاء مستخدم · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 38,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 65,
+      "presses": 66,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    },
+    "en": {
+     "screen": "A11Y-S17",
+     "language": "en",
+     "url": "/admin/users/new",
+     "title": "Create user · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 38,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 65,
+      "presses": 66,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S18": {
+   "name": "Roles",
+   "scr": "ADM-006",
+   "basis": "FG-03 dependency",
+   "topTen": false,
+   "persona": "administrator",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S18",
+     "language": "ar",
+     "url": "/admin/roles",
+     "title": "الأدوار · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 65,
+      "presses": 67,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    },
+    "en": {
+     "screen": "A11Y-S18",
+     "language": "en",
+     "url": "/admin/roles",
+     "title": "Roles · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 65,
+      "presses": 67,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S19": {
+   "name": "Role detail",
+   "scr": "ADM-007",
+   "basis": "FG-03 dependency",
+   "topTen": false,
+   "persona": "administrator",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S19",
+     "language": "ar",
+     "url": "/admin/roles/{id}",
+     "title": "R01 — مدير النظام · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 34,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 57,
+      "presses": 59,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    },
+    "en": {
+     "screen": "A11Y-S19",
+     "language": "en",
+     "url": "/admin/roles/{id}",
+     "title": "R01 — System Administrator · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 34,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 57,
+      "presses": 59,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S20": {
+   "name": "Permission matrix",
+   "scr": "ADM-009",
+   "basis": "FG-03 dependency",
+   "topTen": false,
+   "persona": "administrator",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S20",
+     "language": "ar",
+     "url": "/admin/permission-matrix",
+     "title": "مصفوفة الصلاحيات · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+       {
+        "rule": "color-contrast",
+        "impact": "serious",
+        "nodes": 17
+       },
+       {
+        "rule": "th-has-data-cells",
+        "impact": "serious",
+        "nodes": 1
+       }
+      ]
+     },
+     "contrastReviewed": 10,
+     "contrastBelow": [],
+     "contrastMinimum": 16.58,
+     "keyboard": {
+      "controls": 57,
+      "presses": 59,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    },
+    "en": {
+     "screen": "A11Y-S20",
+     "language": "en",
+     "url": "/admin/permission-matrix",
+     "title": "Permission matrix · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+       {
+        "rule": "color-contrast",
+        "impact": "serious",
+        "nodes": 89
+       },
+       {
+        "rule": "th-has-data-cells",
+        "impact": "serious",
+        "nodes": 1
+       }
+      ]
+     },
+     "contrastReviewed": 10,
+     "contrastBelow": [],
+     "contrastMinimum": 16.58,
+     "keyboard": {
+      "controls": 57,
+      "presses": 59,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S21": {
+   "name": "Role assignments",
+   "scr": "ADM-010",
+   "basis": "FG-03 dependency",
+   "topTen": false,
+   "persona": "administrator",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S21",
+     "language": "ar",
+     "url": "/admin/role-assignments",
+     "title": "إسناد الأدوار · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 84,
+      "presses": 86,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Portfolio Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Department Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Project Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Other Department Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Entity Project Manager",
+       "lang": "ar",
+       "element": "a"
+      },
+      {
+       "text": "E2E Portfolio Manager",
+       "lang": "ar",
+       "element": "td"
+      },
+      {
+       "text": "E2E Entity B Project Manager",
+       "lang": "ar",
+       "element": "a"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S21",
+     "language": "en",
+     "url": "/admin/role-assignments",
+     "title": "Role assignments · PMPlatform",
+     "state": null,
+     "axe": {
+      "version": "4.13.0",
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 84,
+      "presses": 86,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S22": {
+   "name": "Sign in — verification step",
+   "scr": "SCR-002",
+   "basis": "second step of every privileged sign-in",
+   "topTen": false,
+   "persona": null,
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S22",
+     "language": "ar",
+     "url": "/sign-in",
+     "title": "تسجيل الدخول · PMPlatform",
+     "state": {
+      "modal": false
+     },
+     "axe": {
+      "version": "4.13.0",
+      "passes": 30,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 5,
+      "presses": 7,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    },
+    "en": {
+     "screen": "A11Y-S22",
+     "language": "en",
+     "url": "/sign-in",
+     "title": "Sign in · PMPlatform",
+     "state": {
+      "modal": false
+     },
+     "axe": {
+      "version": "4.13.0",
+      "passes": 30,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 5,
+      "presses": 7,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S23": {
+   "name": "Approval inbox — decision dialog",
+   "scr": "SCR-100, MOD-040",
+   "basis": "state of rank 6",
+   "topTen": false,
+   "persona": "portfolioManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S23",
+     "language": "ar",
+     "url": "/approvals/inbox",
+     "title": "صندوق الموافقات · PMPlatform",
+     "state": {
+      "modal": true
+     },
+     "axe": {
+      "version": "4.13.0",
+      "passes": 20,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 3,
+      "presses": 5,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": true,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Portfolio Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S23",
+     "language": "en",
+     "url": "/approvals/inbox",
+     "title": "Approval inbox · PMPlatform",
+     "state": {
+      "modal": true
+     },
+     "axe": {
+      "version": "4.13.0",
+      "passes": 20,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 3,
+      "presses": 5,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": true,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S24": {
+   "name": "Register project — validation errors",
+   "scr": "SCR-033",
+   "basis": "state of the WF-01 form",
+   "topTen": false,
+   "persona": "departmentManager",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S24",
+     "language": "ar",
+     "url": "/projects/new",
+     "title": "إنشاء مشروع · PMPlatform",
+     "state": {
+      "modal": false
+     },
+     "axe": {
+      "version": "4.13.0",
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 56,
+      "presses": 63,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": [
+      {
+       "text": "E2E Department Manager",
+       "lang": "ar",
+       "element": "span.shell__user"
+      }
+     ]
+    },
+    "en": {
+     "screen": "A11Y-S24",
+     "language": "en",
+     "url": "/projects/new",
+     "title": "Create project · PMPlatform",
+     "state": {
+      "modal": false
+     },
+     "axe": {
+      "version": "4.13.0",
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 56,
+      "presses": 63,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  },
+  "A11Y-S25": {
+   "name": "Create user — validation errors",
+   "scr": "ADM-004",
+   "basis": "state of the FG-03 form",
+   "topTen": false,
+   "persona": "administrator",
+   "languages": {
+    "ar": {
+     "screen": "A11Y-S25",
+     "language": "ar",
+     "url": "/admin/users/new",
+     "title": "إنشاء مستخدم · PMPlatform",
+     "state": {
+      "modal": false
+     },
+     "axe": {
+      "version": "4.13.0",
+      "passes": 42,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 65,
+      "presses": 66,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    },
+    "en": {
+     "screen": "A11Y-S25",
+     "language": "en",
+     "url": "/admin/users/new",
+     "title": "Create user · PMPlatform",
+     "state": {
+      "modal": false
+     },
+     "axe": {
+      "version": "4.13.0",
+      "passes": 42,
+      "violations": [],
+      "incomplete": []
+     },
+     "contrastReviewed": 0,
+     "contrastBelow": [],
+     "contrastMinimum": null,
+     "keyboard": {
+      "controls": 65,
+      "presses": 66,
+      "cycled": true,
+      "unreached": [],
+      "noVisibleFocus": [],
+      "trapped": [],
+      "escaped": []
+     },
+     "focusReturned": null,
+     "reflow": {
+      "width": 320,
+      "scrollWidth": 320,
+      "overflowing": []
+     },
+     "languageParts": []
+    }
+   }
+  }
+ }
+}

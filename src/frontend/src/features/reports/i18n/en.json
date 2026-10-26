@@ -1,0 +1,305 @@
+{
+  "nav": {
+    "label": "Reports",
+    "center": "Reports Center",
+    "explorer": "Custom report builder",
+    "savedViews": "Saved views",
+    "exports": "Export history"
+  },
+  "family": {
+    "EXECUTIVE": {
+      "label": "Executive Reports",
+      "description": "Formal management reporting across your authorised scope, with coverage and freshness. No composite executive score is invented."
+    },
+    "PORTFOLIO": {
+      "label": "Portfolio Reports",
+      "description": "The projects in your portfolio scope, with the safeguards that keep unlike figures apart."
+    },
+    "DEPARTMENT": {
+      "label": "Sector Reports",
+      "description": "Reports over the projects of the sectors you may see."
+    },
+    "PROJECT": {
+      "label": "Project Reports",
+      "description": "Formal project reports and project-domain reports for the projects you may see."
+    },
+    "FINANCIAL": {
+      "label": "Financial Reports",
+      "description": "Financial and KPI reporting. Sensitive amounts are shown only to those allowed to see them, and masked otherwise."
+    },
+    "PROGRESS": {
+      "label": "Progress Reports",
+      "description": "Progress reporting status and published progress history."
+    },
+    "RISK_ISSUE": {
+      "label": "Risk & Issue Reports",
+      "description": "Risks, issues and challenges as their workflows recorded them; nothing is rescored."
+    },
+    "none": "None of this experience's reports is open to your roles."
+  },
+  "center": {
+    "title": "Reports Center",
+    "description": "The reports your roles may run, your saved views and your exports.",
+    "searchLabel": "Find a report",
+    "search": "Search by name, code or description",
+    "family": "Report type",
+    "allFamilies": "All report types",
+    "none": "No report is published for your roles.",
+    "noMatch": "No report matches your search.",
+    "savedViewsAllowed": "Views can be saved",
+    "recentViews": "Your saved views",
+    "allViews": "All saved views",
+    "recentExports": "Your latest exports",
+    "allExports": "Export history"
+  },
+  "header": {
+    "version": "Version {version}",
+    "noExport": "Your access does not include exporting this report"
+  },
+  "parameters": {
+    "label": "Report parameters",
+    "none": "This report takes no parameters: it shows every project in your scope.",
+    "all": "All"
+  },
+  "summary": {
+    "label": "Active filters",
+    "noParameters": "No parameter set: every project in your scope.",
+    "columns": "{count} columns shown",
+    "sortedBy": "Sorted by {field}, {direction}"
+  },
+  "actions": {
+    "run": "Run report",
+    "columns": "Choose columns",
+    "columnsAndFilters": "Choose columns and filters",
+    "export": "Export",
+    "saveView": "Save view",
+    "saveChanges": "Save changes to this view",
+    "saveAsNew": "Save as a new view"
+  },
+  "result": {
+    "chooseParameters": "Choose the required parameters, then run the report.",
+    "running": "Running the report…",
+    "empty": "No project in your scope matches.",
+    "generatedAt": "Run at {date}. This is when the report ran, not when its sources were current.",
+    "rowCount": "{count} rows"
+  },
+  "banner": {
+    "label": "Coverage and freshness",
+    "asOf": "As of {date}",
+    "noAsOf": "No as-of date: no value to date",
+    "source": "Source {source}, projection version {version}",
+    "included": "{included} of {eligible} projects shown",
+    "excluded": "{count} left out",
+    "stale": "{count} with stale values"
+  },
+  "cell": {
+    "reference": "Item {id}",
+    "staleAsOf": "Stale · as of {date}"
+  },
+  "units": {
+    "days": "{value} days",
+    "sar": "SAR {amount}"
+  },
+  "columns": {
+    "title": "Select columns and filters",
+    "introReport": "Choose which of the report's own columns to show, their order and the sort. The report narrows through its parameters.",
+    "introExplorer": "Only the fields of the published report rules are offered. There is no query text: choose fields, filters and a sort.",
+    "shown": "Shown columns, in order",
+    "noneShown": "No column is shown yet. Choose at least one below.",
+    "available": "Fields you can add",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "sort": "Sort",
+    "sortBy": "Sort by",
+    "noSort": "No sort",
+    "direction": "Direction",
+    "ascending": "ascending",
+    "descending": "descending",
+    "filters": "Filters",
+    "noFilterable": "None of the offered fields can be filtered.",
+    "filterField": "Field",
+    "operator": "Condition",
+    "value": "Value",
+    "values": "Values",
+    "from": "From",
+    "to": "To",
+    "addFilter": "Add a filter",
+    "removeFilter": "Remove filter",
+    "noColumn": "Choose at least one column.",
+    "incompleteFilter": "Every filter needs a value; a range needs both ends.",
+    "apply": "Apply"
+  },
+  "operators": {
+    "EQ": "is",
+    "NEQ": "is not",
+    "IN": "is one of",
+    "GT": "is more than",
+    "GTE": "is at least",
+    "LT": "is less than",
+    "LTE": "is at most",
+    "BETWEEN": "is between",
+    "CONTAINS": "contains"
+  },
+  "export": {
+    "title": "Export report",
+    "format": "Format",
+    "language": "Language of the file",
+    "sensitiveWarning": "The columns shown include sensitive values. The file will be classified Sensitive, and any amount you may not see is masked in it.",
+    "background": "The file is generated in the background. You can close this window; it will be in your export history.",
+    "start": "Start export",
+    "jobStatus": "Export:",
+    "running": "Generating the file. This window follows it until it is ready.",
+    "classifiedSensitive": "This file is classified Sensitive.",
+    "history": "Open export history",
+    "close": "Close"
+  },
+  "formats": {
+    "PDF": "PDF",
+    "XLSX": "Excel (XLSX)",
+    "CSV": "CSV"
+  },
+  "jobStatus": {
+    "REQUESTED": "Requested",
+    "VALIDATING": "Checking",
+    "QUEUED": "Queued",
+    "RUNNING": "Generating",
+    "COMPLETED": "Ready",
+    "FAILED": "Failed",
+    "CANCELLED": "Cancelled",
+    "EXPIRED": "Expired"
+  },
+  "sensitivity": {
+    "STANDARD": "Standard",
+    "SENSITIVE": "Sensitive"
+  },
+  "failure": {
+    "REPORT_EXPORT_NOT_PERMITTED": "Your access no longer includes exporting.",
+    "REPORT_ACCESS_DENIED": "You may no longer run this report.",
+    "REPORT_NOT_ACTIVE": "The report version is no longer published.",
+    "REPORT_PARAMETER_UNAUTHORIZED": "A parameter names something you may no longer see.",
+    "REPORT_EXPORT_SIZE_LIMIT_EXCEEDED": "The export is too large. Narrow it with parameters or filters and try again.",
+    "REPORT_OUTPUT_GENERATION_FAILED": "The file could not be generated. Try again.",
+    "unknown": "The export failed ({code})."
+  },
+  "download": {
+    "label": "Download",
+    "busy": "Downloading…"
+  },
+  "explorer": {
+    "title": "Custom report builder",
+    "description": "A controlled explorer: combine the fields AHDA has published for exploration. You see only what your access allows.",
+    "allowlist": "{count} fields offered, from published report rules version {version}. No other field can be chosen.",
+    "start": "Choose the columns to see, and any filters.",
+    "columns": "Columns: {columns}",
+    "filters": "Filters: {filters}",
+    "noFilters": "No filter.",
+    "closed": "The custom report builder is not available yet",
+    "closedDescription": "No report rules are published, so no field may be explored. It opens once AHDA publishes them.",
+    "notForRole": "The custom report builder is for Portfolio Managers, Sector Managers and Executives."
+  },
+  "saveView": {
+    "title": "Save report view",
+    "titleChanges": "Save changes to this view",
+    "intro": "A view saves your choices, never the report's data. Whoever opens it runs it with their own access.",
+    "name": "Name",
+    "nameLanguage": "Language of the name",
+    "shareWith": "Share with",
+    "shareHint": "People in these roles can open and run the view with their own access. They cannot change it. Leave all unticked to keep it private.",
+    "save": "Save view",
+    "saved": "The view {name} was saved."
+  },
+  "savedView": {
+    "opened": "Opened from the saved view",
+    "yours": "(yours).",
+    "sharedBy": "(shared with you by {owner}).",
+    "ownAccess": "It runs with your own access: you see only what you may see.",
+    "incompatible": "This view no longer fits the report or the report rules in force, so it was not applied:"
+  },
+  "issues": {
+    "FIELD_NOT_ALLOWLISTED": "the field is no longer offered",
+    "JOIN_NOT_ALLOWLISTED": "its source is no longer offered",
+    "FIELD_NOT_IN_REPORT": "the report no longer has this column",
+    "GRAIN_MISMATCH": "the field cannot stand beside these rows",
+    "OPERATOR_NOT_SUPPORTED": "the condition is no longer allowed",
+    "VALUE_INVALID": "the value is no longer valid",
+    "NOT_FOUND": "it is no longer available to you",
+    "NOT_ALLOWED": "it is no longer allowed",
+    "REQUIRED": "a value is now required",
+    "DUPLICATE": "it is repeated"
+  },
+  "savedViews": {
+    "title": "Saved views",
+    "description": "Your saved views and those shared with your roles. A view holds choices, not data: it runs with the opener's access.",
+    "notForRole": "Saved views are for Portfolio Managers, Sector Managers and Executives.",
+    "empty": "No saved view yet.",
+    "name": "Name",
+    "runs": "Report",
+    "owner": "Owner",
+    "sharing": "Sharing",
+    "compatibility": "Fits current report",
+    "updatedAt": "Last changed",
+    "explorer": "Custom report",
+    "private": "Private",
+    "sharedWith": "Shared with {roles}",
+    "sharedWithYou": "Shared with you",
+    "enteredIn": "Entered in {language}",
+    "open": "Open",
+    "changeSharing": "Change sharing",
+    "sharingTitle": "Name and sharing",
+    "sharingSaved": "Sharing of {name} was saved.",
+    "delete": "Delete",
+    "deleteTitle": "Delete saved view",
+    "deleteMessage": "Delete the view {name}? Anyone it is shared with will lose it too.",
+    "deleted": "The view {name} was deleted."
+  },
+  "compatibility": {
+    "VALID": "Yes",
+    "INCOMPATIBLE": "Needs attention"
+  },
+  "roles": {
+    "R02": "Portfolio Managers",
+    "R03": "Sector Managers",
+    "R07": "Executives"
+  },
+  "history": {
+    "title": "Export history",
+    "description": "The files you have exported: who generated each one and when. Every download checks your access again.",
+    "empty": "No export yet.",
+    "output": "Report",
+    "format": "Format",
+    "status": "Status",
+    "generatedBy": "Generated by",
+    "requestedAt": "Requested",
+    "generatedAt": "Generated",
+    "notGenerated": "Not generated",
+    "classification": "Classification",
+    "expiresAt": "Available until",
+    "you": "{name} (you)",
+    "cancel": "Cancel",
+    "cancelled": "The export of {name} was cancelled."
+  },
+  "notFound": {
+    "title": "Report not found",
+    "description": "This report does not exist or is not open to your roles.",
+    "back": "Go to the Reports Center"
+  },
+  "problems": {
+    "notFound": "This report, view or export does not exist or is not available to you.",
+    "permissionDenied": "Your access does not allow this.",
+    "configurationMissing": "No report rules are published yet, so the custom report builder is closed.",
+    "columnNotSupported": "A column is not offered for this report or by the report rules.",
+    "filterNotSupported": "A filter is not allowed on that field.",
+    "filterValueInvalid": "A filter value is not valid for its field.",
+    "sortNotSupported": "That sort is not allowed.",
+    "parameterInvalid": "A parameter value is not valid.",
+    "parameterRequired": "Choose the required parameters.",
+    "parameterUnauthorized": "A chosen project or sector is not one you may report on.",
+    "savedViewNotAllowed": "This view cannot be saved: the report does not allow it, a role cannot receive it, or your role cannot save views.",
+    "savedViewIncompatible": "This saved view no longer fits the report or the report rules in force.",
+    "duplicateRequest": "This export was already requested with different choices. Start it again.",
+    "jobNotCancellable": "The export has already started or ended and can no longer be cancelled.",
+    "outputNotAvailable": "The file is not ready, or the export did not complete.",
+    "outputExpired": "The file has expired. Export the report again.",
+    "downloadDenied": "You may no longer see some of what this file holds, so it cannot be downloaded."
+  }
+}

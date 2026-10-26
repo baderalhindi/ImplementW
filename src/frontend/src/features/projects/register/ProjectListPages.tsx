@@ -1,0 +1,77 @@
+import { type ReactElement, useState } from 'react';
+import { Link, useLocation } from 'react-router';
+
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
+import { useSession } from '@/features/identity-access/session/useSession.ts';
+import { useI18n } from '@/shared/i18n/i18n.ts';
+import { PageHeader } from '@/shared/ui/Layout.tsx';
+import { PageNotice } from '@/shared/ui/PageNotice.tsx';
+
+import { ProjectList } from './ProjectList.tsx';
+
+/** Offered to a holder of PROJECT_REGISTER only (the 24 Oct 2026 review, C3: no "Create project" for a role that cannot). */
+function CreateProjectLink(): ReactElement | null {
+  const { t } = useI18n();
+  return useCan('PROJECT_REGISTER') ? (
+    <Link className="button button--primary" to="/projects/new">
+      {t('projects.create.action')}
+    </Link>
+  ) : null;
+}
+
+/** SCR-025 Project Register (All Projects). MOD-001 returns here after deleting a draft. */
+export function ProjectRegisterPage(): ReactElement | null {
+  const { t } = useI18n();
+  const { session } = useSession();
+  const location = useLocation();
+  const deleted = (location.state as { notice?: string } | null)?.notice === 'deleted';
+  const [loads, setLoads] = useState(0);
+  if (session === null) {
+    return null;
+  }
+  return (
+    <>
+      <PageHeader
+        title={t('projects.register.title')}
+        description={t('projects.register.description')}
+        actions={
+          <>
+            <ImportAction
+              collectionPath="/projects"
+              registerName={t('projects.register.title')}
+              onImported={() => {
+                setLoads((n) => n + 1);
+              }}
+            />
+            <CreateProjectLink />
+          </>
+        }
+      />
+      <PageNotice
+        notice={deleted ? { tone: 'success', message: t('projects.done.deleted') } : null}
+      />
+      {/* An import's projects are read by a fresh list. */}
+      <ProjectList key={loads} user={session.user} mine={false} basePath="/projects" />
+    </>
+  );
+}
+
+/** SCR-026 My Projects: the projects the signed-in person is the Project Manager of. */
+export function MyProjectsPage(): ReactElement | null {
+  const { t } = useI18n();
+  const { session } = useSession();
+  if (session === null) {
+    return null;
+  }
+  return (
+    <>
+      <PageHeader
+        title={t('projects.mine.title')}
+        description={t('projects.mine.description')}
+        actions={<CreateProjectLink />}
+      />
+      <ProjectList user={session.user} mine basePath="/projects/mine" />
+    </>
+  );
+}

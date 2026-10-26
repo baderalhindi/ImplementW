@@ -1,0 +1,321 @@
+{
+  "nav": {
+    "label": "القضايا والتحديات",
+    "issues": "القضايا",
+    "challenges": "التحديات",
+    "escalations": "التصعيدات",
+    "registers": "سجلات القضايا والتحديات"
+  },
+  "forbidden": "لا يمكنك الاطلاع على القضايا والتحديات هنا.",
+  "type": {
+    "ISSUE": "قضية",
+    "CHALLENGE": "تحدٍ"
+  },
+  "status": {
+    "OPEN": "مفتوحة",
+    "ASSIGNED": "مسندة",
+    "IN_PROGRESS": "قيد العمل",
+    "PENDING_VALIDATION": "بانتظار التحقق",
+    "RESOLVED": "محلولة",
+    "CLOSED": "مغلقة"
+  },
+  "escalationStatus": {
+    "OPEN": "مفتوح",
+    "RESOLVED": "محسوم",
+    "WITHDRAWN": "مسحوب"
+  },
+  "severity": {
+    "none": "لم يُقيَّم"
+  },
+  "issues": {
+    "title": "سجل القضايا",
+    "description": "القضايا في المشاريع التي يمكنك الاطلاع عليها، الأشد أولًا.",
+    "caption": "القضايا في المشاريع",
+    "projectTitle": "القضايا",
+    "projectCaption": "قضايا هذا المشروع",
+    "emptyTitle": "لا توجد قضايا",
+    "emptyRaiser": "ارفع قضية عندما تؤثر مشكلة في المشروع الآن.",
+    "emptyReader": "يرفع مدير المشروع والجهة المنفذة قضايا هذا المشروع.",
+    "emptyAcross": "لا توجد قضية في أي مشروع يمكنك الاطلاع عليه."
+  },
+  "challenges": {
+    "title": "سجل التحديات",
+    "description": "التحديات في المشاريع التي يمكنك الاطلاع عليها، الأشد أولًا.",
+    "caption": "التحديات في المشاريع",
+    "projectTitle": "التحديات",
+    "projectCaption": "تحديات هذا المشروع",
+    "emptyTitle": "لا توجد تحديات",
+    "emptyRaiser": "ارفع تحديًا عندما يحتاج قيد أو اعتماد إلى اهتمام الإدارة.",
+    "emptyReader": "يرفع مدير المشروع والجهة المنفذة تحديات هذا المشروع.",
+    "emptyAcross": "لا يوجد تحدٍ في أي مشروع يمكنك الاطلاع عليه."
+  },
+  "summary": {
+    "open": "مفتوحة",
+    "unassigned": "غير مسندة بعد",
+    "escalated": "مصعّدة",
+    "overdue": "متأخرة",
+    "reviewDue": "حان موعد المراجعة",
+    "pendingValidation": "بانتظار التحقق"
+  },
+  "filter": {
+    "view": "العرض",
+    "views": {
+      "open": "المفتوحة",
+      "mine": "المسندة إليّ",
+      "escalated": "المصعّدة",
+      "overdue": "المتأخرة",
+      "pendingValidation": "بانتظار التحقق",
+      "closed": "المغلقة",
+      "all": "الكل"
+    },
+    "severity": "الخطورة",
+    "priority": "الأولوية"
+  },
+  "empty": {
+    "filtered": "لا شيء يطابق هذا العرض."
+  },
+  "table": {
+    "title": "العنوان",
+    "project": "المشروع",
+    "assignee": "المسند إليه",
+    "status": "الحالة",
+    "severity": "الخطورة",
+    "priority": "الأولوية",
+    "target": "الحل المستهدف",
+    "escalation": "التصعيد",
+    "unassigned": "غير مسندة",
+    "noTarget": "لا يوجد تاريخ مستهدف",
+    "none": "لا يوجد",
+    "escalated": "مصعّدة",
+    "overdue": "متأخرة",
+    "reviewDue": "حان موعد المراجعة",
+    "returned": "أعادها التحقق",
+    "fromRisk": "مرفوعة من مخاطرة",
+    "overallImpact": "الأثر الإجمالي: المستوى {level}"
+  },
+  "fields": {
+    "type": "النوع",
+    "title": "العنوان",
+    "description": "الوصف",
+    "category": "الفئة",
+    "priority": "الأولوية",
+    "severity": "الخطورة",
+    "targetResolutionDate": "تاريخ الحل المستهدف",
+    "resolution": "الحل",
+    "reason": "سبب التصعيد",
+    "direction": "توجيه الإدارة"
+  },
+  "actions": {
+    "createIssue": "رفع قضية",
+    "createChallenge": "رفع تحدٍ",
+    "editIssue": "تعديل القضية",
+    "editChallenge": "تعديل التحدي",
+    "assess": "تقييم الأثر",
+    "reassess": "إعادة تقييم الأثر",
+    "assign": "إسناد",
+    "reassign": "إعادة الإسناد",
+    "submitResolution": "تقديم الحل",
+    "escalate": "تصعيد",
+    "backToIssues": "العودة إلى القضايا",
+    "backToChallenges": "العودة إلى التحديات",
+    "backToEscalations": "العودة إلى التصعيدات"
+  },
+  "form": {
+    "createIssue": "رفع قضية",
+    "createChallenge": "رفع تحدٍ",
+    "editIssue": "تعديل القضية",
+    "editChallenge": "تعديل التحدي",
+    "createIssueIntro": "القضية مشكلة تؤثر في المشروع الآن. تُرفع مفتوحة، ثم يقيّم مدير المشروع أثرها ويسندها.",
+    "createChallengeIntro": "التحدي قيد أو اعتماد يحتاج إلى اهتمام الإدارة. رفعه لا ينشئ مخاطرة ولا قضية.",
+    "issueDescriptionHint": "ما الذي يحدث، وما الذي يتأثر به، ومنذ متى.",
+    "challengeDescriptionHint": "القيد أو الاعتماد، ومن يتحكم فيه، وما الذي يعطّله.",
+    "choose": "اختر…",
+    "priorityHint": "مدى سرعة التعامل معها. أنت من يحدد الأولوية، وهي منفصلة عن الخطورة.",
+    "targetHint": "اختياري. اليوم أو بعده.",
+    "severityOnCreate": "لا تُدخل الخطورة: تحسبها المنصة من تقييم الأثر.",
+    "severityReadOnly": "تحسبها المنصة من تقييم الأثر ولا يمكن تعديلها. لا تتغير إلا بإعادة تقييم الأثر.",
+    "cataloguesUnreadable": "لا يمكن قراءة الفئات والأولويات بصلاحياتك، فلا يمكن الرفع من هنا."
+  },
+  "detail": {
+    "commands": "الأوامر",
+    "notFound": "هذا العنصر لا يتبع هذا المشروع.",
+    "raised": "تاريخ الرفع",
+    "nextReview": "المراجعة القادمة",
+    "lastReviewed": "آخر مراجعة {date}",
+    "revision": "المراجعة",
+    "originatingRisk": "المخاطرة الأصلية",
+    "openRisk": "فتح المخاطرة",
+    "resolved": "تاريخ الحل",
+    "closed": "تاريخ الإغلاق",
+    "severityComputed": "تحسبها المنصة ولا يمكن تعديلها.",
+    "impactsTitle": "تقييم الأثر",
+    "impactsCaption": "مستويات الأثر حسب البُعد",
+    "dimension": "البُعد",
+    "level": "المستوى",
+    "notAssessed": "لم يُقيَّم الأثر بعد، فلا توجد خطورة حتى الآن.",
+    "pinnedCurrent": "حُسبت الخطورة وفق مصفوفة المخاطر النافذة، الإصدار {version}.",
+    "pinnedOther": "حُسبت الخطورة وفق إصدار سابق من مصفوفة المخاطر وتبقى كما حُسبت.",
+    "withValidation": "قيد التحقق (المراجعة {revision}). الحقول ثابتة حتى يصدر القرار.",
+    "returned": "أعادها التحقق: عدّلها وقدّمها مجددًا (المراجعة {revision}).",
+    "validated": "تم التحقق منها.",
+    "escalationsTitle": "التصعيدات",
+    "escalationsCaption": "تصعيدات هذا العنصر",
+    "noEscalations": "لم يُصعَّد",
+    "closeWaitsForEscalation": "يمكن إغلاقها بعد حسم تصعيدها المفتوح أو سحبه."
+  },
+  "assess": {
+    "title": "تقييم أثر «{concern}»",
+    "intro": "المستويات من مصفوفة المخاطر النافذة، الإصدار {version}: المقياس نفسه الذي تستخدمه المخاطر.",
+    "impacts": "الأثر حسب البُعد",
+    "impactsHint": "حدّد مستوى لكل بُعد ينطبق؛ بُعد واحد على الأقل.",
+    "notApplicable": "لا ينطبق",
+    "levelOption": "{level} — {label}",
+    "previewPending": "اختر مستوى واحدًا على الأقل.",
+    "preview": "الأثر الإجمالي: المستوى {level} (الأعلى). تحسب المنصة الخطورة منه عند الحفظ.",
+    "confirm": "حفظ التقييم"
+  },
+  "assign": {
+    "title": "إسناد «{concern}»",
+    "confirm": "إسناد"
+  },
+  "submit": {
+    "title": "تقديم حل «{concern}»",
+    "validation": "يُحال الحل إلى التحقق، ولا يُعد محلولًا إلا بعد اعتماده.",
+    "frozen": "تثبت حقولها وأثرها أثناء التحقق.",
+    "ownDecision": "لا يمكنك التحقق من حل قدّمته بنفسك.",
+    "hint": "ما الذي نُفّذ، ولماذا لم تعد المشكلة تؤثر في المشروع.",
+    "confirm": "تقديم للتحقق"
+  },
+  "escalate": {
+    "title": "تصعيد «{concern}»",
+    "notApproval": "التصعيد ليس اعتمادًا: إنه طلب لاهتمام الإدارة أو توجيهها.",
+    "statusKeptIssue": "لا تتغير حالة القضية.",
+    "statusKeptChallenge": "لا تتغير حالة التحدي.",
+    "routing": "ترسله المنصة إلى الدور المحدد للتصعيدات.",
+    "reasonHint": "ما يجب أن تعرفه الإدارة، وما تحتاجه منها.",
+    "confirm": "تصعيد"
+  },
+  "resolveEscalation": {
+    "title": "حسم التصعيد {number}",
+    "statusKept": "حسم التصعيد يسجّل توجيهك ولا يغيّر حالة العنصر.",
+    "hint": "القرار أو التوجيه الذي تقدمه.",
+    "confirm": "حسم",
+    "named": "حسم التصعيد {number}"
+  },
+  "withdrawEscalation": {
+    "title": "سحب التصعيد {number}",
+    "consequence": "ينتهي التصعيد دون توجيه. لا تتغير حالة العنصر.",
+    "confirm": "سحب",
+    "named": "سحب التصعيد {number}"
+  },
+  "command": {
+    "start": {
+      "title": "بدء العمل",
+      "consequence": "ينتقل العنصر إلى قيد العمل.",
+      "confirm": "بدء العمل",
+      "done": "بدأ العمل."
+    },
+    "review": {
+      "title": "تسجيل مراجعة",
+      "consequence": "يسجّل أنه رُوجع اليوم. يتبع تاريخ المراجعة القادمة ملف حوكمة المشروع.",
+      "confirm": "تسجيل المراجعة",
+      "done": "سُجّلت المراجعة."
+    },
+    "close": {
+      "title": "إغلاق",
+      "consequence": "يُغلق العنصر الذي تم التحقق منه. لا يمكن تغيير أي شيء فيه بعد ذلك.",
+      "confirm": "إغلاق",
+      "done": "تم الإغلاق."
+    }
+  },
+  "escalations": {
+    "title": "التصعيدات",
+    "description": "تصعيدات القضايا والتحديات في المشاريع التي يمكنك الاطلاع عليها.",
+    "caption": "التصعيدات",
+    "summary": {
+      "open": "التصعيدات المفتوحة"
+    },
+    "filter": {
+      "status": "الحالة",
+      "type": "النوع",
+      "views": {
+        "open": "المفتوحة فقط",
+        "resolved": "المحسومة",
+        "withdrawn": "المسحوبة",
+        "all": "الكل (المفتوحة والمنتهية)"
+      }
+    },
+    "showing": {
+      "open": "التصعيدات المفتوحة المعروضة: {count}",
+      "resolved": "التصعيدات المحسومة المعروضة: {count}",
+      "withdrawn": "التصعيدات المسحوبة المعروضة: {count}",
+      "all": "جميع التصعيدات، المفتوحة أولًا: {count}"
+    },
+    "empty": {
+      "open": "لا توجد تصعيدات مفتوحة",
+      "resolved": "لا توجد تصعيدات محسومة",
+      "withdrawn": "لا توجد تصعيدات مسحوبة",
+      "all": "لا توجد تصعيدات",
+      "hint": "اختر حالة أخرى لعرض التصعيدات المحسومة والمسحوبة."
+    },
+    "table": {
+      "escalation": "التصعيد",
+      "concern": "القضية أو التحدي",
+      "addressedTo": "موجّه إلى",
+      "raised": "تاريخ الرفع",
+      "reason": "السبب",
+      "actions": "الإجراءات"
+    },
+    "number": "التصعيد {number}",
+    "openFor": "مفتوح منذ أيام: {days}",
+    "wasOpenFor": "ظل مفتوحًا أيامًا: {days}",
+    "ended": "انتهى {date} بواسطة {name}"
+  },
+  "escalation": {
+    "unknownRole": "الدور {id}"
+  },
+  "escalationDetail": {
+    "title": "التصعيد {number}: {concern}",
+    "age": "المدة",
+    "ended": "تاريخ الانتهاء",
+    "concernTitle": "العنصر المصعّد",
+    "concernNow": "كما هو الآن.",
+    "projectUnreadable": "لا يمكن قراءته بصلاحياتك"
+  },
+  "done": {
+    "raised": "تم الرفع.",
+    "updated": "حُفظت التغييرات.",
+    "assessed": "قُيّم الأثر وحُسبت الخطورة.",
+    "assigned": "تم الإسناد.",
+    "submitted": "قُدّم الحل للتحقق.",
+    "escalated": "تم التصعيد.",
+    "escalationResolved": "حُسم التصعيد.",
+    "escalationWithdrawn": "سُحب التصعيد.",
+    "stale": "تغيّر أثناء عملك عليه، وأُعيدت قراءته."
+  },
+  "fieldErrors": {
+    "targetInPast": "اختر اليوم أو تاريخًا لاحقًا.",
+    "impactsRequired": "حدّد مستوى لبُعد واحد على الأقل.",
+    "resolutionRequired": "أدخل الحل.",
+    "reasonRequired": "أدخل سبب التصعيد.",
+    "assigneeRequired": "اختر من تُسند إليه."
+  },
+  "problems": {
+    "projectNotEligible": "حالة المشروع لا تسمح بذلك.",
+    "categoryInvalid": "اختر فئة منشورة.",
+    "priorityInvalid": "اختر أولوية منشورة.",
+    "impactInvalid": "مستويات الأثر لا تطابق مصفوفة المخاطر النافذة.",
+    "assigneeNotEligible": "هذا الشخص لا يحمل دورًا في هذا المشروع.",
+    "targetDateInvalid": "لا يمكن أن يكون تاريخ الحل المستهدف في الماضي.",
+    "closed": "مغلق ولا يمكن تغييره.",
+    "notEditable": "حلّه قيد التحقق، فلا يمكن تغييره الآن.",
+    "escalationOpen": "لديه تصعيد مفتوح بالفعل.",
+    "notEscalatable": "لا يمكن تصعيد عنصر محلول أو مغلق.",
+    "escalationNotOpen": "انتهى التصعيد بالفعل.",
+    "approvalPending": "يوجد تحقق قيد الانتظار بالفعل.",
+    "keyReused": "أُرسل هذا الطلب سابقًا بمحتوى مختلف. أغلق النافذة وحاول مجددًا.",
+    "configurationMissing": "المنصة غير مهيأة لذلك بعد (مصفوفة المخاطر أو ملف الحوكمة أو مسار التصعيد أو مسار التحقق).",
+    "invalidTransition": "حالته لم تعد تسمح بذلك.",
+    "permissionDenied": "غير مسموح لك بذلك."
+  }
+}

@@ -1,0 +1,294 @@
+{
+  "nav": {
+    "label": "Change requests",
+    "register": "Change requests"
+  },
+  "forbidden": "Your access does not include this project's change requests.",
+  "list": {
+    "title": "Change requests",
+    "description": "The change requests of the projects you can see, most recently changed first. A project's Project Manager raises them from the project's Change requests tab.",
+    "caption": "Change requests across projects",
+    "projectTitle": "Change requests",
+    "projectCaption": "The project's change requests",
+    "emptyTitle": "No change requests",
+    "emptyRaiser": "Raise one when the project's approved scope, schedule, budget, contractual obligations or governance profile needs to change.",
+    "emptyReader": "Change requests the project's Project Manager raises appear here.",
+    "emptyAcross": "None of the projects you can see has a change request."
+  },
+  "filter": {
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "showing": "Showing {shown} of {total} change requests",
+    "noMatch": "No change request has this status."
+  },
+  "table": {
+    "title": "Change request",
+    "project": "Project",
+    "type": "Type",
+    "status": "Status",
+    "materiality": "Materiality",
+    "impacts": "Stated impacts",
+    "updated": "Last changed",
+    "revision": "Revision {revision}",
+    "notRecorded": "Recorded at review"
+  },
+  "changeType": {
+    "SCOPE": "Scope change",
+    "COST": "Cost change",
+    "SCHEDULE": "Schedule change",
+    "CONTRACTUAL_OBLIGATION": "Contractual obligation change",
+    "GOVERNANCE_PROFILE": "Governance profile change"
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "RETURNED": "Returned",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "IMPLEMENTATION": "Implementation in progress",
+    "IMPLEMENTED": "Implemented",
+    "CLOSED": "Closed",
+    "WITHDRAWN": "Withdrawn"
+  },
+  "approvalState": {
+    "NOT_SUBMITTED": "Not submitted",
+    "AWAITING_REVIEW": "Awaiting review",
+    "IN_REVIEW": "In review",
+    "RETURNED": "Returned",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "WITHDRAWN": "Withdrawn"
+  },
+  "implementationState": {
+    "NOT_APPLICABLE": "Not applicable",
+    "NOT_STARTED": "Not started",
+    "IN_PROGRESS": "In progress",
+    "IMPLEMENTED": "Implemented"
+  },
+  "fields": {
+    "changeType": "Change type",
+    "title": "Title",
+    "justification": "Justification",
+    "costImpactSar": "Cost impact",
+    "scheduleImpactDays": "Schedule impact",
+    "scopeImpact": "Scope impact",
+    "isContractualObligation": "This change concerns a contractual obligation",
+    "requestedGovernanceProfile": "Governance profile requested"
+  },
+  "impacts": {
+    "none": "None stated",
+    "sar": "SAR {amount}",
+    "days": "{days} days",
+    "scope": "scope",
+    "stated": "Stated",
+    "contractual": "contractual obligation"
+  },
+  "form": {
+    "createTitle": "Raise a change request",
+    "editTitle": "Correct and submit a change request",
+    "forProject": "For {project}",
+    "notRaiser": "Only the project's Project Manager raises change requests, while the project is approved, active or suspended. The platform will refuse the request otherwise.",
+    "noProject": "Open this form from a project's Change requests tab: it raises a change request for that project.",
+    "notEditable": "This change request can no longer be changed: only a draft or a returned request is corrected.",
+    "returnedNote": "Its review returned this request for correction. Correct it, check its materiality again and submit it as revision {revision}.",
+    "sections": {
+      "change": "The change",
+      "impacts": "Impacts",
+      "materiality": "Materiality and approval path"
+    },
+    "changeTypeHint": "What the change is about. It cannot be changed once the request is saved.",
+    "changeTypeFixed": "Fixed when the request was raised.",
+    "justificationHint": "Why the change is needed and what happens if it is not made.",
+    "impactsNote": "State every impact the change has: a schedule change with a cost consequence is one decision. Leave an impact empty when there is none; a zero is not accepted.",
+    "costHint": "In SAR, up to two decimals. Negative for a reduction.",
+    "daysHint": "Calendar days the finish moves. Negative to bring it forward.",
+    "scopeHint": "The governed scope boundary that changes, and how.",
+    "contractualHint": "A change to a contractual obligation is always band 3, the highest.",
+    "profileHint": "The governance profile the project should move to. Its current profile is not offered.",
+    "profilesUnreadable": "The governance profiles cannot be read with your access, so none can be chosen here.",
+    "materialityIntro": "Before you submit, check the materiality classification. The platform computes it from the impacts you state and the changes already approved since the active baseline, and its band decides the approval path the request enters. Checking saves the request as a draft.",
+    "materialityStale": "You changed the request after it was classified. Check its materiality again before submitting.",
+    "classifyFirst": "Submitting is available once the materiality classification of the request as saved is shown.",
+    "readyToSubmit": "Submitting sends revision {revision} into the band {band} approval path. Its fields are then frozen unless its review returns it."
+  },
+  "materiality": {
+    "title": "Materiality",
+    "previewTitle": "Materiality classification (preview)",
+    "recordedTitle": "Materiality classification (recorded)",
+    "resulting": "Resulting band:",
+    "band": "Band {band} of 3",
+    "pathLabel": "Approval path:",
+    "path": {
+      "band1": "band 1, the lowest materiality. The request is reviewed on the route AHDA set for band 1 change requests.",
+      "band2": "band 2, intermediate materiality. The request is reviewed on the route AHDA set for band 2 change requests.",
+      "band3": "band 3, the highest materiality. The request is reviewed on the elevated route AHDA set for band 3 change requests."
+    },
+    "caption": "Materiality by dimension",
+    "dimension": "Dimension",
+    "thisRequest": "This request",
+    "cumulative": "Cumulative since the active baseline",
+    "bandColumn": "Band",
+    "notApplicable": "No impact stated",
+    "notCumulative": "Not cumulative",
+    "contractual": "A contractual obligation is band 3 whatever its impacts.",
+    "pinnedVersion": "materiality configuration version {id}",
+    "pinnedBaseline": "the active Approved Baseline",
+    "pinnedBudget": "the active Approved Budget",
+    "listSeparator": ", ",
+    "previewBasis": "Computed by the platform at {time} against {pinned}. This preview is advisory and recorded nowhere: AHDA records the classification when it starts the review, against the configuration and commitments in force then.",
+    "recordedBasis": "Recorded at {time} for revision {revision}, when AHDA started the review, against {pinned}. A later publication changes nothing recorded."
+  },
+  "detail": {
+    "title": "Change request",
+    "ofProject": "Change request of {project}",
+    "projectUnreadable": "Its project is not readable with your access.",
+    "commands": "Change request actions",
+    "stateTitle": "Approval and implementation",
+    "approval": "Approval",
+    "implementation": "Implementation",
+    "status": "Status",
+    "appliedCount": "{applied} of {total} authorisations applied",
+    "explain": {
+      "DRAFT": "Not submitted yet: nothing is approved and nothing changes.",
+      "SUBMITTED": "Submitted and waiting for AHDA to start the review. Not approved; nothing changes.",
+      "UNDER_REVIEW": "Under review in the approval workflow. Not approved yet; nothing changes.",
+      "RETURNED": "Returned by its review for correction. Not approved; nothing changes.",
+      "APPROVED": "Approved, not implemented. The approval issued {total} authorisation(s) and changed nothing itself: the change is made only when each one is applied in its module, during the implementation.",
+      "REJECTED": "Rejected: no authorisation was issued and nothing changes. A later proposal is a new request.",
+      "WITHDRAWN": "Withdrawn: nothing changes. A later proposal is a new request.",
+      "IMPLEMENTATION": "Approved and being implemented: {applied} of {total} authorisation(s) applied in their modules. It is implemented only when every one is applied and AHDA marks it implemented.",
+      "IMPLEMENTED": "Approved, and implemented on {date}: every authorisation was applied in its module.",
+      "CLOSED": "Approved, implemented on {date}, and closed."
+    },
+    "waitingForApplication": "Marking it implemented becomes available when every authorisation below has been applied in its module.",
+    "detailsTitle": "Details",
+    "revision": "Revision",
+    "requestedBy": "Raised by",
+    "submitted": "Submitted",
+    "notSubmitted": "Not yet",
+    "implementedAt": "Implemented",
+    "closedAt": "Closed",
+    "impactsTitle": "Stated impacts",
+    "materialityNotRecorded": "Not recorded yet: AHDA records the classification when it starts the review. Until then it can be previewed.",
+    "reviewTitle": "Review",
+    "reviewUnreadable": "The review's history cannot be read with your access.",
+    "noReview": "No review has started yet.",
+    "reviewOfRevision": "Review of revision {revision}",
+    "youDecide": "You can decide this request here, with the actions above, or from your approval inbox. Approving your stage approves the request only once every stage of its route has approved.",
+    "authorizationsTitle": "Change authorisations",
+    "noAuthorizations": "None. Approval issues one authorisation for each governed commitment the change touches.",
+    "noAuthorizationsApproved": "None: this change touches no commitment a module applies, so it is implemented when AHDA marks it implemented.",
+    "authorizationsNote": "Each authorisation permits one change, pinned to the version approved, and is applied once in its module while the request is in implementation: a rebaseline in the schedule's baselines, a new Approved Budget version in the financials.",
+    "authorizationsCaption": "The authorisations the approval issued"
+  },
+  "authorization": {
+    "scope": "Permits",
+    "target": "Approved against",
+    "status": "Status",
+    "issued": "Issued",
+    "applied": "Applied",
+    "notApplied": "Not yet",
+    "targetVersion": "Version {version}",
+    "scopes": {
+      "REBASELINE": "Rebaseline",
+      "COMMITMENT_CHANGE": "Approved Budget change",
+      "PROFILE_CHANGE": "Governance profile change",
+      "SCOPE_CHANGE": "Scope change"
+    },
+    "statuses": {
+      "ISSUED": "Issued, not applied",
+      "APPLIED": "Applied",
+      "EXPIRED": "Expired",
+      "REVOKED": "Revoked"
+    },
+    "open": {
+      "REBASELINE": "Open the schedule baselines",
+      "COMMITMENT_CHANGE": "Open the financials",
+      "PROFILE_CHANGE": "Open the project",
+      "SCOPE_CHANGE": "Open the project"
+    }
+  },
+  "actions": {
+    "raise": "Raise change request",
+    "saveDraft": "Save draft",
+    "classify": "Save and check materiality",
+    "submit": "Submit for review",
+    "edit": "Edit and submit",
+    "correct": "Correct and resubmit",
+    "delete": "Delete draft",
+    "withdrawReview": "Withdraw from review",
+    "previewClassification": "Preview the classification",
+    "backToList": "Back to the project's change requests",
+    "backToDetail": "Back to the change request",
+    "openDetail": "Open the change request"
+  },
+  "command": {
+    "withdraw": {
+      "title": "Withdraw",
+      "consequence": "Withdrawing ends the request: it is not reviewed and nothing changes. A later proposal is a new request."
+    },
+    "startReview": {
+      "title": "Start review",
+      "consequence": "Starting the review records the request's materiality classification, pinned to the configuration and commitments in force now, and sends it to the approvers its band routes it to. Its fields are frozen from now on."
+    },
+    "startImplementation": {
+      "title": "Start implementation",
+      "consequence": "From now on the request's authorisations can be applied in their modules: a rebaseline in the schedule, a new Approved Budget version in the financials. Nothing changes until each is applied there."
+    },
+    "markImplemented": {
+      "title": "Mark implemented",
+      "consequence": "Every authorisation has been applied in its module. Marking the request implemented records that the approved change is made."
+    },
+    "close": {
+      "title": "Close",
+      "consequence": "Closing completes the request's governance record. It cannot change after this."
+    },
+    "delete": {
+      "title": "Delete the draft",
+      "consequence": "The draft is deleted. It was never submitted, so nothing else changes."
+    }
+  },
+  "done": {
+    "saved": "The draft is saved.",
+    "submitted": "The change request is submitted. AHDA starts its review.",
+    "deleted": "The draft change request is deleted.",
+    "withdrawn": "The change request is withdrawn.",
+    "reviewStarted": "The review has started. The materiality classification is recorded.",
+    "implementationStarted": "The implementation has started. The authorisations can now be applied in their modules.",
+    "implemented": "The change request is marked implemented.",
+    "closed": "The change request is closed.",
+    "approve": "Your approval is recorded. The request shows Approved once every stage of its route has approved and the outcome reaches it.",
+    "return": "Your return is recorded. The request shows Returned once the outcome reaches it.",
+    "reject": "Your rejection is recorded. The request shows Rejected once the outcome reaches it.",
+    "reviewWithdrawn": "The review is withdrawn. The request shows Withdrawn once the outcome reaches it."
+  },
+  "problems": {
+    "stale": "It changed while you were working on it. The latest version is shown.",
+    "projectNotEligible": "The project is not in a state that allows this: change requests are raised and reviewed while it is approved, active or suspended, and implemented while it is approved or active.",
+    "incomplete": "The request lacks what its change type needs to be submitted. Complete the highlighted field.",
+    "profileInvalid": "The governance profile requested is not a published profile, or is the project's own.",
+    "targetUnavailable": "The commitment this change touches does not exist yet: a schedule impact needs an active Approved Baseline, a cost impact an active Approved Budget. Remove the impact or establish the commitment first.",
+    "notEditable": "This request can no longer be changed.",
+    "evaluated": "The review has started, so the classification is recorded and shown on the request.",
+    "underReview": "The request is under review: withdraw it from the review instead.",
+    "authorizationPending": "An authorisation has not been applied in its module yet, so the change is not implemented.",
+    "approvalPending": "A review of this request is already in progress.",
+    "configurationMissing": "AHDA has not published the materiality bands for this project's governance profile, or the approval route for change requests, so the classification cannot be computed yet. The request is saved as a draft.",
+    "invalidTransition": "The request is not in a state that allows this.",
+    "terminalState": "The request has ended and can no longer change.",
+    "permissionDenied": "Your access does not allow this action on this change request."
+  },
+  "fieldErrors": {
+    "impactZero": "Enter an impact other than zero, or leave it empty.",
+    "costMalformed": "Enter an amount in SAR with up to two decimals, such as 60000 or -1500.50.",
+    "costRequired": "A cost change states its cost impact.",
+    "daysMalformed": "Enter a whole number of days, such as 12 or -5.",
+    "daysOutOfRange": "Enter a number of days other than zero, at most 3650 either way.",
+    "daysRequired": "A schedule change states its schedule impact.",
+    "scopeRequired": "A scope change states its scope impact.",
+    "contractualRequired": "A contractual obligation change is flagged as one.",
+    "profileRequired": "Choose the governance profile requested.",
+    "profileSameAsProject": "Choose a profile other than the project's current one."
+  }
+}

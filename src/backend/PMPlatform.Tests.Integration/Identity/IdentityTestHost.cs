@@ -1,0 +1,73 @@
+using Microsoft.Extensions.DependencyInjection;
+using PMPlatform.Tests.Integration.AuditActivity;
+
+namespace PMPlatform.Tests.Integration.Identity;
+
+/// <summary>
+/// One database, one identity provider, one MFA provider, one Nafath, one SIEM and one API for the whole identity suite. The API does
+/// not forward to the SIEM; a test that needs forwarding creates an API with <see cref="TestSiem.Settings"/>. The shared API has no Nafath
+/// (the feature is off by default); a test that needs it creates an API with <see cref="TestNafath.Settings"/>. Tests that move the clock or
+/// change a row put it back, so the order they run in does not matter. A suite that runs the background passes itself gives the shared
+/// API settings that park them (<see cref="SharedApiSettings"/>), so no pass of the shared API races its tests on the same database.
+/// </summary>
+public sealed class IdentityTestHost : IAsyncLifetime
+{
+    /// <summary>Settings of the shared API on top of the identity ones, e.g. to park its background passes.</summary>
+    public IReadOnlyDictionary<string, string?>? SharedApiSettings { get; init; }
+
+    public IdentityDatabase Database { get; } = new();
+
+    public AdjustableTimeProvider Clock { get; } = new();
+
+    public CapturedLogs Logs { get; } = new();
+
+    public TestIdentityProvider IdentityProvider { get; private set; } = null!;
+
+    public TestMultiFactorProvider MultiFactorProvider { get; private set; } = null!;
+
+    public TestIdentityProvider Nafath { get; private set; } = null!;
+
+    public TestSiem Siem { get; private set; } = null!;
+
+    public IdentityApiFactory Api { get; private set; } = null!;
+
+    public async Task InitializeAsync()
+    {
+        await Database.InitializeAsync();
+        IdentityProvider = await TestIdentityProvider.StartAsync();
+        MultiFactorProvider = await TestMultiFactorProvider.StartAsync();
+        Nafath = await TestNafath.StartAsync();
+        Siem = await TestSiem.StartAsync();
+        Api = CreateApi(SharedApiSettings);
+    }
+
+    /// <summary>The API with every identity setting in place, <paramref name="overrides"/> on top, and <paramref name="services"/> added.</summary>
+    public IdentityApiFactory CreateApi(IReadOnlyDictionary<string, string?>? overrides = null, Action<IServiceCollection>? services = null)
+    {
+        Dictionary<string, string?> settings = new(TestDirectory.Settings);
+        foreach ((string key, string? value) in IdentityProvider.Settings.Concat(MultiFactorProvider.Settings).Concat(overrides ?? new Dictionary<string, string?>()))
+        {
+            settings[key] = value;
+        }
+
+        settings["DB_CONNECTION_STRING"] = Database.ConnectionString;
+        settings.TryAdd("JWT_SIGNING_KEY", IdentityApiFactory.SigningKey);
+        return new IdentityApiFactory(settings, Clock, Logs, services);
+    }
+
+    public async Task DisposeAsync()
+    {
+        await Api.DisposeAsync();
+        await IdentityProvider.DisposeAsync();
+        await MultiFactorProvider.DisposeAsync();
+        await Nafath.DisposeAsync();
+        await Siem.DisposeAsync();
+        await Database.DisposeAsync();
+    }
+}
+
+[CollectionDefinition(Name)]
+public sealed class IdentitySuite : ICollectionFixture<IdentityTestHost>
+{
+    public const string Name = "Identity";
+}

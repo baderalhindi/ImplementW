@@ -13,7 +13,7 @@ in this repository, in a configuration file, in a container image, in Terraform 
 | `verify-secret-integration.sh` | Read-only check of a provisioned environment: containers, replication, versions, IAM, and what the deployed service was given. |
 | `rehearse-rotation.sh` | Rehearses the rotation end to end against the running API, with `stub-store.py` standing in for the store. Takes about six minutes: it waits out a real refresh interval. |
 | `stub-store.py` | The stand-in, for that rehearsal only. Loopback, plain file, no versions, no IAM — not a secret store. |
-| `scan-history.sh` | Scans the full git history and the working tree for committed secrets. Evidence, not a gate — the gate is TASK-080. |
+| `scan-history.sh` | Scans the full git history and the working tree for committed secrets. Evidence, not a gate — the gate is `.github/workflows/secret-scan.yml` (TASK-080). |
 | `secret-rotation-runbook.md` | The rotation runbook: patterns, procedure, rollback, emergency rotation, per-secret owners. |
 
 The application side is `src/backend/PMPlatform.Infrastructure/Secrets/`, and the record that explains
@@ -60,5 +60,6 @@ missing.
 - **`SECRET_STORE_AUTH_TOKEN`.** The credential that opens the store cannot be kept inside it. On
   Cloud Run it does not exist as a value at all — the runtime service account's token comes from the
   metadata server. It is set only where a runtime has no platform identity.
-- **The secret-scanning gate.** TASK-080 / CTL-42 owns scanning per pull request and on a schedule,
-  and owns `.gitleaks.toml` from the point it lands.
+- **The secret-scanning gate.** `.github/workflows/secret-scan.yml` (TASK-080, CTL-42) scans every
+  pull request and, weekly, the full history, with `.gitleaks.toml`
+  (`docs/architecture/secret-and-dependency-scanning.md`).

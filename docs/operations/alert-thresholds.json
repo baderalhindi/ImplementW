@@ -1,0 +1,122 @@
+{
+  "task": "TASK-092",
+  "record": "docs/operations/operational-dashboards.md",
+  "valuesSource": "Each environment's infra/terraform/environments/<env>/terraform.tfvars, integration_alert_thresholds: the setting below without its IntegrationMonitoring:Policy prefix, ':' written '__', per integration code. This register names the thresholds; it holds no value, so a value is written in one place.",
+  "openQuestion": "PTBC-037 (operational alert thresholds: availability, freshness, queue backlog, reconciliation mismatch), owner AHDA IT / DevOps Lead, gate Before Production (docs/governance/ptbc-themes.csv). PTBC-046 is cited with it by the workbook, but its subject is not recoverable from the sources (ptbc-tbc-tracker.md 9.5), so no threshold here is attributed to it. Until a threshold is CONFIRMED with a reference, PROD sets no value for it.",
+  "routing": {
+    "eventType": "IntegrationMonitoring.OperationalAlertRaised",
+    "family": "INTEGRATION_OPERATIONAL_ALERT",
+    "recipients": "The family's recipient roles and channels in the NOTIFICATION_ROUTING version in force (FG-04; WF-15 resolves them). Proposed: R01, in-app and e-mail, mandatory. TBC-INT-17 (recipients, escalation routes) is AHDA's.",
+    "onCall": "Every alert raised is also counted by the log-based metric <name_prefix>-operational-alerts-raised and sent to the on-call channel (ALERT_CHANNEL_WEBHOOK_URL) by the policy '<name_prefix> operational alert raised' (infra/terraform/monitoring/operations.tf), in SIT, UAT and PROD.",
+    "windowSeconds": 300,
+    "windowBasis": "The configured window: an alert reaches its recipients within 5 minutes of its threshold being crossed, the threshold TASK-091 set for the uptime alert (health-checks-uptime-monitoring.md D-7). PTBC-037 and TASK-093's response targets may set another.",
+    "stages": [
+      { "stage": "FG-05's pass notices a time-driven breach (backlog, freshness, delivery rate, availability delay); a telemetry-driven one is raised as the attempt is recorded", "setting": "IntegrationMonitoring:Worker:PollInterval", "source": "src/backend/PMPlatform.Infrastructure/IntegrationMonitoring/IntegrationMonitoringWorkerOptions.cs" },
+      { "stage": "The outbox dispatcher hands the committed intent to WF-15", "setting": "Outbox:PollInterval", "source": "src/backend/PMPlatform.Infrastructure/Persistence/Messaging/OutboxOptions.cs" },
+      { "stage": "WF-15 routes it: the in-app notification is stored SENT", "setting": "Notifications:Worker:PollInterval", "source": "src/backend/PMPlatform.Infrastructure/Notifications/NotificationWorkerOptions.cs" },
+      { "stage": "WF-15 sends the e-mail on its next pass", "setting": "Notifications:Worker:PollInterval", "source": "src/backend/PMPlatform.Infrastructure/Notifications/NotificationWorkerOptions.cs" }
+    ]
+  },
+  "thresholds": [
+    {
+      "id": "AT-1",
+      "family": "Availability",
+      "alertType": "AVAILABILITY",
+      "severity": "CRITICAL",
+      "setting": "AvailabilityAlertDelays",
+      "key": "AvailabilityAlertDelays__<CODE>",
+      "unit": "duration, hh:mm:ss, greater than zero",
+      "meaning": "How long the integration stays DOWN (its latest technical outcome a failure) before the alert is raised. One alert per outage, even if an operator closes it while the outage goes on.",
+      "withoutValue": "Raised at once, on the technical failure that takes the integration DOWN (TASK-075 behaviour).",
+      "references": ["PTBC-037", "TBC-INT-08"],
+      "status": "OPEN",
+      "confirmation": null
+    },
+    {
+      "id": "AT-2",
+      "family": "Freshness",
+      "alertType": "FRESHNESS",
+      "severity": "WARNING",
+      "setting": "FreshnessWindows",
+      "key": "FreshnessWindows__<CODE>",
+      "unit": "duration, hh:mm:ss, greater than zero",
+      "meaning": "How long after its last success the integration is still FRESH; the alert is raised when it goes STALE.",
+      "withoutValue": "Freshness stays UNKNOWN and no FRESHNESS alert is raised.",
+      "references": ["PTBC-037", "TBC-INT-12"],
+      "status": "OPEN",
+      "confirmation": null
+    },
+    {
+      "id": "AT-3",
+      "family": "Queue backlog",
+      "alertType": "QUEUE_BACKLOG",
+      "severity": "WARNING",
+      "setting": "QueueBacklogThresholds",
+      "property": "Depth",
+      "key": "QueueBacklogThresholds__<CODE>__Depth",
+      "unit": "operations, zero or more",
+      "meaning": "The queue depth (attempts in flight plus operations awaiting a retry) beyond which the alert is raised; exceeded when the depth is greater than the value.",
+      "withoutValue": "No QUEUE_BACKLOG alert on depth.",
+      "references": ["PTBC-037", "TBC-INT-11"],
+      "status": "OPEN",
+      "confirmation": null
+    },
+    {
+      "id": "AT-4",
+      "family": "Queue backlog",
+      "alertType": "QUEUE_BACKLOG",
+      "severity": "WARNING",
+      "setting": "QueueBacklogThresholds",
+      "property": "OldestAge",
+      "key": "QueueBacklogThresholds__<CODE>__OldestAge",
+      "unit": "duration, hh:mm:ss, greater than zero",
+      "meaning": "How long the oldest queued operation may have waited since its first attempt before the alert is raised.",
+      "withoutValue": "No QUEUE_BACKLOG alert on age. With AT-3 also set, either one raises the alert.",
+      "references": ["PTBC-037", "TBC-INT-11"],
+      "status": "OPEN",
+      "confirmation": null
+    },
+    {
+      "id": "AT-5",
+      "family": "Reconciliation",
+      "alertType": "RECONCILIATION_MISMATCH",
+      "severity": "WARNING",
+      "setting": "ReconciliationMismatchTolerances",
+      "key": "ReconciliationMismatchTolerances__<CODE>",
+      "unit": "records, zero or more",
+      "meaning": "How many mismatches a reconciliation may find without an alert; the run records every mismatch whatever the tolerance, and repairs none.",
+      "withoutValue": "Any mismatch raises the alert (TASK-075 behaviour).",
+      "references": ["PTBC-037", "TBC-INT-15"],
+      "status": "OPEN",
+      "confirmation": null
+    },
+    {
+      "id": "AT-6",
+      "family": "Delivery rate (ADR-004)",
+      "alertType": "DELIVERY_RATE",
+      "severity": "WARNING",
+      "setting": "MinimumDeliveryRates",
+      "key": "MinimumDeliveryRates__<CODE>",
+      "unit": "rate, greater than 0 and at most 1",
+      "meaning": "The delivery rate over IntegrationMonitoring:Policy:MetricsWindow below which the alert is raised (built by TASK-075).",
+      "withoutValue": "No DELIVERY_RATE alert.",
+      "references": ["TBC-INT-10", "ADR-004"],
+      "status": "OPEN",
+      "confirmation": null
+    },
+    {
+      "id": "AT-7",
+      "family": "Dead letter",
+      "alertType": "DEAD_LETTER",
+      "severity": "WARNING",
+      "setting": null,
+      "key": null,
+      "unit": null,
+      "meaning": "Raised when an operation is dead-lettered: every dead letter is an alert, one live per integration (TASK-075 D-9). No threshold: a dead letter is a final failure an operator must handle.",
+      "withoutValue": "Always raised.",
+      "references": ["TBC-INT-14"],
+      "status": "FIXED",
+      "confirmation": null
+    }
+  ]
+}

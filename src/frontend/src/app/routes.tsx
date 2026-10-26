@@ -1,0 +1,228 @@
+import { Navigate, Outlet, type RouteObject } from 'react-router';
+
+import { approvalRoutes } from '@/features/approvals/routes.tsx';
+import { auditActivityRoutes } from '@/features/audit-activity/routes.tsx';
+import { changeRequestRoutes } from '@/features/change-requests/routes.tsx';
+import { dataImportRoutes } from '@/features/data-import/routes.tsx';
+import { documentRoutes } from '@/features/documents/routes.tsx';
+import {
+  externalContributionRoutes,
+  externalRequestRoutes,
+  myParticipationRoutes,
+} from '@/features/external-participation/routes.tsx';
+import { dashboardRoutes } from '@/features/dashboards/routes.tsx';
+import { HomePage } from '@/features/home/HomePage.tsx';
+import { kpiRoutes } from '@/features/financial-kpi/routes.tsx';
+import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
+import { integrationAdminRoutes } from '@/features/integration-admin/routes.tsx';
+import { issuesChallengesRoutes } from '@/features/issues-challenges/routes.tsx';
+import { milestoneRoutes } from '@/features/milestones/routes.tsx';
+import { RequireRole } from '@/features/identity-access/session/RequireRole.tsx';
+import { RequireSession } from '@/features/identity-access/session/RequireSession.tsx';
+import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
+import { SYSTEM_ADMINISTRATOR_ROLE } from '@/features/identity-access/session/useSession.ts';
+import { notificationRoutes } from '@/features/notifications/routes.tsx';
+import { projectRoutes } from '@/features/projects/routes.tsx';
+import { reportRoutes } from '@/features/reports/routes.tsx';
+import { riskRoutes } from '@/features/risks/routes.tsx';
+import { closeoutRoutes, suspensionRoutes } from '@/features/suspension-closure/routes.tsx';
+import { taskRoutes } from '@/features/tasks/routes.tsx';
+import { RouteErrorPage } from '@/shared/observability/RouteErrorPage.tsx';
+
+import { AppLayout } from './AppLayout.tsx';
+import { helpRoutes } from './help/routes.tsx';
+import { NotFoundPage } from './pages.tsx';
+
+export const appRoutes: RouteObject[] = [
+  {
+    element: <AppLayout />,
+    // TASK-090: a screen that throws is reported to the APM and replaced by an explanation.
+    errorElement: <RouteErrorPage />,
+    children: [
+      { index: true, element: <HomePage /> }, // the person's own work, or platform health for the administrator (review H2, M-1)
+      {
+        path: 'dashboards', // DSH-001–008, DSH-010–012
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: dashboardRoutes,
+      },
+      { path: 'sign-in', element: <SignInPage /> },
+      {
+        path: 'admin',
+        children: [
+          {
+            element: (
+              <RequireRole roleCode={SYSTEM_ADMINISTRATOR_ROLE}>
+                <Outlet />
+              </RequireRole>
+            ),
+            children: [
+              { index: true, element: <Navigate to="users" replace /> },
+              ...identityAccessRoutes,
+              ...integrationAdminRoutes, // FG-05 (TASK-076): R01 holds its permissions
+              ...dataImportRoutes, // TASK-102: DATA_IMPORT is R01's
+            ],
+          },
+          // FG-06's screens open on audit permissions, not on R01 (TASK-074; each guards itself).
+          ...auditActivityRoutes,
+        ],
+      },
+      {
+        path: 'projects',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: projectRoutes,
+      },
+      {
+        path: 'tasks',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: taskRoutes,
+      },
+      {
+        path: 'milestones',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: milestoneRoutes,
+      },
+      {
+        path: 'kpis',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: kpiRoutes,
+      },
+      {
+        path: 'risks',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: riskRoutes,
+      },
+      {
+        path: 'issues-challenges',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: issuesChallengesRoutes,
+      },
+      {
+        path: 'change-requests',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: changeRequestRoutes,
+      },
+      {
+        path: 'suspension-requests',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: suspensionRoutes,
+      },
+      {
+        path: 'closure-requests',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: closeoutRoutes,
+      },
+      {
+        path: 'external-requests',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: externalRequestRoutes,
+      },
+      {
+        path: 'external-contributions',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: externalContributionRoutes,
+      },
+      {
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: myParticipationRoutes,
+      },
+      {
+        path: 'approvals',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: approvalRoutes,
+      },
+      {
+        path: 'documents',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: documentRoutes,
+      },
+      {
+        path: 'reports',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: reportRoutes,
+      },
+      {
+        path: 'notifications',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: notificationRoutes,
+      },
+      {
+        path: 'help',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: helpRoutes,
+      },
+      { path: '*', element: <NotFoundPage /> },
+    ],
+  },
+];

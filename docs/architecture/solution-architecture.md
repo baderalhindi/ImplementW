@@ -192,7 +192,7 @@ The 21 modules fall into five groups. The group determines what a module may cal
 | **M-6** | **Audit is emitted through the outbox inside the writing transaction** (durable capture, Blueprint Section 18, TASK-073). AuditActivity never calls back into the emitting module and never re-derives what happened. |
 | **M-7** | **The authorization engine is never given a data dependency on a domain module.** The calling module supplies the authorization subject — owner, assignment, lifecycle state, sensitivity classification — as a typed value; IdentityAccess evaluates the Section 10.1 formula and returns a decision. Without this rule FG-03 acquires a read edge into all 20 other modules and the diagram inverts. |
 | **M-8** | **Approval is subject-agnostic.** A source module starts an approval with a subject reference (module, aggregate id, version) and a routing key. Approval returns the outcome as an idempotent typed event the source module handles (TASK-035). Approval holds no reference to any source module's types. |
-| **M-9** | **The core-domain call graph is acyclic.** Where a genuine two-way need exists, one direction is a synchronous call and the other is an event (the intake path in §7, edge 36, is the worked example). The rule is counted over the core-domain group. The foundation, workflow-service and sink groups are exempt because by §4.5 they never call a domain module at all, and the universal edges (E-U1 to E-U4) may therefore run between foundation modules in both directions — they carry a decision, a configuration value or an event, never a write to the caller's data. |
+| **M-9** | **The core-domain call graph is acyclic.** Where a genuine two-way need exists, one direction is a synchronous call and the other is an event (the intake path in §7, edge 35, is the worked example). The rule is counted over the core-domain group. The foundation, workflow-service and sink groups are exempt because by §4.5 they never call a domain module at all, and the universal edges (E-U1 to E-U4) may therefore run between foundation modules in both directions — they carry a decision, a configuration value or an event, never a write to the caller's data. |
 | **M-10** | **Shared code lives in `Application/Common` and `Domain/Common` and is domain-neutral**: identifiers, the SAR money type (ADR-008), bilingual label types (ADR-012), audit columns, pagination, the governed-configuration lifecycle primitive (§11.3). A type that means something to one domain never lands there. |
 | **M-11** | **One command, one transaction.** A command that legitimately writes two modules does so through both modules' application services inside one transaction against the single database. This is a deliberate benefit of the monolith and is not a boundary violation — the boundary is about *whose code writes*, not about transaction scope. |
 | **M-12** | **The read side never writes and never recalculates.** Dashboards and Reports read projections that carry semantic state (CURRENT/LIVE, PUBLISHED/OFFICIAL, HISTORICAL/SNAPSHOT), freshness and coverage, and they render what the owning module published. Overall Project Health is computed in WF-02 and nowhere else (ICD-03, TASK-044, TASK-069). |
@@ -250,11 +250,21 @@ flowchart LR
   SUS --> PRJ
   CLO --> PRJ
   TSK --> SCH
-  MIL <-->|"split authority<br/>ICD-04"| SCH
+  TSK --> PRJ
+  MIL -->|"split authority<br/>ICD-04"| SCH
+  MIL --> PRJ
   SCH --> CHG
   FIN --> CHG
   FIN --> PRG
   CLO --> FIN
+  CLO -->|"readiness queries<br/>edges 39–46"| TSK
+  CLO --> SCH
+  CLO --> MIL
+  CLO --> RSK
+  CLO --> MCN
+  CLO --> CHG
+  CLO --> SUS
+  CLO --> PRG
   RSK --> MCN
   PRJ -.->|"intake event"| SCH
   PRJ -.->|"intake event"| PRG
@@ -272,12 +282,13 @@ flowchart LR
   APR -.->|"outcome event"| CORE
 
   MIL --> DOC
+  FIN --> DOC
   EXT --> DOC
   EXT --> PRJ
   EXT -->|"staged contribution<br/>via typed target adapter"| CORE
 
-  DSH -->|"published read projection"| CORE
-  RPT --> DSH
+  DSH -->|"read projections<br/>edges 29, 47–52"| CORE
+  RPT -->|"rows from the register<br/>edge 30"| DSH
 
   CORE -->|"E-U1 authorize"| IAM
   CORE -->|"E-U2 resolve configuration"| MDC
@@ -315,35 +326,52 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | 4 | ManagementConcern | Project | query | same | TASK-057 dep TASK-041 |
 | 5 | FinancialKpi | Project | query | same | TASK-052 dep TASK-041 |
 | 6 | ChangeRequest | Project | query | same | TASK-060 dep TASK-041 |
-| 7 | Suspension | Project | command | Active↔Suspended lifecycle transition, distinct from the request record | TASK-062 |
-| 8 | Closure | Project | command | Completed then Closed transitions; Closed is terminal | TASK-063 |
+| 7 | Suspension | Project | command | Active↔Suspended lifecycle transition, distinct from the request record: `IProjectSuspensionCommands` in Project's contracts stages the transition in WF-09's unit of work as an APPROVED request is activated, Project checking its own edge and auditing it; and the project's facts through `IProjectFactsReader` (`suspension.md` D-6) | TASK-062 (set 2026-10-07) |
+| 8 | Closure | Project | command | Completed then Closed transitions; Closed is terminal: `IProjectCloseoutCommands` in Project's contracts stages ACTIVE → COMPLETED, COMPLETED → CLOSED or SUSPENDED → CLOSED in WF-10's unit of work as an APPROVED case is activated, Project checking its own edge and auditing it; `ClosedProjectGuard` in Project's contracts, which every module's access check applies, refuses writes to a CLOSED project's records; and the project's facts through `IProjectFactsReader` (`closure.md` D-6, D-8) | TASK-063 (set 2026-10-08) |
 | 9 | ProjectTask | Schedule | query | activity identity and dates the task executes against | TASK-048 dep TASK-046 |
-| 10 | Milestone ↔ Schedule | — | split-authority contract | WF-03 owns schedule representation and dates; WF-05 owns achievement evidence and the accepted Actual Achievement Date | ICD-04; TASK-050 |
-| 11 | Schedule | ChangeRequest | query | version-pinned ChangeAuthorization, read before rebaseline | TASK-060 |
-| 12 | FinancialKpi | ChangeRequest | query | version-pinned ChangeAuthorization, read before a commitment change | TASK-060 |
+| 10 | Milestone | Schedule | split-authority contract | WF-03 owns schedule representation and dates; WF-05 owns achievement evidence and the accepted Actual Achievement Date. One direction: WF-05 queries the shared milestone (`IProjectMilestoneReader`) and, on acceptance, has WF-03 record it ACHIEVED in the same transaction (`IMilestoneAchievementRecorder`); WF-03 never calls WF-05 | ICD-04; TASK-050 (direction set 2026-10-03, `milestone-achievement.md` D-2) |
+| 11 | Schedule | ChangeRequest | query, command | a version-pinned ChangeAuthorization of a REBASELINE, checked before a rebaseline and applied once as it activates, in Schedule's unit of work (`IChangeAuthorizations`); and the ACTIVE Approved Baseline WF-08 evaluates materiality against and pins, served through `IApprovedBaselineSource`, a port in ChangeRequest's contracts that Schedule implements — so the code reference runs Schedule → ChangeRequest only (`change-request.md` D-7, D-10) | TASK-060 (set 2026-10-07) |
+| 12 | FinancialKpi | ChangeRequest | query, command | a version-pinned ChangeAuthorization of a COMMITMENT_CHANGE, checked before a change to the ACTIVE Approved Budget and applied once as it activates (`IChangeAuthorizations`); and the ACTIVE Approved Budget, served through `IApprovedBudgetSource`, a port in ChangeRequest's contracts that FinancialKpi implements (`change-request.md` D-7, D-10) | TASK-060 (set 2026-10-07) |
 | 13 | FinancialKpi | Progress | query | reporting-cycle and period alignment | TASK-052 dep TASK-044 |
-| 14 | Closure | FinancialKpi | query | closure readiness checks against financial state | TASK-063 dep TASK-052 |
-| 15 | Risk | ManagementConcern | command | materialisation of a risk into an issue | TASK-055 |
+| 14 | Closure | FinancialKpi | query | closure readiness checks against financial state: `IFinancialKpiCloseoutReader`, the unpublished or undecided financial records (`closure.md` D-5) | TASK-063 dep TASK-052 |
+| 15 | Risk | ManagementConcern | command | materialisation of a risk into an issue (`IRiskIssueMaterialisation`, in ManagementConcern's contracts: raise the issue in the risk's transaction, and read the issues a risk originated). ManagementConcern calls Risk in no way: the issue holds `originating_risk_id`, the one foreign key both sides query | TASK-055 (contract set 2026-10-05, `risk-management.md` D-9) |
 | 16 | Milestone | DocumentManagement | command | achievement evidence attachment | TASK-051 |
 | 17 | ExternalParticipation | DocumentManagement | command | contribution attachments | TASK-066 dep TASK-037 |
 | 18 | ExternalParticipation | Project | query | ENTITY-scoped, least-disclosure project projection for R08 | TASK-066 |
-| 19 | ExternalParticipation | owning core module | command via `IExternalContributionTarget` | Path B staged contribution, applied after source revalidation. **Target module set unconfirmed — S-5** | TASK-066 |
+| 19 | ExternalParticipation | owning core module | command via `IExternalContributionTarget` | Path B staged contribution, applied after source revalidation: ExternalParticipation's typed adapter calls a command in the owning module's contracts, which revalidates the source record's version and state under its own rules and stages the change in WF-13's unit of work. Built for **ProjectTask**: `ITaskProgressContributions`, a task's actual percentage (`external-participation.md` D-10). **Further targets unconfirmed — S-5** | TASK-066 (ProjectTask set 2026-10-09) |
 | 20 | Project | Approval | command | registration / activation approval | TASK-041 |
 | 21 | Schedule | Approval | command | baseline approval | TASK-046 |
 | 22 | ChangeRequest | Approval | command | change authorisation | TASK-060 |
 | 23 | Suspension | Approval | command | suspension / resumption approval | TASK-062 |
-| 24 | ManagementConcern | Approval | command | escalation | TASK-057 |
+| 24 | ManagementConcern | Approval | command | a resolution's validation, PENDING_VALIDATION → RESOLVED (`IApprovalRequests`, routing key `MANAGEMENT_CONCERN_RESOLUTION`); a concern's escalation itself is WF-07's record and WF-15's intent, never an approval run (`management-concern.md` D-7) | TASK-057 (set 2026-10-06) |
 | 25 | Milestone | Approval | command | achievement acceptance. **Route inferred — S-4** | TASK-050 (WF-11 not named) |
 | 26 | FinancialKpi | Approval | command | approved commitment/budget versions and KPI target versions. **Route inferred — S-4** | TASK-052 (WF-11 not named) |
-| 27 | Closure | Approval | command | completion and closure approval. **Route inferred — S-4** | TASK-063 (WF-11 not named) |
+| 27 | Closure | Approval | command, query | completion and closure approval (`IApprovalRequests`, routing keys `COMPLETION` and `CLOSURE`); and `IApprovalSettlementReader`, the project's runs still pending or whose outcome has not reached its module (`closure.md` D-5). **Route inferred — S-4** | TASK-063 (WF-11 not named) |
 | 28 | Approval | source module | outcome event | idempotent decision outcome carrying the subject reference and version | TASK-035 |
-| 29 | Dashboards | Progress, Schedule, Risk, FinancialKpi | read projection | controlled source projections with semantic state, freshness and coverage; read-only | TASK-069 deps |
-| 30 | Reports | Dashboards | query | the same controlled projections, for report definitions and jobs | TASK-071 dep TASK-069 |
-| 31 | IdentityAccess | IntegrationMonitoring | event | AD/LDAP/SSO invocation and sync-run telemetry | TASK-075 dep TASK-028 |
-| 32 | Notifications | IntegrationMonitoring | event | email/SMS channel invocation telemetry | TASK-075 dep TASK-039; TASK-103 |
-| 33 | ExternalParticipation | IntegrationMonitoring | event | Nafath invocation telemetry, if in scope | TASK-068; TASK-075 |
-| 34 | IntegrationMonitoring | AuditActivity | query | integration audit log view (ADM-053) | TASK-075 dep TASK-073 |
+| 29 | Dashboards | Progress, Schedule, Risk, FinancialKpi | read projection | controlled source projections with semantic state, freshness and coverage; read-only. Built by TASK-069: `IProjectHealthReader`, `IReportingCycleReader`, `IScheduleHealthReader`, `IRiskExposureReader`, `IFinancialProgressService`, `IKpiConditionReader` (`dashboards.md` D-4) | TASK-069 deps |
+| 30 | Reports | Dashboards | query | the same controlled projections, for report definitions and jobs. Built by TASK-071: `IProjectionRowReader` — one row per project (or per published snapshot) the caller's scope reaches under the report's base permission, each cell authorised, masked and dated as FG-01 reads it (`reports.md` D-3) | TASK-071 dep TASK-069 |
+| 31 | IdentityAccess | IntegrationMonitoring | event | AD/LDAP/SSO invocation and sync-run telemetry. Built by TASK-075: `IdentityAccess.IntegrationInvocationCompleted` for every directory, SSO and MFA call (`integration-monitoring.md` D-3, D-4) | TASK-075 dep TASK-028 |
+| 32 | Notifications | IntegrationMonitoring | event | email/SMS channel invocation telemetry. Built by TASK-075: `Notifications.IntegrationInvocationCompleted` for every e-mail and SMS attempt (`integration-monitoring.md` D-3) | TASK-075 dep TASK-039; TASK-103 |
+| 33 | IdentityAccess | IntegrationMonitoring | event | Nafath invocation telemetry. Nafath is in scope (ADR-007) and its adapter is IdentityAccess's, not ExternalParticipation's: it gates the session, not a contribution (changed 2026-10-09, `nafath-identity-verification.md` F-6) | TASK-068; TASK-075 |
+| 34 | IntegrationMonitoring | AuditActivity | query | integration audit log view (ADM-053). Not used by TASK-075: FG-05 records its audit through `IAuditTrail` (E-U3), and ADM-053 reads it through FG-06's own API (`/audit-events?category=INTEGRATION`, TASK-073/074) | TASK-075 dep TASK-073 |
 | 35 | Project | Schedule, Progress, Milestone, FinancialKpi | event (`ProjectIntakeRecorded`) | legacy-intake Declared Baseline and opening position, each written by its owning module (§11.1) | TASK-104 |
+| 36 | ProjectTask | Project | query | project identity, anchors and lifecycle state, as edges 1–6: a task is authorized on its project's anchors (M-7) and executed only while the project is ACTIVE | TASK-048 (added 2026-10-03, `project-task.md` D-2) |
+| 37 | Milestone | Project | query | project identity, anchors and lifecycle state, as edges 1–6: an achievement claim is authorized on its project's anchors (M-7) and made only while the project is ACTIVE | TASK-050 (added 2026-10-03, `milestone-achievement.md` D-3) |
+| 38 | FinancialKpi | DocumentManagement | command | an Approved Budget version's referenced document, linked and pinned as CLEAN evidence of that version (ADR-008 gate: "any change to Approved Budget requires a referenced document") | TASK-052 (added 2026-10-04, `financial-kpi.md` D-6) |
+| 39 | Closure | ProjectTask | query | readiness: the tasks not COMPLETED or CANCELLED (`IProjectTaskCloseoutReader`) | TASK-063 (added 2026-10-08, `closure.md` D-5) |
+| 40 | Closure | Schedule | query | readiness: open baseline candidates and unachieved milestones (`IScheduleCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 41 | Closure | Milestone | query | readiness: achievement claims still on their way (`IMilestoneCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 42 | Closure | Risk | query | readiness: risks neither CLOSED nor under an ACTIVE acceptance (`IRiskCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 43 | Closure | ManagementConcern | query | readiness: issues and challenges not RESOLVED or CLOSED (`IConcernCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 44 | Closure | ChangeRequest | query | readiness: change requests undecided or approved and not carried through (`IChangeRequestCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 45 | Closure | Suspension | query, command | readiness: open suspension and resumption requests (`ISuspensionCloseoutReader`); on the terminal path, the project's open suspension ended with reason PROJECT_CLOSED in WF-10's unit of work (`ISuspensionClosureCommands`) | TASK-063 (added 2026-10-08, `closure.md` D-6; `suspension.md` F-5) |
+| 46 | Closure | Progress | query | readiness: unpublished progress, and whether any is published (`IProgressCloseoutReader`) | TASK-063 (added 2026-10-08) |
+| 47 | Dashboards | Project | query | the projects a caller's record scope reaches — the population an FG-01 aggregate is counted over, authorised before anything is counted — and the Project Dashboard's project (`IProjectFactsReader.ListReachedAsync`, `.FindAsync`) | TASK-069 (added 2026-10-10, `dashboards.md` D-4) |
+| 48 | Dashboards | ProjectTask | read projection | open tasks per project (`IProjectTaskCloseoutReader`), the projection `PROJECT_TASK.OPEN_TASKS` FG-02's Schedule and Delivery report reads | TASK-071 (added 2026-10-10, `reports.md` D-4) |
+| 49 | Dashboards | Milestone | read projection | open achievement claims per project (`IMilestoneCloseoutReader`): `MILESTONE.OPEN_ACHIEVEMENT_CLAIMS` | TASK-071 (added 2026-10-10, `reports.md` D-4) |
+| 50 | Dashboards | ManagementConcern | read projection | open issues and challenges per project (`IConcernCloseoutReader`): `MANAGEMENT_CONCERN.OPEN_CONCERNS` | TASK-071 (added 2026-10-10, `reports.md` D-4) |
+| 51 | Dashboards | ChangeRequest | read projection | change requests undecided, approved and not started, and in implementation per project (`IChangeRequestCloseoutReader`): `CHANGE_REQUEST.CHANGE_POSITION` | TASK-071 (added 2026-10-10, `reports.md` D-4) |
+| 52 | Dashboards | Suspension | read projection | open suspension and resumption requests per project (`ISuspensionCloseoutReader`): `SUSPENSION.OPEN_REQUESTS` | TASK-071 (added 2026-10-10, `reports.md` D-4) |
 
 ### 8.3 Count
 
@@ -352,10 +380,10 @@ Every allowed cross-module edge. "Mechanism" is drawn from a closed set: *comman
 | Modules | **21** |
 | WF/FG domains mapped | **21** (WF-01–WF-15, FG-01–FG-06), 1:1 |
 | Universal edge rules | 4 |
-| Specific edges | 35 |
+| Specific edges | 52 |
 | Edges whose mechanism is direct cross-module repository or table access | **0** |
-| Edges flagged as inferred pending a rank-1 spec | 4 (nos. 19, 25, 26, 27) |
-| Cycles in the core-domain call graph | **0** (edge 35 is an event; edge 10 is a declared split-authority contract, not two calls) |
+| Edges flagged as inferred pending a rank-1 spec | 4 (nos. 19 beyond ProjectTask, 25, 26, 27) |
+| Cycles in the core-domain call graph | **0** (edge 35 is an event; edge 10, the declared split-authority contract, runs Milestone → Schedule only) |
 
 ## 9. Entity ownership register
 
@@ -472,7 +500,7 @@ This does not change any module assignment — each row carries its WF/FG identi
 | S-2 | **WF-02 Progress has no aggregate in TASK-008's list** (§9), while ICD-03 makes it the exclusive owner of Overall Project Health. | Engagement Architect | Into TASK-008 | The ERD gives the platform's most-consumed calculated fact no table, and the first consumer that needs it will compute it — which is exactly what ICD-03 forbids. |
 | S-3 | **FG-04 has no frontend task** (§11.4b). | PMO Engagement Lead | Before W1 closes | Master data and configuration are backend-only, so AHDA cannot populate the catalogues the platform fails closed without. |
 | S-4 | **Three approval routes are inferred, not stated** (§8.2 edges 25, 26, 27): milestone achievement acceptance, financial commitment and KPI target versions, and completion/closure. Each task describes an approval-shaped workflow without naming WF-11. | Engagement Architect, against the WF-05/WF-10/WF-14 specs (rank 1) | Before TASK-050, TASK-052, TASK-063 | Three modules either reuse the shared framework or each build their own — the outcome the Shared Approval Framework exists to prevent. |
-| S-5 | **The WF-13 staged-contribution target set is not enumerated** (§8.2 edge 19). The workbook states Path A and Path B and the revalidation rule, but not which object types an external entity may contribute to. | Engagement Architect, against the WF-13 spec (rank 1) | Before TASK-066 | The adapter interface can be defined without it; the set of implementing modules cannot, so the last edge in the diagram stays open. |
+| S-5 | **The WF-13 staged-contribution target set is not enumerated** (§8.2 edge 19). The workbook states Path A and Path B and the revalidation rule, but not which object types an external entity may contribute to. **Partly resolved 2026-10-09 by TASK-066**: the WF-13 specification (§11.2) recommends a mode per domain; one target is built, WF-04's task percentage, with reference-only answers that reach no source (`external-participation.md` D-10, F-4). | Engagement Architect, against the WF-13 spec (rank 1) | Before TASK-066 | The adapter interface can be defined without it; the set of implementing modules cannot, so the last edge in the diagram stays open for every domain but WF-04. |
 | S-6 | **Nine amendment rows name dependencies that match no task row** (§11.5). | PMO Engagement Lead | Before W1 planning | The workbook's dependency graph and the ratified wave dependency check no longer cover the ten newest rows. |
 | S-7 | **ADR-002 §6.3 row 4 re-issue** if `ProjectTask` is adopted (§4.4b), plus the TASK-007 description and the TASK-048/049 directory cells. | Engagement Architect + PMO | Before TASK-011 | Either the folder name or the namespace has to give, and a `using Task =` alias in every file of the module is the alternative. |
 | S-8 | **The architecture-test suite (§10) is not in any task's acceptance criteria.** TASK-011 creates the skeleton and TASK-015 gates CI, but neither names A-1 to A-6. | Engagement Architect + PMO | Into TASK-011 and TASK-015 | This record becomes documentation rather than a constraint, and the acceptance criterion is verified once, on the day it is signed. |
@@ -517,3 +545,14 @@ On Q1 and Q2 being confirmed, the header status becomes **APPROVED**, the regist
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-20 | Initial record. Option A ratified as the delivery-team proposal, status held at Proposed — Pending AHDA Approval and paired with ADR-002 per the TASK-007 gate note. Three tiers and six API-01 rules recorded (§4.1); 21-module registry mapped 1:1 to WF-01–WF-15 and FG-01–FG-06 (§4.3); the six disputed module names settled and WF-04 renamed `ProjectTask` (§4.4); thirteen call rules (§6); module dependency diagram and a 4+35 edge register with zero repository edges (§7, §8); entity-to-module ownership register with four declared split-authority pairs and the WF-02 aggregate gap (§9); six-rule architecture-test enforcement suite (§10); five workbook consequences specified (§11); eight residual items (S-1 to S-8). | Architecture (TASK-007) |
+| 2026-10-03 | §8.2 edge 36 added, ProjectTask → Project (query), the `IProjectFactsReader` edges 1–6 give the other core modules: WF-04 decides every task operation on the project's anchors and gates execution on its lifecycle state, and edge 9 carries only the schedule activity. No cycle: Project calls no module back. Diagram and §8.3 count updated; M-9's reference to the intake path corrected from edge 36 to 35, its number in the register. `ModuleRegistry` records the edge. Proposed by the delivery team with TASK-048 (`project-task.md` F-1), for the Engagement Architect's confirmation. | Backend (TASK-048) |
+| 2026-10-03 | §8.2 edge 10's direction set: Milestone → Schedule only, a query of the shared milestone and a command that records it ACHIEVED on acceptance, in the accepting transaction; Schedule calls Milestone in no way, so the pair is no cycle. Edge 37 added, Milestone → Project (query), as edge 36 for ProjectTask. Edge 25 implemented through WF-11 (S-4 decided for WF-05 by the delivery team, pending the WF-05 specification). Diagram, §8.3 count and cycle note updated; `ModuleRegistry` records edge 10. Proposed with TASK-050 (`milestone-achievement.md` F-1, F-3), for the Engagement Architect's confirmation. | Backend (TASK-050) |
+| 2026-10-04 | §8.2 edge 38 added, FinancialKpi → DocumentManagement (command), as edge 16 for Milestone: the ADR-008 gate requires a referenced document for any change to the Approved Budget, and the ERD names it as an EvidenceReference. Edges 5 (`IProjectFactsReader`), 13 (`IReportingCycleReader`, new in Progress's contracts) and 26 (WF-11, for commitment and KPI target versions; S-4 decided for WF-14 by the delivery team, pending the WF-14 specification) implemented. Edge 12 is not: ChangeRequest is not built (TASK-060). No cycle: DocumentManagement and Progress call FinancialKpi in no way. Diagram and §8.3 count updated; `ModuleRegistry` records edge 38. Proposed with TASK-052 (`financial-kpi.md` F-1, F-3), for the Engagement Architect's confirmation. | Backend (TASK-052) |
+| 2026-10-05 | §8.2 edge 15's contract set: `IRiskIssueMaterialisation` in ManagementConcern's contracts, which WF-07 implements — a command that raises an ISSUE from a risk in the risk's unit of work (M-11) and a read of the issues a risk originated, so the edge carries the result of its own command. ManagementConcern is not built (TASK-057), so `UnbuiltIssueRegister` answers 503 and no issues until TASK-057 registers its implementation. Edge 3 (`IProjectFactsReader`) implemented. No new edge, no cycle. | Backend (TASK-055) |
+| 2026-10-06 | WF-07 built (TASK-057, `management-concern.md`). Edge 4 (`IProjectFactsReader`) implemented. Edge 15's other side implemented: `RiskIssueRegister` replaces `UnbuiltIssueRegister`, raising the issue in the risk's unit of work, with `management_concern.originating_risk_id` the one foreign key both sides query. Edge 24's crossing set to a resolution's validation through WF-11 (with edge 28 back): both WF-07's specification (ISS-GP-06) and WF-11's (APR-P-08) say escalation is never approval, so the row's "escalation routed through WF-11/WF-15" is read as the validation run and its own task escalation (WF-11 D-11) on the WF-11 side, and the escalation's NotificationIntent on E-U4 — ManagementConcern is E-U4's first producer. No new edge, no cycle. | Backend (TASK-057) |
+| 2026-10-07 | WF-08 built (TASK-060, `change-request.md`). Edges 6 (`IProjectFactsReader`), 22 and 28 (`IApprovalRequests`, routing key `CHANGE_REQUEST`) implemented. Edges 11 and 12 set: each target module checks and applies a WF-08 change authorisation through ChangeRequest's typed adapter `IChangeAuthorizations` — a command as well as a query — and serves the ACTIVE commitment WF-08 evaluates materiality against through a port in ChangeRequest's contracts (`IApprovedBaselineSource`, `IApprovedBudgetSource`) that it implements, so ChangeRequest references neither module and no cycle forms. No edge is added; A-1 to A-6 pass unchanged |
+| 2026-10-07 | WF-09 built (TASK-062, `suspension.md`). Edge 7 set: `IProjectSuspensionCommands`, a command in Project's contracts that stages ACTIVE → SUSPENDED or SUSPENDED → ACTIVE in the caller's unit of work, with the project's facts through `IProjectFactsReader`. Edges 23 and 28 implemented (`IApprovalRequests`, routing keys `SUSPENSION` and `RESUMPTION`). Suspension references no other module: in particular none of Schedule, so no resumption can reach a baseline (D-7). A-1 to A-6 pass unchanged |
+| 2026-10-08 | WF-10 built (TASK-063, `closure.md`). Edge 8 set: `IProjectCloseoutCommands` stages ACTIVE → COMPLETED, COMPLETED → CLOSED and SUSPENDED → CLOSED in the caller's unit of work, and `ClosedProjectGuard` makes every module refuse writes to a CLOSED project. Edges 14 and 27 set (`IFinancialKpiCloseoutReader`; `IApprovalRequests` with routing keys `COMPLETION` and `CLOSURE`, and `IApprovalSettlementReader`). Edges 39–46 added, Closure → ProjectTask, Schedule, Milestone, Risk, ManagementConcern, ChangeRequest, Suspension, Progress: each source module answers WF-10's readiness criterion for its own records through a read-only contract, and edge 45 also carries the command that ends a suspended project's open period on terminal closure. All point away from Closure, which no module calls, so the core-domain graph stays acyclic. Count 38 → 46. A-1 to A-6 pass with the registry's eight new entries |
+| 2026-10-09 | WF-13 built (TASK-066, `external-participation.md`). Edge 19 set for its first target: ExternalParticipation → ProjectTask (command), `ITaskProgressContributions`, through the typed adapter `IExternalContributionTarget`; registered in `ModuleRegistry`. Edge 18 used as written (`IProjectFactsReader`, whose `ProjectFacts` gains the participation mode). Edge 17 not used yet (`external-participation.md` F-1). S-5 stays open for the other targets |
+| 2026-10-10 | FG-01 built (TASK-069, `dashboards.md`). Edge 29 implemented through each source's read contracts — bulk reads added to Progress's `IProjectHealthReader` and `IReportingCycleReader` and Schedule's `IScheduleHealthReader`, and `IRiskExposureReader` and `IKpiConditionReader` added to Risk's and FinancialKpi's contracts — none of which authorises anyone or returns a guarded health row (M-12). Edge 47 added, Dashboards → Project (query): the population an aggregate is counted over, the projects the caller's record scope reaches, read through `IProjectFactsReader.ListReachedAsync`; Project calls Dashboards in no way, so no cycle. IdentityAccess's contracts gain `IUserRoleDirectory` (E-U1). Diagram label and §8.3 count updated; `ModuleRegistry` records edge 47. Proposed by the delivery team, for the Engineering Architect's confirmation. | Backend (TASK-069) |
+| 2026-10-10 | FG-02 built (TASK-071, `reports.md`). Edge 30 implemented: Reports reads its rows through Dashboards' `IProjectionRowReader`, FG-01's register as one row per project or published snapshot, and no source module directly. Edges 48 to 52 added, Dashboards → ProjectTask, Milestone, ManagementConcern, ChangeRequest and Suspension (read projection): five counts per project through each module's existing closeout reader, registered as projections so a report can present tasks, milestone claims, issues, changes and suspensions; none of those modules calls Dashboards, so no cycle. IdentityAccess's `IOrganizationDirectory` gains `ListNamesAsync` (department and entity names for report rows) and MasterDataConfig's contracts `IReportAllowlistReader` (REPORT_RULES). Diagram labels and §8.3 count updated; `ModuleRegistry` records edges 48–52. Proposed by the delivery team, for the Engineering Architect's confirmation. | Backend (TASK-071) |

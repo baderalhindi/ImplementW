@@ -1,0 +1,136 @@
+{
+  "forbidden": "You do not have permission to see this project's progress.",
+  "semanticState": {
+    "official": "Published · official",
+    "live": "Current · live"
+  },
+  "official": {
+    "title": "Official progress",
+    "none": "No period has been published yet.",
+    "publishedAt": "Published"
+  },
+  "live": {
+    "title": "Current progress",
+    "none": "No current value has been computed yet. It is computed when an update is submitted.",
+    "computedAt": "Computed"
+  },
+  "health": {
+    "GREEN": "Green",
+    "AMBER": "Amber",
+    "RED": "Red",
+    "UNKNOWN": "Unknown"
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "RETURNED": "Returned",
+    "PUBLISHED": "Published"
+  },
+  "figures": {
+    "overallHealth": "Overall project health",
+    "planned": "Planned",
+    "actual": "Actual",
+    "variance": "Variance",
+    "overridden": "Overridden",
+    "calculated": "Calculated {value}",
+    "noPlan": "No plan",
+    "noVariance": "No variance without a plan",
+    "points": "{value} pp"
+  },
+  "intake": {
+    "marker": "Legacy intake {date}",
+    "explanation": "This project entered under way. Its progress starts from the opening position recorded at intake, and each variance runs from that date.",
+    "openingPosition": "Opening position at intake",
+    "since": "since intake {date}"
+  },
+  "period": {
+    "range": "{start} – {end}",
+    "unknown": "Period {id}"
+  },
+  "current": {
+    "title": "Progress update in progress",
+    "none": "No progress update is in progress.",
+    "notActive": "Progress is reported once the project is active.",
+    "startHint": "Start the update for the earliest period that has begun. The figures are calculated from the work breakdown and the baseline.",
+    "returned": "AHDA returned the previous revision of this period:",
+    "next": {
+      "DRAFT": "The Project Manager prepares this update and submits it to AHDA.",
+      "SUBMITTED": "Waiting for AHDA to start the review.",
+      "UNDER_REVIEW": "AHDA is reviewing this update. It will be published or returned.",
+      "RETURNED": "Returned to the Project Manager for another revision.",
+      "PUBLISHED": "Published."
+    }
+  },
+  "history": {
+    "title": "Progress update history",
+    "caption": "Progress updates, newest first",
+    "empty": "No progress update has been started for this project.",
+    "period": "Period",
+    "revision": "Revision",
+    "status": "Status",
+    "submitted": "Submitted",
+    "reviewed": "Reviewed",
+    "returnReason": "Returned: {reason}"
+  },
+  "actions": {
+    "start": "Start progress update",
+    "submit": "Submit update",
+    "edit": "Edit draft",
+    "review": "Review update",
+    "history": "View progress update history",
+    "back": "Back to progress"
+  },
+  "update": {
+    "submitTitle": "Submit progress update",
+    "editTitle": "Edit progress update draft",
+    "period": "Period {period}, revision {revision}",
+    "prefilled": "The narrative and any override are carried over from the last published period. If nothing has changed, submit them as they are.",
+    "derived": "Planned and actual progress are calculated from the baseline and the work breakdown. You cannot type them.",
+    "figureSource": "Reported actual progress",
+    "useCalculated": "Use the calculated figure",
+    "useOverride": "Override the calculated figure",
+    "overridePercent": "Overriding actual progress (%)",
+    "overridePercentHint": "A number from 0 to 100, with up to four decimal places. The calculated figure is kept and the override is marked.",
+    "overrideReason": "Reason for the override",
+    "overrideReasonHint": "Required. AHDA's reviewer sees it.",
+    "narrative": "Narrative",
+    "confirmSubmit": "Submit to AHDA",
+    "confirmSave": "Save draft"
+  },
+  "review": {
+    "title": "Review progress update",
+    "start": "Start review",
+    "startConsequence": "Taking the update into review lets you publish it or return it. You cannot review an update you submitted.",
+    "decision": "Decision",
+    "publish": "Publish",
+    "return": "Return for revision",
+    "publishConsequence": "Publishing makes these figures the period's official record and closes the period. It cannot be changed afterwards.",
+    "reason": "Reason for returning",
+    "returnConsequence": "The Project Manager sees the reason and the period continues as a new draft revision.",
+    "confirm": "Confirm decision"
+  },
+  "done": {
+    "saved": "The draft was saved.",
+    "submitted": "The progress update was submitted to AHDA.",
+    "reviewStarted": "The review has started.",
+    "published": "The progress update was published.",
+    "returned": "The progress update was returned for revision.",
+    "stale": "This update changed after you opened it, so nothing was saved. The latest version is shown."
+  },
+  "fieldErrors": {
+    "percentRequired": "Enter the overriding percentage.",
+    "percentMalformed": "Enter a number, for example 42.5.",
+    "percentOutOfRange": "Enter a percentage from 0 to 100 with no more than four decimal places."
+  },
+  "problems": {
+    "projectNotActive": "Progress is reported on an active project only.",
+    "rollupUnavailable": "Progress cannot be calculated: the project has no work breakdown with planned durations yet.",
+    "nothingToReport": "There is nothing to report: every period that has begun is already published.",
+    "submissionExists": "An update for this period is already in progress. It is shown below.",
+    "notEditable": "Only a draft can be changed.",
+    "configurationMissing": "AHDA has not yet configured the reporting cadence or the health thresholds for this project.",
+    "invalidTransition": "The update is no longer in a state that allows this.",
+    "permissionDenied": "You do not have permission to do this. AHDA reviews progress, and no one reviews an update they submitted."
+  }
+}

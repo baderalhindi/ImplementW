@@ -105,7 +105,10 @@ runs:
       with:
         credentials_json: ${{ inputs.deploy-service-account-key }}
 
+    # beta: route-alerts.sh reads the on-call channel with `gcloud beta monitoring channels` (TASK-091).
     - uses: google-github-actions/setup-gcloud@v3
+      with:
+        install_components: beta
 
     - uses: sigstore/cosign-installer@v4.1.2
       with:
@@ -148,8 +151,19 @@ runs:
         MIGRATION_JOB: ${{ inputs.migration-job }}
       run: .github/scripts/migrate-environment.sh
 
+    # TASK-091: the readiness alert notifies the environment's on-call channel. Its owner creates it
+    # from ALERT_CHANNEL_WEBHOOK_URL with route-alerts.sh; this step reads only the channel's name,
+    # never the URL, and prints nothing for DEV, which has no channel.
+    - name: Find the on-call channel
+      id: alert-channel
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "name=$(infra/environments/route-alerts.sh '${{ inputs.environment }}' --name)" >> "$GITHUB_OUTPUT"
+
     # Terraform is the deploy mechanism, so a deployment leaves no drift for the next plan to find
-    # (infrastructure-as-code.md §3.2). The image arrives by digest and nothing else changes.
+    # (infrastructure-as-code.md §3.2). The image arrives by digest, the on-call channel by name, and
+    # nothing else changes.
     - name: Terraform apply
       shell: bash
       working-directory: infra/terraform/environments/${{ inputs.environment }}
@@ -157,6 +171,7 @@ runs:
         TF_IN_AUTOMATION: 'true'
         TF_INPUT: '0'
         TF_VAR_container_image: ${{ inputs.image-digest }}
+        TF_VAR_alert_notification_channel: ${{ steps.alert-channel.outputs.name }}
       run: |
         terraform init -input=false -lockfile=readonly
         terraform apply -auto-approve

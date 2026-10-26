@@ -8,7 +8,7 @@ This is the PMPlatform monorepo. Its layout is fixed by ADR-002 §6 (stack and d
 /
 ├── .editorconfig                  solution-wide editor and C# analyzer baseline
 ├── .github/                       CODEOWNERS, PR template, branch-protection ruleset, promotion scripts,
-│                                  workflows (ci-cd-pipeline, ci-quality-gates, pr-policy)
+│                                  workflows (ci-cd-pipeline, ci-quality-gates)
 ├── global.json                    .NET SDK pin
 ├── .nvmrc                         Node.js line for the frontend toolchain
 ├── db/seed/                       SQL seed and data-integrity scripts (TASK-027)
@@ -99,6 +99,39 @@ dotnet build src/backend -warnaserror
 dotnet test src/backend/PMPlatform.Tests.Unit
 ```
 
+Integration tests run against real servers from the AHDA Compose stack: PostgreSQL for the `Persistence` tests (each
+creates and drops its own database) and, for the `Identity` tests, the test directory `AHDA-ldap` (TASK-028):
+
+```sh
+docker compose -f infra/docker/docker-compose.yml up -d --wait postgres ldap
+DB_CONNECTION_STRING="Host=localhost;Port=5432;Database=postgres;Username=pmplatform;Password=pmplatform" \
+  dotnet test src/backend/PMPlatform.Tests.Integration
+```
+
+The contract tests compare the API's generated OpenAPI document with the committed snapshot `docs/api/openapi.v1.json`
+and fail on a breaking change (api-conventions R-10) or on any change the snapshot does not yet describe:
+`ProjectContractTests` (TASK-043) for the Project API, `ExecutionContractTests` (TASK-054) for the Progress, Schedule,
+ProjectTask, Milestone and FinancialKpi APIs, `RiskIssueContractTests` (TASK-059) for the Risk and ManagementConcern APIs,
+`GovernanceContractTests` (TASK-065) for the ChangeRequest, Suspension and Closure APIs. A PR that changes one of these APIs rewrites the snapshot and commits it with the change; a break is also called out in
+the PR description (R-11):
+
+```sh
+UPDATE_OPENAPI_SNAPSHOT=1 DB_CONNECTION_STRING="…" \
+  dotnet test src/backend/PMPlatform.Tests.Integration \
+  --filter "FullyQualifiedName~ProjectContractTests|FullyQualifiedName~ExecutionContractTests|FullyQualifiedName~RiskIssueContractTests|FullyQualifiedName~GovernanceContractTests"
+```
+
+The whole snapshot can also be rewritten without a database or a test run (TASK-094): the API's `openapi` command writes the
+document it serves. The `api-documentation` check fails a PR whose snapshot differs from it by a byte, and publishes the
+document as the `openapi-v1` artifact. The local stack serves it in Swagger UI at http://localhost:5080/api-docs
+(`docs/api/README.md`):
+
+```sh
+dotnet build src/backend/PMPlatform.Api --configuration Release
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/backend/PMPlatform.Api --configuration Release --no-build \
+  --no-launch-profile -- openapi "$PWD/docs/api/openapi.v1.json"
+```
+
 Frontend:
 
 ```sh
@@ -114,7 +147,7 @@ npm run build         # tsc -b && vite build
 Without a local SDK, both run unchanged inside the official images:
 
 ```sh
-podman run --rm -v "$PWD:/repo" -w /repo/src/backend mcr.microsoft.com/dotnet/sdk:10.0 sh -c 'dotnet build -warnaserror && dotnet test --no-build'
+podman run --rm -v "$PWD:/repo" -w /repo/src/backend mcr.microsoft.com/dotnet/sdk:10.0 sh -c 'dotnet build -warnaserror && dotnet test PMPlatform.Tests.Unit --no-build'
 podman run --rm -v "$PWD/src/frontend:/w" -w /w node:24-alpine sh -c 'npm ci && npm run lint && npm test && npm run build'
 ```
 
@@ -164,9 +197,16 @@ docker compose -f infra/docker/docker-compose.yml down -v              # reset: 
 - The seed creates `local.r01` … `local.r08`, one per canonical role, each bound to that role's shipped-default
   permission profile version. They are data, not accounts: there is no credential and no local sign-in path until
   TASK-028.
-- `infra/docker/postgres/init/01-schema.sql` is a **bridge** — nine ERD tables so the seed has somewhere to go
-  before TASK-023/TASK-024 create the schema through EF Core migrations. It is deleted when they land.
-  `python3 docs/architecture/local-stack-check.py` fails if any column drifts from `erd.dbml`.
+- The tables come from the EF Core migrations: on every `up`, the one-shot `migrate` service applies them and the
+  one-shot `seed` service then runs, in one transaction, the platform seed `db/seed/seed-master-data.sql` (roles
+  R01–R08 and master data — the same file every environment loads), the local users
+  `infra/docker/postgres/seed/seed-local-users.sql`, and `db/seed/validate-data-integrity.sql`, which fails `up` on
+  any orphan or constraint violation. Both exit 0; `api` starts after them. The migrated schema is checked against
+  `erd.dbml` by `CoreSchemaTests` in the backend integration tests.
+- Seed data and the integrity check (TASK-027; record: `docs/architecture/seed-data-and-integrity.md`): the release
+  image runs them as `dotnet PMPlatform.Api.dll seed` and `… validate-data-integrity` after `migrate` in every
+  environment. A migration that adds a `*_item_id` column must add it to the catalogue map in
+  `validate-data-integrity.sql` and its catalogue to `seed-master-data.sql`, or the check fails.
 
 ## Environments and promotion
 
@@ -193,6 +233,11 @@ Full record, topology diagram and promotion path: `docs/architecture/environment
   that names none, so squash-merge subjects matter: they are what makes a deployment traceable (CTL-40).
 - **A migration may not drop a table, column or constraint** in the same release that stops using it — the dry-run
   refuses it. Split it across two releases, or mark a completed contraction `EXPAND-THEN-CONTRACT-REVIEWED`.
+- **Migrations** (TASK-024): read the authoring guide, `src/backend/PMPlatform.Infrastructure/Persistence/Migrations/README.md`,
+  before writing one. Name it `TASK-nnn_<Description>` (EF Core adds the timestamp), give it a Down that restores
+  the previous schema exactly, and never edit one that has reached `dev`. The `backend` gate applies every migration
+  to PostgreSQL 17 from empty, rolls each one back and re-applies it. `repo-checks` fails a pull request that
+  changes a merged migration.
 - **Rollback is a re-promotion**: run the pipeline from the Actions tab with the earlier commit's SHA. It passes the
   same gates and the same PROD approval as any other release.
 
@@ -214,9 +259,17 @@ Full record, topology diagram and promotion path: `docs/architecture/environment
   `backend` (restore, `-warnaserror` build with the analyzers, unit tests), `frontend` (`npm ci`, lint,
   format, `tsc -b --noEmit`, Vitest, build), `repo-checks` (the seven `python3 docs/architecture/*-check.py`
   scripts, standard library only) and `terraform` (`fmt -check`, `validate` on all four environment roots with
-  the committed lock files read-only, and a Trivy config scan gated at HIGH/CRITICAL). Integration tests need
-  the containerised stack and are not in this gate. The same four jobs are called by the promotion pipeline on a
+  the committed lock files read-only, and a Trivy config scan gated at HIGH/CRITICAL). The `backend` job also
+  runs the `Persistence` integration tests against a PostgreSQL service and the `Identity` integration tests against
+  `AHDA-ldap`, started from the Compose file (TASK-024, TASK-028). The same four jobs are called by the promotion pipeline on a
   push to `main`, so a deployment gates on the checks that guarded the pull request rather than on a copy of them.
+
+- **Coverage** (TASK-084, `docs/testing/test-strategy.md` §5): in CI every `dotnet test` collects line coverage of
+  `PMPlatform.Domain` and `PMPlatform.Application` (`src/backend/coverage.runsettings`), and the `coverage` job fails a PR
+  when any module is under 80% or all of them under 85%. The frontend fails under 80% lines or 70% branches
+  (`npm run test:coverage`). A new integration namespace needs its own CI step in the same PR (`test-strategy-check.py`
+  TS-1). To see your numbers locally: `dotnet test <project> -s src/backend/coverage.runsettings --results-directory <dir>`,
+  then `python3 docs/testing/coverage-check.py <dir>`.
 
 ## Branches, pull requests, and main
 
@@ -229,12 +282,13 @@ Full policy: `docs/architecture/branching-strategy.md` (TASK-012).
   `feat`, `fix`, `chore`, `infra`, `sec`, `docs`, `test`, `release`, `refactor`, `ci`, `build`, `perf`, `revert`, `hotfix`. The workbook's
   Branch column is authoritative. One Task ID per branch.
 - Every PR is opened from `.github/PULL_REQUEST_TEMPLATE.md`: Task ID, description, test evidence and a security
-  checklist. The `pr-policy` check goes red until the Task ID is present, the evidence is filled in and every
-  checklist box is ticked. It is **advisory** — red is a review finding, not a merge block (branching-strategy §5.1).
+  checklist. No check enforces it; reviewers do (branching-strategy §5.1).
 - `main` (and `dev`, `stage`) are protected by `.github/branch-protection/protected-branches.ruleset.json`:
-  a pull request with **one approving review** and a review from the directory's code owners
-  (`.github/CODEOWNERS`); the `backend`, `frontend` and `repo-checks` checks **must pass** on a branch that is current
-  with the target; no direct push, no force-push, no bypass.
+  a pull request whose ten required checks (`backend`, `backend-risk-governance`, `backend-endpoint-hardening`,
+  `backend-platform-services`, `coverage`, `frontend`, `repo-checks`, `terraform`, `secret-scan`,
+  `dependency-vuln-gate`) **must pass** on a branch that is current with the target, with every review thread
+  resolved; no direct push, no force-push, no bypass. No approving review is required while one account holds write
+  access (branching-strategy §7 S-4); one approval and a code-owner review return when a second maintainer joins.
 - Commit messages: imperative subject line, task id in the body or the PR title.
 
 ## Where things do not go

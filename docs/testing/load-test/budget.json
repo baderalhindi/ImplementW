@@ -1,0 +1,32 @@
+{
+  "$comment": "TASK-086 working latency budget (docs/testing/load-test.md §2). A DELIVERY-TEAM PROPOSAL pending AHDA's PTBC-043 NFR thresholds, set before the first measured run; not an approval. When AHDA confirms its thresholds, replace the values here and re-run load-test-report.py over the recorded results: every verdict follows from this file.",
+  "status": "PROPOSED (PTBC-043 open)",
+  "concurrency": { "normal": 25, "peak": 50, "namedUsers": 150 },
+  "maxErrorRate": 0.01,
+  "groups": {
+    "shell": {
+      "p95Ms": 500,
+      "basis": "Sent by every page before or beside its content (session, unread badge); it must not be what the person waits for"
+    },
+    "register": {
+      "p95Ms": 1000,
+      "basis": "A register page, filter, next page or record: 1 s is the limit for a person's flow of thought to stay uninterrupted (Nielsen's response-time limits)"
+    },
+    "dashboard": {
+      "p95Ms": 2000,
+      "basis": "A dashboard composes several widgets over the caller's whole scope; up to 2 s with the page frame already shown"
+    },
+    "report-run": {
+      "p95Ms": 3000,
+      "basis": "An interactive report run returns its first page; up to 3 s, well inside the 10 s limit of attention"
+    },
+    "report-export": {
+      "p95Ms": 1000,
+      "basis": "Requesting an export only queues a job (FG-02); the request answers like any command"
+    },
+    "report-job": {
+      "p95Ms": 30000,
+      "basis": "Queue to downloadable file for a portfolio export; asynchronous, with progress shown, so beyond 10 s is acceptable"
+    }
+  }
+}

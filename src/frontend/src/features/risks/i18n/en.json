@@ -1,0 +1,303 @@
+{
+  "nav": {
+    "label": "Risks",
+    "register": "Risk register",
+    "critical": "Critical risks"
+  },
+  "forbidden": "You do not have access to these risks.",
+  "status": {
+    "IDENTIFIED": "Identified",
+    "ASSESSED": "Assessed",
+    "TREATMENT": "In treatment",
+    "MONITORING": "Monitoring",
+    "CLOSED": "Closed"
+  },
+  "actionStatus": {
+    "PLANNED": "Planned",
+    "IN_PROGRESS": "In progress",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "acceptanceStatus": {
+    "ACTIVE": "Active",
+    "EXPIRED": "Expired",
+    "REVOKED": "Revoked"
+  },
+  "actionType": {
+    "MITIGATE": "Mitigate",
+    "AVOID": "Avoid",
+    "TRANSFER": "Transfer",
+    "CONTINGENCY": "Contingency"
+  },
+  "rating": {
+    "none": "Not assessed"
+  },
+  "register": {
+    "title": "Risk register",
+    "description": "The risks of every project you can see, most severe first.",
+    "caption": "Risks across projects"
+  },
+  "project": {
+    "title": "Risk register",
+    "caption": "The project's risks"
+  },
+  "critical": {
+    "title": "Critical risks",
+    "description": "Open risks rated at the most severe rating of the published risk matrix.",
+    "needsMatrix": "Which risks are critical depends on the published risk matrix, so none can be listed until it can be read.",
+    "exposureTitle": "Exposure",
+    "exposureNote": "Open, assessed risks counted by their probability and overall impact.",
+    "matrixCaption": "Open risks by probability and overall impact",
+    "listTitle": "Critical risks ({count})",
+    "criterion": "A risk is listed when its latest assessment is rated {rating}, the most severe rating of matrix version {version}.",
+    "noRatings": "The published matrix defines no ratings.",
+    "caption": "Critical risks"
+  },
+  "summary": {
+    "open": "Open risks",
+    "critical": "Critical",
+    "reviewDue": "Review due",
+    "unassessed": "Not assessed",
+    "accepted": "Accepted",
+    "unknown": "Unknown"
+  },
+  "filter": {
+    "view": "Show",
+    "rating": "Rating",
+    "views": {
+      "open": "Open risks",
+      "reviewDue": "Review due",
+      "unassessed": "Not assessed",
+      "closed": "Closed risks",
+      "all": "All risks"
+    }
+  },
+  "empty": {
+    "filtered": "No risks match this view.",
+    "critical": "No open risk has the most severe rating.",
+    "register": {
+      "title": "No risks yet",
+      "body": "Risks are registered from a project's Risks section by its Project Manager."
+    },
+    "project": {
+      "title": "No risks registered",
+      "registrar": "Register the first risk with \"Register risk\".",
+      "reader": "The Project Manager registers this project's risks."
+    }
+  },
+  "table": {
+    "risk": "Risk",
+    "project": "Project",
+    "category": "Category",
+    "owner": "Owner",
+    "status": "Status",
+    "rating": "Rating",
+    "nextReview": "Next review",
+    "noOwner": "No owner",
+    "noReview": "Not set",
+    "reviewDue": "Review due",
+    "acceptedUntil": "Accepted until {date}",
+    "levels": "Probability {probability} × impact {impact}",
+    "materialised": "Raised as an issue"
+  },
+  "matrix": {
+    "axes": "Probability / impact",
+    "impactLevel": "Impact {level}",
+    "probabilityLevel": "{level} · {label}",
+    "unmapped": "Not mapped",
+    "count": "Risks: {count}",
+    "version": "Risk matrix version {version}, in force from {date}.",
+    "legend": "Ratings, least to most severe:",
+    "forbidden": "You cannot read the risk matrix, so it cannot be shown. Reading it needs the configuration view permission.",
+    "missing": "No risk matrix is published yet, so risks cannot be placed on it or assessed."
+  },
+  "fields": {
+    "title": "Title",
+    "description": "Description",
+    "category": "Category",
+    "identifiedDate": "Identified on",
+    "nextReviewDate": "Next review",
+    "probability": "Probability",
+    "assessmentRationale": "Basis of the assessment",
+    "closureRationale": "Closure rationale",
+    "expiresOn": "Accepted until",
+    "acceptanceRationale": "Why the risk is accepted",
+    "actionType": "Response",
+    "actionTitle": "Action",
+    "actionDescription": "Details",
+    "dueDate": "Target date"
+  },
+  "fieldErrors": {
+    "identifiedInFuture": "The identified date cannot be after today.",
+    "reviewBeforeIdentified": "The next review cannot be before the identified date.",
+    "expiryNotAfterToday": "The acceptance must end after today.",
+    "rationaleRequired": "Enter the rationale."
+  },
+  "form": {
+    "createTitle": "Register risk",
+    "editTitle": "Edit risk",
+    "descriptionHint": "Describe the cause, the uncertain event and its effect on the project.",
+    "chooseCategory": "Choose a category",
+    "categoriesUnreadable": "The risk categories cannot be read, so the category is shown by its ID.",
+    "categoriesUnreadableCreate": "The risk categories cannot be read, so a risk cannot be registered here. Reading them needs the master data view permission.",
+    "nextReviewHint": "Optional. Not before the identified date."
+  },
+  "assess": {
+    "title": "Assess {risk}",
+    "intro": "Choose a probability and an impact for each dimension of risk matrix version {version}. The server works out the overall impact and the rating when you save, and the assessment keeps that version.",
+    "chooseLevel": "Choose a level",
+    "levelOption": "{level} · {label}",
+    "impacts": "Impact by dimension",
+    "impactsHint": "The overall impact is the highest of these.",
+    "previewTitle": "Preview",
+    "previewPending": "Choose every level to see where the risk falls on the matrix.",
+    "preview": "Probability {probability} × overall impact {impact} falls in {rating}. The rating saved is the one the server returns.",
+    "matrixCaption": "Risk matrix in force, with the chosen levels marked",
+    "marked": "Chosen levels",
+    "confirm": "Save assessment"
+  },
+  "owner": {
+    "title": "Assign risk owner",
+    "intro": "Choose who owns {risk}.",
+    "confirm": "Assign owner"
+  },
+  "action": {
+    "createTitle": "Add mitigation or response",
+    "editTitle": "Edit treatment action",
+    "intro": "Plan how the risk is treated. The risk's rating does not change until it is reassessed."
+  },
+  "close": {
+    "title": "Close {risk}",
+    "acceptanceEnds": "Its acceptance, active until {date}, ends.",
+    "openActions": "Open treatment actions stay as they are: {count}.",
+    "history": "Its assessments, actions and acceptances are kept.",
+    "rationaleHint": "Say why the risk no longer needs managing. A rationale is required.",
+    "confirm": "Close risk"
+  },
+  "accept": {
+    "title": "Accept {risk}",
+    "intro": "Accepting a risk moves it to monitoring until the acceptance ends. On that date it returns to assessed.",
+    "expiresHint": "The first day the acceptance no longer holds. It must be after today.",
+    "confirm": "Accept risk"
+  },
+  "command": {
+    "start-treatment": {
+      "title": "Start treatment",
+      "consequence": "The risk moves to treatment. It needs at least one planned or in-progress action.",
+      "confirm": "Start treatment",
+      "done": "The risk is in treatment."
+    },
+    "monitor": {
+      "title": "Move to monitoring",
+      "consequence": "The risk moves to monitoring.",
+      "confirm": "Move to monitoring",
+      "done": "The risk is being monitored."
+    },
+    "revoke-acceptance": {
+      "title": "Revoke acceptance",
+      "consequence": "The acceptance ends now and the risk returns to assessed.",
+      "confirm": "Revoke acceptance",
+      "done": "The acceptance was revoked."
+    },
+    "reopen": {
+      "title": "Reopen risk",
+      "consequence": "The risk reopens as assessed, or identified if it was never assessed. Its closure rationale is cleared and the reopening is recorded.",
+      "confirm": "Reopen risk",
+      "done": "The risk was reopened."
+    }
+  },
+  "actionCommand": {
+    "start": {
+      "title": "Start action",
+      "consequence": "The action moves to in progress.",
+      "confirm": "Start",
+      "named": "Start {action}",
+      "done": "The action was started."
+    },
+    "complete": {
+      "title": "Complete action",
+      "consequence": "The action is completed. A completed action cannot be changed.",
+      "confirm": "Complete",
+      "named": "Complete {action}",
+      "done": "The action was completed."
+    },
+    "cancel": {
+      "title": "Cancel action",
+      "consequence": "The action is cancelled. A cancelled action cannot be changed.",
+      "confirm": "Cancel action",
+      "named": "Cancel {action}",
+      "done": "The action was cancelled."
+    }
+  },
+  "actions": {
+    "create": "Register risk",
+    "edit": "Edit",
+    "assess": "Assess",
+    "reassess": "Reassess",
+    "assignOwner": "Assign owner",
+    "addAction": "Add mitigation",
+    "accept": "Accept risk",
+    "close": "Close risk",
+    "editAction": "Edit {action}",
+    "backToRegister": "Back to the risk register"
+  },
+  "detail": {
+    "notFound": "This risk is not one of this project's.",
+    "commands": "Risk actions",
+    "acceptedUntil": "Accepted until",
+    "materialised": "Issue",
+    "materialisedIssues": "Raised as {count} issue(s)",
+    "reopened": "Reopened",
+    "reopenedCount": "{count} time(s)",
+    "closureTitle": "Closure",
+    "closedBy": "Closed by {name} on {date}.",
+    "exposureTitle": "Current exposure",
+    "notAssessed": "The risk has not been assessed, so it has no rating yet.",
+    "otherVersion": "The rating was given under an earlier matrix version and is kept as given. The map shows the matrix in force now.",
+    "matrixCaption": "Risk matrix in force, with this risk's levels marked",
+    "marked": "This risk",
+    "assessmentsTitle": "Assessment history",
+    "assessmentsCaption": "Assessments, newest first",
+    "noAssessments": "No assessments yet.",
+    "version": "Version",
+    "assessed": "Assessed",
+    "levels": "Levels",
+    "impact": "{dimension}: {level}",
+    "rationale": "Rationale",
+    "actionsTitle": "Treatment plan",
+    "actionsCaption": "Treatment actions, oldest first",
+    "noActions": "No treatment actions yet.",
+    "actionCommands": "Change",
+    "acceptancesTitle": "Acceptances",
+    "acceptancesCaption": "Acceptances, newest first",
+    "accepted": "Accepted"
+  },
+  "done": {
+    "created": "The risk was registered. Assess it to rate it.",
+    "updated": "The risk was updated.",
+    "assessed": "The assessment was saved.",
+    "ownerAssigned": "The owner was assigned.",
+    "actionCreated": "The treatment action was added.",
+    "actionUpdated": "The treatment action was updated.",
+    "closed": "The risk was closed.",
+    "accepted": "The risk was accepted.",
+    "stale": "The risk changed while you were working on it, so nothing was saved. It has been read again."
+  },
+  "problems": {
+    "projectNotEligible": "Risks can only be managed on a project that is approved and planned, active, suspended or completed.",
+    "notInProfile": "This project's governance profile does not include risk management.",
+    "categoryInvalid": "Choose a published risk category.",
+    "ownerNotEligible": "The owner must hold a role on this project.",
+    "identifiedDateInvalid": "The identified date cannot be after today.",
+    "closed": "The risk is closed. Reopen it before changing it.",
+    "impactInvalid": "The levels do not fit the risk matrix in force. Read the matrix again and choose a level for every dimension.",
+    "treatmentActionRequired": "Add a planned or in-progress action before starting treatment.",
+    "acceptanceActive": "The risk has an active acceptance. Revoke it first.",
+    "acceptanceNotActive": "The risk has no active acceptance.",
+    "acceptanceExpiryInvalid": "The acceptance must end after today.",
+    "actionNotEditable": "A completed or cancelled action cannot be changed.",
+    "configurationMissing": "No risk matrix is published, so the risk cannot be assessed.",
+    "invalidTransition": "The risk's state no longer allows this.",
+    "permissionDenied": "You do not have permission to do this."
+  }
+}

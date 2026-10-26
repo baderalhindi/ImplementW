@@ -1,0 +1,86 @@
+# Migration up/down validation at representative volume (TASK-089). Record: db/migrations/rollback-validation.md
+#
+# The release image built from the commit migrates a fresh PostgreSQL 17, the load test's representative volume is loaded
+# (docs/testing/load-test/volume), and db/migrations/validation/rollback_validation.py rolls migrations back and re-applies
+# them with the data in place, comparing schema checksums and data fingerprints. MigrationRollbackTests already reverts
+# every migration on an empty database in `backend`; this adds the data. Two ways in:
+#
+#   pull request  a change to the migrations, the seed or the harness: rehearses the rollback of the migrations the pull
+#                 request adds (at least the newest one), the way an environment would roll back the release.
+#   dispatch      any depth; `all` walks every migration down and up again and reloads the volume (the recorded run).
+name: migration-rollback-validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      depth:
+        description: "Migrations to walk down and up again (a number, or all)"
+        type: string
+        default: all
+  pull_request:
+    branches: [main, dev, stage]
+    paths:
+      - src/backend/PMPlatform.Infrastructure/Persistence/Migrations/**
+      - db/**
+      - docs/testing/load-test/volume/**
+      - src/frontend/e2e/stack/provision/**
+      - .github/workflows/migration-rollback-validation.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-rollback-validation-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    name: migration-rollback-validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Choose the depth
+        id: depth
+        env:
+          REQUESTED: ${{ inputs.depth }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [ -n "${REQUESTED:-}" ]; then
+            depth=$REQUESTED
+          else
+            added=$(git diff --name-only --diff-filter=A "origin/$BASE_REF...HEAD" -- \
+              'src/backend/PMPlatform.Infrastructure/Persistence/Migrations/*_TASK-*.cs' | grep -vc '\.Designer\.cs$' || true)
+            depth=$(( added > 0 ? added : 1 ))
+          fi
+          echo "depth=$depth" >>"$GITHUB_OUTPUT"
+          echo "Depth: $depth"
+
+      - name: Roll back and re-apply at representative volume
+        env:
+          MIGRATION_VALIDATION_OUTPUT: ${{ github.workspace }}/artifacts/migration-validation/ci
+        run: db/migrations/validation/run.sh --depth "${{ steps.depth.outputs.depth }}"
+
+      - name: Summarise
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          results=artifacts/migration-validation/ci/results.json
+          if [ -f "$results" ]; then
+            python3 db/migrations/validation/rollback_validation.py --summary "$results" >>"$GITHUB_STEP_SUMMARY"
+          else
+            echo "No results were written." >>"$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Attach the results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-rollback-validation
+          path: artifacts/migration-validation/
+          retention-days: 90
+          if-no-files-found: warn

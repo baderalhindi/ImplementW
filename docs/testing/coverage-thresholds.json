@@ -1,0 +1,8 @@
+{
+  "task": "TASK-084",
+  "policy": "docs/testing/test-strategy.md §5",
+  "metric": "line",
+  "assemblies": ["PMPlatform.Domain", "PMPlatform.Application"],
+  "minimumPerModule": 80,
+  "minimumTotal": 85
+}

@@ -1,0 +1,32 @@
+using PMPlatform.Application.Features.IdentityAccess.Contracts;
+
+namespace PMPlatform.Application.Features.IdentityAccess.Authentication;
+
+/// <summary>The platform side of a sign-in: the user a directory subject belongs to and their active assignments.</summary>
+public interface IUserAccessRepository
+{
+    public Task<UserAccess?> FindByDirectorySubjectAsync(string directorySubjectId, CancellationToken cancellationToken);
+
+    public Task<UserAccess?> FindByIdAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Copies the directory-authoritative attributes onto the user (ADR-007). A department or manager the platform
+    /// cannot resolve is left as it is and reported, never guessed.
+    /// </summary>
+    public Task ApplyDirectoryAttributesAsync(Guid userId, DirectoryEntry entry, CancellationToken cancellationToken);
+
+    /// <summary>Records that the user has enrolled a second factor (TASK-029). The change is the user's own.</summary>
+    public Task RecordMultiFactorEnrolmentAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Records that Nafath verified the user's identity (TASK-068): the verification's reference and time, nothing else
+    /// (OQ-007). The first verification stands; a later one changes nothing. The change is the user's own.
+    /// </summary>
+    public Task RecordIdentityVerificationAsync(Guid userId, string reference, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Active internal users with a directory subject, with their job title, their department's directory reference and their manager's
+    /// subject, ordered by id: what a directory reconciliation compares (TASK-075). Reads only.
+    /// </summary>
+    public Task<IReadOnlyList<DirectoryLinkedPerson>> ListDirectoryLinkedPeopleAsync(CancellationToken cancellationToken);
+}

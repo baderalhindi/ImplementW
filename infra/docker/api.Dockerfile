@@ -5,7 +5,9 @@
 # tracks .NET 10 LTS (ADR-002 §4.2.1); global.json's rollForward: latestPatch accepts its patch level.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
-COPY global.json ./
+# .editorconfig: the image compiles under the same analyzer rules as CI, including the generated-code exemption
+# for Persistence/Migrations (TASK-024).
+COPY global.json .editorconfig ./
 COPY src/backend/Directory.Build.props src/backend/Directory.Packages.props src/backend/PMPlatform.slnx src/backend/
 COPY src/backend/PMPlatform.Domain/PMPlatform.Domain.csproj src/backend/PMPlatform.Domain/
 COPY src/backend/PMPlatform.Application/PMPlatform.Application.csproj src/backend/PMPlatform.Application/
@@ -13,6 +15,8 @@ COPY src/backend/PMPlatform.Infrastructure/PMPlatform.Infrastructure.csproj src/
 COPY src/backend/PMPlatform.Api/PMPlatform.Api.csproj src/backend/PMPlatform.Api/
 RUN dotnet restore src/backend/PMPlatform.Api/PMPlatform.Api.csproj
 COPY src/backend/ src/backend/
+# TASK-027: the seed and data-integrity scripts are embedded in PMPlatform.Infrastructure (`seed`, `validate-data-integrity`).
+COPY db/seed/ db/seed/
 RUN dotnet publish src/backend/PMPlatform.Api/PMPlatform.Api.csproj --configuration Release --no-restore --output /app
 
 # Stage 2: runtime only. curl is installed for the compose health check; the image otherwise ships nothing but the
@@ -23,6 +27,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app ./
+# TASK-037: the local stack mounts its document store here (DOCUMENT_STORAGE_CONNECTION_STRING=file:///…). A new named
+# volume takes this directory's owner, so the app user can write to it. Environments use Cloud Storage and never mount it.
+RUN mkdir -p /var/lib/pmplatform/documents && chown app:app /var/lib/pmplatform/documents
 USER app
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "PMPlatform.Api.dll"]

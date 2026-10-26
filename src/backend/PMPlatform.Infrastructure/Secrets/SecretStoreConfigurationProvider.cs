@@ -86,12 +86,12 @@ internal sealed class SecretStoreConfigurationProvider : ConfigurationProvider, 
         try
         {
             Dictionary<string, string?> read = new(StringComparer.OrdinalIgnoreCase);
-            foreach (string key in _options.Keys)
+            foreach ((string key, bool keyRequired) in _options.Keys.Select(k => (k, true)).Concat(_options.OptionalKeys.Select(k => (k, false))))
             {
                 string? value = await _store.ReadAsync(key, cancellationToken).ConfigureAwait(false);
                 if (string.IsNullOrEmpty(value))
                 {
-                    if (required)
+                    if (required && keyRequired)
                     {
                         throw new SecretStoreException(
                             $"{key} has no value in the secret store at {GoogleSecretManagerStore.AddressOf(_options.Endpoint, key)}. " +

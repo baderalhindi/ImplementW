@@ -144,7 +144,8 @@ def check_openapi(spec):
             if prop.endswith("Sar"):
                 target = resolve(spec, pschema)
                 alts = [resolve(spec, a) for a in target.get("oneOf", [])] if "oneOf" in target else [target]
-                money = [a for a in alts if a.get("type") == "string"]
+                # OpenAPI 3.1 writes a nullable string as type: ["null", "string"] (TASK-043).
+                money = [a for a in alts if a.get("type") == "string" or "string" in (a.get("type") if isinstance(a.get("type"), list) else [])]
                 if not money or any(a.get("pattern") != MONEY_PATTERN for a in money):
                     find("C-13", f"{name}.{prop} must be a MoneySar decimal string (R-16)")
 

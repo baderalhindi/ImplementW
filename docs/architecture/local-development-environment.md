@@ -48,8 +48,9 @@ takes ten minutes to rewrite does not do that.
 | `postgres` | `postgres:17` — the major version of every environment (ADR-002 §4.1; fallback 16 fixed at TASK-020) | `5432` | `pg_isready` |
 | `api` | built from `infra/docker/api.Dockerfile` — SDK 10.0 publish stage, `aspnet:10.0` runtime stage, non-root `app` user | `5080` → 8080 (5080 matches `launchSettings.json`) | `curl --fail /health` |
 | `frontend` | built from `infra/docker/frontend.Dockerfile` — `node:24-slim`, Vite dev server with `src/frontend` bind-mounted | `5173` | `fetch('/')` |
+| `ldap` (TASK-028) | built from `infra/docker/ldap/Dockerfile` — `alpine:3.22` OpenLDAP, the test directory the API signs people in against (`sso-directory-integration.md` §6) | `3389` → 389 | `ldapwhoami` as the service account |
 
-The compose project is **`ahda`**, and the three containers are `AHDA-postgres`, `AHDA-api` and `AHDA-frontend`,
+The compose project is **`ahda`**, and the containers are `AHDA-postgres`, `AHDA-api`, `AHDA-frontend` and, since TASK-028, `AHDA-ldap`,
 so the stack is identifiable as AHDA in `docker ps` and in any Docker UI. Compose rejects an uppercase project
 name (`must consist only of lowercase alphanumeric characters...`), which is why the project itself is lowercase
 while the container names — which carry no such restriction — are not. The project name also prefixes the
@@ -66,20 +67,28 @@ bind mount cannot drag a host `node_modules` — built on a different platform �
 
 ### 3.2 The seed, and the schema it needs
 
-TASK-014's criterion is "seeded data includes at least one user per role R01-R08", and TASK-023/TASK-024 — which
-create the schema — have not run. Three init scripts run once, in name order, on an empty data volume:
+TASK-014's criterion is "seeded data includes at least one user per role R01-R08". Since TASK-025 the schema comes
+from the EF Core migrations: compose's one-shot `migrate` service runs the API image's `migrate` command once
+`postgres` is healthy, then the one-shot `seed` service runs, with `psql` in one transaction, TASK-027's platform
+seed `db/seed/seed-master-data.sql`, the local users `infra/docker/postgres/seed/seed-local-users.sql` and TASK-027's
+`db/seed/validate-data-integrity.sql`; only then does `api` start. Both one-shots exit 0 on every `up` (the migrations
+are already applied; the seeds are idempotent). The table below is the original TASK-014 layout: `01-schema.sql` is
+deleted (TASK-025), `02-seed-roles.sql` is replaced by `db/seed/seed-master-data.sql` (TASK-027), and
+`03-seed-local-users.sql` is now `seed/seed-local-users.sql`, which no longer creates the SERVICE principal or the
+external-entity type — the platform seed does.
 
 | Script | What it does | Whose job it really is |
 | --- | --- | --- |
-| `01-schema.sql` | **Bridge schema.** Nine tables of the canonical ERD — `department`, `master_data_catalogue`, `master_data_item`, `role`, `user`, `external_entity`, `permission_profile`, `permission_profile_version`, `access_relationship` — transcribed from `erd.dbml` column for column, with the foreign keys between them. | TASK-023/TASK-024. **This file is deleted when they land**, and compose runs `dotnet ef database update` in its place. §4 check 3 is what keeps it honest until then. |
+| `01-schema.sql` | **Bridge schema.** Nine tables of the canonical ERD — `department`, `master_data_catalogue`, `master_data_item`, `role`, `user`, `external_entity`, `permission_profile`, `permission_profile_version`, `access_relationship` — transcribed from `erd.dbml` column for column, with the foreign keys between them. | TASK-025 (TASK-024 built the framework and the module schemas, not these tables). **This file is deleted when TASK-025 lands**, and compose runs the API image's `migrate` command in its place. §4 check 3 is what keeps it honest until then. |
 | `02-seed-roles.sql` | The eight canonical roles R01–R08 (`is_system`, `is_external_eligible` on R04 and R08 per ADR-013), each with its shipped-default `permission_profile` and one PUBLISHED version. | TASK-027 (`db/seed`), whose description names "the 8 canonical roles (R01-R08)". Interim copy, idempotent in TASK-027's own upsert style. |
 | `03-seed-local-users.sql` | One department, one external entity and its master-data type, a SERVICE principal, and **eight local users bound to the eight default profile versions** — R03 carrying the DEPT anchor, R08 the ENTITY anchor and its named AHDA sponsor (ADR-013). | Nobody: these are synthetic local accounts, never promoted to DEV/SIT/UAT/PROD. |
 
 Three decisions inside that:
 
-- **The users are data, not accounts.** They carry no credential of any kind. Sign-in is SSO (ADR-007) and a local
-  sign-in path is TASK-028's test directory; until then these rows are what a developer's queries, fixtures and
-  authorization tests point at. `pmplatform.local` addresses are unroutable by construction.
+- **The users are data, not accounts.** They carry no credential of any kind. Since TASK-028 each signs in against the
+  test directory `AHDA-ldap`, which holds the (local default) password and links the person to the row by
+  `directory_subject_id` = entryUUID: `POST /api/v1/sessions` with `local.r01` … `local.r08`. `pmplatform.local`
+  addresses are unroutable by construction.
 - **Assignments bind to a profile version, not to a role** (ADR-018). Binding the seed directly to `role.id` would
   have been shorter and would have modelled the thing ADR-018 replaced.
 - **No permission grants.** `permission_profile_grant` needs the protected permission catalogue, which is
@@ -161,18 +170,24 @@ identically on both.
 | ID | Finding | Owner / where it goes |
 | --- | --- | --- |
 | **F-1** | **Role labels are provisional.** The Blueprint's Appendix A role list is not in the repository, so `name_ar`/`name_en` for R01–R08 follow the dashboard inventory DSH-001–008 and the two roles the workbook names outright (R01 System Administrator, R04 Project Manager). The codes R01–R08 are canonical and nothing keys on a label, so the correction is a label update. | TASK-027, from the controlled source |
-| **F-2** | **The bridge schema must be deleted, not migrated.** `01-schema.sql` exists only because TASK-023/TASK-024 have not run. When they do, delete it, point compose at `dotnet ef database update`, and keep `02-`/`03-` as DML. Leaving it would give the local stack a second schema definition — exactly the drift `local-stack-check.py` exists to detect in the meantime. | TASK-023, TASK-024 |
-| **F-3** | `JWT_SIGNING_KEY` is supplied to the API and read by nothing: no code issues a token yet. It is set now because the workbook's TASK-014 row names it and because the variable must be present the day TASK-028 starts. | TASK-028 |
-| **F-4** | **The seeded users cannot sign in**, by design (§3.2). A developer testing an authenticated path before TASK-028 needs a local token-issuing stub; that stub is TASK-028/TASK-029 scope and must never ship outside `Development`. | TASK-028 |
+| **F-2** | **CLOSED by TASK-025 (2026-09-25):** `01-schema.sql` and `local-stack-check.py` deleted; compose migrates, then seeds (§3.2); see `core-platform-schema.md` §7. Original finding: **The bridge schema must be deleted, not migrated.** `01-schema.sql` exists only because no migration creates its nine tables yet. TASK-024 built the migration framework and the module schemas; the tables are TASK-025's. When TASK-025 lands, delete the file, run the API image's `migrate` command in compose (`database-migrations.md` §3), and keep `02-`/`03-` as DML. Leaving it would give the local stack a second schema definition — exactly the drift `local-stack-check.py` exists to detect in the meantime. | TASK-025 (handed over by TASK-024, 2026-09-25) |
+| **F-3** | **CLOSED by TASK-028 (2026-09-26):** the API signs and validates its session tokens with it. Original finding: `JWT_SIGNING_KEY` is supplied to the API and read by nothing: no code issues a token yet. It is set now because the workbook's TASK-014 row names it and because the variable must be present the day TASK-028 starts. | TASK-028 |
+| **F-4** | **CLOSED by TASK-028 (2026-09-26):** the seeded users sign in against `AHDA-ldap` through the same directory path as every environment; no token-issuing stub was needed. Original finding: **The seeded users cannot sign in**, by design (§3.2). A developer testing an authenticated path before TASK-028 needs a local token-issuing stub; that stub is TASK-028/TASK-029 scope and must never ship outside `Development`. | TASK-028 |
 | **F-5** | The shipped-default profile versions carry **no permission grants** — the catalogue is TASK-030/TASK-110's. An authorization test written against this seed today asserts on role identity only. | TASK-030, TASK-110 |
 | **F-6** | **Docker Desktop verified; Linux Docker Engine not.** The stack was first built against podman, then re-run unchanged on Docker Desktop 4.92 for macOS (check 1b) — same result, no file changed. Windows (WSL2) and Linux Docker Engine are still unverified; the `src/frontend` bind mount and the `postgres` init-script mount are where a platform difference would show. Run `infra/docker/smoke-test.sh` once on each before the onboarding claim is made unconditionally. | DevOps/Platform Lead, before TASK-015 |
 | **F-7** | `local-stack-check.py` is run by hand, like `erd-check.py`, `contract-check.py` and `env-template-check.py`. Wiring the four into CI is TASK-015's gate scope. | TASK-015 (see TASK-013 F-7) |
 | **F-8** | The stack serves **plain HTTP**; the API logs `Failed to determine the https port for redirect` because `UseHttpsRedirection` has no HTTPS port in the container. Harmless locally and correct — TLS terminates at the environment's ingress (TASK-016) — but the middleware's behaviour in a container is worth settling when the deployment shape is. | TASK-016, TASK-078 |
-| **F-9** | **The SPA does not call the API in this stack.** It cannot: no variable names the API origin for the frontend (TASK-013 F-2, still open). `CORS_ALLOWED_ORIGINS` is set to `http://localhost:5173` in anticipation and is consumed by nothing until TASK-078. When F-2 is decided, add the variable to the sheet, then to `.env.example`, then here. | TASK-016 (decision), TASK-078 |
+| **F-9** | **The SPA does not call the API in this stack.** It cannot: no variable names the API origin for the frontend (TASK-013 F-2, still open). `CORS_ALLOWED_ORIGINS` is set to `http://localhost:5173`; since TASK-078 the API refuses any other browser origin (`endpoint-hardening.md` D-9), so a second Vite on another port needs its origin added. When F-2 is decided, add the variable to the sheet, then to `.env.example`, then here. | TASK-016 (decision), TASK-078 |
 
 ## 7. Change log
 
 | Date | Change | Author |
 | --- | --- | --- |
+| 2026-09-30 | TASK-037 gives the API a document store: `DOCUMENT_STORAGE_CONNECTION_STRING=file:///var/lib/pmplatform/documents` on the named volume `document-store` (the image creates the directory for the `app` user). It is a local path, not a credential. No malware-scanning provider exists, so no uploaded version ever becomes CLEAN here; and no document type or classification is published, so an upload is refused 422 until they are (`document-management.md` F-2, F-4). | Backend (TASK-037) |
+| 2026-09-27 | TASK-032 makes the SPA call the API in this stack: it calls `/api/v1` same-origin and the Vite dev server forwards `/api` to `PMPLATFORM_API_ORIGIN`, set on the `frontend` service to `http://api:8080` (a compose-only variable read by Vite's Node process, never bundled). Addresses F-9 for local development without a sheet variable; deployed routing stays TASK-016's (`identity-access-administration-ui.md` D-2, F-5). Checked through `localhost:5173`: `local.r02` signs in (201) and is refused `GET /users` (403) by the API. | Frontend (TASK-032) |
+| 2026-09-26 | TASK-028 adds the `ldap` service (`AHDA-ldap`), the test directory; the API waits for it and is configured for it (`AD_*`, `Identity__Directory__*`). The local users gain `directory_subject_id` = their entryUUID there, and `DEPT-LOCAL` its `directory_reference`. Closes F-3 and F-4. `smoke-test.sh` after `up --build`: healthy in 14s, one active user per R01–R08; `local.r01` signs in over HTTP with R01 (`sso-directory-integration.md` §7). | Identity (TASK-028) |
+| 2026-09-26 | TASK-027 replaces the interim roles script with the platform seed `db/seed/seed-master-data.sql`, renames the local-users script to `seed/seed-local-users.sql` (it now relies on the platform seed for the SERVICE principal and the external-entity type), and ends the `seed` service with `db/seed/validate-data-integrity.sql`, all in one transaction. Run twice on the existing local volume: exit 0 both times, no violation; `verify-seed.sql` still finds one active user per R01–R08 (`seed-data-and-integrity.md` §5). | Database (TASK-027) |
+| 2026-09-25 | TASK-025 closes F-2. Bridge schema and `local-stack-check.py` (check 3, and its CI step) deleted; the migrated schema is compared with `erd.dbml` by `CoreSchemaTests` instead. Compose gains the one-shot `migrate` and `seed` services; the seed scripts move to `postgres/seed`. The API's `DB_CONNECTION_STRING` host goes back to `postgres`, the service name. `smoke-test.sh` from a reset volume: healthy in 14s, `/health` 200, one user per R01–R08. | Database (TASK-025) |
+| 2026-09-25 | F-2 and the `01-schema.sql` row handed from TASK-023/TASK-024 to TASK-025. TASK-024 created the module schemas but none of the nine bridged tables, so the bridge stays until TASK-025 migrates them. | Database (TASK-024) |
 | 2026-09-22 | Re-run unchanged on Docker Desktop 4.92 (check 1b): healthy in 52s, all checks green. F-6 narrowed to Windows and Linux Docker Engine. Cold-build reading of criterion 1 stated explicitly (§5). | Architecture (TASK-014) |
 | 2026-09-22 | Initial record. Three-service compose stack (PostgreSQL 17, API on .NET 10, Vite dev server) with health-gated start-up; bridge schema transcribing nine ERD tables, canonical roles R01–R08 with shipped-default profile versions, and one local user per role (§3.2); `/health` backed by a real PostgreSQL probe (§3.4); `smoke-test.sh` and `local-stack-check.py` with mutation check. Verified from a cold machine at 70s build + 26s to healthy (§4). Built under the ADR-002 gate on the assumption the stack is confirmed as proposed (§2). Nine findings (F-1…F-9). | Architecture (TASK-014) |

@@ -1,0 +1,12 @@
+# The e2e stack's edge (TASK-085): TLS in front of the SPA and its /api, as SIT's host has, on a reserved .test name.
+# Caddy's internal CA issues the certificate; the browser is told to accept it (playwright.config.ts). Without HTTPS the
+# page is not a secure context and the SPA cannot mint Idempotency-Keys (crypto.randomUUID).
+{
+	auto_https disable_redirects
+	skip_install_trust
+}
+
+pmplatform.e2e.test {
+	tls internal
+	reverse_proxy e2e-web:4173
+}

@@ -1,0 +1,110 @@
+import approvalsAr from '@/features/approvals/i18n/ar.json';
+import approvalsEn from '@/features/approvals/i18n/en.json';
+import auditActivityAr from '@/features/audit-activity/i18n/ar.json';
+import auditActivityEn from '@/features/audit-activity/i18n/en.json';
+import changeRequestsAr from '@/features/change-requests/i18n/ar.json';
+import changeRequestsEn from '@/features/change-requests/i18n/en.json';
+import dashboardsAr from '@/features/dashboards/i18n/ar.json';
+import dataImportAr from '@/features/data-import/i18n/ar.json';
+import dataImportEn from '@/features/data-import/i18n/en.json';
+import dashboardsEn from '@/features/dashboards/i18n/en.json';
+import documentsAr from '@/features/documents/i18n/ar.json';
+import documentsEn from '@/features/documents/i18n/en.json';
+import externalParticipationAr from '@/features/external-participation/i18n/ar.json';
+import externalParticipationEn from '@/features/external-participation/i18n/en.json';
+import financialKpiAr from '@/features/financial-kpi/i18n/ar.json';
+import financialKpiEn from '@/features/financial-kpi/i18n/en.json';
+import homeAr from '@/features/home/i18n/ar.json';
+import homeEn from '@/features/home/i18n/en.json';
+import identityAccessAr from '@/features/identity-access/i18n/ar.json';
+import identityAccessEn from '@/features/identity-access/i18n/en.json';
+import integrationAdminAr from '@/features/integration-admin/i18n/ar.json';
+import integrationAdminEn from '@/features/integration-admin/i18n/en.json';
+import issuesChallengesAr from '@/features/issues-challenges/i18n/ar.json';
+import issuesChallengesEn from '@/features/issues-challenges/i18n/en.json';
+import milestonesAr from '@/features/milestones/i18n/ar.json';
+import milestonesEn from '@/features/milestones/i18n/en.json';
+import notificationsAr from '@/features/notifications/i18n/ar.json';
+import notificationsEn from '@/features/notifications/i18n/en.json';
+import progressAr from '@/features/progress/i18n/ar.json';
+import progressEn from '@/features/progress/i18n/en.json';
+import projectsAr from '@/features/projects/i18n/ar.json';
+import projectsEn from '@/features/projects/i18n/en.json';
+import reportsAr from '@/features/reports/i18n/ar.json';
+import reportsEn from '@/features/reports/i18n/en.json';
+import risksAr from '@/features/risks/i18n/ar.json';
+import risksEn from '@/features/risks/i18n/en.json';
+import scheduleAr from '@/features/schedule/i18n/ar.json';
+import scheduleEn from '@/features/schedule/i18n/en.json';
+import suspensionClosureAr from '@/features/suspension-closure/i18n/ar.json';
+import suspensionClosureEn from '@/features/suspension-closure/i18n/en.json';
+import tasksAr from '@/features/tasks/i18n/ar.json';
+import tasksEn from '@/features/tasks/i18n/en.json';
+
+import commonAr from './locales/ar.json';
+import commonEn from './locales/en.json';
+
+export type Language = 'ar' | 'en';
+
+// One namespace per resource file: `common` for the application shell, one per feature module.
+const en = {
+  common: commonEn,
+  identityAccess: identityAccessEn,
+  home: homeEn,
+  approvals: approvalsEn,
+  documents: documentsEn,
+  notifications: notificationsEn,
+  projects: projectsEn,
+  progress: progressEn,
+  schedule: scheduleEn,
+  tasks: tasksEn,
+  milestones: milestonesEn,
+  financialKpi: financialKpiEn,
+  risks: risksEn,
+  issuesChallenges: issuesChallengesEn,
+  changeRequests: changeRequestsEn,
+  suspensionClosure: suspensionClosureEn,
+  externalParticipation: externalParticipationEn,
+  dashboards: dashboardsEn,
+  reports: reportsEn,
+  auditActivity: auditActivityEn,
+  integrationAdmin: integrationAdminEn,
+  dataImport: dataImportEn,
+};
+
+// English is the reference shape; resources.test.ts fails if Arabic lacks or adds a key.
+type Resources = typeof en;
+
+export const resources: Record<Language, Resources> = {
+  en,
+  ar: {
+    common: commonAr,
+    identityAccess: identityAccessAr,
+    home: homeAr,
+    approvals: approvalsAr,
+    documents: documentsAr,
+    notifications: notificationsAr,
+    projects: projectsAr,
+    progress: progressAr,
+    schedule: scheduleAr,
+    tasks: tasksAr,
+    milestones: milestonesAr,
+    financialKpi: financialKpiAr,
+    risks: risksAr,
+    issuesChallenges: issuesChallengesAr,
+    changeRequests: changeRequestsAr,
+    suspensionClosure: suspensionClosureAr,
+    externalParticipation: externalParticipationAr,
+    dashboards: dashboardsAr,
+    reports: reportsAr,
+    auditActivity: auditActivityAr,
+    integrationAdmin: integrationAdminAr,
+    dataImport: dataImportAr,
+  },
+};
+
+type LeafKeys<T, Prefix extends string = ''> = {
+  [K in keyof T & string]: T[K] extends string ? `${Prefix}${K}` : LeafKeys<T[K], `${Prefix}${K}.`>;
+}[keyof T & string];
+
+export type TranslationKey = LeafKeys<Resources>;

@@ -1,0 +1,277 @@
+using Microsoft.Extensions.Logging;
+using PMPlatform.Application.Common.Auditing;
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Events;
+using PMPlatform.Domain.Common;
+using PMPlatform.Domain.IdentityAccess;
+using PMPlatform.Domain.MasterDataConfig;
+
+namespace PMPlatform.Application.Common.Authorization;
+
+/// <summary>
+/// Evaluates the Section 10.1 formula over the grants of the profile versions the user's active assignments are bound
+/// to (ADR-018). Grants combine by union: a request is allowed if any one grant allows it. Two rules bound every grant,
+/// whatever its scope (ADR-013): a per-project assignment covers only its project, and an external user never reaches a
+/// record of another entity or of no entity. Scoped: what it reads is read once per request. Every refusal is recorded as
+/// an AUTHORIZATION_DENIAL audit event before it is returned (TASK-033, CTL-25), whichever caller enforces it.
+/// </summary>
+internal sealed partial class AuthorizationEngine(
+    IAuthorizationRepository repository, PermissionCatalogue catalogue, IAuditTrail audit, ILogger<AuthorizationEngine> logger)
+    : IAuthorizationEngine
+{
+    private readonly Dictionary<Guid, AuthorizationPrincipal?> _principals = [];
+    private readonly Dictionary<string, IReadOnlyList<FieldClassification>> _fieldClassifications = new(StringComparer.Ordinal);
+    private IReadOnlyDictionary<Guid, int>? _classificationRanks;
+
+    public async Task<AuthorizationPrincipal?> GetPrincipalAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        if (!_principals.TryGetValue(userId, out AuthorizationPrincipal? principal))
+        {
+            principal = Bounded(await repository.FindPrincipalAsync(userId, cancellationToken).ConfigureAwait(false));
+            _principals[userId] = principal;
+        }
+
+        return principal;
+    }
+
+    public async Task<AuthorizationDecision> AuthorizeAsync(Guid userId, AuthorizationRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        AuthorizationDecision decision = await EvaluateAsync(userId, request, cancellationToken).ConfigureAwait(false);
+        if (!decision.IsAllowed)
+        {
+            LogDenied(logger, userId, request.PermissionCode, decision.Outcome, decision.Denial);
+            bool userExists = await GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false) is not null;
+            await audit.RecordAsync(DeniedEntry(userId, userExists, request.PermissionCode, decision, request.Subject)).ConfigureAwait(false);
+        }
+
+        return decision;
+    }
+
+    public async Task<AuthorizationDecision> EvaluateAsync(Guid userId, AuthorizationRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        PermissionDefinition permission = catalogue.Get(request.PermissionCode);
+        AuthorizationPrincipal? principal = await GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, int> ranks = request.Subject?.DataClassificationItemId is null
+            ? new Dictionary<Guid, int>()
+            : await GetClassificationRanksAsync(cancellationToken).ConfigureAwait(false);
+
+        return principal is not { IsActive: true }
+            ? AuthorizationDecision.Forbidden(AuthorizationDenial.InactivePrincipal)
+            : request.Subject is null
+                ? DecideWithoutRecord(principal, permission, request.RoleCode)
+                : DecideOnRecord(principal, permission, request.RoleCode, request.Subject, ranks);
+    }
+
+    public async Task<RecordScope> GetRecordScopeAsync(Guid userId, string permissionCode, CancellationToken cancellationToken)
+    {
+        PermissionDefinition permission = catalogue.Get(permissionCode);
+        AuthorizationPrincipal? principal = await GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (principal is not { IsActive: true })
+        {
+            return RecordScope.None;
+        }
+
+        IReadOnlyDictionary<Guid, int> ranks = await GetClassificationRanksAsync(cancellationToken).ConfigureAwait(false);
+        return new RecordScope([.. Granted(principal, permission, roleCode: null)
+            .Where(g => permission.Mode == AccessMode.Read || g.Scope != DataScope.ReadOnly)
+            .Select(g => ClauseOf(principal, g, ranks))
+            .OfType<RecordScopeClause>()]);
+    }
+
+    /// <summary>The principal without the grants <see cref="GrantPolicy"/> forbids: they take no effect, whatever the profile holds.</summary>
+    private AuthorizationPrincipal? Bounded(AuthorizationPrincipal? principal) =>
+        principal is null ? null : principal with
+        {
+            Grants = [.. principal.Grants.Where(g => !catalogue.Contains(g.PermissionCode)
+                                                     || GrantPolicy.Permits(g.RoleCode, principal.UserType, catalogue.Get(g.PermissionCode)))],
+        };
+
+    /// <summary>
+    /// <see cref="Covers"/> and <see cref="Clears"/> as conditions on the record's anchors. Null when the grant can reach
+    /// nothing: an anchor its scope needs is missing, or ADR-013's isolation contradicts its entity.
+    /// </summary>
+    private static RecordScopeClause? ClauseOf(AuthorizationPrincipal principal, EffectiveGrant grant, IReadOnlyDictionary<Guid, int> ranks)
+    {
+        Guid? isolatedTo = null;
+        if (principal.UserType == UserType.External)
+        {
+            if (principal.ExternalEntityId is not { } own)
+            {
+                return null;
+            }
+
+            isolatedTo = own;
+        }
+
+        RecordScopeClause clause = new()
+        {
+            ProjectId = grant.ProjectId,
+            ExternalEntityId = isolatedTo,
+            ClearedClassificationIds = grant.ClearanceItemId is { } clearance && ranks.TryGetValue(clearance, out int held)
+                ? ranks.Where(r => r.Value <= held).Select(r => r.Key).ToHashSet()
+                : [],
+        };
+
+        switch (grant.Scope)
+        {
+            case DataScope.All or DataScope.ReadOnly:
+                return clause;
+            case DataScope.Dept:
+                Guid? department = grant.DepartmentId ?? principal.DepartmentId;
+                return department is null ? null : clause with { DepartmentId = department };
+            case DataScope.Own:
+                return clause with { OwnerUserId = principal.UserId };
+            case DataScope.Assigned:
+                return AssignedToProject(principal, grant) ? clause : clause with { AssignedUserId = principal.UserId };
+            case DataScope.Entity:
+                Guid? entity = grant.ExternalEntityId ?? principal.ExternalEntityId;
+                return entity is null || (isolatedTo is not null && isolatedTo != entity) ? null : clause with { ExternalEntityId = entity };
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>
+    /// The refusal, with the anchors of the record it was decided on. The caller's answer (403 or 404) is not changed by
+    /// it. A token whose user does not exist names that id as the subject: it cannot be the actor of a stored event.
+    /// </summary>
+    private static AuditEntry DeniedEntry(Guid userId, bool userExists, string permissionCode, AuthorizationDecision decision, AuthorizationSubject? subject) =>
+        new(AuditEventClass.AuthorizationDenial, IdentityAccessAuditEvents.AccessDenied, AuditOutcome.Denied)
+        {
+            ActorUserId = userExists ? userId : null,
+            Subject = userExists ? null : new AuditSubject("IdentityAccess", nameof(User), userId),
+            ScopeProjectId = subject?.ProjectId,
+            ScopeExternalEntityId = subject?.ExternalEntityId,
+            DataClassificationItemId = subject?.DataClassificationItemId,
+            Attributes =
+            [
+                AuditAttribute.Of(IdentityAccessAuditAttributes.PermissionCode, permissionCode),
+                AuditAttribute.Of(IdentityAccessAuditAttributes.DenialReason, decision.Denial),
+                AuditAttribute.Of(IdentityAccessAuditAttributes.DecisionOutcome, decision.Outcome),
+                .. subject?.DepartmentId is { } departmentId ? [AuditAttribute.Of(IdentityAccessAuditAttributes.DepartmentId, departmentId)] : Array.Empty<AuditAttribute>(),
+                .. subject?.OwnerUserId is { } ownerUserId ? [AuditAttribute.Of(IdentityAccessAuditAttributes.OwnerUserId, ownerUserId)] : Array.Empty<AuditAttribute>(),
+            ],
+        };
+
+    public async Task<FieldMask> GetFieldMaskAsync(Guid userId, string permissionCode, string entityCode, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(entityCode);
+        catalogue.Get(permissionCode);
+
+        if (!_fieldClassifications.TryGetValue(entityCode, out IReadOnlyList<FieldClassification>? fields))
+        {
+            fields = await repository.GetFieldClassificationsAsync(entityCode, cancellationToken).ConfigureAwait(false);
+            _fieldClassifications[entityCode] = fields;
+        }
+
+        if (fields.Count == 0)
+        {
+            return FieldMask.None;
+        }
+
+        AuthorizationPrincipal? principal = await GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<Guid, int> ranks = await GetClassificationRanksAsync(cancellationToken).ConfigureAwait(false);
+        IEnumerable<EffectiveGrant> grants = principal is { IsActive: true }
+            ? principal.Grants.Where(g => g.PermissionCode == permissionCode)
+            : [];
+        List<EffectiveGrant> audience = [.. grants];
+
+        return new FieldMask(fields
+            .Where(f => f.MaskingRule != MaskingRule.Reveal && !audience.Any(g => Clears(g, f.DataClassificationItemId, ranks)))
+            .ToDictionary(f => f.FieldCode, f => f.MaskingRule, StringComparer.Ordinal));
+    }
+
+    private static AuthorizationDecision DecideWithoutRecord(AuthorizationPrincipal principal, PermissionDefinition permission, string? roleCode)
+    {
+        List<EffectiveGrant> granted = [.. Granted(principal, permission, roleCode)];
+        return granted.Count == 0 ? AuthorizationDecision.Forbidden(AuthorizationDenial.NotGranted)
+            : permission.Mode == AccessMode.Write && granted.All(g => g.Scope == DataScope.ReadOnly) ? AuthorizationDecision.Forbidden(AuthorizationDenial.ReadOnlyScope)
+            : AuthorizationDecision.Allowed;
+    }
+
+    private AuthorizationDecision DecideOnRecord(
+        AuthorizationPrincipal principal, PermissionDefinition permission, string? roleCode, AuthorizationSubject subject, IReadOnlyDictionary<Guid, int> ranks)
+    {
+        List<EffectiveGrant> granted = [.. Granted(principal, permission, roleCode)];
+        List<EffectiveGrant> covering = [.. granted.Where(g => Covers(principal, g, subject))];
+        List<EffectiveGrant> cleared = [.. covering.Where(g => Clears(g, subject.DataClassificationItemId, ranks))];
+
+        AuthorizationDenial denial =
+            granted.Count == 0 ? AuthorizationDenial.NotGranted
+            : covering.Count == 0 ? AuthorizationDenial.OutOfScope
+            : cleared.Count == 0 ? AuthorizationDenial.ClassificationExceeded
+            : permission.Mode == AccessMode.Write && cleared.All(g => g.Scope == DataScope.ReadOnly) ? AuthorizationDenial.ReadOnlyScope
+            : AuthorizationDenial.None;
+
+        if (denial != AuthorizationDenial.None)
+        {
+            // R-47: 403 only if some permission on this kind of record lets the caller see this one; otherwise 404.
+            bool visible = principal.Grants.Any(g =>
+                catalogue.Contains(g.PermissionCode)
+                && catalogue.Get(g.PermissionCode).Group == permission.Group
+                && Covers(principal, g, subject)
+                && Clears(g, subject.DataClassificationItemId, ranks));
+            return visible ? AuthorizationDecision.Forbidden(denial) : AuthorizationDecision.NotFound(denial);
+        }
+
+        // Record/lifecycle state, then workflow authority: both apply only to a record the caller is otherwise allowed.
+        return permission.Mode == AccessMode.Write && !subject.StateAllowsChange ? AuthorizationDecision.Forbidden(AuthorizationDenial.StateLocked)
+            : subject.WorkflowActorUserIds is { } actors && !actors.Contains(principal.UserId) ? AuthorizationDecision.Forbidden(AuthorizationDenial.NotWorkflowActor)
+            : AuthorizationDecision.Allowed;
+    }
+
+    /// <summary>The user's grants of the permission, through <paramref name="roleCode"/> only when one is named.</summary>
+    private static IEnumerable<EffectiveGrant> Granted(AuthorizationPrincipal principal, PermissionDefinition permission, string? roleCode) =>
+        principal.Grants.Where(g => g.PermissionCode == permission.Code && (roleCode is null || g.RoleCode == roleCode));
+
+    /// <summary>The project/business relationship (ADR-013), then the data scope with the assignment's anchors.</summary>
+    private static bool Covers(AuthorizationPrincipal principal, EffectiveGrant grant, AuthorizationSubject subject)
+    {
+        if (grant.ProjectId is { } project && project != subject.ProjectId)
+        {
+            return false;
+        }
+
+        // Cross-entity isolation is absolute (ADR-013): no scope takes an external user outside their own entity.
+        bool isolated = principal.UserType == UserType.External
+                        && (subject.ExternalEntityId is null || subject.ExternalEntityId != principal.ExternalEntityId);
+
+        return !isolated && grant.Scope switch
+        {
+            DataScope.All or DataScope.ReadOnly => true,
+            DataScope.Dept => subject.DepartmentId is { } department && department == (grant.DepartmentId ?? principal.DepartmentId),
+            DataScope.Own => subject.OwnerUserId == principal.UserId,
+            DataScope.Assigned => AssignedToProject(principal, grant) || subject.AssignedUserIds.Contains(principal.UserId),
+            DataScope.Entity => subject.ExternalEntityId is { } entity && entity == (grant.ExternalEntityId ?? principal.ExternalEntityId),
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// D-4: ASSIGNED reaches the records the user is an assignee of, and — for an internal user whose assignment names a project, such as a
+    /// Liaison assigned to it — every record of that project (the project itself is checked by <see cref="Covers"/>). An external user's
+    /// per-project assignment is ADR-013's isolation, not an assignment to the project's records, so it keeps to the records they are named on.
+    /// </summary>
+    private static bool AssignedToProject(AuthorizationPrincipal principal, EffectiveGrant grant) =>
+        principal.UserType == UserType.Internal && grant.ProjectId is not null;
+
+    /// <summary>
+    /// Unclassified data is cleared for everyone. Classified data needs a clearance of equal or higher rank; an unknown
+    /// classification or clearance clears nothing (fail closed).
+    /// </summary>
+    private static bool Clears(EffectiveGrant grant, Guid? classificationItemId, IReadOnlyDictionary<Guid, int> ranks) =>
+        classificationItemId is not { } classification
+        || (ranks.TryGetValue(classification, out int required)
+            && grant.ClearanceItemId is { } clearance
+            && ranks.TryGetValue(clearance, out int held)
+            && held >= required);
+
+    private async Task<IReadOnlyDictionary<Guid, int>> GetClassificationRanksAsync(CancellationToken cancellationToken) =>
+        _classificationRanks ??= await repository.GetClassificationRanksAsync(cancellationToken).ConfigureAwait(false);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Authorization denied: user {UserId}, permission {PermissionCode}: {Outcome} ({Denial}).")]
+    private static partial void LogDenied(ILogger logger, Guid userId, string permissionCode, AuthorizationOutcome outcome, AuthorizationDenial denial);
+}

@@ -7,7 +7,7 @@ namespace PMPlatform.Infrastructure.Secrets;
 /// </summary>
 /// <remarks>
 /// A key is added here by the task that first reads it, not in advance: the provider requires every key
-/// on this list at start-up, so listing a variable before any code consumes it would refuse to start an
+/// on <see cref="Keys"/> at start-up, so listing a variable before any code consumes it would refuse to start an
 /// environment over a value nothing needs yet. The full per-environment inventory the store holds is
 /// <c>infra/environments/environments.json</c>, derived from the sheet by <c>infra/secrets/inventory.py</c>;
 /// <c>docs/architecture/secret-management-check.py</c> fails the build if a key here is missing from it.
@@ -17,6 +17,64 @@ public static class ApplicationSecrets
     /// <summary>TASK-014, read by <see cref="Persistence.PostgreSqlHealthCheck"/> and by the data tier.</summary>
     public const string DatabaseConnectionString = "DB_CONNECTION_STRING";
 
-    /// <summary>The configuration keys loaded from the secret store, in the order they are read.</summary>
-    public static readonly IReadOnlyList<string> Keys = [DatabaseConnectionString];
+    /// <summary>TASK-028: signs and validates the platform's session tokens.</summary>
+    public const string JwtSigningKey = "JWT_SIGNING_KEY";
+
+    /// <summary>TASK-028: AHDA's directory, as an LDAP URL whose path is the user search base.</summary>
+    public const string DirectoryUrl = "AD_LDAP_URL";
+
+    /// <summary>TASK-028: the directory service account.</summary>
+    public const string DirectoryBindDn = "AD_BIND_DN";
+
+    /// <summary>TASK-028: the directory service account's password.</summary>
+    public const string DirectoryBindPassword = "AD_BIND_PASSWORD";
+
+    /// <summary>TASK-028: the platform's client secret at AHDA's identity provider.</summary>
+    public const string SsoClientSecret = "SSO_OIDC_CLIENT_SECRET";
+
+    /// <summary>TASK-029: the platform's API key at the MFA verification provider.</summary>
+    public const string MultiFactorProviderApiKey = "MFA_PROVIDER_API_KEY";
+
+    /// <summary>TASK-033: the platform's token at AHDA's SIEM ingestion endpoint.</summary>
+    public const string SiemApiToken = "SIEM_API_TOKEN";
+
+    /// <summary>TASK-037: the private object store behind WF-12 documents, <c>gs://&lt;bucket&gt;</c> or, in DEV, <c>file:///&lt;path&gt;</c>.</summary>
+    public const string DocumentStorageConnectionString = "DOCUMENT_STORAGE_CONNECTION_STRING";
+
+    /// <summary>TASK-039: the service account the WF-15 e-mail channel authenticates to AHDA's Exchange SMTP relay with.</summary>
+    public const string ExchangeSmtpUser = "EXCHANGE_SMTP_USER";
+
+    /// <summary>TASK-039: that service account's password.</summary>
+    public const string ExchangeSmtpPassword = "EXCHANGE_SMTP_PASSWORD";
+
+    /// <summary>TASK-068: the platform's client id at Nafath. An identifier, but classified Secret by the sheet, so stored as one.</summary>
+    public const string NafathClientId = "NAFATH_CLIENT_ID";
+
+    /// <summary>TASK-068: the platform's client secret at Nafath.</summary>
+    public const string NafathClientSecret = "NAFATH_CLIENT_SECRET";
+
+    /// <summary>TASK-078: the Redis-compatible store that holds the rate-limit counters every API instance shares.</summary>
+    public const string RateLimitStoreConnectionString = "RATE_LIMIT_STORE_CONNECTION_STRING";
+
+    /// <summary>The configuration keys loaded from the secret store and required at start-up, in the order they are read.</summary>
+    public static readonly IReadOnlyList<string> Keys = [DatabaseConnectionString, JwtSigningKey];
+
+    /// <summary>
+    /// Keys loaded from the secret store when they hold a value. Each belongs to a sign-in method that an environment
+    /// may not offer yet: the sheet scopes the directory to SIT/UAT/PROD, and the SSO client exists only once AHDA IT
+    /// registers it (ADR-007). Without them the method reports "not configured" on ADM-041 and the API still starts.
+    /// The MFA provider key is scoped to SIT/UAT/PROD and may not be needed at all if AHDA's identity provider applies
+    /// the second factor (ADR-010 gate note); without it, a sign-in that requires MFA is refused, never let through.
+    /// The SIEM token is scoped to SIT/UAT/PROD; without it, audit events are stored and wait to be forwarded. Without the
+    /// document store, uploads and downloads answer 503 and the API still starts. The Exchange relay's account is scoped to
+    /// SIT/UAT/PROD; without it, a relay that needs no authentication is used as it is, and without a relay no e-mail is sent.
+    /// The Nafath client is scoped to SIT/UAT/PROD; without it, an external user who must be verified is told verification
+    /// is unavailable and gets no session, never one without the verification (TASK-068). The rate-limit store is scoped to
+    /// SIT/UAT/PROD; without it, each API instance keeps its own counters (TASK-078).
+    /// </summary>
+    public static readonly IReadOnlyList<string> OptionalKeys =
+    [
+        DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey, SiemApiToken, DocumentStorageConnectionString,
+        ExchangeSmtpUser, ExchangeSmtpPassword, NafathClientId, NafathClientSecret, RateLimitStoreConnectionString,
+    ];
 }

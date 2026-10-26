@@ -1,0 +1,472 @@
+{
+  "nav": {
+    "label": "External participation",
+    "register": "External update requests",
+    "applications": "Source application monitoring",
+    "monitor": "Participation monitor",
+    "mine": "My update requests",
+    "contributions": "My contributions"
+  },
+  "forbidden": "You do not have access to this project's update requests.",
+  "internalOnly": {
+    "title": "Not available",
+    "description": "This screen is for AHDA staff. Your entity's update requests are in your own list."
+  },
+  "requestStatus": {
+    "DRAFT": "Draft",
+    "ISSUED": "Issued",
+    "IN_PROGRESS": "Response in progress",
+    "RESPONDED": "Response with AHDA",
+    "CLOSED": "Closed",
+    "CANCELLED": "Cancelled"
+  },
+  "contributionStatus": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "RETURNED": "Returned",
+    "REJECTED": "Rejected",
+    "ACCEPTED_PENDING_APPLICATION": "Accepted, pending application",
+    "APPLIED": "Applied",
+    "APPLICATION_FAILED": "Application failed"
+  },
+  "outcome": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "RETURNED": "Returned for correction",
+    "REJECTED": "Rejected",
+    "ACCEPTED": "Accepted"
+  },
+  "dueCondition": {
+    "NOT_APPLICABLE": "Not applicable",
+    "NOT_DUE": "Not yet due",
+    "DUE": "Due today",
+    "OVERDUE": "Overdue"
+  },
+  "due": {
+    "none": "No due date"
+  },
+  "schema": {
+    "TASK_PROGRESS": "Task progress",
+    "PROJECT_INFORMATION": "Project information"
+  },
+  "applicationMode": {
+    "REFERENCE_ONLY": "Reference only: kept as accepted input, applied to no record",
+    "UPDATE_ALLOWED_SOURCE_FIELDS": "Applied to its source record after acceptance"
+  },
+  "applicationState": {
+    "PENDING": "Pending application",
+    "CONFLICT": "Conflict: revalidation needed",
+    "REVALIDATED": "Revalidated: apply again",
+    "RETRYABLE": "Not applied: can retry",
+    "APPLIED": "Applied",
+    "FAILED": "Failed: cannot be applied"
+  },
+  "applicationExplain": {
+    "PENDING": "Accepted by AHDA and not yet applied to its source record.",
+    "CONFLICT": "The source record changed after the answer was given. Nothing was applied. Revalidate to confirm the answer still applies, then apply it again.",
+    "REVALIDATED": "A conflict was confirmed against the record as it is now. Apply it again.",
+    "RETRYABLE": "The source record refused the change for now, for example because its project or task is not in a state that takes it. Nothing was applied. Apply it again once it can.",
+    "APPLIED": "Applied to its source record.",
+    "FAILED": "The source record is gone or closed, so the answer can never be applied. The request is closed.",
+    "PENDING_AT": "Accepted on {date}; not yet applied to its source record.",
+    "CONFLICT_VERSIONS": "Conflict: the source record changed after the answer was given (answered against version {expected}, now version {found}). Nothing was applied. Revalidate to confirm the answer still applies, then apply it again.",
+    "REVALIDATED_BY": "Conflict revalidated by {person} against version {version}. Apply it again.",
+    "RETRYABLE_BECAUSE": "Not applied: {failure} Nothing was changed. Apply it again once the record can take it.",
+    "APPLIED_AT": "Applied by attempt {attempt} on {date} ({person}).",
+    "FAILED_BECAUSE": "Failed: {failure} Nothing was applied, and the request is closed."
+  },
+  "attemptStatus": {
+    "APPLIED": "Applied",
+    "CONFLICT": "Conflict",
+    "FAILED": "Refused"
+  },
+  "failure": {
+    "SOURCE_RECORD_NOT_FOUND": "the source record no longer exists.",
+    "SOURCE_RECORD_TERMINAL": "the source record is closed (for example, the task was cancelled).",
+    "SOURCE_RECORD_STATE_INVALID": "the task does not take a percentage in its current state (only an in-progress or blocked task without subtasks does).",
+    "PROJECT_STATE_NOT_PERMITTED": "the project is not active."
+  },
+  "fields": {
+    "project": "Project",
+    "entity": "External entity",
+    "purpose": "Purpose",
+    "contributionType": "Contribution type",
+    "source": "Source record",
+    "status": "Status",
+    "dueDate": "Response due",
+    "responder": "Responder (entity user)",
+    "reviewer": "Reviewer (AHDA)",
+    "instructions": "Instructions",
+    "issuedAt": "Issued",
+    "issuedBy": "Issued by",
+    "closedAt": "Closed",
+    "cancelledAt": "Cancelled",
+    "configuration": "Participation configuration version",
+    "schema": "Response schema",
+    "createdBy": "Drafted by",
+    "updatedBy": "Last changed by",
+    "actualPercentComplete": "Actual percent complete",
+    "progressNote": "Progress note",
+    "response": "Response",
+    "asOfDate": "As of"
+  },
+  "values": {
+    "notAnswered": "Not answered"
+  },
+  "people": {
+    "notNamed": "Not named yet",
+    "self": "Me ({name})",
+    "other": "Someone else",
+    "later": "Name later (before issuing)",
+    "find": "Find a person",
+    "userId": "User ID",
+    "userIdHint": "Enter the person's user ID. You cannot search people; the platform checks whether they are eligible."
+  },
+  "entity": {
+    "unknown": "Entity {id}"
+  },
+  "project": {
+    "noFormalId": "No formal project ID yet",
+    "internalTitle": "External update requests",
+    "externalTitle": "Update requests from AHDA",
+    "caption": "This project's update requests",
+    "emptyTitle": "No update requests",
+    "emptyCreator": "Ask the delivering entity for an update with Create request.",
+    "emptyReader": "No external entity has been asked for an update on this project.",
+    "emptyEntity": "AHDA has not asked your entity for an update on this project."
+  },
+  "table": {
+    "request": "Request",
+    "project": "Project",
+    "entity": "Entity",
+    "status": "Status",
+    "due": "Due",
+    "responder": "Responder",
+    "reviewer": "Reviewer",
+    "updated": "Last changed",
+    "revision": "Revision",
+    "outcome": "Outcome",
+    "submitted": "Submitted",
+    "reason": "AHDA's reason"
+  },
+  "filter": {
+    "status": "Status",
+    "allStatuses": "All statuses",
+    "due": "Due",
+    "anyDue": "Any",
+    "mineToReview": "Only requests I review",
+    "mineToAnswer": "Only requests I answer",
+    "showing": "Showing {shown} of {total} requests, most recently changed first.",
+    "noMatch": "No request matches these filters.",
+    "applicationState": "State",
+    "allStates": "All states"
+  },
+  "register": {
+    "title": "External update requests",
+    "description": "AHDA's requests to external entities for project updates: drafts, issued, answered and closed.",
+    "caption": "External update requests",
+    "narrowed": "Showing project {project}, entity {entity} only.",
+    "showAll": "Show all requests",
+    "emptyTitle": "No update requests",
+    "emptyHint": "A request is created from its project's workspace, on the External requests tab."
+  },
+  "mine": {
+    "title": "My update requests",
+    "description": "AHDA's requests for updates to your entity, on the projects you are assigned to.",
+    "caption": "Update requests to my entity",
+    "emptyTitle": "No update requests",
+    "emptyHint": "When AHDA asks your entity for an update, it appears here."
+  },
+  "contributions": {
+    "title": "My contributions",
+    "description": "Your answers to AHDA's update requests, each revision with its outcome.",
+    "awaitingTitle": "Waiting for your response",
+    "noneAwaiting": "No request is waiting for you to start a response.",
+    "start": "Start your response: {purpose}",
+    "historyTitle": "Your responses",
+    "caption": "My responses",
+    "emptyTitle": "You have not responded to a request yet.",
+    "continueDraft": "Draft: continue it on the request"
+  },
+  "detail": {
+    "title": "Update request",
+    "notFound": "This update request was not found, or you do not have access to it.",
+    "externalDescription": "A request from AHDA for an update from your entity.",
+    "internalDescription": "AHDA's request to an external entity for an update.",
+    "commands": "Request actions",
+    "contextTitle": "Request",
+    "openProject": "Open the project's requests",
+    "handlingTitle": "AHDA handling",
+    "notIssued": "Not issued yet",
+    "revisionsTitle": "Responses",
+    "draftNotVisible": "A draft is not visible to the entity. Issue it to ask for a response.",
+    "noRevisions": "The entity has not started a response yet.",
+    "applicationTitle": "Application to the source record",
+    "openApplications": "Open source application monitoring",
+    "noAttempts": "Accepted; no application attempt yet.",
+    "attemptsCaption": "Application attempts, newest first"
+  },
+  "response": {
+    "title": "Your response",
+    "intro": "Answer the fields AHDA asked for. Save a draft at any time; submit when it is complete. Once submitted, it cannot be changed: AHDA reviews it and may return it for correction.",
+    "returnedTitle": "AHDA returned your previous response",
+    "historyTitle": "Submitted responses",
+    "noHistory": "No response has been submitted yet.",
+    "withAhda": "Your entity's response is with AHDA for review.",
+    "notOpen": "This request is not open for a response now.",
+    "otherResponder": "Another user of your entity answers this request.",
+    "cancelled": "AHDA cancelled this request.",
+    "closed": "This request is closed.",
+    "numberHint": "A number, with up to 4 decimal places.",
+    "rangeHint": "A number from {min} to {max}, with up to 4 decimal places."
+  },
+  "revision": {
+    "number": "Revision {revision}",
+    "contributor": "Answered by",
+    "submitted": "Submitted",
+    "notSubmitted": "Not submitted",
+    "answeredAgainst": "Answered against",
+    "sourceVersion": "Version {version} ({state})",
+    "reviewedBy": "Reviewed by",
+    "reviewStarted": "Review started {date}",
+    "reviewStartedTerm": "Review started",
+    "decided": "Decided",
+    "reason": "AHDA's reason",
+    "internalNote": "Internal note (AHDA only)",
+    "values": "Values as submitted",
+    "openReview": "Open the review"
+  },
+  "review": {
+    "title": "Contribution review",
+    "heading": "{purpose}: revision {revision}",
+    "noSource": "No source record: a reference-only answer",
+    "notFound": "This response was not found, or you do not have access to it.",
+    "commands": "Review actions",
+    "notReviewer": "Only the request's reviewer, {name}, starts the review and decides.",
+    "pendingApplication": "Accepted. It is applied to its source record from source application monitoring.",
+    "stateTitle": "Review",
+    "sourceTitle": "Source record",
+    "referenceOnly": "Reference only: an accepted answer is kept as input and applied to no record.",
+    "notYetSubmitted": "Not submitted yet.",
+    "answeredAgainst": "Answered against version {version} of the source record ({state}).",
+    "sourceUnreadable": "The source record as it stands now cannot be read here.",
+    "sourceChanged": "The source record has changed since this answer was given: it is now at version {version} ({state}). You can still decide; applying an accepted answer will record a conflict to revalidate.",
+    "sourceUnchanged": "The source record is unchanged since this answer was given ({state}).",
+    "valuesTitle": "Submitted values",
+    "valuesNote": "The values are shown as submitted and cannot be edited. Accept, return with a reason for correction, or reject.",
+    "valuesCaption": "Submitted values beside the source record and the previous revision",
+    "field": "Field",
+    "submittedValue": "Submitted",
+    "currentValue": "Source record now",
+    "previousValue": "Revision {revision}",
+    "notMapped": "Not applied to the record"
+  },
+  "applications": {
+    "title": "Source application monitoring",
+    "description": "Accepted answers waiting to be applied to their source records, conflicts to revalidate, refusals to retry, and every attempt made.",
+    "legendTitle": "What each state means",
+    "count": "{count} {state}",
+    "attempts": "Attempts",
+    "lineage": "Application lineage",
+    "lineageCaption": "Attempts for revision {revision}, newest first",
+    "emptyTitle": "No accepted answer to apply",
+    "emptyHint": "An answer accepted in review appears here until it is applied to its source record."
+  },
+  "attempt": {
+    "number": "Attempt",
+    "status": "Outcome",
+    "expected": "Version expected",
+    "found": "Version found",
+    "failure": "Refusal",
+    "attempted": "Attempted",
+    "revalidated": "Revalidated",
+    "revalidatedVersion": "against version {version} ({person})",
+    "correlation": "Correlation ID"
+  },
+  "monitor": {
+    "title": "External participation monitor",
+    "description": "Each project and entity: requests not yet started, being drafted, or with AHDA; what is due or overdue; named responders.",
+    "accessNotAvailable": "Active external users and access expiry are not shown: the platform does not provide them yet. This screen changes no one's access.",
+    "caption": "Participation by project and entity",
+    "notStarted": "Not started",
+    "drafting": "Being drafted",
+    "withAhda": "With AHDA",
+    "dueOverdue": "Due or overdue",
+    "overdueCount": "{count} overdue",
+    "dueCount": "{count} due today",
+    "responders": "Responders named",
+    "drafts": "AHDA drafts",
+    "closedCancelled": "Closed / cancelled",
+    "emptyTitle": "No update requests"
+  },
+  "form": {
+    "createTitle": "Create update request",
+    "editTitle": "Edit update request",
+    "forProject": "For {project}",
+    "projectUnreadable": "For a project you cannot open here",
+    "noProject": "A request is created from its project's workspace, on the External requests tab.",
+    "notCreator": "Requests on this project are created by AHDA staff who manage it; the platform decides when you save.",
+    "notEditable": "Only a draft can be edited.",
+    "draftNote": "A draft is not visible to the entity. Save it to finish later, or save and issue it now.",
+    "entityHint": "The entity asked for the update; by default, the project's delivering entity.",
+    "entityIdHint": "You cannot list entities: enter the entity's ID.",
+    "entityFixed": "A request's entity does not change.",
+    "typeHint": "What the entity is asked for. Its schema decides the fields they answer.",
+    "typeIdHint": "You cannot list the contribution types: enter the type's ID.",
+    "taskHint": "The task whose progress the entity reports. Only an open task without subtasks can take a percentage.",
+    "sourceUnknownHint": "The record the answer applies to, if the type needs one.",
+    "taskIdHint": "You cannot list this project's tasks: enter the task's ID.",
+    "instructionsHint": "What the entity should answer and how. The entity reads this text.",
+    "dueDateHint": "Required to issue; not before today.",
+    "responderHint": "An active user of the entity, assigned to this project. Required to issue.",
+    "reviewerHint": "The AHDA user who reviews the response. Required to issue.",
+    "loadingChoices": "Loading the choices for {field}…"
+  },
+  "words": {
+    "reason": "Reason",
+    "reasonHint": "The entity reads this reason.",
+    "internalNote": "Internal note",
+    "internalNoteHint": "Seen by AHDA only, never by the entity."
+  },
+  "assign": {
+    "responderTitle": "Change the responder",
+    "reviewerTitle": "Change the reviewer",
+    "confirm": "Assign"
+  },
+  "apply": {
+    "title": "Apply to the source record",
+    "retryTitle": "Apply to the source record again",
+    "consequence": "The accepted answer is applied through the source's own rules. If the record changed since the answer was given, nothing is applied and a conflict is recorded; if the record cannot take it now, nothing is applied and the refusal is recorded."
+  },
+  "command": {
+    "issue": {
+      "title": "Issue the request",
+      "consequence": "The entity's responder can see and answer it from now on. The responder, the reviewer and a due date not before today are required."
+    },
+    "delete": {
+      "title": "Delete the draft",
+      "consequence": "The draft is deleted. The entity never saw it."
+    },
+    "cancel": {
+      "title": "Cancel the request",
+      "consequence": "The entity can no longer answer it. A response already with its reviewer is decided instead."
+    },
+    "submit": {
+      "title": "Submit your response",
+      "consequence": "Your response goes to AHDA for review. Once submitted it cannot be changed; AHDA may return it to you for correction."
+    },
+    "startReview": {
+      "title": "Start the review",
+      "consequence": "You take this response into review; then accept, return or reject it."
+    },
+    "accept": {
+      "title": "Accept the response",
+      "consequence": "The response is accepted as submitted. An answer for a source record waits to be applied to it; a reference-only answer is complete."
+    },
+    "return": {
+      "title": "Return for correction",
+      "consequence": "The entity gets a new revision holding the same values to correct and submit again. This revision stays as submitted."
+    },
+    "reject": {
+      "title": "Reject the response",
+      "consequence": "The response is rejected and the request is closed. Nothing is applied."
+    },
+    "revalidate": {
+      "title": "Revalidate the conflict",
+      "consequence": "Confirm that the accepted answer still applies to the source record as it is now (version {found}). The next attempt expects that version."
+    }
+  },
+  "actions": {
+    "create": "Create request",
+    "edit": "Edit",
+    "delete": "Delete draft",
+    "issue": "Issue",
+    "saveDraft": "Save draft",
+    "saveAndIssue": "Save and issue",
+    "cancelRequest": "Cancel request",
+    "changeResponder": "Change responder",
+    "changeReviewer": "Change reviewer",
+    "submitResponse": "Submit response",
+    "startReview": "Start review",
+    "accept": "Accept",
+    "return": "Return for correction",
+    "reject": "Reject",
+    "apply": "Apply to source",
+    "applyAgain": "Apply again",
+    "revalidate": "Revalidate",
+    "reviewRevision": "Review revision {revision}",
+    "openDetail": "Back to the request",
+    "backToRegister": "Back to external update requests",
+    "backToMine": "Back to my update requests",
+    "backToProject": "Back to the project's requests"
+  },
+  "done": {
+    "saved": "Draft saved. The entity cannot see it until it is issued.",
+    "issued": "Request issued. The entity's responder can answer it now.",
+    "cancelled": "Request cancelled.",
+    "responderChanged": "Responder changed.",
+    "reviewerChanged": "Reviewer changed.",
+    "draftSaved": "Draft saved.",
+    "submitted": "Response submitted to AHDA for review.",
+    "reviewStarted": "Review started.",
+    "accepted": "Response accepted.",
+    "returned": "Response returned for correction. The entity has a new revision to correct.",
+    "rejected": "Response rejected. The request is closed.",
+    "applied": "Applied to the source record.",
+    "conflictRecorded": "Not applied: the source record changed since the answer was given. The conflict is recorded; revalidate it, then apply again.",
+    "failureRecorded": "Not applied: the source record refused the change. The refusal is recorded with the answer.",
+    "revalidated": "Conflict revalidated. Apply it again."
+  },
+  "fieldErrors": {
+    "typeUnknown": "This contribution type does not exist or is not published.",
+    "typeNotAvailable": "This contribution type cannot be requested here: the platform has no schema for it, or it is not enabled for this project.",
+    "targetRequired": "Choose the task this request is about.",
+    "targetNotAllowed": "This contribution type is not about a record; leave it empty.",
+    "targetNotFound": "This record is not one of the project's.",
+    "entityInactive": "This entity is not active.",
+    "responderIneligible": "This person cannot answer the request: they must be an active user of the entity, assigned to this project.",
+    "responderRequired": "Name the responder before issuing.",
+    "reviewerIneligible": "This person cannot review the request: they must be an active AHDA user who may review it.",
+    "reviewerRequired": "Name the reviewer before issuing.",
+    "dueDatePast": "The due date cannot be before today.",
+    "answerRequired": "Answer this field before submitting.",
+    "answerMalformed": "This value is not in the expected format.",
+    "answerTooPrecise": "Use at most 4 decimal places.",
+    "answerOutOfRange": "Enter a number from {min} to {max}.",
+    "answerNotAccepted": "This value is not accepted."
+  },
+  "problems": {
+    "stale": "The request changed since you opened it. It has been reloaded; review it and try again.",
+    "projectState": "The project is not in a state that allows this (requests are drafted and issued while it is approved, active or suspended).",
+    "projectClosed": "The project is closed; nothing about it can be changed.",
+    "entityInactive": "The entity is not active.",
+    "schemaInvalid": "This contribution type has no response schema on the platform.",
+    "typeNotEnabled": "This contribution type is not enabled for the project's participation mode.",
+    "sourceInvalid": "The source record is missing, not needed, or not one of the project's.",
+    "responderIneligible": "The responder cannot answer this request.",
+    "reviewerIneligible": "The reviewer cannot review this request.",
+    "incomplete": "Name the responder and the reviewer before issuing.",
+    "dueDateInvalid": "The due date cannot be before today.",
+    "requestNotEditable": "Only a draft can be edited or deleted.",
+    "requestNotOpen": "This request is not open for a response now.",
+    "requestResponded": "The response is with its reviewer; decide it instead of cancelling.",
+    "contributionNotEditable": "A submitted response cannot be changed.",
+    "alreadySubmitted": "This response was already submitted.",
+    "alreadyDecided": "This response was already decided.",
+    "fieldNotAllowed": "The response holds a field the request does not ask for.",
+    "valueInvalid": "Some values are not accepted. Correct the highlighted fields.",
+    "requiredMissing": "Answer every required field before submitting.",
+    "applicationNotPermitted": "Only an accepted response waiting for application can be applied.",
+    "alreadyApplied": "This response was already applied.",
+    "unrevalidatedConflict": "The last attempt found a conflict. Revalidate it before applying again.",
+    "notRevalidatable": "Only the latest conflict, not yet revalidated, can be revalidated.",
+    "sourceGone": "The source record no longer exists.",
+    "keyReused": "This attempt was already used for another response. Close the dialog and try again.",
+    "configurationMissing": "AHDA has not configured external participation yet (no participation rule is published).",
+    "invalidTransition": "The request or response is no longer in a state that allows this.",
+    "terminalState": "The request is closed or cancelled.",
+    "permissionDenied": "You do not have permission to do this."
+  }
+}

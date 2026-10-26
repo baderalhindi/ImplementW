@@ -1,0 +1,12 @@
+ role | username  | user_type | status | dept_anchor | entity_anchor 
+------+-----------+-----------+--------+-------------+---------------
+ R01  | local.r01 | INTERNAL  | ACTIVE | f           | f
+ R02  | local.r02 | INTERNAL  | ACTIVE | f           | f
+ R03  | local.r03 | INTERNAL  | ACTIVE | t           | f
+ R04  | local.r04 | INTERNAL  | ACTIVE | f           | f
+ R05  | local.r05 | INTERNAL  | ACTIVE | f           | f
+ R06  | local.r06 | INTERNAL  | ACTIVE | f           | f
+ R07  | local.r07 | INTERNAL  | ACTIVE | f           | f
+ R08  | local.r08 | EXTERNAL  | ACTIVE | f           | t
+(8 rows)
+

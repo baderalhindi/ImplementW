@@ -110,6 +110,37 @@ public sealed class SecretStoreTests
     }
 
     /// <summary>
+    /// TASK-028: the directory and SSO secrets exist only where the sheet scopes them (AD_* are not in DEV). An environment
+    /// without one starts, with that sign-in method unconfigured; an environment with one reads it.
+    /// </summary>
+    [Fact]
+    public void AnUnsetOptionalSecretDoesNotStopStartUp()
+    {
+        FakeSecretStore store = new() { [ApplicationSecrets.DatabaseConnectionString] = "Host=db" };
+        using SecretStoreConfigurationProvider provider = new(store, Options());
+
+        provider.Load();
+
+        Assert.False(provider.TryGet(ApplicationSecrets.DirectoryBindPassword, out _));
+    }
+
+    [Fact]
+    public void ASetOptionalSecretIsRead()
+    {
+        FakeSecretStore store = new()
+        {
+            [ApplicationSecrets.DatabaseConnectionString] = "Host=db",
+            [ApplicationSecrets.DirectoryBindPassword] = "service-account-password",
+        };
+        using SecretStoreConfigurationProvider provider = new(store, Options());
+
+        provider.Load();
+
+        Assert.True(provider.TryGet(ApplicationSecrets.DirectoryBindPassword, out string? value));
+        Assert.Equal("service-account-password", value);
+    }
+
+    /// <summary>
     /// The TASK-019 validation check, at the level it can be asserted without a provisioned environment:
     /// the value changes in the store and the running configuration follows it, with no restart, no
     /// redeployment and no code change.
@@ -153,10 +184,16 @@ public sealed class SecretStoreTests
         Assert.Equal("Host=db;Password=old", value);
     }
 
+    /// <summary>
+    /// One required key and one optional key, whatever the application lists today, so each test is about the
+    /// behaviour and not about the current inventory.
+    /// </summary>
     private static SecretStoreOptions Options(TimeSpan? refreshInterval = null) => new()
     {
         Endpoint = Endpoint,
         RefreshInterval = refreshInterval ?? TimeSpan.Zero,
+        Keys = [ApplicationSecrets.DatabaseConnectionString],
+        OptionalKeys = [ApplicationSecrets.DirectoryBindPassword],
     };
 
     private static string Payload(string value)

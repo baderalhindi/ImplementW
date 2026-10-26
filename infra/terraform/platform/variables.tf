@@ -117,3 +117,33 @@ variable "deletion_protection" {
   description = "Whether terraform destroy may remove the database instance and the Cloud Run service."
   type        = bool
 }
+
+variable "alert_notification_channel" {
+  description = "The on-call channel's resource name, supplied at apply time by the promotion pipeline as TF_VAR_alert_notification_channel, never committed: the channel holds ALERT_CHANNEL_WEBHOOK_URL, which its owner writes with infra/environments/route-alerts.sh (TASK-091). Empty where uptime_monitoring is off."
+  type        = string
+  default     = ""
+}
+
+variable "uptime_monitoring" {
+  description = "Whether the environment has an uptime check on /health/ready and an alert on it (TASK-091). True where the Environment and Secrets sheet gives it ALERT_CHANNEL_WEBHOOK_URL — SIT, UAT and PROD — so the alert has somewhere to go."
+  type        = bool
+}
+
+variable "integration_alert_thresholds" {
+  description = "FG-05's alert thresholds for the environment, as IntegrationMonitoring:Policy settings without the prefix, e.g. { \"QueueBacklogThresholds__EXCHANGE_EMAIL__Depth\" = \"50\" } (TASK-092). Each is registered in docs/operations/alert-thresholds.json. Empty until AHDA confirms the values (PTBC-037): without one, FG-05 invents none."
+  type        = map(string)
+  default     = {}
+
+  validation {
+    condition = alltrue([for setting in keys(var.integration_alert_thresholds) : can(regex(
+      "^(FreshnessWindows|AvailabilityAlertDelays|MinimumDeliveryRates|ReconciliationMismatchTolerances)__[A-Z][A-Z0-9_]*$|^QueueBacklogThresholds__[A-Z][A-Z0-9_]*__(Depth|OldestAge)$",
+    setting))])
+    error_message = "Each key of integration_alert_thresholds is a threshold of docs/operations/alert-thresholds.json for one integration code, e.g. FreshnessWindows__DIRECTORY or QueueBacklogThresholds__SMS__Depth."
+  }
+}
+
+variable "api_documentation" {
+  description = "Whether the API serves its OpenAPI document at /openapi/v1.json and the Swagger UI docs UI at /api-docs, anonymously (TASK-094, docs/api/README.md). True in DEV and SIT, the environments the acceptance criterion names; refused for UAT and PROD (guards.tf)."
+  type        = bool
+  default     = false
+}

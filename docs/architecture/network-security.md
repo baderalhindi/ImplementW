@@ -181,8 +181,9 @@ listener. The reasons, in order:
 
 The cost is that a user who types `http://` gets a refused connection instead of a redirect. HSTS
 removes that for any browser that has visited once, and HSTS preload removes it entirely once AHDA's
-domain is on the preload list. HSTS is CTL-12, added to every response by TASK-078 — **not yet
-built**, so until it is, a typed `http://` address is refused on every visit. If
+domain is on the preload list. HSTS is CTL-12, added to every response by TASK-078 (`max-age=31536000; includeSubDomains`, no
+`preload` yet; `endpoint-hardening.md` D-15), so a typed `http://` address is refused only on a
+browser's first visit. If
 AHDA would rather keep the redirect, that is a change to the validation cell, not to this module —
 finding N-F1.
 
@@ -394,10 +395,10 @@ cell is correct; it does not prove the cell.
 
 | ID | Finding | Owner / where it goes |
 | --- | --- | --- |
-| **N-F1** | **Port 80 is closed, so `http://` is refused rather than redirected** (§3.3). This follows the validation cell literally. HSTS (TASK-078, not yet built) removes the effect for returning browsers and preload removes it for everyone; until TASK-078 lands, every typed `http://` is refused. If AHDA prefers a redirect, the validation cell and CTL-03's evidence line change first ("only 443 and a redirect-only 80"), and then this module — not the other way round. | AHDA IT (preference); TASK-078 (HSTS, preload) |
+| **N-F1** | **Port 80 is closed, so `http://` is refused rather than redirected** (§3.3). This follows the validation cell literally. HSTS (TASK-078, built 2026-10-14: `endpoint-hardening.md` D-15) removes the effect for returning browsers; preload, which removes it for everyone, waits for AHDA's domain to be named and submitted. If AHDA prefers a redirect, the validation cell and CTL-03's evidence line change first ("only 443 and a redirect-only 80"), and then this module — not the other way round. | AHDA IT (preference); TASK-078 (HSTS, preload) |
 | **N-F2** | **The APIs this network needs are not enabled anywhere.** Restating TASK-020's D-1 with this task's list: `compute`, `servicenetworking` and `certificatemanager`. It surfaces at the first apply as an API error. **Recommended, unchanged: one `gcloud services enable` step in `provision-environment.sh` with the platform's full list.** | TASK-016 (the script), TASK-017 (the list) |
 | **N-F3** | **Regional Cloud Armor and the `RESTRICTED` regional SSL policy are not yet confirmed available in the named region.** CTL-54 requires the regional load balancer/WAF pairing to be confirmed before the region is fixed; it is on the ADR-001 confirmation request. If regional Cloud Armor is unavailable there, ADR-001 C-2 rules out the global alternative, so the answer is a different WAF in front of the regional load balancer — a design change, not a variable. | AHDA IT — with UGV-07, CTL-54 |
-| **N-F4** | **No rate limiting at the edge** (§3.4). A per-IP threshold set without knowing AHDA's egress addresses risks blocking AHDA itself. Per-client limits on authentication and sensitive endpoints are CTL-12, in the application. **Recommended: revisit with a month of PROD load balancer logs, which show real per-address request rates.** | TASK-078; revisit after go-live |
+| **N-F4** | **No rate limiting at the edge** (§3.4). A per-IP threshold set without knowing AHDA's egress addresses risks blocking AHDA itself. Per-client limits on authentication and sensitive endpoints are CTL-12, in the application — built by TASK-078 (`endpoint-hardening.md`: sign-in counted per forwarded client address, sensitive writes per user). **Recommended: revisit with a month of PROD load balancer logs, which show real per-address request rates.** | TASK-078; revisit after go-live |
 | **N-F5** | **The probe needs rights and images an organisation might restrict.** `--probe` creates two `e2-micro` VMs from `debian-cloud` with no public IP, no service account and Shielded VM secure boot. An organisation enforcing `constraints/compute.trustedImageProjects` without `debian-cloud` will refuse them. The fallback is the same startup script on any image AHDA trusts; the classification logic is unchanged. | AHDA IT — with UGV-07 (organisation policy set) |
 | **N-F6** | **TASK-017's F-8 (no fixed egress address) and F-4 (`allUsers` invoker) are unchanged.** F-8 is still not needed until an integration counterparty allowlists source addresses. F-4 is still safe because ingress is restricted to the load balancer — which N-5 now verifies on the running service — and still needs an answer with the tenancy (R-3). | As in `infrastructure-as-code.md` |
 | **N-F7** | **`compare-plans.py` compared `child_modules` in emission order** (§4.1), so TASK-017's V-4 would have reported non-idempotency at random against an unchanged environment. Fixed here, in TASK-017's file, because this task's verification depends on it. | Closed — TASK-021 |

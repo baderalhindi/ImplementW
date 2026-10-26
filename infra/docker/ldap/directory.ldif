@@ -1,0 +1,140 @@
+# The test directory (TASK-028). Synthetic people only, on the reserved pmplatform.local domain.
+#
+# entryUUID is each person's directory subject: infra/docker/postgres/seed/seed-local-users.sql stores the same value in
+# identity_access.user.directory_subject_id (synthetic kind 0012). title, departmentNumber and manager are the three
+# directory-authoritative attributes of ADR-007; DEPT-LOCAL is the local department's directory_reference.
+#
+# Every userPassword below is a LOCAL DEFAULT, never a real credential: "local-directory-password" for people and
+# "local-service-password" for the service account. The integration tests sign in with them.
+
+dn: dc=pmplatform,dc=local
+objectClass: dcObject
+objectClass: organization
+dc: pmplatform
+o: PMPlatform test directory
+
+dn: ou=Services,dc=pmplatform,dc=local
+objectClass: organizationalUnit
+ou: Services
+
+dn: cn=svc-pmplatform,ou=Services,dc=pmplatform,dc=local
+objectClass: applicationProcess
+objectClass: simpleSecurityObject
+cn: svc-pmplatform
+userPassword: local-service-password
+
+dn: ou=People,dc=pmplatform,dc=local
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=External,dc=pmplatform,dc=local
+objectClass: organizationalUnit
+ou: External
+
+dn: uid=local.r01,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.r01
+cn: Local R01
+sn: R01
+displayName: Local R01 — System Administrator
+mail: local.r01@pmplatform.local
+title: System Administrator
+departmentNumber: DEPT-LOCAL
+entryUUID: 00000000-0012-4000-8000-000000000001
+userPassword: local-directory-password
+
+dn: uid=local.r02,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.r02
+cn: Local R02
+sn: R02
+displayName: Local R02 — Portfolio Manager
+mail: local.r02@pmplatform.local
+title: Portfolio Manager
+departmentNumber: DEPT-LOCAL
+entryUUID: 00000000-0012-4000-8000-000000000002
+userPassword: local-directory-password
+
+dn: uid=local.r03,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.r03
+cn: Local R03
+sn: R03
+displayName: Local R03 — Department Manager
+mail: local.r03@pmplatform.local
+title: Department Manager
+departmentNumber: DEPT-LOCAL
+manager: uid=local.r02,ou=People,dc=pmplatform,dc=local
+entryUUID: 00000000-0012-4000-8000-000000000003
+userPassword: local-directory-password
+
+dn: uid=local.r04,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.r04
+cn: Local R04
+sn: R04
+displayName: Local R04 — Project Manager
+mail: local.r04@pmplatform.local
+title: Project Manager
+departmentNumber: DEPT-LOCAL
+manager: uid=local.r03,ou=People,dc=pmplatform,dc=local
+entryUUID: 00000000-0012-4000-8000-000000000004
+userPassword: local-directory-password
+
+dn: uid=local.r05,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.r05
+cn: Local R05
+sn: R05
+displayName: Local R05 — Liaison
+mail: local.r05@pmplatform.local
+title: Liaison
+departmentNumber: DEPT-LOCAL
+manager: uid=local.r03,ou=People,dc=pmplatform,dc=local
+entryUUID: 00000000-0012-4000-8000-000000000005
+userPassword: local-directory-password
+
+dn: uid=local.r06,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.r06
+cn: Local R06
+sn: R06
+displayName: Local R06 — Viewer
+mail: local.r06@pmplatform.local
+title: Viewer
+departmentNumber: DEPT-LOCAL
+entryUUID: 00000000-0012-4000-8000-000000000006
+userPassword: local-directory-password
+
+dn: uid=local.r07,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.r07
+cn: Local R07
+sn: R07
+displayName: Local R07 — Executive
+mail: local.r07@pmplatform.local
+title: Executive
+departmentNumber: DEPT-LOCAL
+entryUUID: 00000000-0012-4000-8000-000000000007
+userPassword: local-directory-password
+
+dn: uid=local.r08,ou=External,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.r08
+cn: Local R08
+sn: R08
+displayName: Local R08 — External Entity User
+mail: local.r08@pmplatform.local
+title: Entity Project Coordinator
+entryUUID: 00000000-0012-4000-8000-000000000008
+userPassword: local-directory-password
+
+# In the directory, not in the platform: signs in to the directory but has no platform user.
+dn: uid=local.unregistered,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.unregistered
+cn: Local Unregistered
+sn: Unregistered
+mail: local.unregistered@pmplatform.local
+entryUUID: 00000000-0012-4000-8000-000000000099
+userPassword: local-directory-password

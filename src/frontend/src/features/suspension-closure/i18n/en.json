@@ -1,0 +1,544 @@
+{
+  "nav": {
+    "label": "Suspension and closeout",
+    "suspension": "Suspension requests",
+    "closeout": "Closure requests"
+  },
+  "commands": "Actions on this record",
+  "detailsTitle": "Details",
+  "revision": "Revision",
+  "requestedBy": "Requested by",
+  "submitted": "Submitted",
+  "notSubmitted": "Not submitted yet",
+  "effectedAt": "Took effect",
+  "notStated": "Not stated",
+  "noProject": "Open this page from a project's workspace: it needs the project.",
+  "projectUnreadable": "The project is not readable with your access; what you may do is decided when you act.",
+  "forProject": "For {project}",
+  "ofProject": "Project: {project}",
+  "notEditable": "This record can no longer be changed: only a draft or a returned record is edited.",
+  "notRaiser": "Only the project's Project Manager raises this request; if you are not, the request will be refused.",
+  "returnedNote": "It was returned for correction. Submitting it again sends it as revision {revision}.",
+  "status": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "RETURNED": "Returned",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "WITHDRAWN": "Withdrawn",
+    "EFFECTED": "In effect"
+  },
+  "state": {
+    "title": "Approval and effect",
+    "approval": "Approval (WF-11)",
+    "activation": "Effect on the project",
+    "status": "Status",
+    "project": "Project lifecycle"
+  },
+  "approval": {
+    "NOT_SUBMITTED": "Not submitted",
+    "AWAITING_REVIEW": "Awaiting review",
+    "IN_REVIEW": "In review",
+    "RETURNED": "Returned",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "WITHDRAWN": "Withdrawn"
+  },
+  "activation": {
+    "NOT_APPLICABLE": "Not applicable yet",
+    "PENDING": "Approved, not yet in effect",
+    "EFFECTED": "In effect"
+  },
+  "actions": {
+    "backToList": "Back to the project's register",
+    "backToDetail": "Back to the request",
+    "backToCloseout": "Back to the project's closeout",
+    "openDetail": "Open the record",
+    "edit": "Edit",
+    "correct": "Correct and resubmit",
+    "delete": "Delete draft",
+    "saveDraft": "Save draft",
+    "submit": "Submit for review",
+    "withdrawReview": "Withdraw from review",
+    "requestSuspension": "Request suspension",
+    "requestResumption": "Request resumption",
+    "evaluateReadiness": "Evaluate readiness",
+    "raise": {
+      "completion": "Raise completion request",
+      "closure": "Raise closure request",
+      "terminalClosure": "Raise closure without completion"
+    }
+  },
+  "command": {
+    "withdraw": {
+      "title": "Withdraw request",
+      "consequence": "Withdrawing ends this request before its review; it cannot be submitted again. A new request can be raised afterwards."
+    },
+    "startReview": {
+      "title": "Start review",
+      "consequence": "Starting the review sends this revision to its approvers through the approval workflow. Its fields can no longer be changed unless it is returned."
+    },
+    "activate": {
+      "title": "Activate now"
+    },
+    "submit": {
+      "title": "Submit for review"
+    },
+    "delete": {
+      "title": "Delete draft",
+      "consequence": "Deleting removes this draft permanently. It was never submitted, so nothing else changes."
+    }
+  },
+  "done": {
+    "saved": "Draft saved.",
+    "submitted": "Submitted for review.",
+    "withdrawn": "Withdrawn.",
+    "reviewStarted": "Review started. The approvers find it in their inbox.",
+    "reviewWithdrawn": "Withdrawn from review.",
+    "activated": "Activated: the project's lifecycle has changed.",
+    "approve": "Your approval is recorded. The record shows Approved once every stage of its route has approved and the outcome reaches it.",
+    "return": "Your return is recorded. The record shows Returned once the outcome reaches it.",
+    "reject": "Your rejection is recorded. The record shows Rejected once the outcome reaches it.",
+    "evaluated": "Readiness evaluated.",
+    "waived": "Criterion waived.",
+    "obligationAdded": "Obligation recorded.",
+    "obligationSaved": "Obligation saved.",
+    "obligationStarted": "Obligation started.",
+    "obligationSatisfied": "Obligation satisfied.",
+    "obligationCancelled": "Obligation cancelled.",
+    "obligationWaived": "Obligation waived."
+  },
+  "review": {
+    "title": "Review",
+    "none": "No review has started yet.",
+    "unreadable": "The review's history is not readable with your access.",
+    "ofRevision": "Review of revision {revision}",
+    "youDecide": "Your inbox holds the decision on this revision."
+  },
+  "table": {
+    "project": "Project",
+    "updated": "Last changed",
+    "revision": "Revision {revision}"
+  },
+  "banner": {
+    "SUSPENDED": {
+      "title": "This project is suspended",
+      "body": "Work is on hold until an approved resumption takes effect.",
+      "link": "See the suspension"
+    },
+    "COMPLETED": {
+      "title": "This project is completed",
+      "body": "Stage 1 of the closeout is done. Stage 2, Closure, follows once every post-project obligation is settled.",
+      "link": "See the closeout"
+    },
+    "CLOSED": {
+      "title": "Closed: read-only",
+      "body": "This project is closed. Its records are kept as history; nothing in any tab can be changed.",
+      "bodyDated": "This project was closed on {date}. Its records are kept as history; nothing in any tab can be changed.",
+      "link": "See the closeout"
+    }
+  },
+  "suspension": {
+    "title": "Suspension requests",
+    "description": "The suspension and resumption requests of the projects you can see, most recently changed first. A project's Project Manager raises them from the project's Suspension tab.",
+    "caption": "Suspension and resumption requests across projects",
+    "projectTitle": "Suspension",
+    "projectCaption": "The project's suspension and resumption requests",
+    "forbidden": "Your access does not include this project's suspension requests.",
+    "emptyTitle": "No suspension requests",
+    "emptyProject": "Requests the project's Project Manager raises to suspend or resume the project appear here.",
+    "emptyAcross": "None of the projects you can see has a suspension or resumption request.",
+    "notSuspended": "No suspension is in effect.",
+    "inEffectSince": "Suspended since {date}.",
+    "openSuspension": "Open the suspension",
+    "periodsTitle": "Suspension periods",
+    "periodsCaption": "The project's suspension periods, most recent first",
+    "noPeriods": "The project has never been suspended.",
+    "periodTitle": "Suspension period",
+    "plannedOnly": "Planning information only: nothing resumes on this date",
+    "detail": {
+      "title": "Suspension request",
+      "heading": {
+        "SUSPEND": "Suspension request",
+        "RESUME": "Resumption request"
+      }
+    },
+    "type": {
+      "SUSPEND": "Suspension",
+      "RESUME": "Resumption"
+    },
+    "view": {
+      "OPEN": "Open requests",
+      "PENDING_ACTIVATION": "Approved, pending activation",
+      "IN_EFFECT": "Suspension in effect",
+      "HISTORICAL": "Historical"
+    },
+    "filter": {
+      "view": "View",
+      "allViews": "All requests",
+      "type": "Type",
+      "allTypes": "Both types",
+      "showing": "Showing {shown} of {total} requests",
+      "noMatch": "No request matches these filters."
+    },
+    "table": {
+      "request": "Request",
+      "status": "Status",
+      "effectiveDate": "Effective date",
+      "plannedResumption": "Planned resumption"
+    },
+    "fields": {
+      "requestType": "Request type",
+      "reason": "Reason",
+      "requestedEffectiveDate": "Effective date",
+      "plannedResumptionDate": "Planned resumption date"
+    },
+    "form": {
+      "createTitle": {
+        "SUSPEND": "Request suspension",
+        "RESUME": "Request resumption"
+      },
+      "editTitle": "Edit request",
+      "section": "The request",
+      "typeHint": {
+        "SUSPEND": "A suspension puts an active project on hold. A resumption is requested separately while it is suspended.",
+        "RESUME": "A resumption returns a suspended project to active. Its approved baseline is not changed."
+      },
+      "effectiveHint": "Required to submit, from today on (UTC). The project changes state on this date, once the request is approved.",
+      "plannedHint": "Optional, after the effective date. For planning only: the project resumes only through an approved resumption request.",
+      "submitNote": {
+        "SUSPEND": "Approval does not suspend the project by itself: it is suspended when the approved request takes effect on its effective date.",
+        "RESUME": "Approval does not resume the project by itself: it becomes active again when the approved request takes effect on its effective date. No new baseline is created."
+      }
+    },
+    "command": {
+      "activateConsequence": "Activating applies the approved request now, if its effective date has come: the project's lifecycle changes. The activation pass does this on its own; use this to apply it at once or to retry one left approved."
+    },
+    "explain": {
+      "SUSPEND": {
+        "DRAFT": "A draft. Nothing is decided and the project is unchanged.",
+        "SUBMITTED": "Submitted and waiting for AHDA to start the review. The project is unchanged.",
+        "UNDER_REVIEW": "In review through the approval workflow. The project is unchanged.",
+        "RETURNED": "Returned for correction. Correct it and submit it again as the next revision.",
+        "APPROVED": "Approved, not yet in effect. The project stays active until the request is activated on its effective date.",
+        "REJECTED": "Rejected. The project was not suspended.",
+        "WITHDRAWN": "Withdrawn. The project was not suspended.",
+        "EFFECTED": "In effect: the project was suspended when this request was activated."
+      },
+      "RESUME": {
+        "DRAFT": "A draft. Nothing is decided and the project stays suspended.",
+        "SUBMITTED": "Submitted and waiting for AHDA to start the review. The project stays suspended.",
+        "UNDER_REVIEW": "In review through the approval workflow. The project stays suspended.",
+        "RETURNED": "Returned for correction. Correct it and submit it again as the next revision.",
+        "APPROVED": "Approved, not yet in effect. The project stays suspended until the request is activated on its effective date.",
+        "REJECTED": "Rejected. The project stays suspended.",
+        "WITHDRAWN": "Withdrawn. The project stays suspended.",
+        "EFFECTED": "In effect: the project became active again when this request was activated. Its approved baseline was not changed."
+      }
+    },
+    "period": {
+      "started": "Started",
+      "ended": "Ended",
+      "endReason": "How it ended",
+      "ongoing": "In effect"
+    },
+    "endReason": {
+      "RESUMED": "Resumed",
+      "PROJECT_CLOSED": "Project closed"
+    },
+    "resumption": {
+      "title": "Resumption",
+      "open": "Open the resumption request",
+      "ofSuspension": "Resumes",
+      "openSuspension": "Open the suspension request",
+      "underWay": "A resumption request is under way.",
+      "none": "No resumption has been requested. The project's Project Manager requests one."
+    }
+  },
+  "stages": {
+    "title": "Closeout stages",
+    "intro": "A project is closed out in two steps, one after the other: Completion ends its delivery, then Closure ends the project. Each step is its own request, reviewed and approved on its own.",
+    "number": "Stage {number} of {total}",
+    "numbered": "Stage {number}: {name}",
+    "shown": "This request",
+    "effectedAt": "In effect since {date}",
+    "name": {
+      "completion": "Completion",
+      "closure": "Closure"
+    },
+    "caseLink": {
+      "completion": "Completion request, revision {revision}",
+      "closure": "Closure request, revision {revision}"
+    },
+    "state": {
+      "NOT_YET": "Not yet available",
+      "LOCKED": "Waits for Stage 1",
+      "READY": "Ready to start",
+      "IN_PROGRESS": "In progress",
+      "DONE": "Done",
+      "ON_HOLD": "On hold",
+      "SKIPPED": "Skipped"
+    },
+    "explain": {
+      "completion": {
+        "NOT_YET": "Completion is requested once the project is active.",
+        "LOCKED": "Completion is requested once the project is active.",
+        "READY": "The project's Project Manager raises the completion request when delivery has ended. Full progress or every task done does not complete the project by itself.",
+        "IN_PROGRESS": "The completion request is open. The project becomes completed only when the approved request is activated.",
+        "DONE": "The project is completed: its delivery has ended.",
+        "ON_HOLD": "The project is suspended. It is resumed before it is completed, or closed without completion in Stage 2.",
+        "SKIPPED": "The project is closed from suspension without being completed."
+      },
+      "closure": {
+        "NOT_YET": "Closure follows Completion.",
+        "LOCKED": "Closure starts after Stage 1, Completion, has taken effect.",
+        "READY": "The project's Project Manager raises the closure request once every post-project obligation is settled.",
+        "IN_PROGRESS": "The closure request is open. The project closes only when the approved request is activated.",
+        "DONE": "The project is closed: terminal and read-only.",
+        "ON_HOLD": "Closure follows Completion.",
+        "SKIPPED": "Closure follows Completion.",
+        "TERMINAL_READY": "The project is suspended: it can be closed without completion. Its suspension ends when the closure takes effect.",
+        "TERMINAL_IN_PROGRESS": "The closure without completion is open. The project closes, and its suspension ends, only when the approved request is activated."
+      }
+    }
+  },
+  "closeout": {
+    "title": "Closure requests",
+    "description": "The completion and closure requests of the projects you can see, each naming its stage, most recently changed first. A project's Project Manager raises them from the project's Closeout tab.",
+    "caption": "Completion and closure requests across projects",
+    "projectTitle": "Closeout requests",
+    "projectCaption": "The project's completion and closure requests",
+    "forbidden": "Your access does not include this project's closeout.",
+    "emptyTitle": "No closeout requests",
+    "emptyProject": "The completion and closure requests of this project appear here.",
+    "emptyAcross": "None of the projects you can see has a completion or closure request.",
+    "detail": {
+      "heading": {
+        "completion": "Stage 1: Completion request",
+        "closure": "Stage 2: Closure request"
+      }
+    },
+    "outcome": {
+      "COMPLETED": "Closed after completion",
+      "TERMINATED_WITHOUT_COMPLETION": "Closed without completion"
+    },
+    "fields": {
+      "actualProjectCompletionDate": "Actual completion date",
+      "outcome": "Outcome",
+      "narrative": {
+        "completion": "Completion summary",
+        "closure": "Closure summary"
+      }
+    },
+    "filter": {
+      "stage": "Stage",
+      "allStages": "Both stages",
+      "readiness": "Readiness",
+      "allReadiness": "Any readiness",
+      "showing": "Showing {shown} of {total} requests",
+      "noMatch": "No request matches these filters."
+    },
+    "table": {
+      "stage": "Request",
+      "lifecycle": "Project lifecycle",
+      "status": "Status",
+      "readiness": "Readiness",
+      "failing": "{count} criteria failing"
+    },
+    "form": {
+      "createTitle": {
+        "completion": "Raise completion request",
+        "closure": "Raise closure request"
+      },
+      "editTitle": "Edit closeout request",
+      "intro": {
+        "completion": "Stage 1 of 2. Completion records that the project's delivery has ended; the project becomes completed when the approved request takes effect. Closure is a separate request, raised afterwards.",
+        "closure": "Stage 2 of 2. Closure ends the completed project; once it takes effect the project is terminal and read-only.",
+        "terminal": "Stage 2 of 2, without Stage 1. The project is suspended and will not resume: closing it ends its suspension, and it is recorded as closed without completion."
+      },
+      "section": {
+        "completion": "Completion",
+        "closure": "Closure"
+      },
+      "completionDateHint": "The date the works actually finished: required to submit, not after today and not before the project was activated. It changes no schedule date.",
+      "narrativeHint": {
+        "completion": "Required to submit: what was delivered and how the project ended.",
+        "closure": "Required to submit: how the project was closed out."
+      },
+      "nextStep": "Saving keeps it as a draft. Its readiness is evaluated and it is submitted from its own page."
+    },
+    "command": {
+      "submitConsequence": "Submitting evaluates the readiness again and sends the request for review if no criterion fails without a waiver. Its fields can then no longer be changed unless it is returned.",
+      "activateConsequence": "Activating evaluates the readiness again and, if nothing blocks it, changes the project's lifecycle now. The activation pass does this on its own; use this to apply it at once or to retry one left approved.",
+      "deleteConsequence": "Deleting removes this draft permanently. A draft with readiness records or obligations is withdrawn instead."
+    },
+    "explain": {
+      "completion": {
+        "DRAFT": "A draft. Evaluate its readiness, then submit it. The project stays active.",
+        "SUBMITTED": "Submitted and waiting for AHDA to start the review. The project stays active.",
+        "UNDER_REVIEW": "In review through the approval workflow. The project stays active.",
+        "RETURNED": "Returned for correction. Correct it and submit it again as the next revision.",
+        "APPROVED": "Approved, not yet in effect. The project stays active until the request is activated; its readiness is checked again first.",
+        "REJECTED": "Rejected. The project stays active.",
+        "WITHDRAWN": "Withdrawn. The project stays active.",
+        "EFFECTED": "In effect: the project is completed. Stage 2, Closure, can now be requested."
+      },
+      "closure": {
+        "DRAFT": "A draft. Evaluate its readiness, then submit it. The project is unchanged.",
+        "SUBMITTED": "Submitted and waiting for AHDA to start the review. The project is unchanged.",
+        "UNDER_REVIEW": "In review through the approval workflow. The project is unchanged.",
+        "RETURNED": "Returned for correction. Correct it and submit it again as the next revision.",
+        "APPROVED": "Approved, not yet in effect. The project is not closed until the request is activated; its readiness is checked again first.",
+        "REJECTED": "Rejected. The project is not closed.",
+        "WITHDRAWN": "Withdrawn. The project is not closed.",
+        "EFFECTED": "In effect: the project is closed, terminal and read-only."
+      }
+    }
+  },
+  "readiness": {
+    "title": "Readiness",
+    "rollUp": "Readiness",
+    "evaluatedAt": "Evaluated",
+    "neverEvaluated": "Never evaluated",
+    "caption": "Readiness criteria of the latest evaluation",
+    "criterion": "Criterion",
+    "result": "Result",
+    "blocking": "Blocking records",
+    "waiver": "Waiver",
+    "whereSettled": "Where to settle them",
+    "notWaivable": "Cannot be waived",
+    "status": {
+      "READY": "Ready",
+      "READY_WITH_CONDITIONS": "Ready with conditions",
+      "NOT_READY": "Not ready",
+      "INCOMPLETE": "Not evaluated"
+    },
+    "explain": {
+      "READY": "Every criterion passed in the latest evaluation.",
+      "READY_WITH_CONDITIONS": "Every criterion that failed has been waived.",
+      "NOT_READY": "At least one criterion fails without a waiver: the request cannot be submitted or take effect until it is settled or waived.",
+      "INCOMPLETE": "Readiness has not been evaluated yet. It is evaluated again when the request is submitted and when it takes effect."
+    },
+    "results": {
+      "PASS": "Passed",
+      "FAIL": "Failed",
+      "WAIVED": "Waived"
+    },
+    "checks": {
+      "DECISIONS_SETTLED": "Approval decisions settled",
+      "TASKS_DISPOSITIONED": "Tasks dispositioned",
+      "SCHEDULE_RECONCILED": "Schedule reconciled",
+      "MILESTONES_DISPOSITIONED": "Milestones dispositioned",
+      "RISKS_DISPOSITIONED": "Risks dispositioned",
+      "ISSUES_DISPOSITIONED": "Issues and challenges dispositioned",
+      "CHANGES_DISPOSITIONED": "Change requests dispositioned",
+      "SUSPENSION_REQUESTS_SETTLED": "Suspension requests settled",
+      "PROGRESS_REPORTED": "Progress reported",
+      "FINANCIALS_SETTLED": "Financials settled",
+      "OBLIGATIONS_OWNED": "Obligations owned and dated",
+      "OBLIGATIONS_SATISFIED": "Obligations settled"
+    }
+  },
+  "waive": {
+    "action": "Waive",
+    "named": "Waive {criterion}",
+    "title": "Waive: {criterion}",
+    "reason": "Reason for the waiver",
+    "consequence": "The criterion stays failed in the record, with your waiver and reason beside it. Once every failure is waived the request reads Ready with conditions."
+  },
+  "obligations": {
+    "title": "Post-project obligations",
+    "intro": "{open} of {total} open. Obligations may stay open after Completion; Closure waits until every one is settled.",
+    "caption": "The project's post-project obligations",
+    "none": "No post-project obligations are recorded.",
+    "add": "Add obligation",
+    "addTitle": "Add a post-project obligation",
+    "editTitle": "Edit obligation",
+    "edit": "Edit",
+    "editNamed": "Edit {name}",
+    "save": "Save obligation",
+    "actions": "Actions",
+    "noOwner": "No owner yet",
+    "noDueDate": "No due date",
+    "ownerHint": "Completion needs an owner and a due date on every open obligation.",
+    "fields": {
+      "title": "Obligation",
+      "description": "Description",
+      "owner": "Owner",
+      "dueDate": "Due date",
+      "status": "Status"
+    },
+    "status": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In progress",
+      "SATISFIED": "Satisfied",
+      "WAIVED": "Waived",
+      "CANCELLED": "Cancelled"
+    },
+    "command": {
+      "start": {
+        "action": "Start",
+        "named": "Start {name}",
+        "title": "Start: {name}",
+        "consequence": "Marks the obligation as being worked on."
+      },
+      "satisfy": {
+        "action": "Satisfy",
+        "named": "Satisfy {name}",
+        "title": "Satisfy: {name}",
+        "consequence": "Records the obligation as fulfilled. A settled obligation cannot be changed again."
+      },
+      "cancel": {
+        "action": "Cancel",
+        "named": "Cancel {name}",
+        "title": "Cancel: {name}",
+        "consequence": "Records that the obligation no longer applies. A settled obligation cannot be changed again."
+      },
+      "waive": {
+        "action": "Waive",
+        "named": "Waive {name}",
+        "title": "Waive: {name}",
+        "consequence": "AHDA releases the project from this obligation. A settled obligation cannot be changed again."
+      }
+    }
+  },
+  "fieldErrors": {
+    "effectiveDateRequired": "Enter the effective date to submit.",
+    "effectiveDatePast": "The effective date cannot be before today (UTC).",
+    "plannedResumptionBeforeEffective": "The planned resumption date must be after the effective date.",
+    "completionDateRequired": "Enter the actual completion date to submit.",
+    "completionDateInvalid": "The completion date cannot be after today or before the project was activated.",
+    "narrativeRequired": "Enter the summary to submit.",
+    "reasonRequired": "Enter a reason."
+  },
+  "problems": {
+    "suspensionProjectNotEligible": "The project is not in a state this request applies to: a suspension is of an active project, a resumption of a suspended one.",
+    "suspensionAlreadyExists": "The project is already suspended, or already has an open suspension request.",
+    "resumptionAlreadyExists": "The project already has an open resumption request.",
+    "suspensionIncomplete": "Enter the effective date before submitting.",
+    "suspensionDateInvalid": "Check the dates: the effective date cannot be in the past, and a planned resumption comes after it.",
+    "notEditable": "Only a draft or a returned record can be changed.",
+    "underReview": "It is under review: withdraw it from review instead.",
+    "notYetEffective": "Its effective date has not come yet; it takes effect on that date.",
+    "closureProjectNotEligible": "The project is not in a state this stage applies to: completion is of an active project, closure of a completed or suspended one.",
+    "caseAlreadyOpen": "The project already has an open request for this stage.",
+    "caseInUse": "This draft has readiness records or obligations: withdraw it instead of deleting it.",
+    "closureIncomplete": "Enter the completion date and summary, or the closure summary, before submitting.",
+    "completionDateInvalid": "The completion date cannot be after today or before the project was activated.",
+    "blockerExists": "A readiness criterion fails without a waiver.",
+    "blockersNamed": "These criteria fail without a waiver: {criteria}. Settle them in their registers, or have them waived where allowed.",
+    "checkNotFailed": "That criterion did not fail in the latest evaluation.",
+    "checkNotWaivable": "That criterion cannot be waived: it is settled where it lives.",
+    "obligationCaseInvalid": "An obligation is recorded against the project's open or completed completion request, or its open closure without completion.",
+    "obligationOwnerInvalid": "The owner must be an active user.",
+    "obligationSettled": "The obligation is already settled.",
+    "projectClosed": "The project is closed: it is read-only and nothing can be changed.",
+    "approvalPending": "A review of this revision is already in progress.",
+    "configurationMissing": "No approval route is configured for this request yet. AHDA must publish one before it can be reviewed.",
+    "invalidTransition": "That step is not possible from the record's current state.",
+    "terminalState": "The record is final and cannot change.",
+    "permissionDenied": "Your access does not allow this action.",
+    "stale": "It changed while you were working on it. Here is its current state."
+  }
+}

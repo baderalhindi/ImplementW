@@ -1,0 +1,13 @@
+# Named owner of the scheduled security scans (TASK-080, CTL-42, CTL-55).
+# Record: docs/architecture/secret-and-dependency-scanning.md
+#
+# The weekly full-history secret scan and the weekly dependency scan report every run, clean or not,
+# to this GitHub account: each scan keeps one issue assigned to it and comments on it every run, and
+# reopens it if it was closed. The account must have access to this repository, or the assignment
+# fails and the scheduled run goes red.
+#
+# The role is the Security Lead. Until AHDA names one, the repository owner holds it
+# (secret-and-dependency-scanning.md F-1). A change to this file is a change of who is told about a
+# leaked secret: the Security Lead reviews it (CODEOWNERS).
+role: Security Lead
+github: baderalhindi

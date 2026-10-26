@@ -1,7 +1,7 @@
 <!--
 Branch: type/task-id-short-description (e.g. feat/task-046-schedule-baseline). The workbook's Branch column is authoritative.
-The `pr-policy` check (advisory — it reports, it does not block) goes red until: the title or body names a TASK-nnn, "Test evidence" has content,
-and every box under "Security checklist" is ticked. See docs/architecture/branching-strategy.md.
+Name a TASK-nnn in the title or body, fill in "Test evidence", and tick every box under "Security checklist" that is true.
+See docs/architecture/branching-strategy.md.
 -->
 
 ## Task
@@ -30,13 +30,14 @@ npm run lint && npm run typecheck       ->
 
 <!-- Every box must be ticked. Each item is written so that it is either satisfied or does not apply to this change. -->
 
-- [ ] No secret, credential, connection string, token or `.env` file is committed; `infra/secrets/` holds templates only (CTL-18, F-3).
+- [ ] No secret, credential, connection string, token or `.env` file is committed in any commit of this PR; `infra/secrets/` holds templates only; `secret-scan` is green (CTL-18, CTL-42, F-3).
 - [ ] Every new or changed API endpoint has server-side authorization and server-side DTO validation, or this PR adds no endpoint (CTL-08, CTL-11).
 - [ ] No password, token, national ID or classified field reaches a log, error report or test fixture, or this PR touches no logging path (CTL-27).
-- [ ] Every new dependency (NuGet or npm) is pinned in `Directory.Packages.props` / `package-lock.json` and has no known CRITICAL vulnerability, or this PR adds no dependency (CTL-41, CTL-42).
+- [ ] Every new dependency (NuGet or npm) is pinned in `Directory.Packages.props` / `package-lock.json` and `dependency-vuln-gate` is green, or this PR adds no dependency (CTL-41, CTL-42).
 - [ ] Every migration lives under `Infrastructure/Persistence/Migrations`, adds no `deleted_at`, `currency_code` or `row_version` column, and has been reviewed for cross-schema writes, or this PR adds no migration (A-5, ERD D-3/D-5/D-16).
 - [ ] No cross-module reference outside `Contracts/` and no edge missing from ADR-003 §8.2; the architecture tests (A-1 to A-6) pass unchanged, or ADR-003 was revised first and the revision is linked above.
-- [ ] Any change to authentication, SSO, RBAC, data scope, document upload, WF-13 or Nafath has a Security Lead review requested (CTL-43), or this PR touches none of these.
+- [ ] No state change on GET or HEAD, no credential read from a cookie or a query string, no write taken as a form without the bearer token, and no endpoint exempted from `CsrfProtection`, or this PR adds no endpoint (CTL-13, `csrf-protection.md` §7).
+- [ ] Any change to authentication, SSO, RBAC, data scope, document upload, WF-13, Nafath or the SMS receipt callback has a Security Lead review requested and updates its threat model and the findings log in `docs/security/` (CTL-43), or this PR touches none of these.
 
 ## Notes for reviewers
 

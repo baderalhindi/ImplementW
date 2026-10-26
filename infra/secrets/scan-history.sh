@@ -6,8 +6,8 @@
 #   infra/secrets/scan-history.sh --report out/   # also write the JSON findings there
 #
 # This is the evidence command for TASK-019, not the gate. The gate — scanning per pull request, on a
-# schedule, and as a required branch-protection check — is TASK-080 / CTL-42, which owns the scanner
-# configuration and the baseline. Nothing here is wired into CI on purpose.
+# schedule, and as a required branch-protection check — is .github/workflows/secret-scan.yml
+# (TASK-080, CTL-42). Nothing here is wired into CI on purpose.
 #
 # Requires: gitleaks (https://github.com/gitleaks/gitleaks), git.
 set -eu

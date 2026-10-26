@@ -1,0 +1,47 @@
+namespace PMPlatform.Api.Errors;
+
+/// <summary>The platform codes of the api-conventions §4.4 catalogue this API returns so far.</summary>
+internal static class ErrorCodes
+{
+    public const string ValidationFailed = "VALIDATION_FAILED";
+    public const string IdempotencyKeyRequired = "IDEMPOTENCY_KEY_REQUIRED";
+    public const string IdempotencyKeyInvalid = "IDEMPOTENCY_KEY_INVALID";
+    public const string AuthenticationRequired = "AUTHENTICATION_REQUIRED";
+    public const string PermissionDenied = "PERMISSION_DENIED";
+    public const string StepUpRequired = "STEP_UP_REQUIRED";
+    public const string NotFound = "NOT_FOUND";
+    public const string InvalidTransition = "INVALID_TRANSITION";
+    public const string TerminalState = "TERMINAL_STATE";
+    public const string PreconditionFailed = "PRECONDITION_FAILED";
+    public const string PreconditionRequired = "PRECONDITION_REQUIRED";
+    public const string Unavailable = "UNAVAILABLE";
+
+    /// <summary>429 with <c>Retry-After</c>: the client has used up its requests on a rate-limited endpoint for now (R-48, TASK-078).</summary>
+    public const string RateLimited = "RATE_LIMITED";
+
+    /// <summary>403: the request carries an <c>Origin</c> that <c>CORS_ALLOWED_ORIGINS</c> does not list; it is not executed (TASK-078).</summary>
+    public const string OriginNotAllowed = "ORIGIN_NOT_ALLOWED";
+
+    /// <summary>
+    /// 403: a state-changing request carries neither a bearer token nor a body a cross-origin page could send only after a
+    /// preflight, so another site could have forged it; it is not executed (TASK-079).
+    /// </summary>
+    public const string CrossSiteRequestRefused = "CROSS_SITE_REQUEST_REFUSED";
+
+    /// <summary>413 / 415 on uploads (R-8, TASK-037).</summary>
+    public const string PayloadTooLarge = "PAYLOAD_TOO_LARGE";
+    public const string UnsupportedMediaType = "UNSUPPORTED_MEDIA_TYPE";
+
+    /// <summary>422: required configuration is absent or ambiguous; the operation fails closed (TASK-034, Blueprint Section 12).</summary>
+    public const string ConfigurationMissing = "CONFIGURATION_MISSING";
+    public const string InternalError = "INTERNAL_ERROR";
+
+    /// <summary>422: Nafath answered and did not verify the person; they may start the verification again (TASK-068).</summary>
+    public const string IdentityVerificationFailed = "IDENTITY_VERIFICATION_FAILED";
+
+    /// <summary>
+    /// 503 with <c>Retry-After</c>: Nafath cannot be reached, refuses the platform's client, or is not configured. Nothing is
+    /// granted and nothing is held against the person; the same verification token retries (TASK-068).
+    /// </summary>
+    public const string IdentityVerificationUnavailable = "IDENTITY_VERIFICATION_UNAVAILABLE";
+}

@@ -8,7 +8,7 @@
 | Status | **PROPOSED — PENDING APPENDIX D/C RECONCILIATION AND ADR-003 APPROVAL.** The model is complete against every business fact the workbook states; the Blueprint appendices it must be checked against cannot be read (§3). |
 | Decision owner | Engagement Architect (proposer) → AHDA IT with ADR-002/ADR-003 (§14) |
 | Branch | `chore/task-008-task-008-canonical-erd` |
-| Deliverables | This record; `erd.dbml` (column-level source, 121 tables); `erd-appendix-crosswalk.csv` (109 business-fact rows); `erd-check.py` (consistency check) |
+| Deliverables | This record; `erd.dbml` (column-level source, 123 tables); `erd-appendix-crosswalk.csv` (109 business-fact rows); `erd-check.py` (consistency check) |
 | Workbook read | Google Sheet "Implementation work" (ID `1JQdbw-S9wAS247cP3PpSCme_D2NAPVnWzhXhvvxrtl0`), sheets Implementation Plan (112 rows), Architecture Decisions (ADR-001–ADR-013), Open Questions, as exported 2026-09-20 |
 | Controlled sources and authority order | per TASK-001 |
 
@@ -19,7 +19,7 @@ TASK-007 fixed *which* module owns *which* fact and forbade any module from touc
 This record is the data model that makes those rules physical. It has four parts:
 
 1. **Conventions** (§4) — seventeen rules, D-1 to D-17, that every table follows. They carry the four gate decisions (ADR-008, ADR-009, ADR-011, ADR-012) and the three participation amendments (financial provenance, narrative language tag, Declared Baseline and intake marker) as *types and columns*, not as guidance. A reviewer can check a table against them mechanically, and `erd-check.py` does.
-2. **The model by module** (§5) — 121 tables in 21 module schemas plus one infrastructure schema, each with a purpose, its lifecycle column and states, its delete policy and whether other modules may hold its identity. The diagrams show keys and relationships; `erd.dbml` is the column-level source and governs where the two differ. The two files are maintained together, and `erd-check.py` fails when they diverge.
+2. **The model by module** (§5) — 123 tables in 21 module schemas plus one infrastructure schema, each with a purpose, its lifecycle column and states, its delete policy and whether other modules may hold its identity. The diagrams show keys and relationships; `erd.dbml` is the column-level source and governs where the two differ. The two files are maintained together, and `erd-check.py` fails when they diverge.
 3. **Three registers the acceptance criteria ask for** — the lifecycle-state matrix for the Appendix C review (§6), the derived and duplicated field register with a justification per column (§7), and the delete-policy census (§8).
 4. **The Appendix D crosswalk** (§9) — 109 business facts as the workbook restates them, each mapped to a table or column, with the Appendix D row number left blank because Appendix D cannot be read (§3). The completeness check the task defines is specified and ready to run; it has not been run.
 
@@ -68,7 +68,7 @@ Each rule states what it is, why, and how it is checked. `erd-check.py` verifies
 | **D-14** | **Cross-module references.** A foreign key may cross a schema only to a table marked *referenceable* (an identity another module is allowed to hold — M-4, M-13). Polymorphic references (`subject_module`, `subject_type`, `subject_id`; `target_*`) carry no FK, by design: Approval, Notifications, Audit and DocumentManagement are subject-agnostic. No navigation property crosses a module (A-3). | The dashed edges in §5 are exactly these FKs. | `erd-check.py`: every cross-schema FK targets a referenceable table. 167 cross-schema FKs, 59 referenceable tables. |
 | **D-15** | **Revisions and approval subjects.** Every aggregate that goes through WF-11 carries `revision_no`. `ApprovalInstance` references (`subject_module`, `subject_type`, `subject_id`, `subject_revision_no`) and is unique on the four. A RETURNED decision creates revision+1 and a new linked instance (TASK-035). Subjects do not store their approval instance id — Approval is queried by subject (M-4). | The idempotency and "never mutate the rejected one" rules of TASK-035 fall out of the unique key. | 13 approvable aggregates. |
 | **D-16** | **Concurrency.** Optimistic concurrency uses PostgreSQL's `xmin` system column through Npgsql; no `row_version` column exists. | A concurrency token is not a business fact and should not look like one. | — |
-| **D-17** | **Outbox.** `common.outbox_message` is the single transactional outbox (M-5, M-6). Its `payload jsonb` is the one jsonb column in the platform: it is a serialised envelope, never queried by attribute. `__EFMigrationsHistory` is the only other table outside a module schema. | Blueprint Section 15 (commit-before-notify) and Section 18 (durable audit capture) both need a write inside the source transaction that a dispatcher reads after commit; that table can belong to no module. | — |
+| **D-17** | **Outbox.** `common.outbox_message` is the single transactional outbox (M-5, M-6). Its `payload jsonb` is the one jsonb column in the platform: it is a serialised envelope, never queried by attribute. Outside a module schema there are only `__EFMigrationsHistory` and, since TASK-102, the migration import's lineage, `common.import_batch` and `common.imported_record`: every register's import writes them, so they can belong to no module either (data-import.md D-3). | Blueprint Section 15 (commit-before-notify) and Section 18 (durable audit capture) both need a write inside the source transaction that a dispatcher reads after commit; that table can belong to no module. | — |
 
 ### 4.1 Semantic state is a property of the table, not a column
 
@@ -89,11 +89,26 @@ erDiagram
         varchar message_type
         varchar message_key
     }
+    ImportBatch {
+        uuid id PK
+        varchar register_code
+        char file_sha256
+    }
+    ImportedRecord {
+        uuid id PK
+        uuid import_batch_id FK
+        varchar register_code
+        varchar legacy_id
+        uuid entity_id
+    }
+    ImportBatch ||--o{ ImportedRecord : "loaded"
 ```
 
 | Entity | Table | Purpose | Lifecycle column → states | Delete policy | Identity |
 | --- | --- | --- | --- | --- | --- |
 | **OutboxMessage** | `common.outbox_message` | Transactional outbox: audit events, notification intents and domain events written inside the source transaction and dispatched after commit (M-5, M-6). | — | RETAIN | — |
+| **ImportBatch** | `common.import_batch` | One committed migration import: a workbook of one register, loaded in one transaction, with the file's SHA-256 and its counts (TASK-102). | — | APPEND_ONLY | — |
+| **ImportedRecord** | `common.imported_record` | Import lineage: each legacy ID and the record it became, unique per register, so loading a workbook again creates no second identity (Step 17 BE-027; TASK-102). | — | APPEND_ONLY | — |
 
 ### 5.2 IdentityAccess — FG-03
 
@@ -983,7 +998,7 @@ erDiagram
         uuid id PK
         uuid project_id FK
         uuid external_entity_id FK
-        uuid request_type_item_id FK
+        uuid contribution_type_item_id FK
         uuid issued_by_user_id FK
         varchar status
     }
@@ -993,7 +1008,6 @@ erDiagram
         uuid project_id FK
         uuid external_entity_id FK
         uuid contributor_user_id FK
-        uuid contribution_type_item_id FK
         int revision_no
         varchar status
         uuid reviewed_by_user_id FK
@@ -1239,9 +1253,11 @@ erDiagram
 | **UserDashboardPreference** | `dashboards.user_dashboard_preference` | Presentation-only personalisation per user and definition (TASK-111); reset deletes it. | — | HARD_OWNER | — |
 | **UserDashboardWidgetPreference** | `dashboards.user_dashboard_widget_preference` | Hidden/ordered state of one OptionalVisibility widget. | — | CASCADE | — |
 
+Built by TASK-069 as listed (`dashboards.md` D-9), with what the table above leaves to notes: `code` is CHECKed to PORTFOLIO, PROJECT and GOVERNANCE, so a fourth dashboard is refused by the schema (ADR-006); a partial unique key admits one version DRAFT or VALIDATED per code; `allows_personalization` is CHECKed to PORTFOLIO (ADR-019); widget and projection codes are CHECKed as codes. The guard of migration `TASK-069_GuardDashboardDefinitions` keeps a definition RETAIN, its content changing only while DRAFT, a PUBLISHED version changing only by its retirement, widgets and audience written only while their version is DRAFT, and, at commit, one PUBLISHED version per code and one default landing per role. Personalisation (F-074) is built here for ADR-019's Portfolio Dashboard, beside TASK-111.
+
 ### 5.20 Reports — FG-02
 
-`SavedView` serves both a saved parameter set for a published definition and an SCR-138 explorer composition (`view_type`). A composition can reference only `ReportAllowlistEntry` rows — the FK is the allowlist enforcement (TASK-071, TASK-112). A share carries configuration; authorisation is evaluated per viewer at `ReportJob` time.
+`SavedView` serves both a saved parameter set for a published definition and an SCR-138 explorer composition (`view_type`). A composition can reference only `ReportAllowlistEntry` rows — the FK is the allowlist enforcement (TASK-071, TASK-112). A share carries configuration; authorisation is evaluated per viewer at `ReportJob` time. As built by TASK-071 (`reports.md` D-13): a definition's columns are `ReportColumn` rows bound to FG-01's projection register, and its rows are decided by `primary_projection_code`; a job pins its whole request in `request_snapshot`, so `ReportParameterValue` belongs to saved views only; a generated file's bytes are `ReportOutputContent`, deleted at expiry while `GeneratedOutput` is kept. Sharing is built by TASK-072 (`reports-ui.md` D-3): a `SavedViewShare` names one of ADR-019's saved-view roles, whose holders read and run the view under their own access; `saved_view.is_shared` is not built, since the share rows say it.
 
 ```mermaid
 erDiagram
@@ -1249,6 +1265,7 @@ erDiagram
         uuid id PK
         varchar code
         int version_no
+        varchar primary_projection_code
         varchar lifecycle_state
         uuid validated_by_user_id FK
         uuid published_by_user_id FK
@@ -1258,11 +1275,18 @@ erDiagram
         uuid report_definition_id FK
         uuid role_id FK
     }
+    ReportColumn {
+        uuid id PK
+        uuid report_definition_id FK
+        varchar source_entity_code
+        varchar field_code
+        uuid data_classification_item_id FK
+    }
     ReportParameter {
         uuid id PK
         uuid report_definition_id FK
         varchar code
-        uuid option_catalogue_id FK
+        varchar data_type
     }
     ReportParameterOption {
         uuid id PK
@@ -1278,8 +1302,6 @@ erDiagram
         uuid id PK
         uuid saved_view_id FK
         uuid shared_with_role_id FK
-        uuid shared_with_department_id FK
-        uuid shared_with_user_id FK
     }
     SavedViewColumn {
         uuid id PK
@@ -1294,12 +1316,11 @@ erDiagram
     ReportParameterValue {
         uuid id PK
         uuid saved_view_id FK
-        uuid report_job_id FK
     }
     ReportJob {
         uuid id PK
+        varchar kind
         uuid report_definition_id FK
-        uuid saved_view_id FK
         uuid requested_by_user_id FK
         varchar status
     }
@@ -1309,9 +1330,14 @@ erDiagram
         varchar storage_object_key UK
         varchar status
     }
+    ReportOutputContent {
+        uuid id PK
+        varchar storage_object_key FK, UK
+    }
     ReportDefinition ||--o{ ReportAudienceRole : "report_definition_id"
+    ReportDefinition ||--o{ ReportColumn : "report_definition_id"
+    MasterDataItem |o..o{ ReportColumn : "data_classification_item_id"
     ReportDefinition ||--o{ ReportParameter : "report_definition_id"
-    MasterDataCatalogue |o..o{ ReportParameter : "option_catalogue_id"
     ReportParameter ||--o{ ReportParameterOption : "report_parameter_id"
     ReportDefinition |o--o{ SavedView : "report_definition_id"
     SavedView ||--o{ SavedViewShare : "saved_view_id"
@@ -1319,26 +1345,27 @@ erDiagram
     ReportAllowlistEntry ||..o{ SavedViewColumn : "report_allowlist_entry_id"
     SavedView ||--o{ SavedViewFilter : "saved_view_id"
     ReportAllowlistEntry ||..o{ SavedViewFilter : "report_allowlist_entry_id"
-    SavedView |o--o{ ReportParameterValue : "saved_view_id"
-    ReportJob |o--o{ ReportParameterValue : "report_job_id"
+    SavedView ||--o{ ReportParameterValue : "saved_view_id"
     ReportDefinition |o--o{ ReportJob : "report_definition_id"
-    SavedView |o--o{ ReportJob : "saved_view_id"
     ReportJob ||--o| GeneratedOutput : "report_job_id"
+    GeneratedOutput ||--o| ReportOutputContent : "storage_object_key"
 ```
 
 | Entity | Table | Purpose | Lifecycle column → states | Delete policy | Identity |
 | --- | --- | --- | --- | --- | --- |
-| **ReportDefinition** | `reports.report_definition` | Governed parameterised report definition; ten at launch (ADR-006), modes and scopes carried as parameters. | `lifecycle_state` → DRAFT · VALIDATED · PUBLISHED · RETIRED | RETAIN | referenceable |
+| **ReportDefinition** | `reports.report_definition` | Governed parameterised report definition; ten at launch (ADR-006), modes and scopes carried as parameters. Its rows are those its primary projection's permission reaches (TASK-071). | `lifecycle_state` → DRAFT · VALIDATED · PUBLISHED · RETIRED | RETAIN | referenceable |
 | **ReportAudienceRole** | `reports.report_audience_role` | Roles that may run a definition; R08 limited to the entity report set (ADR-013). | — | CASCADE | — |
+| **ReportColumn** | `reports.report_column` | A column a definition presents, bound by code to a field of a registered FG-01 projection (TASK-071); never an expression. | — | CASCADE | — |
 | **ReportParameter** | `reports.report_parameter` | A parameter (including mode and scope) of a definition. | — | CASCADE | — |
 | **ReportParameterOption** | `reports.report_parameter_option` | Fixed option of an OPTION parameter (report mode / scope variants absorbed per ADR-006). | — | CASCADE | — |
 | **SavedView** | `reports.saved_view` | Saved parameter set for a definition, or an SCR-138 explorer composition (ADR-019). A shared view carries configuration only; authorisation is per viewer at execution (TASK-112). | — | HARD_OWNER | referenceable |
-| **SavedViewShare** | `reports.saved_view_share` | Who a view is shared with. CHECK: exactly one of the three shared_with columns is not null. | — | CASCADE | — |
+| **SavedViewShare** | `reports.saved_view_share` | A role a view is shared with (TASK-072): one of R02, R03, R07; unique per view and role. Configuration transfers, authorisation does not. | — | CASCADE | — |
 | **SavedViewColumn** | `reports.saved_view_column` | An allowlisted column selected in an explorer composition (MOD-061). | — | CASCADE | — |
 | **SavedViewFilter** | `reports.saved_view_filter` | An allowlisted filter in a composition; operators from a closed set — no free-text SQL, formulas or joins. | — | CASCADE | — |
-| **ReportParameterValue** | `reports.report_parameter_value` | Pinned parameter value of a saved view or a job. CHECK: exactly one of saved_view_id, report_job_id is not null. | — | CASCADE | — |
-| **ReportJob** | `reports.report_job` | A generation run (REQUESTED→VALIDATING→QUEUED→RUNNING→COMPLETED/FAILED/CANCELLED/EXPIRED) for a definition or an explorer view (TASK-071). CHECK: at least one of report_definition_id, saved_view_id is not null. | `status` → REQUESTED · VALIDATING · QUEUED · RUNNING · COMPLETED · FAILED · CANCELLED · EXPIRED | RETAIN | referenceable |
-| **GeneratedOutput** | `reports.generated_output` | The secured output of a completed job; downloads are authorised at download time (TASK-071). The file is purged at expiry; the row is kept. | `status` → AVAILABLE · EXPIRED · PURGED | RETAIN | — |
+| **ReportParameterValue** | `reports.report_parameter_value` | Pinned parameter value of a saved view; a job pins its whole request in `report_job.request_snapshot` (TASK-071). | — | CASCADE | — |
+| **ReportJob** | `reports.report_job` | A generation run (REQUESTED→VALIDATING→QUEUED→RUNNING→COMPLETED/FAILED/CANCELLED/EXPIRED) of a definition or an explorer composition (TASK-071). CHECK: report_definition_id is not null exactly when kind = REPORT. | `status` → REQUESTED · VALIDATING · QUEUED · RUNNING · COMPLETED · FAILED · CANCELLED · EXPIRED | RETAIN | referenceable |
+| **GeneratedOutput** | `reports.generated_output` | The secured output of a completed job; downloads are authorised at download time against its authorisation footprint (TASK-071). The file is purged at expiry; the row is kept. | `status` → AVAILABLE · EXPIRED · PURGED | RETAIN | — |
+| **ReportOutputContent** | `reports.report_output_content` | The bytes of a generated output (TASK-071), never updated; deleted when the output is purged. | — | HARD_WORKING | — |
 
 ### 5.21 IntegrationMonitoring — FG-05
 
@@ -1387,11 +1414,11 @@ erDiagram
 
 | Entity | Table | Purpose | Lifecycle column → states | Delete policy | Identity |
 | --- | --- | --- | --- | --- | --- |
-| **IntegrationDefinition** | `integration_monitoring.integration_definition` | A named external integration (AD/LDAP, SSO, Exchange, SMS provider, Nafath, SIEM, malware scan, Etimad-future, legacy source) — Blueprint Section 17.1. | `status` → ACTIVE · DISABLED · RETIRED | RETAIN | referenceable |
-| **IntegrationInstance** | `integration_monitoring.integration_instance` | A configured endpoint of a definition. Availability and Freshness are two separate indicators (ADM-047); stored as an operational projection — D-8 register. | — | RETAIN | referenceable |
-| **SyncRun** | `integration_monitoring.sync_run` | A directory sync or reconciliation run; mismatches raise alerts and never auto-repair authoritative data (TASK-075). | `status` → RUNNING · SUCCEEDED · PARTIAL · FAILED | RETAIN | referenceable |
-| **Invocation** | `integration_monitoring.invocation` | One call to or from an integration with retry, dead-letter and correlation (TASK-075). Never carries a secret or a sensitive payload. | `status` → IN_PROGRESS · SUCCEEDED · FAILED · RETRY_SCHEDULED · DEAD_LETTER | RETAIN | referenceable |
-| **OperationalAlert** | `integration_monitoring.operational_alert` | An alert for investigation: availability, freshness, reconciliation mismatch, dead-letter, delivery rate (ADR-004). | `status` → OPEN · ACKNOWLEDGED · RESOLVED · DISMISSED | RETAIN | — |
+| **IntegrationDefinition** | `integration_monitoring.integration_definition` | A named external integration (AD/LDAP, SSO, Exchange, SMS provider, Nafath, SIEM, malware scan, Etimad-future, legacy source) — Blueprint Section 17.1. Seeded for the six the platform calls (TASK-075). `status` is monitoring activation, never health. | `status` → ACTIVE · DISABLED · RETIRED | RETAIN | referenceable |
+| **IntegrationInstance** | `integration_monitoring.integration_instance` | A configured endpoint of a definition, named by its configuration key. Availability and Freshness are two separate indicators (ADM-047); stored as an operational projection — D-8 register — evaluated at `evaluated_at` (TASK-075); `availability_changed_at` dates the last change of availability (TASK-092). | — | RETAIN | referenceable |
+| **SyncRun** | `integration_monitoring.sync_run` | A directory sync or reconciliation run; mismatches raise alerts and never auto-repair authoritative data (TASK-075). Fixed once it ends (guard). | `status` → RUNNING · SUCCEEDED · PARTIAL · FAILED | RETAIN | referenceable |
+| **Invocation** | `integration_monitoring.invocation` | One attempt at one call to or from an integration; a lineage's attempts share its key and correlation id (TASK-075). `failure_category` separates technical from business and security failures; `next_attempt_at` is set when a retry is scheduled. Fixed once it ends, but for a pending retry or dead letter becoming FAILED when its lineage's next attempt exists (guard). Never carries a secret or a payload. | `status` → IN_PROGRESS · SUCCEEDED · FAILED · RETRY_SCHEDULED · DEAD_LETTER | RETAIN | referenceable |
+| **OperationalAlert** | `integration_monitoring.operational_alert` | An alert for investigation: availability, freshness, reconciliation mismatch, dead-letter, delivery rate (ADR-004), queue backlog (TASK-092). One live per instance and type (partial unique index); born OPEN, final once RESOLVED or DISMISSED with a note; `acknowledged_at` with `acknowledged_by_user_id` (TASK-075). | `status` → OPEN · ACKNOWLEDGED · RESOLVED · DISMISSED | RETAIN | — |
 
 ### 5.22 AuditActivity — FG-06
 
@@ -1423,6 +1450,10 @@ erDiagram
         uuid project_id FK
         uuid actor_user_id FK
     }
+    ActivityProjectionCheckpoint {
+        uuid id PK
+        timestamptz last_recorded_at
+    }
     Project |o..o{ AuditEvent : "scope_project_id"
     AuditEvent ||--o{ AuditEventAttribute : "audit_event_id"
     AuditEvent ||--o| AuditForwardingRecord : "audit_event_id"
@@ -1433,10 +1464,11 @@ erDiagram
 
 | Entity | Table | Purpose | Lifecycle column → states | Delete policy | Identity |
 | --- | --- | --- | --- | --- | --- |
-| **AuditEvent** | `audit_activity.audit_event` | Append-only, tamper-evident formal audit record (Blueprint Section 18; TASK-033, TASK-073). Hash-chained; no update or delete by any application role. | — | APPEND_ONLY | referenceable |
+| **AuditEvent** | `audit_activity.audit_event` | Append-only, tamper-evident formal audit record (Blueprint Section 18; TASK-033, TASK-073). Hash-chained, the hash covering the digest of its attributes (TASK-073); no update or delete by any application role. | — | APPEND_ONLY | referenceable |
 | **AuditEventAttribute** | `audit_activity.audit_event_attribute` | Old/new value pair captured with the event (the diff TASK-110 requires). | — | APPEND_ONLY | — |
 | **AuditForwardingRecord** | `audit_activity.audit_forwarding_record` | SIEM forwarding state kept apart from the immutable event (PTBC-029). | `status` → PENDING · FORWARDED · FAILED | RETAIN | — |
-| **BusinessActivityEntry** | `audit_activity.business_activity_entry` | Derived, rebuildable business-readable projection of audit events (SCR-057); rebuild-and-diff must reproduce it exactly (TASK-073). Stored — D-8 register. | — | RETAIN | — |
+| **BusinessActivityEntry** | `audit_activity.business_activity_entry` | Derived, rebuildable business-readable projection of audit events (SCR-057); rebuild-and-diff must reproduce it exactly (TASK-073). Stored — D-8 register. A rebuild may replace or remove a line; a line is never purged otherwise. | — | RETAIN | — |
+| **ActivityProjectionCheckpoint** | `audit_activity.activity_projection_checkpoint` | How far the Activity projection has read the audit store, in commit order (TASK-073). One row. | — | RETAIN | — |
 
 ## 6. Lifecycle-state review (Appendix C)
 
@@ -1494,7 +1526,7 @@ The acceptance criterion asks that the ERD be reviewed against Blueprint Appendi
 | 46 | ReportDefinition | `lifecycle_state` | DRAFT · VALIDATED · PUBLISHED · RETIRED | TASK-071 + governed lifecycle primitive | NOT RUN (E-1) |
 | 47 | ReportJob | `status` | REQUESTED · VALIDATING · QUEUED · RUNNING · COMPLETED · FAILED · CANCELLED · EXPIRED | TASK-071 (REQUESTED → VALIDATING/QUEUED/RUNNING → COMPLETED/FAILED/CANCELLED/EXPIRED) | NOT RUN (E-1) |
 | 48 | GeneratedOutput | `status` | AVAILABLE · EXPIRED · PURGED | Inferred — no workbook statement (E-1; Q2) | NOT RUN (E-1) |
-| 49 | IntegrationDefinition | `status` | ACTIVE · DISABLED · RETIRED | TASK-076 (Enable/Disable modal MOD-101) | NOT RUN (E-1) |
+| 49 | IntegrationDefinition | `status` | ACTIVE · DISABLED · RETIRED | TASK-076 (Enable/Disable modal MOD-101); the commands built by TASK-075 (ACTIVE ↔ DISABLED; RETIRED is final) | NOT RUN (E-1) |
 | 50 | SyncRun | `status` | RUNNING · SUCCEEDED · PARTIAL · FAILED | TASK-075 (sync run, reconciliation) — state names inferred | NOT RUN (E-1) |
 | 51 | Invocation | `status` | IN_PROGRESS · SUCCEEDED · FAILED · RETRY_SCHEDULED · DEAD_LETTER | TASK-075 (retry/dead-letter) — state names inferred | NOT RUN (E-1) |
 | 52 | OperationalAlert | `status` | OPEN · ACKNOWLEDGED · RESOLVED · DISMISSED | TASK-075 (alert for investigation) — state names inferred | NOT RUN (E-1) |
@@ -1531,7 +1563,7 @@ Two lifecycle facts are deliberately not columns:
 | 18 | `ProjectIntake.declared_budget_sar` | Declaration record whose figures are re-written by owning modules from the ProjectIntakeRecorded event (ProjectBaseline DECLARED, FinancialCommitment DECLARED_BUDGET, opening ProgressSubmission and FinancialProgressUpdate, MilestoneAchievement) | M-1 and §11.1: each module writes its own fact; the intake row is the immutable declaration and the project_intake_id FKs make the reconciliation testable. |
 | 19 | `Project.registration_budget_sar` | Budget stated at registration | Input to governance-profile assignment by rule (TASK-105) before any WF-14 commitment exists; a distinct fact from the budget of record, not a copy. |
 | 20 | `Project.activated_at` | Lifecycle timestamp also present in Audit (with closed_at) | Registers and variance need business dates as columns; Audit is not a query source (Blueprint Section 18 separation). |
-| 21 | `IntegrationInstance.availability` | Derived from invocation history (with freshness, last_success_at, last_failure_at) | ADM-047 renders both indicators on every load; an operational projection rewritten by the runtime, never a business state (TASK-075). |
+| 21 | `IntegrationInstance.availability` | Derived from invocation history (with freshness, last_success_at, last_failure_at, evaluated_at) | ADM-047 renders both indicators on every load; an operational projection rewritten by the runtime, never a business state (TASK-075: the latest technical outcome sets availability; the last success against a configured window sets freshness). |
 | 22 | `BusinessActivityEntry.summary_ar` | Derived projection of AuditEvent | Blueprint Section 18 requires the derived, rebuildable Activity projection kept separate from Audit; TASK-073 tests rebuild-and-diff. |
 | 23 | `NotificationDelivery.rendered_body` | Rendered from a template version at send time | History (SCR-153) must show what was sent; templates are versioned and retired. |
 | 24 | `AuditEventAttribute.old_value` | Copy of a value at change time (with new_value) | The diff TASK-110 requires; append-only. |
@@ -1551,10 +1583,10 @@ Two lifecycle facts are deliberately not columns:
 | `RETAIN` | Never physically deleted. A terminal lifecycle state or an end timestamp ends its active life; retention period per PTBC-048-class decision. | 55 |
 | `HARD_DRAFT` | Physical delete permitted only while the row is in its DRAFT (unsubmitted) state, by its owner, with an audit event; forbidden once submitted. | 14 |
 | `HARD_OWNER` | User-owned convenience rows deletable by the owner at any time (preferences, saved views); audited. | 3 |
-| `HARD_WORKING` | Planning edits on the working schedule (dependencies) may be deleted; the approved baseline copies them, so history is unaffected; audited via the attribute diff. | 2 |
-| `CASCADE` | Follows its parent's policy. | 34 |
+| `HARD_WORKING` | Working rows the platform's own rule deletes: planning edits on the working schedule (dependencies), which the approved baseline copies, so history is unaffected, audited via the attribute diff; and the stored bytes of a generated output, deleted at its expiry while its `GeneratedOutput` record is kept (TASK-071). | 3 |
+| `CASCADE` | Follows its parent's policy. | 35 |
 
-Sum 121. `HARD_DRAFT` applies to business aggregates a person submits; governed configuration drafts (D-12) are `RETAIN` because author, reviewer and publisher separation makes every authored version audit-relevant (TASK-110) — an abandoned draft is RETIRED, not deleted. The physical `GeneratedOutput` file is purged at expiry while its row is retained as PURGED; `DocumentVersion` files are never purged.
+Sum 123. `HARD_DRAFT` applies to business aggregates a person submits; governed configuration drafts (D-12) are `RETAIN` because author, reviewer and publisher separation makes every authored version audit-relevant (TASK-110) — an abandoned draft is RETIRED, not deleted. The physical `GeneratedOutput` file (`ReportOutputContent`) is purged at expiry while its row is retained as PURGED; `DocumentVersion` files are never purged.
 
 ## 9. Appendix D crosswalk
 
@@ -1638,10 +1670,10 @@ Completeness check as the task defines it, restated for the day Appendix D is av
 | F-072 | Bilingual, mandatory notification templates | Notifications | `NotificationTemplate` | TASK-039; ADR-012 |
 | F-073 | DashboardDefinition — governed, bound to controlled projections | Dashboards | `DashboardDefinition`, `DashboardWidget`, `DashboardAudienceRole` | TASK-069; ADR-006 |
 | F-074 | UserDashboardPreference — presentation-only personalisation | Dashboards | `UserDashboardPreference`, `UserDashboardWidgetPreference` | TASK-111; ADR-019 |
-| F-075 | ReportDefinition — parameterised, ten at launch | Reports | `ReportDefinition`, `ReportParameter`, `ReportParameterOption`, `ReportAudienceRole` | TASK-071; ADR-006 |
-| F-076 | SavedView including shared controlled-explorer compositions | Reports | `SavedView`, `SavedViewShare`, `SavedViewColumn`, `SavedViewFilter` | TASK-071; TASK-112; ADR-019 |
-| F-077 | ReportJob lifecycle with pinned parameters | Reports | `ReportJob`, `ReportParameterValue` | TASK-071 |
-| F-078 | Secure generated output, authorised at download time | Reports | `GeneratedOutput` | TASK-071 |
+| F-075 | ReportDefinition — parameterised, ten at launch | Reports | `ReportDefinition`, `ReportColumn`, `ReportParameter`, `ReportParameterOption`, `ReportAudienceRole` | TASK-071; ADR-006 |
+| F-076 | SavedView including shared controlled-explorer compositions | Reports | `SavedView`, `SavedViewShare`, `SavedViewColumn`, `SavedViewFilter` | TASK-071; TASK-072; ADR-019 |
+| F-077 | ReportJob lifecycle with pinned parameters | Reports | `ReportJob`, `ReportJob.request_snapshot` | TASK-071 |
+| F-078 | Secure generated output, authorised at download time | Reports | `GeneratedOutput`, `GeneratedOutput.authorization_footprint`, `ReportOutputContent` | TASK-071 |
 | F-079 | User — internal, external and service principals; deactivation preserves attribution | IdentityAccess | `User` | TASK-031; ADR-013; Appendix A.1 |
 | F-080 | Role R01–R08 — undeletable shipped defaults | IdentityAccess | `Role` | TASK-028; TASK-110 |
 | F-081 | Protected permission catalogue | IdentityAccess | `Permission` | TASK-110; ADR-019 |
@@ -1672,7 +1704,8 @@ Completeness check as the task defines it, restated for the day Appendix D is av
 | F-106 | Business Activity projection — derived, rebuildable | AuditActivity | `BusinessActivityEntry` | TASK-073; TASK-074 |
 | F-107 | Transactional outbox for audit, notification and domain events | Common | `OutboxMessage` | M-5; M-6; TASK-073 |
 | F-108 | Entry-language attribute on every narrative field | Common | `Project.title_lang`, `Risk.description_lang`, `ProgressSubmission.narrative_lang` | TASK-109; ADR-012 extension — 51 columns platform-wide |
-| F-109 | Audit columns on every table | Common | `Project.id` | TASK-008; TASK-025 — created_at/by, updated_at/by on all 121 tables |
+| F-109 | Audit columns on every table | Common | `Project.id` | TASK-008; TASK-025 — created_at/by, updated_at/by on all 126 tables |
+| F-110 | Migration import lineage: legacy ID to platform record, per batch | Common | `ImportBatch`, `ImportedRecord` | TASK-102; Step 17 BE-027 |
 
 ## 10. Normalisation
 
@@ -1714,7 +1747,7 @@ Specified, not applied — per TASK-001 §4. Authorisation is Q5 (§14).
 | # | Criterion | Result |
 | --- | --- | --- |
 | 1 | ERD covers 100% of the Appendix D ownership register rows | **MET against the workbook restatement; NOT VERIFIED against Appendix D.** 109 of 109 business facts the workbook states (TASK-008 aggregate list, TASK-007 §9 register, 112 task rows) have a table or column (§9). 0 of 33 Appendix D rows are matched by number because Appendix D cannot be read (E-1). The check is defined and the CSV is ready to receive it. |
-| 2 | Every entity has a primary key, audit fields (CreatedAt, CreatedBy, UpdatedAt, UpdatedBy) and a documented soft-delete or hard-delete policy | **MET.** 121 of 121 tables: `id uuid` primary key (D-1), the four audit columns (D-2), one of six delete-policy classes in the DBML note and the §5 registers (D-3, §8). `erd-check.py` verifies the first two on every run. |
+| 2 | Every entity has a primary key, audit fields (CreatedAt, CreatedBy, UpdatedAt, UpdatedBy) and a documented soft-delete or hard-delete policy | **MET.** 123 of 123 tables: `id uuid` primary key (D-1), the four audit columns (D-2), one of six delete-policy classes in the DBML note and the §5 registers (D-3, §8). `erd-check.py` verifies the first two on every run. |
 | 3 | No duplicated/derived field exists without a documented performance justification | **MET.** §7 lists 29 entries covering every stored derived or copied column; each has a justification. The justifications are pinning and snapshot immutability more often than performance — they are stated as what they are. |
 | 4 | ERD is reviewed against Blueprint Appendix C for lifecycle-state columns | **NOT RUN — Appendix C not obtainable (E-1).** §6 is the review that could be run: 53 lifecycle columns with states and the workbook row that states them, inferred sets marked. |
 
@@ -1747,3 +1780,10 @@ On Q1 and Q6, the E-1 reconciliation is run, the crosswalk's Appendix D columns 
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-20 | Initial record. 121 tables across 21 module schemas and `common`; seventeen conventions (D-1 to D-17) carrying ADR-008/009/011/012 and the provenance, language-tag and Declared-Baseline amendments; WF-02 aggregates added (TASK-007 S-2); 53 lifecycle columns reviewed against the workbook restatement; 29 derived/duplicated columns justified; delete-policy census; 109-row Appendix D crosswalk with row numbers pending (E-1); six workbook consequences; seven residual items. | Architecture (TASK-008) |
+| 2026-10-09 | §5.16, `erd.dbml`: `external_update_request.request_type_item_id` (an `UPDATE_REQUEST_TYPE` no source defines) becomes `contribution_type_item_id` (`CONTRIBUTION_TYPE`), and `external_contribution.contribution_type_item_id` is removed: WF-13's specification puts the contribution type on the request (EXT-F-011) — one purpose per request (BR-EXT-004) — and every revision answers in that type's schema. The columns TASK-066 adds beyond the ERD are listed in `external-participation.md` D-2 and F-8 | TASK-066 |
+| 2026-10-10 | §5.19: the `dashboards` schema built as the ERD lists it (TASK-069, `dashboards.md` D-9); the CHECKs, the partial unique key and the guard it adds are noted under the table. No column added or changed. | Backend (TASK-069) |
+| 2026-10-10 | §5.20, `erd.dbml`, §8: the `reports` schema as TASK-071 builds it (`reports.md` D-13). Added: `ReportColumn` (a definition's columns, bound to FG-01's projection register) and `ReportOutputContent` (a file's bytes, `HARD_WORKING`: deleted at expiry while `GeneratedOutput` is kept), so 123 tables; `report_definition.primary_projection_code` and `.allows_saved_views`; `report_parameter.sort_order`, `.source_entity_code`, `.field_code`; `report_job.kind`, `.idempotency_key`, `.request_snapshot`, and `.failure_code` in place of `failure_reason`; `generated_output.sensitivity`, `.row_count`, `.source_as_of`, `.authorization_footprint`. Removed: `report_parameter.option_catalogue_id` (no MASTER_DATA_ITEM parameter is defined), `report_job.saved_view_id` and `report_parameter_value.report_job_id` (a job pins its whole request in `request_snapshot`). `SavedViewShare` and `saved_view.is_shared` stay as TASK-112's, not yet built. | Backend (TASK-071) |
+| 2026-10-11 | §5.20, `erd.dbml`, §8: `SavedViewShare` built by TASK-072 (`reports-ui.md` D-3), migration `TASK-072_ShareSavedViews`. A share names a role only (`shared_with_role_id`, not null, unique with `saved_view_id`): the recipients ADR-019 allows are three roles, and a non-administrator can list neither users nor departments to choose from, so `shared_with_department_id`, `shared_with_user_id` and the one-of-three CHECK are not built. `saved_view.is_shared` is not built: whether a view is shared is whether it has share rows. Table count unchanged (123). | Frontend (TASK-072) |
+| 2026-10-12 | §5.22, `erd.dbml`, §8: the `audit_activity` schema completed by TASK-073 (`audit-activity.md` D-5, D-8), migrations `TASK-073_CreateActivityProjection` and `TASK-073_AddActivityProjectionCrossModuleForeignKeys`. Added: `audit_event.attribute_digest` (SHA-256 over the event's attributes, now covered by `event_hash`; null for events stored before it, whose hash is unchanged) and `ActivityProjectionCheckpoint` (how far the projection has read the store), so 124 tables. `BusinessActivityEntry` built as listed; a rebuild may replace or remove a line. No `event_id` column (event-conventions S-8): the stored event's `id` is the captured event's id, so a repeated delivery finds it. | Backend (TASK-073) |
+| 2026-10-13 | §5.21, `erd.dbml`: the `integration_monitoring` schema built by TASK-075 (`integration-monitoring.md` D-1), migrations `TASK-075_CreateIntegrationMonitoringTables`, `…_AddIntegrationMonitoringCrossModuleForeignKeys`, `…_AddAuditForwardingInvocationForeignKey` and `…_GuardIntegrationMonitoringHistory`. Added: `invocation.failure_category` (technical, business or security: only technical counts against availability, FG-05 DC-INT-04), `invocation.next_attempt_at` (a scheduled retry), the unique key `(integration_instance_id, operation_code, idempotency_key, attempt_no)` (one attempt per number in a lineage), `operational_alert.acknowledged_at` (FG-05 §13.3 records who and when) and the partial unique index of one live alert per instance and type. Renamed: `integration_instance.health_evaluated_at` → `evaluated_at` (a column named for health is WF-02's or WF-03's alone, M-12). `audit_forwarding_record.invocation_id` now references `invocation` (TASK-033 F-3). Table count unchanged (124). | Backend (TASK-075) |
+| 2026-10-21 | §5.21, `erd.dbml`: `integration_monitoring.integration_instance.availability_changed_at` (since when the current availability has held, so an availability alert can wait for a configured delay, TBC-INT-08) and the `operational_alert.alert_type` value `QUEUE_BACKLOG` (FG-05 §10.1's backlog family, TBC-INT-11), migration `TASK-092_AddIntegrationQueueStateAndAlertThresholds`, which also adds the worker-owned partial index `ix_invocation_queue_state` behind ADM-047's queue state (`docs/operations/operational-dashboards.md`). Table count unchanged (124). | Observability (TASK-092) |

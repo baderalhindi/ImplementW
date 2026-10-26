@@ -1,0 +1,78 @@
+{
+  "overall-project-health": {
+    "term": "[[progress.figures.overallHealth]]",
+    "definition": "تقدير واحد لوضع المشروع تحتسبه المنصة وفق قواعد الصحة المعتمدة في الهيئة، ويكون [[progress.health.GREEN]] أو [[progress.health.AMBER]] أو [[progress.health.RED]]، أو [[progress.health.UNKNOWN]] إذا تعذّر احتسابه. ولا يُدخل يدويًا في أي حال."
+  },
+  "current-live": {
+    "term": "[[dashboards.semanticState.CURRENT_LIVE]]",
+    "definition": "الرقم كما هو الآن بحسب آخر ما سُجّل من عمل، وقد يتغير في أي وقت، ولم تراجعه الهيئة بعد."
+  },
+  "published-official": {
+    "term": "[[dashboards.semanticState.PUBLISHED_OFFICIAL]]",
+    "definition": "رقم راجعته الهيئة ونشرته، وهو القيمة الرسمية لدورة التقارير التي يخصها، ولا يتغير إلا بنشر الدورة التالية."
+  },
+  "historical-snapshot": {
+    "term": "[[dashboards.semanticState.HISTORICAL_SNAPSHOT]]",
+    "definition": "الرقم كما كان في تاريخ سابق، يُحتفظ به لقراءة الاتجاهات والتقارير السابقة كما كانت."
+  },
+  "stale": {
+    "term": "[[dashboards.freshness.STALE]]",
+    "definition": "قيمة يفيد مصدرها بأن تقريرًا لاحقًا لم يُرفع بعد، فتُعرض كما كانت في تاريخ سريانها."
+  },
+  "coverage": {
+    "term": "التغطية",
+    "definition": "عدد المشاريع المؤهلة التي احتسبها الإجمالي، وسبب استبعاد البقية: انعدام البيانات، أو تقييد الاطلاع، أو قيم لا يمكن جمعها."
+  },
+  "as-of": {
+    "term": "تاريخ السريان",
+    "definition": "التاريخ الذي يصفه الرقم. والرقم الذي لا تاريخ سريان له لا قيمة له يمكن تأريخها."
+  },
+  "formal-project-id": {
+    "term": "[[projects.fields.formalProjectId]]",
+    "definition": "الرقم الرسمي للمشروع، ويصدر عند اعتماد الهيئة لتسجيله، فلا يحمله المشروع وهو مسودة أو مقدَّم."
+  },
+  "governance-profile": {
+    "term": "[[projects.fields.governanceProfile]]",
+    "definition": "مجموعة القواعد التي يخضع لها المشروع، وتُختار عند التسجيل، ومنها تحديد الحقول الواجب تعبئتها قبل التقديم."
+  },
+  "participation": {
+    "term": "[[projects.fields.participation]]",
+    "definition": "الجهة التي تنفّذ المشروع: [[projects.participationMode.AHDA_MANAGED]] أو [[projects.participationMode.ENTITY_MANAGED]]. وفي الحالة الثانية تُسمّى الجهة، فيطّلع مستخدموها على المشروع ويردّون على طلبات التحديث الواردة من الهيئة."
+  },
+  "owning-sector": {
+    "term": "[[projects.fields.department]]",
+    "definition": "قطاع الهيئة الذي يتبعه المشروع، ويطّلع مديرو القطاعات على مشاريع قطاعاتهم ويتابعونها."
+  },
+  "project-workspace": {
+    "term": "مساحة عمل المشروع",
+    "definition": "الصفحة التي يُفتح عليها المشروع، وفيها تبويب لكل مجال: [[projects.workspace.tabs.overview]] و[[projects.workspace.tabs.registration]] و[[projects.workspace.tabs.progress]] و[[projects.workspace.tabs.schedule]]، وغيرها مما تتيحه أدوارك."
+  },
+  "approval-authority": {
+    "term": "صلاحية الاعتماد",
+    "definition": "القرارات التي يملك الشخص اتخاذها في الطلبات وفق مسارات الاعتماد في الهيئة، ويجوز تفويضها إلى غيره، على ألا يقرّر المفوَّض إلا فيما كان يملكه المفوِّض."
+  },
+  "revision": {
+    "term": "الإصدار",
+    "definition": "نسخة مرقّمة مما يُقدَّم للمراجعة. فإذا أُعيد التقديم قُدّمت النسخة المصحّحة إصدارًا تاليًا، مع الاحتفاظ بالإصدارات السابقة."
+  },
+  "reporting-completeness": {
+    "term": "اكتمال التقارير",
+    "definition": "مدى تقديم كل مشروع لتقرير التقدم المستحق عن دورة التقارير الحالية."
+  },
+  "update-request": {
+    "term": "طلب التحديث",
+    "definition": "طلب توجّهه الهيئة إلى جهة خارجية للحصول على معلومات محددة عن أحد مشاريعها، كتقدم المهام، مع موعد استحقاق."
+  },
+  "contribution": {
+    "term": "المساهمة",
+    "definition": "رد الجهة الخارجية على طلب التحديث، ولا يمكن تغييره بعد تقديمه؛ فإما أن تقبله الهيئة أو ترفضه أو تعيده للتصحيح."
+  },
+  "clean-file": {
+    "term": "[[documents.scanState.CLEAN]]",
+    "definition": "ملف اجتاز فحص البرمجيات الخبيثة، ولا يُنزَّل أي ملف ولا يُعتمد دليلًا إلا إذا كان سليمًا."
+  },
+  "escalation": {
+    "term": "التصعيد",
+    "definition": "رفع عنصر متأخر أو لم يُعالَج إلى المستوى الأعلى من الصلاحية، ليتولاه من يملك صلاحية أوسع."
+  }
+}

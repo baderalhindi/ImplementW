@@ -42,8 +42,8 @@ internal static class ModuleRegistry
         ("Suspension", "Project"),                   // 7 command
         ("Closure", "Project"),                      // 8 command
         ("ProjectTask", "Schedule"),                 // 9
-        // 10 Milestone ↔ Schedule is a split-authority contract (ICD-04), not a call; the direction
-        //    TASK-050 implements is added by revising §8.2 first.
+        ("Milestone", "Schedule"),                   // 10 split-authority contract (ICD-04), WF-05 → WF-03 only: query the
+                                                     //    shared milestone, record it ACHIEVED on acceptance (TASK-050)
         ("Schedule", "ChangeRequest"),               // 11
         ("FinancialKpi", "ChangeRequest"),           // 12
         ("FinancialKpi", "Progress"),                // 13
@@ -52,8 +52,9 @@ internal static class ModuleRegistry
         ("Milestone", "DocumentManagement"),         // 16 command
         ("ExternalParticipation", "DocumentManagement"), // 17 command
         ("ExternalParticipation", "Project"),        // 18
-        // 19 ExternalParticipation → owning core module via IExternalContributionTarget: target set
-        //    unconfirmed (ADR-003 S-5); added when confirmed.
+        ("ExternalParticipation", "ProjectTask"),    // 19 command: an accepted external report of a task's percentage, applied
+                                                     //    through WF-04's ITaskProgressContributions (TASK-066). The target set is
+                                                     //    what TASK-066 built; another target is another row here (S-5).
         ("Project", "Approval"),                     // 20 command; 28 outcome-event consumer
         ("Schedule", "Approval"),                    // 21; 28
         ("ChangeRequest", "Approval"),               // 22; 28
@@ -72,6 +73,23 @@ internal static class ModuleRegistry
         ("IntegrationMonitoring", "ExternalParticipation"), // 33 event consumer
         ("IntegrationMonitoring", "AuditActivity"),  // 34 query
         ("Milestone", "Project"),                    // 35 event consumer
+        ("ProjectTask", "Project"),                  // 36 query
+        ("FinancialKpi", "DocumentManagement"),      // 38 command: an Approved Budget version's referenced document (TASK-052)
+        ("Closure", "ProjectTask"),                  // 39 query: WF-10's readiness, the tasks still to be dispositioned (TASK-063)
+        ("Closure", "Schedule"),                     // 40 query: open baseline candidates, unachieved milestones (TASK-063)
+        ("Closure", "Milestone"),                    // 41 query: achievement claims still on their way (TASK-063)
+        ("Closure", "Risk"),                         // 42 query: risks neither closed nor accepted (TASK-063)
+        ("Closure", "ManagementConcern"),            // 43 query: issues and challenges not resolved (TASK-063)
+        ("Closure", "ChangeRequest"),                // 44 query: change requests not carried through (TASK-063)
+        ("Closure", "Suspension"),                   // 45 query, command: open requests; the open suspension ended on terminal closure (TASK-063)
+        ("Closure", "Progress"),                     // 46 query: unpublished progress, and whether any is published (TASK-063)
+        ("Dashboards", "Project"),                   // 47 query: the projects a caller's record scope reaches, the population an FG-01
+                                                     //    aggregate is counted over, and the one project of the Project Dashboard (TASK-069)
+        ("Dashboards", "ProjectTask"),               // 48 read projection: open tasks per project, for FG-01 and FG-02's rows (TASK-071)
+        ("Dashboards", "Milestone"),                 // 49 read projection: open achievement claims per project (TASK-071)
+        ("Dashboards", "ManagementConcern"),         // 50 read projection: open issues and challenges per project (TASK-071)
+        ("Dashboards", "ChangeRequest"),             // 51 read projection: change requests undecided, approved, in implementation (TASK-071)
+        ("Dashboards", "Suspension"),                // 52 read projection: open suspension and resumption requests (TASK-071)
     };
 
     public static bool Allows(string referrer, string referenced) =>

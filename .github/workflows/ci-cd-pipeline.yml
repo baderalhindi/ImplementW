@@ -88,8 +88,8 @@ jobs:
 
   # ── Stage 2: the gates ────────────────────────────────────────────────────────────────────────
   # TASK-015's gate, called rather than restated, so the pipeline cannot drift from the checks that
-  # guard the pull request. Its jobs report here as `quality-gates / backend`, `… / frontend`,
-  # `… / repo-checks` and `… / terraform`.
+  # guard the pull request. Its jobs report here as `quality-gates / backend`, `… / backend-risk-governance`,
+  # `… / backend-endpoint-hardening`, `… / frontend`, `… / repo-checks` and `… / terraform`.
   quality-gates:
     name: quality-gates
     uses: ./.github/workflows/ci-quality-gates.yml
@@ -258,15 +258,18 @@ jobs:
           echo "signed $IMAGE_DIGEST and attested its SBOM" >>"$GITHUB_STEP_SUMMARY"
 
   # CTL-40's "failed migration dry-run blocks promotion". Runs against a scratch database, so it is
-  # independent of every environment and of whether any environment exists.
+  # independent of every environment and of whether any environment exists. The seed and the data-integrity
+  # check run on the result (TASK-027), so a seed that fails or a violation also blocks promotion.
   migration-dry-run:
     name: migration-dry-run
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [release-metadata, quality-gates]
+    # Docker Hub images are pulled through Google's public mirror: GitHub's shared runner addresses exhaust Docker Hub's
+    # anonymous pull limit ("toomanyrequests"), which failed PR #78 three times before any test ran. Same image, same digest.
     services:
       postgres:
-        image: postgres:17
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_PASSWORD: scratch
           POSTGRES_DB: scratch
@@ -286,8 +289,9 @@ jobs:
         with:
           global-json-file: global.json
 
+      # The version pinned in .config/dotnet-tools.json (TASK-024), the one migrations are authored with.
       - name: Install dotnet-ef
-        run: dotnet tool install --global dotnet-ef
+        run: dotnet tool restore
 
       - name: Build
         run: dotnet build src/backend/PMPlatform.Api --configuration Release
@@ -296,6 +300,14 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:scratch@localhost:5432/scratch
         run: .github/scripts/migration-dry-run.sh
+
+      # TASK-027: the post-migration step every deployment runs (seed, then validate-data-integrity), on the database
+      # just migrated, with a second seed run in between that must change nothing.
+      - name: Seed and validate data integrity
+        env:
+          DATABASE_URL: postgres://postgres:scratch@localhost:5432/scratch
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=scratch;Username=postgres;Password=scratch
+        run: .github/scripts/seed-dry-run.sh
 
   # ── Stage 3 to 6: the promotion path ──────────────────────────────────────────────────────────
   # G-1, automatic. Every gate the workbook names is a `needs` of this job, so a red gate skips DEV
@@ -347,12 +359,30 @@ jobs:
           authorisation-ref: ${{ vars.ADR001_CONFIRMATION_REF }}
           migration-job: ${{ vars.MIGRATION_JOB }}
 
+  # G-3's first precondition (TASK-085): the cross-domain journeys pass against SIT, on the release just deployed there. The
+  # same workflow runs them nightly (docs/testing/e2e-suite.md); here it is a need of deploy-uat, so a failing journey
+  # blocks promotion to UAT before any reviewer is asked.
+  e2e-sit:
+    name: e2e-sit
+    needs: [release-metadata, preflight, deploy-sit]
+    if: ${{ success() && needs.preflight.outputs.ready == 'true' }}
+    uses: ./.github/workflows/e2e-journeys.yml
+    permissions:
+      contents: read
+      issues: write
+    with:
+      target: sit
+      commit_sha: ${{ needs.release-metadata.outputs.commit_sha }}
+    secrets:
+      E2E_SECRET_READER_KEY: ${{ secrets.E2E_SECRET_READER_KEY }}
+      E2E_TEST_USER_CREDENTIALS_SECRET_REF: ${{ secrets.E2E_TEST_USER_CREDENTIALS_SECRET_REF }}
+
   # G-3, QA Lead and Security Lead.
   deploy-uat:
     name: deploy-uat
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [release-metadata, preflight, package, deploy-sit]
+    needs: [release-metadata, preflight, package, deploy-sit, e2e-sit]
     if: ${{ success() && needs.preflight.outputs.ready == 'true' }}
     environment:
       name: uat

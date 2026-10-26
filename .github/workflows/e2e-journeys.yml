@@ -1,0 +1,187 @@
+# Cross-domain journey suite (TASK-085). Record: docs/testing/e2e-suite.md
+#
+# The 15 Step 18 journeys and ADR-013's participation journeys, as Playwright browser tests (src/frontend/e2e), against a
+# deployed stack. Three ways in:
+#
+#   nightly       every night against SIT when SIT exists (vars.E2E_SIT_BASE_URL set), and until then against the e2e stack
+#                 built from the head of the default branch (src/frontend/e2e/stack). Each run comments its per-journey
+#                 outcome on the "Nightly cross-domain journeys" issue, so the pass/fail history is visible to the team.
+#   promotion     ci-cd-pipeline.yml calls this workflow against SIT with the release it just deployed there; deploy-uat
+#                 needs it, so a failing journey blocks promotion to UAT.
+#   pull request  a change to the suite or its stack runs it against the e2e stack built from the change.
+#
+# Nothing here retries a failed journey (test-strategy.md §10).
+name: e2e-journeys
+
+on:
+  # 21:40 UTC = 00:40 Riyadh, after the working day's merges; off the hour, when GitHub's scheduler is busiest.
+  schedule:
+    - cron: "40 21 * * *"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "auto: SIT when vars.E2E_SIT_BASE_URL is set, otherwise the e2e stack"
+        type: choice
+        options: [auto, compose, sit]
+        default: auto
+      journeys:
+        description: "Optional path filter, e.g. journeys/uj-004 (empty runs every journey)"
+        type: string
+        required: false
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        default: sit
+      commit_sha:
+        type: string
+        required: false
+    secrets:
+      E2E_SECRET_READER_KEY:
+        required: false
+      E2E_TEST_USER_CREDENTIALS_SECRET_REF:
+        required: false
+  pull_request:
+    branches: [main, dev, stage]
+    paths:
+      - src/frontend/e2e/**
+      - src/frontend/package-lock.json
+      - .github/workflows/e2e-journeys.yml
+      - .github/scripts/e2e-*
+      - infra/docker/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-journeys-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  journeys:
+    name: e2e-journeys
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      issues: write # the nightly history comment only
+    env:
+      COMMIT_SHA: ${{ inputs.commit_sha || github.sha }}
+      SUMMARY: src/frontend/test-results/summary.md
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha || github.sha }}
+
+      # SIT when it is asked for, or when it exists and nothing else was asked for; a pull request always builds its own stack.
+      - name: Choose the target
+        id: target
+        env:
+          REQUESTED: ${{ inputs.target || 'auto' }}
+          EVENT: ${{ github.event_name }}
+          SIT_BASE_URL: ${{ vars.E2E_SIT_BASE_URL }}
+        run: |
+          set -euo pipefail
+          target=compose
+          if [ "$REQUESTED" = sit ] || { [ "$REQUESTED" = auto ] && [ "$EVENT" != pull_request ] && [ -n "$SIT_BASE_URL" ]; }; then
+            target=sit
+          fi
+          if [ "$target" = sit ] && [ -z "$SIT_BASE_URL" ]; then
+            echo "::error::SIT was asked for, but vars.E2E_SIT_BASE_URL is not set: SIT does not exist yet (e2e-suite.md F-1)."
+            exit 1
+          fi
+          echo "target=$target" >>"$GITHUB_OUTPUT"
+          echo "Target: **$target**" >>"$GITHUB_STEP_SUMMARY"
+
+      # The suite runs as root in Playwright's image; the runner creates the report folders first, so it owns them and the
+      # summary and log steps after the suite can still write into them.
+      - name: Prepare the report folders
+        run: mkdir -p src/frontend/test-results src/frontend/playwright-report
+
+      # The synthetic accounts' credentials, read from the secret store entry E2E_TEST_USER_CREDENTIALS_SECRET_REF names, with
+      # every password masked before anything can print it. The file lives in the runner's temp directory, outside the tree.
+      - name: Authenticate to the secret store
+        if: ${{ steps.target.outputs.target == 'sit' }}
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.E2E_SECRET_READER_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+        if: ${{ steps.target.outputs.target == 'sit' }}
+
+      - name: Read the e2e test users' credentials
+        if: ${{ steps.target.outputs.target == 'sit' }}
+        env:
+          SECRET_REF: ${{ secrets.E2E_TEST_USER_CREDENTIALS_SECRET_REF }}
+        run: |
+          set -euo pipefail
+          [ -n "$SECRET_REF" ] || { echo "::error::E2E_TEST_USER_CREDENTIALS_SECRET_REF is not set"; exit 1; }
+          umask 077
+          mkdir -p "$RUNNER_TEMP/e2e"
+          gcloud secrets versions access latest --secret="$SECRET_REF" >"$RUNNER_TEMP/e2e/credentials.json"
+          python3 - "$RUNNER_TEMP/e2e/credentials.json" <<'EOF'
+          import json, sys
+          for persona in json.load(open(sys.argv[1])).values():
+              if isinstance(persona, dict):
+                  for key in ("password", "mfaCode", "totpSecret"):
+                      if persona.get(key):
+                          print(f"::add-mask::{persona[key]}")
+          EOF
+
+      - name: Run the journeys against SIT
+        if: ${{ steps.target.outputs.target == 'sit' }}
+        env:
+          E2E_BASE_URL: ${{ vars.E2E_SIT_BASE_URL }}
+          E2E_FIXTURE_CONTROL_URL: ${{ vars.E2E_SIT_FIXTURE_CONTROL_URL }}
+          JOURNEYS: ${{ inputs.journeys }}
+        run: |
+          set -euo pipefail
+          docker run --rm --init --ipc=host -w /work \
+            -v "$PWD/src/frontend:/work" -v "$RUNNER_TEMP/e2e:/credentials:ro" \
+            -e CI=true -e E2E_TARGET=sit -e E2E_BASE_URL -e E2E_FIXTURE_CONTROL_URL \
+            -e E2E_TEST_USER_CREDENTIALS_FILE=/credentials/credentials.json \
+            mcr.microsoft.com/playwright:v1.63.0-noble \
+            sh -c 'npm ci --no-audit --no-fund --loglevel=error && npx playwright test --config e2e/playwright.config.ts "$@"' -- ${JOURNEYS:+"$JOURNEYS"}
+
+      # The e2e stack: built from this commit, a fresh database provisioned with the e2e data set, the suite in Playwright's
+      # own image on the stack's network (src/frontend/e2e/stack/run.sh).
+      - name: Run the journeys against the e2e stack
+        if: ${{ steps.target.outputs.target == 'compose' }}
+        env:
+          CI: "true"
+          JOURNEYS: ${{ inputs.journeys }}
+        run: src/frontend/e2e/stack/run.sh ${JOURNEYS:+"$JOURNEYS"}
+
+      - name: Summarise the journeys
+        id: summary
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          python3 .github/scripts/e2e-summary.py src/frontend/test-results/results.json \
+            "${{ steps.target.outputs.target == 'sit' && 'SIT' || 'e2e stack (SIT stand-in)' }}" "$SUMMARY" >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the e2e stack's logs
+        if: ${{ failure() && steps.target.outputs.target == 'compose' }}
+        run: |
+          mkdir -p src/frontend/test-results/stack-logs
+          for service in e2e-api e2e-web e2e-edge e2e-standins e2e-seed e2e-migrate; do
+            docker compose -f src/frontend/e2e/stack/compose.yml logs --no-color "$service" \
+              >"src/frontend/test-results/stack-logs/$service.log" 2>&1 || true
+          done
+
+      - name: Attach the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-journeys-${{ steps.target.outputs.target }}
+          path: |
+            src/frontend/playwright-report/
+            src/frontend/test-results/
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Record the night on the history issue
+        if: ${{ !cancelled() && github.event_name == 'schedule' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/e2e-history.sh "$SUMMARY" "${{ steps.summary.outcome == 'success' && 'success' || 'failure' }}"

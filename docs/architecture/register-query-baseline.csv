@@ -1,0 +1,75 @@
+query,indexes,baseline_ms
+SCR-025 ALL page,ix_project_updated_at_id,0.032
+SCR-025 ALL page 11,ix_project_updated_at_id,0.289
+SCR-025 ALL count,ix_project_region_item_id,0.213
+SCR-025 DEPT page,ix_project_department_id_updated_at_id,0.033
+SCR-025 DEPT count,ix_project_department_id_updated_at_id,0.038
+SCR-025 ENTITY page,ix_project_external_entity_id_updated_at_id,0.036
+SCR-025 ENTITY count,ix_project_external_entity_id_updated_at_id,0.034
+SCR-025 state filter page,ix_project_lifecycle_state_updated_at_id,0.027
+SCR-025 state filter count,ix_project_lifecycle_state_updated_at_id,0.151
+SCR-026 OWN page,ix_project_project_manager_user_id_updated_at_id,0.046
+SCR-026 OWN count,ix_project_project_manager_user_id_updated_at_id,0.036
+Data scope: caller's active grants,ix_access_relationship_user_id_status,0.048
+ADM-002 user list page,ix_user_status_display_name_id,0.019
+ADM-020 catalogue items,ix_master_data_item_catalogue_id_lifecycle_state_sort_order_id,0.127
+FG-04 configuration as of now,ix_configuration_version_family_state_effective_from,0.021
+SCR-080 ALL page,risk_updated_at_id_idx,0.042
+SCR-080 ALL count,risk_closed_by_user_id_idx,2.755
+SCR-080 DEPT page,risk_updated_at_id_idx + pk_project,2.243
+SCR-080 DEPT count,ix_project_department_id_updated_at_id + risk_project_id_updated_at_id_idx,2.337
+SCR-080 project tab page,risk_project_id_updated_at_id_idx,0.106
+SCR-081 critical page,risk_updated_at_id_idx + risk_assessment_version_risk_id_version_no_idx,2.282
+SCR-081 critical count,risk_assessment_version_risk_rating_definition_id_idx + risk_assessment_version_risk_id_version_no_idx,16.057
+SCR-083 ALL page,management_concern_concern_type_updated_at_id_idx,0.032
+SCR-083 ALL count,management_concern_concern_type_updated_at_id_idx,2.065
+SCR-083 DEPT page,management_concern_concern_type_updated_at_id_idx + pk_project,0.939
+SCR-083 DEPT count,ix_project_department_id_updated_at_id + management_concern_project_id_concern_type_updated_at_id_idx,1.687
+SCR-085 ALL page,management_concern_concern_type_updated_at_id_idx,0.121
+SCR-085 ALL count,management_concern_concern_type_updated_at_id_idx,0.860
+SCR-087 open page,concern_escalation_status_escalated_at_id_idx,0.078
+SCR-087 open count,concern_escalation_status_escalated_at_id_idx,0.072
+SCR-100 personal page,approval_task_assigned_user_id_status_due_at_id_idx,0.057
+SCR-100 personal count,approval_task_assigned_user_id_status_due_at_id_idx,0.022
+SCR-100 role queue page,approval_task_assigned_user_id_status_due_at_id_idx,1.174
+SCR-101 page,approval_instance_requested_by_user_id_requested_at_id_idx,0.112
+SCR-101 count,approval_instance_requested_by_user_id_requested_at_id_idx,0.184
+SCR-114 page,approval_delegation_delegate_user_id_status_valid_to_idx,0.021
+SCR-105 ALL page,change_request_updated_at_id_idx,0.108
+SCR-105 ALL count,change_request_requested_governance_profile_item_id_idx,0.562
+SCR-105 project page,change_request_project_id_updated_at_id_idx,0.038
+SCR-108 ALL page,suspension_request_updated_at_id_idx,0.049
+SCR-108 ALL count,,0.080
+SCR-120 ALL page,document_updated_at_id_idx,0.126
+SCR-120 ALL count,document_owner_user_id_idx,4.344
+SCR-121 project page,document_project_id_updated_at_id_idx,0.134
+SCR-047 project tasks page,project_task_project_id_status_planned_finish_date_idx,0.136
+SCR-063 my tasks page,project_task_assignee_user_id_status_planned_finish_date_idx,0.429
+SCR-063 my tasks count,project_task_assignee_user_id_status_planned_finish_date_idx,0.112
+SCR-065 my overdue page,project_task_assignee_user_id_status_planned_finish_date_idx,1.978
+SCR-046 project milestones,project_milestone_project_id_forecast_date_idx,0.069
+SCR-062 register page,project_milestone_status_forecast_date_idx,0.168
+SCR-062 register count,project_milestone_status_forecast_date_idx,0.026
+SCR-070 progress history,progress_submission_project_id_submitted_at_idx,0.143
+SCR-071 financial progress,financial_progress_update_project_id_as_of_date_idx,0.171
+SCR-072 project KPIs,kpi_assignment_project_id_kpi_definition_id_idx,0.042
+SCR-073 KPI history,kpi_measurement_kpi_assignment_id_period_start_idx,0.092
+FG-01 latest progress snapshot,published_progress_snapshot_project_id_published_at_idx,0.026
+FG-01 latest financial snapshot,published_financial_snapshot_project_id_as_of_date_idx,0.029
+SCR-160 project requests,external_update_request_project_id_issued_at_id_idx,0.046
+SCR-163 entity open page,external_update_request_external_entity_id_status_due_date_idx,0.373
+SCR-163 entity open count,external_update_request_external_entity_id_status_due_date_idx,0.024
+SCR-164 my contributions,external_contribution_contributor_user_id_submitted_at_id_idx,0.134
+SCR-165 review queue page,external_contribution_status_submitted_at_id_idx,0.250
+SCR-165 review queue count,external_contribution_status_submitted_at_id_idx,0.350
+SCR-166 conflicts page,source_application_status_attempted_at_idx,0.118
+SCR-150 first page,notification_delivery_recipient_user_id_channel_created_at__idx,0.105
+SCR-150 next page,notification_delivery_recipient_user_id_channel_created_at__idx,0.102
+SCR-150 unread badge,notification_delivery_recipient_user_id_channel_read_at_idx,0.037
+SCR-057 activity first page,business_activity_entry_project_id_occurred_at_id_idx,0.126
+SCR-058 audit first page,audit_event_scope_project_id_occurred_at_id_idx,0.149
+ADM-050 audit trail first page,audit_event_occurred_at_id_idx,0.095
+ADM-050 by actor first page,audit_event_actor_user_id_occurred_at_idx,0.087
+SCR-139 my saved views,saved_view_owner_user_id_view_type_idx,0.044
+SCR-140 export history page,report_job_requested_by_user_id_requested_at_id_idx,0.048
+SCR-140 export history count,report_job_requested_by_user_id_requested_at_id_idx,0.042

@@ -1,0 +1,37 @@
+namespace PMPlatform.Application.Common.Authorization;
+
+/// <summary>
+/// The backend-authoritative authorization engine (Blueprint Section 10.1, TASK-030, CTL-08). Every protected endpoint
+/// passes through it; hiding a control in the SPA is presentation, never the protection (solution-architecture T-4).
+/// </summary>
+public interface IAuthorizationEngine
+{
+    /// <summary>The user and their grants in force now, read once per request.</summary>
+    public Task<AuthorizationPrincipal?> GetPrincipalAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Effective authorization = permission + data scope + project/business relationship + assignment/ownership +
+    /// record/lifecycle state + workflow authority + sensitivity restriction.
+    /// </summary>
+    public Task<AuthorizationDecision> AuthorizeAsync(Guid userId, AuthorizationRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The same decision as <see cref="AuthorizeAsync"/>, as a question about authority rather than a request: nothing
+    /// is recorded. For deciding who may act — whether a delegator could decide a task, what belongs in an inbox — where
+    /// a negative answer is not a refused request. The caller that refuses a request on the answer audits that refusal.
+    /// </summary>
+    public Task<AuthorizationDecision> EvaluateAsync(Guid userId, AuthorizationRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The records the user reaches under <paramref name="permissionCode"/>, as clauses a collection query filters by
+    /// (api-conventions R-3: "filters the collection server-side"). Nothing is recorded: a list is not a refusal. Empty for
+    /// an inactive user or one without the permission; a write permission's READ-ONLY grants reach nothing.
+    /// </summary>
+    public Task<RecordScope> GetRecordScopeAsync(Guid userId, string permissionCode, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The fields of <paramref name="entityCode"/> the user may not see when reading it under
+    /// <paramref name="permissionCode"/>: those classified above that permission's clearance (ADR-010).
+    /// </summary>
+    public Task<FieldMask> GetFieldMaskAsync(Guid userId, string permissionCode, string entityCode, CancellationToken cancellationToken);
+}

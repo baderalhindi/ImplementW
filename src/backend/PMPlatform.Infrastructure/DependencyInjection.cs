@@ -1,6 +1,77 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
+using PMPlatform.Application.Common.Events;
+using PMPlatform.Application.Common.Observability;
+using PMPlatform.Application.Common.RateLimiting;
+using PMPlatform.Application.Features.Approval;
+using PMPlatform.Application.Features.ChangeRequest;
+using PMPlatform.Application.Features.Dashboards;
+using PMPlatform.Application.Features.Reports;
+using PMPlatform.Application.Features.AuditActivity;
+using PMPlatform.Application.Features.DocumentManagement;
+using PMPlatform.Application.Features.DocumentManagement.Contracts;
+using PMPlatform.Application.Features.IdentityAccess.Administration;
+using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.IntegrationMonitoring;
+using PMPlatform.Application.Features.FinancialKpi;
+using PMPlatform.Application.Features.MasterDataConfig;
+using PMPlatform.Application.Features.ExternalParticipation;
+using PMPlatform.Application.Features.ManagementConcern;
+using PMPlatform.Application.Features.Milestone;
+using PMPlatform.Application.Features.Notifications;
+using PMPlatform.Application.Features.Progress;
+using PMPlatform.Application.Features.Project;
+using PMPlatform.Application.Features.ProjectTask;
+using PMPlatform.Application.Features.Risk;
+using PMPlatform.Application.Features.Schedule;
+using PMPlatform.Application.Features.Suspension;
+using PMPlatform.Application.Features.Closure;
+using PMPlatform.Infrastructure.Approval;
+using PMPlatform.Infrastructure.Audit;
+using PMPlatform.Infrastructure.DocumentManagement;
+using PMPlatform.Infrastructure.Hosting;
+using PMPlatform.Infrastructure.Identity;
+using PMPlatform.Infrastructure.IntegrationMonitoring;
+using PMPlatform.Infrastructure.Notifications;
+using PMPlatform.Infrastructure.Risk;
+using PMPlatform.Infrastructure.Suspension;
+using PMPlatform.Infrastructure.Closure;
 using PMPlatform.Infrastructure.Persistence;
+using PMPlatform.Infrastructure.Persistence.Approval;
+using PMPlatform.Infrastructure.Persistence.AuditActivity;
+using PMPlatform.Infrastructure.Persistence.ChangeRequest;
+using PMPlatform.Infrastructure.Persistence.DocumentManagement;
+using PMPlatform.Infrastructure.Persistence.Dashboards;
+using PMPlatform.Infrastructure.Persistence.Reports;
+using PMPlatform.Infrastructure.Reports;
+using PMPlatform.Infrastructure.Reports.Rendering;
+using PMPlatform.Infrastructure.Persistence.FinancialKpi;
+using PMPlatform.Infrastructure.Persistence.ExternalParticipation;
+using PMPlatform.Infrastructure.Persistence.ManagementConcern;
+using PMPlatform.Infrastructure.Persistence.Milestone;
+using PMPlatform.Infrastructure.Persistence.Progress;
+using PMPlatform.Infrastructure.Persistence.Project;
+using PMPlatform.Infrastructure.Persistence.ProjectTask;
+using PMPlatform.Infrastructure.Persistence.Risk;
+using PMPlatform.Infrastructure.Persistence.Schedule;
+using PMPlatform.Infrastructure.Persistence.Suspension;
+using PMPlatform.Infrastructure.Persistence.Closure;
+using PMPlatform.Infrastructure.Persistence.Authorization;
+using PMPlatform.Infrastructure.Persistence.IdentityAccess;
+using PMPlatform.Infrastructure.Persistence.IntegrationMonitoring;
+using PMPlatform.Infrastructure.Persistence.MasterDataConfig;
+using PMPlatform.Infrastructure.Persistence.Messaging;
+using PMPlatform.Infrastructure.Persistence.Notifications;
+using PMPlatform.Infrastructure.RateLimiting;
+using PMPlatform.Infrastructure.Secrets;
+using PMPlatform.Infrastructure.DataImport;
+using PMPlatform.Infrastructure.Persistence.DataImport;
 
 namespace PMPlatform.Infrastructure;
 
@@ -15,8 +86,324 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        services.AddHealthChecks().AddCheck<PostgreSqlHealthCheck>("postgresql");
+        // TASK-091 (CTL-31): readiness is the database; liveness is the workers, and never the database, so an outage does not restart
+        // every instance. Both are singletons: the database probe is shared by every request (PostgreSqlHealthCheck), and the workers
+        // record their passes in the one WorkerActivity the liveness check reads.
+        services.AddSingleton<PostgreSqlHealthCheck>();
+        services.AddSingleton<WorkerActivity>();
+        services.AddSingleton<WorkerLivenessHealthCheck>();
+        services.AddOptions<WorkerLivenessOptions>()
+            .Bind(configuration.GetSection(WorkerLivenessOptions.Section))
+            .Validate(options => options.WorkerPassTimeout > TimeSpan.Zero, $"{WorkerLivenessOptions.Section}:WorkerPassTimeout must be positive.")
+            .ValidateOnStart();
+        services.AddHealthChecks()
+            .AddCheck<PostgreSqlHealthCheck>("postgresql", tags: [HealthCheckTags.Readiness])
+            .AddCheck<WorkerLivenessHealthCheck>("background-workers", tags: [HealthCheckTags.Liveness]);
+
+        // Resolved when a context is created, not at start-up, so the API still starts and reports Unhealthy
+        // without a database, as it did before TASK-024.
+        // TASK-073: every context refuses to change committed audit evidence, and ingests the audit messages it commits.
+        services.AddDbContext<PMPlatformDbContext>((provider, options) => options
+            .UsePlatformDatabase(RequiredConnectionString(configuration))
+            .AddInterceptors(provider.GetRequiredService<AuditEvidenceGuard>(), provider.GetRequiredService<AuditCommitInterceptor>()));
+
+        // TASK-028: the directory, SSO and session-token adapters, and the IdentityAccess repository sign-in reads.
+        services.AddIdentityIntegration(configuration);
+        services.AddScoped<IUserAccessRepository, UserAccessRepository>();
+
+        // TASK-030: the grants and classifications the authorization engine evaluates.
+        services.AddScoped<IAuthorizationRepository, AuthorizationRepository>();
+
+        // TASK-031: FG-03 administration. The mobile verifier is a placeholder until the SMS provider (TASK-103) replaces it.
+        services.AddScoped<IUserAdministrationRepository, UserAdministrationRepository>();
+        services.AddScoped<IAccessRelationshipRepository, AccessRelationshipRepository>();
+        services.AddScoped<IRoleAdministrationRepository, RoleAdministrationRepository>();
+        services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+        services.AddScoped<IExternalEntityRepository, ExternalEntityRepository>();
+        services.TryAddSingleton<IMobileNumberVerifier, UnconfiguredMobileNumberVerifier>();
+
+        // TASK-034: FG-04 master data and configuration.
+        services.AddScoped<IMasterDataRepository, MasterDataRepository>();
+        services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
+
+        services.AddAuditForwarding(configuration);
+        services.AddOutbox(configuration);
+
+        // TASK-035: WF-11 approvals, and the pass that escalates overdue tasks and expires delegations.
+        services.AddScoped<IApprovalRepository, ApprovalRepository>();
+        services.AddOptions<ApprovalMaintenanceOptions>()
+            .Bind(configuration.GetSection(ApprovalMaintenanceOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{ApprovalMaintenanceOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<ApprovalMaintenanceWorker>();
+
+        services.AddDocumentManagement(configuration);
+
+        // TASK-041: WF-01's project schema.
+        services.AddScoped<IProjectRepository, ProjectRepository>();
+
+        // TASK-044: WF-02's progress schema.
+        services.AddScoped<IProgressRepository, ProgressRepository>();
+
+        // TASK-046: WF-03's schedule schema.
+        services.AddScoped<IScheduleRepository, ScheduleRepository>();
+
+        // TASK-048: WF-04's project_task schema.
+        services.AddScoped<IProjectTaskRepository, ProjectTaskRepository>();
+
+        // TASK-050: WF-05's milestone schema.
+        services.AddScoped<IMilestoneRepository, MilestoneRepository>();
+
+        // TASK-052: WF-14's financial_kpi schema.
+        services.AddScoped<IFinancialKpiRepository, FinancialKpiRepository>();
+
+        // TASK-055: WF-06's risk schema, and the pass that expires lapsed risk acceptances.
+        services.AddScoped<IRiskRepository, RiskRepository>();
+        services.AddOptions<RiskMaintenanceOptions>()
+            .Bind(configuration.GetSection(RiskMaintenanceOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{RiskMaintenanceOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<RiskMaintenanceWorker>();
+
+        // TASK-057: WF-07's management_concern schema.
+        services.AddScoped<IManagementConcernRepository, ManagementConcernRepository>();
+        services.AddScoped<IExternalParticipationRepository, ExternalParticipationRepository>();
+
+        // TASK-069: FG-01's dashboards schema.
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
+
+        // TASK-060: WF-08's change_request schema.
+        services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
+
+        // TASK-102: the migration import's transaction and lineage, and its workbook.
+        services.AddScoped<IImportRepository, ImportRepository>();
+        services.AddSingleton<IImportWorkbook, XlsxImportWorkbook>();
+
+        // TASK-071: FG-02's reports schema; the PDF, XLSX and CSV renderers; and the pass that validates, generates and expires report jobs.
+        services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddSingleton<IReportRenderer, PdfReportRenderer>();
+        services.AddSingleton<IReportRenderer, XlsxReportRenderer>();
+        services.AddSingleton<IReportRenderer, CsvReportRenderer>();
+        services.AddOptions<ReportJobOptions>()
+            .Bind(configuration.GetSection(ReportJobOptions.Section))
+            .Validate(
+                options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0 && options.OutputLifetime > TimeSpan.Zero && options.MaxExportRows > 0
+                           && options.AbandonAfter > TimeSpan.Zero,
+                $"{ReportJobOptions.Section}: every interval, size and limit must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<ReportJobWorker>();
+
+        // TASK-062: WF-09's suspension schema, and the pass that activates approved requests on their effective date.
+        services.AddScoped<ISuspensionRepository, SuspensionRepository>();
+        services.AddOptions<SuspensionActivationOptions>()
+            .Bind(configuration.GetSection(SuspensionActivationOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{SuspensionActivationOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<SuspensionActivationWorker>();
+
+        // TASK-063: WF-10's closure schema, and the pass that activates approved completion and closure cases.
+        services.AddScoped<ICloseoutRepository, CloseoutRepository>();
+        services.AddOptions<CloseoutActivationOptions>()
+            .Bind(configuration.GetSection(CloseoutActivationOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{CloseoutActivationOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<CloseoutActivationWorker>();
+
+        services.AddNotifications(configuration);
+        services.AddIntegrationMonitoring(configuration);
+
+        // TASK-078: the rate-limit counters — shared through RATE_LIMIT_STORE_CONNECTION_STRING where it is set (SIT/UAT/PROD),
+        // this instance's own otherwise. Read once at start-up: a new store address takes a restart, like the database's.
+        services.AddSingleton<IRateLimitStore>(provider => configuration[ApplicationSecrets.RateLimitStoreConnectionString] is { Length: > 0 } store
+            ? new RedisRateLimitStore(store, provider.GetRequiredService<ILogger<RedisRateLimitStore>>())
+            : new InMemoryRateLimitStore(provider.GetRequiredService<TimeProvider>()));
 
         return services;
+    }
+
+    /// <summary>
+    /// TASK-075: FG-05 — the integration_monitoring schema, the policy (thresholds are AHDA's and none is set by default; an invalid one stops
+    /// the API at start-up) and the pass that retries, ends abandoned attempts and evaluates health.
+    /// </summary>
+    private static void AddIntegrationMonitoring(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IIntegrationMonitoringRepository, IntegrationMonitoringRepository>();
+        services.AddOptions<IntegrationMonitoringPolicy>()
+            .Bind(configuration.GetSection(IntegrationMonitoringPolicy.Section))
+            .Validate(policy => policy.IsValid(),
+                $"{IntegrationMonitoringPolicy.Section}: MetricsWindow, AbandonAfter and every freshness window must be positive, every minimum delivery rate above 0 and at most 1.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<IntegrationMonitoringPolicy>>().Value);
+        services.AddOptions<IntegrationMonitoringWorkerOptions>()
+            .Bind(configuration.GetSection(IntegrationMonitoringWorkerOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{IntegrationMonitoringWorkerOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<IntegrationMonitoringWorker>();
+    }
+
+    /// <summary>
+    /// TASK-039: WF-15. The e-mail channel is the Exchange relay when <c>EXCHANGE_SMTP_HOST</c> is set; a host with an unusable
+    /// port, sender or credential pair stops the API at start-up without logging a value. No SMS provider is selected, so the
+    /// gateway is the one that is not configured (TASK-103 replaces it). Links in e-mail and SMS are built on
+    /// <c>APP_BASE_URL</c>, which must be an absolute http(s) origin when set.
+    /// </summary>
+    private static void AddNotifications(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IRoleHolderDirectory, RoleHolderDirectory>();
+
+        services.AddOptions<NotificationDeliveryPolicy>()
+            .Bind(configuration.GetSection(NotificationDeliveryPolicy.Section))
+            .Configure<IConfiguration>((policy, source) => policy.AppBaseUrl = AppBaseUrlOf(source[AppBaseUrlKey]))
+            .Validate(
+                policy => policy.MaxAttempts > 0 && policy.RetryBaseDelay > TimeSpan.Zero && policy.SmsMaxSegments > 0 && policy.SmsDeepLinkAllowance >= 0,
+                $"{NotificationDeliveryPolicy.Section}: MaxAttempts, RetryBaseDelay and SmsMaxSegments must be positive.")
+            .Validate(_ => AppBaseUrlOf(configuration[AppBaseUrlKey]) is not null || string.IsNullOrWhiteSpace(configuration[AppBaseUrlKey]),
+                $"{AppBaseUrlKey} is not an absolute http(s) URL without a query or fragment.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<NotificationDeliveryPolicy>>().Value);
+
+        services.AddOptions<SmtpOptions>()
+            .Bind(configuration.GetSection(SmtpOptions.Section))
+            .Configure<IConfiguration>((options, source) =>
+            {
+                options.Host = source[SmtpOptions.HostKey];
+                options.PortText = source[SmtpOptions.PortKey];
+                options.User = source[ApplicationSecrets.ExchangeSmtpUser];
+                options.Password = source[ApplicationSecrets.ExchangeSmtpPassword];
+            })
+            .Validate(options => options.IsValid(),
+                $"{SmtpOptions.HostKey} is set, but {SmtpOptions.PortKey}, {SmtpOptions.Section}:FromAddress, or the {ApplicationSecrets.ExchangeSmtpUser}/{ApplicationSecrets.ExchangeSmtpPassword} pair is not usable.")
+            .ValidateOnStart();
+        services.TryAddSingleton<IEmailSender, SmtpEmailSender>();
+        services.TryAddSingleton<ISmsGateway, UnconfiguredSmsGateway>();
+
+        services.AddOptions<NotificationWorkerOptions>()
+            .Bind(configuration.GetSection(NotificationWorkerOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{NotificationWorkerOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<NotificationWorker>();
+    }
+
+    /// <summary>The application's public origin (Environment and Secrets sheet: Public, DEV/SIT/UAT/PROD).</summary>
+    private const string AppBaseUrlKey = "APP_BASE_URL";
+
+    private static Uri? AppBaseUrlOf(string? value) =>
+        Uri.TryCreate(value, UriKind.Absolute, out Uri? url) && (url.Scheme == Uri.UriSchemeHttps || url.Scheme == Uri.UriSchemeHttp)
+        && string.IsNullOrEmpty(url.Query) && string.IsNullOrEmpty(url.Fragment)
+            ? url
+            : null;
+
+    /// <summary>
+    /// TASK-037: WF-12. The store is <c>DOCUMENT_STORAGE_CONNECTION_STRING</c>'s; a value in neither accepted form stops the
+    /// API at start-up. No malware-scanning provider is selected, so the scanner is the one that scans nothing and every
+    /// version stays SCAN_PENDING (fail closed); the provider's adapter replaces it.
+    /// </summary>
+    private static void AddDocumentManagement(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
+
+        services.AddOptions<DocumentUploadPolicy>()
+            .Bind(configuration.GetSection(DocumentUploadPolicy.Section))
+            .Validate(policy => policy.MaxFileSizeBytes > 0 && policy.AllowedContentTypes.Count > 0,
+                $"{DocumentUploadPolicy.Section}: MaxFileSizeBytes must be positive and AllowedContentTypes must name at least one media type.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<DocumentUploadPolicy>>().Value);
+
+        services.AddOptions<DocumentStorageOptions>()
+            .Configure<IConfiguration>((options, source) => options.ConnectionString = source[ApplicationSecrets.DocumentStorageConnectionString])
+            .Validate(options => options.Location is not null,
+                $"{ApplicationSecrets.DocumentStorageConnectionString} is neither gs://<bucket>[/<prefix>] nor file:///<absolute path>.")
+            .ValidateOnStart();
+        services.AddSingleton<IDocumentStorage>(provider => provider.GetRequiredService<IOptions<DocumentStorageOptions>>().Value.Location switch
+        {
+            { Kind: DocumentStorageKind.CloudStorage } location => new CloudStorageDocumentStorage(location.Root, location.Prefix),
+            { Kind: DocumentStorageKind.FileSystem } location => new FileSystemDocumentStorage(location.Root),
+            _ => new UnconfiguredDocumentStorage(),
+        });
+        services.TryAddSingleton<IMalwareScanner, UnconfiguredMalwareScanner>();
+
+        services.AddOptions<DocumentScanOptions>()
+            .Bind(configuration.GetSection(DocumentScanOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{DocumentScanOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<DocumentScanWorker>();
+    }
+
+    /// <summary>
+    /// TASK-035: the transactional outbox (event-conventions EV-6) — producers stage into the request's context, and a
+    /// worker delivers each DOMAIN_EVENT after commit to its one consumer.
+    /// </summary>
+    private static void AddOutbox(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IOutbox, Outbox>();
+        services.AddOptions<OutboxOptions>()
+            .Bind(configuration.GetSection(OutboxOptions.Section))
+            .Validate(
+                options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0 && options.RetryBaseDelay > TimeSpan.Zero,
+                $"{OutboxOptions.Section}: PollInterval, BatchSize and RetryBaseDelay must be positive.")
+            .ValidateOnStart();
+        services.AddSingleton<IOutboxDispatcher, OutboxDispatcher>();
+        services.AddHostedService<OutboxDispatchWorker>();
+    }
+
+    /// <summary>
+    /// TASK-033 and TASK-073: the audit store, its capture and ingestion, the Activity projection, and SIEM forwarding. The forwarded subset (PTBC-029) is configuration; an environment whose
+    /// subset leaves out authentication, or names a class that does not exist, does not start (CTL-26).
+    /// </summary>
+    private static void AddAuditForwarding(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IAuditForwardingRepository, AuditForwardingRepository>();
+
+        // TASK-073: capture into the outbox, ingestion at commit and by a worker, the Activity projection and the read side.
+        services.AddSingleton<AuditEvidenceGuard>();
+        services.AddScoped<AuditCommitInterceptor>();
+        services.AddScoped<IAuditCaptureStore, AuditCaptureStore>();
+        services.AddSingleton<IAuditIngestor, AuditIngestor>();
+        services.AddSingleton<IActivityProjectionRunner, ActivityProjectionRunner>();
+        services.AddScoped<IActivityProjectionRepository, ActivityProjectionRepository>();
+        services.AddScoped<IAuditReadRepository, AuditReadRepository>();
+        services.AddScoped<IAuditIntegrityRepository, AuditIntegrityRepository>();
+        services.AddOptions<AuditIngestionOptions>()
+            .Bind(configuration.GetSection(AuditIngestionOptions.Section))
+            .Validate(
+                options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0 && options.RetryBaseDelay > TimeSpan.Zero
+                           && options.MaxRetryDelay >= options.RetryBaseDelay && options.LockTimeout > TimeSpan.Zero,
+                $"{AuditIngestionOptions.Section}: PollInterval, BatchSize, RetryBaseDelay and LockTimeout must be positive, MaxRetryDelay at least RetryBaseDelay.")
+            .ValidateOnStart();
+        services.AddOptions<ActivityProjectionOptions>()
+            .Bind(configuration.GetSection(ActivityProjectionOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{ActivityProjectionOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.AddHostedService<AuditIngestionWorker>();
+        services.AddHostedService<ActivityProjectionWorker>();
+
+        services.AddOptions<SiemForwardingPolicy>()
+            .Bind(configuration.GetSection(SiemForwardingPolicy.Section))
+            .Validate(
+                policy => policy.ForwardedClasses.Contains(SiemForwardingPolicy.MinimumForwardedClass, StringComparer.Ordinal),
+                $"{SiemForwardingPolicy.Section}:ForwardedClasses must include {SiemForwardingPolicy.MinimumForwardedClass} (CTL-26).")
+            .Validate(policy => !policy.UnknownClasses().Any(), $"{SiemForwardingPolicy.Section}:ForwardedClasses names a class that is not an audit class.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<SiemForwardingPolicy>>().Value);
+
+        services.AddOptions<SiemOptions>()
+            .Bind(configuration.GetSection(SiemOptions.Section))
+            .Validate(options => options.PollInterval > TimeSpan.Zero && options.BatchSize > 0, $"{SiemOptions.Section}: PollInterval and BatchSize must be positive.")
+            .ValidateOnStart();
+        services.TryAddTransient<CorrelationPropagationHandler>();
+        services.AddHttpClient(HttpSiemClient.HttpClientName, (provider, client) =>
+                client.Timeout = provider.GetRequiredService<IOptions<SiemOptions>>().Value.Timeout)
+            .AddHttpMessageHandler<CorrelationPropagationHandler>();
+        services.AddSingleton<ISiemClient, HttpSiemClient>();
+        services.AddHostedService<SiemForwardingWorker>();
+    }
+
+    private static string RequiredConnectionString(IConfiguration configuration)
+    {
+        string? connectionString = configuration[ApplicationSecrets.DatabaseConnectionString];
+        return string.IsNullOrWhiteSpace(connectionString)
+            ? throw new InvalidOperationException($"{ApplicationSecrets.DatabaseConnectionString} is not configured.")
+            : connectionString;
     }
 }

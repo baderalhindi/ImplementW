@@ -83,3 +83,25 @@ variable "waf_preview" {
 variable "deletion_protection" {
   type = bool
 }
+
+variable "uptime_monitoring" {
+  type = bool
+}
+
+variable "alert_notification_channel" {
+  description = "The on-call channel's resource name. Supplied by the promotion pipeline as TF_VAR_alert_notification_channel; never committed."
+  type        = string
+  default     = ""
+}
+
+variable "integration_alert_thresholds" {
+  description = "FG-05's alert thresholds for this environment (TASK-092; docs/operations/alert-thresholds.json)."
+  type        = map(string)
+  default     = {}
+}
+
+variable "api_documentation" {
+  description = "Whether the API serves the OpenAPI document and the docs UI (TASK-094). DEV and SIT only."
+  type        = bool
+  default     = false
+}

@@ -123,17 +123,19 @@ Each rule states what it is and, where it is not obvious, why. §8 says which ru
 | `correlationId` | uuid | yes | R-41 |
 | `idempotencyKey` | uuid or null | yes | Echo of the request `Idempotency-Key`; null when the request carried none |
 | `timestamp` | date-time | yes | Server time, UTC |
-| `errors[]` | `{ field, code, message? }` | on 400/422 | `field` is the dotted path into the body, or the parameter name; `code` is a validation code (`REQUIRED`, `MAX_LENGTH`, `ENUM_VALUE`, `DATE_BEFORE_START`, …) |
+| `errors[]` | `{ field, code, message? }` | on 400/422 | `field` is the dotted path into the body, or the parameter name; `code` is a validation code (`REQUIRED`, `MAX_LENGTH`, `ENUM_VALUE`, `DATE_BEFORE_START`, `INVALID_CHARACTER`, …; the list is `ValidationCode`, TASK-077) |
 
 **Status-code catalogue.**
 
 | Status | `code` | When | Source |
 | --- | --- | --- | --- |
-| 400 | `VALIDATION_FAILED` | Body, query or header fails shape validation; `errors[]` lists each field | TASK-077, T-3 |
+| 400 | `VALIDATION_FAILED` | Body, query or header fails shape validation; `errors[]` lists each field. Every string an action receives also obeys the platform's text rules — no control character but tab and line breaks, no lone surrogate, at most 10,000 characters — before the action runs (`input-validation.md`) | TASK-077, T-3 |
 | 400 | `IDEMPOTENCY_KEY_REQUIRED` / `IDEMPOTENCY_KEY_INVALID` | Sensitive write without a key, or key not a uuid | R-36 |
 | 401 | `AUTHENTICATION_REQUIRED` | No or invalid token. Generic — no user enumeration | TASK-028 |
 | 403 | `PERMISSION_DENIED` | The caller may see the resource but lacks the permission for this operation | TASK-030 |
 | 403 | `STEP_UP_REQUIRED` | The operation needs a fresh authentication context | TASK-029, ADR-010 |
+| 403 | `ORIGIN_NOT_ALLOWED` | The request carries an `Origin` that `CORS_ALLOWED_ORIGINS` does not list; nothing ran (`endpoint-hardening.md` D-9) | TASK-078 |
+| 403 | `CROSS_SITE_REQUEST_REFUSED` | A state-changing request carries neither `Authorization: Bearer` nor a body a browser would preflight, so another site could have forged it; nothing ran (`csrf-protection.md` D-2) | TASK-079 |
 | 404 | `NOT_FOUND` | The resource does not exist **or is outside the caller's data scope** (R-47) | TASK-066 |
 | 409 | `INVALID_TRANSITION` | The command is not allowed from the current lifecycle state | TASK-041, TASK-060 |
 | 409 | `TERMINAL_STATE` | Any write against a CLOSED project or other terminal aggregate ("an explicit terminal-state error") | TASK-063 |
@@ -145,10 +147,12 @@ Each rule states what it is and, where it is not obvious, why. §8 says which ru
 | 422 | `BUSINESS_RULE_VIOLATED` or a module code | Well-formed request rejected by a domain rule: end date before start, severity supplied by the client (TASK-057), out-of-allowlist report field (TASK-071) | T-3 |
 | 422 | `CONFIGURATION_MISSING` | Required configuration absent — the fail-closed rule; the operation does not default | TASK-034, Blueprint Section 12 |
 | 422 | `IDEMPOTENCY_KEY_REUSED` | Same key, different request fingerprint | R-37 |
+| 422 | `IDENTITY_VERIFICATION_FAILED` | Nafath answered and did not verify the signed-in external user (code spent or expired, state, transaction or ID token not this verification's); the same identity verification token starts it again | TASK-068 |
 | 428 | `PRECONDITION_REQUIRED` | `PUT` without `If-Match` | R-21 |
 | 429 | `RATE_LIMITED` | Throttled; `Retry-After` header present | TASK-078 |
 | 500 | `INTERNAL_ERROR` | Unhandled; minimal body (R-26) | TASK-090 |
 | 503 | `UNAVAILABLE` | Readiness failing (database unreachable) | TASK-091 |
+| 503 | `IDENTITY_VERIFICATION_UNAVAILABLE` | Nafath unreachable, refusing the platform's client, or not configured; `Retry-After` header present. No session is issued and nothing is held against the person: the same identity verification token retries | TASK-068 |
 
 ### 4.5 Pagination, filtering and sorting
 
@@ -187,9 +191,9 @@ Each rule states what it is and, where it is not obvious, why. §8 says which ru
 
 | # | Rule |
 | --- | --- |
-| **R-46** | Credentials travel only in `Authorization: Bearer <token>`. No token, key or credential in a query string or a body; no cookie-based session for the API (the SPA holds the token). |
+| **R-46** | Credentials travel only in `Authorization: Bearer <token>`. No token, key or credential in a query string or a body; no cookie-based session for the API (the SPA holds the token). This is the platform's CSRF defence: no browser sends the token on its own, and every write without it or a JSON body is refused (TASK-079, `csrf-protection.md` §7 — the rules for new endpoints). |
 | **R-47** | **Least disclosure on 403 versus 404.** A resource outside the caller's data scope — another department under DEPT scope, another entity under ENTITY scope (R08), a project the caller is not assigned to — returns **404 `NOT_FOUND`, identical to a nonexistent id.** 403 is returned only when the caller may see the resource and lacks the permission for this operation. This is what makes TASK-066's criterion — an R08 user "can never query or infer data outside their explicit ENTITY/Project grant" — hold for the single-item endpoints, where a 403 would confirm existence. The threat-model review confirms the rule (S-4). |
-| **R-48** | Rate limiting, CORS and security response headers are TASK-078's. The only contract fixed here is that a throttled request answers 429 with the R-23 envelope and a `Retry-After` header. |
+| **R-48** | Rate limiting, CORS and security response headers are TASK-078's (built: `endpoint-hardening.md`). The only contract fixed here is that a throttled request answers 429 with the R-23 envelope and a `Retry-After` header. |
 
 ### 4.9 The OpenAPI document
 
@@ -384,3 +388,7 @@ On Q1 the header status becomes **RATIFIED**, still provisional on ADR-002/ADR-0
 | Date | Change | By |
 | --- | --- | --- |
 | 2026-09-20 | Initial record. 55 REST and OpenAPI rules (R-1 to R-55) over the seven concerns of the TASK-009 row; API-01/API-03 mapped from the workbook, the rest recorded as unobtainable (§3, §6). Sensitive-write register (§5). Three sample endpoint definitions linted with 0 findings and a 29-mutation self-test (§7). Lint C-1 to C-13 in `contract-check.py`, architecture tests A-7 to A-10, PR checklist (§8). Twelve workbook consequences including `common.idempotency_record` (§9). Eight residual items (S-1 to S-8), two of them raised by the companion event record. | Architecture (TASK-009) |
+| 2026-10-02 | TASK-043 (`project-lifecycle-contract-tests.md`): §9 row 5's contract test built for the Project tag. The R-11 snapshot `docs/api/openapi.v1.json` exists; C-13 accepts the OpenAPI 3.1 nullable form `type: ["null", "string"]`; the generated document now carries R-19 enum values and the R-16 money pattern (its D-6). | Testing (TASK-043) |
+| 2026-10-10 | TASK-069 (`dashboards.md` D-3): §10 row 10 built — R-20(c)'s `ProjectionMeta { semanticState, freshness, asOf, coverage }` with its three enumerations in `Application/Common/Projections`, carried by every FG-01 widget result; FG-01 §7.3's finer reason for an UNKNOWN freshness (`unknownReason`) and §7.4's counts (`coverageDetail`) sit beside it, not in it. WF-14's own `SemanticState` (TASK-052) predates it with the same two values (`dashboards.md` F-12). | Backend (TASK-069) |
+| 2026-10-16 | TASK-079 (`csrf-protection.md`): R-46 named as the CSRF strategy and enforced by `CsrfProtection`; `CROSS_SITE_REQUEST_REFUSED` added to §4.4. | Security (TASK-079) |
+| 2026-10-24 | TASK-094 (`docs/api/README.md`): R-49's hosting built — the API's `openapi` command writes the document, the `api-documentation` check compares it byte for byte with `docs/api/openapi.v1.json` and publishes it as the `openapi-v1` artifact on every build, including every build of main; Swagger UI serves it at `/api-docs` in DEV and SIT (R-51's grouping by tag). §9 row 12's audit is `docs/api/spec-audit.py`. `info.version` is not yet the release version (README F-1). | Documentation (TASK-094) |

@@ -1,0 +1,28 @@
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Domain.IdentityAccess;
+
+namespace PMPlatform.Application.Features.IdentityAccess.Administration;
+
+/// <summary>Organization reference data another module names, read without a caller (TASK-041).</summary>
+internal sealed class OrganizationDirectory(IDepartmentRepository departments, IExternalEntityRepository entities) : IOrganizationDirectory
+{
+    public async Task<bool> IsActiveDepartmentAsync(Guid departmentId, CancellationToken cancellationToken) =>
+        (await departments.FindDetailAsync(departmentId, cancellationToken).ConfigureAwait(false))?.Value.IsActive == true;
+
+    public async Task<bool> IsActiveExternalEntityAsync(Guid externalEntityId, CancellationToken cancellationToken) =>
+        (await entities.FindDetailAsync(externalEntityId, cancellationToken).ConfigureAwait(false))?.Value.Status == ExternalEntityStatus.Active;
+
+    public async Task<OrganizationNames> ListNamesAsync(IReadOnlyCollection<Guid> departmentIds, IReadOnlyCollection<Guid> externalEntityIds, CancellationToken cancellationToken) =>
+        new(await departments.ListNamesAsync(departmentIds, cancellationToken).ConfigureAwait(false),
+            await entities.ListNamesAsync(externalEntityIds, cancellationToken).ConfigureAwait(false));
+
+    public Task<Guid?> FindDepartmentIdAsync(string code, CancellationToken cancellationToken) => departments.FindIdByCodeAsync(code, cancellationToken);
+
+    public Task<Guid?> FindExternalEntityIdAsync(string code, CancellationToken cancellationToken) => entities.FindIdByCodeAsync(code, cancellationToken);
+
+    public Task<IReadOnlyList<OrganizationCode>> ListActiveDepartmentCodesAsync(CancellationToken cancellationToken) =>
+        departments.ListActiveCodesAsync(cancellationToken);
+
+    public Task<IReadOnlyList<OrganizationCode>> ListActiveExternalEntityCodesAsync(CancellationToken cancellationToken) =>
+        entities.ListActiveCodesAsync(cancellationToken);
+}
