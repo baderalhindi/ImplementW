@@ -148,6 +148,20 @@ export function labelOfValue(
   };
 }
 
+/** The vocabularies that are a RAG-like scale, whose values keep their status colours when drawn. */
+const STATUS_SCALES = new Set<Dimension>([
+  'health',
+  'financialStatus',
+  'kpiCondition',
+  'reporting',
+]);
+
+/** Whether a projection's values are drawn in their status colours; any other is told apart by categorical fills. */
+export function isStatusScale(projectionCode: string): boolean {
+  const dimension = DIMENSIONS[projectionCode];
+  return dimension !== undefined && STATUS_SCALES.has(dimension);
+}
+
 export function countedKey(projectionCode: string): TranslationKey {
   const dimension = DIMENSIONS[projectionCode];
   return dimension === undefined ? 'dashboards.counted.items' : COUNTED[dimension];

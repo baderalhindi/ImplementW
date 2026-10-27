@@ -136,7 +136,6 @@ function CredentialField({
           name={name}
           className="field__input"
           type={type}
-          dir="ltr"
           placeholder={label}
           value={value}
           onChange={(event) => {
@@ -200,7 +199,6 @@ function NafathPanel(): ReactElement {
           name="nationalId"
           className="field__input"
           inputMode="numeric"
-          dir="ltr"
           placeholder={t('identityAccess.signIn.biometric.nationalIdPlaceholder')}
           disabled
         />

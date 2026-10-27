@@ -4,10 +4,11 @@ import { translate } from '@/shared/i18n/i18n.ts';
 import { catalogueEntry, catalogueFor, widget } from '@/test/dashboardFixtures.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
 
+import { bucketColors, chartForm } from './charts.ts';
 import { drillPath } from './drill.ts';
 import { landingEntry, landingRole, mayPersonalize, selectedEntry } from './landing.ts';
-import { arrangedWidgets, visibleWidgets } from './layout.ts';
-import { formatFigure, labelOfValue } from './presentation.ts';
+import { arrangedWidgets, drawnSpan, filledSpans, visibleWidgets } from './layout.ts';
+import { formatFigure, isStatusScale, labelOfValue } from './presentation.ts';
 
 const t = (key: string, params?: Record<string, string | number>) => translate('en', key, params);
 const user = (roles: string[]) => sessionFor(roles).user;
@@ -70,6 +71,61 @@ describe('the layout (ADR-019 presentation only)', () => {
     expect(
       visibleWidgets([governed, { ...first, isHidden: true }, second]).map((w) => w.code),
     ).toEqual(['G', 'B']);
+  });
+
+  test('the figure cards lead and the charts follow, each in the arranged order', () => {
+    const chart = (code: string, layoutRow: number) =>
+      widget({ code, layoutRow, layoutColumn: 1, widgetType: 'STATUS_DISTRIBUTION' });
+    const card = (code: string, layoutRow: number) =>
+      widget({ code, layoutRow, layoutColumn: 1, widgetType: 'METRIC_CARD' });
+    expect(
+      visibleWidgets([chart('C1', 1), card('M1', 2), chart('C2', 3), card('M2', 4)]).map(
+        (w) => w.code,
+      ),
+    ).toEqual(['M1', 'M2', 'C1', 'C2']);
+  });
+
+  test('after the figure cards come bar and column charts, then donuts, then trends, each kind side by side', () => {
+    const distribution = (count: number) => ({
+      state: null,
+      figures: [],
+      series: [],
+      distribution: Array.from({ length: count }, (_, index) => ({
+        key: `K${String(index)}`,
+        label: null,
+        count: 1,
+      })),
+    });
+    const drawn = visibleWidgets([
+      widget({ code: 'TREND', layoutRow: 1, widgetType: 'LINE_TREND' }),
+      widget({
+        code: 'DONUT',
+        layoutRow: 2,
+        widgetType: 'STATUS_DISTRIBUTION',
+        data: distribution(4),
+      }),
+      widget({
+        code: 'LONG',
+        layoutRow: 3,
+        widgetType: 'STATUS_DISTRIBUTION',
+        data: distribution(7),
+      }),
+      widget({ code: 'RISK', layoutRow: 4, widgetType: 'BAR_COLUMN', data: distribution(4) }),
+      widget({ code: 'CARD', layoutRow: 5, widgetType: 'METRIC_CARD', layoutSpan: 6 }),
+    ]);
+    expect(drawn.map((w) => w.code)).toEqual(['CARD', 'LONG', 'RISK', 'DONUT', 'TREND']);
+    expect(drawn.map(drawnSpan)).toEqual([6, 6, 6, 4, 12]);
+  });
+
+  test('a row the next widget does not fit shares its spare columns, so the grid has no holes', () => {
+    // The Project dashboard's figure cards, then its charts: every row already full.
+    expect(filledSpans([3, 3, 3, 3, 4, 4, 4, 6, 6, 12, 6, 6])).toEqual([
+      3, 3, 3, 3, 4, 4, 4, 6, 6, 12, 6, 6,
+    ]);
+    expect(filledSpans([4, 6, 6, 4, 12])).toEqual([5, 7, 7, 5, 12]);
+    expect(filledSpans([4, 4, 4, 4, 4])).toEqual([4, 4, 4, 6, 6]);
+    expect(filledSpans([3, 3])).toEqual([6, 6]);
+    expect(filledSpans([])).toEqual([]);
   });
 });
 
@@ -135,5 +191,41 @@ describe('drill-through (BR-DSH-011)', () => {
     expect(drillPath('SCR-080', null)).toBe('/risks');
     expect(drillPath('SCR-027', null)).toBeNull();
     expect(drillPath(null, null)).toBeNull();
+  });
+});
+
+describe('the charts a distribution is drawn as', () => {
+  test('a few values are a donut, or columns for BAR_COLUMN; more than six are a bar list', () => {
+    expect(chartForm('STATUS_DISTRIBUTION', 4)).toBe('donut');
+    expect(chartForm('DONUT_PIE', 6)).toBe('donut');
+    expect(chartForm('BAR_COLUMN', 5)).toBe('columns');
+    expect(chartForm('STATUS_DISTRIBUTION', 7)).toBe('bars');
+    expect(chartForm('BAR_COLUMN', 9)).toBe('bars');
+  });
+
+  test('a status scale keeps its RAG colours with greys for no data; any other takes categorical fills', () => {
+    expect(isStatusScale('PROGRESS.PROJECT_HEALTH_STATUS')).toBe(true);
+    expect(isStatusScale('FINANCIAL_KPI.KPI_CONDITION')).toBe(true);
+    expect(isStatusScale('PROJECT.LIFECYCLE_STATE')).toBe(false);
+    expect(isStatusScale('RISK.RISK_EXPOSURE')).toBe(false);
+    expect(isStatusScale('UNREGISTERED.PROJECTION')).toBe(false);
+
+    expect(bucketColors(['positive', 'warning', 'negative', 'neutral', 'neutral'], true)).toEqual([
+      'var(--chart-positive)',
+      'var(--chart-warning)',
+      'var(--chart-negative)',
+      'var(--chart-neutral-1)',
+      'var(--chart-neutral-2)',
+    ]);
+    // A lifecycle's states share tones: told apart in order, never by the tone they share.
+    expect(bucketColors(['info', 'neutral', 'neutral'], false)).toEqual([
+      'var(--chart-category-1)',
+      'var(--chart-category-2)',
+      'var(--chart-category-3)',
+    ]);
+    // Past six values one fill: a seventh hue is never generated.
+    expect(new Set(bucketColors(Array<'neutral'>(7).fill('neutral'), false))).toEqual(
+      new Set(['var(--chart-single)']),
+    );
   });
 });

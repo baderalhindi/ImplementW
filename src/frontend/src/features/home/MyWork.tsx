@@ -36,57 +36,66 @@ function daysAfter(day: string, days: number): string {
 const PORTFOLIO_ROLES: readonly string[] = ['R02', 'R03', 'R06', 'R07'];
 
 /**
- * The Home of everyone who does the work (the 24 Oct 2026 review, H2: "Home = my work, for every role"): approvals waiting for them
- * with their due dates, the requests they submitted, their tasks due this week and overdue, update requests waiting for their answer,
- * unread notifications, and the things they may start. Each card is offered to a holder of the permission its list reads under.
+ * The Home of everyone who does the work (the 24 Oct 2026 review, H2: "Home = my work, for every role"): first the things
+ * they may start, then approvals waiting for them with their due dates, the requests they submitted, their tasks due this
+ * week and overdue, update requests waiting for their answer, and unread notifications. Each card is offered to a holder
+ * of the permission its list reads under.
  */
 export function MyWork({ user }: { user: SessionUser }): ReactElement {
-  const { t } = useI18n();
   const { can } = usePermissions();
   return (
     <div className="home__grid">
+      <StartOrOpen user={user} />
       {can('APPROVAL_DECIDE') && <ApprovalsWaiting />}
       {can('TASK_UPDATE') && <MyTasks userId={user.id} />}
       {can('EXTERNAL_CONTRIBUTION_RESPOND') && <RequestsToAnswer userId={user.id} />}
       {can('APPROVAL_VIEW') && <MyRequests />}
       <UnreadNotifications />
-      <section className="widget home__card" aria-label={t('home.actions.title')}>
-        <h2 className="widget__title">{t('home.actions.title')}</h2>
-        <ul className="home__actions">
-          {can('PROJECT_REGISTER') && (
-            <li>
-              <Link to="/projects/new">{t('projects.nav.create')}</Link>
-            </li>
-          )}
-          {can('CHANGE_REQUEST_RAISE') && (
-            <li>
-              <Link to="/change-requests/new">{t('common.shell.createChangeRequest')}</Link>
-            </li>
-          )}
-          {can('PROJECT_VIEW') && (
-            <li>
-              <Link to="/projects">{t('projects.nav.register')}</Link>
-            </li>
-          )}
-          {user.userType !== 'EXTERNAL' &&
-            user.roleAssignments.some((assignment) =>
-              PORTFOLIO_ROLES.includes(assignment.roleCode),
-            ) && (
-              <li>
-                <Link to={PORTFOLIO_DASHBOARD_PATH}>{t('common.menu.portfolioDashboard')}</Link>
-              </li>
-            )}
-          {user.userType !== 'EXTERNAL' && can('PROJECT_VIEW') && (
-            <li>
-              <Link to={DASHBOARDS_PATH}>{t('common.menu.dashboards')}</Link>
-            </li>
-          )}
-          <li>
-            <Link to="/notifications/preferences">{t('notifications.nav.preferences')}</Link>
-          </li>
-        </ul>
-      </section>
     </div>
+  );
+}
+
+/** The records the person may start and the screens they open most: the Home's first card, so the way in is seen first. */
+function StartOrOpen({ user }: { user: SessionUser }): ReactElement {
+  const { t } = useI18n();
+  const { can } = usePermissions();
+  return (
+    <section className="widget home__card" aria-label={t('home.actions.title')}>
+      <h2 className="widget__title">{t('home.actions.title')}</h2>
+      <ul className="home__actions">
+        {can('PROJECT_REGISTER') && (
+          <li>
+            <Link to="/projects/new">{t('projects.nav.create')}</Link>
+          </li>
+        )}
+        {can('CHANGE_REQUEST_RAISE') && (
+          <li>
+            <Link to="/change-requests/new">{t('common.shell.createChangeRequest')}</Link>
+          </li>
+        )}
+        {can('PROJECT_VIEW') && (
+          <li>
+            <Link to="/projects">{t('projects.nav.register')}</Link>
+          </li>
+        )}
+        {user.userType !== 'EXTERNAL' &&
+          user.roleAssignments.some((assignment) =>
+            PORTFOLIO_ROLES.includes(assignment.roleCode),
+          ) && (
+            <li>
+              <Link to={PORTFOLIO_DASHBOARD_PATH}>{t('common.menu.portfolioDashboard')}</Link>
+            </li>
+          )}
+        {user.userType !== 'EXTERNAL' && can('PROJECT_VIEW') && (
+          <li>
+            <Link to={DASHBOARDS_PATH}>{t('common.menu.dashboards')}</Link>
+          </li>
+        )}
+        <li>
+          <Link to="/notifications/preferences">{t('notifications.nav.preferences')}</Link>
+        </li>
+      </ul>
+    </section>
   );
 }
 

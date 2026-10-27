@@ -276,6 +276,31 @@ describe('the master navigation', () => {
     expect(await screen.findByRole('button', { name: en('common.menu.expand') })).toBeTruthy();
   });
 
+  test('the dark mode switch turns the whole page dark, and the choice is remembered', async () => {
+    withInbox(mockApi());
+    renderApp({ path: '/notifications', session: notificationSession() });
+    const user = userEvent.setup();
+
+    await findMainMenu();
+    const darkMode = screen.getByRole('button', { name: en('common.darkMode') });
+    expect(darkMode.getAttribute('aria-pressed')).toBe('false');
+    await user.click(darkMode);
+    expect(darkMode.getAttribute('aria-pressed')).toBe('true');
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    cleanup();
+    // As on a fresh page load: the theme comes back from the stored choice alone.
+    delete document.documentElement.dataset.theme;
+
+    withInbox(mockApi());
+    renderApp({ path: '/notifications', session: notificationSession() });
+    await findMainMenu();
+    expect(
+      screen.getByRole('button', { name: en('common.darkMode') }).getAttribute('aria-pressed'),
+    ).toBe('true');
+    await user.click(screen.getByRole('button', { name: en('common.darkMode') }));
+    expect(document.documentElement.dataset.theme).toBe('light');
+  });
+
   test('has no axe violations with a menu open', async () => {
     withInbox(mockApi());
     renderApp({ path: '/notifications', session: notificationSession() });

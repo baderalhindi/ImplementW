@@ -11,6 +11,7 @@ import { StepUpDialog } from '@/features/identity-access/session/StepUpDialog.ts
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { unreadCountStore, useUnreadCount } from '@/features/notifications/unreadCount.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { useTheme } from '@/shared/theme/theme.ts';
 
 import { activeItem, activeMenu, isCurrent, type Menu, type MenuId, menusFor } from './menus.ts';
 import { ShellIcon } from './ShellIcon.tsx';
@@ -115,6 +116,28 @@ function LanguageSwitch({ labelled = false }: { labelled?: boolean }): ReactElem
         ))}
       </ul>
     </div>
+  );
+}
+
+/** Dark mode on or off: a moon while the theme is light, a sun while it is dark. */
+function ThemeSwitch(): ReactElement {
+  const { t } = useI18n();
+  const { theme, setTheme } = useTheme();
+  const dark = theme === 'dark';
+
+  return (
+    <button
+      type="button"
+      className="button button--quiet theme-switch__button"
+      aria-pressed={dark}
+      title={t('common.darkMode')}
+      onClick={() => {
+        setTheme(dark ? 'light' : 'dark');
+      }}
+    >
+      <ShellIcon name={dark ? 'sun' : 'moon'} className="theme-switch__icon" />
+      <span className="visually-hidden">{t('common.darkMode')}</span>
+    </button>
   );
 }
 
@@ -422,7 +445,10 @@ function SignedOutLayout(): ReactElement {
             height="232"
           />
         </Link>
-        <LanguageSwitch />
+        <div className="shell__controls">
+          <ThemeSwitch />
+          <LanguageSwitch />
+        </div>
       </header>
       <main id="main" className="shell__main" tabIndex={-1}>
         <Outlet />
@@ -524,6 +550,7 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
           <Breadcrumb menu={current} pathname={pathname} />
           <div className="topbar__actions">
             <CreateMenu />
+            <ThemeSwitch />
             <LanguageSwitch labelled />
             <AccountMenu user={user} />
           </div>
