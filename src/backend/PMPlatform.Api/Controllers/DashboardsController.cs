@@ -35,16 +35,18 @@ public sealed class DashboardsController(IDashboardService dashboards) : Adminis
 
     /// <summary>
     /// The dashboard's PUBLISHED version and each widget's result. <c>PROJECT</c> is bound to <c>projectId</c> (DSH-009 in SCR-040, DSH-008 for
-    /// an entity's own project); the others are read over every project the caller may see, optionally of one <c>departmentId</c> among
-    /// the view's <c>departmentOptions</c>.
+    /// an entity's own project); the others are read over every project the caller may see, optionally narrowed to one <c>departmentId</c>,
+    /// <c>externalEntityId</c>, <c>regionItemId</c> and <c>cityItemId</c>, each among the view's options.
     /// </summary>
     [HttpGet("{dashboardCode}")]
     [AllowAnyAuthenticatedUser]
     [ProducesResponseType<DashboardView>(StatusCodes.Status200OK, "application/json")]
     [EndpointName("Dashboards_GetDashboard")]
-    public async Task<IActionResult> Get(string dashboardCode, [FromQuery] Guid? projectId, [FromQuery] Guid? departmentId, CancellationToken cancellationToken) =>
+    public async Task<IActionResult> Get(
+        string dashboardCode, [FromQuery] Guid? projectId, [FromQuery] Guid? departmentId, [FromQuery] Guid? externalEntityId, [FromQuery] Guid? regionItemId,
+        [FromQuery] Guid? cityItemId, CancellationToken cancellationToken) =>
         DashboardRoute.Parse(dashboardCode) is { } code
-            ? Respond(await dashboards.GetAsync(CallerId, code, new DashboardContext(projectId, departmentId), cancellationToken))
+            ? Respond(await dashboards.GetAsync(CallerId, code, new DashboardContext(projectId, departmentId, externalEntityId, regionItemId, cityItemId), cancellationToken))
             : Failure(AdministrationError.NotFound);
 
     /// <summary>ADR-019: hide and order the optional widgets of a personalisable dashboard, as a whole. R02, R03 and R07 hold the permission.</summary>

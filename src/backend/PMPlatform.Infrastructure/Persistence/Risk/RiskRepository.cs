@@ -105,6 +105,13 @@ internal sealed class RiskRepository(PMPlatformDbContext context) : IRiskReposit
         context.Set<RiskTreatmentAction>().AnyAsync(
             a => a.RiskId == riskId && (a.Status == RiskTreatmentActionStatus.Planned || a.Status == RiskTreatmentActionStatus.InProgress), cancellationToken);
 
+    public async Task<IReadOnlyList<RiskTreatmentAction>> ListOpenActionsAsync(IReadOnlyCollection<Guid> riskIds, CancellationToken cancellationToken) =>
+        await context.Set<RiskTreatmentAction>().AsNoTracking()
+            .Where(a => riskIds.Contains(a.RiskId) && (a.Status == RiskTreatmentActionStatus.Planned || a.Status == RiskTreatmentActionStatus.InProgress))
+            .OrderBy(a => a.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     public Task<(IReadOnlyList<RiskTreatmentAction> Items, int TotalCount)> PageActionsAsync(Guid riskId, PageRequest page, CancellationToken cancellationToken) =>
         PageAsync(context.Set<RiskTreatmentAction>().AsNoTracking().Where(a => a.RiskId == riskId).OrderBy(a => a.Id), page, cancellationToken);
 

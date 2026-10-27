@@ -34,18 +34,31 @@
     "formalId": "Project ID",
     "status": "Status"
   },
-  "refreshedAt": "Assembled {date}",
+  "refreshedAt": "Updated {date}",
   "actions": {
     "refresh": "Refresh"
   },
   "filter": {
     "department": "Sector",
-    "allDepartments": "All your sectors"
+    "allDepartments": "All your sectors",
+    "entity": "Entity",
+    "allEntities": "All entities",
+    "region": "Region",
+    "allRegions": "All regions",
+    "city": "City",
+    "allCities": "All cities"
+  },
+  "locations": {
+    "title": "Projects by location",
+    "description": "Where the projects shown are delivered. Choose a region to show only its projects.",
+    "projects": "{count} projects",
+    "noRegion": "No region recorded",
+    "noCity": "No city recorded"
   },
   "semanticState": {
-    "CURRENT_LIVE": "Current · live",
-    "PUBLISHED_OFFICIAL": "Published · official",
-    "HISTORICAL_SNAPSHOT": "Historical · snapshot"
+    "CURRENT_LIVE": "Live · not yet approved",
+    "PUBLISHED_OFFICIAL": "Official · approved",
+    "HISTORICAL_SNAPSHOT": "History"
   },
   "freshness": {
     "STALE": "Stale",
@@ -56,7 +69,20 @@
     "at": "As of {date}",
     "none": "No as-of date: there is no value to date"
   },
-  "source": "Owned by {source} · version {version}",
+  "source": "Source: {source}",
+  "sourceDomain": {
+    "WF-01": "Project register",
+    "WF-02": "Progress reporting",
+    "WF-03": "Project schedule",
+    "WF-04": "Tasks",
+    "WF-05": "Milestones",
+    "WF-06": "Risk register",
+    "WF-07": "Issues and challenges",
+    "WF-08": "Change requests",
+    "WF-09": "Suspensions",
+    "WF-14": "Financials and KPIs",
+    "FG-01": "Dashboard configuration"
+  },
   "coverage": {
     "counted": "{included} of {eligible} projects counted",
     "leftOut": "left out: {reasons}",
@@ -97,7 +123,7 @@
   "counted": {
     "projects": "Projects",
     "risks": "Open risks",
-    "kpiAssignments": "KPI assignments",
+    "kpiAssignments": "KPIs",
     "versions": "Dashboard versions",
     "items": "Count"
   },
@@ -105,7 +131,7 @@
     "UP_TO_DATE": "Up to date",
     "OVERDUE": "Overdue",
     "NOT_ASSESSED": "Not assessed",
-    "NOT_PUBLISHED": "Nothing published",
+    "NOT_PUBLISHED": "Not yet reported",
     "definition": {
       "DRAFT": "Draft",
       "VALIDATED": "Validated",
@@ -121,8 +147,8 @@
     "OPEN_RISKS": "Open risks",
     "NOT_ASSESSED": "Not yet assessed",
     "REVIEW_OVERDUE": "Past their review date",
-    "ACTIVE_ASSIGNMENTS": "Active KPI assignments",
-    "NOT_PUBLISHED": "With nothing published",
+    "ACTIVE_ASSIGNMENTS": "Active KPIs",
+    "NOT_PUBLISHED": "Not yet reported",
     "APPROVED_BUDGET": "Approved budget",
     "ACTUAL_EXPENDITURE_TO_DATE": "Actual expenditure to date",
     "FORECAST_AT_COMPLETION": "Forecast at completion"

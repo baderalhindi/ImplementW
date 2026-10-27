@@ -8,7 +8,11 @@
     "preferences": "Notification preferences"
   },
   "bell": {
-    "unread": "{count} unread"
+    "unread": "{count} unread",
+    "label": "Notifications",
+    "title": "Recent notifications",
+    "all": "See all notifications",
+    "unavailable": "Your notifications cannot be shown now. Open them from the menu to try again."
   },
   "all": {
     "title": "All notifications",

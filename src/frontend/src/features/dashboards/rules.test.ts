@@ -24,7 +24,9 @@ describe('the landing (Blueprint §20.2, TBC-DSH-003)', () => {
   test('the Home shows what the address asks for only among the dashboards it hosts', () => {
     const entries = catalogueFor(['R02']);
     expect(selectedEntry(entries, null)?.code).toBe('PORTFOLIO');
-    expect(selectedEntry(entries, 'GOVERNANCE')?.code).toBe('GOVERNANCE');
+    // The Governance Dashboard repeats the Portfolio Dashboard's widgets: someone offered both sees the Portfolio one.
+    expect(selectedEntry(entries, 'GOVERNANCE')?.code).toBe('PORTFOLIO');
+    expect(selectedEntry(catalogueFor(['R01']), 'GOVERNANCE')?.code).toBe('GOVERNANCE');
     expect(selectedEntry(entries, 'PROJECT')?.code).toBe('PORTFOLIO');
     expect(selectedEntry(entries, 'ANYTHING')?.code).toBe('PORTFOLIO');
     expect(selectedEntry([], null)).toBeNull();

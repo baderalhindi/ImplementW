@@ -46,9 +46,9 @@
     "UNKNOWN": "Unknown: figures missing"
   },
   "rag": {
-    "GREEN": "Green",
-    "AMBER": "Amber",
-    "RED": "Red",
+    "GREEN": "On target",
+    "AMBER": "Near target",
+    "RED": "Off target",
     "UNKNOWN": "Not rated",
     "NOT_APPLICABLE": "Not applicable"
   },
@@ -284,7 +284,7 @@
     "targetsCaption": "Every version of this KPI's target, newest first",
     "targetValue": "Target ({unit})",
     "thresholds": "Rating thresholds",
-    "thresholdValues": "Green {green}, amber {amber}",
+    "thresholdValues": "On target at {green}, near target at {amber}",
     "noThresholds": "None: values are not rated"
   },
   "register": {
@@ -297,9 +297,9 @@
     "filters": {
       "all": "All KPIs",
       "noData": "No data",
-      "red": "Red",
-      "amber": "Amber",
-      "green": "Green"
+      "red": "Off target",
+      "amber": "Near target",
+      "green": "On target"
     },
     "search": "Find a project or KPI",
     "empty": "No KPIs to show",

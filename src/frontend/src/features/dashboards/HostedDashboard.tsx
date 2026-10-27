@@ -4,50 +4,88 @@ import { type SessionUser } from '@/features/identity-access/session/sessionApi.
 import { ApiError } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
-import { dashboardsApi } from './api/dashboardsApi.ts';
-import { type DashboardCatalogueEntry } from './api/types.ts';
+import { dashboardsApi, type PortfolioFilters } from './api/dashboardsApi.ts';
+import { type DashboardCatalogueEntry, type DashboardView } from './api/types.ts';
 import { DashboardCanvas } from './components/DashboardCanvas.tsx';
+import {
+  type FilterName,
+  type FilterOptions,
+  PortfolioFilterBar,
+} from './components/PortfolioFilterBar.tsx';
+import { ProjectLocations } from './components/ProjectLocations.tsx';
 import { mayPersonalize } from './landing.ts';
 import { PersonalizeDialog } from './PersonalizeDialog.tsx';
 import { dashboardProblemMessage } from './problems.ts';
-import { useDepartmentNames } from './useDepartmentNames.ts';
+
+function optionsOf(view: DashboardView): FilterOptions {
+  return {
+    departments: view.departmentOptions,
+    entities: view.entityOptions,
+    regions: view.regionOptions,
+    cities: view.cityOptions,
+    places: view.places,
+  };
+}
+
+function sameOptions(a: FilterOptions, b: FilterOptions): boolean {
+  return (
+    a.departments.join() === b.departments.join() &&
+    a.entities.join() === b.entities.join() &&
+    a.regions.join() === b.regions.join() &&
+    a.cities.join() === b.cities.join()
+  );
+}
+
+const NO_OPTIONS: FilterOptions = {
+  departments: [],
+  entities: [],
+  regions: [],
+  cities: [],
+  places: [],
+};
 
 /**
- * A dashboard the Home hosts (Portfolio, Governance), read over every project the caller may see. The department
- * filter offers only the departments of those projects (`departmentOptions`, DSH-CC-17): it narrows the population and
- * can never widen it — a department outside them is refused by the API (422), and the filter is then cleared.
+ * A dashboard the page hosts (Portfolio, Governance), read over every project the caller may see. The filters — sector, entity,
+ * region and city — offer only the values of those projects (DSH-CC-17): they narrow the population and can never widen it; a value
+ * outside them is refused by the API (422), and the filters are then cleared. The Portfolio Dashboard also shows where its projects
+ * are delivered.
  */
 export function HostedDashboard({
   entry,
   user,
-  departmentId,
-  onDepartmentChange,
+  filters,
+  onFilterChange,
+  onClearFilters,
 }: {
   entry: DashboardCatalogueEntry;
   user: SessionUser;
-  departmentId: string | undefined;
-  onDepartmentChange: (departmentId: string | undefined) => void;
+  filters: PortfolioFilters;
+  onFilterChange: (name: FilterName, value: string | undefined) => void;
+  onClearFilters: () => void;
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
-  const departmentName = useDepartmentNames();
+  const { departmentId, externalEntityId, regionItemId, cityItemId } = filters;
   const load = useCallback(
-    (signal: AbortSignal) => dashboardsApi.get(entry.code, { departmentId }, signal),
-    [entry.code, departmentId],
+    (signal: AbortSignal) =>
+      dashboardsApi.get(
+        entry.code,
+        { departmentId, externalEntityId, regionItemId, cityItemId },
+        signal,
+      ),
+    [entry.code, departmentId, externalEntityId, regionItemId, cityItemId],
   );
   const view = useApiResource(load, { keepWhileReloading: true });
-  const [options, setOptions] = useState<string[]>([]);
+  const [options, setOptions] = useState<FilterOptions>(NO_OPTIONS);
   const [personalizing, setPersonalizing] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
-  // The options do not depend on the filter (the API lists them before narrowing), so the last ones read stay offered
-  // while another department loads: the select never disappears under a keyboard user.
-  const loaded = view.data?.departmentOptions;
-  if (loaded !== undefined && loaded.join() !== options.join()) {
-    setOptions(loaded);
+  // The options do not depend on the filters (the API lists them before narrowing), so the last ones read stay offered
+  // while another choice loads: a select never disappears under a keyboard user.
+  if (view.data !== undefined && !sameOptions(optionsOf(view.data), options)) {
+    setOptions(optionsOf(view.data));
   }
 
   const filterRefused =
@@ -56,24 +94,7 @@ export function HostedDashboard({
   return (
     <div className="dashboard">
       <div className="dashboard__toolbar">
-        {options.length > 0 && (
-          <div className="filters filters--inline">
-            <SelectField
-              label={t('dashboards.filter.department')}
-              name="department"
-              value={
-                departmentId !== undefined && options.includes(departmentId) ? departmentId : ''
-              }
-              placeholder={t('dashboards.filter.allDepartments')}
-              options={options
-                .map((id) => ({ value: id, label: departmentName(id) }))
-                .sort((a, b) => a.label.localeCompare(b.label))}
-              onChange={(value) => {
-                onDepartmentChange(value === '' ? undefined : value);
-              }}
-            />
-          </div>
-        )}
+        <PortfolioFilterBar options={options} filters={filters} onChange={onFilterChange} />
         {view.data !== undefined && (
           <p className="dashboard__meta">
             <span>
@@ -104,17 +125,21 @@ export function HostedDashboard({
           <ErrorState
             error={view.error}
             message={dashboardProblemMessage(view.error, t)}
-            onRetry={
-              filterRefused
-                ? () => {
-                    onDepartmentChange(undefined);
-                  }
-                : view.reload
-            }
+            onRetry={filterRefused ? onClearFilters : view.reload}
           />
         )
       ) : (
         <>
+          {entry.code === 'PORTFOLIO' && (
+            <ProjectLocations
+              locations={view.data.locations}
+              places={view.data.places}
+              selectedRegion={regionItemId}
+              onSelectRegion={(region) => {
+                onFilterChange('regionItemId', region);
+              }}
+            />
+          )}
           <DashboardCanvas view={view.data} headingLevel={2} />
           <PersonalizeDialog
             open={personalizing}

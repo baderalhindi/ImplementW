@@ -134,6 +134,14 @@ export function dashboardView(
     departmentOptions: code === 'PROJECT' ? [] : [DEPARTMENT_A, DEPARTMENT_B],
     refreshedAt: REFRESHED_AT,
     widgets: [widget()],
+    externalEntityId: null,
+    regionItemId: null,
+    cityItemId: null,
+    entityOptions: [],
+    regionOptions: [],
+    cityOptions: [],
+    locations: [],
+    places: [],
     ...overrides,
   };
 }

@@ -57,10 +57,11 @@ internal static class ReportText
 
     private static readonly Dictionary<string, BilingualLabel> Codes = new(StringComparer.Ordinal)
     {
-        ["GREEN"] = new("أخضر", "Green"),
-        ["AMBER"] = new("كهرماني", "Amber"),
-        ["RED"] = new("أحمر", "Red"),
-        ["UNKNOWN"] = new("غير معروف", "Unknown"),
+        // A rating in words of what it means, not its colour (the 27 Oct 2026 review), as the screens say it.
+        ["GREEN"] = new("على المسار", "On track"),
+        ["AMBER"] = new("معرّض للخطر", "At risk"),
+        ["RED"] = new("متعثر", "Off track"),
+        ["UNKNOWN"] = new("غير محدد", "Not determined"),
         ["NOT_APPLICABLE"] = new("لا ينطبق", "Not applicable"),
         ["DRAFT"] = new("مسودة", "Draft"),
         ["SUBMITTED"] = new("مقدم", "Submitted"),

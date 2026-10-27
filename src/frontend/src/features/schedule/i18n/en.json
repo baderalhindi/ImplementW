@@ -29,7 +29,7 @@
     "GREEN": "On track",
     "AMBER": "At risk",
     "RED": "Delayed",
-    "UNKNOWN": "Unknown"
+    "UNKNOWN": "Not determined"
   },
   "variance": {
     "none": "No baseline",

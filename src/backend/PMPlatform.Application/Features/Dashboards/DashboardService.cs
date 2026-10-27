@@ -5,6 +5,8 @@ using PMPlatform.Application.Common.Projections;
 using PMPlatform.Application.Features.Dashboards.Contracts;
 using PMPlatform.Application.Features.Dashboards.Projections;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Domain.Dashboards;
 
@@ -22,6 +24,7 @@ internal sealed partial class DashboardService(
     IUserRoleDirectory userRoles,
     IRoleDirectory roles,
     IProjectFactsReader projects,
+    IMasterDataResolver masterData,
     IAuthorizationEngine engine,
     IEnumerable<IDashboardProjectionSource> sources,
     IAuditTrail audit,
@@ -74,7 +77,7 @@ internal sealed partial class DashboardService(
 
         // The candidate projects: the one the Project Dashboard is bound to, or every project some widget's permission reaches.
         List<ProjectFacts> candidates;
-        List<Guid> departments;
+        PortfolioFilters filters = PortfolioFilters.None;
         if (kind == DashboardContextKind.Project)
         {
             ProjectFacts? project = await projects.FindAsync(context.ProjectId!.Value, cancellationToken).ConfigureAwait(false);
@@ -84,7 +87,6 @@ internal sealed partial class DashboardService(
             }
 
             candidates = [project];
-            departments = [];
         }
         else
         {
@@ -94,16 +96,13 @@ internal sealed partial class DashboardService(
                 .Select(p => p!.PermissionCode).Distinct(StringComparer.Ordinal)
                 .SelectMany(permission => scopes[permission].Clauses)]);
             candidates = [.. await projects.ListReachedAsync(reach, cancellationToken).ConfigureAwait(false)];
-            departments = [.. candidates.Select(p => p.DepartmentId).Distinct().Order()];
-            if (context.DepartmentId is { } departmentId)
+            filters = PortfolioFilters.Of(candidates);
+            if (filters.Refused(context) is { } field)
             {
-                if (!departments.Contains(departmentId))
-                {
-                    return AdministrationError.Rule(DashboardErrorCodes.FilterValueUnauthorized, new FieldIssue("departmentId", FieldIssue.NotAllowed));
-                }
-
-                candidates = [.. candidates.Where(p => p.DepartmentId == departmentId)];
+                return AdministrationError.Rule(DashboardErrorCodes.FilterValueUnauthorized, new FieldIssue(field, FieldIssue.NotAllowed));
             }
+
+            candidates = [.. candidates.Where(p => PortfolioFilters.Matches(p, context))];
         }
 
         IReadOnlyDictionary<Guid, UserDashboardWidgetPreference> personal = await PersonalAsync(callerId, definition, cancellationToken).ConfigureAwait(false);
@@ -139,7 +138,10 @@ internal sealed partial class DashboardService(
 
         return new DashboardView(
             definition.Code, definition.Id, definition.VersionNo, definition.Name, definition.Description, kind, definition.AllowsPersonalization,
-            context.ProjectId, context.DepartmentId, departments, now, results);
+            context.ProjectId, context.DepartmentId, filters.Departments, now, results,
+            context.ExternalEntityId, context.RegionItemId, context.CityItemId, filters.Entities, filters.Regions, filters.Cities,
+            kind == DashboardContextKind.Project ? [] : PortfolioFilters.Locations(candidates),
+            await PlacesAsync(filters, cancellationToken).ConfigureAwait(false));
     }
 
     public async Task<AdministrationResult<DashboardPersonalizationDetail>> PersonalizeAsync(
@@ -310,11 +312,11 @@ internal sealed partial class DashboardService(
         && scopes[projection.PermissionCode].Matches(ProjectSubjects.Of(project, widget.DataClassificationItemId));
 
 
-    /// <summary>DSH-CC-18: the Project Dashboard is bound to a project and takes no department; the others take no project.</summary>
+    /// <summary>DSH-CC-18: the Project Dashboard is bound to a project and takes no portfolio filter; the others take no project.</summary>
     private static AdministrationError? ContextRefused(DashboardContextKind kind, DashboardContext context) =>
         kind == DashboardContextKind.Project
             ? context.ProjectId is null ? AdministrationError.Rule(DashboardErrorCodes.ContextInvalid, new FieldIssue("projectId", FieldIssue.Required))
-                : context.DepartmentId is not null ? AdministrationError.Rule(DashboardErrorCodes.ContextInvalid, new FieldIssue("departmentId", FieldIssue.NotAllowed))
+                : context.IsFiltered ? AdministrationError.Rule(DashboardErrorCodes.ContextInvalid, new FieldIssue(PortfolioFilters.FirstField(context), FieldIssue.NotAllowed))
                 : null
             : context.ProjectId is not null ? AdministrationError.Rule(DashboardErrorCodes.ContextInvalid, new FieldIssue("projectId", FieldIssue.NotAllowed))
             : null;
@@ -323,6 +325,24 @@ internal sealed partial class DashboardService(
         definition.AllowsPersonalization && await repository.FindPreferenceAsync(callerId, definition.Id, cancellationToken).ConfigureAwait(false) is { } preference
             ? (await repository.ListWidgetPreferencesAsync(preference.Id, track: false, cancellationToken).ConfigureAwait(false)).ToDictionary(p => p.DashboardWidgetId)
             : [];
+
+    /// <summary>
+    /// The names of the regions and cities the filters offer: a portfolio reader holds no MASTER_DATA_VIEW, so the view names its own
+    /// places. A retired place is not named and shows by its id.
+    /// </summary>
+    private async Task<IReadOnlyList<DashboardPlace>> PlacesAsync(PortfolioFilters filters, CancellationToken cancellationToken)
+    {
+        if (filters.Regions.Count == 0 && filters.Cities.Count == 0)
+        {
+            return [];
+        }
+
+        IReadOnlyList<MasterDataItemReference> regions = await masterData.ListPublishedItemsAsync(MasterDataCatalogueCodes.Region, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<MasterDataItemReference> cities = await masterData.ListPublishedItemsAsync(MasterDataCatalogueCodes.City, cancellationToken).ConfigureAwait(false);
+        return [.. regions.Where(r => filters.Regions.Contains(r.Id)).Concat(cities.Where(c => filters.Cities.Contains(c.Id)))
+            .OrderBy(p => p.SortOrder)
+            .Select(p => new DashboardPlace(p.Id, p.Label, p.ParentItemId))];
+    }
 
     private async Task<IReadOnlyDictionary<Guid, string>> RoleCodesAsync(CancellationToken cancellationToken) =>
         (await roles.ListRolesAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(r => r.Id, r => r.Code);
