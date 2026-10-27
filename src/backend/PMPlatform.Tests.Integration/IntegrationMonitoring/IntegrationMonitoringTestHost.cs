@@ -2,8 +2,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.IntegrationMonitoring;
+using PMPlatform.Infrastructure.Notifications;
 using PMPlatform.Tests.Integration.AuditActivity;
 using PMPlatform.Tests.Integration.Identity;
 
@@ -12,7 +14,8 @@ namespace PMPlatform.Tests.Integration.IntegrationMonitoring;
 /// <summary>
 /// The identity test database and providers with what FG-05 (TASK-075) needs beside the seeded registry: an internal system,
 /// <see cref="TestOperation.Code"/>, whose one operation the test drives, registered as AHDA would register a future integration. The API's
-/// outbox dispatcher and FG-05's pass are parked (an hour), so a test dispatches telemetry and runs the pass itself, in order.
+/// outbox dispatcher and FG-05's pass are parked (an hour) and WF-15's worker is removed, so a test dispatches telemetry and runs each pass
+/// itself, in order.
 /// </summary>
 public sealed class IntegrationMonitoringTestHost : IAsyncLifetime
 {
@@ -69,7 +72,17 @@ public sealed class IntegrationMonitoringTestHost : IAsyncLifetime
             settings[key] = value;
         }
 
-        return Identity.CreateApi(settings, services => services.AddScoped<IIntegrationOperation>(_ => Operation));
+        return Identity.CreateApi(settings, services =>
+        {
+            services.AddScoped<IIntegrationOperation>(_ => Operation);
+
+            // A parked worker still runs one pass as it starts: WF-15's would turn earlier tests' alert intents into deliveries while a
+            // test compares the business state. A test that needs deliveries runs the pass itself.
+            foreach (ServiceDescriptor worker in services.Where(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(NotificationWorker)).ToList())
+            {
+                services.Remove(worker);
+            }
+        });
     }
 
     /// <summary>A client of <paramref name="api"/> (the suite's by default) signed in as local.r0<paramref name="person"/>.</summary>
