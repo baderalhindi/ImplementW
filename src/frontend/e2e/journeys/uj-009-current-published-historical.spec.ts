@@ -152,7 +152,9 @@ test('UJ-009 current, published and historical values stay distinguishable and h
 
     const trend = widget(consumer, 'Published progress trend');
     await expectText(trend, 'Historical · snapshot');
-    // The history is WF-02's own snapshots, oldest first: Amber at 20%, then Green at 45%.
+    // The history is WF-02's own snapshots, oldest first: Amber at 20%, then Green at 45%. The chart's values table is
+    // folded under its disclosure.
+    await trend.getByText('Show the values', { exact: true }).click();
     const rows = trend.getByRole('table').getByRole('row');
     await expect(rows).toHaveCount(3);
     const cells = async (row: Locator) =>

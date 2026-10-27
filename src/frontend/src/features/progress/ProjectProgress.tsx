@@ -1,6 +1,7 @@
 import { type ReactElement, useCallback, useState } from 'react';
 import { Link } from 'react-router';
 
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
@@ -72,6 +73,7 @@ export function ProjectProgress({
   user: SessionUser;
 }): ReactElement {
   const { t } = useI18n();
+  const { can } = usePermissions();
   const health = useHealthView(project.id);
   const load = useCallback((signal: AbortSignal) => loadCurrent(project.id, signal), [project.id]);
   const current = useApiResource(load);
@@ -128,7 +130,8 @@ export function ProjectProgress({
   }
 
   const update = current.data;
-  const reporter = canReport(user, project);
+  // The Project Manager of an entity's own project (ADR-013) holds no PROGRESS_SUBMIT (shipped-permission-matrix.md F-7).
+  const reporter = canReport(user, project) && can('PROGRESS_SUBMIT');
   const reviewer = update !== null && canReview(user, project, update.submission);
   const label =
     update === null

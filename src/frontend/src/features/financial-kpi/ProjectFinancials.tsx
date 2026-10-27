@@ -2,6 +2,7 @@ import { type ReactElement, useState } from 'react';
 import { Link } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { periodLabel } from '@/features/progress/components/Period.tsx';
 import { usePeriods } from '@/features/progress/usePeriods.ts';
@@ -61,6 +62,7 @@ export function ProjectFinancials({
   user: SessionUser;
 }): ReactElement {
   const { t } = useI18n();
+  const { can } = usePermissions();
   const overview = useFinancialOverview(project.id);
   const period = usePeriods(project.id);
   const personName = usePersonNames(peopleOf(overview.data));
@@ -116,7 +118,8 @@ export function ProjectFinancials({
 
   const data = overview.data;
   const current = data.current;
-  const reporter = canReportFinancials(user, project);
+  // The Project Manager of an entity's own project (ADR-013) holds no FINANCIAL_SUBMIT (shipped-permission-matrix.md F-7).
+  const reporter = canReportFinancials(user, project) && can('FINANCIAL_SUBMIT');
   const reviewer = current !== null && canReviewFinancials(user, project, current.update);
   const label = current === null ? '' : labelOf(current.update.reportingCycleId);
   const integrated = {

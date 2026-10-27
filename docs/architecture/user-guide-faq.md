@@ -146,7 +146,7 @@ JSON files and re-reviewed.
 
 | ID | Finding | Owner / where it goes |
 | --- | --- | --- |
-| F-1 | **Arabic "التنبيهات" names two things.** The shell's Notifications menu (`common.menu.notifications`) is "التنبيهات", and so is the Alerts screen inside it (`notifications.nav.alerts`), while the notification screens call themselves "الإشعارات". The help uses the labels as they are (D-6), so it inherits the clash. Suggested: menu "الإشعارات". | Frontend (WF-15 UI), with the bilingual reviewer |
+| F-1 | **Resolved 2026-10-27:** the menu is "الإشعارات", as the notification screens call themselves, and "التنبيهات" names the Alerts screen only. Was: **Arabic "التنبيهات" names two things.** The shell's Notifications menu (`common.menu.notifications`) is "التنبيهات", and so is the Alerts screen inside it (`notifications.nav.alerts`), while the notification screens call themselves "الإشعارات". The help uses the labels as they are (D-6), so it inherits the clash. Suggested: menu "الإشعارات". | Frontend (WF-15 UI), with the bilingual reviewer |
 | F-2 | **R03's name differs between sources.** Blueprint §20.2 says Department Manager and Department Dashboard; the seed and the UI say "Sector Manager", "Sector Dashboard" and "Sector" (القطاع). The help follows the UI. | TASK-027 / AHDA terminology owner |
 | F-3 | **"Access denied" always says "available to system administrators only"** (`common.forbidden.description`), including on pages guarded by other roles. The FAQ explains the title only. | Frontend (shell) |
 | F-4 | **No dedicated message for a wrong password or a locked account** at sign-in: these fall to generic problems. The help does not describe them, because their wording is not fixed. | FG-03 UI |
