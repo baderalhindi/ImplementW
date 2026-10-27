@@ -21,6 +21,7 @@ import {
 } from '@/test/progressFixtures.ts';
 import {
   ENTITY_USER_ID,
+  entityManagerSession,
   entitySession,
   projectDetail,
   PROJECT_ID,
@@ -169,7 +170,7 @@ describe('SCR-048 error state', () => {
 describe('starting an update (TASK-044 D-5, ADR-017)', () => {
   test('the Project Manager starts the period’s update and lands in MOD-020 with the pre-filled draft', async () => {
     const submissions: ProgressSubmissionDetail[] = [];
-    const api = open(entitySession(), { submissions });
+    const api = open(entityManagerSession(), { submissions });
     api
       .on('POST', /^\/progress-submissions$/, () => {
         submissions.push(submission());
@@ -197,7 +198,7 @@ describe('starting an update (TASK-044 D-5, ADR-017)', () => {
   });
 
   test('an update already in progress (a retried start, F-17) is shown, not reported as a failure', async () => {
-    const api = open(entitySession());
+    const api = open(entityManagerSession());
     api.on('POST', /^\/progress-submissions$/, problem(409, 'PROGRESS_SUBMISSION_EXISTS'));
 
     await pressButton('progress.actions.start');
@@ -207,7 +208,7 @@ describe('starting an update (TASK-044 D-5, ADR-017)', () => {
   });
 
   test('a start the API refuses says why beside the button', async () => {
-    const api = open(entitySession());
+    const api = open(entityManagerSession());
     api.on('POST', /^\/progress-submissions$/, problem(422, 'PROGRESS_ROLLUP_UNAVAILABLE'));
 
     await pressButton('progress.actions.start');
@@ -220,6 +221,12 @@ describe('starting an update (TASK-044 D-5, ADR-017)', () => {
   test('nothing is offered on a project that is not ACTIVE, nor to someone who is not its Project Manager', async () => {
     open(entitySession(), {}, { project: activeProject({ status: 'APPROVED_PLANNED' }) });
     expect(await screen.findByText(en('progress.current.notActive'))).toBeTruthy();
+    expect(screen.queryByRole('button', { name: en('progress.actions.start') })).toBeNull();
+  });
+
+  test('a Project Manager without PROGRESS_SUBMIT (an entity user holding R08 only) is not offered the start', async () => {
+    open(entitySession());
+    expect(await screen.findByText(en('progress.current.none'))).toBeTruthy();
     expect(screen.queryByRole('button', { name: en('progress.actions.start') })).toBeNull();
   });
 
@@ -242,7 +249,7 @@ describe('acceptance criterion 1: an out-of-range percentage is refused with a f
   test.each(['120', '-1', '100.5', '42.12345'])(
     'client-side: %s is flagged on the field as it is typed, and nothing is sent',
     async (value) => {
-      const api = open(entitySession(), { submissions: [submission()] });
+      const api = open(entityManagerSession(), { submissions: [submission()] });
       const dialog = await overrideDialog();
 
       await userEvent.type(percentInput(dialog), value);
@@ -268,7 +275,7 @@ describe('acceptance criterion 1: an out-of-range percentage is refused with a f
   );
 
   test('server-side: the API’s OUT_OF_RANGE lands on the percentage field, and the update is not submitted', async () => {
-    const api = open(entitySession(), { submissions: [submission()] });
+    const api = open(entityManagerSession(), { submissions: [submission()] });
     api.on(
       'PUT',
       new RegExp(`^/progress-submissions/${SUBMISSION_ID}$`),
@@ -299,7 +306,7 @@ describe('acceptance criterion 1: an out-of-range percentage is refused with a f
   });
 
   test('an override without its reason is refused on the reason field (ADR-009)', async () => {
-    const api = open(entitySession(), { submissions: [submission()] });
+    const api = open(entityManagerSession(), { submissions: [submission()] });
     const dialog = await overrideDialog();
 
     await userEvent.type(percentInput(dialog), '45');
@@ -315,7 +322,7 @@ describe('acceptance criterion 1: an out-of-range percentage is refused with a f
 
 describe('MOD-020 and MOD-021', () => {
   test('MOD-020 saves the override with the ETag it was shown, then submits with the new one', async () => {
-    const api = open(entitySession(), { submissions: [submission()] });
+    const api = open(entityManagerSession(), { submissions: [submission()] });
     api
       .on('PUT', new RegExp(`^/progress-submissions/${SUBMISSION_ID}$`), {
         body: submission({ isOverridden: true, actualPercentOverride: 45, actualPercent: 45 }),
@@ -350,7 +357,7 @@ describe('MOD-020 and MOD-021', () => {
   });
 
   test('confirming a pre-filled draft as it is submits it without an edit (ADR-017)', async () => {
-    const api = open(entitySession(), { submissions: [submission()] });
+    const api = open(entityManagerSession(), { submissions: [submission()] });
     api.on('POST', /\/submit$/, { body: submitted() });
 
     const dialog = await openDialog('progress.actions.submit', 'progress.update.submitTitle');
@@ -364,7 +371,7 @@ describe('MOD-020 and MOD-021', () => {
   });
 
   test('MOD-021 saves the draft and does not submit it', async () => {
-    const api = open(entitySession(), { submissions: [submission()] });
+    const api = open(entityManagerSession(), { submissions: [submission()] });
     api.on('PUT', new RegExp(`^/progress-submissions/${SUBMISSION_ID}$`), {
       body: submission(),
       headers: { ETag: NEW_ETAG },
@@ -387,7 +394,7 @@ describe('MOD-020 and MOD-021', () => {
   });
 
   test('a draft changed meanwhile (412) closes the dialog, says so and shows the latest version', async () => {
-    const api = open(entitySession(), { submissions: [submission()] });
+    const api = open(entityManagerSession(), { submissions: [submission()] });
     api.on('POST', /\/submit$/, problem(412, 'PRECONDITION_FAILED'));
 
     const dialog = await openDialog('progress.actions.submit', 'progress.update.submitTitle');

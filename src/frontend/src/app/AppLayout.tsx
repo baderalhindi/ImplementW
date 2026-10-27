@@ -328,7 +328,7 @@ function Rail({
   const { t } = useI18n();
   const { search } = useLocation();
   const unread = useUnreadCount().count;
-  const awaiting = useInboxCount(pathname);
+  const awaiting = useInboxCount(pathname, usePermissions().can('APPROVAL_DECIDE'));
 
   useEffect(() => unreadCountStore.watch(), []);
 

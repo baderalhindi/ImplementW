@@ -257,6 +257,18 @@ describe('the master navigation', () => {
     expect(api.shellInboxCountReads[0]?.query.get('page')).toBe('1');
   });
 
+  test('someone who may not decide approvals gets no count, and the shell never asks the inbox for one', async () => {
+    const api = mockApi();
+    renderApp({ path: '/', session: sessionFor(['R04']) });
+
+    await findMainMenu();
+    await waitFor(() => {
+      expect(menuLink('common.menu.requestsApprovals')).toBeTruthy();
+    });
+    expect(menuLink('common.menu.requestsApprovals')?.querySelector('.rail__count')).toBeNull();
+    expect(api.shellInboxCountReads).toHaveLength(0);
+  });
+
   test('collapsing keeps every menu’s name for screen readers, hides the screens, and is remembered', async () => {
     withInbox(mockApi());
     renderApp({ path: '/notifications', session: notificationSession() });

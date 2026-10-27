@@ -31,6 +31,7 @@ import { type MockApi, mockApi, page, problem } from '@/test/mockApi.ts';
 import { withProgress } from '@/test/progressFixtures.ts';
 import {
   ENTITY_USER_ID,
+  entityManagerSession,
   entitySession,
   projectDetail,
   projectSummary,
@@ -235,7 +236,7 @@ describe('MOD-023 Update Financial Progress', () => {
   }
 
   test('"No data" sends no figure at all — null, never "0.00" — then submits with the saved ETag', async () => {
-    const api = open(FINANCIALS, entitySession());
+    const api = open(FINANCIALS, entityManagerSession());
     answerSave(api);
     const dialog = await openDialog();
 
@@ -264,7 +265,7 @@ describe('MOD-023 Update Financial Progress', () => {
   });
 
   test('measured figures are SAR with two places; a grouped amount and a future as-of date are refused before sending', async () => {
-    const api = open(FINANCIALS, entitySession());
+    const api = open(FINANCIALS, entityManagerSession());
     answerSave(api);
     const dialog = await openDialog();
 
@@ -304,7 +305,7 @@ describe('MOD-023 Update Financial Progress', () => {
   });
 
   test('an INTEGRATED actual cannot be measured by hand: only the reasons for no figure are offered', async () => {
-    open(FINANCIALS, entitySession(), (api) =>
+    open(FINANCIALS, entityManagerSession(), (api) =>
       withKpis(withFinancials(api, { modes: sourceModes({ ACTUAL_EXPENDITURE: 'INTEGRATED' }) })),
     );
     const dialog = await openDialog();
@@ -314,8 +315,16 @@ describe('MOD-023 Update Financial Progress', () => {
     ).toBeNull();
   });
 
-  test('MOD-023 has no accessibility violations', async () => {
+  test('a Project Manager without FINANCIAL_SUBMIT (an entity user holding R08 only) is not offered the update', async () => {
     open(FINANCIALS, entitySession());
+    expect(
+      await screen.findByRole('heading', { level: 2, name: en('financialKpi.current.title') }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: en('financialKpi.actions.update') })).toBeNull();
+  });
+
+  test('MOD-023 has no accessibility violations', async () => {
+    open(FINANCIALS, entityManagerSession());
     await openDialog();
     const violations = await accessibilityViolations();
     expect(violations, describeViolations(violations)).toEqual([]);
