@@ -5021,12 +5021,21 @@ path.trend__line--ACTUAL_PERCENT {
   border-inline-start-color: var(--chart-negative);
 }
 
-/* A money figure is long: it scales with the tile and wraps inside it rather than run into the next tile. */
+/* A money figure is long: its tile takes two columns where there are two, and the figure is never broken mid-number. */
+@media (min-width: 40rem) {
+  .home__tile--wide {
+    grid-column: span 2;
+  }
+}
+
 .home__tile-value {
   font-size: clamp(1.125rem, 0.8rem + 0.8vw, 1.5rem);
   font-weight: 700;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+}
+
+.home__tile--wide .home__tile-value {
+  overflow-wrap: break-word;
 }
 
 .home__tile-label {

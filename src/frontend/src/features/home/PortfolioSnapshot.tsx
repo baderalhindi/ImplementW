@@ -38,6 +38,8 @@ interface Tile {
   label: string;
   value: string;
   tone?: StatusTone;
+  /** A money figure: long, so its tile takes two columns. */
+  wide?: boolean;
 }
 
 /**
@@ -96,7 +98,7 @@ export function PortfolioSnapshot(): ReactElement | null {
     const figure = figureOf(financials, measure);
     const value = figure === undefined ? null : formatFigure(figure, t);
     if (value !== null) {
-      tiles.push({ key: measure, label: t(`dashboards.measures.${measure}`), value });
+      tiles.push({ key: measure, label: t(`dashboards.measures.${measure}`), value, wide: true });
     }
   }
 
@@ -109,7 +111,11 @@ export function PortfolioSnapshot(): ReactElement | null {
       {tiles.length > 0 && (
         <ul className="home__tiles">
           {tiles.map((tile) => (
-            <li key={tile.key} className="home__tile" data-tone={tile.tone}>
+            <li
+              key={tile.key}
+              className={tile.wide === true ? 'home__tile home__tile--wide' : 'home__tile'}
+              data-tone={tile.tone}
+            >
               <span className="home__tile-value" dir="ltr">
                 {tile.value}
               </span>
