@@ -9,6 +9,7 @@ import { type SessionUser } from '@/features/identity-access/session/sessionApi.
 import { sessionStore } from '@/features/identity-access/session/sessionStore.ts';
 import { StepUpDialog } from '@/features/identity-access/session/StepUpDialog.tsx';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
+import { RecentNotifications } from '@/features/notifications/bell/RecentNotifications.tsx';
 import { unreadCountStore, useUnreadCount } from '@/features/notifications/unreadCount.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { useTheme } from '@/shared/theme/theme.ts';
@@ -189,6 +190,53 @@ function CreateMenu(): ReactElement | null {
           </li>
         )}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * The top bar's bell (the 27 Oct 2026 review): the unread count on it, opening the newest notifications. The rail's Notifications menu
+ * stays, with every screen. The count is the same poll the rail's badge reads.
+ */
+function NotificationBell(): ReactElement {
+  const { t } = useI18n();
+  const unread = useUnreadCount().count ?? 0;
+  const { open, setOpen, containerRef, buttonRef, menuId } = usePopover();
+
+  return (
+    <div className="popover" ref={containerRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="button button--quiet topbar__bell"
+        aria-expanded={open}
+        aria-controls={menuId}
+        title={t('notifications.bell.label')}
+        onClick={() => {
+          setOpen((value) => !value);
+        }}
+      >
+        <ShellIcon name="notifications" />
+        {unread > 0 && (
+          <span className="topbar__bell-count" aria-hidden="true">
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
+        <span className="visually-hidden">
+          {unread > 0
+            ? `${t('notifications.bell.label')}: ${t('notifications.bell.unread', { count: unread })}`
+            : t('notifications.bell.label')}
+        </span>
+      </button>
+      <div className="popover__menu popover__menu--notifications" id={menuId} hidden={!open}>
+        {open && (
+          <RecentNotifications
+            onClose={() => {
+              setOpen(false);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -550,6 +598,7 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
           <Breadcrumb menu={current} pathname={pathname} />
           <div className="topbar__actions">
             <CreateMenu />
+            <NotificationBell />
             <ThemeSwitch />
             <LanguageSwitch labelled />
             <AccountMenu user={user} />

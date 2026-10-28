@@ -34,18 +34,31 @@
     "formalId": "رقم المشروع",
     "status": "الحالة"
   },
-  "refreshedAt": "جُمعت في {date}",
+  "refreshedAt": "آخر تحديث {date}",
   "actions": {
     "refresh": "تحديث"
   },
   "filter": {
     "department": "القطاع",
-    "allDepartments": "جميع قطاعاتك"
+    "allDepartments": "جميع قطاعاتك",
+    "entity": "الجهة",
+    "allEntities": "كل الجهات",
+    "region": "المنطقة",
+    "allRegions": "كل المناطق",
+    "city": "المدينة",
+    "allCities": "كل المدن"
+  },
+  "locations": {
+    "title": "المشاريع حسب الموقع",
+    "description": "أماكن تنفيذ المشاريع المعروضة. اختر منطقة لعرض مشاريعها فقط.",
+    "projects": "{count} مشاريع",
+    "noRegion": "لم تُسجَّل منطقة",
+    "noCity": "لم تُسجَّل مدينة"
   },
   "semanticState": {
-    "CURRENT_LIVE": "حالي · مباشر",
-    "PUBLISHED_OFFICIAL": "منشور · رسمي",
-    "HISTORICAL_SNAPSHOT": "تاريخي · لقطة"
+    "CURRENT_LIVE": "مباشر · غير معتمد بعد",
+    "PUBLISHED_OFFICIAL": "رسمي · معتمد",
+    "HISTORICAL_SNAPSHOT": "سجل تاريخي"
   },
   "freshness": {
     "STALE": "قديمة",
@@ -56,7 +69,20 @@
     "at": "بتاريخ {date}",
     "none": "لا تاريخ سريان: لا توجد قيمة لتأريخها"
   },
-  "source": "مملوكة لـ {source} · الإصدار {version}",
+  "source": "المصدر: {source}",
+  "sourceDomain": {
+    "WF-01": "سجل المشاريع",
+    "WF-02": "تقارير التقدم",
+    "WF-03": "الجدول الزمني للمشروع",
+    "WF-04": "المهام",
+    "WF-05": "المعالم",
+    "WF-06": "سجل المخاطر",
+    "WF-07": "القضايا والتحديات",
+    "WF-08": "طلبات التغيير",
+    "WF-09": "طلبات التعليق",
+    "WF-14": "المالية ومؤشرات الأداء",
+    "FG-01": "إعداد لوحات المعلومات"
+  },
   "coverage": {
     "counted": "احتُسب {included} من {eligible} مشروعًا",
     "leftOut": "المستبعد: {reasons}",
@@ -97,7 +123,7 @@
   "counted": {
     "projects": "المشاريع",
     "risks": "المخاطر المفتوحة",
-    "kpiAssignments": "تعيينات مؤشرات الأداء",
+    "kpiAssignments": "مؤشرات الأداء",
     "versions": "إصدارات اللوحات",
     "items": "العدد"
   },
@@ -105,7 +131,7 @@
     "UP_TO_DATE": "محدّث",
     "OVERDUE": "متأخر",
     "NOT_ASSESSED": "غير مقيّم",
-    "NOT_PUBLISHED": "لم يُنشر شيء",
+    "NOT_PUBLISHED": "لم يُرفع بعد",
     "definition": {
       "DRAFT": "مسودة",
       "VALIDATED": "مُتحقق منه",
@@ -121,8 +147,8 @@
     "OPEN_RISKS": "المخاطر المفتوحة",
     "NOT_ASSESSED": "لم تُقيَّم بعد",
     "REVIEW_OVERDUE": "تجاوزت موعد مراجعتها",
-    "ACTIVE_ASSIGNMENTS": "تعيينات المؤشرات النشطة",
-    "NOT_PUBLISHED": "بلا قيمة منشورة",
+    "ACTIVE_ASSIGNMENTS": "المؤشرات النشطة",
+    "NOT_PUBLISHED": "لم يُرفع بعد",
     "APPROVED_BUDGET": "الميزانية المعتمدة",
     "ACTUAL_EXPENDITURE_TO_DATE": "المصروف الفعلي حتى تاريخه",
     "FORECAST_AT_COMPLETION": "التقدير عند الإنجاز"

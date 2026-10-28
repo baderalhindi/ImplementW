@@ -280,8 +280,7 @@ describe('acceptance criterion 2: every widget states its semantic state and its
       expect(
         within(region).getByText(
           en('dashboards.source', {
-            source: expected.sourceDomain,
-            version: expected.projectionVersion,
+            source: en(`dashboards.sourceDomain.${expected.sourceDomain}`),
           }),
         ),
       ).toBeTruthy();
@@ -571,27 +570,18 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
     ).toBeNull();
   });
 
-  test('with several roles the person lands as their first role, and may open the others', async () => {
+  test('with several roles the person lands as their first role; the Governance Dashboard is not offered beside the Portfolio one', async () => {
     const api = homeAs(sessionFor(['R04', 'R02']), { catalogue: catalogueFor(['R04', 'R02']) });
 
     expect(
       await screen.findByRole('heading', { level: 1, name: en('dashboards.landing.R02') }),
     ).toBeTruthy();
-    const switcher = screen.getByRole('navigation', { name: en('dashboards.home.switch') });
-    const links = within(switcher).getAllByRole('link');
-    expect(links.map((link) => link.getAttribute('href'))).toEqual([
-      '/dashboards',
-      '/dashboards?dashboard=GOVERNANCE',
-    ]);
-    expect(links[0]?.getAttribute('aria-current')).toBe('page');
-
-    await userEvent.click(present(links[1], 'Governance link'));
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Governance Dashboard' }),
-    ).toBeTruthy();
+    // Its widgets repeat the Portfolio Dashboard's (the 27 Oct 2026 review): one dashboard is hosted, so there is no switch.
+    expect(screen.queryByRole('navigation', { name: en('dashboards.home.switch') })).toBeNull();
     await waitFor(() => {
-      expect(api.requestsTo('GET', /^\/dashboards\/GOVERNANCE$/)).toHaveLength(1);
+      expect(api.requestsTo('GET', /^\/dashboards\/PORTFOLIO$/)).toHaveLength(1);
     });
+    expect(api.requestsTo('GET', /^\/dashboards\/GOVERNANCE$/)).toHaveLength(0);
   });
 
   test('a person whose roles open no dashboard is told so', async () => {

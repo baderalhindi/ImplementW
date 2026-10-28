@@ -3,21 +3,25 @@ import { Navigate } from 'react-router';
 
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
-import { useI18n } from '@/shared/i18n/i18n.ts';
+import { DATE_LOCALES, useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { LoadingState } from '@/shared/ui/States.tsx';
 
-import { MyWork } from './MyWork.tsx';
+import { MyWork, StartOrOpen } from './MyWork.tsx';
 import { PlatformHealth } from './PlatformHealth.tsx';
+import { PortfolioSnapshot } from './PortfolioSnapshot.tsx';
 
 /**
- * The Home (Blueprint §20.1 "Home"), given its own job by the 24 Oct 2026 review (H2): the person's own work — what waits for them,
- * what they submitted, what is due — while the analysis is the Portfolio menu's (/dashboards). Someone who administers the platform and
- * holds no business data, R01, sees the platform's health instead (M-1).
+ * The Home (Blueprint §20.1 "Home"). The 24 Oct 2026 review (H2) gave it the person's own work — what waits for them, what they
+ * submitted, what is due; the 27 Oct 2026 review asked for more meaning: a welcome banner with the ways in, and for the Portfolio
+ * Dashboard's audience a snapshot of the portfolio — its headline figures and where its projects are — above their work. The full
+ * analysis stays the Portfolio menu's (/dashboards). Someone who administers the platform and holds no business data, R01, sees the
+ * platform's health instead (M-1).
  */
 export function HomePage(): ReactElement {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { session } = useSession();
+  const today = new Intl.DateTimeFormat(DATE_LOCALES[language], { dateStyle: 'full' });
   const permissions = usePermissions();
 
   if (session === null) {
@@ -26,7 +30,7 @@ export function HomePage(): ReactElement {
   if (!permissions.loaded) {
     return (
       <>
-        <PageHeader title={t('home.title')} />
+        <PageHeader title={t('home.title', { name: session.user.displayName })} />
         <LoadingState />
       </>
     );
@@ -40,12 +44,15 @@ export function HomePage(): ReactElement {
       <PlatformHealth />
     </>
   ) : (
-    <>
-      <PageHeader
-        title={t('home.title')}
-        description={t('home.description', { name: session.user.displayName })}
-      />
+    <div className="home">
+      <header className="home__hero">
+        <p className="home__date">{today.format(new Date())}</p>
+        <h1 className="home__title">{t('home.title', { name: session.user.displayName })}</h1>
+        <p className="home__intro">{t('home.description')}</p>
+        <StartOrOpen user={session.user} />
+      </header>
+      <PortfolioSnapshot />
       <MyWork user={session.user} />
-    </>
+    </div>
   );
 }

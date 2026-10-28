@@ -39,16 +39,28 @@ export function landingRole(user: SessionUser): string | null {
 }
 
 /**
- * The dashboards the Home hosts. The Project Dashboard is not one of them: DSH-009 renders only inside SCR-040
- * Project Overview (Blueprint §21.1, no duplicate page), so it is opened from a project, never from here.
+ * The dashboards the page hosts. The Project Dashboard is not one of them: DSH-009 renders only inside SCR-040
+ * Project Overview (Blueprint §21.1, no duplicate page), so it is opened from a project, never from here. Nor is the
+ * Governance Dashboard to someone the Portfolio Dashboard is offered to: its widgets repeat the Portfolio Dashboard's
+ * (the 27 Oct 2026 review), which answers the same questions with its filters. It stays the landing of the roles that
+ * have no Portfolio Dashboard (R01, R04, R05).
  */
 export function hostedEntries(entries: DashboardCatalogueEntry[]): DashboardCatalogueEntry[] {
-  return entries.filter((entry) => entry.contextKind === 'PORTFOLIO');
+  const hosted = entries.filter((entry) => entry.contextKind === 'PORTFOLIO');
+  return hosted.some((entry) => entry.code === 'PORTFOLIO')
+    ? hosted.filter((entry) => entry.code !== 'GOVERNANCE')
+    : hosted;
 }
 
-/** The entry the caller lands on; a catalogue without one lands on the first dashboard the Home hosts. */
+/** The entry the caller lands on; a catalogue without one hosted lands on the first dashboard the page hosts. */
 export function landingEntry(entries: DashboardCatalogueEntry[]): DashboardCatalogueEntry | null {
-  return entries.find((entry) => entry.isDefaultLanding) ?? hostedEntries(entries)[0] ?? null;
+  const hosted = hostedEntries(entries);
+  return (
+    hosted.find((entry) => entry.isDefaultLanding) ??
+    entries.find((entry) => entry.isDefaultLanding && entry.contextKind === 'PROJECT') ??
+    hosted[0] ??
+    null
+  );
 }
 
 /**

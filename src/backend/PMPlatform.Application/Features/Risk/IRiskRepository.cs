@@ -54,6 +54,9 @@ public interface IRiskRepository
     /// <summary>Whether the risk has a PLANNED or IN_PROGRESS action.</summary>
     public Task<bool> HasOpenActionAsync(Guid riskId, CancellationToken cancellationToken);
 
+    /// <summary>The PLANNED and IN_PROGRESS actions of the risks, for the register's corrective action column. Not tracked.</summary>
+    public Task<IReadOnlyList<RiskTreatmentAction>> ListOpenActionsAsync(IReadOnlyCollection<Guid> riskIds, CancellationToken cancellationToken);
+
     /// <summary>One page of the risk's actions, oldest first, with the total. Not tracked.</summary>
     public Task<(IReadOnlyList<RiskTreatmentAction> Items, int TotalCount)> PageActionsAsync(Guid riskId, PageRequest page, CancellationToken cancellationToken);
 

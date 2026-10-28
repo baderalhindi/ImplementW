@@ -15,10 +15,10 @@
     "computedAt": "Computed"
   },
   "health": {
-    "GREEN": "Green",
-    "AMBER": "Amber",
-    "RED": "Red",
-    "UNKNOWN": "Unknown"
+    "GREEN": "On track",
+    "AMBER": "At risk",
+    "RED": "Off track",
+    "UNKNOWN": "Not determined"
   },
   "status": {
     "DRAFT": "Draft",

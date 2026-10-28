@@ -3657,7 +3657,7 @@
         "tags": [
           "Dashboards"
         ],
-        "summary": "The dashboard's PUBLISHED version and each widget's result. `PROJECT` is bound to `projectId` (DSH-009 in SCR-040, DSH-008 for\nan entity's own project); the others are read over every project the caller may see, optionally of one `departmentId` among\nthe view's `departmentOptions`.",
+        "summary": "The dashboard's PUBLISHED version and each widget's result. `PROJECT` is bound to `projectId` (DSH-009 in SCR-040, DSH-008 for\nan entity's own project); the others are read over every project the caller may see, optionally narrowed to one `departmentId`,\n`externalEntityId`, `regionItemId` and `cityItemId`, each among the view's options.",
         "operationId": "Dashboards_GetDashboard",
         "parameters": [
           {
@@ -3678,6 +3678,30 @@
           },
           {
             "name": "departmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "externalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "regionItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cityItemId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -23073,6 +23097,39 @@
           }
         }
       },
+      "DashboardLocationCount": {
+        "required": [
+          "regionItemId",
+          "cityItemId",
+          "projectCount"
+        ],
+        "type": "object",
+        "properties": {
+          "regionItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "cityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projectCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "How many of the dashboard's projects are delivered in one region and city."
+      },
       "DashboardPersonalizationDetail": {
         "required": [
           "code",
@@ -23114,6 +23171,31 @@
           }
         },
         "description": "ADR-019: the caller's choices for the optional widgets, as a whole; a widget not named keeps the governed layout."
+      },
+      "DashboardPlace": {
+        "required": [
+          "id",
+          "label",
+          "parentItemId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "parentItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "A region or city a portfolio dashboard offers, with its name; a city's parent is its region."
       },
       "DashboardProjectionDetail": {
         "required": [
@@ -23248,7 +23330,15 @@
           "departmentId",
           "departmentOptions",
           "refreshedAt",
-          "widgets"
+          "widgets",
+          "externalEntityId",
+          "regionItemId",
+          "cityItemId",
+          "entityOptions",
+          "regionOptions",
+          "cityOptions",
+          "locations",
+          "places"
         ],
         "type": "object",
         "properties": {
@@ -23316,9 +23406,63 @@
             "items": {
               "$ref": "#/components/schemas/DashboardWidgetResult"
             }
+          },
+          "externalEntityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "regionItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "cityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "entityOptions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "regionOptions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "cityOptions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardLocationCount"
+            }
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardPlace"
+            }
           }
         },
-        "description": "A dashboard as the caller reads it now: the PUBLISHED version's composition with the caller's personalisation applied, and each\nwidget's result. DateTimeOffset DashboardView.RefreshedAt is when FG-01 assembled it and is never a source's as-of (BR-DSH-042).\nIReadOnlyList&lt;Guid&gt; DashboardView.DepartmentOptions are the departments of the projects the caller may see here, the only values the department\nfilter takes (DSH-CC-17)."
+        "description": "A dashboard as the caller reads it now: the PUBLISHED version's composition with the caller's personalisation applied, and each\nwidget's result. DateTimeOffset DashboardView.RefreshedAt is when FG-01 assembled it and is never a source's as-of (BR-DSH-042).\nIReadOnlyList&lt;Guid&gt; DashboardView.DepartmentOptions are the departments of the projects the caller may see here, the only values the department\nfilter takes (DSH-CC-17); IReadOnlyList&lt;Guid&gt; DashboardView.EntityOptions, IReadOnlyList&lt;Guid&gt; DashboardView.RegionOptions and IReadOnlyList&lt;Guid&gt; DashboardView.CityOptions are the same for the\nentity, region and city filters. IReadOnlyList&lt;DashboardLocationCount&gt; DashboardView.Locations counts the filtered projects by region and city, for the portfolio's\nlocation view; a project with no region recorded is counted under a null region. IReadOnlyList&lt;DashboardPlace&gt; DashboardView.Places names those regions and\ncities, which a portfolio reader could not otherwise read."
       },
       "DashboardWidgetDetail": {
         "required": [
@@ -37325,7 +37469,8 @@
           "createdAt",
           "createdBy",
           "updatedAt",
-          "updatedBy"
+          "updatedBy",
+          "openTreatmentActions"
         ],
         "type": "object",
         "properties": {
@@ -37446,9 +37591,15 @@
           "updatedBy": {
             "type": "string",
             "format": "uuid"
+          },
+          "openTreatmentActions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskOpenTreatmentAction"
+            }
           }
         },
-        "description": "A risk register entry. RiskAssessmentSummary? RiskDetail.CurrentAssessment is its latest assessment, whose rating was fixed by the matrix version\nthat assessment pinned; null while the risk was never assessed. DateOnly? RiskDetail.AcceptedUntil is the expiry of its ACTIVE\nacceptance, if it has one. IReadOnlyList&lt;Guid&gt; RiskDetail.MaterialisedIssueIds are the issues WF-07 raised from it (edge 15), each holding the\nrisk as its `originating_risk_id`: the risk side of the linkage."
+        "description": "A risk register entry. RiskAssessmentSummary? RiskDetail.CurrentAssessment is its latest assessment, whose rating was fixed by the matrix version\nthat assessment pinned; null while the risk was never assessed. DateOnly? RiskDetail.AcceptedUntil is the expiry of its ACTIVE\nacceptance, if it has one. IReadOnlyList&lt;Guid&gt; RiskDetail.MaterialisedIssueIds are the issues WF-07 raised from it (edge 15), each holding the\nrisk as its `originating_risk_id`: the risk side of the linkage. IReadOnlyList&lt;RiskOpenTreatmentAction&gt; RiskDetail.OpenTreatmentActions are its PLANNED and\nIN_PROGRESS treatment actions, oldest first: the register's corrective action column (the 27 Oct 2026 review)."
       },
       "RiskImpactRequest": {
         "required": [
@@ -37595,6 +37746,39 @@
             ]
           }
         }
+      },
+      "RiskOpenTreatmentAction": {
+        "required": [
+          "id",
+          "title",
+          "actionType",
+          "status",
+          "dueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "actionType": {
+            "$ref": "#/components/schemas/RiskTreatmentActionType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RiskTreatmentActionStatus"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A PLANNED or IN_PROGRESS treatment action as the register lists it beside its risk."
       },
       "RiskPage": {
         "required": [

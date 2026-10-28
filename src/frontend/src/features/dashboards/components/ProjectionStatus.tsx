@@ -1,6 +1,6 @@
 import { type ReactElement } from 'react';
 
-import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
+import { isTranslationKey, type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { ValueStateFlag } from '@/shared/ui/ValueState.tsx';
 
 import {
@@ -71,17 +71,14 @@ export function ProjectionStatus({ widget }: { widget: DashboardWidgetResult }):
   );
 }
 
-/** The card's footer: when the value was current, and which source owns it in which projection version. */
+/** The card's footer: when the value was current, and the part of the platform it comes from, named as its users know it. */
 export function ProjectionOrigin({ widget }: { widget: DashboardWidgetResult }): ReactElement {
   const { t, formatDateTime } = useI18n();
   const { asOf } = widget.projection;
   return (
     <p className="widget__origin">
-      <span className="widget__source">
-        {t('dashboards.source', {
-          source: widget.sourceDomain === '' ? '—' : widget.sourceDomain,
-          version: widget.projectionVersion === '' ? '—' : widget.projectionVersion,
-        })}
+      <span className="widget__source" data-projection-version={widget.projectionVersion}>
+        {t('dashboards.source', { source: sourceName(widget.sourceDomain, t) })}
       </span>
       <span className="widget__as-of">
         {asOf === null
@@ -90,6 +87,15 @@ export function ProjectionOrigin({ widget }: { widget: DashboardWidgetResult }):
       </span>
     </p>
   );
+}
+
+/** The source's name; a source the interface does not know yet is shown by its code. */
+function sourceName(sourceDomain: string, t: (key: TranslationKey) => string): string {
+  if (sourceDomain === '') {
+    return '—';
+  }
+  const key = `dashboards.sourceDomain.${sourceDomain}`;
+  return isTranslationKey(key) ? t(key) : sourceDomain;
 }
 
 const ICONS = {

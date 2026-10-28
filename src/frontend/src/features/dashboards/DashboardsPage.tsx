@@ -9,6 +9,8 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { dashboardsApi } from './api/dashboardsApi.ts';
 import { type DashboardCatalogueEntry } from './api/types.ts';
+import { type PortfolioFilters } from './api/dashboardsApi.ts';
+import { type FilterName } from './components/PortfolioFilterBar.tsx';
 import { HostedDashboard } from './HostedDashboard.tsx';
 import { hostedEntries, landingRole, ROLE_LANDINGS, selectedEntry } from './landing.ts';
 import { DASHBOARDS_PATH } from './paths.ts';
@@ -16,7 +18,14 @@ import { dashboardProblemMessage } from './problems.ts';
 import { ProjectLanding } from './ProjectLanding.tsx';
 
 const DASHBOARD_PARAM = 'dashboard';
-const DEPARTMENT_PARAM = 'department';
+
+/** Each portfolio filter's address parameter, kept in the URL so a filtered view can be shared and reloaded. */
+const FILTER_PARAMS: Record<FilterName, string> = {
+  departmentId: 'department',
+  externalEntityId: 'entity',
+  regionItemId: 'region',
+  cityItemId: 'city',
+};
 
 /**
  * The role dashboards (FG-01 §5.1), at /dashboards since the Home became the person's own work (the 24 Oct 2026 review, H2:
@@ -68,19 +77,29 @@ export function DashboardsPage(): ReactElement {
   const role = landingRole(session.user);
   const rendering = entry.isDefaultLanding && role !== null ? ROLE_LANDINGS[role] : undefined;
   const others = hostedEntries(entries);
-  const setParam = (name: string, value: string | undefined) => {
+  const filters: PortfolioFilters = Object.fromEntries(
+    Object.entries(FILTER_PARAMS).map(([name, param]) => [name, params.get(param) ?? undefined]),
+  );
+  const setFilter = (name: FilterName, value: string | undefined) => {
     const next = new URLSearchParams(params);
     if (value === undefined) {
-      next.delete(name);
+      next.delete(FILTER_PARAMS[name]);
     } else {
-      next.set(name, value);
+      next.set(FILTER_PARAMS[name], value);
     }
-    if (name === DASHBOARD_PARAM) {
-      next.delete(DEPARTMENT_PARAM);
+    // A city belongs to a region: another region drops the city chosen under the last one.
+    if (name === 'regionItemId') {
+      next.delete(FILTER_PARAMS.cityItemId);
     }
     setParams(next);
   };
-  const departmentId = params.get(DEPARTMENT_PARAM) ?? undefined;
+  const clearFilters = () => {
+    const next = new URLSearchParams(params);
+    Object.values(FILTER_PARAMS).forEach((param) => {
+      next.delete(param);
+    });
+    setParams(next);
+  };
 
   return (
     <>
@@ -100,10 +119,9 @@ export function DashboardsPage(): ReactElement {
           key={entry.code}
           entry={entry}
           user={session.user}
-          departmentId={departmentId}
-          onDepartmentChange={(value) => {
-            setParam(DEPARTMENT_PARAM, value);
-          }}
+          filters={filters}
+          onFilterChange={setFilter}
+          onClearFilters={clearFilters}
         />
       )}
     </>
