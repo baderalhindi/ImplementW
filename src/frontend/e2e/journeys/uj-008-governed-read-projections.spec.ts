@@ -190,8 +190,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
         header.findIndex(
           (h) =>
             h === label ||
-            (/^(Live ·|Official ·|History)/.test(h.slice(label.length)) &&
-              h.startsWith(label)),
+            (/^(Live ·|Official ·|History)/.test(h.slice(label.length)) && h.startsWith(label)),
         )
       ];
     expect([
