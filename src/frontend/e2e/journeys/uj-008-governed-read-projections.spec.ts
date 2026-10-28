@@ -190,7 +190,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
         header.findIndex(
           (h) =>
             h === label ||
-            (/^(Current|Published|Historical) ·/.test(h.slice(label.length)) &&
+            (/^(Live ·|Official ·|History)/.test(h.slice(label.length)) &&
               h.startsWith(label)),
         )
       ];
@@ -233,7 +233,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
       await compose
         .getByRole('group', { name: 'Fields you can add' })
         .getByRole('checkbox', {
-          name: new RegExp(`^${field}( (Current|Published|Historical) ·.*)?$`),
+          name: new RegExp(`^${field}( (Live ·|Official ·|History).*)?$`),
         })
         .click();
       await expect(shown).toHaveCount(index + 1);
