@@ -23,7 +23,7 @@ export type FilterName = keyof PortfolioFilters;
 
 /**
  * The portfolio's filters (the 27 Oct 2026 review): sector, delivering entity, region and city, each offering only the values of the
- * projects the person may see there. A city is offered under the region chosen. A filter with nothing to choose between is not shown.
+ * projects the person may see there. A city is offered under the region chosen. A filter with no value is not shown.
  */
 export function PortfolioFilterBar({
   options,
@@ -82,10 +82,7 @@ export function PortfolioFilterBar({
       nameOf: placeName,
     },
   ];
-  const shown = fields.filter(
-    (field) =>
-      field.ids.length > 1 || (field.ids.length === 1 && filters[field.name] !== undefined),
-  );
+  const shown = fields.filter((field) => field.ids.length > 0);
   if (shown.length === 0) {
     return null;
   }
