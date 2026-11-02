@@ -8,7 +8,7 @@ import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { LoadingState } from '@/shared/ui/States.tsx';
 
 import { MyWork, StartOrOpen } from './MyWork.tsx';
-import { PlatformHealth } from './PlatformHealth.tsx';
+import { AdministrationActions, PlatformHealth } from './PlatformHealth.tsx';
 import { PortfolioSnapshot } from './PortfolioSnapshot.tsx';
 
 /**
@@ -16,7 +16,7 @@ import { PortfolioSnapshot } from './PortfolioSnapshot.tsx';
  * submitted, what is due; the 27 Oct 2026 review asked for more meaning: a welcome banner with the ways in, and for the Portfolio
  * Dashboard's audience a snapshot of the portfolio — its headline figures and where its projects are — above their work. The full
  * analysis stays the Portfolio menu's (/dashboards). Someone who administers the platform and holds no business data, R01, sees the
- * platform's health instead (M-1).
+ * platform's health instead (M-1), under the same welcome banner with the administration's ways in.
  */
 export function HomePage(): ReactElement {
   const { t, language } = useI18n();
@@ -38,21 +38,24 @@ export function HomePage(): ReactElement {
 
   const administers =
     permissions.can('USER_VIEW', 'INTEGRATION_VIEW') && !permissions.can('PROJECT_VIEW');
-  return administers ? (
-    <>
-      <PageHeader title={t('home.health.title')} description={t('home.health.description')} />
-      <PlatformHealth />
-    </>
-  ) : (
+  return (
     <div className="home">
       <header className="home__hero">
         <p className="home__date">{today.format(new Date())}</p>
         <h1 className="home__title">{t('home.title', { name: session.user.displayName })}</h1>
-        <p className="home__intro">{t('home.description')}</p>
-        <StartOrOpen user={session.user} />
+        <p className="home__intro">
+          {t(administers ? 'home.health.description' : 'home.description')}
+        </p>
+        {administers ? <AdministrationActions /> : <StartOrOpen user={session.user} />}
       </header>
-      <PortfolioSnapshot />
-      <MyWork user={session.user} />
+      {administers ? (
+        <PlatformHealth />
+      ) : (
+        <>
+          <PortfolioSnapshot />
+          <MyWork user={session.user} />
+        </>
+      )}
     </div>
   );
 }

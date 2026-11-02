@@ -163,8 +163,17 @@ describe('the Home', () => {
     renderApp({ path: '/', session: sessionFor(['R01']) });
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: en('home.health.title') }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: en('home.title', { name: 'Test Administrator' }),
+      }),
     ).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: en('home.health.title') })).toBeTruthy();
+    expect(
+      within(screen.getByRole('navigation', { name: en('home.actions.title') }))
+        .getByRole('link', { name: en('home.health.createUser') })
+        .getAttribute('href'),
+    ).toBe('/admin/users/new');
     expect(
       await screen.findByRole('region', { name: en('home.health.integrations.title') }),
     ).toBeTruthy();
