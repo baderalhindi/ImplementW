@@ -944,6 +944,18 @@ h3 {
   gap: var(--space-3);
 }
 
+/* The header, not its heading, keeps the space below: a button beside the heading reaches lower than its text, and would
+   otherwise touch the table or card that follows. */
+.section__header,
+.audit-history__header {
+  margin-block-end: var(--space-3);
+}
+
+.section__header > :is(h2, h3),
+.audit-history__header > :is(h2, h3) {
+  margin-block-end: 0;
+}
+
 .columns {
   display: grid;
   gap: var(--space-6);
