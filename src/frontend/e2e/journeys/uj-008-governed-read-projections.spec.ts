@@ -120,20 +120,20 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
 
   await test.step("the Project Dashboard projects the same record, naming each value's source and its own freshness point", async () => {
     const lifecycle = widget(page, 'Lifecycle state');
-    await expectText(lifecycle, 'Owned by WF-01');
+    await expectText(lifecycle, 'Source: Project register');
     await expect(lifecycle.getByText('Active', { exact: true })).toBeVisible();
 
     const risks = widget(page, 'Open risks by rating');
-    await expectText(risks, 'Current · live');
-    await expectText(risks, 'Owned by WF-06');
+    await expectText(risks, 'Live · not yet approved');
+    await expectText(risks, 'Source: Risk register');
     await expect(risks.getByRole('definition').first()).toHaveText('1');
 
     // The KPI condition is dated by the measurement's own as-of, not by when the dashboard was assembled.
     const kpi = widget(page, 'KPI condition');
-    await expectText(kpi, 'Published · official');
-    await expectText(kpi, 'Owned by WF-14');
+    await expectText(kpi, 'Official · approved');
+    await expectText(kpi, 'Source: Financials and KPIs');
     await expectText(kpi, `As of ${dayOf(measuredOn)}`);
-    await expect(kpi.getByRole('row', { name: 'Green 1' })).toBeVisible();
+    await expect(kpi.getByRole('row', { name: 'On target 1' })).toBeVisible();
 
     await page
       .getByRole('region', { name: 'Project Dashboard' })
@@ -166,10 +166,8 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
       .click();
     await expectText(page.getByRole('main'), 'The standard layout was restored.');
 
-    await page.getByRole('link', { name: 'Governance Dashboard' }).click();
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Governance Dashboard' }),
-    ).toBeVisible();
+    // The Governance Dashboard repeats the Portfolio Dashboard's widgets, so it is not offered beside it (the 27 Oct 2026 review).
+    await expect(page.getByRole('link', { name: 'Governance Dashboard' })).toHaveCount(0);
   });
 
   await test.step('the Project Report projects the record with its owner, identity and counts, under the same context', async () => {
@@ -192,8 +190,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
         header.findIndex(
           (h) =>
             h === label ||
-            (/^(Current|Published|Historical) ·/.test(h.slice(label.length)) &&
-              h.startsWith(label)),
+            (/^(Live ·|Official ·|History)/.test(h.slice(label.length)) && h.startsWith(label)),
         )
       ];
     expect([
@@ -235,7 +232,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
       await compose
         .getByRole('group', { name: 'Fields you can add' })
         .getByRole('checkbox', {
-          name: new RegExp(`^${field}( (Current|Published|Historical) ·.*)?$`),
+          name: new RegExp(`^${field}( (Live ·|Official ·|History).*)?$`),
         })
         .click();
       await expect(shown).toHaveCount(index + 1);

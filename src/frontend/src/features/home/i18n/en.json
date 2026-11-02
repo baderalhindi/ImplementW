@@ -1,6 +1,16 @@
 {
-  "title": "My work",
-  "description": "What is waiting for you, {name}: decisions, your requests, what is due and what is new.",
+  "title": "Welcome, {name}",
+  "description": "Start something new, see where the portfolio stands, and pick up what is waiting for you.",
+  "work": {
+    "title": "My work"
+  },
+  "portfolio": {
+    "title": "Portfolio at a glance",
+    "open": "Open the Portfolio Dashboard",
+    "projects": "Projects",
+    "active": "Active projects",
+    "openRisks": "Open risks"
+  },
   "unavailable": "This list cannot be shown now. Open it from the menu to try again.",
   "dueAt": "Due {date}",
   "dueOn": "Due {date}",

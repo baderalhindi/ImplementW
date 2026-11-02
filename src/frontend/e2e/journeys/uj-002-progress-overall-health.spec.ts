@@ -95,11 +95,11 @@ test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero
 
   await test.step('before any publication: WF-03 rates the schedule Green, and Overall Health is no data — not zero, not Green', async () => {
     await dashboard.goto(`/projects/${project.id}`);
-    await expect(widget('Current schedule health')).toContainText('Green');
+    await expect(widget('Current schedule health')).toContainText('On track');
     for (const title of ['Current Overall Project Health', 'Published Overall Project Health']) {
       await expect(widget(title)).toContainText('No data');
       await expectText(widget(title), 'It is not zero.');
-      await expect(widget(title)).not.toContainText('Green');
+      await expect(widget(title)).not.toContainText('On track');
     }
     expect((await snapshots()).items).toEqual([]);
     expect((await liveHealth()).items).toEqual([]);
@@ -123,10 +123,10 @@ test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero
 
   await test.step('a domain indicator does not overwrite Overall Health: schedule Red beside Overall still no data', async () => {
     await dashboard.goto(`/projects/${project.id}`);
-    await expect(widget('Current schedule health')).toContainText('Red');
+    await expect(widget('Current schedule health')).toContainText('Off track');
     for (const title of ['Current Overall Project Health', 'Published Overall Project Health']) {
       await expect(widget(title)).toContainText('No data');
-      await expect(widget(title)).not.toContainText('Red');
+      await expect(widget(title)).not.toContainText('Off track');
     }
     expect((await liveHealth()).items).toEqual([]);
   });
@@ -227,14 +227,14 @@ test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero
     expect(snapshot?.overallHealth).toBe('UNKNOWN');
     await reviewer.page.goto(`/projects/${project.id}/progress`);
     const official = reviewer.page.getByRole('region', { name: /Official progress/ });
-    await expect(official).toContainText('Unknown');
-    await expect(official).not.toContainText('Green');
+    await expect(official).toContainText('Not determined');
+    await expect(official).not.toContainText('On track');
 
     // The dashboard shows WF-02's published value beside WF-03's indicator: Red schedule health has not become Overall Health.
     await dashboard.goto(`/projects/${project.id}`);
-    await expect(widget('Current schedule health')).toContainText('Red');
-    await expect(widget('Published Overall Project Health')).not.toContainText('Green');
-    await expect(widget('Published Overall Project Health')).not.toContainText('Red');
+    await expect(widget('Current schedule health')).toContainText('Off track');
+    await expect(widget('Published Overall Project Health')).not.toContainText('On track');
+    await expect(widget('Published Overall Project Health')).not.toContainText('Off track');
   });
 });
 

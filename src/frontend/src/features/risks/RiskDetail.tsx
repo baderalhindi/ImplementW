@@ -1,5 +1,5 @@
-import { type ReactElement, useState } from 'react';
-import { Link, useLocation } from 'react-router';
+import { type ReactElement, useEffect, useState } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
@@ -36,6 +36,7 @@ import { MatrixUnavailable, RiskHeatMap } from './components/RiskHeatMap.tsx';
 import { type RiskDialog } from './dialogs/riskDialog.ts';
 import { RiskDialogs } from './dialogs/RiskDialogs.tsx';
 import { isForbidden, riskProblemMessage } from './problems.ts';
+import { ADD_ACTION_PARAM } from './riskLinks.ts';
 import { isLiveAction, isReviewDue } from './riskRules.ts';
 import { useRiskLookups, useRiskMatrix, useRiskRecord } from './useRiskData.ts';
 
@@ -66,7 +67,11 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
   const [notice, setNotice] = useState<Notice | null>(
     arrivalKey === undefined ? null : { tone: 'success', message: t(arrivalKey) },
   );
-  const [dialog, setDialog] = useState<RiskDialog | null>(null);
+  const [params, setParams] = useSearchParams();
+  // The register's "Add corrective action" lands here with the parameter: the dialog opens once the risk is read, for whoever
+  // may add one.
+  const [addRequested, setAddRequested] = useState(() => params.has(ADD_ACTION_PARAM));
+  const [chosenDialog, setChosenDialog] = useState<RiskDialog | null>(null);
   const data = record.data;
   const personName = usePersonNames([
     data?.risk.data.ownerUserId ?? null,
@@ -75,6 +80,25 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
     ...(data?.acceptances ?? []).map((acceptance) => acceptance.acceptedByUserId),
     ...(data?.actions ?? []).map((action) => action.ownerUserId),
   ]);
+
+  // The parameter is dropped from the address so a reload does not open the dialog again.
+  useEffect(() => {
+    if (params.has(ADD_ACTION_PARAM)) {
+      const next = new URLSearchParams(params);
+      next.delete(ADD_ACTION_PARAM);
+      setParams(next, { replace: true });
+    }
+  }, [params, setParams]);
+  const loadedRisk = data?.risk.data;
+  const dialog: RiskDialog | null =
+    chosenDialog ??
+    (addRequested && loadedRisk !== undefined && canManageRisk(user, project, loadedRisk)
+      ? { kind: 'action', actionId: null }
+      : null);
+  const setDialog = (next: RiskDialog | null): void => {
+    setAddRequested(false);
+    setChosenDialog(next);
+  };
 
   const back = (
     <p>
@@ -109,6 +133,7 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
   const assessment = risk.currentAssessment;
   const liveActions = data.actions.filter(isLiveAction);
   const manager = canManageRisk(user, project, risk);
+  const isOpenRisk = risk.status !== 'CLOSED';
   const command = (name: RiskCommand) => ({
     label: t(`risks.command.${name}.title`),
     dialog: { kind: 'command', command: name } as const,
@@ -132,8 +157,8 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
   }
   if (manager) {
     commands.push(
+      // "Add corrective action" sits on the Corrective actions section, beside what it adds to.
       { label: t('risks.actions.assignOwner'), dialog: { kind: 'owner' } },
-      { label: t('risks.actions.addAction'), dialog: { kind: 'action', actionId: null } },
     );
   }
   if (canStartTreatment(user, project, risk, liveActions.length > 0)) {
@@ -311,7 +336,21 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
       </section>
 
       <section className="section" aria-labelledby="risk-actions">
-        <h3 id="risk-actions">{t('risks.detail.actionsTitle')}</h3>
+        <div className="section__header">
+          <h3 id="risk-actions">{t('risks.detail.actionsTitle')}</h3>
+          {manager && (
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setDialog({ kind: 'action', actionId: null });
+              }}
+            >
+              {t('risks.actions.addAction')}
+            </button>
+          )}
+        </div>
+        {!manager && isOpenRisk && <p className="form__note">{t('risks.detail.actionsWho')}</p>}
         {data.actions.length === 0 ? (
           <EmptyState title={t('risks.detail.noActions')} />
         ) : (

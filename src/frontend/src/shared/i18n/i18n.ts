@@ -51,6 +51,11 @@ function lookup(language: Language, key: string): string | undefined {
   return typeof node === 'string' ? node : undefined;
 }
 
+/** Whether the key names a string in the English resources, which hold every key (resources.test.ts). */
+export function isTranslationKey(key: string): key is TranslationKey {
+  return lookup('en', key) !== undefined;
+}
+
 export function translate(language: Language, key: string, params?: TranslationParams): string {
   const template = lookup(language, key) ?? key;
   if (params === undefined) {

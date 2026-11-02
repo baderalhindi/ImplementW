@@ -36,32 +36,33 @@ function daysAfter(day: string, days: number): string {
 const PORTFOLIO_ROLES: readonly string[] = ['R02', 'R03', 'R06', 'R07'];
 
 /**
- * The Home of everyone who does the work (the 24 Oct 2026 review, H2: "Home = my work, for every role"): first the things
- * they may start, then approvals waiting for them with their due dates, the requests they submitted, their tasks due this
- * week and overdue, update requests waiting for their answer, and unread notifications. Each card is offered to a holder
- * of the permission its list reads under.
+ * The person's own work on the Home (the 24 Oct 2026 review, H2: "Home = my work, for every role"): approvals waiting for
+ * them with their due dates, their tasks due this week and overdue, update requests waiting for their answer, the requests
+ * they submitted, and unread notifications. Each card is offered to a holder of the permission its list reads under.
  */
 export function MyWork({ user }: { user: SessionUser }): ReactElement {
-  const { can } = usePermissions();
-  return (
-    <div className="home__grid">
-      <StartOrOpen user={user} />
-      {can('APPROVAL_DECIDE') && <ApprovalsWaiting />}
-      {can('TASK_UPDATE') && <MyTasks userId={user.id} />}
-      {can('EXTERNAL_CONTRIBUTION_RESPOND') && <RequestsToAnswer userId={user.id} />}
-      {can('APPROVAL_VIEW') && <MyRequests />}
-      <UnreadNotifications />
-    </div>
-  );
-}
-
-/** The records the person may start and the screens they open most: the Home's first card, so the way in is seen first. */
-function StartOrOpen({ user }: { user: SessionUser }): ReactElement {
   const { t } = useI18n();
   const { can } = usePermissions();
   return (
-    <section className="widget home__card" aria-label={t('home.actions.title')}>
-      <h2 className="widget__title">{t('home.actions.title')}</h2>
+    <section className="home__work" aria-labelledby="home-work">
+      <h2 id="home-work">{t('home.work.title')}</h2>
+      <div className="home__grid">
+        {can('APPROVAL_DECIDE') && <ApprovalsWaiting />}
+        {can('TASK_UPDATE') && <MyTasks userId={user.id} />}
+        {can('EXTERNAL_CONTRIBUTION_RESPOND') && <RequestsToAnswer userId={user.id} />}
+        {can('APPROVAL_VIEW') && <MyRequests />}
+        <UnreadNotifications />
+      </div>
+    </section>
+  );
+}
+
+/** The records the person may start and the screens they open most, in the Home's banner so the way in is seen first. */
+export function StartOrOpen({ user }: { user: SessionUser }): ReactElement {
+  const { t } = useI18n();
+  const { can } = usePermissions();
+  return (
+    <nav className="home__actions-bar" aria-label={t('home.actions.title')}>
       <ul className="home__actions">
         {can('PROJECT_REGISTER') && (
           <li>
@@ -95,7 +96,7 @@ function StartOrOpen({ user }: { user: SessionUser }): ReactElement {
           <Link to="/notifications/preferences">{t('notifications.nav.preferences')}</Link>
         </li>
       </ul>
-    </section>
+    </nav>
   );
 }
 

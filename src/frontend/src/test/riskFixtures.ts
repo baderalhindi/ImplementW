@@ -192,6 +192,7 @@ export function risk(overrides: Partial<RiskDetail> = {}): RiskDetail {
     createdBy: ENTITY_USER_ID,
     updatedAt: at(-20),
     updatedBy: ENTITY_USER_ID,
+    openTreatmentActions: [],
     ...overrides,
   };
 }
@@ -217,6 +218,15 @@ export function coastalRisks(): RiskDetail[] {
       status: 'TREATMENT',
       nextReviewDate: day(10),
       currentAssessment: assessmentSummary('a1000000-0000-4000-8000-000000000002', 2, 3),
+      openTreatmentActions: [
+        {
+          id: HEDGE_ACTION_ID,
+          title: { text: 'Hedge the asphalt price', language: 'EN' },
+          actionType: 'TRANSFER',
+          status: 'PLANNED',
+          dueDate: null,
+        },
+      ],
     }),
     risk(),
     risk({

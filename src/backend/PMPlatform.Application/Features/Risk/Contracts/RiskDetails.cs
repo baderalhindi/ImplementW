@@ -7,7 +7,8 @@ namespace PMPlatform.Application.Features.Risk.Contracts;
 /// A risk register entry. <see cref="CurrentAssessment"/> is its latest assessment, whose rating was fixed by the matrix version
 /// that assessment pinned; null while the risk was never assessed. <see cref="AcceptedUntil"/> is the expiry of its ACTIVE
 /// acceptance, if it has one. <see cref="MaterialisedIssueIds"/> are the issues WF-07 raised from it (edge 15), each holding the
-/// risk as its <c>originating_risk_id</c>: the risk side of the linkage.
+/// risk as its <c>originating_risk_id</c>: the risk side of the linkage. <see cref="OpenTreatmentActions"/> are its PLANNED and
+/// IN_PROGRESS treatment actions, oldest first: the register's corrective action column (the 27 Oct 2026 review).
 /// </summary>
 public sealed record RiskDetail(
     Guid Id,
@@ -30,7 +31,11 @@ public sealed record RiskDetail(
     DateTimeOffset CreatedAt,
     Guid CreatedBy,
     DateTimeOffset UpdatedAt,
-    Guid UpdatedBy);
+    Guid UpdatedBy,
+    IReadOnlyList<RiskOpenTreatmentAction> OpenTreatmentActions);
+
+/// <summary>A PLANNED or IN_PROGRESS treatment action as the register lists it beside its risk.</summary>
+public sealed record RiskOpenTreatmentAction(Guid Id, NarrativeText Title, RiskTreatmentActionType ActionType, RiskTreatmentActionStatus Status, DateOnly? DueDate);
 
 /// <summary>A rating as the pinned RISK_MATRIX version defines it (ADR-011; labels outstanding, OQ-006).</summary>
 public sealed record RiskRatingDetail(Guid Id, string Code, BilingualLabel Label);

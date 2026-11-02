@@ -27,8 +27,14 @@ public sealed record DashboardWidgetInput(
     short LayoutColumn,
     short LayoutSpan);
 
-/// <summary>The context a dashboard is read in: the project of the Project Dashboard (context-bound, DSH-CC-18), or a department filter of the others.</summary>
-public sealed record DashboardContext(Guid? ProjectId, Guid? DepartmentId);
+/// <summary>
+/// The context a dashboard is read in: the project of the Project Dashboard (context-bound, DSH-CC-18), or the filters of the others — the
+/// department (sector), the delivering external entity, the region and the city — each narrowing the population, never widening it.
+/// </summary>
+public sealed record DashboardContext(Guid? ProjectId, Guid? DepartmentId, Guid? ExternalEntityId = null, Guid? RegionItemId = null, Guid? CityItemId = null)
+{
+    public bool IsFiltered => DepartmentId is not null || ExternalEntityId is not null || RegionItemId is not null || CityItemId is not null;
+}
 
 /// <summary>ADR-019: the caller's choices for the optional widgets of a personalisable dashboard, as a whole; a widget not named keeps the governed layout.</summary>
 public sealed record DashboardPersonalizationInput(IReadOnlyList<WidgetPersonalizationInput> Widgets);

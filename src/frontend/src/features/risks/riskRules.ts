@@ -104,6 +104,22 @@ export function riskMatrixOf(resolution: RiskMatrixResolution): RiskMatrix {
   };
 }
 
+/** A probability level's name in the matrix in force; null when the matrix is not read or defines no such level. */
+export function probabilityLabel(matrix: RiskMatrix | null, level: number): BilingualLabel | null {
+  return matrix?.probabilityLevels.find((entry) => entry.level === level)?.label ?? null;
+}
+
+/** An overall impact level's name: the first dimension that defines the level names it. */
+export function impactLabel(matrix: RiskMatrix | null, level: number): BilingualLabel | null {
+  for (const dimension of matrix?.dimensions ?? []) {
+    const entry = dimension.levels.find((candidate) => candidate.level === level);
+    if (entry !== undefined) {
+      return entry.label;
+    }
+  }
+  return null;
+}
+
 /** The rating the version maps a probability and an overall impact to; null for a cell it leaves unmapped. */
 export function ratingAt(
   matrix: RiskMatrix,

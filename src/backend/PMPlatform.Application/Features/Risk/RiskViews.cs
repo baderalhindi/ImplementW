@@ -26,6 +26,7 @@ internal sealed class RiskViews(IRiskRepository repository, IConfigurationResolv
         Guid[] ids = [.. risks.Select(r => r.Id)];
         Dictionary<Guid, RiskAssessmentVersion> latest = (await repository.ListLatestAssessmentsAsync(ids, cancellationToken).ConfigureAwait(false)).ToDictionary(a => a.RiskId);
         Dictionary<Guid, RiskAcceptance> accepted = (await repository.ListActiveAcceptancesAsync(ids, cancellationToken).ConfigureAwait(false)).ToDictionary(a => a.RiskId);
+        ILookup<Guid, RiskTreatmentAction> open = (await repository.ListOpenActionsAsync(ids, cancellationToken).ConfigureAwait(false)).ToLookup(a => a.RiskId);
 
         // Only risks with a materialisation can have an issue; the others cost WF-07 no query.
         Guid[] materialised = [.. risks.Where(r => r.MaterialisedAt is not null).Select(r => r.Id)];
@@ -41,7 +42,8 @@ internal sealed class RiskViews(IRiskRepository repository, IConfigurationResolv
             details.Add(new RiskDetail(
                 r.Id, r.ProjectId, r.Title, r.Description, r.RiskCategoryItemId, r.OwnerUserId, r.Status, r.IdentifiedDate, r.NextReviewDate, current,
                 accepted.TryGetValue(r.Id, out RiskAcceptance? acceptance) ? acceptance.ExpiresOn : null,
-                r.MaterialisedAt, [.. raised[r.Id]], r.ClosureRationale, r.ClosedAt, r.ClosedByUserId, r.ReopenedCount, r.CreatedAt, r.CreatedBy, r.UpdatedAt, r.UpdatedBy));
+                r.MaterialisedAt, [.. raised[r.Id]], r.ClosureRationale, r.ClosedAt, r.ClosedByUserId, r.ReopenedCount, r.CreatedAt, r.CreatedBy, r.UpdatedAt, r.UpdatedBy,
+                [.. open[r.Id].Select(o => new RiskOpenTreatmentAction(o.Id, o.Title, o.ActionType, o.Status, o.DueDate))]));
         }
 
         return details;

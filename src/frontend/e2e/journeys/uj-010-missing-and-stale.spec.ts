@@ -149,19 +149,19 @@ test('UJ-010 missing, stale, Unknown and N/A stay distinguishable from a genuine
   await test.step('the genuine record: Green with its own as-of, and a zero the source counted', async () => {
     await page.goto(`/projects/${projects.green.id}`);
     const kpi = widget(page, 'KPI condition');
-    await expectText(kpi, 'Published · official');
+    await expectText(kpi, 'Official · approved');
     await expectText(kpi, `As of ${dayOf(measuredOn)}`);
-    await expect(kpi.getByRole('row', { name: 'Green 1' })).toBeVisible();
+    await expect(kpi.getByRole('row', { name: 'On target 1' })).toBeVisible();
     await expect(kpi.getByText('Stale', { exact: true })).toHaveCount(0);
 
     const health = widget(page, 'Published Overall Project Health');
-    await expectText(health, 'Published · official');
-    await expect(health.getByText('Green', { exact: true })).toBeVisible();
+    await expectText(health, 'Official · approved');
+    await expect(health.getByText('On track', { exact: true })).toBeVisible();
     await expect(health.getByText('Stale', { exact: true })).toHaveCount(0);
 
     // No open risk is a count of 0 the risk register keeps, FRESH and dated: a value, not an absence (dashboards.md F-13).
     const risks = widget(page, 'Open risks by rating');
-    await expectText(risks, 'Current · live');
+    await expectText(risks, 'Live · not yet approved');
     await expect(risks.getByRole('definition').first()).toHaveText('0');
     await expect(risks.getByText('No data', { exact: true })).toHaveCount(0);
     await expectText(widget(page, 'Reporting completeness'), 'Up to date');
@@ -178,7 +178,7 @@ test('UJ-010 missing, stale, Unknown and N/A stay distinguishable from a genuine
       await expectText(missing, 'No data');
       await expectText(missing, 'It is not zero.');
       await expectText(missing, 'No as-of date: there is no value to date');
-      expect(plain(await missing.textContent())).not.toMatch(/\bGreen\b|\b0\b/);
+      expect(plain(await missing.textContent())).not.toMatch(/\bOn track\b|\bOn target\b|\b0\b/);
     }
   });
 
@@ -186,21 +186,21 @@ test('UJ-010 missing, stale, Unknown and N/A stay distinguishable from a genuine
     await page.goto(`/projects/${projects.unknown.id}`);
     const kpi = widget(page, 'KPI condition');
     await expect(kpi.getByRole('row', { name: 'Not rated 1' })).toBeVisible();
-    await expect(kpi.getByRole('row', { name: /^Green/ })).toHaveCount(0);
+    await expect(kpi.getByRole('row', { name: /^On target/ })).toHaveCount(0);
   });
 
   await test.step('N/A: a period that does not apply is counted "Not applicable", apart from Green and from missing', async () => {
     await page.goto(`/projects/${projects.notApplicable.id}`);
     const kpi = widget(page, 'KPI condition');
     await expect(kpi.getByRole('row', { name: 'Not applicable 1' })).toBeVisible();
-    await expect(kpi.getByRole('row', { name: /^Green/ })).toHaveCount(0);
+    await expect(kpi.getByRole('row', { name: /^On target/ })).toHaveCount(0);
     await expect(kpi.getByText('No data', { exact: true })).toHaveCount(0);
   });
 
   await test.step('stale: the last published Green keeps its value and its own as-of, flagged Stale; the obligation reads Overdue', async () => {
     await page.goto(`/projects/${projects.stale.id}`);
     const health = widget(page, 'Published Overall Project Health');
-    await expect(health.getByText('Green', { exact: true })).toBeVisible();
+    await expect(health.getByText('On track', { exact: true })).toBeVisible();
     await expect(health.getByText('Stale', { exact: true })).toBeVisible();
     await expectText(health, `As of ${dayOf(utcDate(-20))}`);
     await expectText(widget(page, 'Reporting completeness'), 'Overdue');
@@ -208,7 +208,7 @@ test('UJ-010 missing, stale, Unknown and N/A stay distinguishable from a genuine
     // WF-14's own word: a measurement recorded STALE makes the published KPI condition stale, rated nothing.
     const kpi = widget(page, 'KPI condition');
     await expect(kpi.getByText('Stale', { exact: true })).toBeVisible();
-    await expect(kpi.getByRole('row', { name: /^Green/ })).toHaveCount(0);
+    await expect(kpi.getByRole('row', { name: /^On target/ })).toHaveCount(0);
   });
 
   await test.step('FG-02 keeps the same meanings apart: the KPI Performance report, row by row', async () => {

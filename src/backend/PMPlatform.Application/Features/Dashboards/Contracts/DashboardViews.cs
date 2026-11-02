@@ -28,7 +28,10 @@ public sealed record DashboardCataloguePage(IReadOnlyList<DashboardCatalogueEntr
 /// A dashboard as the caller reads it now: the PUBLISHED version's composition with the caller's personalisation applied, and each
 /// widget's result. <see cref="RefreshedAt"/> is when FG-01 assembled it and is never a source's as-of (BR-DSH-042).
 /// <see cref="DepartmentOptions"/> are the departments of the projects the caller may see here, the only values the department
-/// filter takes (DSH-CC-17).
+/// filter takes (DSH-CC-17); <see cref="EntityOptions"/>, <see cref="RegionOptions"/> and <see cref="CityOptions"/> are the same for the
+/// entity, region and city filters. <see cref="Locations"/> counts the filtered projects by region and city, for the portfolio's
+/// location view; a project with no region recorded is counted under a null region. <see cref="Places"/> names those regions and
+/// cities, which a portfolio reader could not otherwise read.
 /// </summary>
 public sealed record DashboardView(
     DashboardCode Code,
@@ -42,7 +45,21 @@ public sealed record DashboardView(
     Guid? DepartmentId,
     IReadOnlyList<Guid> DepartmentOptions,
     DateTimeOffset RefreshedAt,
-    IReadOnlyList<DashboardWidgetResult> Widgets);
+    IReadOnlyList<DashboardWidgetResult> Widgets,
+    Guid? ExternalEntityId,
+    Guid? RegionItemId,
+    Guid? CityItemId,
+    IReadOnlyList<Guid> EntityOptions,
+    IReadOnlyList<Guid> RegionOptions,
+    IReadOnlyList<Guid> CityOptions,
+    IReadOnlyList<DashboardLocationCount> Locations,
+    IReadOnlyList<DashboardPlace> Places);
+
+/// <summary>A region or city a portfolio dashboard offers, with its name; a city's parent is its region.</summary>
+public sealed record DashboardPlace(Guid Id, BilingualLabel Label, Guid? ParentItemId);
+
+/// <summary>How many of the dashboard's projects are delivered in one region and city.</summary>
+public sealed record DashboardLocationCount(Guid? RegionItemId, Guid? CityItemId, int ProjectCount);
 
 /// <summary>
 /// One widget's result (FG-01 §10.1, RUN-001–022): what it presents, from which projection and version, in which semantic state, as

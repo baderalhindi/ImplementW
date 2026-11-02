@@ -74,8 +74,8 @@ test('UJ-009 current, published and historical values stay distinguishable and h
   await test.step('the consumer views the current values: live and dated, with nothing published yet', async () => {
     await consumer.goto(overview);
     const schedule = widget(consumer, 'Current schedule health');
-    await expectText(schedule, 'Current · live');
-    await expect(schedule.getByText('Green', { exact: true })).toBeVisible();
+    await expectText(schedule, 'Live · not yet approved');
+    await expect(schedule.getByText('On track', { exact: true })).toBeVisible();
     await expect(schedule.getByRole('term')).toHaveText('Finish variance');
     await expectText(schedule.getByRole('definition'), '0 days');
     for (const published of [
@@ -85,7 +85,7 @@ test('UJ-009 current, published and historical values stay distinguishable and h
     ]) {
       await expectText(widget(consumer, published), 'No data');
     }
-    await expectText(widget(consumer, 'Published progress trend'), 'Historical · snapshot');
+    await expectText(widget(consumer, 'Published progress trend'), 'History');
   });
 
   let measurement = '';
@@ -142,16 +142,16 @@ test('UJ-009 current, published and historical values stay distinguishable and h
   await test.step('the consumer sees the published values as Published, and the periods as Historical', async () => {
     await consumer.goto(overview);
     const kpi = widget(consumer, 'KPI condition');
-    await expectText(kpi, 'Published · official');
+    await expectText(kpi, 'Official · approved');
     await expectText(kpi, `As of ${dayOf(measuredOn)}`);
-    await expect(kpi.getByRole('row', { name: 'Green 1' })).toBeVisible();
+    await expect(kpi.getByRole('row', { name: 'On target 1' })).toBeVisible();
 
     const health = widget(consumer, 'Published Overall Project Health');
-    await expectText(health, 'Published · official');
-    await expect(health.getByText('Green', { exact: true })).toBeVisible();
+    await expectText(health, 'Official · approved');
+    await expect(health.getByText('On track', { exact: true })).toBeVisible();
 
     const trend = widget(consumer, 'Published progress trend');
-    await expectText(trend, 'Historical · snapshot');
+    await expectText(trend, 'History');
     // The history is WF-02's own snapshots, oldest first: Amber at 20%, then Green at 45%. The chart's values table is
     // folded under its disclosure.
     await trend.getByText('Show the values', { exact: true }).click();
@@ -161,14 +161,14 @@ test('UJ-009 current, published and historical values stay distinguishable and h
       (await row.locator('th, td').allTextContents()).map(plain);
     expect(await cells(rows.nth(1))).toEqual([
       `${utcDate(-14)} to ${utcDate(-8)}`,
-      'Amber',
+      'At risk',
       '20%',
       '28%',
       expect.stringContaining(dayOf(utcDate(-7))),
     ]);
     expect(await cells(rows.nth(2))).toEqual([
       `${utcDate(-7)} to ${utcDate(-1)}`,
-      'Green',
+      'On track',
       '45%',
       '46%',
       expect.stringContaining(dayOf(utcDate(0))),
@@ -208,18 +208,18 @@ test('UJ-009 current, published and historical values stay distinguishable and h
   await test.step('the consumer sees the current value move while the published and historical ones stand', async () => {
     await consumer.goto(overview);
     const schedule = widget(consumer, 'Current schedule health');
-    await expectText(schedule, 'Current · live');
-    await expect(schedule.getByText('Red', { exact: true })).toBeVisible();
+    await expectText(schedule, 'Live · not yet approved');
+    await expect(schedule.getByText('Off track', { exact: true })).toBeVisible();
     // Thirty days late against the frozen baseline (schedule-baseline.md D-9), RED from 20 in the e2e WORKFLOW_POLICY.
     await expectText(schedule.getByRole('definition'), '+30 days');
 
     const publishedSchedule = widget(consumer, 'Published schedule health');
-    await expectText(publishedSchedule, 'Published · official');
-    await expect(publishedSchedule.getByText('Green', { exact: true })).toBeVisible();
+    await expectText(publishedSchedule, 'Official · approved');
+    await expect(publishedSchedule.getByText('On track', { exact: true })).toBeVisible();
 
     // A submitted value is not published: the official condition is still last month's Green.
     const kpi = widget(consumer, 'KPI condition');
-    await expect(kpi.getByRole('row', { name: 'Green 1' })).toBeVisible();
+    await expect(kpi.getByRole('row', { name: 'On target 1' })).toBeVisible();
     await expectText(kpi, `As of ${dayOf(measuredOn)}`);
   });
 
@@ -230,19 +230,16 @@ test('UJ-009 current, published and historical values stay distinguishable and h
     const table = consumer.getByRole('table', { name: 'Published Progress History' });
     await expect(
       table.getByRole('columnheader', { name: /^Published Overall Project Health/ }),
-    ).toContainText('Historical · snapshot');
+    ).toContainText('History');
     const rows = table.getByRole('row');
     await expect(rows).toHaveCount(3);
     const first = plain(await rows.nth(1).textContent());
     const second = plain(await rows.nth(2).textContent());
-    expect(first).toMatch(/Amber/);
+    expect(first).toMatch(/At risk/);
     expect(first).toMatch(/20(\.0+)?\s*%/);
-    expect(second).toMatch(/Green/);
+    expect(second).toMatch(/On track/);
     expect(second).toMatch(/45(\.0+)?\s*%/);
-    await expectText(
-      consumer.getByRole('region', { name: 'Coverage and freshness' }),
-      'Historical · snapshot',
-    );
+    await expectText(consumer.getByRole('region', { name: 'Coverage and freshness' }), 'History');
 
     // The project's own report puts the three side by side, each column named for what it is.
     await consumer.goto('/reports/project/PROJECT_REPORT');
@@ -251,10 +248,10 @@ test('UJ-009 current, published and historical values stay distinguishable and h
     const report = consumer.getByRole('table', { name: 'Project Report' });
     await expect(
       report.getByRole('columnheader', { name: /^Current schedule health/ }),
-    ).toContainText('Current · live');
+    ).toContainText('Live · not yet approved');
     await expect(
       report.getByRole('columnheader', { name: /^Published schedule health/ }),
-    ).toContainText('Published · official');
+    ).toContainText('Official · approved');
     const header = (await report.getByRole('columnheader').allTextContents()).map(plain);
     const cells = (await report.getByRole('row').nth(1).getByRole('cell').allTextContents()).map(
       plain,
@@ -264,7 +261,7 @@ test('UJ-009 current, published and historical values stay distinguishable and h
       at('Current schedule health'),
       at('Published schedule health'),
       at('KPIs green'),
-    ]).toEqual(['Red', 'Green', '1']);
+    ]).toEqual(['Off track', 'On track', '1']);
 
     // Through the API: the snapshots are exactly as published before the current values moved.
     expect(await snapshots()).toEqual(publishedBefore);

@@ -218,7 +218,7 @@ test('ADR-013 entity Project Manager journey: the entity drafts and manages its 
       'Active',
     );
     await expect(dashboard.getByRole('region', { name: 'Current schedule health' })).toContainText(
-      'Green',
+      'On track',
     );
     await page.goto(`/projects/${projectId}/schedule`);
     await expect(page.getByRole('region', { name: 'Schedule status' })).toContainText('On track');

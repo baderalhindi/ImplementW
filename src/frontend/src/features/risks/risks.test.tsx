@@ -98,6 +98,22 @@ async function openDialog(name: string, title: string): Promise<HTMLElement> {
 }
 
 describe('SCR-080 Risk Register', () => {
+  test('a risk row offers its Project Manager "Add corrective action", which opens the dialog on the risk', async () => {
+    open(RISKS_PATH);
+
+    const table = await screen.findByRole('region', { name: en('risks.project.caption') });
+    const flooding = within(table)
+      .getByRole('link', { name: 'Flooding of the works' })
+      .closest('tr');
+    await userEvent.click(
+      within(flooding as HTMLElement).getByRole('link', { name: en('risks.actions.addAction') }),
+    );
+
+    expect(
+      await screen.findByRole('dialog', { name: en('risks.action.createTitle') }),
+    ).toBeTruthy();
+  });
+
   test("lists the project's open risks most severe first, with the server's rating, levels and due reviews", async () => {
     open(RISKS_PATH);
 
@@ -112,11 +128,14 @@ describe('SCR-080 Risk Register', () => {
       .closest('tr');
     expect(flooding?.className).toBe('row--overdue');
     expect(within(flooding as HTMLElement).getByText('Critical')).toBeTruthy();
-    expect(
-      within(flooding as HTMLElement).getByText(
-        en('risks.table.levels', { probability: 4, impact: 5 }),
-      ),
-    ).toBeTruthy();
+    // Probability and impact in their own columns, as the matrix in force names the levels.
+    const cells = within(flooding as HTMLElement).getAllByRole('cell');
+    expect(cells.map((cell) => cell.textContent)).toEqual(
+      expect.arrayContaining([expect.stringMatching(/^4/), expect.stringMatching(/^5/)]),
+    );
+    expect(within(flooding as HTMLElement).getByText(en('risks.table.noAction'))).toBeTruthy();
+    const asphalt = within(table).getByRole('link', { name: 'Asphalt price rise' }).closest('tr');
+    expect(within(asphalt as HTMLElement).getByText('Hedge the asphalt price')).toBeTruthy();
     expect(within(flooding as HTMLElement).getByText(en('risks.table.reviewDue'))).toBeTruthy();
     expect(within(flooding as HTMLElement).getByText('Weather')).toBeTruthy();
     // An unassessed risk says so: never a low rating (WF-06 §8).

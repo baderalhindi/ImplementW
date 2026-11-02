@@ -136,6 +136,30 @@ export interface DashboardView {
   /** When FG-01 assembled the view; never a source's as-of (BR-DSH-042). */
   refreshedAt: string;
   widgets: DashboardWidgetResult[];
+  externalEntityId: string | null;
+  regionItemId: string | null;
+  cityItemId: string | null;
+  /** The only values the entity, region and city filters take: those of the projects the caller may see here. */
+  entityOptions: string[];
+  regionOptions: string[];
+  cityOptions: string[];
+  /** The filtered projects counted by region and city, largest first; a null region is a project with none recorded. */
+  locations: DashboardLocationCount[];
+  /** The names of the regions and cities offered, which a portfolio reader cannot read from master data. */
+  places: DashboardPlace[];
+}
+
+export interface DashboardLocationCount {
+  regionItemId: string | null;
+  cityItemId: string | null;
+  projectCount: number;
+}
+
+/** A region or city; a city's parent is its region. */
+export interface DashboardPlace {
+  id: string;
+  label: BilingualLabel;
+  parentItemId: string | null;
 }
 
 /** ADR-019: one optional widget's presentation choice. */

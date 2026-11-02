@@ -54,6 +54,17 @@ export interface RiskDetail {
   createdBy: string;
   updatedAt: string;
   updatedBy: string;
+  /** Its PLANNED and IN_PROGRESS treatment actions, oldest first: the register's corrective action column. */
+  openTreatmentActions: RiskOpenTreatmentAction[];
+}
+
+/** An open treatment action as the register lists it beside its risk. */
+export interface RiskOpenTreatmentAction {
+  id: string;
+  title: NarrativeText;
+  actionType: RiskTreatmentActionType;
+  status: RiskTreatmentActionStatus;
+  dueDate: string | null;
 }
 
 export interface RiskAssessmentImpactDetail {

@@ -21,36 +21,49 @@ export function PlatformHealth(): ReactElement {
   const { t } = useI18n();
   const { can } = usePermissions();
   return (
-    <div className="home__grid">
-      {can('INTEGRATION_VIEW') && <Integrations />}
-      {can('AUDIT_OPERATIONS_MANAGE') && <AuditPipeline />}
-      {can('USER_VIEW') && <People />}
-      <section className="widget home__card" aria-label={t('home.actions.title')}>
-        <h2 className="widget__title">{t('home.actions.title')}</h2>
-        <ul className="home__actions">
-          {can('USER_MANAGE') && (
-            <li>
-              <Link to="/admin/users/new">{t('home.health.createUser')}</Link>
-            </li>
-          )}
-          {can('ROLE_ASSIGN') && (
-            <li>
-              <Link to="/admin/role-assignments">{t('identityAccess.nav.roleAssignments')}</Link>
-            </li>
-          )}
-          {can('ROLE_VIEW') && (
-            <li>
-              <Link to="/admin/permission-matrix">{t('identityAccess.nav.permissionMatrix')}</Link>
-            </li>
-          )}
-          {can('DATA_IMPORT') && (
-            <li>
-              <Link to="/admin/data-migration">{t('dataImport.nav')}</Link>
-            </li>
-          )}
-        </ul>
-      </section>
-    </div>
+    <section className="home__work" aria-labelledby="home-health">
+      <h2 id="home-health">{t('home.health.title')}</h2>
+      <div className="home__grid">
+        {can('INTEGRATION_VIEW') && <Integrations />}
+        {can('AUDIT_OPERATIONS_MANAGE') && <AuditPipeline />}
+        {can('USER_VIEW') && <People />}
+      </div>
+    </section>
+  );
+}
+
+/** The administration the administrator starts most, in the Home's banner like every other role's ways in. */
+export function AdministrationActions(): ReactElement {
+  const { t } = useI18n();
+  const { can } = usePermissions();
+  return (
+    <nav className="home__actions-bar" aria-label={t('home.actions.title')}>
+      <ul className="home__actions">
+        {can('USER_MANAGE') && (
+          <li>
+            <Link to="/admin/users/new">{t('home.health.createUser')}</Link>
+          </li>
+        )}
+        {can('ROLE_ASSIGN') && (
+          <li>
+            <Link to="/admin/role-assignments">{t('identityAccess.nav.roleAssignments')}</Link>
+          </li>
+        )}
+        {can('ROLE_VIEW') && (
+          <li>
+            <Link to="/admin/permission-matrix">{t('identityAccess.nav.permissionMatrix')}</Link>
+          </li>
+        )}
+        {can('DATA_IMPORT') && (
+          <li>
+            <Link to="/admin/data-migration">{t('dataImport.nav')}</Link>
+          </li>
+        )}
+        <li>
+          <Link to="/notifications/preferences">{t('notifications.nav.preferences')}</Link>
+        </li>
+      </ul>
+    </nav>
   );
 }
 

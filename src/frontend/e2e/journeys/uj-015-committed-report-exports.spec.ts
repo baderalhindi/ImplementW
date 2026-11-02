@@ -134,7 +134,7 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
       formalId,
       title,
       'E2E Journeys Department',
-      'Green',
+      'On track',
       'Restricted',
       'Restricted',
     ]);
@@ -236,7 +236,7 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
       formalId,
       expect.stringMatching(/^UJ-015 Harbour bridge/),
       'E2E Journeys Department',
-      'Green',
+      'On track',
       'Restricted',
       'Restricted',
     ]);

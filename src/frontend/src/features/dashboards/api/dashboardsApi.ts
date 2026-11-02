@@ -13,10 +13,17 @@ import {
 // widget reaches, is 404 (R-47). The personalisation commands are sensitive writes with an Idempotency-Key, never
 // retried here; they are offered for the Portfolio Dashboard only (ADR-019).
 
-/** The context a dashboard is read in: PROJECT takes a project, the others an optional department (D-12). */
-export interface DashboardContext {
-  projectId?: string | undefined;
+/** The portfolio filters, each narrowing the projects a dashboard counts (D-12; the 27 Oct 2026 review added the last three). */
+export interface PortfolioFilters {
   departmentId?: string | undefined;
+  externalEntityId?: string | undefined;
+  regionItemId?: string | undefined;
+  cityItemId?: string | undefined;
+}
+
+/** The context a dashboard is read in: PROJECT takes a project, the others optional portfolio filters. */
+export interface DashboardContext extends PortfolioFilters {
+  projectId?: string | undefined;
 }
 
 export const dashboardsApi = {
@@ -27,7 +34,13 @@ export const dashboardsApi = {
   get: async (code: DashboardCode, context: DashboardContext, signal?: AbortSignal) =>
     (
       await apiRequest<DashboardView>(`/dashboards/${code}`, {
-        query: { projectId: context.projectId, departmentId: context.departmentId },
+        query: {
+          projectId: context.projectId,
+          departmentId: context.departmentId,
+          externalEntityId: context.externalEntityId,
+          regionItemId: context.regionItemId,
+          cityItemId: context.cityItemId,
+        },
         signal,
       })
     ).data,
