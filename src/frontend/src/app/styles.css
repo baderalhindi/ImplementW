@@ -1322,6 +1322,17 @@ select.field__input {
   gap: var(--space-2);
 }
 
+/* One column cannot hold "Apply" and "Clear" side by side: once the bar has two (29rem fits two of the report parameters' 14rem), the actions take both. */
+.filters:not(.filters--inline) {
+  container: filters / inline-size;
+}
+
+@container filters (min-width: 29rem) {
+  .filters__actions {
+    grid-column: span 2;
+  }
+}
+
 /* "Clear" stays to the right of "Apply" in Arabic too (client review); the pair keeps its place at the start of the row. */
 [dir='rtl'] .filters__actions {
   flex-direction: row-reverse;
