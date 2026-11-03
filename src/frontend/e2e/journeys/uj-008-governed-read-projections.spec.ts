@@ -149,7 +149,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     const filter = page.getByRole('combobox', { name: 'Department' });
     await expect(filter.getByRole('option')).toHaveText([
       /Department\W+All/,
-      /Department\W+E2E Journeys Department\W+\(\d+\)/,
+      /Department\W+E2E Journeys Department\W+\(\W*\d+\W*\)/,
     ]);
     await filter.selectOption({ index: 1 });
     await expect(page).toHaveURL(/department=/);
@@ -281,7 +281,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     );
     const ours = await departmentId(portfolio.api, DATA_SET.department);
     await outsider.page.goto(`/dashboards?department=${ours}`);
-    await expectText(outsider.page.getByRole('main'), 'That sector is not one you may filter by.');
+    await expectText(outsider.page.getByRole('main'), 'That filter value is not one you may filter by.');
     const filtered = await outsider.api.send('GET', `/dashboards/PORTFOLIO?departmentId=${ours}`);
     expect([filtered.status, filtered.code]).toEqual([422, 'DASHBOARD_FILTER_VALUE_UNAUTHORIZED']);
     const dashboard = await outsider.api.send('GET', `/dashboards/PROJECT?projectId=${project.id}`);
