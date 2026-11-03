@@ -44,6 +44,7 @@ export const projectRoutes: RouteObject[] = [
   { path: 'new', element: <CreateProjectPage /> }, // SCR-033
   { path: 'follow-up', element: <FollowUpListPage /> }, // the 2 Nov 2026 review, R3-5: قائمة المتابعة
   { path: 'import', element: <ProjectImportPage /> }, // R3-4: Projects → Import and the batches
+  { path: 'import/validations/:validationId', element: <ProjectImportPage /> }, // a background validation, from its notification
   { path: 'import/:batchId', element: <ImportBatchPage /> }, // R3-4: one batch, its approval and rollback
   { path: ':projectId/edit', element: <EditProjectPage /> }, // SCR-034
   {

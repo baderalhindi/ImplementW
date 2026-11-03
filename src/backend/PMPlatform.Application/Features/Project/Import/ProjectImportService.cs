@@ -151,7 +151,7 @@ internal sealed class ProjectImportService(
             validation.CompletedAt = now;
             validation.UpdatedAt = now;
             outbox.Stage(ImportNotifications.Validated(
-                validation.Id, validation.CreatedBy, scope.Clauses.Count > 0 ? scope.Clauses[0].DepartmentId : null, $"/projects/import?validation={validation.Id:D}",
+                validation.Id, validation.CreatedBy, scope.Clauses.Count > 0 ? scope.Clauses[0].DepartmentId : null, $"/projects/import/validations/{validation.Id:D}",
                 [
                     new NotificationParameter("fileName", validation.FileName),
                     new NotificationParameter("rowCount", validation.RowCount.ToString(System.Globalization.CultureInfo.InvariantCulture)),

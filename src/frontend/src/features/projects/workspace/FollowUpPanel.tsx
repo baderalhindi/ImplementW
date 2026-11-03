@@ -167,13 +167,15 @@ export function FollowUpPanel(): ReactElement | null {
           )}
         </Detail>
         <Detail term={t('projects.fields.strategicPortfolio')}>
-          {lookups.itemLabel(project.strategicPortfolioItemId ?? null) ?? t('common.values.none')}
-          {project.strategicInitiativeItemId !== null &&
-            project.strategicInitiativeItemId !== undefined && (
-              <span className="details__aside">
-                {lookups.itemLabel(project.strategicInitiativeItemId)}
-              </span>
-            )}
+          <bdi>
+            {lookups.itemLabel(project.strategicPortfolioItemId ?? null) ?? t('common.values.none')}
+          </bdi>
+        </Detail>
+        <Detail term={t('projects.fields.strategicInitiative')}>
+          <bdi>
+            {lookups.itemLabel(project.strategicInitiativeItemId ?? null) ??
+              t('common.values.none')}
+          </bdi>
         </Detail>
         <Detail term={t('projects.fields.followUpOwner')}>
           {project.followUpOwnerUserId === null || project.followUpOwnerUserId === undefined

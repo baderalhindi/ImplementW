@@ -1,5 +1,5 @@
 import { type ReactElement, type SyntheticEvent, useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
@@ -65,12 +65,12 @@ function NewImport({ onSubmitted }: { onSubmitted: (batch: ImportBatch) => void 
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [params] = useSearchParams();
+  const { validationId } = useParams();
   const [background, setBackground] = useState<ImportValidation | null>(null);
   const [requested, setRequested] = useState<ImportValueRequest[]>([]);
 
-  // A background validation, polled until it is done; the notification's link opens it here (?validation=).
-  const backgroundId = background?.id ?? params.get('validation');
+  // A background validation, polled until it is done; the notification's link opens it here (/projects/import/validations/:id).
+  const backgroundId = background?.id ?? validationId ?? null;
   useEffect(() => {
     if (
       backgroundId === null ||

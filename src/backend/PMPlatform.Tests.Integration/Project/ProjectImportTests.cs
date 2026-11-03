@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Tests.Integration.DataImport;
 using PMPlatform.Tests.Integration.Identity;
@@ -154,6 +155,11 @@ public sealed class ProjectImportTests(ProjectTestHost host)
         Assert.Equal(201, completed["preview"]!["createCount"]!.GetValue<int>());
         Assert.Contains("recipientUserId", Assert.Single(await host.Database.QueryAsync(
             $"SELECT payload::text FROM common.outbox_message WHERE message_type = 'NOTIFICATION_INTENT' AND message_key LIKE 'Project.ImportValidated%{queued["id"]}%'")));
+
+        // WF-15 takes the intent in: its deep link is a plain SPA route.
+        await host.WithScopeAsync(services => services.GetRequiredService<IOutboxDispatcher>().DispatchDueAsync(500, CancellationToken.None));
+        Assert.Single(await host.Database.QueryAsync(
+            $"SELECT deep_link FROM notifications.notification_intent WHERE event_family_code = 'PROJECT_IMPORT_VALIDATED' AND subject_id = '{queued["id"]}'"));
 
         // Only the importer reads it.
         using HttpResponseMessage other = await GetAsync(client, sessions.Approver, validation);

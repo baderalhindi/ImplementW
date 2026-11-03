@@ -35,6 +35,7 @@ export const identityAccessRoutes: RouteObject[] = [
   { path: 'organization/departments', element: <DepartmentListPage /> }, // ADM-012
   { path: 'organization/entities', element: <ExternalEntityListPage /> }, // ADM-013
   { path: 'master-data', element: <MasterDataPage /> }, // ADM-020–029 (the 2 Nov 2026 review)
+  { path: 'master-data/requests', element: <MasterDataPage /> }, // the requested values, from their notification
 ];
 
 export interface NavigationItem {

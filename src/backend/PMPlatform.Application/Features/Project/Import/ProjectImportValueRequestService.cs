@@ -55,7 +55,7 @@ internal sealed class ProjectImportValueRequestService(
         };
         repository.Add(request);
         outbox.Stage(ImportNotifications.ValueRequested(
-            request.Id, callerId, "/admin/master-data?requests=open",
+            request.Id, callerId, "/admin/master-data/requests",
             [new NotificationParameter("dimension", code), new NotificationParameter("sourceText", text)],
             now));
         return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) ? DetailOf(request) : AdministrationError.PreconditionFailed;
