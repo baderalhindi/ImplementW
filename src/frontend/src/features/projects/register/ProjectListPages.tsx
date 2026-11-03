@@ -20,6 +20,16 @@ function CreateProjectLink(): ReactElement | null {
   ) : null;
 }
 
+/** Projects → Import, next to Create (the 2 Nov 2026 review, R3-4): offered to a holder of PROJECT_IMPORT only. */
+function ImportProjectsLink(): ReactElement | null {
+  const { t } = useI18n();
+  return useCan('PROJECT_IMPORT') ? (
+    <Link className="button" to="/projects/import">
+      {t('projects.import.open')}
+    </Link>
+  ) : null;
+}
+
 /** SCR-025 Project Register (All Projects). MOD-001 returns here after deleting a draft. */
 export function ProjectRegisterPage(): ReactElement | null {
   const { t } = useI18n();
@@ -44,6 +54,7 @@ export function ProjectRegisterPage(): ReactElement | null {
                 setLoads((n) => n + 1);
               }}
             />
+            <ImportProjectsLink />
             <CreateProjectLink />
           </>
         }

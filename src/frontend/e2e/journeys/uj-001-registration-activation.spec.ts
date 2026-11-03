@@ -29,11 +29,11 @@ test('UJ-001 registration and activation follow Project-master governance', asyn
   await test.step('the department manager signs in and registers a draft', async () => {
     await signInThroughTheForm(page, 'departmentManager', '/projects/new');
     await page.getByLabel('Project title (required)').fill(title);
-    await page.getByLabel('Classification (required)').selectOption({ label: 'Infrastructure' });
+    await page.getByLabel('Sector (required)').selectOption({ label: 'Infrastructure' });
     await page.getByLabel('Governance profile (required)').selectOption({ label: 'Standard' });
     await page.getByRole('radio', { name: 'Managed by AHDA' }).check();
     await page
-      .getByLabel('Owning sector (required)')
+      .getByLabel('Owning department (required)')
       .selectOption({ label: 'E2E Journeys Department' });
     await page.getByLabel('Registration budget (SAR)').fill('8500000');
     await page.getByLabel('Planned start date').fill(utcDate(7));

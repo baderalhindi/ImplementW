@@ -15,7 +15,7 @@ internal sealed class MasterDataRepository(PMPlatformDbContext context) : IMaste
     public async Task<IReadOnlyList<MasterDataCatalogueDetail>> ListCataloguesAsync(CancellationToken cancellationToken) =>
         await context.Set<MasterDataCatalogue>().AsNoTracking()
             .OrderBy(c => c.Code)
-            .Select(c => new MasterDataCatalogueDetail(c.Id, c.Code, c.Name, c.AllowsHierarchy, c.IsSystem, c.UpdatedAt, c.UpdatedBy))
+            .Select(c => new MasterDataCatalogueDetail(c.Id, c.Code, c.Name, c.AllowsHierarchy, c.IsSystem, c.UpdatedAt, c.UpdatedBy, c.ParentCatalogueId))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task<Versioned<MasterDataCatalogueDetail>?> FindCatalogueAsync(Guid catalogueId, CancellationToken cancellationToken)
@@ -29,7 +29,7 @@ internal sealed class MasterDataRepository(PMPlatformDbContext context) : IMaste
             : new Versioned<MasterDataCatalogueDetail>(
                 new MasterDataCatalogueDetail(
                     row.Catalogue.Id, row.Catalogue.Code, row.Catalogue.Name, row.Catalogue.AllowsHierarchy, row.Catalogue.IsSystem,
-                    row.Catalogue.UpdatedAt, row.Catalogue.UpdatedBy),
+                    row.Catalogue.UpdatedAt, row.Catalogue.UpdatedBy, row.Catalogue.ParentCatalogueId),
                 row.Version);
     }
 
@@ -130,7 +130,7 @@ internal sealed class MasterDataRepository(PMPlatformDbContext context) : IMaste
         List<Guid> ids = [.. itemIds];
         return await context.Set<MasterDataItem>().AsNoTracking()
             .Where(i => ids.Contains(i.Id))
-            .Join(context.Set<MasterDataCatalogue>(), i => i.CatalogueId, c => c.Id, (i, c) => new ItemFacts(i.Id, c.Code, i.LifecycleState))
+            .Join(context.Set<MasterDataCatalogue>(), i => i.CatalogueId, c => c.Id, (i, c) => new ItemFacts(i.Id, c.Code, i.LifecycleState, c.Id))
             .ToDictionaryAsync(f => f.Id, cancellationToken).ConfigureAwait(false);
     }
 

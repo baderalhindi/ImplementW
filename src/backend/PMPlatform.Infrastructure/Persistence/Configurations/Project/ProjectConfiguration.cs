@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PMPlatform.Domain.IdentityAccess;
 using PMPlatform.Domain.MasterDataConfig;
+using PMPlatform.Domain.Project;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
 
 namespace PMPlatform.Infrastructure.Persistence.Configurations.Project;
@@ -22,6 +23,22 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.Property(e => e.Latitude).HasPrecision(18, 4);
         builder.Property(e => e.Longitude).HasPrecision(18, 4);
 
+        // The 2 Nov 2026 review (R3-3): strategy classification, legacy reference and RPMO's follow-up.
+        builder.Property(e => e.LegacyReference).HasMaxLength(100);
+        builder.HasIndex(e => e.LegacyReference).IsUnique().HasFilter("legacy_reference IS NOT NULL");
+        builder.HasNarrative(e => e.CurrentObstacle, "current_obstacle");
+        builder.HasNarrative(e => e.NextAction, "next_action");
+        builder.Property(e => e.NextActionOwner).HasMaxLength(200);
+        builder.Property(e => e.DeclaredPlannedPercent).HasPrecision(18, 4);
+        builder.Property(e => e.DeclaredActualPercent).HasPrecision(18, 4);
+        builder.Property(e => e.DeclaredPlannedSpendPercent).HasPrecision(18, 4);
+        builder.Property(e => e.DeclaredActualSpendPercent).HasPrecision(18, 4);
+        builder.HasCheck(
+            "declared_percent_range",
+            "(declared_planned_percent IS NULL OR declared_planned_percent BETWEEN 0 AND 100) AND (declared_actual_percent IS NULL OR declared_actual_percent BETWEEN 0 AND 100)"
+            + " AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100)"
+            + " AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
+
         // TASK-041: the formal identifier is issued when AHDA approves, so every state from APPROVED_PLANNED on has one.
         builder.HasCheck(
             "formal_project_id",
@@ -34,6 +51,11 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.GovernanceProfileItemId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.RegionItemId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.CityItemId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.StrategicPortfolioItemId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.StrategicInitiativeItemId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.PriorityItemId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(e => e.FollowUpOwnerUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ProjectImportBatch>().WithMany().HasForeignKey(e => e.ProjectImportBatchId).OnDelete(DeleteBehavior.Restrict);
 
         // TASK-026 (indexing-strategy.md I-01 to I-05): SCR-025/SCR-026 sort by updated_at desc, id desc under each
         // data scope, read by a backward index scan. The scope composites lead with their foreign key, so they replace

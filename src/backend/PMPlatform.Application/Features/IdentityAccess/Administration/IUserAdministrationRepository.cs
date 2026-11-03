@@ -16,6 +16,9 @@ public interface IUserAdministrationRepository
     public Task<Guid?> FindIdByUsernameAsync(string username, CancellationToken cancellationToken);
 
     /// <summary>The display name and entity of each user named, whatever their state; an id that names nobody is left out.</summary>
+    /// <summary>Every ACTIVE user's identity, by username. Not tracked.</summary>
+    public Task<IReadOnlyList<UserIdentity>> ListActiveIdentitiesAsync(CancellationToken cancellationToken);
+
     public Task<IReadOnlyList<UserName>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
     public void Add(User user);

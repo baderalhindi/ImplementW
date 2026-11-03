@@ -9,6 +9,7 @@ using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.Reports.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.Project.Contracts;
 
 namespace PMPlatform.Api.Controllers;
 
@@ -96,6 +97,10 @@ public abstract class AdministrationControllerBase : ControllerBase
     /// <summary>R-8 for a report job's output (TASK-071): authorised at download time by the module, then sent as a document's bytes are.</summary>
     private protected IActionResult Attachment(AdministrationResult<ReportOutputDownload> result) =>
         result.Succeeded ? Attachment(result.Value.Content, result.Value.FileName) : Failure(result.Error);
+
+    /// <summary>R3-4: a project import workbook — the template, or a batch's file as uploaded — as an attachment (R-8).</summary>
+    private protected IActionResult Attachment(AdministrationResult<ProjectImportFile> result) =>
+        result.Succeeded ? Attachment(new MemoryStream(result.Value.Content), result.Value.FileName) : Failure(result.Error);
 
     /// <summary>TASK-102: the register's migration workbook template, as an attachment (R-8).</summary>
     private protected async Task<IActionResult> ImportTemplateAsync(IDataImportService imports, string registerCode, CancellationToken cancellationToken)

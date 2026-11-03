@@ -19,6 +19,14 @@ export interface PortfolioFilters {
   externalEntityId?: string | undefined;
   regionItemId?: string | undefined;
   cityItemId?: string | undefined;
+  /** The sector: the project classification (the 2 Nov 2026 review, R3-1, adds it and the four below). */
+  classificationItemId?: string | undefined;
+  status?: string | undefined;
+  priorityItemId?: string | undefined;
+  strategicPortfolioItemId?: string | undefined;
+  strategicInitiativeItemId?: string | undefined;
+  /** A year: the projects whose planned period touches it. */
+  period?: string | undefined;
 }
 
 /** The context a dashboard is read in: PROJECT takes a project, the others optional portfolio filters. */
@@ -40,6 +48,12 @@ export const dashboardsApi = {
           externalEntityId: context.externalEntityId,
           regionItemId: context.regionItemId,
           cityItemId: context.cityItemId,
+          classificationItemId: context.classificationItemId,
+          status: context.status,
+          priorityItemId: context.priorityItemId,
+          strategicPortfolioItemId: context.strategicPortfolioItemId,
+          strategicInitiativeItemId: context.strategicInitiativeItemId,
+          period: context.period,
         },
         signal,
       })

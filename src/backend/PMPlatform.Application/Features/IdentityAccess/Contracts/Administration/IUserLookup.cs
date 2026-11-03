@@ -1,3 +1,5 @@
+using PMPlatform.Domain.IdentityAccess;
+
 namespace PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
 /// <summary>
@@ -8,4 +10,12 @@ public interface IUserLookup
 {
     /// <summary>The user with this username, whatever their state; null when none has it.</summary>
     public Task<Guid?> FindIdByUsernameAsync(string username, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Every ACTIVE user, with what a person is known by in a spreadsheet — username, display name and e-mail — so an import can match a name
+    /// to an account (the 2 Nov 2026 review, R3-4).
+    /// </summary>
+    public Task<IReadOnlyList<UserIdentity>> ListActiveAsync(CancellationToken cancellationToken);
 }
+
+public sealed record UserIdentity(Guid Id, string Username, string DisplayName, string Email, UserType UserType);

@@ -27,6 +27,7 @@ function optionsOf(view: DashboardView): FilterOptions {
     regions: view.regionOptions,
     cities: view.cityOptions,
     places: view.places,
+    filters: view.filters ?? [],
   };
 }
 
@@ -35,7 +36,9 @@ function sameOptions(a: FilterOptions, b: FilterOptions): boolean {
     a.departments.join() === b.departments.join() &&
     a.entities.join() === b.entities.join() &&
     a.regions.join() === b.regions.join() &&
-    a.cities.join() === b.cities.join()
+    a.cities.join() === b.cities.join() &&
+    JSON.stringify(a.filters) === JSON.stringify(b.filters) &&
+    a.places.length === b.places.length
   );
 }
 
@@ -45,6 +48,7 @@ const NO_OPTIONS: FilterOptions = {
   regions: [],
   cities: [],
   places: [],
+  filters: [],
 };
 
 /**
@@ -67,15 +71,49 @@ export function HostedDashboard({
   onClearFilters: () => void;
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
-  const { departmentId, externalEntityId, regionItemId, cityItemId } = filters;
+  const {
+    departmentId,
+    externalEntityId,
+    regionItemId,
+    cityItemId,
+    classificationItemId,
+    status,
+    priorityItemId,
+    strategicPortfolioItemId,
+    strategicInitiativeItemId,
+    period,
+  } = filters;
   const load = useCallback(
     (signal: AbortSignal) =>
       dashboardsApi.get(
         entry.code,
-        { departmentId, externalEntityId, regionItemId, cityItemId },
+        {
+          departmentId,
+          externalEntityId,
+          regionItemId,
+          cityItemId,
+          classificationItemId,
+          status,
+          priorityItemId,
+          strategicPortfolioItemId,
+          strategicInitiativeItemId,
+          period,
+        },
         signal,
       ),
-    [entry.code, departmentId, externalEntityId, regionItemId, cityItemId],
+    [
+      entry.code,
+      departmentId,
+      externalEntityId,
+      regionItemId,
+      cityItemId,
+      classificationItemId,
+      status,
+      priorityItemId,
+      strategicPortfolioItemId,
+      strategicInitiativeItemId,
+      period,
+    ],
   );
   const view = useApiResource(load, { keepWhileReloading: true });
   const [options, setOptions] = useState<FilterOptions>(NO_OPTIONS);
@@ -94,7 +132,6 @@ export function HostedDashboard({
   return (
     <div className="dashboard">
       <div className="dashboard__toolbar">
-        <PortfolioFilterBar options={options} filters={filters} onChange={onFilterChange} />
         {view.data !== undefined && (
           <p className="dashboard__meta">
             <span>
@@ -117,6 +154,12 @@ export function HostedDashboard({
           </p>
         )}
       </div>
+      <PortfolioFilterBar
+        options={options}
+        filters={filters}
+        onChange={onFilterChange}
+        onClearAll={onClearFilters}
+      />
       <PageNotice notice={notice} />
       {view.data === undefined ? (
         view.loading ? (

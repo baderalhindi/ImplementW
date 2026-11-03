@@ -614,20 +614,21 @@ describe('the department filter narrows the population and never widens it', () 
     });
     renderApp({ path: '/dashboards', session: sessionFor(['R03']) });
 
-    const select = await screen.findByRole('combobox', {
-      name: en('dashboards.filter.department'),
-    });
+    // The filter bar (the 2 Nov 2026 review, R3-1): the label sits inside each option, "Department: Roads".
+    const label = en('dashboards.filter.departmentId');
+    const inline = (value: string) => en('common.filters.inline', { label, value });
+    const select = await screen.findByRole('combobox', { name: label });
     await waitFor(() => {
-      expect(within(select).getByRole('option', { name: 'Roads' })).toBeTruthy();
+      expect(within(select).getByRole('option', { name: inline('Roads') })).toBeTruthy();
     });
     expect(
       within(select)
         .getAllByRole('option')
         .map((option) => option.textContent),
     ).toEqual([
-      en('dashboards.filter.allDepartments'),
-      en('projects.lookups.unknownItem', { id: DEPARTMENT_B.slice(0, 8) }),
-      'Roads',
+      inline(en('dashboards.filter.all.departmentId')),
+      inline(en('projects.lookups.unknownItem', { id: DEPARTMENT_B.slice(0, 8) })),
+      inline('Roads'),
     ]);
 
     await userEvent.selectOptions(select, DEPARTMENT_A);

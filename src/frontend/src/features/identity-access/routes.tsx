@@ -3,6 +3,7 @@ import { type RouteObject } from 'react-router';
 import { type TranslationKey } from '@/shared/i18n/i18n.ts';
 
 import { RoleAssignmentPage } from './assignments/RoleAssignmentPage.tsx';
+import { MasterDataPage } from './masterData/MasterDataPage.tsx';
 import { DepartmentListPage } from './organization/DepartmentListPage.tsx';
 import { ExternalEntityListPage } from './organization/ExternalEntityListPage.tsx';
 import { OrganizationStructurePage } from './organization/OrganizationStructurePage.tsx';
@@ -33,6 +34,8 @@ export const identityAccessRoutes: RouteObject[] = [
   { path: 'organization', element: <OrganizationStructurePage /> }, // ADM-011
   { path: 'organization/departments', element: <DepartmentListPage /> }, // ADM-012
   { path: 'organization/entities', element: <ExternalEntityListPage /> }, // ADM-013
+  { path: 'master-data', element: <MasterDataPage /> }, // ADM-020–029 (the 2 Nov 2026 review)
+  { path: 'master-data/requests', element: <MasterDataPage /> }, // the requested values, from their notification
 ];
 
 export interface NavigationItem {
@@ -72,5 +75,10 @@ export const identityAccessNavigation: NavigationItem[] = [
     to: '/admin/organization/entities',
     label: 'identityAccess.nav.entities',
     permissions: ['ORGANIZATION_VIEW'],
+  },
+  {
+    to: '/admin/master-data',
+    label: 'identityAccess.nav.masterData',
+    permissions: ['MASTER_DATA_MANAGE'],
   },
 ];

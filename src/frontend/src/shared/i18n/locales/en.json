@@ -40,7 +40,15 @@
     "any": "Any",
     "sort": "Sort by",
     "apply": "Apply filters",
-    "clear": "Clear filters"
+    "clear": "Clear filters",
+    "more": "More filters",
+    "moreCount": "More filters ({count})",
+    "toggle": "Filters ({count})",
+    "clearAll": "Clear all",
+    "remove": "Remove filter {filter}",
+    "active": "Active filters",
+    "optionCount": "{label} ({count})",
+    "inline": "{label}: {value}"
   },
   "pagination": {
     "label": "Pagination",

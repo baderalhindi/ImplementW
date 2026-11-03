@@ -15,6 +15,24 @@ namespace PMPlatform.Infrastructure.Persistence.ExternalParticipation;
 /// <summary>The <c>external_participation</c> schema (TASK-066).</summary>
 internal sealed class ExternalParticipationRepository(PMPlatformDbContext context) : IExternalParticipationRepository
 {
+    public async Task<IReadOnlyList<RequestTimeliness>> ListTimelinessAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken)
+    {
+        if (projectIds.Count == 0)
+        {
+            return [];
+        }
+
+        List<Guid> ids = [.. projectIds];
+        return await context.Set<ExternalUpdateRequest>().AsNoTracking()
+            .Where(r => ids.Contains(r.ProjectId) && r.DueDate != null
+                        && r.Status != ExternalUpdateRequestStatus.Draft && r.Status != ExternalUpdateRequestStatus.Cancelled)
+            .Select(r => new RequestTimeliness(
+                r.ProjectId,
+                r.DueDate!.Value,
+                context.Set<ExternalContribution>().Where(c => c.ExternalUpdateRequestId == r.Id && c.SubmittedAt != null).Min(c => c.SubmittedAt)))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<IExternalParticipationWork> BeginAsync(CancellationToken cancellationToken) =>
         context.Database.CurrentTransaction is null
             ? new ExternalParticipationWork(await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false))

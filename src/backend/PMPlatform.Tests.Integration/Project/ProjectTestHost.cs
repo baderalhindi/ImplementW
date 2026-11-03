@@ -5,7 +5,8 @@ namespace PMPlatform.Tests.Integration.Project;
 /// <summary>
 /// The identity test database and people (IdentityDatabase) with what WF-01 needs and no environment has yet: test grants
 /// for AHDA's side — Appendix A grants nothing there (project-registration.md F-1) — beside the shipped R04 and R08 ENTITY
-/// grants; published region, city and classification items; and published PROJECT_REGISTRATION, SUSPENSION, RESUMPTION, COMPLETION and
+/// grants; published region, city, classification, strategic portfolio and initiative, and priority items; the 2 Nov 2026 review's follow-up
+/// and import grants for local.r02 (and import at DEPT for local.r03); and published PROJECT_REGISTRATION, SUSPENSION, RESUMPTION, COMPLETION and
 /// CLOSURE routes in APPROVAL_AUTHORITY with their WORKFLOW_POLICY, so that WF-09 and WF-10 can take a project along TASK-062's and
 /// TASK-063's edges. The API's outbox and maintenance workers stay idle, so each test dispatches and activates when it chooses.
 /// </summary>
@@ -31,6 +32,10 @@ public sealed class ProjectTestHost : IAsyncLifetime
     public static readonly Guid CityId = new("00000000-0410-4000-8000-000000000021");
     public static readonly Guid OtherEntityId = new("00000000-0410-4000-8000-000000000031");
     public static readonly Guid OtherDepartmentId = new("00000000-0420-4000-8000-000000000001");
+    public static readonly Guid PortfolioId = new("00000000-0430-4000-8000-000000000001");
+    public static readonly Guid OtherPortfolioId = new("00000000-0430-4000-8000-000000000002");
+    public static readonly Guid InitiativeId = new("00000000-0430-4000-8000-000000000011");
+    public static readonly Guid PriorityId = new("00000000-0430-4000-8000-000000000021");
 
     private const string Seed = IdentityDatabase.SeedPrincipalId;
 
@@ -42,7 +47,11 @@ public sealed class ProjectTestHost : IAsyncLifetime
         FROM (VALUES ('{DraftClassificationId}', 'PROJECT_CLASSIFICATION', 'TEST_DRAFT_CLASS', 'Draft classification', NULL, 'DRAFT'),
                      ('{RegionId}', 'REGION', 'TEST_REGION', 'Test region', NULL, 'PUBLISHED'),
                      ('{OtherRegionId}', 'REGION', 'TEST_OTHER_REGION', 'Other region', NULL, 'PUBLISHED'),
-                     ('{CityId}', 'CITY', 'TEST_CITY', 'Test city', '{RegionId}', 'PUBLISHED'))
+                     ('{CityId}', 'CITY', 'TEST_CITY', 'Test city', '{RegionId}', 'PUBLISHED'),
+                     ('{PortfolioId}', 'STRATEGIC_PORTFOLIO', 'PF-T1', 'Test portfolio', NULL, 'PUBLISHED'),
+                     ('{OtherPortfolioId}', 'STRATEGIC_PORTFOLIO', 'PF-T2', 'Other portfolio', NULL, 'PUBLISHED'),
+                     ('{InitiativeId}', 'STRATEGIC_INITIATIVE', 'SI-T1', 'Test initiative', '{PortfolioId}', 'PUBLISHED'),
+                     ('{PriorityId}', 'PRIORITY', 'TEST_HIGH', 'High', NULL, 'PUBLISHED'))
              AS i (id, catalogue, code, label_en, parent, state)
         JOIN master_data_config.master_data_catalogue c ON c.code = i.catalogue;
 
@@ -59,6 +68,8 @@ public sealed class ProjectTestHost : IAsyncLifetime
         FROM (VALUES ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_VIEW', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_REVIEW', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_ACTIVATE', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'APPROVAL_DECIDE', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'APPROVAL_VIEW', 'ALL'),
+                     ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_FOLLOW_UP', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_IMPORT', 'ALL'),
+                     ('{IdentityDatabase.ProfileVersionId(2)}', 'PROJECT_IMPORT_APPROVE', 'ALL'), ('{IdentityDatabase.ProfileVersionId(3)}', 'PROJECT_IMPORT', 'DEPT'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'SUSPENSION_VIEW', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'SUSPENSION_ACTIVATE', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(2)}', 'CLOSEOUT_VIEW', 'ALL'), ('{IdentityDatabase.ProfileVersionId(2)}', 'CLOSEOUT_ACTIVATE', 'ALL'),
                      ('{IdentityDatabase.ProfileVersionId(3)}', 'SUSPENSION_RAISE', 'DEPT'), ('{IdentityDatabase.ProfileVersionId(3)}', 'CLOSEOUT_RAISE', 'DEPT'),

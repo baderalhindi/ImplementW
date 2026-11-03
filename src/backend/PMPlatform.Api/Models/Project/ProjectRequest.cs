@@ -3,12 +3,14 @@ using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Api.Models.MasterDataConfig;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Domain.Common;
+using PMPlatform.Domain.Project;
 
 namespace PMPlatform.Api.Models.Project;
 
 /// <summary>
 /// MOD-001 Create Project and the edit of a DRAFT or RETURNED project: the whole registration (R-5). There is no
-/// <c>formalProjectId</c>: AHDA issues it on approval (ADR-013).
+/// <c>formalProjectId</c>: AHDA issues it on approval (ADR-013). The strategy classification, priority, funding source, legacy reference and
+/// follow-up owner are optional (the 2 Nov 2026 review, R3-3).
 /// </summary>
 public sealed record ProjectRequest(
     NarrativeTextRequest? Title,
@@ -24,8 +26,16 @@ public sealed record ProjectRequest(
     Guid? RegionItemId,
     Guid? CityItemId,
     decimal? Latitude,
-    decimal? Longitude)
+    decimal? Longitude,
+    Guid? StrategicPortfolioItemId = null,
+    Guid? StrategicInitiativeItemId = null,
+    Guid? PriorityItemId = null,
+    string? FundingSource = null,
+    string? LegacyReference = null,
+    Guid? FollowUpOwnerUserId = null)
 {
+    private const int LegacyReferenceLength = 100;
+
     internal List<FieldError> Validate(out ProjectDraft? draft)
     {
         List<FieldError> errors = [];
@@ -57,10 +67,19 @@ public sealed record ProjectRequest(
             errors.Add(new FieldError("longitude", FieldError.OutOfRange));
         }
 
+        RequestValidation.Optional(LegacyReference, "legacyReference", LegacyReferenceLength, errors);
+        IReadOnlyCollection<FundingSource> funding = QueryParameters.EnumSet<FundingSource>(FundingSource, "fundingSource", errors);
+        if (StrategicInitiativeItemId is not null && StrategicPortfolioItemId is null)
+        {
+            errors.Add(new FieldError("strategicPortfolioItemId", FieldError.Required));
+        }
+
         draft = errors.Count == 0
             ? new ProjectDraft(
                 title!, description, ClassificationItemId!.Value, DepartmentId!.Value, ExternalEntityId, mode!.Value, GovernanceProfileItemId!.Value, budget,
-                PlannedStartDate, PlannedEndDate, RegionItemId, CityItemId, Latitude, Longitude)
+                PlannedStartDate, PlannedEndDate, RegionItemId, CityItemId, Latitude, Longitude,
+                StrategicPortfolioItemId, StrategicInitiativeItemId, PriorityItemId, funding.Count == 1 ? funding.First() : null, LegacyReference?.Trim(),
+                FollowUpOwnerUserId)
             : null;
         return errors;
     }

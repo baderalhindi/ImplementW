@@ -51,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(11, built["paths"]!.AsObject().Count);
+        Assert.Equal(28, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -108,6 +108,66 @@ public sealed class ProjectContractTests(ProjectTestHost host)
 
         using HttpResponseMessage listed = await client.GetAsync($"{ProjectDriver.Projects}?q={(await host.RowAsync(projectId))["formal_project_id"]}", sessions.Approver);
         Assert.Single((await responses.CheckAsync("GET", ProjectDriver.Projects, listed))!["items"]!.AsArray());
+
+        // The 2 Nov 2026 review: the follow-up of an approved project, its notes and the Follow-up list (R3-3, R3-5).
+        using HttpResponseMessage current = await client.GetAsync(path, sessions.Approver);
+        using HttpResponseMessage followedUp = await client.PostAsync($"{path}/update-follow-up", sessions.Approver,
+            new { currentObstacle = new { text = "تأخر التصاريح", language = "ar" }, declaredPlannedPercent = 40, declaredActualPercent = 25, note = new { text = "متابعة", language = "ar" } },
+            AdministrationApi.ETagOf(current));
+        Assert.Equal("STALLED", (await responses.CheckAsync("POST", $"{item}/update-follow-up", followedUp))!["indicators"]!["onPlan"]!.GetValue<string>());
+        using HttpResponseMessage notes = await client.GetAsync($"/api/v1/project-follow-up-notes?projectId={projectId}", sessions.Approver);
+        Assert.Single((await responses.CheckAsync("GET", "/api/v1/project-follow-up-notes", notes))!["items"]!.AsArray());
+        using HttpResponseMessage followUps = await client.GetAsync("/api/v1/project-follow-ups", sessions.Approver);
+        Assert.Contains((await responses.CheckAsync("GET", "/api/v1/project-follow-ups", followUps))!["items"]!.AsArray(), i => i!["projectId"]!.GetValue<string>() == projectId.ToString());
+
+        // R3-4: a batch from RPMO's workbook, validated, submitted by local.r03, approved and rolled back by local.r02; a second one returned.
+        const string batches = "/api/v1/project-import-batches";
+        ProjectImportTests import = new(host);
+        using HttpResponseMessage importTemplate = await client.GetAsync($"{batches}/import-template/content", sessions.Approver);
+        await responses.CheckAsync("GET", $"{batches}/import-template/content", importTemplate);
+        byte[] rpmo = await ProjectImportTests.WorkbookAsync([await import.RowAsync($"CONTRACT-{Guid.NewGuid():N}"[..20], "نشط")]);
+        using HttpResponseMessage rpmoValidated = await ProjectImportTests.SendValidationAsync(client, sessions.Reviewer, rpmo);
+        await responses.CheckAsync("POST", $"{batches}/validations", rpmoValidated);
+        using HttpResponseMessage submittedBatch = await ProjectImportTests.SubmitAsync(client, sessions.Reviewer, rpmo, string.Empty);
+        Guid batchId = AdministrationApi.IdOf((await responses.CheckAsync("POST", batches, submittedBatch))!);
+        using HttpResponseMessage batchList = await client.GetAsync(batches, sessions.Approver);
+        await responses.CheckAsync("GET", batches, batchList);
+        using HttpResponseMessage batchRead = await client.GetAsync($"{batches}/{batchId}", sessions.Approver);
+        await responses.CheckAsync("GET", $"{batches}/{{batchId}}", batchRead);
+        using HttpResponseMessage batchPreview = await client.GetAsync($"/api/v1/project-import-batch-previews/{batchId}", sessions.Approver);
+        await responses.CheckAsync("GET", "/api/v1/project-import-batch-previews/{batchId}", batchPreview);
+        using HttpResponseMessage batchFile = await client.GetAsync($"{batches}/{batchId}/content", sessions.Approver);
+        await responses.CheckAsync("GET", $"{batches}/{{batchId}}/content", batchFile);
+        using HttpResponseMessage batchApproved = await ProjectImportTests.PostAsync(client, sessions.Approver, $"{batches}/{batchId}/approve");
+        await responses.CheckAsync("POST", $"{batches}/{{batchId}}/approve", batchApproved);
+        using HttpResponseMessage batchRolledBack = await ProjectImportTests.PostAsync(client, sessions.Approver, $"{batches}/{batchId}/rollback");
+        await responses.CheckAsync("POST", $"{batches}/{{batchId}}/rollback", batchRolledBack);
+        byte[] second = await ProjectImportTests.WorkbookAsync([await import.RowAsync($"CONTRACT-{Guid.NewGuid():N}"[..20], "نشط")]);
+        using HttpResponseMessage resubmitted = await ProjectImportTests.SubmitAsync(client, sessions.Reviewer, second, string.Empty);
+        Guid returnedId = AdministrationApi.IdOf((await resubmitted.ReadObjectAsync())!);
+        using HttpResponseMessage batchReturned = await ProjectImportTests.PostAsync(client, sessions.Approver, $"{batches}/{returnedId}/return",
+            "{\"reason\":{\"text\":\"أكمل الأسماء\",\"language\":\"ar\"}}");
+        await responses.CheckAsync("POST", $"{batches}/{{batchId}}/return", batchReturned);
+
+        // The 2 Nov 2026 review, round 3 follow-up: a background validation read back, and a value request asked for and resolved.
+        Guid validationId = Guid.CreateVersion7();
+        await host.Database.ExecuteAsync($$"""
+            INSERT INTO project.project_import_validation (id, status, file_name, file_content, plan, row_count, result, completed_at, created_at, created_by, updated_at, updated_by)
+            VALUES ('{{validationId}}', 'COMPLETED', 'rpmo.xlsx', ''::bytea, '{"mappings":[],"skippedRows":[]}', 0,
+                    '{"fileSha256":"","rowCount":0,"createCount":0,"updateCount":0,"skipCount":0,"errorCount":0,"warningCount":0,"submittable":false,"fileIssues":[],"unmatched":[],"rows":[]}',
+                    now(), now(), '{{IdentityDatabase.UserId(3)}}', now(), '{{IdentityDatabase.UserId(3)}}');
+            """);
+        using HttpResponseMessage validationRead = await client.GetAsync($"/api/v1/project-import-validations/{validationId}", sessions.Reviewer);
+        await responses.CheckAsync("GET", "/api/v1/project-import-validations/{validationId}", validationRead);
+        const string valueRequests = "/api/v1/project-import-value-requests";
+        using HttpResponseMessage asked = await ProjectImportTests.PostAsync(client, sessions.Reviewer, valueRequests,
+            $"{{\"dimension\":\"SECTOR\",\"sourceText\":\"قطاع {Guid.NewGuid():N}\"}}");
+        Guid valueRequestId = AdministrationApi.IdOf((await responses.CheckAsync("POST", valueRequests, asked))!);
+        using HttpResponseMessage requestList = await client.GetAsync($"{valueRequests}?status=OPEN", sessions.Reviewer);
+        await responses.CheckAsync("GET", valueRequests, requestList);
+        string resolver = (await client.SignInOrFailAsync(1)).AccessToken;
+        using HttpResponseMessage resolved = await ProjectImportTests.PostAsync(client, resolver, $"{valueRequests}/{valueRequestId}/resolve", "{\"status\":\"DECLINED\"}");
+        await responses.CheckAsync("POST", $"{valueRequests}/{{requestId}}/resolve", resolved);
 
         Guid draft = AdministrationApi.IdOf(await client.CreateOrFailAsync(sessions.Entity, host.Registration()));
         using HttpResponseMessage deleted = await client.DeleteProjectAsync(draft, sessions.Entity);

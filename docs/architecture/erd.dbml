@@ -228,6 +228,7 @@ Table master_data_config.master_data_catalogue {
   name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
   name_en varchar(200) [not null, note: 'English label (ADR-012)']
   allows_hierarchy boolean [not null, default: false]
+  parent_catalogue_id uuid [ref: > master_data_config.master_data_catalogue.id, note: "The catalogue an item's parent is of, when another: CITY in REGION, STRATEGIC_INITIATIVE in STRATEGIC_PORTFOLIO (2 Nov 2026 review)"]
   is_system boolean [not null, default: false, note: 'Shipped catalogues cannot be retired']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
@@ -644,11 +645,132 @@ Table project.project {
   legacy_intake_date date [note: 'Permanent intake marker; set once by the intake path and never cleared (ADR-014, TASK-104)']
   activated_at timestamptz [note: 'Planned→Active command timestamp (business date, D-8 register)']
   closed_at timestamptz [note: 'Closed is terminal (TASK-063)']
+  strategic_portfolio_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Catalogue STRATEGIC_PORTFOLIO; a view of the project, never a scope (2 Nov 2026 review, R3-3)']
+  strategic_initiative_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Catalogue STRATEGIC_INITIATIVE, an initiative of the chosen portfolio']
+  priority_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Catalogue PRIORITY']
+  funding_source varchar(50) [note: 'STRATEGY_BUDGET_FULL | STRATEGY_BUDGET_PARTIAL | NOT_STRATEGY_BUDGET']
+  legacy_reference varchar(100) [unique, note: 'RPMO register number before the platform; unique where set; matches a row on re-import']
+  follow_up_owner_user_id uuid [ref: > identity_access.user.id, note: 'The RPMO staff member who follows the project up (portfolio owner)']
+  project_import_batch_id uuid [ref: > project.project_import_batch.id, note: 'The import batch that created the project: its Imported label (R3-4)']
+  current_obstacle text [note: 'Narrative, stored as entered (ADR-012)']
+  current_obstacle_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  next_action text [note: 'Narrative, stored as entered (ADR-012)']
+  next_action_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  next_action_owner varchar(200) [note: 'Who takes the next action, as RPMO names them']
+  next_action_due_date date
+  declared_planned_percent numeric(18,4) [note: 'Declared planned progress, 0-100, until a schedule computes it']
+  declared_actual_percent numeric(18,4) [note: 'Declared actual progress, 0-100']
+  declared_planned_spend_percent numeric(18,4) [note: 'Declared planned spend, 0-100 of the budget']
+  declared_actual_spend_percent numeric(18,4) [note: 'Declared actual spend, 0-100 of the budget']
+  declared_as_of date [note: 'The date the declared values hold for']
+  declared_source varchar(50) [note: 'IMPORT | MANUAL']
+  entity_update_compliant boolean [note: 'Whether the entity keeps to its periodic updates, as RPMO records it']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
   updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   Note: 'Project master aggregate (Blueprint Sections 5, 9; ICD-02). Root of the core-domain graph. Delete policy: HARD_DRAFT.'
+}
+
+Table project.project_follow_up_note {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id]
+  note text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  note_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_id, created_at, id)
+  }
+  Note: 'A dated follow-up note on a project, attributed by its creation stamp (2 Nov 2026 review, R3-3). Delete policy: APPEND_ONLY.'
+}
+
+Table project.project_import_batch {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  batch_no integer [not null, unique, note: 'Shown on the Imported label']
+  status varchar(50) [not null, note: 'SUBMITTED | APPROVED | RETURNED | ROLLED_BACK']
+  file_name varchar(255) [not null, note: 'As uploaded; evidence only']
+  file_sha256 char(64) [not null]
+  file_content bytea [not null, note: 'The workbook as uploaded, attached to the batch']
+  submission_note text [note: 'Narrative, stored as entered (ADR-012)']
+  submission_note_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  plan jsonb [not null, note: 'The name mappings and row actions submitted; the approval applies exactly these']
+  row_count integer [not null]
+  create_count integer [not null]
+  update_count integer [not null]
+  skip_count integer [not null]
+  warning_count integer [not null]
+  decided_by_user_id uuid [ref: > identity_access.user.id, note: 'Never the importer (created_by)']
+  decided_at timestamptz
+  return_reason text [note: 'Narrative, stored as entered (ADR-012)']
+  return_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  rolled_back_by_user_id uuid [ref: > identity_access.user.id]
+  rolled_back_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (created_at, id)
+    (status, created_at, id)
+  }
+  Note: 'A batch of projects imported from the RPMO workbook, approved by a second person (2 Nov 2026 review, R3-4). Delete policy: RETAIN.'
+}
+
+Table project.project_import_name_mapping {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  dimension varchar(50) [not null, note: 'ENTITY | DEPARTMENT | SECTOR | PORTFOLIO | INITIATIVE | REGION | CITY | PRIORITY | GOVERNANCE | STATUS | PROJECT_MANAGER | FOLLOW_UP_OWNER']
+  source_key varchar(200) [not null, note: 'The name as normalized for matching']
+  target_value varchar(50) [not null, note: 'An id, or a lifecycle state for STATUS; an opaque value, since it may name a row of any module (D-14)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (dimension, source_key) [unique]
+  }
+  Note: 'A workbook name mapped to the platform value it means, remembered for the next import (R3-4). Delete policy: RETAIN.'
+}
+
+Table project.project_import_validation {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  status varchar(50) [not null, note: 'QUEUED | RUNNING | COMPLETED | FAILED']
+  file_name varchar(255) [not null, note: 'As uploaded; evidence only']
+  file_content bytea [not null, note: 'The workbook until it is validated; cleared after']
+  plan jsonb [not null, note: 'The name mappings and skipped rows validated with']
+  row_count integer [not null]
+  result jsonb [note: 'The preview, once COMPLETED']
+  failure_code varchar(50) [note: 'Why it FAILED']
+  completed_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (status, created_at, id)
+  }
+  Note: 'A project import workbook of more than 200 rows, validated in the background; its importer is notified when done (2 Nov 2026 review). Delete policy: RETAIN.'
+}
+
+Table project.project_import_value_request {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  dimension varchar(50) [not null, note: 'ENTITY | DEPARTMENT | SECTOR | PORTFOLIO | INITIATIVE | REGION | CITY | PRIORITY | GOVERNANCE | PROJECT_MANAGER | FOLLOW_UP_OWNER']
+  source_text varchar(200) [not null, note: 'The name as the workbook writes it']
+  status varchar(50) [not null, note: 'OPEN | ADDED | DECLINED']
+  resolved_by_user_id uuid [ref: > identity_access.user.id]
+  resolved_at timestamptz
+  resolution_note text [note: 'Narrative, stored as entered (ADR-012)']
+  resolution_note_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (status, created_at, id)
+  }
+  Note: 'An importer asks the administrators to add a value the lists lack; they mark it added or declined (2 Nov 2026 review). Delete policy: RETAIN.'
 }
 
 Table project.project_intake {

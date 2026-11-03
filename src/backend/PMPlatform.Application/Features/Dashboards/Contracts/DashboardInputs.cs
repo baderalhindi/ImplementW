@@ -1,6 +1,8 @@
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.Dashboards;
 
+using PMPlatform.Domain.Project;
+
 namespace PMPlatform.Application.Features.Dashboards.Contracts;
 
 /// <summary>
@@ -33,7 +35,23 @@ public sealed record DashboardWidgetInput(
 /// </summary>
 public sealed record DashboardContext(Guid? ProjectId, Guid? DepartmentId, Guid? ExternalEntityId = null, Guid? RegionItemId = null, Guid? CityItemId = null)
 {
-    public bool IsFiltered => DepartmentId is not null || ExternalEntityId is not null || RegionItemId is not null || CityItemId is not null;
+    /// <summary>The sector: the project classification (the 2 Nov 2026 review aligns the catalogue to RPMO's 15 sectors).</summary>
+    public Guid? ClassificationItemId { get; init; }
+
+    public ProjectLifecycleState? Status { get; init; }
+
+    public Guid? PriorityItemId { get; init; }
+
+    public Guid? StrategicPortfolioItemId { get; init; }
+
+    public Guid? StrategicInitiativeItemId { get; init; }
+
+    /// <summary>A year: the projects whose planned period touches it.</summary>
+    public int? PeriodYear { get; init; }
+
+    public bool IsFiltered => DepartmentId is not null || ExternalEntityId is not null || RegionItemId is not null || CityItemId is not null
+                              || ClassificationItemId is not null || Status is not null || PriorityItemId is not null
+                              || StrategicPortfolioItemId is not null || StrategicInitiativeItemId is not null || PeriodYear is not null;
 }
 
 /// <summary>ADR-019: the caller's choices for the optional widgets of a personalisable dashboard, as a whole; a widget not named keeps the governed layout.</summary>

@@ -30,6 +30,10 @@ internal sealed class FakeUserAdministrationRepository : FakeStore<User>, IUserA
     public Task<Guid?> FindIdByUsernameAsync(string username, CancellationToken cancellationToken) =>
         Task.FromResult(Rows.Values.Where(u => u.Username == username).Select(u => (Guid?)u.Id).SingleOrDefault());
 
+    public Task<IReadOnlyList<UserIdentity>> ListActiveIdentitiesAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<UserIdentity>>([.. Rows.Values.Where(u => u.Status == UserStatus.Active).OrderBy(u => u.Username, StringComparer.Ordinal)
+            .Select(u => new UserIdentity(u.Id, u.Username, u.DisplayName, u.Email, u.UserType))]);
+
     public Task<IReadOnlyList<UserName>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<UserName>>([.. Rows.Values.Where(u => ids.Contains(u.Id)).Select(u => new UserName(u.Id, u.DisplayName, u.ExternalEntityId))]);
 }

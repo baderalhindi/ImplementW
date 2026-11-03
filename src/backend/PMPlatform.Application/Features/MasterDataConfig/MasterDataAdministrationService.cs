@@ -244,10 +244,14 @@ internal sealed partial class MasterDataAdministrationService(
             return new FieldIssue("parentItemId", FieldIssue.NotAllowed);
         }
 
+        // A parent in another catalogue (a city's region) cannot loop back to the item, so only a same-catalogue parent is walked.
         ItemFacts? parent = (await masterData.FindItemFactsAsync([id], cancellationToken).ConfigureAwait(false)).GetValueOrDefault(id);
-        return parent is null || parent.CatalogueCode != catalogue.Code ? new FieldIssue("parentItemId", FieldIssue.NotFound)
+        bool across = catalogue.ParentCatalogueId is not null;
+        return parent is null || (across ? parent.CatalogueId != catalogue.ParentCatalogueId : parent.CatalogueCode != catalogue.Code)
+                ? new FieldIssue("parentItemId", FieldIssue.NotFound)
             : parent.LifecycleState == GovernedLifecycleState.Retired ? new FieldIssue("parentItemId", FieldIssue.Inactive)
-            : IsOwnAncestor(itemId, id, await masterData.GetParentsAsync(catalogue.Id, cancellationToken).ConfigureAwait(false)) ? new FieldIssue("parentItemId", FieldIssue.NotAllowed)
+            : !across && IsOwnAncestor(itemId, id, await masterData.GetParentsAsync(catalogue.Id, cancellationToken).ConfigureAwait(false))
+                ? new FieldIssue("parentItemId", FieldIssue.NotAllowed)
             : null;
     }
 

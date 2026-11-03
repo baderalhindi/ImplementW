@@ -141,7 +141,8 @@ internal sealed partial class DashboardService(
             context.ProjectId, context.DepartmentId, filters.Departments, now, results,
             context.ExternalEntityId, context.RegionItemId, context.CityItemId, filters.Entities, filters.Regions, filters.Cities,
             kind == DashboardContextKind.Project ? [] : PortfolioFilters.Locations(candidates),
-            await PlacesAsync(filters, cancellationToken).ConfigureAwait(false));
+            await PlacesAsync(filters, cancellationToken).ConfigureAwait(false),
+            filters.ToView());
     }
 
     public async Task<AdministrationResult<DashboardPersonalizationDetail>> PersonalizeAsync(
@@ -327,21 +328,35 @@ internal sealed partial class DashboardService(
             : [];
 
     /// <summary>
-    /// The names of the regions and cities the filters offer: a portfolio reader holds no MASTER_DATA_VIEW, so the view names its own
-    /// places. A retired place is not named and shows by its id.
+    /// The names of the master data values the filters offer: a portfolio reader holds no MASTER_DATA_VIEW, so the view names its own
+    /// values. A retired value is not named and shows by its id.
     /// </summary>
     private async Task<IReadOnlyList<DashboardPlace>> PlacesAsync(PortfolioFilters filters, CancellationToken cancellationToken)
     {
-        if (filters.Regions.Count == 0 && filters.Cities.Count == 0)
+        HashSet<Guid> offered = [.. filters.Items];
+        if (offered.Count == 0)
         {
             return [];
         }
 
-        IReadOnlyList<MasterDataItemReference> regions = await masterData.ListPublishedItemsAsync(MasterDataCatalogueCodes.Region, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<MasterDataItemReference> cities = await masterData.ListPublishedItemsAsync(MasterDataCatalogueCodes.City, cancellationToken).ConfigureAwait(false);
-        return [.. regions.Where(r => filters.Regions.Contains(r.Id)).Concat(cities.Where(c => filters.Cities.Contains(c.Id)))
-            .OrderBy(p => p.SortOrder)
-            .Select(p => new DashboardPlace(p.Id, p.Label, p.ParentItemId))];
+        List<MasterDataItemReference> items = [];
+        foreach (string catalogue in new[]
+        {
+            MasterDataCatalogueCodes.Region, MasterDataCatalogueCodes.City, MasterDataCatalogueCodes.ProjectClassification, MasterDataCatalogueCodes.Priority,
+            MasterDataCatalogueCodes.StrategicPortfolio, MasterDataCatalogueCodes.StrategicInitiative,
+        })
+        {
+            try
+            {
+                items.AddRange((await masterData.ListPublishedItemsAsync(catalogue, cancellationToken).ConfigureAwait(false)).Where(i => offered.Contains(i.Id)));
+            }
+            catch (ConfigurationMissingException)
+            {
+                // A catalogue a database has not been seeded with yet offers nothing to name.
+            }
+        }
+
+        return [.. items.OrderBy(p => p.SortOrder).Select(p => new DashboardPlace(p.Id, p.Label, p.ParentItemId))];
     }
 
     private async Task<IReadOnlyDictionary<Guid, string>> RoleCodesAsync(CancellationToken cancellationToken) =>

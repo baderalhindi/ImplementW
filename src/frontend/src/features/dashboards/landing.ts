@@ -78,7 +78,7 @@ export function selectedEntry(
 const PERSONALIZING_ROLES = new Set(['R02', 'R03', 'R07']);
 
 /**
- * Whether the Home offers "Customise layout" on a dashboard: only one the API says is personalisable (the Portfolio
+ * Whether the Home offers "Customize layout" on a dashboard: only one the API says is personalisable (the Portfolio
  * Dashboard, by its CHECK) and only to a holder of the permission. The Project Dashboard never is (ADR-019).
  */
 export function mayPersonalize(

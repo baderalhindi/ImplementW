@@ -29,6 +29,7 @@ public static class ActivityTemplateCatalogue
     public static IReadOnlySet<string> ExcludedEventTypes { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
         "Project.ApprovalOutcomeIgnored", "Project.LifecycleGateRefused",
+        "Project.ImportBatchSubmitted", "Project.ImportBatchApproved", "Project.ImportBatchReturned", "Project.ImportBatchRolledBack",
         "Progress.ProjectHealthRecomputed", "Progress.ReviewRefused",
         "Schedule.ApprovalOutcomeIgnored", "Schedule.ScheduleHealthRecomputed",
         "ProjectTask.ActivityProgressRecomputed",
@@ -63,6 +64,9 @@ public static class ActivityTemplateCatalogue
         ["Project.ProjectResumed"] = new("Project resumed", "تم استئناف المشروع"),
         ["Project.ProjectCompleted"] = new("Project completed", "تم إكمال المشروع"),
         ["Project.ProjectClosed"] = new("Project closed", "تم إغلاق المشروع"),
+        ["Project.FollowUpChanged"] = new("Project follow-up updated", "تم تحديث متابعة المشروع"),
+        ["Project.FollowUpNoteAdded"] = new("Follow-up note added", "تمت إضافة ملاحظة متابعة"),
+        ["Project.ProjectUpdatedByImport"] = new("Project updated by an import batch", "تم تحديث المشروع بدفعة استيراد"),
 
         // WF-02 Progress update
         ["Progress.ReportingCycleCreated"] = new("Reporting period created", "تم إنشاء فترة التقرير"),

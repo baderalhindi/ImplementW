@@ -49,6 +49,118 @@ export interface ProjectSummary {
   /** Set only on a project that entered by the legacy intake path (ADR-014, TASK-104). */
   legacyIntakeDate: string | null;
   updatedAt: string;
+  /** RPMO's register number before the platform (the 2 Nov 2026 review, R3-3). */
+  legacyReference?: string | null;
+  strategicPortfolioItemId?: string | null;
+  strategicInitiativeItemId?: string | null;
+  priorityItemId?: string | null;
+  regionItemId?: string | null;
+  cityItemId?: string | null;
+  /** The import batch that created the project: its Imported label (R3-4). */
+  projectImportBatchId?: string | null;
+  declaredPlannedPercent?: number | null;
+  declaredActualPercent?: number | null;
+  currentObstacle?: NarrativeText | null;
+  /** RPMO's calculated columns, from the declared values and the on-plan thresholds in force. */
+  indicators?: ProjectIndicators;
+}
+
+/** RPMO's on-plan indicator (مؤشر الالتزام بالخطة). */
+export type OnPlanStatus = 'ON_TRACK' | 'LATE' | 'STALLED';
+
+/** Why a project is on the Follow-up list, most urgent first. */
+export type FollowUpReason = 'STALLED' | 'SUSPENDED' | 'LATE' | 'ACTION_OVERDUE' | 'OPEN_OBSTACLE';
+
+export const FOLLOW_UP_REASONS: FollowUpReason[] = [
+  'STALLED',
+  'SUSPENDED',
+  'LATE',
+  'ACTION_OVERDUE',
+  'OPEN_OBSTACLE',
+];
+
+export interface ProjectIndicators {
+  /** Actual minus planned progress, in points; null when it cannot be calculated. */
+  gapPoints: number | null;
+  onPlan: OnPlanStatus | null;
+  daysRemaining: number | null;
+  actionDue: 'SCHEDULED' | 'OVERDUE' | null;
+  followUpReasons: FollowUpReason[];
+  /** Whether the entity keeps to its updates: calculated from on-time answers, overridden by what RPMO recorded. */
+  entityUpdates?: EntityUpdateCompliance | null;
+}
+
+export interface EntityUpdateCompliance {
+  counted: number;
+  onTime: number;
+  onTimePercent: number | null;
+  calculated: boolean | null;
+  effective: boolean | null;
+  overridden: boolean;
+}
+
+export type FundingSource =
+  'STRATEGY_BUDGET_FULL' | 'STRATEGY_BUDGET_PARTIAL' | 'NOT_STRATEGY_BUDGET';
+
+export const FUNDING_SOURCES: FundingSource[] = [
+  'STRATEGY_BUDGET_FULL',
+  'STRATEGY_BUDGET_PARTIAL',
+  'NOT_STRATEGY_BUDGET',
+];
+
+/** A project's follow-up as RPMO keeps it (R3-3). Every value is optional: a blank is "not available", never zero. */
+export interface ProjectFollowUp {
+  currentObstacle: NarrativeText | null;
+  nextAction: NarrativeText | null;
+  nextActionOwner: string | null;
+  nextActionDueDate: string | null;
+  declaredPlannedPercent: number | null;
+  declaredActualPercent: number | null;
+  declaredPlannedSpendPercent: number | null;
+  declaredActualSpendPercent: number | null;
+  declaredAsOf: string | null;
+  declaredSource: 'IMPORT' | 'MANUAL' | null;
+  entityUpdateCompliant: boolean | null;
+}
+
+/** The whole follow-up, as the follow-up command replaces it, with an optional dated note. */
+export interface ProjectFollowUpRequest {
+  currentObstacle: NarrativeTextRequest | null;
+  nextAction: NarrativeTextRequest | null;
+  nextActionOwner: string | null;
+  nextActionDueDate: string | null;
+  declaredPlannedPercent: number | null;
+  declaredActualPercent: number | null;
+  declaredPlannedSpendPercent: number | null;
+  declaredActualSpendPercent: number | null;
+  declaredAsOf: string | null;
+  entityUpdateCompliant: boolean | null;
+  note: NarrativeTextRequest | null;
+}
+
+export interface ProjectFollowUpNote {
+  id: string;
+  projectId: string;
+  note: NarrativeText;
+  recordedAt: string;
+  recordedBy: string;
+}
+
+/** A row of the Follow-up list (قائمة المتابعة). */
+export interface ProjectFollowUpItem {
+  projectId: string;
+  formalProjectId: string | null;
+  legacyReference: string | null;
+  title: NarrativeText;
+  status: ProjectStatus;
+  departmentId: string;
+  externalEntityId: string | null;
+  followUpOwnerUserId: string | null;
+  currentObstacle: NarrativeText | null;
+  nextAction: NarrativeText | null;
+  nextActionOwner: string | null;
+  nextActionDueDate: string | null;
+  indicators: ProjectIndicators;
 }
 
 /** The project the workspace (SCR-040–043) shows, with the ETag every change sends back. */
@@ -69,6 +181,9 @@ export interface ProjectDetail extends ProjectSummary {
   createdAt: string;
   createdBy: string;
   updatedBy: string;
+  fundingSource?: FundingSource | null;
+  followUpOwnerUserId?: string | null;
+  followUp?: ProjectFollowUp;
 }
 
 /** The whole registration (R-5): what SCR-033 creates and SCR-034 / SCR-035 replace. No Formal Project ID. */
@@ -87,6 +202,12 @@ export interface ProjectRequest {
   cityItemId: string | null;
   latitude: number | null;
   longitude: number | null;
+  strategicPortfolioItemId: string | null;
+  strategicInitiativeItemId: string | null;
+  priorityItemId: string | null;
+  fundingSource: FundingSource | null;
+  legacyReference: string | null;
+  followUpOwnerUserId: string | null;
 }
 
 export interface ProjectQuery {
@@ -97,6 +218,15 @@ export interface ProjectQuery {
   /** SCR-026 My Projects. */
   projectManagerUserId?: string | undefined;
   q?: string | undefined;
+  /** The filter bar's dimensions on the register (R3-1). */
+  classificationItemId?: string | undefined;
+  strategicPortfolioItemId?: string | undefined;
+  strategicInitiativeItemId?: string | undefined;
+  priorityItemId?: string | undefined;
+  regionItemId?: string | undefined;
+  cityItemId?: string | undefined;
+  /** A year the planned period touches. */
+  period?: string | undefined;
   page?: number | undefined;
   pageSize?: number | undefined;
 }

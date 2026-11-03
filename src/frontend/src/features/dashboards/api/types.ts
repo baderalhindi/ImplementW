@@ -145,8 +145,18 @@ export interface DashboardView {
   cityOptions: string[];
   /** The filtered projects counted by region and city, largest first; a null region is a project with none recorded. */
   locations: DashboardLocationCount[];
-  /** The names of the regions and cities offered, which a portfolio reader cannot read from master data. */
+  /**
+   * The names of the master data values offered — regions, cities, sectors, priorities, strategic portfolios and initiatives — which a
+   * portfolio reader cannot read from master data.
+   */
   places: DashboardPlace[];
+  /** Every filter the bar offers, each value with its count of projects in the caller's scope (the 2 Nov 2026 review, R3-1). */
+  filters?: DashboardFilter[];
+}
+
+export interface DashboardFilter {
+  field: string;
+  options: { value: string; projectCount: number }[];
 }
 
 export interface DashboardLocationCount {

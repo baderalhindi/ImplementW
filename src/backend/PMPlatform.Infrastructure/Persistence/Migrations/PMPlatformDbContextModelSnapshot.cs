@@ -6705,6 +6705,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_system");
 
+                    b.Property<Guid?>("ParentCatalogueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("parent_catalogue_id");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -6742,6 +6746,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_master_data_catalogue_code");
+
+                    b.HasIndex("ParentCatalogueId")
+                        .HasDatabaseName("ix_master_data_catalogue_parent_catalogue_id");
 
                     b.ToTable("master_data_catalogue", "master_data_config");
                 });
@@ -8596,18 +8603,60 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<decimal?>("DeclaredActualPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("declared_actual_percent");
+
+                    b.Property<decimal?>("DeclaredActualSpendPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("declared_actual_spend_percent");
+
+                    b.Property<DateOnly?>("DeclaredAsOf")
+                        .HasColumnType("date")
+                        .HasColumnName("declared_as_of");
+
+                    b.Property<decimal?>("DeclaredPlannedPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("declared_planned_percent");
+
+                    b.Property<decimal?>("DeclaredPlannedSpendPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("declared_planned_spend_percent");
+
+                    b.Property<string>("DeclaredSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("declared_source");
+
                     b.Property<Guid>("DepartmentId")
                         .HasColumnType("uuid")
                         .HasColumnName("department_id");
+
+                    b.Property<bool?>("EntityUpdateCompliant")
+                        .HasColumnType("boolean")
+                        .HasColumnName("entity_update_compliant");
 
                     b.Property<Guid?>("ExternalEntityId")
                         .HasColumnType("uuid")
                         .HasColumnName("external_entity_id");
 
+                    b.Property<Guid?>("FollowUpOwnerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("follow_up_owner_user_id");
+
                     b.Property<string>("FormalProjectId")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("formal_project_id");
+
+                    b.Property<string>("FundingSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("funding_source");
 
                     b.Property<Guid>("GovernanceProfileItemId")
                         .HasColumnType("uuid")
@@ -8628,6 +8677,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("legacy_intake_date");
 
+                    b.Property<string>("LegacyReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("legacy_reference");
+
                     b.Property<string>("LifecycleState")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -8638,6 +8692,15 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("longitude");
+
+                    b.Property<DateOnly?>("NextActionDueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("next_action_due_date");
+
+                    b.Property<string>("NextActionOwner")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("next_action_owner");
 
                     b.Property<string>("ParticipationMode")
                         .IsRequired()
@@ -8652,6 +8715,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly?>("PlannedStartDate")
                         .HasColumnType("date")
                         .HasColumnName("planned_start_date");
+
+                    b.Property<Guid?>("PriorityItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("priority_item_id");
+
+                    b.Property<Guid?>("ProjectImportBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_import_batch_id");
 
                     b.Property<Guid?>("ProjectManagerUserId")
                         .HasColumnType("uuid")
@@ -8672,6 +8743,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(1)
                         .HasColumnName("revision_no");
 
+                    b.Property<Guid?>("StrategicInitiativeItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("strategic_initiative_item_id");
+
+                    b.Property<Guid?>("StrategicPortfolioItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("strategic_portfolio_item_id");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -8685,6 +8764,19 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "CurrentObstacle", "PMPlatform.Domain.Project.Project.CurrentObstacle#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("current_obstacle_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("current_obstacle");
+                        });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Description", "PMPlatform.Domain.Project.Project.Description#NarrativeText", b1 =>
                         {
@@ -8712,6 +8804,19 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                                 .HasColumnName("governance_profile_override_reason");
                         });
 
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "NextAction", "PMPlatform.Domain.Project.Project.NextAction#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("next_action_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("next_action");
+                        });
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Title", "PMPlatform.Domain.Project.Project.Title#NarrativeText", b1 =>
                         {
                             b1.IsRequired();
@@ -8736,6 +8841,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("ClassificationItemId")
                         .HasDatabaseName("ix_project_classification_item_id");
 
+                    b.HasIndex("FollowUpOwnerUserId")
+                        .HasDatabaseName("ix_project_follow_up_owner_user_id");
+
                     b.HasIndex("FormalProjectId")
                         .IsUnique()
                         .HasDatabaseName("ix_project_formal_project_id");
@@ -8743,8 +8851,25 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("GovernanceProfileItemId")
                         .HasDatabaseName("ix_project_governance_profile_item_id");
 
+                    b.HasIndex("LegacyReference")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_legacy_reference")
+                        .HasFilter("legacy_reference IS NOT NULL");
+
+                    b.HasIndex("PriorityItemId")
+                        .HasDatabaseName("ix_project_priority_item_id");
+
+                    b.HasIndex("ProjectImportBatchId")
+                        .HasDatabaseName("ix_project_project_import_batch_id");
+
                     b.HasIndex("RegionItemId")
                         .HasDatabaseName("ix_project_region_item_id");
+
+                    b.HasIndex("StrategicInitiativeItemId")
+                        .HasDatabaseName("ix_project_strategic_initiative_item_id");
+
+                    b.HasIndex("StrategicPortfolioItemId")
+                        .HasDatabaseName("ix_project_strategic_portfolio_item_id");
 
                     b.HasIndex("UpdatedAt", "Id")
                         .HasDatabaseName("ix_project_updated_at_id");
@@ -8763,11 +8888,21 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("project", "project", t =>
                         {
+                            t.HasCheckConstraint("ck_project_current_obstacle_lang", "\"current_obstacle_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_project_current_obstacle_pair", "(\"current_obstacle\" IS NULL) = (\"current_obstacle_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_declared_percent_range", "(declared_planned_percent IS NULL OR declared_planned_percent BETWEEN 0 AND 100) AND (declared_actual_percent IS NULL OR declared_actual_percent BETWEEN 0 AND 100) AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100) AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
+
+                            t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL')");
+
                             t.HasCheckConstraint("ck_project_description_lang", "\"description_lang\" IN ('ar', 'en')");
 
                             t.HasCheckConstraint("ck_project_description_pair", "(\"description\" IS NULL) = (\"description_lang\" IS NULL)");
 
                             t.HasCheckConstraint("ck_project_formal_project_id", "lifecycle_state IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED') OR formal_project_id IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_project_funding_source", "\"funding_source\" IN ('STRATEGY_BUDGET_FULL', 'STRATEGY_BUDGET_PARTIAL', 'NOT_STRATEGY_BUDGET')");
 
                             t.HasCheckConstraint("ck_project_governance_profile_override_reason_lang", "\"governance_profile_override_reason_lang\" IN ('ar', 'en')");
 
@@ -8775,9 +8910,452 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_project_lifecycle_state", "\"lifecycle_state\" IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'RETURNED', 'APPROVED_PLANNED', 'ACTIVE', 'SUSPENDED', 'COMPLETED', 'CLOSED')");
 
+                            t.HasCheckConstraint("ck_project_next_action_lang", "\"next_action_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_project_next_action_pair", "(\"next_action\" IS NULL) = (\"next_action_lang\" IS NULL)");
+
                             t.HasCheckConstraint("ck_project_participation_mode", "\"participation_mode\" IN ('ENTITY_MANAGED', 'AHDA_MANAGED')");
 
                             t.HasCheckConstraint("ck_project_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectFollowUpNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Note", "PMPlatform.Domain.Project.ProjectFollowUpNote.Note#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("note_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("note");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_follow_up_note");
+
+                    b.HasIndex("ProjectId", "CreatedAt", "Id")
+                        .HasDatabaseName("ix_project_follow_up_note_project_id_created_at_id");
+
+                    b.ToTable("project_follow_up_note", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_follow_up_note_append_only", "updated_at = created_at AND updated_by = created_by");
+
+                            t.HasCheckConstraint("ck_project_follow_up_note_note_lang", "\"note_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectImportBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("BatchNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("batch_no");
+
+                    b.Property<int>("CreateCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("create_count");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<Guid?>("DecidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by_user_id");
+
+                    b.Property<byte[]>("FileContent")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("file_content");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("FileSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("file_sha256")
+                        .IsFixedLength();
+
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("plan");
+
+                    b.Property<DateTimeOffset?>("RolledBackAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rolled_back_at");
+
+                    b.Property<Guid?>("RolledBackByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rolled_back_by_user_id");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_count");
+
+                    b.Property<int>("SkipCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("skip_count");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("UpdateCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("update_count");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("WarningCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("warning_count");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ReturnReason", "PMPlatform.Domain.Project.ProjectImportBatch.ReturnReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("return_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("return_reason");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "SubmissionNote", "PMPlatform.Domain.Project.ProjectImportBatch.SubmissionNote#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("submission_note_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("submission_note");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_import_batch");
+
+                    b.HasIndex("BatchNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_import_batch_batch_no");
+
+                    b.HasIndex("DecidedByUserId")
+                        .HasDatabaseName("ix_project_import_batch_decided_by_user_id");
+
+                    b.HasIndex("RolledBackByUserId")
+                        .HasDatabaseName("ix_project_import_batch_rolled_back_by_user_id");
+
+                    b.HasIndex("CreatedAt", "Id")
+                        .HasDatabaseName("ix_project_import_batch_created_at_id");
+
+                    b.HasIndex("Status", "CreatedAt", "Id")
+                        .HasDatabaseName("ix_project_import_batch_status_created_at_id");
+
+                    b.ToTable("project_import_batch", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_import_batch_decided_by", "decided_by_user_id IS NULL OR decided_by_user_id <> created_by");
+
+                            t.HasCheckConstraint("ck_project_import_batch_decision", "(status = 'SUBMITTED') = (decided_at IS NULL) AND (status = 'RETURNED') = (return_reason IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_project_import_batch_return_reason_lang", "\"return_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_project_import_batch_return_reason_pair", "(\"return_reason\" IS NULL) = (\"return_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_import_batch_status", "\"status\" IN ('SUBMITTED', 'APPROVED', 'RETURNED', 'ROLLED_BACK')");
+
+                            t.HasCheckConstraint("ck_project_import_batch_submission_note_lang", "\"submission_note_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_project_import_batch_submission_note_pair", "(\"submission_note\" IS NULL) = (\"submission_note_lang\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectImportNameMapping", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Dimension")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("dimension");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("source_key");
+
+                    b.Property<string>("TargetValue")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("target_value");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_import_name_mapping");
+
+                    b.HasIndex("Dimension", "SourceKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_import_name_mapping_dimension_source_key");
+
+                    b.ToTable("project_import_name_mapping", "project");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectImportValidation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<byte[]>("FileContent")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("file_content");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("plan");
+
+                    b.Property<string>("Result")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("result");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_count");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_import_validation");
+
+                    b.HasIndex("Status", "CreatedAt", "Id")
+                        .HasDatabaseName("ix_project_import_validation_status_created_at_id");
+
+                    b.ToTable("project_import_validation", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_import_validation_result", "(status = 'COMPLETED') = (result IS NOT NULL) AND (status = 'FAILED') = (failure_code IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_project_import_validation_status", "\"status\" IN ('QUEUED', 'RUNNING', 'COMPLETED', 'FAILED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectImportValueRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Dimension")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("dimension");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<Guid?>("ResolvedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_user_id");
+
+                    b.Property<string>("SourceText")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("source_text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ResolutionNote", "PMPlatform.Domain.Project.ProjectImportValueRequest.ResolutionNote#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("resolution_note_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("resolution_note");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_import_value_request");
+
+                    b.HasIndex("ResolvedByUserId")
+                        .HasDatabaseName("ix_project_import_value_request_resolved_by_user_id");
+
+                    b.HasIndex("Status", "CreatedAt", "Id")
+                        .HasDatabaseName("ix_project_import_value_request_status_created_at_id");
+
+                    b.ToTable("project_import_value_request", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_import_value_request_resolution", "(status = 'OPEN') = (resolved_at IS NULL) AND (status = 'OPEN') = (resolved_by_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_import_value_request_resolution_note_lang", "\"resolution_note_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_project_import_value_request_resolution_note_pair", "(\"resolution_note\" IS NULL) = (\"resolution_note_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_import_value_request_status", "\"status\" IN ('OPEN', 'ADDED', 'DECLINED')");
                         });
                 });
 
@@ -13158,6 +13736,15 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_kpi_policy_rule_kpi_definition_kpi_definition_id");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.MasterDataCatalogue", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataCatalogue", null)
+                        .WithMany()
+                        .HasForeignKey("ParentCatalogueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_master_data_catalogue_master_data_catalogue_parent_catalogu");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.MasterDataItem", b =>
                 {
                     b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataCatalogue", null)
@@ -13553,12 +14140,30 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_project_external_entity_external_entity_id");
 
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("FollowUpOwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_user_follow_up_owner_user_id");
+
                     b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
                         .WithMany()
                         .HasForeignKey("GovernanceProfileItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_project_master_data_item_governance_profile_item_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("PriorityItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_master_data_item_priority_item_id");
+
+                    b.HasOne("PMPlatform.Domain.Project.ProjectImportBatch", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectImportBatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_project_import_batch_project_import_batch_id");
 
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
                         .WithMany()
@@ -13571,6 +14176,52 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("RegionItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_project_master_data_item_region_item_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("StrategicInitiativeItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_master_data_item_strategic_initiative_item_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
+                        .WithMany()
+                        .HasForeignKey("StrategicPortfolioItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_master_data_item_strategic_portfolio_item_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectFollowUpNote", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_follow_up_note_project_project_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectImportBatch", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_import_batch_user_decided_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("RolledBackByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_import_batch_user_rolled_back_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectImportValueRequest", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ResolvedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_import_value_request_user_resolved_by_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Project.ProjectIntake", b =>

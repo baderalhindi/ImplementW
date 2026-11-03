@@ -43,10 +43,10 @@ const createButton = () => screen.getByRole('button', { name: en('projects.creat
 
 async function fillRequired(user: UserEvent) {
   await user.type(screen.getByLabelText(/Project title/), 'Coastal road upgrade');
-  await user.selectOptions(await screen.findByLabelText(/Classification/), CLASSIFICATION_ID);
+  await user.selectOptions(await screen.findByLabelText(/Sector/), CLASSIFICATION_ID);
   await user.selectOptions(screen.getByLabelText(/Governance profile/), LIGHT_PROFILE_ID);
   await user.click(screen.getByLabelText(en('projects.participationMode.AHDA_MANAGED')));
-  await user.selectOptions(screen.getByLabelText(/Owning sector/), DEPARTMENT_ID);
+  await user.selectOptions(screen.getByLabelText(/Owning department/), DEPARTMENT_ID);
 }
 
 describe('SCR-033 Create Project', () => {
@@ -58,7 +58,7 @@ describe('SCR-033 Create Project', () => {
     expect(createButton()).toHaveProperty('disabled', true);
     const note = document.getElementById(createButton().getAttribute('aria-describedby') ?? '');
     expect(note?.textContent).toContain('Project title');
-    expect(note?.textContent).toContain('Owning sector');
+    expect(note?.textContent).toContain('Owning department');
 
     await user.type(screen.getByLabelText(/Project title/), 'Coastal road upgrade');
     expect(createButton()).toHaveProperty('disabled', true);
@@ -135,6 +135,13 @@ describe('SCR-033 Create Project', () => {
       cityItemId: RIYADH_CITY_ID,
       latitude: 24.7136,
       longitude: null,
+      // The 2 Nov 2026 review's optional fields, left empty (R3-3).
+      strategicPortfolioItemId: null,
+      strategicInitiativeItemId: null,
+      priorityItemId: null,
+      fundingSource: null,
+      legacyReference: null,
+      followUpOwnerUserId: null,
     });
     // No Formal Project ID is ever sent: AHDA issues it (ADR-013).
     expect(request?.body).not.toHaveProperty('formalProjectId');
@@ -178,9 +185,9 @@ describe('SCR-033 Create Project', () => {
     const user = userEvent.setup();
     const api = openCreate(entitySession());
     await user.type(screen.getByLabelText(/Project title/), 'Entity depot');
-    await user.selectOptions(await screen.findByLabelText(/Classification/), CLASSIFICATION_ID);
+    await user.selectOptions(await screen.findByLabelText(/Sector/), CLASSIFICATION_ID);
     await user.selectOptions(screen.getByLabelText(/Governance profile/), LIGHT_PROFILE_ID);
-    await user.selectOptions(screen.getByLabelText(/Owning sector/), DEPARTMENT_ID);
+    await user.selectOptions(screen.getByLabelText(/Owning department/), DEPARTMENT_ID);
 
     // The entity is theirs and fixed; the mode starts as entity-managed.
     expect(screen.queryByRole('combobox', { name: /External entity/ })).toBeNull();

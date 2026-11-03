@@ -36,6 +36,8 @@ using PMPlatform.Application.Features.Reports;
 using PMPlatform.Application.Features.Reports.Contracts;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.EventHandlers;
+using PMPlatform.Application.Features.Project.FollowUp;
+using PMPlatform.Application.Features.Project.Import;
 using PMPlatform.Application.Features.ChangeRequest;
 using PMPlatform.Application.Features.ChangeRequest.Contracts;
 using PMPlatform.Application.Features.ChangeRequest.EventHandlers;
@@ -175,6 +177,17 @@ public static class DependencyInjection
         services.AddScoped<ProjectManagerEligibility>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IApprovalOutcomeHandler, ProjectApprovalOutcomeHandler>();
+
+        // The 2 Nov 2026 review: RPMO's follow-up of registered projects and its Follow-up list (R3-3, R3-5), and project import batches
+        // from RPMO's workbook, approved by a second person (R3-4).
+        services.AddScoped<OnPlanPolicy>();
+        services.AddScoped<ProjectIndicatorReader>();
+        services.TryAddScoped<IProjectUpdateComplianceSource, NoUpdateComplianceSource>();
+        services.AddScoped<IProjectFollowUpService, ProjectFollowUpService>();
+        services.AddScoped<ProjectImportService>();
+        services.AddScoped<IProjectImportService>(sp => sp.GetRequiredService<ProjectImportService>());
+        services.AddScoped<IProjectImportValidationRunner>(sp => sp.GetRequiredService<ProjectImportService>());
+        services.AddScoped<IProjectImportValueRequestService, ProjectImportValueRequestService>();
 
         // TASK-102: the migration import's project register takes projects in by ADR-014's intake, and the intake's one consumer fans
         // ProjectIntakeRecorded out to the modules that write their own fact from it (edge 35).
@@ -354,6 +367,8 @@ public static class DependencyInjection
         services.AddScoped<IExternalContributionTarget, TaskProgressTarget>();
         services.AddScoped<ContributionTargets>();
         services.AddScoped<IExternalUpdateRequestService, ExternalUpdateRequestService>();
+        // The 2 Nov 2026 review: the entity's on-time answers to its update requests, from which the project module decides compliance.
+        services.AddScoped<IProjectUpdateComplianceSource, UpdateComplianceSource>();
         services.AddScoped<IExternalContributionService, ExternalContributionService>();
         services.AddScoped<ISourceApplicationService, SourceApplicationService>();
 
