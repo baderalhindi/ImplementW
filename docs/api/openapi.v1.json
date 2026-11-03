@@ -3657,7 +3657,7 @@
         "tags": [
           "Dashboards"
         ],
-        "summary": "The dashboard's PUBLISHED version and each widget's result. `PROJECT` is bound to `projectId` (DSH-009 in SCR-040, DSH-008 for\nan entity's own project); the others are read over every project the caller may see, optionally narrowed to one `departmentId`,\n`externalEntityId`, `regionItemId` and `cityItemId`, each among the view's options.",
+        "summary": "The dashboard's PUBLISHED version and each widget's result. `PROJECT` is bound to `projectId` (DSH-009 in SCR-040, DSH-008 for\nan entity's own project); the others are read over every project the caller may see, optionally narrowed to one `departmentId`,\n`externalEntityId`, `regionItemId`, `cityItemId`, `classificationItemId` (sector), `status`,\n`priorityItemId`, `strategicPortfolioItemId` and `strategicInitiativeItemId`, each among the view's options.",
         "operationId": "Dashboards_GetDashboard",
         "parameters": [
           {
@@ -3702,6 +3702,45 @@
           },
           {
             "name": "cityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "classificationItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priorityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicPortfolioItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicInitiativeItemId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -12115,6 +12154,131 @@
         }
       }
     },
+    "/api/v1/project-follow-up-notes": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The notes of `projectId`, which is required.",
+        "operationId": "Project_ListProjectFollowUpNotes",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectFollowUpNotePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-follow-ups": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Filters: `departmentId`, `reason` (one follow-up reason), `followUpOwnerUserId`.",
+        "operationId": "Project_ListProjectFollowUps",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "followUpOwnerUserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectFollowUpPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/project-health-statuses": {
       "get": {
         "tags": [
@@ -12163,6 +12327,332 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectHealthStatusPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-batches/import-template/content": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The .xlsx template, its drop-downs from live master data, with a hidden version stamp.",
+        "operationId": "Project_DownloadProjectImportBatchTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-batches/validations": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "What the workbook in part `file` would do with the decisions in part `plan`: every row's action, issues and changes.",
+        "operationId": "Project_ValidateProjectImport",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportPreview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-batches": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Submits the workbook, its plan and a note as one SUBMITTED batch, when it validates with no error and no unmatched name.",
+        "operationId": "Project_SubmitProjectImportBatch",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportBatchDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Newest first. Filter: `status`.",
+        "operationId": "Project_ListProjectImportBatches",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportBatchPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-batches/{batchId}": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "operationId": "Project_GetProjectImportBatch",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportBatchDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-batch-previews/{batchId}": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "What a batch would do if it were approved now: its plan validated again against today's master data and projects, row by row, for the\napprover to review.",
+        "operationId": "Project_GetProjectImportBatchPreview",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportPreview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-batches/{batchId}/content": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The workbook the batch was submitted from, as uploaded.",
+        "operationId": "Project_DownloadProjectImportBatchFile",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-batches/{batchId}/approve": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "SUBMITTED → APPROVED: applies the batch, all of it or none. Never by its importer.",
+        "operationId": "Project_ApproveProjectImportBatch",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportBatchDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-batches/{batchId}/return": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "SUBMITTED → RETURNED, with a reason. Never by its importer.",
+        "operationId": "Project_ReturnProjectImportBatch",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectImportReturnCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectImportReturnCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectImportReturnCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportBatchDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-batches/{batchId}/rollback": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "APPROVED → ROLLED_BACK: removes the projects the batch created, while none has been touched.",
+        "operationId": "Project_RollBackProjectImportBatch",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportBatchDetail"
                 }
               }
             }
@@ -12476,7 +12966,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "SCR-025: only projects the caller may see. Filters: `status` (a set), `departmentId`, `externalEntityId`,\n`projectManagerUserId` (SCR-026 My Projects), `q` (title or Formal Project ID). Most recently changed first.",
+        "summary": "SCR-025: only projects the caller may see. Filters: `status` (a set), `departmentId`, `externalEntityId`,\n`projectManagerUserId` (SCR-026 My Projects), `q` (title, Formal Project ID or legacy reference), and the filter bar's\n`classificationItemId`, `strategicPortfolioItemId`, `strategicInitiativeItemId`, `priorityItemId`,\n`regionItemId` and `cityItemId` (the 2 Nov 2026 review). Most recently changed first.",
         "operationId": "Project_ListProjects",
         "parameters": [
           {
@@ -12539,6 +13029,54 @@
                 "string"
               ],
               "format": "int32"
+            }
+          },
+          {
+            "name": "classificationItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicPortfolioItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicInitiativeItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "priorityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "regionItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
@@ -12885,6 +13423,58 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/update-follow-up": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The project's whole follow-up — current obstacle, next action, declared progress and spend, entity update compliance — with an optional\nnote (the 2 Nov 2026 review, R3-3). From APPROVED_PLANNED on, by AHDA. Requires `If-Match` (R-21).",
+        "operationId": "Project_UpdateProjectFollowUp",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectFollowUpRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectFollowUpRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectFollowUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -17993,6 +18583,13 @@
         },
         "description": "A row of ADM-010 Role Assignment: a user bound to a profile version with its scope anchors (ADR-018)."
       },
+      "ActionDueStatus": {
+        "enum": [
+          "SCHEDULED",
+          "OVERDUE",
+          null
+        ]
+      },
       "ActiveSuspensionDetail": {
         "required": [
           "id",
@@ -23097,6 +23694,46 @@
           }
         }
       },
+      "DashboardFilter": {
+        "required": [
+          "field",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardFilterOption"
+            }
+          }
+        },
+        "description": "One filter of the filter bar (the 2 Nov 2026 review, R3-1), by its query name, and the values it offers: only values that projects in the\ncaller's scope have, each with how many. The names of master data values are in IReadOnlyList&lt;DashboardPlace&gt; DashboardView.Places."
+      },
+      "DashboardFilterOption": {
+        "required": [
+          "value",
+          "projectCount"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "projectCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A value a filter offers — an id, or a lifecycle state — and how many of the caller's projects have it."
+      },
       "DashboardLocationCount": {
         "required": [
           "regionItemId",
@@ -23195,7 +23832,7 @@
             "format": "uuid"
           }
         },
-        "description": "A region or city a portfolio dashboard offers, with its name; a city's parent is its region."
+        "description": "A master data value a portfolio dashboard's filters offer — a region, a city, a sector, a priority, a strategic portfolio or initiative —\nwith its name; a city's parent is its region, an initiative's its portfolio."
       },
       "DashboardProjectionDetail": {
         "required": [
@@ -23338,7 +23975,8 @@
           "regionOptions",
           "cityOptions",
           "locations",
-          "places"
+          "places",
+          "filters"
         ],
         "type": "object",
         "properties": {
@@ -23459,6 +24097,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardPlace"
+            }
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardFilter"
             }
           }
         },
@@ -23768,6 +24412,13 @@
           "READ_ONLY"
         ],
         "description": "The data scope a granted permission applies to (Blueprint Section 10.1)."
+      },
+      "DeclaredValueSource": {
+        "enum": [
+          "IMPORT",
+          "MANUAL",
+          null
+        ]
       },
       "DepartmentCreateRequest": {
         "required": [
@@ -26639,6 +27290,24 @@
           null
         ]
       },
+      "FollowUpReason": {
+        "enum": [
+          "STALLED",
+          "SUSPENDED",
+          "LATE",
+          "ACTION_OVERDUE",
+          "OPEN_OBSTACLE"
+        ],
+        "description": "Why a project is on the Follow-up list, in the order RPMO follows them up: stalled first, an open obstacle last."
+      },
+      "FundingSource": {
+        "enum": [
+          "STRATEGY_BUDGET_FULL",
+          "STRATEGY_BUDGET_PARTIAL",
+          "NOT_STRATEGY_BUDGET",
+          null
+        ]
+      },
       "GeneratedOutputDetail": {
         "required": [
           "fileName",
@@ -29262,9 +29931,16 @@
           "updatedBy": {
             "type": "string",
             "format": "uuid"
+          },
+          "parentCatalogueId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
-        "description": "A controlled list of ADM-020–029. The catalogues are the platform's (db/seed); only the name is AHDA's to edit."
+        "description": "A controlled list of ADM-020–029. The catalogues are the platform's (db/seed); only the name is AHDA's to edit. An item's parent is an\nitem of Guid? MasterDataCatalogueDetail.ParentCatalogueId when it is set — a city's region, a strategic initiative's portfolio — else of the catalogue itself."
       },
       "MasterDataCatalogueUpdateRequest": {
         "required": [
@@ -31420,6 +32096,14 @@
         },
         "description": "A DRAFT's full text."
       },
+      "OnPlanStatus": {
+        "enum": [
+          "ON_TRACK",
+          "LATE",
+          "STALLED",
+          null
+        ]
+      },
       "OperationalAlertNoteCommand": {
         "required": [
           "note"
@@ -33008,7 +33692,16 @@
           "createdAt",
           "createdBy",
           "updatedAt",
-          "updatedBy"
+          "updatedBy",
+          "strategicPortfolioItemId",
+          "strategicInitiativeItemId",
+          "priorityItemId",
+          "fundingSource",
+          "legacyReference",
+          "followUpOwnerUserId",
+          "projectImportBatchId",
+          "followUp",
+          "indicators"
         ],
         "type": "object",
         "properties": {
@@ -33167,9 +33860,486 @@
           "updatedBy": {
             "type": "string",
             "format": "uuid"
+          },
+          "strategicPortfolioItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "strategicInitiativeItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "fundingSource": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FundingSource"
+              }
+            ]
+          },
+          "legacyReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "followUpOwnerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projectImportBatchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "followUp": {
+            "$ref": "#/components/schemas/ProjectFollowUpDetail"
+          },
+          "indicators": {
+            "$ref": "#/components/schemas/ProjectIndicators"
           }
         },
         "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart. DateTimeOffset? ProjectDetail.ClosedAt is when WF-10's\nclosure took effect (TASK-063); a closed project's completion date, or its having been terminated without one, is its closure cases'."
+      },
+      "ProjectFollowUpDetail": {
+        "required": [
+          "currentObstacle",
+          "nextAction",
+          "nextActionOwner",
+          "nextActionDueDate",
+          "declaredPlannedPercent",
+          "declaredActualPercent",
+          "declaredPlannedSpendPercent",
+          "declaredActualSpendPercent",
+          "declaredAsOf",
+          "declaredSource",
+          "entityUpdateCompliant"
+        ],
+        "type": "object",
+        "properties": {
+          "currentObstacle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "nextAction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "nextActionOwner": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextActionDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "declaredPlannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "declaredActualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "declaredPlannedSpendPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "declaredActualSpendPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "declaredAsOf": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "declaredSource": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DeclaredValueSource"
+              }
+            ]
+          },
+          "entityUpdateCompliant": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "A project's follow-up as RPMO keeps it (R3-3). Every value is optional: a blank is \"not available\", never zero. The declared values hold\nas of DateOnly? ProjectFollowUpDetail.DeclaredAsOf, from DeclaredValueSource? ProjectFollowUpDetail.DeclaredSource, until the project has a schedule to calculate them from."
+      },
+      "ProjectFollowUpItem": {
+        "required": [
+          "projectId",
+          "formalProjectId",
+          "legacyReference",
+          "title",
+          "status",
+          "departmentId",
+          "externalEntityId",
+          "followUpOwnerUserId",
+          "currentObstacle",
+          "nextAction",
+          "nextActionOwner",
+          "nextActionDueDate",
+          "indicators"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formalProjectId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "legacyReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectLifecycleState"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalEntityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "followUpOwnerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "currentObstacle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "nextAction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "nextActionOwner": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextActionDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "indicators": {
+            "$ref": "#/components/schemas/ProjectIndicators"
+          }
+        },
+        "description": "One row of the Follow-up list (قائمة المتابعة): a project that needs following up, why, and what is next."
+      },
+      "ProjectFollowUpNoteDetail": {
+        "required": [
+          "id",
+          "projectId",
+          "note",
+          "recordedAt",
+          "recordedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "note": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recordedBy": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "A dated follow-up note, attributed to who wrote it."
+      },
+      "ProjectFollowUpNotePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectFollowUpNoteDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectFollowUpPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectFollowUpItem"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectFollowUpRequest": {
+        "type": "object",
+        "properties": {
+          "currentObstacle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "nextAction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          },
+          "nextActionOwner": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextActionDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "declaredPlannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "declaredActualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "declaredPlannedSpendPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "declaredActualSpendPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "declaredAsOf": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "entityUpdateCompliant": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "note": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A project's whole follow-up (R-5; the 2 Nov 2026 review, R3-3): what is not sent is cleared. Percentages are 0 to 100 and optional —\nblank is \"not available\", never zero. `note`, when sent, is added as a dated follow-up note."
       },
       "ProjectHealthStatusDetail": {
         "required": [
@@ -33264,6 +34434,554 @@
           }
         },
         "description": "A project's live health: one item once it has been computed, none before (R-29)."
+      },
+      "ProjectImportBatchDetail": {
+        "required": [
+          "id",
+          "batchNo",
+          "status",
+          "fileName",
+          "fileSha256",
+          "submissionNote",
+          "rowCount",
+          "createCount",
+          "updateCount",
+          "skipCount",
+          "warningCount",
+          "submittedBy",
+          "submittedAt",
+          "decidedByUserId",
+          "decidedAt",
+          "returnReason",
+          "rolledBackByUserId",
+          "rolledBackAt",
+          "mayDecide",
+          "mayRollBack"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "batchNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectImportBatchStatus"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "fileSha256": {
+            "type": "string"
+          },
+          "submissionNote": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "rowCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "updateCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "skipCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "warningCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "submittedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "decidedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "returnReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "rolledBackByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "rolledBackAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "mayDecide": {
+            "type": "boolean"
+          },
+          "mayRollBack": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProjectImportBatchPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectImportBatchDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectImportBatchStatus": {
+        "enum": [
+          "SUBMITTED",
+          "APPROVED",
+          "RETURNED",
+          "ROLLED_BACK"
+        ]
+      },
+      "ProjectImportChange": {
+        "required": [
+          "field",
+          "before",
+          "after"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "before": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "after": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A field an update changes, as text: the value before and after."
+      },
+      "ProjectImportDimension": {
+        "enum": [
+          "ENTITY",
+          "DEPARTMENT",
+          "SECTOR",
+          "PORTFOLIO",
+          "INITIATIVE",
+          "REGION",
+          "CITY",
+          "PRIORITY",
+          "GOVERNANCE",
+          "STATUS",
+          "PROJECT_MANAGER",
+          "FOLLOW_UP_OWNER"
+        ],
+        "description": "What a name in an import workbook is of, so it is matched against the right list (R3-4)."
+      },
+      "ProjectImportIssue": {
+        "required": [
+          "column",
+          "code",
+          "level"
+        ],
+        "type": "object",
+        "properties": {
+          "column": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/ProjectImportIssueLevel"
+          }
+        }
+      },
+      "ProjectImportIssueLevel": {
+        "enum": [
+          "ERROR",
+          "WARNING",
+          "INFO"
+        ],
+        "description": "An error blocks its row; a warning is allowed but flagged; info is something the platform settled itself."
+      },
+      "ProjectImportOption": {
+        "required": [
+          "value",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          }
+        },
+        "description": "A platform value a name may be mapped to."
+      },
+      "ProjectImportPreview": {
+        "required": [
+          "fileSha256",
+          "rowCount",
+          "createCount",
+          "updateCount",
+          "skipCount",
+          "errorCount",
+          "warningCount",
+          "submittable",
+          "fileIssues",
+          "unmatched",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "fileSha256": {
+            "type": "string"
+          },
+          "rowCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "updateCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "skipCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "errorCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "warningCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "submittable": {
+            "type": "boolean"
+          },
+          "fileIssues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectImportIssue"
+            }
+          },
+          "unmatched": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectImportUnmatchedName"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectImportRowPreview"
+            }
+          }
+        },
+        "description": "What a workbook would do (R3-4): every row's action, issues and changes, the names to map, and the counts. bool ProjectImportPreview.Submittable is\ntrue when no row has an error and no name is unmatched."
+      },
+      "ProjectImportReturnCommand": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "R3-4: returning a submitted batch names why, for the importer to read."
+      },
+      "ProjectImportRowAction": {
+        "enum": [
+          "CREATE",
+          "UPDATE",
+          "SKIP"
+        ],
+        "description": "What an approved batch does with a row: a project that matches nothing is created, one that matches is updated."
+      },
+      "ProjectImportRowPreview": {
+        "required": [
+          "row",
+          "legacyReference",
+          "title",
+          "action",
+          "projectId",
+          "issues",
+          "changes"
+        ],
+        "type": "object",
+        "properties": {
+          "row": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "legacyReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "action": {
+            "$ref": "#/components/schemas/ProjectImportRowAction"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectImportIssue"
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectImportChange"
+            }
+          }
+        }
+      },
+      "ProjectImportUnmatchedName": {
+        "required": [
+          "dimension",
+          "sourceText",
+          "rowCount",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "$ref": "#/components/schemas/ProjectImportDimension"
+          },
+          "sourceText": {
+            "type": "string"
+          },
+          "rowCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectImportOption"
+            }
+          }
+        },
+        "description": "A name that matched nothing, listed once with the rows that carry it, and what it may be mapped to."
+      },
+      "ProjectIndicators": {
+        "required": [
+          "gapPoints",
+          "onPlan",
+          "daysRemaining",
+          "actionDue",
+          "followUpReasons"
+        ],
+        "type": "object",
+        "properties": {
+          "gapPoints": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "onPlan": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OnPlanStatus"
+              }
+            ]
+          },
+          "daysRemaining": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "actionDue": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ActionDueStatus"
+              }
+            ]
+          },
+          "followUpReasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FollowUpReason"
+            }
+          }
+        },
+        "description": "The register's calculated columns (R3-3): the gap between actual and planned progress, in points, the on-plan indicator, the days to\nthe planned end, the next action's due status and the follow-up reasons, most urgent first. A value that cannot be calculated is null:\nno gap without both percentages, none for a project not started or closed."
       },
       "ProjectionCoverage": {
         "enum": [
@@ -33824,9 +35542,49 @@
               "string"
             ],
             "format": "double"
+          },
+          "strategicPortfolioItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "strategicInitiativeItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "fundingSource": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "legacyReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "followUpOwnerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
-        "description": "MOD-001 Create Project and the edit of a DRAFT or RETURNED project: the whole registration (R-5). There is no\n`formalProjectId`: AHDA issues it on approval (ADR-013)."
+        "description": "MOD-001 Create Project and the edit of a DRAFT or RETURNED project: the whole registration (R-5). There is no\n`formalProjectId`: AHDA issues it on approval (ADR-013). The strategy classification, priority, funding source, legacy reference and\nfollow-up owner are optional (the 2 Nov 2026 review, R3-3)."
       },
       "ProjectScheduleDetail": {
         "required": [
@@ -33952,7 +35710,18 @@
           "status",
           "participationMode",
           "legacyIntakeDate",
-          "updatedAt"
+          "updatedAt",
+          "legacyReference",
+          "strategicPortfolioItemId",
+          "strategicInitiativeItemId",
+          "priorityItemId",
+          "regionItemId",
+          "cityItemId",
+          "projectImportBatchId",
+          "declaredPlannedPercent",
+          "declaredActualPercent",
+          "currentObstacle",
+          "indicators"
         ],
         "type": "object",
         "properties": {
@@ -34007,9 +35776,88 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "legacyReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "strategicPortfolioItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "strategicInitiativeItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "priorityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "regionItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "cityItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projectImportBatchId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "declaredPlannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "declaredActualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currentObstacle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "indicators": {
+            "$ref": "#/components/schemas/ProjectIndicators"
           }
         },
-        "description": "A row of SCR-025 Project Register."
+        "description": "A row of SCR-025 Project Register, with RPMO's calculated columns (R3-3)."
       },
       "ProjectTaskCreateRequest": {
         "required": [

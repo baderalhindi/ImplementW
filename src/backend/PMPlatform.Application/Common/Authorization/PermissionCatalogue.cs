@@ -86,6 +86,21 @@ public sealed class PermissionCatalogue
     public const string ProjectActivate = "PROJECT_ACTIVATE";
 
     /// <summary>
+    /// The 2 Nov 2026 review (R3-4): prepare a project import batch from RPMO's workbook — validate it, map its names, choose each row's
+    /// action and submit the batch for approval — for the projects of the grant's scope; a row outside it is refused.
+    /// </summary>
+    public const string ProjectImport = "PROJECT_IMPORT";
+
+    /// <summary>R3-4: approve a submitted project import batch, which applies it, or return it with a reason; never one's own batch.</summary>
+    public const string ProjectImportApprove = "PROJECT_IMPORT_APPROVE";
+
+    /// <summary>
+    /// The 2 Nov 2026 review (R3-3): keep a project's follow-up — its current obstacle, next action, declared progress and spend, entity
+    /// update compliance and dated follow-up notes — on the projects the grant's scope covers. Internal users only.
+    /// </summary>
+    public const string ProjectFollowUp = "PROJECT_FOLLOW_UP";
+
+    /// <summary>
     /// WF-02: a project's reporting periods, progress submissions, published snapshots and Overall Project Health (SCR-048,
     /// SCR-070), on the projects the grant's scope covers (TASK-044).
     /// </summary>
@@ -412,6 +427,9 @@ public sealed class PermissionCatalogue
             new(ProjectRegister, "PROJECT", AccessMode.Write),
             new(ProjectReview, "PROJECT", AccessMode.Write),
             new(ProjectActivate, "PROJECT", AccessMode.Write),
+            new(ProjectImport, "PROJECT", AccessMode.Write),
+            new(ProjectImportApprove, "PROJECT", AccessMode.Write),
+            new(ProjectFollowUp, "PROJECT", AccessMode.Write),
             new(ProgressView, "PROGRESS", AccessMode.Read),
             new(ProgressSubmit, "PROGRESS", AccessMode.Write),
             new(ProgressReview, "PROGRESS", AccessMode.Write),
@@ -491,8 +509,8 @@ public sealed class PermissionCatalogue
     /// </summary>
     private static readonly string[] ManagerPermissions =
     [
-        ApprovalView, ApprovalDecide, ReportExport, ProjectView, ProjectRegister, ProjectReview, ProjectActivate, ProgressView, ProgressReview,
-        ScheduleView, TaskView, MilestoneView, RiskView, RiskManage, RiskAssess, RiskAccept, RiskReopen,
+        ApprovalView, ApprovalDecide, ReportExport, ProjectView, ProjectRegister, ProjectReview, ProjectActivate, ProjectImport, ProjectFollowUp,
+        ProgressView, ProgressReview, ScheduleView, TaskView, MilestoneView, RiskView, RiskManage, RiskAssess, RiskAccept, RiskReopen,
         ConcernView, ConcernRaise, ConcernEscalationResolve, ChangeRequestView, ChangeRequestRaise, ChangeRequestReview,
         SuspensionView, SuspensionRaise, SuspensionReview, CloseoutView, CloseoutRaise, CloseoutReview, CloseoutWaive,
         ExternalRequestView, ExternalRequestManage, ExternalContributionReview,
@@ -543,6 +561,7 @@ public sealed class PermissionCatalogue
         new("R02", LayoutPersonalize, DataScope.Own),
         new("R02", ReportCompose, DataScope.Own),
         .. Role("R02", DataScope.All, ManagerPermissions),
+        new("R02", ProjectImportApprove, DataScope.All),
 
         // R03 Department Manager: the same authority over its own department.
         new("R03", MasterDataView, DataScope.All),

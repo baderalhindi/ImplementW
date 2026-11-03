@@ -46,7 +46,10 @@ internal sealed class XlsxImportWorkbook : IImportWorkbook
         IgnoreProcessingInstructions = true,
     };
 
-    public ImportSheet? Read(Stream content, int rowLimit)
+    public ImportSheet? Read(Stream content, int rowLimit) => Read(content, rowLimit, DataSheet);
+
+    /// <summary>The cells of the sheet named <paramref name="sheetName"/>, or of the first sheet when none is.</summary>
+    public static ImportSheet? Read(Stream content, int rowLimit, string sheetName)
     {
         ArgumentNullException.ThrowIfNull(content);
         try
@@ -61,7 +64,7 @@ internal sealed class XlsxImportWorkbook : IImportWorkbook
             string workbookPath = document.Target;
             string folder = workbookPath.Contains('/', StringComparison.Ordinal) ? workbookPath[..(workbookPath.LastIndexOf('/') + 1)] : string.Empty;
             Dictionary<string, Relationship> parts = ReadRelationships(zip, $"{folder}_rels/{workbookPath[folder.Length..]}.rels", folder);
-            if (SheetId(zip, workbookPath) is not { } sheetId || !parts.TryGetValue(sheetId, out Relationship? sheet))
+            if (SheetId(zip, workbookPath, sheetName) is not { } sheetId || !parts.TryGetValue(sheetId, out Relationship? sheet))
             {
                 return null;
             }
@@ -251,8 +254,8 @@ internal sealed class XlsxImportWorkbook : IImportWorkbook
         return string.Join('/', segments.Reverse());
     }
 
-    /// <summary>The relationship id of the sheet named Data, or of the first sheet.</summary>
-    private static string? SheetId(ZipArchive zip, string workbookPath)
+    /// <summary>The relationship id of the sheet named <paramref name="sheetName"/>, or of the first sheet.</summary>
+    private static string? SheetId(ZipArchive zip, string workbookPath, string sheetName)
     {
         if (zip.GetEntry(workbookPath) is not { } entry)
         {
@@ -266,7 +269,7 @@ internal sealed class XlsxImportWorkbook : IImportWorkbook
             if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "sheet")
             {
                 string? id = RelationshipId(reader);
-                if (string.Equals(reader.GetAttribute("name"), DataSheet, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(reader.GetAttribute("name"), sheetName, StringComparison.OrdinalIgnoreCase))
                 {
                     return id;
                 }

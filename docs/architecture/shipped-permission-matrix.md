@@ -36,7 +36,7 @@
 
 ## 3. The matrix
 
-"—" is not granted. 91 permissions; 234 grants. Eight permissions ship to no role: `SUSPENSION_ACTIVATE` and `CLOSEOUT_ACTIVATE` (the workflows' own services), and six waiting on AHDA (F-1, F-2). `ShippedGrantTests.TheShippedGrantsAreTheAgreedMatrix` states this table a second time, independently of the catalogue.
+"—" is not granted. 94 permissions; 239 grants. Eight permissions ship to no role: `SUSPENSION_ACTIVATE` and `CLOSEOUT_ACTIVATE` (the workflows' own services), and six waiting on AHDA (F-1, F-2). `ShippedGrantTests.TheShippedGrantsAreTheAgreedMatrix` states this table a second time, independently of the catalogue.
 
 | Permission | Group | Mode | R01 | R02 | R03 | R04 | R05 | R06 | R07 | R08 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -61,6 +61,9 @@
 | `PROJECT_REGISTER` | PROJECT | Write | — | ALL | DEPT | OWN | — | — | — | ENTITY |
 | `PROJECT_REVIEW` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
 | `PROJECT_ACTIVATE` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
+| `PROJECT_IMPORT` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
+| `PROJECT_IMPORT_APPROVE` | PROJECT | Write | — | ALL | — | — | — | — | — | — |
+| `PROJECT_FOLLOW_UP` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
 | `PROGRESS_VIEW` | PROGRESS | Read | — | ALL | DEPT | OWN | ASSIGNED | DEPT | ALL | ENTITY |
 | `PROGRESS_SUBMIT` | PROGRESS | Write | — | — | — | OWN | — | — | — | — |
 | `PROGRESS_REVIEW` | PROGRESS | Write | — | ALL | DEPT | — | — | — | — | — |

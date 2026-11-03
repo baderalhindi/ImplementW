@@ -27,6 +27,7 @@ using PMPlatform.Application.Features.Milestone;
 using PMPlatform.Application.Features.Notifications;
 using PMPlatform.Application.Features.Progress;
 using PMPlatform.Application.Features.Project;
+using PMPlatform.Application.Features.Project.Import;
 using PMPlatform.Application.Features.ProjectTask;
 using PMPlatform.Application.Features.Risk;
 using PMPlatform.Application.Features.Schedule;
@@ -141,6 +142,8 @@ public static class DependencyInjection
 
         // TASK-041: WF-01's project schema.
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IProjectImportRepository, ProjectImportRepository>();
+        services.AddSingleton<IProjectImportWorkbook, XlsxProjectImportWorkbook>();
 
         // TASK-044: WF-02's progress schema.
         services.AddScoped<IProgressRepository, ProgressRepository>();

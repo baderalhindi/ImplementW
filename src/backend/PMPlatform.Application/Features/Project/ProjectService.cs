@@ -3,6 +3,7 @@ using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.Project.Contracts;
+using PMPlatform.Application.Features.Project.FollowUp;
 using PMPlatform.Domain.Project;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
 
@@ -21,6 +22,7 @@ internal sealed class ProjectService(
     IApprovalRequests approvals,
     IEnumerable<IProjectActivationPrecondition> activationPreconditions,
     IAuthorizationEngine engine,
+    OnPlanPolicy onPlan,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProjectService
 {
@@ -35,7 +37,11 @@ internal sealed class ProjectService(
         }
 
         (IReadOnlyList<ProjectEntity> items, int total) = await repository.ListAsync(scope, query, cancellationToken).ConfigureAwait(false);
-        return new ProjectPage([.. items.Select(ProjectMapping.ToSummary)], query.Page.Page, query.Page.PageSize, total);
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        OnPlanThresholds thresholds = await onPlan.ThresholdsAsync(now, cancellationToken).ConfigureAwait(false);
+        DateOnly today = DateOnly.FromDateTime(now.UtcDateTime);
+        return new ProjectPage(
+            [.. items.Select(p => ProjectMapping.ToSummary(p, ProjectIndicatorCalculator.Of(p, thresholds, today)))], query.Page.Page, query.Page.PageSize, total);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> GetAsync(Guid callerId, Guid projectId, CancellationToken cancellationToken)
@@ -43,7 +49,7 @@ internal sealed class ProjectService(
         ProjectEntity? project = await repository.FindAsync(projectId, null, cancellationToken).ConfigureAwait(false);
         return project is null ? AdministrationError.NotFound
             : await access.CheckAsync(callerId, PermissionCatalogue.ProjectView, project, cancellationToken).ConfigureAwait(false) is { } refused ? refused
-            : Versioned(project);
+            : await VersionedAsync(project, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> CreateAsync(Guid callerId, ProjectDraft draft, CancellationToken cancellationToken)
@@ -53,6 +59,11 @@ internal sealed class ProjectService(
         if (await references.CheckAsync(draft, cancellationToken).ConfigureAwait(false) is { } invalid)
         {
             return invalid;
+        }
+
+        if (await LegacyReferenceTakenAsync(draft, null, cancellationToken).ConfigureAwait(false) is { } taken)
+        {
+            return taken;
         }
 
         // ADR-013: an entity user registers a project of their own entity only; the engine's cross-entity isolation decides it. The caller
@@ -79,7 +90,9 @@ internal sealed class ProjectService(
         audit.Stage(ProjectAudit.Created(callerId, project));
         // A new row with a new id: no conflict is expected, so any is a fault.
         ProjectSaveOutcome outcome = await repository.SaveAsync(cancellationToken).ConfigureAwait(false);
-        return outcome == ProjectSaveOutcome.Saved ? Versioned(project) : throw new InvalidOperationException($"Saving a new project failed: {outcome}.");
+        return outcome == ProjectSaveOutcome.Saved
+            ? await VersionedAsync(project, cancellationToken).ConfigureAwait(false)
+            : throw new InvalidOperationException($"Saving a new project failed: {outcome}.");
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> UpdateAsync(
@@ -106,6 +119,11 @@ internal sealed class ProjectService(
         if (await references.CheckAsync(draft, cancellationToken).ConfigureAwait(false) is { } invalid)
         {
             return invalid;
+        }
+
+        if (await LegacyReferenceTakenAsync(draft, project.Id, cancellationToken).ConfigureAwait(false) is { } taken)
+        {
+            return taken;
         }
 
         // Moving a project to another department or entity needs the permission there as well: no one moves a project out
@@ -315,6 +333,13 @@ internal sealed class ProjectService(
         return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
     }
 
+    private async Task<AdministrationError?> LegacyReferenceTakenAsync(ProjectDraft draft, Guid? projectId, CancellationToken cancellationToken) =>
+        draft.LegacyReference is { } reference
+        && (await repository.ListByLegacyReferencesAsync([reference], cancellationToken).ConfigureAwait(false)).TryGetValue(reference, out ProjectEntity? holder)
+        && holder.Id != projectId
+            ? AdministrationError.Conflict(ProjectErrorCodes.LegacyReferenceTaken, new FieldIssue("legacyReference", FieldIssue.Duplicate))
+            : null;
+
     /// <summary>Review needs what the governance profile is assigned on (TASK-105): the budget and the planned duration.</summary>
     private static AdministrationError? Incomplete(ProjectEntity project)
     {
@@ -346,10 +371,16 @@ internal sealed class ProjectService(
 
     private async Task<AdministrationResult<Versioned<ProjectDetail>>> SaveAsync(ProjectEntity project, CancellationToken cancellationToken) =>
         await repository.SaveAsync(cancellationToken).ConfigureAwait(false) == ProjectSaveOutcome.Saved
-            ? Versioned(project)
+            ? await VersionedAsync(project, cancellationToken).ConfigureAwait(false)
             : AdministrationError.PreconditionFailed;
 
-    private Versioned<ProjectDetail> Versioned(ProjectEntity project) => new(ProjectMapping.ToDetail(project), repository.RowVersionOf(project));
+    private async Task<Versioned<ProjectDetail>> VersionedAsync(ProjectEntity project, CancellationToken cancellationToken)
+    {
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        ProjectIndicators indicators = ProjectIndicatorCalculator.Of(
+            project, await onPlan.ThresholdsAsync(now, cancellationToken).ConfigureAwait(false), DateOnly.FromDateTime(now.UtcDateTime));
+        return new(ProjectMapping.ToDetail(project, indicators), repository.RowVersionOf(project));
+    }
 
     private void Touch(ProjectEntity project, Guid by)
     {

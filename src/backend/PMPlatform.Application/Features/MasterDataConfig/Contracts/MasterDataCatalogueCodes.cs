@@ -22,4 +22,10 @@ public static class MasterDataCatalogueCodes
     public const string Region = "REGION";
     public const string City = "CITY";
     public const string ExternalEntityType = "EXTERNAL_ENTITY_TYPE";
+
+    /// <summary>RPMO's strategic portfolios (the 2 Nov 2026 review, R3-3), labelled "المحفظة الاستراتيجية".</summary>
+    public const string StrategicPortfolio = "STRATEGIC_PORTFOLIO";
+
+    /// <summary>RPMO's strategic initiatives, each an item under one STRATEGIC_PORTFOLIO item.</summary>
+    public const string StrategicInitiative = "STRATEGIC_INITIATIVE";
 }

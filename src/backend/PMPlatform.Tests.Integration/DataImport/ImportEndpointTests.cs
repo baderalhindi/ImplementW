@@ -15,6 +15,8 @@ public sealed class ImportEndpointTests(IdentityTestHost host)
     {
         Dictionary<string, string?> imports = host.Api.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
+            // The project import batches of the 2 Nov 2026 review (R3-4) are not a migration register: PROJECT_IMPORT protects them.
+            .Where(e => e.RoutePattern.RawText?.StartsWith("api/v1/project-import-batches", StringComparison.Ordinal) != true)
             .Where(e => e.RoutePattern.RawText?.EndsWith("/import-template/content", StringComparison.Ordinal) == true
                         || e.RoutePattern.RawText?.EndsWith("/imports", StringComparison.Ordinal) == true)
             .ToDictionary(e => e.RoutePattern.RawText!, EndpointAuthorization.DeclarationOf);

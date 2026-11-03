@@ -1,42 +1,61 @@
+using System.Text.Json;
 using PMPlatform.Application.Features.Dashboards.Contracts;
 using PMPlatform.Application.Features.Project.Contracts;
 
 namespace PMPlatform.Application.Features.Dashboards;
 
 /// <summary>
-/// The filters of a portfolio-wide dashboard (DSH-CC-17, widened by the 27 Oct 2026 review to entity, region and city): each offers only
-/// the values of the projects the caller may see there, so a filter narrows the population and can never widen it.
+/// The filters of a portfolio-wide dashboard (DSH-CC-17, widened by the 27 Oct 2026 review to entity, region and city, and by the 2 Nov 2026
+/// review to sector, status, priority, strategic portfolio and initiative): each offers only the values of the projects the caller may see
+/// there, with how many projects have each, so a filter narrows the population and can never widen it.
 /// </summary>
-internal sealed record PortfolioFilters(IReadOnlyList<Guid> Departments, IReadOnlyList<Guid> Entities, IReadOnlyList<Guid> Regions, IReadOnlyList<Guid> Cities)
+internal sealed record PortfolioFilters(IReadOnlyList<PortfolioFilters.Dimension> Dimensions)
 {
-    public static readonly PortfolioFilters None = new([], [], [], []);
+    public static readonly PortfolioFilters None = new([]);
+
+    /// <summary>Every filter, by its query name: how a project's value and the context's chosen value are read.</summary>
+    private static readonly (string Field, Func<ProjectFacts, string?> Of, Func<DashboardContext, string?> Chosen)[] Fields =
+    [
+        ("classificationItemId", p => Id(p.ClassificationItemId), c => Id(c.ClassificationItemId)),
+        ("externalEntityId", p => Id(p.ExternalEntityId), c => Id(c.ExternalEntityId)),
+        ("departmentId", p => Id(p.DepartmentId), c => Id(c.DepartmentId)),
+        ("regionItemId", p => Id(p.RegionItemId), c => Id(c.RegionItemId)),
+        ("cityItemId", p => Id(p.CityItemId), c => Id(c.CityItemId)),
+        ("status", p => StatusCode(p.Status), c => c.Status is { } s ? StatusCode(s) : null),
+        ("priorityItemId", p => Id(p.PriorityItemId), c => Id(c.PriorityItemId)),
+        ("strategicPortfolioItemId", p => Id(p.StrategicPortfolioItemId), c => Id(c.StrategicPortfolioItemId)),
+        ("strategicInitiativeItemId", p => Id(p.StrategicInitiativeItemId), c => Id(c.StrategicInitiativeItemId)),
+    ];
+
+    public IReadOnlyList<Guid> Departments => Ids("departmentId");
+
+    public IReadOnlyList<Guid> Entities => Ids("externalEntityId");
+
+    public IReadOnlyList<Guid> Regions => Ids("regionItemId");
+
+    public IReadOnlyList<Guid> Cities => Ids("cityItemId");
+
+    /// <summary>The master data items some filter offers — sector, place, priority, portfolio, initiative — which the view names.</summary>
+    public IReadOnlyList<Guid> Items =>
+        [.. Dimensions.Where(d => d.Field.EndsWith("ItemId", StringComparison.Ordinal)).SelectMany(d => d.Options).Select(o => Guid.Parse(o.Value))];
 
     public static PortfolioFilters Of(IReadOnlyList<ProjectFacts> projects) => new(
-        Distinct(projects.Select(p => (Guid?)p.DepartmentId)),
-        Distinct(projects.Select(p => p.ExternalEntityId)),
-        Distinct(projects.Select(p => p.RegionItemId)),
-        Distinct(projects.Select(p => p.CityItemId)));
+        [.. Fields.Select(f => new Dimension(f.Field, [.. projects
+            .Select(f.Of).OfType<string>()
+            .GroupBy(v => v, StringComparer.Ordinal)
+            .OrderBy(g => g.Key, StringComparer.Ordinal)
+            .Select(g => new DashboardFilterOption(g.Key, g.Count()))]))]);
 
     /// <summary>The first filter whose value is not among the options, by its query name; null when every one is.</summary>
     public string? Refused(DashboardContext context) =>
-        Outside(context.DepartmentId, Departments) ? "departmentId"
-        : Outside(context.ExternalEntityId, Entities) ? "externalEntityId"
-        : Outside(context.RegionItemId, Regions) ? "regionItemId"
-        : Outside(context.CityItemId, Cities) ? "cityItemId"
-        : null;
+        Fields.FirstOrDefault(f => f.Chosen(context) is { } chosen
+                                   && !Dimensions.Single(d => d.Field == f.Field).Options.Any(o => o.Value == chosen)).Field;
 
     public static bool Matches(ProjectFacts project, DashboardContext context) =>
-        (context.DepartmentId is not { } department || project.DepartmentId == department)
-        && (context.ExternalEntityId is not { } entity || project.ExternalEntityId == entity)
-        && (context.RegionItemId is not { } region || project.RegionItemId == region)
-        && (context.CityItemId is not { } city || project.CityItemId == city);
+        Fields.All(f => f.Chosen(context) is not { } chosen || f.Of(project) == chosen);
 
     /// <summary>The query name of the first filter the context sets.</summary>
-    public static string FirstField(DashboardContext context) =>
-        context.DepartmentId is not null ? "departmentId"
-        : context.ExternalEntityId is not null ? "externalEntityId"
-        : context.RegionItemId is not null ? "regionItemId"
-        : "cityItemId";
+    public static string FirstField(DashboardContext context) => Fields.FirstOrDefault(f => f.Chosen(context) is not null).Field ?? "departmentId";
 
     /// <summary>The projects counted by region and city, largest first.</summary>
     public static IReadOnlyList<DashboardLocationCount> Locations(IReadOnlyList<ProjectFacts> projects) =>
@@ -45,7 +64,15 @@ internal sealed record PortfolioFilters(IReadOnlyList<Guid> Departments, IReadOn
             .Select(g => new DashboardLocationCount(g.Key.RegionItemId, g.Key.CityItemId, g.Count()))
             .OrderByDescending(l => l.ProjectCount).ThenBy(l => l.RegionItemId).ThenBy(l => l.CityItemId)];
 
-    private static bool Outside(Guid? value, IReadOnlyList<Guid> options) => value is { } chosen && !options.Contains(chosen);
+    public IReadOnlyList<DashboardFilter> ToView() => [.. Dimensions.Select(d => new DashboardFilter(d.Field, d.Options))];
 
-    private static List<Guid> Distinct(IEnumerable<Guid?> values) => [.. values.OfType<Guid>().Distinct().Order()];
+    private List<Guid> Ids(string field) =>
+        [.. Dimensions.FirstOrDefault(d => d.Field == field)?.Options.Select(o => Guid.Parse(o.Value)) ?? []];
+
+    private static string? Id(Guid? id) => id?.ToString("D");
+
+    private static string StatusCode(Domain.Project.ProjectLifecycleState state) => JsonNamingPolicy.SnakeCaseUpper.ConvertName(state.ToString());
+
+    /// <summary>One filter and the values it offers, each with its count of projects.</summary>
+    public sealed record Dimension(string Field, IReadOnlyList<DashboardFilterOption> Options);
 }

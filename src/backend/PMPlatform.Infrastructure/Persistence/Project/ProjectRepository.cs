@@ -52,6 +52,36 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
             rows = rows.Where(p => p.ExternalEntityId == externalEntityId);
         }
 
+        if (query.ClassificationItemId is { } classification)
+        {
+            rows = rows.Where(p => p.ClassificationItemId == classification);
+        }
+
+        if (query.StrategicPortfolioItemId is { } portfolio)
+        {
+            rows = rows.Where(p => p.StrategicPortfolioItemId == portfolio);
+        }
+
+        if (query.StrategicInitiativeItemId is { } initiative)
+        {
+            rows = rows.Where(p => p.StrategicInitiativeItemId == initiative);
+        }
+
+        if (query.PriorityItemId is { } priority)
+        {
+            rows = rows.Where(p => p.PriorityItemId == priority);
+        }
+
+        if (query.RegionItemId is { } region)
+        {
+            rows = rows.Where(p => p.RegionItemId == region);
+        }
+
+        if (query.CityItemId is { } city)
+        {
+            rows = rows.Where(p => p.CityItemId == city);
+        }
+
         if (query.ProjectManagerUserId is { } projectManagerUserId)
         {
             rows = rows.Where(p => p.ProjectManagerUserId == projectManagerUserId);
@@ -60,7 +90,8 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
         if (!string.IsNullOrWhiteSpace(query.Q))
         {
             string pattern = AdministrationPersistence.ContainsPattern(query.Q.Trim());
-            rows = rows.Where(p => EF.Functions.ILike(p.Title.Text, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(p.FormalProjectId!, pattern, AdministrationPersistence.LikeEscape));
+            rows = rows.Where(p => EF.Functions.ILike(p.Title.Text, pattern, AdministrationPersistence.LikeEscape) || EF.Functions.ILike(p.FormalProjectId!, pattern, AdministrationPersistence.LikeEscape)
+                || EF.Functions.ILike(p.LegacyReference!, pattern, AdministrationPersistence.LikeEscape));
         }
 
         int total = await rows.CountAsync(cancellationToken).ConfigureAwait(false);
@@ -87,6 +118,41 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
 
     public Task<Guid?> FindIdByFormalProjectIdAsync(string formalProjectId, CancellationToken cancellationToken) =>
         context.Set<ProjectEntity>().AsNoTracking().Where(p => p.FormalProjectId == formalProjectId).Select(p => (Guid?)p.Id).SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyDictionary<string, ProjectEntity>> ListByLegacyReferencesAsync(
+        IReadOnlyCollection<string> legacyReferences, CancellationToken cancellationToken) =>
+        legacyReferences.Count == 0
+            ? new Dictionary<string, ProjectEntity>(StringComparer.Ordinal)
+            : await context.Set<ProjectEntity>().AsNoTracking().Where(p => p.LegacyReference != null && legacyReferences.Contains(p.LegacyReference))
+                .ToDictionaryAsync(p => p.LegacyReference!, StringComparer.Ordinal, cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyDictionary<string, ProjectEntity>> ListByFormalProjectIdsAsync(
+        IReadOnlyCollection<string> formalProjectIds, CancellationToken cancellationToken) =>
+        formalProjectIds.Count == 0
+            ? new Dictionary<string, ProjectEntity>(StringComparer.Ordinal)
+            : await context.Set<ProjectEntity>().AsNoTracking().Where(p => p.FormalProjectId != null && formalProjectIds.Contains(p.FormalProjectId))
+                .ToDictionaryAsync(p => p.FormalProjectId!, StringComparer.Ordinal, cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<ProjectEntity>> FindManyAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        projectIds.Count == 0 ? [] : await context.Set<ProjectEntity>().Where(p => projectIds.Contains(p.Id)).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<ProjectEntity>> ListCreatedByImportAsync(Guid projectImportBatchId, CancellationToken cancellationToken) =>
+        await context.Set<ProjectEntity>().Where(p => p.ProjectImportBatchId == projectImportBatchId).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public void Add(ProjectFollowUpNote note) => context.Add(note);
+
+    public async Task<(IReadOnlyList<ProjectFollowUpNote> Items, int TotalCount)> ListNotesAsync(
+        Guid projectId, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        IQueryable<ProjectFollowUpNote> rows = context.Set<ProjectFollowUpNote>().AsNoTracking().Where(n => n.ProjectId == projectId);
+        int total = await rows.CountAsync(cancellationToken).ConfigureAwait(false);
+        List<ProjectFollowUpNote> items = await rows.OrderByDescending(n => n.CreatedAt).ThenByDescending(n => n.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return (items, total);
+    }
+
+    public async Task RemoveFollowUpNotesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        context.RemoveRange(await context.Set<ProjectFollowUpNote>().Where(n => projectIds.Contains(n.ProjectId)).ToListAsync(cancellationToken).ConfigureAwait(false));
 
     public void Remove(ProjectEntity project) => context.Remove(project);
 

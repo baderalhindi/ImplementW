@@ -188,6 +188,9 @@ FROM (VALUES
     ('PROJECT_REGISTER',            'تسجيل المشاريع',      'Register projects',           'PROJECT',         false),
     ('PROJECT_REVIEW',              'مراجعة تسجيل المشاريع', 'Review project registrations', 'PROJECT',       false),
     ('PROJECT_ACTIVATE',            'تفعيل المشاريع',      'Activate projects',           'PROJECT',         false),
+    ('PROJECT_IMPORT',              'استيراد المشاريع',    'Import projects',             'PROJECT',         false),
+    ('PROJECT_IMPORT_APPROVE',      'اعتماد دفعات استيراد المشاريع', 'Approve project import batches', 'PROJECT', false),
+    ('PROJECT_FOLLOW_UP',           'متابعة المشاريع',     'Follow up projects',          'PROJECT',         false),
     ('PROGRESS_VIEW',               'عرض تقدم المشاريع',    'View project progress',       'PROGRESS',        false),
     ('PROGRESS_SUBMIT',             'رفع تقدم المشاريع',    'Submit project progress',     'PROGRESS',        false),
     ('PROGRESS_REVIEW',             'مراجعة تقدم المشاريع ونشره', 'Review and publish project progress', 'PROGRESS', false),
@@ -292,6 +295,9 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R02', 'PROJECT_REGISTER',              'ALL'),
     ('R02', 'PROJECT_REVIEW',                'ALL'),
     ('R02', 'PROJECT_ACTIVATE',              'ALL'),
+    ('R02', 'PROJECT_IMPORT',                'ALL'),
+    ('R02', 'PROJECT_FOLLOW_UP',             'ALL'),
+    ('R02', 'PROJECT_IMPORT_APPROVE',        'ALL'),
     ('R02', 'PROGRESS_VIEW',                 'ALL'),
     ('R02', 'PROGRESS_REVIEW',               'ALL'),
     ('R02', 'SCHEDULE_VIEW',                 'ALL'),
@@ -340,6 +346,8 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R03', 'PROJECT_REGISTER',              'DEPT'),
     ('R03', 'PROJECT_REVIEW',                'DEPT'),
     ('R03', 'PROJECT_ACTIVATE',              'DEPT'),
+    ('R03', 'PROJECT_IMPORT',                'DEPT'),
+    ('R03', 'PROJECT_FOLLOW_UP',             'DEPT'),
     ('R03', 'PROGRESS_VIEW',                 'DEPT'),
     ('R03', 'PROGRESS_REVIEW',               'DEPT'),
     ('R03', 'SCHEDULE_VIEW',                 'DEPT'),
@@ -542,13 +550,27 @@ FROM (VALUES
     ('CONTRIBUTION_TYPE',      'نوع المساهمة',            'Contribution type'),
     ('ETIMAD_COST_CATEGORY',   'فئة التكلفة في اعتماد',   'Etimad cost category'),
     ('KPI_UNIT',               'وحدة قياس المؤشر',        'KPI unit'),
-    ('MEASUREMENT_FREQUENCY',  'دورية القياس',            'Measurement frequency')
+    ('MEASUREMENT_FREQUENCY',  'دورية القياس',            'Measurement frequency'),
+    ('STRATEGIC_PORTFOLIO',    'المحفظة الاستراتيجية',    'Strategic portfolio'),
+    ('STRATEGIC_INITIATIVE',   'المبادرة الاستراتيجية',   'Strategic initiative')
 ) AS v (code, name_ar, name_en)
 ON CONFLICT (code) DO UPDATE SET
     is_system = EXCLUDED.is_system,
     updated_at = EXCLUDED.updated_at,
     updated_by = EXCLUDED.updated_by
 WHERE NOT c.is_system;
+
+-- An item's parent in another catalogue (the 2 Nov 2026 review): a city lies in a region, a strategic initiative in a strategic portfolio.
+-- The platform owns these links as structure, so a re-run puts them back.
+UPDATE master_data_config.master_data_catalogue c
+SET allows_hierarchy = true,
+    parent_catalogue_id = p.id,
+    updated_at = now(),
+    updated_by = '00000000-0000-4000-8000-0000000000ff'
+FROM (VALUES ('CITY', 'REGION'), ('STRATEGIC_INITIATIVE', 'STRATEGIC_PORTFOLIO')) AS v (code, parent_code)
+JOIN master_data_config.master_data_catalogue p ON p.code = v.parent_code
+WHERE c.code = v.code
+  AND (NOT c.allows_hierarchy OR c.parent_catalogue_id IS DISTINCT FROM p.id);
 
 -- The items a controlled source fixes, PUBLISHED so forms can offer them. Reviewer and publisher stay null: the
 -- author/reviewer/publisher separation (TASK-110) has no people in a seed.

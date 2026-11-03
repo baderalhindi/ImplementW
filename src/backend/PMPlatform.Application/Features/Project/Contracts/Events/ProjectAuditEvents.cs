@@ -62,4 +62,28 @@ public static class ProjectAuditEvents
 
     /// <summary>AUTHORIZATION_DENIAL: an external user asked for an AHDA lifecycle gate (ADR-013).</summary>
     public const string LifecycleGateRefused = "Project.LifecycleGateRefused";
+
+    /// <summary>DATA_CHANGE: a project's follow-up — obstacle, next action, declared progress and spend, entity compliance — changed (R3-3).</summary>
+    public const string FollowUpChanged = "Project.FollowUpChanged";
+
+    /// <summary>DATA_CHANGE: a dated follow-up note was added to a project (R3-3).</summary>
+    public const string FollowUpNoteAdded = "Project.FollowUpNoteAdded";
+
+    /// <summary>DATA_CHANGE: an approved import batch updated an existing project, matched by its legacy reference or Formal Project ID (R3-4).</summary>
+    public const string ProjectUpdatedByImport = "Project.ProjectUpdatedByImport";
+
+    /// <summary>DATA_CHANGE: a project import batch was submitted for approval (R3-4).</summary>
+    public const string ImportBatchSubmitted = "Project.ImportBatchSubmitted";
+
+    /// <summary>
+    /// LIFECYCLE_TRANSITION: a submitted import batch was approved and applied, creating and updating its projects (R3-4). The projects it
+    /// created are recorded here, by count and batch, not one event each: the batch can be rolled back while they are untouched.
+    /// </summary>
+    public const string ImportBatchApproved = "Project.ImportBatchApproved";
+
+    /// <summary>LIFECYCLE_TRANSITION: a submitted import batch was returned to its importer with a reason (R3-4).</summary>
+    public const string ImportBatchReturned = "Project.ImportBatchReturned";
+
+    /// <summary>LIFECYCLE_TRANSITION: an applied import batch was rolled back, removing the projects it created (R3-4).</summary>
+    public const string ImportBatchRolledBack = "Project.ImportBatchRolledBack";
 }

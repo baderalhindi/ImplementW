@@ -184,5 +184,43 @@ internal static class ProjectAudit
             AuditAttribute.Change(ProjectAuditAttributes.CityItemId, before?.CityItemId, after.CityItemId),
             AuditAttribute.Change(ProjectAuditAttributes.Latitude, before?.Latitude, after.Latitude),
             AuditAttribute.Change(ProjectAuditAttributes.Longitude, before?.Longitude, after.Longitude),
+            AuditAttribute.Change(ProjectAuditAttributes.StrategicPortfolioItemId, before?.StrategicPortfolioItemId, after.StrategicPortfolioItemId),
+            AuditAttribute.Change(ProjectAuditAttributes.StrategicInitiativeItemId, before?.StrategicInitiativeItemId, after.StrategicInitiativeItemId),
+            AuditAttribute.Change(ProjectAuditAttributes.PriorityItemId, before?.PriorityItemId, after.PriorityItemId),
+            AuditAttribute.Change(ProjectAuditAttributes.FundingSource, before?.FundingSource, after.FundingSource),
+            AuditAttribute.Change(ProjectAuditAttributes.LegacyReference, before?.LegacyReference, after.LegacyReference),
+            AuditAttribute.Change(ProjectAuditAttributes.FollowUpOwnerUserId, before?.FollowUpOwnerUserId, after.FollowUpOwnerUserId),
+        }.OfType<AuditAttribute>();
+
+    /// <summary>R3-3: the follow-up fields that changed. The obstacle and next action are free text and are not copied.</summary>
+    public static AuditEntry FollowUpChanged(Guid actorId, ProjectFollowUpDetail before, ProjectEntity project) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.FollowUpChanged, actorId, project, FollowUpChanges(before, project));
+
+    public static AuditEntry FollowUpNoteAdded(Guid actorId, ProjectEntity project, ProjectFollowUpNote note) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.FollowUpNoteAdded, actorId, project, [AuditAttribute.Of(ProjectAuditAttributes.FollowUpNoteId, note.Id)]);
+
+    /// <summary>R3-4: what an approved import batch changed on an existing project, its classification and its follow-up.</summary>
+    public static AuditEntry UpdatedByImport(Guid actorId, ProjectDraft before, ProjectFollowUpDetail followUpBefore, ProjectEntity project, Guid batchId) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.ProjectUpdatedByImport, actorId, project,
+        [
+            AuditAttribute.Of(ProjectAuditAttributes.ProjectImportBatchId, batchId),
+            .. Changes(before, project),
+            .. FollowUpChanges(followUpBefore, project),
+        ]);
+
+    private static IEnumerable<AuditAttribute> FollowUpChanges(ProjectFollowUpDetail before, ProjectEntity after) =>
+        new[]
+        {
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.CurrentObstacleText, before.CurrentObstacle?.Text, after.CurrentObstacle?.Text),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.NextActionText, before.NextAction?.Text, after.NextAction?.Text),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.NextActionOwner, before.NextActionOwner, after.NextActionOwner),
+            AuditAttribute.Change(ProjectAuditAttributes.NextActionDueDate, before.NextActionDueDate, after.NextActionDueDate),
+            AuditAttribute.Change(ProjectAuditAttributes.DeclaredPlannedPercent, before.DeclaredPlannedPercent, after.DeclaredPlannedPercent),
+            AuditAttribute.Change(ProjectAuditAttributes.DeclaredActualPercent, before.DeclaredActualPercent, after.DeclaredActualPercent),
+            AuditAttribute.Change(ProjectAuditAttributes.DeclaredPlannedSpendPercent, before.DeclaredPlannedSpendPercent, after.DeclaredPlannedSpendPercent),
+            AuditAttribute.Change(ProjectAuditAttributes.DeclaredActualSpendPercent, before.DeclaredActualSpendPercent, after.DeclaredActualSpendPercent),
+            AuditAttribute.Change(ProjectAuditAttributes.DeclaredAsOf, before.DeclaredAsOf, after.DeclaredAsOf),
+            AuditAttribute.Change(ProjectAuditAttributes.DeclaredSource, before.DeclaredSource, after.DeclaredSource),
+            AuditAttribute.Change(ProjectAuditAttributes.EntityUpdateCompliant, before.EntityUpdateCompliant, after.EntityUpdateCompliant),
         }.OfType<AuditAttribute>();
 }

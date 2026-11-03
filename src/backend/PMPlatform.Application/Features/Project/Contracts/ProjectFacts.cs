@@ -8,7 +8,8 @@ namespace PMPlatform.Application.Features.Project.Contracts;
 /// the anchors its authorization is decided on, its lifecycle state, governance profile, the ADR-014 intake marker, and who manages its
 /// record day to day (ADR-013), on which FG-04's participation rules are keyed (TASK-066). <see cref="Title"/> names the project as entered (ADR-012) for
 /// FG-02's report rows (edge 30 through edge 47, TASK-071). <see cref="RegionItemId"/> and <see cref="CityItemId"/> are where it is delivered,
-/// by which FG-01's portfolio filters and locates it (the 27 Oct 2026 review).
+/// by which FG-01's portfolio filters and locates it (the 27 Oct 2026 review); its classification (sector), priority and strategic portfolio and
+/// initiative are the filters the 2 Nov 2026 review added.
 /// </summary>
 public sealed record ProjectFacts(
     Guid Id,
@@ -23,4 +24,8 @@ public sealed record ProjectFacts(
     ParticipationMode ParticipationMode,
     NarrativeText Title,
     Guid? RegionItemId = null,
-    Guid? CityItemId = null);
+    Guid? CityItemId = null,
+    Guid ClassificationItemId = default,
+    Guid? PriorityItemId = null,
+    Guid? StrategicPortfolioItemId = null,
+    Guid? StrategicInitiativeItemId = null);

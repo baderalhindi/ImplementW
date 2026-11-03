@@ -6,6 +6,7 @@ using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.Dashboards.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Domain.Project;
 
 namespace PMPlatform.Api.Controllers;
 
@@ -36,7 +37,8 @@ public sealed class DashboardsController(IDashboardService dashboards) : Adminis
     /// <summary>
     /// The dashboard's PUBLISHED version and each widget's result. <c>PROJECT</c> is bound to <c>projectId</c> (DSH-009 in SCR-040, DSH-008 for
     /// an entity's own project); the others are read over every project the caller may see, optionally narrowed to one <c>departmentId</c>,
-    /// <c>externalEntityId</c>, <c>regionItemId</c> and <c>cityItemId</c>, each among the view's options.
+    /// <c>externalEntityId</c>, <c>regionItemId</c>, <c>cityItemId</c>, <c>classificationItemId</c> (sector), <c>status</c>,
+    /// <c>priorityItemId</c>, <c>strategicPortfolioItemId</c> and <c>strategicInitiativeItemId</c>, each among the view's options.
     /// </summary>
     [HttpGet("{dashboardCode}")]
     [AllowAnyAuthenticatedUser]
@@ -44,10 +46,31 @@ public sealed class DashboardsController(IDashboardService dashboards) : Adminis
     [EndpointName("Dashboards_GetDashboard")]
     public async Task<IActionResult> Get(
         string dashboardCode, [FromQuery] Guid? projectId, [FromQuery] Guid? departmentId, [FromQuery] Guid? externalEntityId, [FromQuery] Guid? regionItemId,
-        [FromQuery] Guid? cityItemId, CancellationToken cancellationToken) =>
-        DashboardRoute.Parse(dashboardCode) is { } code
-            ? Respond(await dashboards.GetAsync(CallerId, code, new DashboardContext(projectId, departmentId, externalEntityId, regionItemId, cityItemId), cancellationToken))
-            : Failure(AdministrationError.NotFound);
+        [FromQuery] Guid? cityItemId, [FromQuery] Guid? classificationItemId, [FromQuery] string? status, [FromQuery] Guid? priorityItemId,
+        [FromQuery] Guid? strategicPortfolioItemId, [FromQuery] Guid? strategicInitiativeItemId, CancellationToken cancellationToken)
+    {
+        if (DashboardRoute.Parse(dashboardCode) is not { } code)
+        {
+            return Failure(AdministrationError.NotFound);
+        }
+
+        List<FieldError> errors = [];
+        IReadOnlyCollection<ProjectLifecycleState> statuses = QueryParameters.EnumSet<ProjectLifecycleState>(status, "status", errors);
+        if (statuses.Count > 1)
+        {
+            errors.Add(new FieldError("status", FieldError.Malformed));
+        }
+
+        DashboardContext context = new(projectId, departmentId, externalEntityId, regionItemId, cityItemId)
+        {
+            ClassificationItemId = classificationItemId,
+            Status = statuses.Count == 1 ? statuses.First() : null,
+            PriorityItemId = priorityItemId,
+            StrategicPortfolioItemId = strategicPortfolioItemId,
+            StrategicInitiativeItemId = strategicInitiativeItemId,
+        };
+        return errors.Count > 0 ? ValidationFailed(errors) : Respond(await dashboards.GetAsync(CallerId, code, context, cancellationToken));
+    }
 
     /// <summary>ADR-019: hide and order the optional widgets of a personalisable dashboard, as a whole. R02, R03 and R07 hold the permission.</summary>
     [HttpPost("{dashboardCode}/personalize")]

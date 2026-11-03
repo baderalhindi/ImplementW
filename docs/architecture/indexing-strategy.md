@@ -134,6 +134,9 @@ Each row is one index, by its key columns. **`IndexingStrategyTests` reads this 
 | I-58 | `integration_monitoring.invocation` | `correlation_id` | ADM-048 search by Correlation ID: one request's whole technical lineage (FG-05 §13.2) | TASK-075 |
 | I-59 | `integration_monitoring.operational_alert` | `status, raised_at, id` | ADM-047 operational alerts by state, newest first | TASK-075 |
 | I-60 | `integration_monitoring.sync_run` | `integration_instance_id, started_at, id` | ADM-047 an integration's synchronisation and reconciliation runs, newest first | TASK-075 |
+| I-61 | `project.project_follow_up_note` | `project_id, created_at, id` | A project's follow-up notes, newest first (the 2 Nov 2026 review, R3-3) | TASK-111 |
+| I-62 | `project.project_import_batch` | `created_at, id` | The project import batches, newest first (R3-4) | TASK-111 |
+| I-63 | `project.project_import_batch` | `status, created_at, id` | The SUBMITTED batches awaiting a decision (R3-4) | TASK-111 |
 
 ### 4.3 Screens covered without a register row
 

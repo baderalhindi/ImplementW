@@ -35,4 +35,13 @@ public sealed record ProjectDetail(
     DateTimeOffset CreatedAt,
     Guid CreatedBy,
     DateTimeOffset UpdatedAt,
-    Guid UpdatedBy);
+    Guid UpdatedBy,
+    Guid? StrategicPortfolioItemId,
+    Guid? StrategicInitiativeItemId,
+    Guid? PriorityItemId,
+    FundingSource? FundingSource,
+    string? LegacyReference,
+    Guid? FollowUpOwnerUserId,
+    Guid? ProjectImportBatchId,
+    ProjectFollowUpDetail FollowUp,
+    ProjectIndicators Indicators);

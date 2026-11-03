@@ -32,4 +32,10 @@ public static class ProjectErrorCodes
     /// records with it; the project's own commands answer TERMINAL_STATE.
     /// </summary>
     public const string Closed = "PROJECT_CLOSED";
+
+    /// <summary>409: another project already has this legacy reference, which matches a row on re-import (R3-3).</summary>
+    public const string LegacyReferenceTaken = "PROJECT_LEGACY_REFERENCE_TAKEN";
+
+    /// <summary>409: the follow-up of a project not yet approved is not kept: RPMO follows up registered projects (R3-3).</summary>
+    public const string FollowUpNotOpen = "PROJECT_FOLLOW_UP_NOT_OPEN";
 }

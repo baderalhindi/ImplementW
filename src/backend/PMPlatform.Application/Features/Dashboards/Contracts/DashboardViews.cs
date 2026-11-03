@@ -53,9 +53,22 @@ public sealed record DashboardView(
     IReadOnlyList<Guid> RegionOptions,
     IReadOnlyList<Guid> CityOptions,
     IReadOnlyList<DashboardLocationCount> Locations,
-    IReadOnlyList<DashboardPlace> Places);
+    IReadOnlyList<DashboardPlace> Places,
+    IReadOnlyList<DashboardFilter> Filters);
 
-/// <summary>A region or city a portfolio dashboard offers, with its name; a city's parent is its region.</summary>
+/// <summary>
+/// One filter of the filter bar (the 2 Nov 2026 review, R3-1), by its query name, and the values it offers: only values that projects in the
+/// caller's scope have, each with how many. The names of master data values are in <see cref="DashboardView.Places"/>.
+/// </summary>
+public sealed record DashboardFilter(string Field, IReadOnlyList<DashboardFilterOption> Options);
+
+/// <summary>A value a filter offers — an id, or a lifecycle state — and how many of the caller's projects have it.</summary>
+public sealed record DashboardFilterOption(string Value, int ProjectCount);
+
+/// <summary>
+/// A master data value a portfolio dashboard's filters offer — a region, a city, a sector, a priority, a strategic portfolio or initiative —
+/// with its name; a city's parent is its region, an initiative's its portfolio.
+/// </summary>
 public sealed record DashboardPlace(Guid Id, BilingualLabel Label, Guid? ParentItemId);
 
 /// <summary>How many of the dashboard's projects are delivered in one region and city.</summary>

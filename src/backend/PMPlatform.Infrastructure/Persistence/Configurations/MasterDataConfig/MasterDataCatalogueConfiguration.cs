@@ -15,5 +15,6 @@ internal sealed class MasterDataCatalogueConfiguration : IEntityTypeConfiguratio
         builder.HasBilingualLabel(e => e.Name, "name");
         builder.Property(e => e.AllowsHierarchy).HasDatabaseDefault(false);
         builder.Property(e => e.IsSystem).HasDatabaseDefault(false);
+        builder.HasOne<MasterDataCatalogue>().WithMany().HasForeignKey(e => e.ParentCatalogueId).OnDelete(DeleteBehavior.Restrict);
     }
 }

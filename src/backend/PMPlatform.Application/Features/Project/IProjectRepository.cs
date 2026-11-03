@@ -34,6 +34,27 @@ public interface IProjectRepository
     /// <summary>The project with this Formal Project ID, if any.</summary>
     public Task<Guid?> FindIdByFormalProjectIdAsync(string formalProjectId, CancellationToken cancellationToken);
 
+    /// <summary>The projects whose legacy reference is one of <paramref name="legacyReferences"/>, by reference. Not tracked.</summary>
+    public Task<IReadOnlyDictionary<string, ProjectEntity>> ListByLegacyReferencesAsync(IReadOnlyCollection<string> legacyReferences, CancellationToken cancellationToken);
+
+    /// <summary>The projects whose Formal Project ID is one of <paramref name="formalProjectIds"/>, by that ID. Not tracked.</summary>
+    public Task<IReadOnlyDictionary<string, ProjectEntity>> ListByFormalProjectIdsAsync(IReadOnlyCollection<string> formalProjectIds, CancellationToken cancellationToken);
+
+    /// <summary>Tracked: the projects with these ids, for an import batch to update.</summary>
+    public Task<IReadOnlyList<ProjectEntity>> FindManyAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
+    /// <summary>Tracked: the projects an import batch created (R3-4).</summary>
+    public Task<IReadOnlyList<ProjectEntity>> ListCreatedByImportAsync(Guid projectImportBatchId, CancellationToken cancellationToken);
+
+    /// <summary>R3-3: a dated follow-up note, saved with the project's change.</summary>
+    public void Add(ProjectFollowUpNote note);
+
+    /// <summary>A project's follow-up notes, newest first, one page, with the total. Not tracked.</summary>
+    public Task<(IReadOnlyList<ProjectFollowUpNote> Items, int TotalCount)> ListNotesAsync(Guid projectId, int page, int pageSize, CancellationToken cancellationToken);
+
+    /// <summary>Stages the removal of these projects' follow-up notes, with the projects a rolled-back import batch removes (R3-4).</summary>
+    public Task RemoveFollowUpNotesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
     public void Remove(ProjectEntity project);
 
     /// <summary>

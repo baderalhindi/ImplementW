@@ -421,6 +421,26 @@ erDiagram
         uuid governance_profile_item_id FK
         uuid region_item_id FK
         uuid city_item_id FK
+        uuid strategic_portfolio_item_id FK
+        uuid strategic_initiative_item_id FK
+        uuid priority_item_id FK
+        uuid follow_up_owner_user_id FK
+        uuid project_import_batch_id FK
+    }
+    ProjectFollowUpNote {
+        uuid id PK
+        uuid project_id FK
+    }
+    ProjectImportBatch {
+        uuid id PK
+        integer batch_no UK
+        varchar status
+        uuid decided_by_user_id FK
+    }
+    ProjectImportNameMapping {
+        uuid id PK
+        varchar dimension
+        varchar source_key
     }
     ProjectIntake {
         uuid id PK
@@ -433,13 +453,20 @@ erDiagram
     }
     Project ||--o| ProjectIntake : "project_id"
     ProjectIntake ||--o{ ProjectIntakeMilestone : "project_intake_id"
+    Project ||--o{ ProjectFollowUpNote : "project_id"
+    ProjectImportBatch |o--o{ Project : "project_import_batch_id"
 ```
+
+The 2 Nov 2026 review (R3-3, R3-4) adds RPMO's strategy classification — a strategic portfolio and one of its initiatives, both master data, a view and never a scope — the legacy reference an import matches on, the follow-up fields (obstacle, next action, declared progress and spend, entity update compliance) and dated `ProjectFollowUpNote`s. `ProjectImportBatch` holds a workbook a second person approves; the projects it created carry its id until it is rolled back, which the project guard allows only for a ROLLED_BACK batch's projects.
 
 | Entity | Table | Purpose | Lifecycle column → states | Delete policy | Identity |
 | --- | --- | --- | --- | --- | --- |
 | **Project** | `project.project` | Project master aggregate (Blueprint Sections 5, 9; ICD-02). Root of the core-domain graph. | `lifecycle_state` → DRAFT · SUBMITTED · UNDER_REVIEW · RETURNED · APPROVED_PLANNED · ACTIVE · SUSPENDED · COMPLETED · CLOSED | HARD_DRAFT | referenceable |
 | **ProjectIntake** | `project.project_intake` | The one-time declaration for a project already under way: Declared Baseline inputs and opening position (ADR-014, TASK-104). Source of the ProjectIntakeRecorded event (§11.1 of the solution architecture). | — | APPEND_ONLY | referenceable |
 | **ProjectIntakeMilestone** | `project.project_intake_milestone` | A milestone declared as already achieved at intake; WF-05 records the achievement on the event. | — | APPEND_ONLY | — |
+| **ProjectFollowUpNote** | `project.project_follow_up_note` | A dated follow-up note on a project, attributed by its creation stamp: RPMO's "ملاحظات" (2 Nov 2026 review, R3-3). | — | APPEND_ONLY | — |
+| **ProjectImportBatch** | `project.project_import_batch` | A batch of projects imported from RPMO's workbook: the file, the submitted plan, the counts, and a second person's decision; the projects it created carry its id (R3-4). | — | RETAIN | — |
+| **ProjectImportNameMapping** | `project.project_import_name_mapping` | A workbook name mapped to the platform value it means, remembered for the next import (R3-4). | — | RETAIN | — |
 
 ### 5.5 Progress — WF-02 (closes TASK-007 S-2)
 
