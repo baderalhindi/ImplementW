@@ -67,7 +67,7 @@ public sealed record ProjectImportOption(string Value, BilingualLabel Label);
 
 /// <summary>
 /// What a workbook would do (R3-4): every row's action, issues and changes, the names to map, and the counts. <see cref="Submittable"/> is
-/// true when no row has an error and no name is unmatched.
+/// true when no row has an error and no required name is unmatched (an unmatched follow-up owner is a warning).
 /// </summary>
 public sealed record ProjectImportPreview(
     string FileSha256,

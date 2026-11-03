@@ -449,7 +449,8 @@
       "MALFORMED": "Not in the expected format",
       "MAX_LENGTH": "Too long",
       "ENUM_VALUE": "Not one of the allowed values",
-      "NOT_ALLOWED": "Not allowed here"
+      "NOT_ALLOWED": "Not allowed here",
+      "OWNER_UNMATCHED": "No active AHDA user has this name: left empty unless you map it"
     },
     "fileLevel": "Whole file"
   }

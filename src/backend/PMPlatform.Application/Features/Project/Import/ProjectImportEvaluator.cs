@@ -161,7 +161,7 @@ internal static class ProjectImportEvaluator
             ready.Count(p => p.Action == ProjectImportRowAction.Skip),
             errors,
             previews.Count(p => p.Issues.Any(i => i.Level == ProjectImportIssueLevel.Warning)),
-            Submittable: errors == 0 && names.Count == 0 && previews.Count > 0,
+            Submittable: errors == 0 && names.All(n => n.Dimension == ProjectImportDimension.FollowUpOwner) && previews.Count > 0,
             fileIssues,
             names,
             previews);
@@ -449,7 +449,16 @@ internal static class ProjectImportEvaluator
                 return id;
             }
 
-            Error(column, ProjectImportIssueCodes.NameUnmatched);
+            // The follow-up owner is optional (review §3): a name with no account is left empty and flagged, and may still be mapped.
+            if (dimension == ProjectImportDimension.FollowUpOwner)
+            {
+                Warning(column, ProjectImportIssueCodes.OwnerUnmatched);
+            }
+            else
+            {
+                Error(column, ProjectImportIssueCodes.NameUnmatched);
+            }
+
             unmatched[(dimension, text)] = unmatched.GetValueOrDefault((dimension, text)) + 1;
             return null;
         }

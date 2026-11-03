@@ -26,6 +26,9 @@ public static class ProjectImportErrorCodes
 public static class ProjectImportIssueCodes
 {
     public const string NameUnmatched = "NAME_UNMATCHED";
+
+    /// <summary>A warning: the follow-up owner names no active internal user; the field is left empty unless the name is mapped.</summary>
+    public const string OwnerUnmatched = "OWNER_UNMATCHED";
     public const string InitiativeOutsidePortfolio = "INITIATIVE_OUTSIDE_PORTFOLIO";
     public const string EndBeforeStart = "END_BEFORE_START";
     public const string NotPositive = "NOT_POSITIVE";

@@ -19,6 +19,7 @@ const LEVEL_TONES: Record<ImportIssueLevel, StatusTone> = {
 /** The issue codes the import names in words; any other is shown as its code. */
 const ISSUE_CODES = [
   'NAME_UNMATCHED',
+  'OWNER_UNMATCHED',
   'INITIATIVE_OUTSIDE_PORTFOLIO',
   'END_BEFORE_START',
   'NOT_POSITIVE',

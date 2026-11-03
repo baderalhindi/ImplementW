@@ -30,12 +30,18 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
         ["POST /api/v1/approval-delegations"] = "a person's delegation, of no project",
         ["POST /api/v1/approval-delegations/{delegationId}/revoke"] = "a person's delegation, of no project",
         ["POST /api/v1/change-requests/{changeRequestId}/preview-materiality"] = "a read sent as POST (CHANGE_REQUEST_VIEW): it computes a preview and writes nothing",
+        ["POST /api/v1/project-import-batches"] = "submits a project import batch (R3-4); it names no existing project, and a row matching a closed one is an error",
+        ["POST /api/v1/project-import-batches/validations"] = "a read sent as POST (PROJECT_IMPORT): it validates a workbook and writes nothing",
+        ["POST /api/v1/project-import-batches/{batchId}/approve"] = "applies a batch, validated again: a row matching a closed project is an error and nothing is applied",
+        ["POST /api/v1/project-import-batches/{batchId}/return"] = "returns a batch to its importer; no project changes",
+        ["POST /api/v1/project-import-batches/{batchId}/rollback"] = "removes only the projects the batch created, untouched since",
     };
 
     /// <summary>String values a request's validation knows but the document does not enumerate, by property name.</summary>
     private static readonly Dictionary<string, JsonNode?> Known = new(StringComparer.Ordinal)
     {
         ["participationMode"] = "ENTITY_MANAGED",
+        ["fundingSource"] = "STRATEGY_BUDGET_FULL",
         ["dependencyType"] = "FS",
         ["actionType"] = "MITIGATE",
         ["concernType"] = "ISSUE",

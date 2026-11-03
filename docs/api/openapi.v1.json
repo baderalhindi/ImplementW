@@ -34809,7 +34809,7 @@
             }
           }
         },
-        "description": "What a workbook would do (R3-4): every row's action, issues and changes, the names to map, and the counts. bool ProjectImportPreview.Submittable is\ntrue when no row has an error and no name is unmatched."
+        "description": "What a workbook would do (R3-4): every row's action, issues and changes, the names to map, and the counts. bool ProjectImportPreview.Submittable is\ntrue when no row has an error and no required name is unmatched (an unmatched follow-up owner is a warning)."
       },
       "ProjectImportReturnCommand": {
         "required": [

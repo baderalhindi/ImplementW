@@ -649,7 +649,7 @@ Table project.project {
   strategic_initiative_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Catalogue STRATEGIC_INITIATIVE, an initiative of the chosen portfolio']
   priority_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Catalogue PRIORITY']
   funding_source varchar(50) [note: 'STRATEGY_BUDGET_FULL | STRATEGY_BUDGET_PARTIAL | NOT_STRATEGY_BUDGET']
-  legacy_reference varchar(100) [note: 'RPMO register number before the platform; unique where set; matches a row on re-import']
+  legacy_reference varchar(100) [unique, note: 'RPMO register number before the platform; unique where set; matches a row on re-import']
   follow_up_owner_user_id uuid [ref: > identity_access.user.id, note: 'The RPMO staff member who follows the project up (portfolio owner)']
   project_import_batch_id uuid [ref: > project.project_import_batch.id, note: 'The import batch that created the project: its Imported label (R3-4)']
   current_obstacle text [note: 'Narrative, stored as entered (ADR-012)']
