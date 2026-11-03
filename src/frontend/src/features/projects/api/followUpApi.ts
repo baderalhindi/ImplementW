@@ -8,8 +8,12 @@ import {
 import {
   type ImportBatch,
   type ImportBatchStatus,
+  type ImportDimension,
   type ImportPlan,
   type ImportPreview,
+  type ImportValidation,
+  type ImportValueRequest,
+  type ImportValueRequestStatus,
 } from './importTypes.ts';
 import {
   type FollowUpReason,
@@ -70,8 +74,36 @@ function importForm(file: File, plan: ImportPlan, note?: string, noteLanguage?: 
 
 export const projectImportApi = {
   template: (): Promise<DownloadedFile> => apiDownload(`${BATCHES}/import-template/content`),
-  validate: async (file: File, plan: ImportPlan) =>
-    (await apiUpload<ImportPreview>(`${BATCHES}/validations`, importForm(file, plan))).data,
+  /** A preview at once, or — for more than 200 rows — the queued background validation (202). */
+  validate: async (file: File, plan: ImportPlan): Promise<ImportPreview | ImportValidation> =>
+    (
+      await apiUpload<ImportPreview | ImportValidation>(
+        `${BATCHES}/validations`,
+        importForm(file, plan),
+      )
+    ).data,
+  validation: async (validationId: string, signal?: AbortSignal) =>
+    (await apiRequest<ImportValidation>(`/project-import-validations/${validationId}`, { signal }))
+      .data,
+  requestValue: async (dimension: ImportDimension, sourceText: string) =>
+    (
+      await apiRequest<ImportValueRequest>('/project-import-value-requests', {
+        method: 'POST',
+        body: { dimension, sourceText },
+      })
+    ).data,
+  valueRequests: async (status: ImportValueRequestStatus | undefined, signal?: AbortSignal) =>
+    (
+      await apiRequest<Page<ImportValueRequest>>('/project-import-value-requests', {
+        query: { status, pageSize: 200 },
+        signal,
+      })
+    ).data,
+  resolveValue: (requestId: string, status: 'ADDED' | 'DECLINED', note: string, language: string) =>
+    apiRequest<ImportValueRequest>(`/project-import-value-requests/${requestId}/resolve`, {
+      method: 'POST',
+      body: { status, note: note.trim() === '' ? null : { text: note.trim(), language } },
+    }),
   submit: async (file: File, plan: ImportPlan, note: string, noteLanguage: string) =>
     (await apiUpload<ImportBatch>(BATCHES, importForm(file, plan, note, noteLanguage))).data,
   list: async (

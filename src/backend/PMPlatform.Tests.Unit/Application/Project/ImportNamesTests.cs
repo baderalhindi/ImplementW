@@ -20,3 +20,18 @@ public sealed class ImportNamesTests
     [InlineData("الصحة", null, "الصحة")]
     public void ACodedNameSplitsIntoCodeAndLabel(string text, string? code, string label) => Assert.Equal((code, label), ImportNames.Split(text));
 }
+
+/// <summary>The Period filter's years (the 2 Nov 2026 review §1).</summary>
+public sealed class ProjectPeriodsTests
+{
+    [Fact]
+    public void APlannedPeriodTouchesEveryYearItSpans() =>
+        Assert.Equal([2025, 2026, 2027], PMPlatform.Application.Features.Project.Contracts.ProjectPeriods.YearsOf(new DateOnly(2025, 3, 1), new DateOnly(2027, 1, 31)));
+
+    [Fact]
+    public void OneDateIsItsYearAndNoneIsNoPeriod()
+    {
+        Assert.Equal([2026], PMPlatform.Application.Features.Project.Contracts.ProjectPeriods.YearsOf(null, new DateOnly(2026, 6, 30)));
+        Assert.Empty(PMPlatform.Application.Features.Project.Contracts.ProjectPeriods.YearsOf(null, null));
+    }
+}

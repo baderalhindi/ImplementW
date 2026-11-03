@@ -1,5 +1,6 @@
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.Common;
+using PMPlatform.Domain.Project;
 
 namespace PMPlatform.Application.Features.Project.Contracts;
 
@@ -14,8 +15,12 @@ public interface IProjectImportService
     /// <summary>The .xlsx template, its lists drawn from live master data, with a version stamp.</summary>
     public Task<AdministrationResult<byte[]>> TemplateAsync(Guid callerId, CancellationToken cancellationToken);
 
-    public Task<AdministrationResult<ProjectImportPreview>> ValidateAsync(
+    /// <summary>Validates a workbook of up to 200 rows at once; queues a larger one for the background.</summary>
+    public Task<AdministrationResult<ProjectImportValidationOutcome>> ValidateAsync(
         Guid callerId, ProjectImportUpload upload, ProjectImportPlan plan, CancellationToken cancellationToken);
+
+    /// <summary>A background validation, to the person who asked for it only.</summary>
+    public Task<AdministrationResult<ProjectImportValidationDetail>> GetValidationAsync(Guid callerId, Guid validationId, CancellationToken cancellationToken);
 
     /// <summary>Validates again and, when the workbook is submittable, saves it as a SUBMITTED batch and remembers its mappings.</summary>
     public Task<AdministrationResult<ProjectImportBatchDetail>> SubmitAsync(
@@ -39,4 +44,28 @@ public interface IProjectImportService
 
     /// <summary>APPROVED → ROLLED_BACK: removes the projects the batch created, while none has changed since and the batch updated none.</summary>
     public Task<AdministrationResult<Versioned<ProjectImportBatchDetail>>> RollBackAsync(Guid callerId, Guid batchId, uint? expectedVersion, CancellationToken cancellationToken);
+}
+
+/// <summary>Runs the queued background validations (review §4, step 3), one pass at a time.</summary>
+public interface IProjectImportValidationRunner
+{
+    /// <summary>Validates up to <paramref name="batchSize"/> queued workbooks; returns how many it finished.</summary>
+    public Task<int> RunAsync(int batchSize, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Requests to add a value the platform's lists lack (review §3): an importer (PROJECT_IMPORT) asks, administrators (MASTER_DATA_MANAGE or
+/// ORGANIZATION_MANAGE) are notified and mark each added or declined, and the importer is notified in turn.
+/// </summary>
+public interface IProjectImportValueRequestService
+{
+    /// <summary>Asks for the value; an OPEN request for the same name is answered instead of a second one.</summary>
+    public Task<AdministrationResult<ProjectImportValueRequestDetail>> RequestAsync(
+        Guid callerId, ProjectImportDimension dimension, string sourceText, CancellationToken cancellationToken);
+
+    public Task<AdministrationResult<ProjectImportValueRequestPage>> ListAsync(
+        Guid callerId, ProjectImportValueRequestStatus? status, PageRequest page, CancellationToken cancellationToken);
+
+    public Task<AdministrationResult<Versioned<ProjectImportValueRequestDetail>>> ResolveAsync(
+        Guid callerId, Guid requestId, ProjectImportValueRequestStatus status, NarrativeText? note, uint? expectedVersion, CancellationToken cancellationToken);
 }

@@ -21,6 +21,6 @@ internal sealed class ProjectFactsReader(IProjectRepository repository) : IProje
         return new ProjectFacts(
             p.Id, p.FormalProjectId, p.DepartmentId, p.ExternalEntityId, p.ProjectManagerUserId, p.LifecycleState, p.GovernanceProfileItemId,
             p.LegacyIntakeDate, p.ActivatedAt, p.ParticipationMode, p.Title, p.RegionItemId, p.CityItemId, p.ClassificationItemId, p.PriorityItemId,
-            p.StrategicPortfolioItemId, p.StrategicInitiativeItemId);
+            p.StrategicPortfolioItemId, p.StrategicInitiativeItemId, p.PlannedStartDate, p.PlannedEndDate);
     }
 }

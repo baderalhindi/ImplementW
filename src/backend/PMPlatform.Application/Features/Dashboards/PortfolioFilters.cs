@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using PMPlatform.Application.Features.Dashboards.Contracts;
 using PMPlatform.Application.Features.Project.Contracts;
@@ -6,25 +7,30 @@ namespace PMPlatform.Application.Features.Dashboards;
 
 /// <summary>
 /// The filters of a portfolio-wide dashboard (DSH-CC-17, widened by the 27 Oct 2026 review to entity, region and city, and by the 2 Nov 2026
-/// review to sector, status, priority, strategic portfolio and initiative): each offers only the values of the projects the caller may see
+/// review to sector, status, priority, strategic portfolio, initiative and period): each offers only the values of the projects the caller may see
 /// there, with how many projects have each, so a filter narrows the population and can never widen it.
 /// </summary>
 internal sealed record PortfolioFilters(IReadOnlyList<PortfolioFilters.Dimension> Dimensions)
 {
     public static readonly PortfolioFilters None = new([]);
 
-    /// <summary>Every filter, by its query name: how a project's value and the context's chosen value are read.</summary>
-    private static readonly (string Field, Func<ProjectFacts, string?> Of, Func<DashboardContext, string?> Chosen)[] Fields =
+    /// <summary>
+    /// Every filter, by its query name: the values a project has for it — one, or none, except the period, every year its planned period
+    /// touches — and the value the context chose.
+    /// </summary>
+    private static readonly (string Field, Func<ProjectFacts, IEnumerable<string>> Of, Func<DashboardContext, string?> Chosen)[] Fields =
     [
-        ("classificationItemId", p => Id(p.ClassificationItemId), c => Id(c.ClassificationItemId)),
-        ("externalEntityId", p => Id(p.ExternalEntityId), c => Id(c.ExternalEntityId)),
-        ("departmentId", p => Id(p.DepartmentId), c => Id(c.DepartmentId)),
-        ("regionItemId", p => Id(p.RegionItemId), c => Id(c.RegionItemId)),
-        ("cityItemId", p => Id(p.CityItemId), c => Id(c.CityItemId)),
-        ("status", p => StatusCode(p.Status), c => c.Status is { } s ? StatusCode(s) : null),
-        ("priorityItemId", p => Id(p.PriorityItemId), c => Id(c.PriorityItemId)),
-        ("strategicPortfolioItemId", p => Id(p.StrategicPortfolioItemId), c => Id(c.StrategicPortfolioItemId)),
-        ("strategicInitiativeItemId", p => Id(p.StrategicInitiativeItemId), c => Id(c.StrategicInitiativeItemId)),
+        ("classificationItemId", p => One(Id(p.ClassificationItemId)), c => Id(c.ClassificationItemId)),
+        ("externalEntityId", p => One(Id(p.ExternalEntityId)), c => Id(c.ExternalEntityId)),
+        ("departmentId", p => One(Id(p.DepartmentId)), c => Id(c.DepartmentId)),
+        ("regionItemId", p => One(Id(p.RegionItemId)), c => Id(c.RegionItemId)),
+        ("cityItemId", p => One(Id(p.CityItemId)), c => Id(c.CityItemId)),
+        ("status", p => [StatusCode(p.Status)], c => c.Status is { } s ? StatusCode(s) : null),
+        ("priorityItemId", p => One(Id(p.PriorityItemId)), c => Id(c.PriorityItemId)),
+        ("strategicPortfolioItemId", p => One(Id(p.StrategicPortfolioItemId)), c => Id(c.StrategicPortfolioItemId)),
+        ("strategicInitiativeItemId", p => One(Id(p.StrategicInitiativeItemId)), c => Id(c.StrategicInitiativeItemId)),
+        ("period", p => ProjectPeriods.YearsOf(p.PlannedStartDate, p.PlannedEndDate).Select(y => y.ToString(CultureInfo.InvariantCulture)),
+            c => c.PeriodYear?.ToString(CultureInfo.InvariantCulture)),
     ];
 
     public IReadOnlyList<Guid> Departments => Ids("departmentId");
@@ -41,7 +47,7 @@ internal sealed record PortfolioFilters(IReadOnlyList<PortfolioFilters.Dimension
 
     public static PortfolioFilters Of(IReadOnlyList<ProjectFacts> projects) => new(
         [.. Fields.Select(f => new Dimension(f.Field, [.. projects
-            .Select(f.Of).OfType<string>()
+            .SelectMany(f.Of)
             .GroupBy(v => v, StringComparer.Ordinal)
             .OrderBy(g => g.Key, StringComparer.Ordinal)
             .Select(g => new DashboardFilterOption(g.Key, g.Count()))]))]);
@@ -52,7 +58,7 @@ internal sealed record PortfolioFilters(IReadOnlyList<PortfolioFilters.Dimension
                                    && !Dimensions.Single(d => d.Field == f.Field).Options.Any(o => o.Value == chosen)).Field;
 
     public static bool Matches(ProjectFacts project, DashboardContext context) =>
-        Fields.All(f => f.Chosen(context) is not { } chosen || f.Of(project) == chosen);
+        Fields.All(f => f.Chosen(context) is not { } chosen || f.Of(project).Contains(chosen, StringComparer.Ordinal));
 
     /// <summary>The query name of the first filter the context sets.</summary>
     public static string FirstField(DashboardContext context) => Fields.FirstOrDefault(f => f.Chosen(context) is not null).Field ?? "departmentId";
@@ -70,6 +76,8 @@ internal sealed record PortfolioFilters(IReadOnlyList<PortfolioFilters.Dimension
         [.. Dimensions.FirstOrDefault(d => d.Field == field)?.Options.Select(o => Guid.Parse(o.Value)) ?? []];
 
     private static string? Id(Guid? id) => id?.ToString("D");
+
+    private static IEnumerable<string> One(string? value) => value is null ? [] : [value];
 
     private static string StatusCode(Domain.Project.ProjectLifecycleState state) => JsonNamingPolicy.SnakeCaseUpper.ConvertName(state.ToString());
 

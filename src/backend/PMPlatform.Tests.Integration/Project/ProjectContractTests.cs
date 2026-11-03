@@ -51,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(24, built["paths"]!.AsObject().Count);
+        Assert.Equal(28, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -148,6 +148,26 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         using HttpResponseMessage batchReturned = await ProjectImportTests.PostAsync(client, sessions.Approver, $"{batches}/{returnedId}/return",
             "{\"reason\":{\"text\":\"أكمل الأسماء\",\"language\":\"ar\"}}");
         await responses.CheckAsync("POST", $"{batches}/{{batchId}}/return", batchReturned);
+
+        // The 2 Nov 2026 review, round 3 follow-up: a background validation read back, and a value request asked for and resolved.
+        Guid validationId = Guid.CreateVersion7();
+        await host.Database.ExecuteAsync($$"""
+            INSERT INTO project.project_import_validation (id, status, file_name, file_content, plan, row_count, result, completed_at, created_at, created_by, updated_at, updated_by)
+            VALUES ('{{validationId}}', 'COMPLETED', 'rpmo.xlsx', ''::bytea, '{"mappings":[],"skippedRows":[]}', 0,
+                    '{"fileSha256":"","rowCount":0,"createCount":0,"updateCount":0,"skipCount":0,"errorCount":0,"warningCount":0,"submittable":false,"fileIssues":[],"unmatched":[],"rows":[]}',
+                    now(), now(), '{{IdentityDatabase.UserId(3)}}', now(), '{{IdentityDatabase.UserId(3)}}');
+            """);
+        using HttpResponseMessage validationRead = await client.GetAsync($"/api/v1/project-import-validations/{validationId}", sessions.Reviewer);
+        await responses.CheckAsync("GET", "/api/v1/project-import-validations/{validationId}", validationRead);
+        const string valueRequests = "/api/v1/project-import-value-requests";
+        using HttpResponseMessage asked = await ProjectImportTests.PostAsync(client, sessions.Reviewer, valueRequests,
+            $"{{\"dimension\":\"SECTOR\",\"sourceText\":\"قطاع {Guid.NewGuid():N}\"}}");
+        Guid valueRequestId = AdministrationApi.IdOf((await responses.CheckAsync("POST", valueRequests, asked))!);
+        using HttpResponseMessage requestList = await client.GetAsync($"{valueRequests}?status=OPEN", sessions.Reviewer);
+        await responses.CheckAsync("GET", valueRequests, requestList);
+        string resolver = (await client.SignInOrFailAsync(1)).AccessToken;
+        using HttpResponseMessage resolved = await ProjectImportTests.PostAsync(client, resolver, $"{valueRequests}/{valueRequestId}/resolve", "{\"status\":\"DECLINED\"}");
+        await responses.CheckAsync("POST", $"{valueRequests}/{{requestId}}/resolve", resolved);
 
         Guid draft = AdministrationApi.IdOf(await client.CreateOrFailAsync(sessions.Entity, host.Registration()));
         using HttpResponseMessage deleted = await client.DeleteProjectAsync(draft, sessions.Entity);

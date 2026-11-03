@@ -734,6 +734,45 @@ Table project.project_import_name_mapping {
   Note: 'A workbook name mapped to the platform value it means, remembered for the next import (R3-4). Delete policy: RETAIN.'
 }
 
+Table project.project_import_validation {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  status varchar(50) [not null, note: 'QUEUED | RUNNING | COMPLETED | FAILED']
+  file_name varchar(255) [not null, note: 'As uploaded; evidence only']
+  file_content bytea [not null, note: 'The workbook until it is validated; cleared after']
+  plan jsonb [not null, note: 'The name mappings and skipped rows validated with']
+  row_count integer [not null]
+  result jsonb [note: 'The preview, once COMPLETED']
+  failure_code varchar(50) [note: 'Why it FAILED']
+  completed_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (status, created_at, id)
+  }
+  Note: 'A project import workbook of more than 200 rows, validated in the background; its importer is notified when done (2 Nov 2026 review). Delete policy: RETAIN.'
+}
+
+Table project.project_import_value_request {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  dimension varchar(50) [not null, note: 'ENTITY | DEPARTMENT | SECTOR | PORTFOLIO | INITIATIVE | REGION | CITY | PRIORITY | GOVERNANCE | PROJECT_MANAGER | FOLLOW_UP_OWNER']
+  source_text varchar(200) [not null, note: 'The name as the workbook writes it']
+  status varchar(50) [not null, note: 'OPEN | ADDED | DECLINED']
+  resolved_by_user_id uuid [ref: > identity_access.user.id]
+  resolved_at timestamptz
+  resolution_note text [note: 'Narrative, stored as entered (ADR-012)']
+  resolution_note_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (status, created_at, id)
+  }
+  Note: 'An importer asks the administrators to add a value the lists lack; they mark it added or declined (2 Nov 2026 review). Delete policy: RETAIN.'
+}
+
 Table project.project_intake {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   project_id uuid [not null, unique, ref: > project.project.id, note: 'One intake per project']

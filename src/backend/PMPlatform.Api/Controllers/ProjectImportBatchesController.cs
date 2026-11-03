@@ -35,11 +35,16 @@ public sealed class ProjectImportBatchesController(IProjectImportService imports
         return template.Succeeded ? Attachment(new ProjectImportFile("project-import-template.xlsx", template.Value)) : Failure(template.Error);
     }
 
-    /// <summary>What the workbook in part <c>file</c> would do with the decisions in part <c>plan</c>: every row's action, issues and changes.</summary>
+    /// <summary>
+    /// What the workbook in part <c>file</c> would do with the decisions in part <c>plan</c>: every row's action, issues and changes. A workbook of
+    /// more than 200 rows is validated in the background: 202 with the queued validation, read at <c>/project-import-validations/{id}</c>,
+    /// and its importer is notified when it is done.
+    /// </summary>
     [HttpPost("validations")]
     [RequirePermission(PermissionCatalogue.ProjectImport)]
     [DisableFormValueModelBinding]
     [ProducesResponseType<ProjectImportPreview>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<ProjectImportValidationDetail>(StatusCodes.Status202Accepted, "application/json")]
     [EndpointName("Project_ValidateProjectImport")]
     public async Task<IActionResult> Validate(CancellationToken cancellationToken)
     {
@@ -51,8 +56,24 @@ public sealed class ProjectImportBatchesController(IProjectImportService imports
 
         List<FieldError> errors = [];
         (ProjectImportUpload? upload, ProjectImportPlan? plan, _) = ProjectImportForm.Read(form!, errors);
-        return errors.Count > 0 ? ValidationFailed(errors) : Respond(await imports.ValidateAsync(CallerId, upload!, plan!, cancellationToken));
+        if (errors.Count > 0)
+        {
+            return ValidationFailed(errors);
+        }
+
+        AdministrationResult<ProjectImportValidationOutcome> result = await imports.ValidateAsync(CallerId, upload!, plan!, cancellationToken);
+        return !result.Succeeded ? Failure(result.Error)
+            : result.Value.Queued is { } queued ? Accepted($"/api/v1/project-import-validations/{queued.Id}", queued)
+            : Ok(result.Value.Preview);
     }
+
+    /// <summary>A background validation and, once COMPLETED, its preview; to the person who asked for it only.</summary>
+    [HttpGet("~/api/v1/project-import-validations/{validationId:guid}")]
+    [RequirePermission(PermissionCatalogue.ProjectImport)]
+    [ProducesResponseType<ProjectImportValidationDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Project_GetProjectImportValidation")]
+    public async Task<IActionResult> GetValidation(Guid validationId, CancellationToken cancellationToken) =>
+        Respond(await imports.GetValidationAsync(CallerId, validationId, cancellationToken));
 
     /// <summary>Submits the workbook, its plan and a note as one SUBMITTED batch, when it validates with no error and no unmatched name.</summary>
     [HttpPost]

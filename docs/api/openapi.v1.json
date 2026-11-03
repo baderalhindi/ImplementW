@@ -3657,7 +3657,7 @@
         "tags": [
           "Dashboards"
         ],
-        "summary": "The dashboard's PUBLISHED version and each widget's result. `PROJECT` is bound to `projectId` (DSH-009 in SCR-040, DSH-008 for\nan entity's own project); the others are read over every project the caller may see, optionally narrowed to one `departmentId`,\n`externalEntityId`, `regionItemId`, `cityItemId`, `classificationItemId` (sector), `status`,\n`priorityItemId`, `strategicPortfolioItemId` and `strategicInitiativeItemId`, each among the view's options.",
+        "summary": "The dashboard's PUBLISHED version and each widget's result. `PROJECT` is bound to `projectId` (DSH-009 in SCR-040, DSH-008 for\nan entity's own project); the others are read over every project the caller may see, optionally narrowed to one `departmentId`,\n`externalEntityId`, `regionItemId`, `cityItemId`, `classificationItemId` (sector), `status`,\n`priorityItemId`, `strategicPortfolioItemId`, `strategicInitiativeItemId` and `period` (a year the planned period touches),\neach among the view's options.",
         "operationId": "Dashboards_GetDashboard",
         "parameters": [
           {
@@ -3745,6 +3745,18 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
             }
           }
         ],
@@ -12360,7 +12372,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "What the workbook in part `file` would do with the decisions in part `plan`: every row's action, issues and changes.",
+        "summary": "What the workbook in part `file` would do with the decisions in part `plan`: every row's action, issues and changes. A workbook of\nmore than 200 rows is validated in the background: 202 with the queued validation, read at `/project-import-validations/{id}`,\nand its importer is notified when it is done.",
         "operationId": "Project_ValidateProjectImport",
         "responses": {
           "200": {
@@ -12369,6 +12381,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectImportPreview"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportValidationDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-validations/{validationId}": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "A background validation and, once COMPLETED, its preview; to the person who asked for it only.",
+        "operationId": "Project_GetProjectImportValidation",
+        "parameters": [
+          {
+            "name": "validationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportValidationDetail"
                 }
               }
             }
@@ -12653,6 +12707,151 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectImportBatchDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-value-requests": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Asks for the value. An OPEN request for the same name is answered instead of a second one.",
+        "operationId": "Project_RequestProjectImportValue",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectImportValueRequestRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectImportValueRequestRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectImportValueRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportValueRequestDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Oldest first. Filter: `status`.",
+        "operationId": "Project_ListProjectImportValueRequests",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportValueRequestPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-import-value-requests/{requestId}/resolve": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "OPEN → ADDED or DECLINED, by an administrator; the requester is notified.",
+        "operationId": "Project_ResolveProjectImportValueRequest",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectImportValueResolveCommand"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectImportValueResolveCommand"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectImportValueResolveCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectImportValueRequestDetail"
                 }
               }
             }
@@ -12966,7 +13165,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "SCR-025: only projects the caller may see. Filters: `status` (a set), `departmentId`, `externalEntityId`,\n`projectManagerUserId` (SCR-026 My Projects), `q` (title, Formal Project ID or legacy reference), and the filter bar's\n`classificationItemId`, `strategicPortfolioItemId`, `strategicInitiativeItemId`, `priorityItemId`,\n`regionItemId` and `cityItemId` (the 2 Nov 2026 review). Most recently changed first.",
+        "summary": "SCR-025: only projects the caller may see. Filters: `status` (a set), `departmentId`, `externalEntityId`,\n`projectManagerUserId` (SCR-026 My Projects), `q` (title, Formal Project ID or legacy reference), and the filter bar's\n`classificationItemId`, `strategicPortfolioItemId`, `strategicInitiativeItemId`, `priorityItemId`,\n`regionItemId`, `cityItemId` and `period`, a year the planned period touches (the 2 Nov 2026 review). Most recently changed\nfirst.",
         "operationId": "Project_ListProjects",
         "parameters": [
           {
@@ -13077,6 +13276,18 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
             }
           }
         ],
@@ -25058,6 +25269,60 @@
           }
         }
       },
+      "EntityUpdateCompliance": {
+        "required": [
+          "counted",
+          "onTime",
+          "onTimePercent",
+          "calculated",
+          "effective",
+          "overridden"
+        ],
+        "type": "object",
+        "properties": {
+          "counted": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "onTime": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "onTimePercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "calculated": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "effective": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "overridden": {
+            "type": "boolean"
+          }
+        },
+        "description": "Whether the delivering entity keeps to its updates (R3-3): calculated from the update requests sent to it — compliant when at least the\nthreshold's share was answered on time — unless RPMO recorded otherwise, which overrides it. bool? EntityUpdateCompliance.Calculated is null with no\nrequest counted yet."
+      },
       "EvidenceReferenceDetail": {
         "required": [
           "id",
@@ -34926,6 +35191,232 @@
         },
         "description": "A name that matched nothing, listed once with the rows that carry it, and what it may be mapped to."
       },
+      "ProjectImportValidationDetail": {
+        "required": [
+          "id",
+          "status",
+          "fileName",
+          "rowCount",
+          "requestedAt",
+          "completedAt",
+          "failureCode",
+          "preview"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectImportValidationStatus"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "rowCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "failureCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "preview": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectImportPreview"
+              }
+            ]
+          }
+        },
+        "description": "A background validation: its state, and once COMPLETED, the preview; a FAILED one names why."
+      },
+      "ProjectImportValidationStatus": {
+        "enum": [
+          "QUEUED",
+          "RUNNING",
+          "COMPLETED",
+          "FAILED"
+        ]
+      },
+      "ProjectImportValueRequestDetail": {
+        "required": [
+          "id",
+          "dimension",
+          "sourceText",
+          "status",
+          "requestedBy",
+          "requestedAt",
+          "resolvedByUserId",
+          "resolvedAt",
+          "resolutionNote"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dimension": {
+            "$ref": "#/components/schemas/ProjectImportDimension"
+          },
+          "sourceText": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectImportValueRequestStatus"
+          },
+          "requestedBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolvedByUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "resolvedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "resolutionNote": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          }
+        },
+        "description": "An importer's request to add a value the lists lack, and how it was resolved."
+      },
+      "ProjectImportValueRequestPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectImportValueRequestDetail"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectImportValueRequestRequest": {
+        "required": [
+          "dimension",
+          "sourceText"
+        ],
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sourceText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "R3-4: ask the administrators to add a value the lists lack — the list (`dimension`) and the name as the workbook writes it."
+      },
+      "ProjectImportValueRequestStatus": {
+        "enum": [
+          "OPEN",
+          "ADDED",
+          "DECLINED"
+        ]
+      },
+      "ProjectImportValueResolveCommand": {
+        "required": [
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "R3-4: an administrator marks a request ADDED or DECLINED, with an optional note the requester reads."
+      },
       "ProjectIndicators": {
         "required": [
           "gapPoints",
@@ -34979,6 +35470,16 @@
             "items": {
               "$ref": "#/components/schemas/FollowUpReason"
             }
+          },
+          "entityUpdates": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EntityUpdateCompliance"
+              }
+            ]
           }
         },
         "description": "The register's calculated columns (R3-3): the gap between actual and planned progress, in points, the on-plan indicator, the days to\nthe planned end, the next action's due status and the follow-up reasons, most urgent first. A value that cannot be calculated is null:\nno gap without both percentages, none for a project not started or closed."

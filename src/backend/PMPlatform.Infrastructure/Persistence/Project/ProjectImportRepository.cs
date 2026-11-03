@@ -52,6 +52,65 @@ internal sealed class ProjectImportRepository(PMPlatformDbContext context) : IPr
 
     public void Add(ProjectImportNameMapping mapping) => context.Add(mapping);
 
+    public void Add(ProjectImportValidation validation) => context.Add(validation);
+
+    public async Task<ProjectImportValidation?> FindValidationAsync(Guid validationId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        ProjectImportValidation? validation = await context.Set<ProjectImportValidation>()
+            .SingleOrDefaultAsync(v => v.Id == validationId, cancellationToken).ConfigureAwait(false);
+        if (validation is not null)
+        {
+            AdministrationPersistence.ExpectVersion(context, validation, expectedVersion);
+        }
+
+        return validation;
+    }
+
+    public async Task<IReadOnlyList<(Guid Id, uint Version)>> ListQueuedValidationsAsync(int batchSize, CancellationToken cancellationToken) =>
+        [.. (await context.Set<ProjectImportValidation>().AsNoTracking()
+            .Where(v => v.Status == ProjectImportValidationStatus.Queued)
+            .OrderBy(v => v.CreatedAt).ThenBy(v => v.Id)
+            .Select(v => new { v.Id, Version = EF.Property<uint>(v, EntityTypeBuilderExtensions.RowVersion) })
+            .Take(batchSize).ToListAsync(cancellationToken).ConfigureAwait(false)).Select(v => (v.Id, v.Version))];
+
+    public void Add(ProjectImportValueRequest request) => context.Add(request);
+
+    public async Task<ProjectImportValueRequest?> FindValueRequestAsync(Guid requestId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        ProjectImportValueRequest? request = await context.Set<ProjectImportValueRequest>()
+            .SingleOrDefaultAsync(r => r.Id == requestId, cancellationToken).ConfigureAwait(false);
+        if (request is not null)
+        {
+            AdministrationPersistence.ExpectVersion(context, request, expectedVersion);
+        }
+
+        return request;
+    }
+
+    public Task<ProjectImportValueRequest?> FindOpenValueRequestAsync(string dimension, string sourceText, CancellationToken cancellationToken) =>
+        context.Set<ProjectImportValueRequest>().AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Dimension == dimension && r.SourceText == sourceText && r.Status == ProjectImportValueRequestStatus.Open, cancellationToken);
+
+    public async Task<(IReadOnlyList<ProjectImportValueRequest> Items, int TotalCount)> ListValueRequestsAsync(
+        ProjectImportValueRequestStatus? status, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        IQueryable<ProjectImportValueRequest> rows = context.Set<ProjectImportValueRequest>().AsNoTracking();
+        if (status is { } only)
+        {
+            rows = rows.Where(r => r.Status == only);
+        }
+
+        int total = await rows.CountAsync(cancellationToken).ConfigureAwait(false);
+        List<ProjectImportValueRequest> items = await rows.OrderBy(r => r.CreatedAt).ThenBy(r => r.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return (items, total);
+    }
+
+    public uint RowVersionOf(ProjectImportValueRequest request) =>
+        context.Entry(request).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
+
+    public void Clear() => context.ChangeTracker.Clear();
+
     public async Task<IAsyncDisposable> BeginAsync(CancellationToken cancellationToken)
     {
         IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);

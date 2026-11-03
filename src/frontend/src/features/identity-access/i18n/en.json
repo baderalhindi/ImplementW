@@ -424,6 +424,16 @@
       "VALIDATED": "Validated",
       "PUBLISHED": "Published",
       "RETIRED": "Retired"
+    },
+    "requested": {
+      "title": "Requested values",
+      "description": "Values importers asked to add because their workbook names them and the platform’s lists do not. Add the value where it belongs, then mark the request added; the importer is notified.",
+      "list": "List",
+      "value": "Name in the workbook",
+      "by": "Requested by",
+      "note": "Note to the importer",
+      "added": "Mark added",
+      "declined": "Decline"
     }
   }
 }

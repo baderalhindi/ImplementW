@@ -23,4 +23,7 @@ public sealed record ProjectQuery(
     public Guid? RegionItemId { get; init; }
 
     public Guid? CityItemId { get; init; }
+
+    /// <summary>A year: the projects whose planned period touches it (the review's Period filter).</summary>
+    public int? PeriodYear { get; init; }
 }

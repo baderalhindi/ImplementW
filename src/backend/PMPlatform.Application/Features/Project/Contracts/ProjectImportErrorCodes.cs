@@ -20,6 +20,9 @@ public static class ProjectImportErrorCodes
 
     /// <summary>409: a project of the batch changed since it was applied, or the batch updated existing projects: it cannot be rolled back.</summary>
     public const string RollbackRefused = "PROJECT_IMPORT_ROLLBACK_REFUSED";
+
+    /// <summary>422: a value request names nothing, a name too long, or a status (a status is mapped, never added).</summary>
+    public const string ValueRequestInvalid = "PROJECT_IMPORT_VALUE_REQUEST_INVALID";
 }
 
 /// <summary>The codes a row's issues carry. A column's shape uses the platform's validation codes as well (REQUIRED, MALFORMED, …).</summary>

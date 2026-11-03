@@ -65,8 +65,10 @@
       "status": "الكل",
       "priorityItemId": "الكل",
       "strategicPortfolioItemId": "الكل",
-      "strategicInitiativeItemId": "الكل"
-    }
+      "strategicInitiativeItemId": "الكل",
+      "period": "الكل"
+    },
+    "period": "الفترة"
   },
   "locations": {
     "title": "المشاريع حسب الموقع",

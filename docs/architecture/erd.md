@@ -442,6 +442,15 @@ erDiagram
         varchar dimension
         varchar source_key
     }
+    ProjectImportValidation {
+        uuid id PK
+        varchar status
+    }
+    ProjectImportValueRequest {
+        uuid id PK
+        varchar status
+        uuid resolved_by_user_id FK
+    }
     ProjectIntake {
         uuid id PK
         uuid project_id FK, UK
@@ -467,6 +476,8 @@ The 2 Nov 2026 review (R3-3, R3-4) adds RPMO's strategy classification — a str
 | **ProjectFollowUpNote** | `project.project_follow_up_note` | A dated follow-up note on a project, attributed by its creation stamp: RPMO's "ملاحظات" (2 Nov 2026 review, R3-3). | — | APPEND_ONLY | — |
 | **ProjectImportBatch** | `project.project_import_batch` | A batch of projects imported from RPMO's workbook: the file, the submitted plan, the counts, and a second person's decision; the projects it created carry its id (R3-4). | — | RETAIN | — |
 | **ProjectImportNameMapping** | `project.project_import_name_mapping` | A workbook name mapped to the platform value it means, remembered for the next import (R3-4). | — | RETAIN | — |
+| **ProjectImportValidation** | `project.project_import_validation` | A workbook of more than 200 rows validated in the background, its result kept for its importer, who is notified when it is done. | `status` → QUEUED · RUNNING · COMPLETED · FAILED | RETAIN | — |
+| **ProjectImportValueRequest** | `project.project_import_value_request` | An importer's request that the administrators add a value the lists lack, marked added or declined. | `status` → OPEN · ADDED · DECLINED | RETAIN | — |
 
 ### 5.5 Progress — WF-02 (closes TASK-007 S-2)
 

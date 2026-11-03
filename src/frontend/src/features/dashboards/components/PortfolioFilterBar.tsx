@@ -35,6 +35,7 @@ const ORDER: { name: FilterName; more: boolean }[] = [
   { name: 'priorityItemId', more: true },
   { name: 'strategicPortfolioItemId', more: true },
   { name: 'strategicInitiativeItemId', more: true },
+  { name: 'period', more: true },
 ];
 
 /**
@@ -84,7 +85,9 @@ export function PortfolioFilterBar({
           ? entityName
           : name === 'status'
             ? (value: string) => t(`projects.status.${value as ProjectStatus}`)
-            : placeName;
+            : name === 'period'
+              ? (value: string) => value
+              : placeName;
     const parentFilter =
       name === 'cityItemId'
         ? filters.regionItemId
@@ -106,7 +109,9 @@ export function PortfolioFilterBar({
           label: nameOf(option.value),
           count: option.count,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
+        .sort((a, b) =>
+          name === 'period' ? b.label.localeCompare(a.label) : a.label.localeCompare(b.label),
+        ),
     };
   });
 

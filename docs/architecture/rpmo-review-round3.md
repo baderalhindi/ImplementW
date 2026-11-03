@@ -16,7 +16,8 @@ folds into a **Filters (n)** button.
 `strategicInitiativeItemId` beside the four filters it had. `filters` lists each filter's values with the count of projects in the caller's
 scope (DSH-CC-17: a filter narrows the population and can never widen it). A region narrows the cities and a portfolio the initiatives.
 
-**Not built.** The review's *Period* filter: no project field holds a period to filter on. The dashboard map from round 2 is unchanged.
+The **Period** filter (`period`, a year) finds the projects whose planned period touches that year: a project planned from 2025 to 2027 is in
+each of the three; one with a single planned date is in that date's year. The dashboard map from round 2 is unchanged.
 
 Department and sector are told apart everywhere: the department (الإدارة) sets R03's scope, and the sector (القطاع) is the project
 classification, aligned to RPMO's 15 sectors by loading them as PROJECT_CLASSIFICATION items. The administration screens called
@@ -47,8 +48,13 @@ in points), the on-plan indicator (on track above −5, late to just above −10
 `ON_PLAN_LATE_GAP_POINTS` and `ON_PLAN_STALLED_GAP_POINTS` override RPMO's defaults), days remaining, the next action's due status and the
 follow-up reasons. The gap is not calculated for a project not started or closed, or when either percentage is missing.
 
-**Not built.** Entity update compliance is the value RPMO records, not yet calculated from on-time responses to update requests. The
-indicator reads declared progress; a project with a WF-02 schedule still shows its declared values until they are cleared.
+Entity update compliance is calculated (`indicators.entityUpdates`) from the update requests WF-13 issued to the entity: a request counts
+once its due date has come or it is answered, and is on time when its first contribution was submitted by its due date. The entity is
+compliant from 80% on time (WORKFLOW_POLICY `ENTITY_UPDATE_COMPLIANCE_PERCENT`). The value RPMO records overrides the calculation. The
+Project module declares `IProjectUpdateComplianceSource` and ExternalParticipation implements it, so Project depends on no module that
+depends on it.
+
+The indicator reads declared progress; a project with a WF-02 schedule still shows its declared values until they are cleared.
 
 ## 3. Follow-up list (build item 5)
 
@@ -85,9 +91,22 @@ when its batch is ROLLED_BACK, and any record another module holds on a project 
 **Deviations from the review.** The project manager must hold R04 over the row's department, as the review's rule says: the import does not
 grant R04. An unmatched **follow-up owner** is a warning that leaves the field empty rather than an error, because the column is optional
 and RPMO's owners may have no account. Governed fields of an existing project — name, department, entity, sector, value, dates, place,
-status, governance level — are not updated by an import: a difference is a warning, and the change goes through a change request. Files over
-200 rows are validated in the request, not in the background; 1,500 rows is the limit. An unknown name is mapped by the importer, but
-sending the administrator a request to add it is not built.
+status, governance level — are not updated by an import: a difference is a warning, and the change goes through a change request.
+
+**Background validation.** A workbook of more than 200 rows answers 202 with a queued `project.project_import_validation`; the
+`ProjectImport:Validation` worker validates it as its importer may import, keeps the preview (`GET /project-import-validations/{id}`, to
+the importer only) and clears the file. The importer is notified (`Project.ImportValidated`, family PROJECT_IMPORT_VALIDATED); the import
+page polls meanwhile, and the notification's link reopens the result. 1,500 rows is still the limit.
+
+**Asking for a missing value.** For each unknown name the import page offers "Ask an administrator to add it":
+`POST /project-import-value-requests` records the request (one OPEN request per name) and notifies the administrators
+(`Project.ImportValueRequested`, family PROJECT_IMPORT_VALUE_REQUESTED). A holder of MASTER_DATA_MANAGE or ORGANIZATION_MANAGE adds the value
+where it belongs and marks the request added or declined on the Master data screen; the importer is notified
+(`Project.ImportValueResolved`, family PROJECT_IMPORT_VALUE_RESOLVED).
+
+**Notifications addressed to one person.** WF-15 routes by role (ADR-004). An intent may name a `recipientUserId`: of the people the
+family's role matrix names over the intent's scope, only that user receives it. The three families need NOTIFICATION_ROUTING entries and
+templates, which AHDA publishes.
 
 ## 5. RPMO's draft file
 

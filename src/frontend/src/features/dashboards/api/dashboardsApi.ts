@@ -25,6 +25,8 @@ export interface PortfolioFilters {
   priorityItemId?: string | undefined;
   strategicPortfolioItemId?: string | undefined;
   strategicInitiativeItemId?: string | undefined;
+  /** A year: the projects whose planned period touches it. */
+  period?: string | undefined;
 }
 
 /** The context a dashboard is read in: PROJECT takes a project, the others optional portfolio filters. */
@@ -51,6 +53,7 @@ export const dashboardsApi = {
           priorityItemId: context.priorityItemId,
           strategicPortfolioItemId: context.strategicPortfolioItemId,
           strategicInitiativeItemId: context.strategicInitiativeItemId,
+          period: context.period,
         },
         signal,
       })

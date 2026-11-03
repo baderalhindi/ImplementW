@@ -113,3 +113,34 @@ public sealed record ProjectImportFile(string FileName, byte[] Content);
 
 /// <summary>A workbook as uploaded.</summary>
 public sealed record ProjectImportUpload(string FileName, byte[] Content);
+
+/// <summary>
+/// What a validation request answers (review §4, step 3): a workbook of up to 200 rows is validated at once, <see cref="Preview"/>; a larger one
+/// is queued for the background, <see cref="Queued"/>, and its importer notified when it is done.
+/// </summary>
+public sealed record ProjectImportValidationOutcome(ProjectImportPreview? Preview, ProjectImportValidationDetail? Queued);
+
+/// <summary>A background validation: its state, and once COMPLETED, the preview; a FAILED one names why.</summary>
+public sealed record ProjectImportValidationDetail(
+    Guid Id,
+    ProjectImportValidationStatus Status,
+    string FileName,
+    int RowCount,
+    DateTimeOffset RequestedAt,
+    DateTimeOffset? CompletedAt,
+    string? FailureCode,
+    ProjectImportPreview? Preview);
+
+/// <summary>An importer's request to add a value the lists lack, and how it was resolved.</summary>
+public sealed record ProjectImportValueRequestDetail(
+    Guid Id,
+    ProjectImportDimension Dimension,
+    string SourceText,
+    ProjectImportValueRequestStatus Status,
+    Guid RequestedBy,
+    DateTimeOffset RequestedAt,
+    Guid? ResolvedByUserId,
+    DateTimeOffset? ResolvedAt,
+    NarrativeText? ResolutionNote);
+
+public sealed record ProjectImportValueRequestPage(IReadOnlyList<ProjectImportValueRequestDetail> Items, int Page, int PageSize, int TotalCount);

@@ -22,7 +22,7 @@ internal sealed class ProjectService(
     IApprovalRequests approvals,
     IEnumerable<IProjectActivationPrecondition> activationPreconditions,
     IAuthorizationEngine engine,
-    OnPlanPolicy onPlan,
+    ProjectIndicatorReader indicators,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProjectService
 {
@@ -37,11 +37,8 @@ internal sealed class ProjectService(
         }
 
         (IReadOnlyList<ProjectEntity> items, int total) = await repository.ListAsync(scope, query, cancellationToken).ConfigureAwait(false);
-        DateTimeOffset now = timeProvider.GetUtcNow();
-        OnPlanThresholds thresholds = await onPlan.ThresholdsAsync(now, cancellationToken).ConfigureAwait(false);
-        DateOnly today = DateOnly.FromDateTime(now.UtcDateTime);
-        return new ProjectPage(
-            [.. items.Select(p => ProjectMapping.ToSummary(p, ProjectIndicatorCalculator.Of(p, thresholds, today)))], query.Page.Page, query.Page.PageSize, total);
+        Func<ProjectEntity, ProjectIndicators> indicatorsOf = await indicators.ForAsync(items, cancellationToken).ConfigureAwait(false);
+        return new ProjectPage([.. items.Select(p => ProjectMapping.ToSummary(p, indicatorsOf(p)))], query.Page.Page, query.Page.PageSize, total);
     }
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> GetAsync(Guid callerId, Guid projectId, CancellationToken cancellationToken)
@@ -374,13 +371,8 @@ internal sealed class ProjectService(
             ? await VersionedAsync(project, cancellationToken).ConfigureAwait(false)
             : AdministrationError.PreconditionFailed;
 
-    private async Task<Versioned<ProjectDetail>> VersionedAsync(ProjectEntity project, CancellationToken cancellationToken)
-    {
-        DateTimeOffset now = timeProvider.GetUtcNow();
-        ProjectIndicators indicators = ProjectIndicatorCalculator.Of(
-            project, await onPlan.ThresholdsAsync(now, cancellationToken).ConfigureAwait(false), DateOnly.FromDateTime(now.UtcDateTime));
-        return new(ProjectMapping.ToDetail(project, indicators), repository.RowVersionOf(project));
-    }
+    private async Task<Versioned<ProjectDetail>> VersionedAsync(ProjectEntity project, CancellationToken cancellationToken) =>
+        new(ProjectMapping.ToDetail(project, await indicators.OfAsync(project, cancellationToken).ConfigureAwait(false)), repository.RowVersionOf(project));
 
     private void Touch(ProjectEntity project, Guid by)
     {

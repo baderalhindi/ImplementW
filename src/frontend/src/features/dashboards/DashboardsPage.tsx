@@ -30,6 +30,7 @@ const FILTER_PARAMS: Record<FilterName, string> = {
   priorityItemId: 'priority',
   strategicPortfolioItemId: 'portfolio',
   strategicInitiativeItemId: 'initiative',
+  period: 'period',
 };
 
 /** A child list's filter, dropped when its parent's changes: a city lies in a region, an initiative in a portfolio. */

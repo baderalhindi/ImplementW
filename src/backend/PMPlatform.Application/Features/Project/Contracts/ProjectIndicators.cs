@@ -38,13 +38,24 @@ public sealed record ProjectIndicators(
     OnPlanStatus? OnPlan,
     int? DaysRemaining,
     ActionDueStatus? ActionDue,
-    IReadOnlyList<FollowUpReason> FollowUpReasons)
+    IReadOnlyList<FollowUpReason> FollowUpReasons,
+    EntityUpdateCompliance? EntityUpdates = null)
 {
     public static ProjectIndicators None { get; } = new(null, null, null, null, []);
 }
 
-/// <summary>The on-plan thresholds in force, as positive points behind plan: 5 and 10 unless WORKFLOW_POLICY sets them.</summary>
-public sealed record OnPlanThresholds(decimal LatePoints, decimal StalledPoints)
+/// <summary>
+/// Whether the delivering entity keeps to its updates (R3-3): calculated from the update requests sent to it — compliant when at least the
+/// threshold's share was answered on time — unless RPMO recorded otherwise, which overrides it. <see cref="Calculated"/> is null with no
+/// request counted yet.
+/// </summary>
+public sealed record EntityUpdateCompliance(int Counted, int OnTime, decimal? OnTimePercent, bool? Calculated, bool? Effective, bool Overridden);
+
+/// <summary>
+/// The follow-up thresholds in force: points behind plan from which a project is late and stalled (5 and 10 unless WORKFLOW_POLICY sets them),
+/// and the share of update requests answered on time from which an entity is compliant (80% unless WORKFLOW_POLICY sets it).
+/// </summary>
+public sealed record OnPlanThresholds(decimal LatePoints, decimal StalledPoints, decimal CompliancePercent = 80m)
 {
     /// <summary>The thresholds RPMO's register uses today (the 2 Nov 2026 review §2).</summary>
     public static OnPlanThresholds Default { get; } = new(5m, 10m);

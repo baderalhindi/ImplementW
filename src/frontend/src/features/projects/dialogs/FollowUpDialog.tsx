@@ -222,6 +222,7 @@ function FollowUpBody({ project, etag, onClose, onSaved }: FollowUpDialogProps):
           { value: 'true', label: t('projects.followUp.yes') },
           { value: 'false', label: t('projects.followUp.no') },
         ]}
+        hint={t('projects.followUp.complianceHint')}
         onChange={set('entityUpdateCompliant')}
       />
       <TextAreaField

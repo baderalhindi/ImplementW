@@ -41,7 +41,7 @@ public sealed class IndexingStrategyTests(MigratedDatabase database) : IClassFix
             .Where(i => !keys.Contains($"{i.Table}|{string.Join(", ", i.Columns)}"))
             .Select(i => $"{i.Id} {i.Table} ({string.Join(", ", i.Columns)})")];
 
-        Assert.Equal(13, due.Count(i => i.Table.Split('.')[0] is "identity_access" or "master_data_config" or "project"));
+        Assert.Equal(15, due.Count(i => i.Table.Split('.')[0] is "identity_access" or "master_data_config" or "project"));
         Assert.Empty(missing);
     }
 }

@@ -2,6 +2,7 @@ import { type ReactElement, type SyntheticEvent, useCallback, useState } from 'r
 import { useSearchParams } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
+import { projectImportApi } from '@/features/projects/api/followUpApi.ts';
 import { apiRequest } from '@/shared/api/httpClient.ts';
 import { type MasterDataItemSummary } from '@/shared/api/masterData.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -12,6 +13,7 @@ import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
+import { usePersonNames } from '../assignments/useUserNames.ts';
 import { useCan } from '../permissions/permissions.ts';
 import { problemMessage } from '../problems.ts';
 
@@ -101,6 +103,7 @@ export function MasterDataPage(): ReactElement {
           onRetry={catalogues.reload}
         />
       )}
+      <RequestedValues />
       {catalogues.loading && <LoadingState />}
       {chosen !== undefined && (
         <>
@@ -416,4 +419,90 @@ function CreateItemDialog({
       </form>
     </Dialog>
   );
+}
+
+/**
+ * The values importers asked for (the 2 Nov 2026 review: "an unknown name triggers a request to add it"), oldest first. The administrator adds
+ * the value where it belongs — a list here, a department or an entity under Organization — then marks the request added; the importer is
+ * notified either way.
+ */
+function RequestedValues(): ReactElement | null {
+  const { t, language, formatDateTime } = useI18n();
+  const mayResolve = useCan('MASTER_DATA_MANAGE', 'ORGANIZATION_MANAGE');
+  const requests = useApiResource(readOpenRequests);
+  const requester = usePersonNames((requests.data ?? []).map((r) => r.requestedBy));
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  if (!mayResolve || requests.data === undefined || requests.data.length === 0) {
+    return null;
+  }
+  const resolve = async (id: string, status: 'ADDED' | 'DECLINED') => {
+    setError(null);
+    try {
+      await projectImportApi.resolveValue(id, status, notes[id] ?? '', language);
+      requests.reload();
+    } catch (caught) {
+      setError(problemMessage(caught, t));
+    }
+  };
+  return (
+    <section className="section" aria-labelledby="requested-values-heading">
+      <h2 id="requested-values-heading">{t('identityAccess.masterData.requested.title')}</h2>
+      <p>{t('identityAccess.masterData.requested.description')}</p>
+      <FormAlert message={error} />
+      <TableContainer caption={t('identityAccess.masterData.requested.title')}>
+        <thead>
+          <tr>
+            <th scope="col">{t('identityAccess.masterData.requested.list')}</th>
+            <th scope="col">{t('identityAccess.masterData.requested.value')}</th>
+            <th scope="col">{t('identityAccess.masterData.requested.by')}</th>
+            <th scope="col">{t('identityAccess.masterData.requested.note')}</th>
+            <th scope="col">{t('common.table.actions')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {requests.data.map((request) => (
+            <tr key={request.id}>
+              <td>{t(`projects.import.dimensionName.${request.dimension}`)}</td>
+              <td dir="auto">{request.sourceText}</td>
+              <td>
+                {requester(request.requestedBy)}
+                <span className="cell__aside">{formatDateTime(request.requestedAt)}</span>
+              </td>
+              <td>
+                <TextField
+                  label={t('identityAccess.masterData.requested.note')}
+                  name={`note-${request.id}`}
+                  value={notes[request.id] ?? ''}
+                  onChange={(value) => {
+                    setNotes((current) => ({ ...current, [request.id]: value }));
+                  }}
+                />
+              </td>
+              <td>
+                <button
+                  type="button"
+                  className="button button--quiet"
+                  onClick={() => void resolve(request.id, 'ADDED')}
+                >
+                  {t('identityAccess.masterData.requested.added')}
+                </button>
+                <button
+                  type="button"
+                  className="button button--quiet"
+                  onClick={() => void resolve(request.id, 'DECLINED')}
+                >
+                  {t('identityAccess.masterData.requested.declined')}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </TableContainer>
+    </section>
+  );
+}
+
+async function readOpenRequests(signal: AbortSignal) {
+  return (await projectImportApi.valueRequests('OPEN', signal)).items;
 }

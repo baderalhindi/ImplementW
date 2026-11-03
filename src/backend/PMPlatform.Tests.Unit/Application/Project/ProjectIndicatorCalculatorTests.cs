@@ -76,3 +76,43 @@ public sealed class ProjectIndicatorCalculatorTests
         DeclaredActualPercent = actual,
     };
 }
+
+/// <summary>Entity update compliance (the 2 Nov 2026 review): calculated from on-time answers, overridden by what RPMO records.</summary>
+public sealed class EntityUpdateComplianceTests
+{
+    private static readonly DateOnly Today = new(2026, 11, 3);
+
+    [Theory]
+    [InlineData(5, 4, true)]
+    [InlineData(5, 3, false)]
+    [InlineData(10, 8, true)]
+    public void AnEntityIsCompliantWhenEnoughAnswersCameOnTime(int counted, int onTime, bool compliant)
+    {
+        EntityUpdateCompliance? result = ProjectIndicatorCalculator.Of(Project(null), OnPlanThresholds.Default, Today, new UpdateComplianceCounts(counted, onTime)).EntityUpdates;
+
+        Assert.Equal(compliant, result?.Calculated);
+        Assert.Equal(compliant, result?.Effective);
+        Assert.False(result?.Overridden);
+    }
+
+    [Fact]
+    public void WhatRpmoRecordedOverridesTheCalculation()
+    {
+        EntityUpdateCompliance? result = ProjectIndicatorCalculator.Of(Project(false), OnPlanThresholds.Default, Today, new UpdateComplianceCounts(4, 4)).EntityUpdates;
+
+        Assert.True(result?.Calculated);
+        Assert.False(result?.Effective);
+        Assert.True(result?.Overridden);
+    }
+
+    [Fact]
+    public void WithNoRequestAndNoRecordComplianceIsNotKnown() =>
+        Assert.Null(ProjectIndicatorCalculator.Of(Project(null), OnPlanThresholds.Default, Today).EntityUpdates);
+
+    private static PMPlatform.Domain.Project.Project Project(bool? recorded) => new()
+    {
+        Title = new NarrativeText("مشروع", Language.Ar),
+        LifecycleState = ProjectLifecycleState.Active,
+        EntityUpdateCompliant = recorded,
+    };
+}

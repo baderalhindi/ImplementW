@@ -104,3 +104,32 @@ export interface ImportBatch {
   mayDecide: boolean;
   mayRollBack: boolean;
 }
+
+export type ImportValidationStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+
+/** A workbook of more than 200 rows, validated in the background; its importer is notified when it is done. */
+export interface ImportValidation {
+  id: string;
+  status: ImportValidationStatus;
+  fileName: string;
+  rowCount: number;
+  requestedAt: string;
+  completedAt: string | null;
+  failureCode: string | null;
+  preview: ImportPreview | null;
+}
+
+export type ImportValueRequestStatus = 'OPEN' | 'ADDED' | 'DECLINED';
+
+/** An importer's request that an administrator add a value the lists lack. */
+export interface ImportValueRequest {
+  id: string;
+  dimension: ImportDimension;
+  sourceText: string;
+  status: ImportValueRequestStatus;
+  requestedBy: string;
+  requestedAt: string;
+  resolvedByUserId: string | null;
+  resolvedAt: string | null;
+  resolutionNote: NarrativeText | null;
+}

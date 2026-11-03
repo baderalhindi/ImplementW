@@ -19,6 +19,9 @@ public static class ProjectImportLayout
 
     public const int MaxRows = 1_500;
 
+    /// <summary>A workbook of more rows than this is validated in the background (review §4, step 3).</summary>
+    public const int BackgroundRows = 200;
+
     public const long MaxBytes = 10L * 1024 * 1024;
 
     public const string LegacyRef = "legacy_ref";

@@ -37,6 +37,7 @@ const FILTERS = [
   'priorityItemId',
   'regionItemId',
   'cityItemId',
+  'period',
 ] as const;
 
 /** The register's filter bar parameters besides `q`, `status` and the two organization ones (the 2 Nov 2026 review, R3-1). */
@@ -47,6 +48,7 @@ const ITEM_FILTERS = [
   'priorityItemId',
   'regionItemId',
   'cityItemId',
+  'period',
 ] as const;
 
 interface ProjectListProps {
@@ -304,6 +306,13 @@ function ProjectFilters({
               ? []
               : items('STRATEGIC_INITIATIVE', values.strategicPortfolioItemId),
         },
+        {
+          name: 'period',
+          more: true,
+          label: t('dashboards.filter.period'),
+          all: t('dashboards.filter.all.period'),
+          options: PERIOD_OPTIONS,
+        },
       ]
     : [
         {
@@ -353,6 +362,14 @@ function ProjectFilters({
     </>
   );
 }
+
+/** The register cannot count projects per year, so it offers the ten years either side of this one. */
+const PERIOD_OPTIONS = Array.from({ length: 21 }, (_, i) =>
+  String(new Date().getFullYear() + 10 - i),
+).map((year) => ({
+  value: year,
+  label: year,
+}));
 
 function STATUS_OPTIONS(t: ReturnType<typeof useI18n>['t']) {
   return PROJECT_STATUSES.map((value) => ({ value, label: t(`projects.status.${value}`) }));

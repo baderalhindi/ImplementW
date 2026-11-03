@@ -86,6 +86,17 @@ export interface ProjectIndicators {
   daysRemaining: number | null;
   actionDue: 'SCHEDULED' | 'OVERDUE' | null;
   followUpReasons: FollowUpReason[];
+  /** Whether the entity keeps to its updates: calculated from on-time answers, overridden by what RPMO recorded. */
+  entityUpdates?: EntityUpdateCompliance | null;
+}
+
+export interface EntityUpdateCompliance {
+  counted: number;
+  onTime: number;
+  onTimePercent: number | null;
+  calculated: boolean | null;
+  effective: boolean | null;
+  overridden: boolean;
 }
 
 export type FundingSource =
@@ -214,6 +225,8 @@ export interface ProjectQuery {
   priorityItemId?: string | undefined;
   regionItemId?: string | undefined;
   cityItemId?: string | undefined;
+  /** A year the planned period touches. */
+  period?: string | undefined;
   page?: number | undefined;
   pageSize?: number | undefined;
 }

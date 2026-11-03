@@ -144,9 +144,27 @@ export function FollowUpPanel(): ReactElement | null {
           )}
         </Detail>
         <Detail term={t('projects.followUp.compliance')}>
-          {followUp?.entityUpdateCompliant === null || followUp?.entityUpdateCompliant === undefined
+          {indicators?.entityUpdates?.effective === null ||
+          indicators?.entityUpdates?.effective === undefined
             ? none
-            : t(followUp.entityUpdateCompliant ? 'projects.followUp.yes' : 'projects.followUp.no')}
+            : t(
+                indicators.entityUpdates.effective
+                  ? 'projects.followUp.yes'
+                  : 'projects.followUp.no',
+              )}
+          {indicators?.entityUpdates !== null && indicators?.entityUpdates !== undefined && (
+            <span className="details__aside">
+              {indicators.entityUpdates.counted === 0
+                ? t('projects.followUp.complianceNoRequests')
+                : t('projects.followUp.complianceCounted', {
+                    onTime: indicators.entityUpdates.onTime,
+                    counted: indicators.entityUpdates.counted,
+                    percent: formatPoints(indicators.entityUpdates.onTimePercent ?? 0),
+                  })}
+              {indicators.entityUpdates.overridden &&
+                ` · ${t('projects.followUp.complianceOverridden')}`}
+            </span>
+          )}
         </Detail>
         <Detail term={t('projects.fields.strategicPortfolio')}>
           {lookups.itemLabel(project.strategicPortfolioItemId ?? null) ?? t('common.values.none')}

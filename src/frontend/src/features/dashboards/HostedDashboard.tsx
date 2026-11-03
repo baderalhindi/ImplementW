@@ -81,6 +81,7 @@ export function HostedDashboard({
     priorityItemId,
     strategicPortfolioItemId,
     strategicInitiativeItemId,
+    period,
   } = filters;
   const load = useCallback(
     (signal: AbortSignal) =>
@@ -96,6 +97,7 @@ export function HostedDashboard({
           priorityItemId,
           strategicPortfolioItemId,
           strategicInitiativeItemId,
+          period,
         },
         signal,
       ),
@@ -110,6 +112,7 @@ export function HostedDashboard({
       priorityItemId,
       strategicPortfolioItemId,
       strategicInitiativeItemId,
+      period,
     ],
   );
   const view = useApiResource(load, { keepWhileReloading: true });

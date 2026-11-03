@@ -9188,6 +9188,177 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("project_import_name_mapping", "project");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectImportValidation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("failure_code");
+
+                    b.Property<byte[]>("FileContent")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("file_content");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("plan");
+
+                    b.Property<string>("Result")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("result");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_count");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_import_validation");
+
+                    b.HasIndex("Status", "CreatedAt", "Id")
+                        .HasDatabaseName("ix_project_import_validation_status_created_at_id");
+
+                    b.ToTable("project_import_validation", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_import_validation_result", "(status = 'COMPLETED') = (result IS NOT NULL) AND (status = 'FAILED') = (failure_code IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_project_import_validation_status", "\"status\" IN ('QUEUED', 'RUNNING', 'COMPLETED', 'FAILED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectImportValueRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Dimension")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("dimension");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<Guid?>("ResolvedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_user_id");
+
+                    b.Property<string>("SourceText")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("source_text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "ResolutionNote", "PMPlatform.Domain.Project.ProjectImportValueRequest.ResolutionNote#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("resolution_note_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("resolution_note");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_import_value_request");
+
+                    b.HasIndex("ResolvedByUserId")
+                        .HasDatabaseName("ix_project_import_value_request_resolved_by_user_id");
+
+                    b.HasIndex("Status", "CreatedAt", "Id")
+                        .HasDatabaseName("ix_project_import_value_request_status_created_at_id");
+
+                    b.ToTable("project_import_value_request", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_import_value_request_resolution", "(status = 'OPEN') = (resolved_at IS NULL) AND (status = 'OPEN') = (resolved_by_user_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_import_value_request_resolution_note_lang", "\"resolution_note_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_project_import_value_request_resolution_note_pair", "(\"resolution_note\" IS NULL) = (\"resolution_note_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_project_import_value_request_status", "\"status\" IN ('OPEN', 'ADDED', 'DECLINED')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Project.ProjectIntake", b =>
                 {
                     b.Property<Guid>("Id")
@@ -14042,6 +14213,15 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("RolledBackByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_project_import_batch_user_rolled_back_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectImportValueRequest", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ResolvedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_import_value_request_user_resolved_by_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Project.ProjectIntake", b =>

@@ -1,5 +1,5 @@
-import { type ReactElement, type SyntheticEvent, useCallback, useState } from 'react';
-import { Link } from 'react-router';
+import { type ReactElement, type SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
@@ -13,7 +13,14 @@ import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/Sta
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import { projectImportApi } from '../api/followUpApi.ts';
-import { type ImportBatch, type ImportMapping, type ImportPreview } from '../api/importTypes.ts';
+import {
+  type ImportBatch,
+  type ImportDimension,
+  type ImportMapping,
+  type ImportPreview,
+  type ImportValidation,
+  type ImportValueRequest,
+} from '../api/importTypes.ts';
 import { projectProblemMessage } from '../problems.ts';
 import { TEXT_LENGTH } from '../registration.ts';
 
@@ -58,6 +65,63 @@ function NewImport({ onSubmitted }: { onSubmitted: (batch: ImportBatch) => void 
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  const [background, setBackground] = useState<ImportValidation | null>(null);
+  const [requested, setRequested] = useState<ImportValueRequest[]>([]);
+
+  // A background validation, polled until it is done; the notification's link opens it here (?validation=).
+  const backgroundId = background?.id ?? params.get('validation');
+  useEffect(() => {
+    if (
+      backgroundId === null ||
+      (background !== null && background.status !== 'QUEUED' && background.status !== 'RUNNING')
+    ) {
+      return undefined;
+    }
+    const timer = setTimeout(
+      () => {
+        void projectImportApi.validation(backgroundId).then(
+          (read) => {
+            setBackground(read);
+            if (read.preview !== null) {
+              setPreview(read.preview);
+            }
+          },
+          (caught: unknown) => {
+            setError(projectProblemMessage(caught, t));
+          },
+        );
+      },
+      background === null ? 0 : 3000,
+    );
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [backgroundId, background, t]);
+
+  // The values this person asked an administrator to add and that are still open.
+  useEffect(() => {
+    const controller = new AbortController();
+    projectImportApi.valueRequests('OPEN', controller.signal).then(
+      (page) => {
+        setRequested(page.items);
+      },
+      () => {
+        setRequested([]);
+      },
+    );
+    return () => {
+      controller.abort();
+    };
+  }, []);
+  const isRequested = (dimension: string, sourceText: string) =>
+    requested.some((r) => r.dimension === dimension && r.sourceText === sourceText.trim());
+  const askToAdd = async (dimension: ImportDimension, sourceText: string) => {
+    const created = await attempt(() => projectImportApi.requestValue(dimension, sourceText));
+    if (created !== null) {
+      setRequested((current) => [...current.filter((r) => r.id !== created.id), created]);
+    }
+  };
 
   const plan = { mappings, skippedRows: skipped };
   const attempt = async <T,>(action: () => Promise<T>): Promise<T | null> => {
@@ -77,9 +141,14 @@ function NewImport({ onSubmitted }: { onSubmitted: (batch: ImportBatch) => void 
     if (file === null) {
       return;
     }
+    setBackground(null);
     const result = await attempt(() => projectImportApi.validate(file, plan));
-    if (result !== null) {
+    if (result !== null && 'rows' in result) {
       setPreview(result);
+    } else if (result !== null) {
+      // More than 200 rows: validated in the background, and polled here; a notification comes when it is done.
+      setPreview(null);
+      setBackground(result);
     }
   };
   const submit = async () => {
@@ -141,6 +210,25 @@ function NewImport({ onSubmitted }: { onSubmitted: (batch: ImportBatch) => void 
         </div>
       </form>
 
+      {background !== null &&
+        (background.status === 'QUEUED' || background.status === 'RUNNING') && (
+          <p className="notice notice--info" role="status">
+            {t('projects.import.background', {
+              rows: background.rowCount,
+              file: background.fileName,
+            })}
+          </p>
+        )}
+      {background?.status === 'FAILED' && (
+        <p className="notice notice--warning" role="status">
+          {t('projects.import.backgroundFailed', { code: background.failureCode ?? '' })}
+        </p>
+      )}
+      {background?.status === 'COMPLETED' && file === null && (
+        <p className="notice notice--info" role="status">
+          {t('projects.import.backgroundDone', { file: background.fileName })}
+        </p>
+      )}
       {preview !== null && preview.unmatched.length > 0 && (
         <>
           <h2>{t('projects.import.steps.map')}</h2>
@@ -176,6 +264,29 @@ function NewImport({ onSubmitted }: { onSubmitted: (batch: ImportBatch) => void 
               />
             ))}
           </div>
+          <ul className="issue-list">
+            {preview.unmatched
+              .filter((name) => name.dimension !== 'STATUS' && name.sourceText.trim() !== '')
+              .map((name) => (
+                <li key={`ask-${name.dimension}-${name.sourceText}`}>
+                  <span dir="auto">{name.sourceText}</span>{' '}
+                  {isRequested(name.dimension, name.sourceText) ? (
+                    <span className="badge badge--info">{t('projects.import.askedToAdd')}</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="button button--quiet"
+                      disabled={busy}
+                      onClick={() => void askToAdd(name.dimension, name.sourceText)}
+                    >
+                      {t('projects.import.askToAdd', {
+                        list: t(`projects.import.dimensionName.${name.dimension}`),
+                      })}
+                    </button>
+                  )}
+                </li>
+              ))}
+          </ul>
           <button type="button" className="button" disabled={busy} onClick={() => void validate()}>
             {t('projects.import.revalidate')}
           </button>

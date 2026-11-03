@@ -14,6 +14,12 @@ public interface IExternalParticipationRepository
 {
     public Task<IExternalParticipationWork> BeginAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The issued requests of these projects that have a due date, each with when its first contribution was submitted (null while none
+    /// was): what an entity's update compliance is counted from (the 2 Nov 2026 review). Not tracked.
+    /// </summary>
+    public Task<IReadOnlyList<RequestTimeliness>> ListTimelinessAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
     /// <summary>Tracked. With <paramref name="expectedVersion"/>, the next save is conditional on it (R-21).</summary>
     public Task<ExternalUpdateRequest?> FindRequestAsync(Guid requestId, uint? expectedVersion, CancellationToken cancellationToken);
 
@@ -96,3 +102,6 @@ public enum ExternalParticipationSaveOutcome
     /// </summary>
     Duplicate = 3,
 }
+
+/// <summary>An issued request's due date and its first submission.</summary>
+public sealed record RequestTimeliness(Guid ProjectId, DateOnly DueDate, DateTimeOffset? FirstSubmittedAt);

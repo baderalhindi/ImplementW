@@ -11,7 +11,7 @@ namespace PMPlatform.Application.Features.Project.FollowUp;
 /// </summary>
 internal static class ProjectIndicatorCalculator
 {
-    public static ProjectIndicators Of(ProjectEntity project, OnPlanThresholds thresholds, DateOnly today)
+    public static ProjectIndicators Of(ProjectEntity project, OnPlanThresholds thresholds, DateOnly today, UpdateComplianceCounts? updates = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(thresholds);
@@ -57,6 +57,17 @@ internal static class ProjectIndicatorCalculator
             }
         }
 
-        return new ProjectIndicators(gap, onPlan, daysRemaining, actionDue, reasons);
+        return new ProjectIndicators(gap, onPlan, daysRemaining, actionDue, reasons, Compliance(project, thresholds, updates));
+    }
+
+    /// <summary>RPMO's recorded value overrides the calculation; with neither, compliance is not known.</summary>
+    private static EntityUpdateCompliance? Compliance(ProjectEntity project, OnPlanThresholds thresholds, UpdateComplianceCounts? updates)
+    {
+        decimal? percent = updates is { Counted: > 0 } counts ? decimal.Round(100m * counts.OnTime / counts.Counted, 1) : null;
+        bool? calculated = percent is { } share ? share >= thresholds.CompliancePercent : null;
+        return updates is null && project.EntityUpdateCompliant is null
+            ? null
+            : new EntityUpdateCompliance(
+                updates?.Counted ?? 0, updates?.OnTime ?? 0, percent, calculated, project.EntityUpdateCompliant ?? calculated, project.EntityUpdateCompliant is not null);
     }
 }

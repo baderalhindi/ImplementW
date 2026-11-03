@@ -309,7 +309,11 @@
     "percentHint": "0 to 100. Leave blank when it is not available; a blank is never read as 0.",
     "saved": "The follow-up was updated.",
     "notOpen": "The follow-up is kept from approval on.",
-    "noteBy": "{name}, {date}"
+    "noteBy": "{name}, {date}",
+    "complianceNoRequests": "No update request is due yet",
+    "complianceCounted": "{onTime} of {counted} update requests answered on time ({percent}%)",
+    "complianceOverridden": "recorded by RPMO, overriding the calculation",
+    "complianceHint": "Leave blank to use the calculation from the entity’s on-time answers to update requests."
   },
   "followUpList": {
     "nav": "Follow-up list",
@@ -452,6 +456,11 @@
       "NOT_ALLOWED": "Not allowed here",
       "OWNER_UNMATCHED": "No active AHDA user has this name: left empty unless you map it"
     },
-    "fileLevel": "Whole file"
+    "fileLevel": "Whole file",
+    "background": "{rows} rows in {file}: validating in the background. You will get a notification when it is done; you may leave this page.",
+    "backgroundFailed": "The background validation failed ({code}). Check the file and validate again.",
+    "backgroundDone": "{file} was validated in the background. To submit it, choose the same file again.",
+    "askToAdd": "Ask an administrator to add it to {list}",
+    "askedToAdd": "Requested from an administrator"
   }
 }

@@ -38,7 +38,8 @@ public sealed class DashboardsController(IDashboardService dashboards) : Adminis
     /// The dashboard's PUBLISHED version and each widget's result. <c>PROJECT</c> is bound to <c>projectId</c> (DSH-009 in SCR-040, DSH-008 for
     /// an entity's own project); the others are read over every project the caller may see, optionally narrowed to one <c>departmentId</c>,
     /// <c>externalEntityId</c>, <c>regionItemId</c>, <c>cityItemId</c>, <c>classificationItemId</c> (sector), <c>status</c>,
-    /// <c>priorityItemId</c>, <c>strategicPortfolioItemId</c> and <c>strategicInitiativeItemId</c>, each among the view's options.
+    /// <c>priorityItemId</c>, <c>strategicPortfolioItemId</c>, <c>strategicInitiativeItemId</c> and <c>period</c> (a year the planned period touches),
+    /// each among the view's options.
     /// </summary>
     [HttpGet("{dashboardCode}")]
     [AllowAnyAuthenticatedUser]
@@ -47,7 +48,8 @@ public sealed class DashboardsController(IDashboardService dashboards) : Adminis
     public async Task<IActionResult> Get(
         string dashboardCode, [FromQuery] Guid? projectId, [FromQuery] Guid? departmentId, [FromQuery] Guid? externalEntityId, [FromQuery] Guid? regionItemId,
         [FromQuery] Guid? cityItemId, [FromQuery] Guid? classificationItemId, [FromQuery] string? status, [FromQuery] Guid? priorityItemId,
-        [FromQuery] Guid? strategicPortfolioItemId, [FromQuery] Guid? strategicInitiativeItemId, CancellationToken cancellationToken)
+        [FromQuery] Guid? strategicPortfolioItemId, [FromQuery] Guid? strategicInitiativeItemId, CancellationToken cancellationToken,
+        [FromQuery] int? period = null)
     {
         if (DashboardRoute.Parse(dashboardCode) is not { } code)
         {
@@ -61,6 +63,11 @@ public sealed class DashboardsController(IDashboardService dashboards) : Adminis
             errors.Add(new FieldError("status", FieldError.Malformed));
         }
 
+        if (period is < 1900 or > 2200)
+        {
+            errors.Add(new FieldError("period", FieldError.OutOfRange));
+        }
+
         DashboardContext context = new(projectId, departmentId, externalEntityId, regionItemId, cityItemId)
         {
             ClassificationItemId = classificationItemId,
@@ -68,6 +75,7 @@ public sealed class DashboardsController(IDashboardService dashboards) : Adminis
             PriorityItemId = priorityItemId,
             StrategicPortfolioItemId = strategicPortfolioItemId,
             StrategicInitiativeItemId = strategicInitiativeItemId,
+            PeriodYear = period,
         };
         return errors.Count > 0 ? ValidationFailed(errors) : Respond(await dashboards.GetAsync(CallerId, code, context, cancellationToken));
     }

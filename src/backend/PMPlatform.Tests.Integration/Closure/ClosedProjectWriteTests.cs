@@ -35,6 +35,8 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
         ["POST /api/v1/project-import-batches/{batchId}/approve"] = "applies a batch, validated again: a row matching a closed project is an error and nothing is applied",
         ["POST /api/v1/project-import-batches/{batchId}/return"] = "returns a batch to its importer; no project changes",
         ["POST /api/v1/project-import-batches/{batchId}/rollback"] = "removes only the projects the batch created, untouched since",
+        ["POST /api/v1/project-import-value-requests"] = "asks for a list value to be added; of no project",
+        ["POST /api/v1/project-import-value-requests/{requestId}/resolve"] = "marks a list value request added or declined; of no project",
     };
 
     /// <summary>String values a request's validation knows but the document does not enumerate, by property name.</summary>

@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.DependencyInjection;
+using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Tests.Integration.DataImport;
 using PMPlatform.Tests.Integration.Identity;
 
@@ -123,6 +125,90 @@ public sealed class ProjectImportTests(ProjectTestHost host)
         using HttpResponseMessage refused = await client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+    }
+
+    [Fact]
+    public async Task AWorkbookOfMoreThan200RowsIsValidatedInTheBackgroundAndItsImporterNotified()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        string prefix = $"BG-{Guid.NewGuid():N}"[..12];
+        List<string?[]> rows = [];
+        for (int n = 0; n < 201; n++)
+        {
+            rows.Add(await RowAsync($"{prefix}-{n:D3}", status: "نشط"));
+        }
+
+        using HttpResponseMessage accepted = await SendValidationAsync(client, sessions.Reviewer, await WorkbookAsync([.. rows]));
+        Assert.Equal(HttpStatusCode.Accepted, accepted.StatusCode);
+        JsonObject queued = JsonNode.Parse(await accepted.Content.ReadAsStringAsync())!.AsObject();
+        Assert.Equal("QUEUED", queued["status"]!.GetValue<string>());
+        Assert.Equal(201, queued["rowCount"]!.GetValue<int>());
+        string validation = $"/api/v1/project-import-validations/{queued["id"]}";
+
+        await host.WithScopeAsync(services => services.GetRequiredService<IProjectImportValidationRunner>().RunAsync(10, CancellationToken.None));
+
+        using HttpResponseMessage done = await GetAsync(client, sessions.Reviewer, validation);
+        JsonObject completed = JsonNode.Parse(await done.Content.ReadAsStringAsync())!.AsObject();
+        Assert.Equal("COMPLETED", completed["status"]!.GetValue<string>());
+        Assert.Equal(201, completed["preview"]!["createCount"]!.GetValue<int>());
+        Assert.Contains("recipientUserId", Assert.Single(await host.Database.QueryAsync(
+            $"SELECT payload::text FROM common.outbox_message WHERE message_type = 'NOTIFICATION_INTENT' AND message_key LIKE 'Project.ImportValidated%{queued["id"]}%'")));
+
+        // Only the importer reads it.
+        using HttpResponseMessage other = await GetAsync(client, sessions.Approver, validation);
+        Assert.Equal(HttpStatusCode.NotFound, other.StatusCode);
+    }
+
+    [Fact]
+    public async Task AnImporterAsksForAMissingValueAndAnAdministratorMarksItAdded()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        string name = $"جهة جديدة {Guid.NewGuid():N}"[..24];
+
+        using HttpResponseMessage asked = await PostAsync(client, sessions.Reviewer, "/api/v1/project-import-value-requests", $"{{\"dimension\":\"ENTITY\",\"sourceText\":\"{name}\"}}");
+        Assert.Equal(HttpStatusCode.Created, asked.StatusCode);
+        string id = JsonNode.Parse(await asked.Content.ReadAsStringAsync())!["id"]!.GetValue<string>();
+        using HttpResponseMessage again = await PostAsync(client, sessions.Reviewer, "/api/v1/project-import-value-requests", $"{{\"dimension\":\"ENTITY\",\"sourceText\":\"{name}\"}}");
+        Assert.Equal(id, JsonNode.Parse(await again.Content.ReadAsStringAsync())!["id"]!.GetValue<string>());
+
+        // An importer does not decide; an administrator does.
+        string resolve = $"/api/v1/project-import-value-requests/{id}/resolve";
+        using HttpResponseMessage refused = await PostAsync(client, sessions.Approver, resolve, "{\"status\":\"ADDED\"}");
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+        string administrator = (await client.SignInOrFailAsync(1)).AccessToken;
+        using HttpResponseMessage added = await PostAsync(client, administrator, resolve, "{\"status\":\"ADDED\",\"note\":{\"text\":\"أضيفت\",\"language\":\"ar\"}}");
+        Assert.Equal(HttpStatusCode.OK, added.StatusCode);
+        Assert.Equal("ADDED", JsonNode.Parse(await added.Content.ReadAsStringAsync())!["status"]!.GetValue<string>());
+        Assert.Equal(2, (await host.Database.QueryAsync(
+            $"SELECT message_key FROM common.outbox_message WHERE message_type = 'NOTIFICATION_INTENT' AND message_key LIKE 'Project.ImportValue%{id}%'")).Count);
+    }
+
+    [Fact]
+    public async Task ThePeriodFilterFindsTheProjectsWhosePlannedPeriodTouchesTheYear()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        string reference = $"PER-{Guid.NewGuid():N}"[..20];
+        using HttpResponseMessage submitted = await SubmitAsync(client, sessions.Reviewer, await WorkbookAsync([await RowAsync(reference, status: "نشط")]), string.Empty);
+        Guid batchId = AdministrationApi.IdOf(JsonNode.Parse(await submitted.Content.ReadAsStringAsync())!.AsObject());
+        using HttpResponseMessage approved = await PostAsync(client, sessions.Approver, $"{Batches}/{batchId}/approve");
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+
+        // The row is planned from 2025-01-01 to 2027-12-31.
+        foreach ((int year, int expected) in new[] { (2026, 1), (2028, 0) })
+        {
+            using HttpResponseMessage listed = await GetAsync(client, sessions.Approver, $"/api/v1/projects?q={reference}&period={year}");
+            Assert.Equal(expected, JsonNode.Parse(await listed.Content.ReadAsStringAsync())!["items"]!.AsArray().Count);
+        }
+    }
+
+    internal static Task<HttpResponseMessage> GetAsync(HttpClient client, string token, string path)
+    {
+        HttpRequestMessage request = new(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return client.SendAsync(request);
     }
 
     internal static Task<JsonObject> ValidateAsync(HttpClient client, string token, byte[] workbook, string plan = "") =>

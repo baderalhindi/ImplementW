@@ -57,7 +57,12 @@ internal sealed class NotificationRouting(
             return await CloseAsync(intent, NotificationIntentStatus.Failed, NotificationSuppressionReasons.ConfigurationMissing, now, cancellationToken).ConfigureAwait(false);
         }
 
-        IReadOnlyList<RoleHolder> holders = await roleHolders.FindHoldersAsync(family.RecipientRoleIds, ScopeOf(envelope), cancellationToken).ConfigureAwait(false);
+        Dictionary<string, string> parameters = (await repository.GetParametersAsync(intent.Id, cancellationToken).ConfigureAwait(false))
+            .ToDictionary(p => p.ParameterKey, p => p.ParameterValue, StringComparer.Ordinal);
+
+        // An intent addressed to one person reaches them alone, and only if the role matrix names them (NotificationParameterKeys).
+        IReadOnlyList<RoleHolder> holders = [.. (await roleHolders.FindHoldersAsync(family.RecipientRoleIds, ScopeOf(envelope), cancellationToken).ConfigureAwait(false))
+            .Where(h => !parameters.TryGetValue(NotificationParameterKeys.RecipientUserId, out string? only) || h.UserId.ToString("D") == only)];
         if (holders.Count == 0)
         {
             return await CloseAsync(intent, NotificationIntentStatus.Suppressed, NotificationSuppressionReasons.NoEligibleRecipient, now, cancellationToken).ConfigureAwait(false);
@@ -70,8 +75,6 @@ internal sealed class NotificationRouting(
             return await CloseAsync(intent, NotificationIntentStatus.Failed, NotificationSuppressionReasons.TemplateMissing, now, cancellationToken).ConfigureAwait(false);
         }
 
-        Dictionary<string, string> parameters = (await repository.GetParametersAsync(intent.Id, cancellationToken).ConfigureAwait(false))
-            .ToDictionary(p => p.ParameterKey, p => p.ParameterValue, StringComparer.Ordinal);
         Dictionary<(Guid, NotificationChannel), bool> preferences = (await repository
                 .GetPreferencesAsync([.. holders.Select(h => h.UserId)], family.Code, cancellationToken).ConfigureAwait(false))
             .ToDictionary(p => (p.UserId, p.Channel), p => p.IsEnabled);

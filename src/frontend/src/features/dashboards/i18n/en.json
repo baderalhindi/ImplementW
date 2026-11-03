@@ -65,8 +65,10 @@
       "status": "All",
       "priorityItemId": "All",
       "strategicPortfolioItemId": "All",
-      "strategicInitiativeItemId": "All"
-    }
+      "strategicInitiativeItemId": "All",
+      "period": "All"
+    },
+    "period": "Period"
   },
   "locations": {
     "title": "Projects by location",

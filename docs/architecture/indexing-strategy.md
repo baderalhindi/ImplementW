@@ -137,6 +137,8 @@ Each row is one index, by its key columns. **`IndexingStrategyTests` reads this 
 | I-61 | `project.project_follow_up_note` | `project_id, created_at, id` | A project's follow-up notes, newest first (the 2 Nov 2026 review, R3-3) | TASK-111 |
 | I-62 | `project.project_import_batch` | `created_at, id` | The project import batches, newest first (R3-4) | TASK-111 |
 | I-63 | `project.project_import_batch` | `status, created_at, id` | The SUBMITTED batches awaiting a decision (R3-4) | TASK-111 |
+| I-64 | `project.project_import_validation` | `status, created_at, id` | The background validation worker's queue, oldest first | TASK-111 |
+| I-65 | `project.project_import_value_request` | `status, created_at, id` | The administrators' OPEN value requests, oldest first | TASK-111 |
 
 ### 4.3 Screens covered without a register row
 

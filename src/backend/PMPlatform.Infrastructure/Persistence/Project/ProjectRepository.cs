@@ -82,6 +82,16 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
             rows = rows.Where(p => p.CityItemId == city);
         }
 
+        if (query.PeriodYear is { } year)
+        {
+            // The planned period touches the year: a project with one planned date is in that date's year.
+            DateOnly first = new(year, 1, 1);
+            DateOnly last = new(year, 12, 31);
+            rows = rows.Where(p => (p.PlannedStartDate != null || p.PlannedEndDate != null)
+                                   && (p.PlannedStartDate ?? p.PlannedEndDate) <= last
+                                   && (p.PlannedEndDate ?? p.PlannedStartDate) >= first);
+        }
+
         if (query.ProjectManagerUserId is { } projectManagerUserId)
         {
             rows = rows.Where(p => p.ProjectManagerUserId == projectManagerUserId);

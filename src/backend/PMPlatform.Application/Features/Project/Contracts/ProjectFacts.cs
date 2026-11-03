@@ -28,4 +28,6 @@ public sealed record ProjectFacts(
     Guid ClassificationItemId = default,
     Guid? PriorityItemId = null,
     Guid? StrategicPortfolioItemId = null,
-    Guid? StrategicInitiativeItemId = null);
+    Guid? StrategicInitiativeItemId = null,
+    DateOnly? PlannedStartDate = null,
+    DateOnly? PlannedEndDate = null);

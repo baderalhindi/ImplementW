@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.DataImport;
+using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
@@ -34,7 +35,8 @@ internal sealed class ProjectImportService(
     IRoleHolderDirectory holders,
     IAuthorizationEngine engine,
     IAuditTrail audit,
-    TimeProvider timeProvider) : IProjectImportService
+    IOutbox outbox,
+    TimeProvider timeProvider) : IProjectImportService, IProjectImportValidationRunner
 {
     private static readonly JsonSerializerOptions PlanJson = new(JsonSerializerDefaults.Web)
     {
@@ -71,7 +73,7 @@ internal sealed class ProjectImportService(
             ProjectImportLayout.MaxRows));
     }
 
-    public async Task<AdministrationResult<ProjectImportPreview>> ValidateAsync(
+    public async Task<AdministrationResult<ProjectImportValidationOutcome>> ValidateAsync(
         Guid callerId, ProjectImportUpload upload, ProjectImportPlan plan, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(upload);
@@ -83,9 +85,105 @@ internal sealed class ProjectImportService(
             return AdministrationError.Forbidden;
         }
 
+        // Review §4, step 3: a workbook of more than 200 rows is validated in the background, and its importer notified when it is done.
+        if (RowsOf(upload.Content) is { } rows && rows > ProjectImportLayout.BackgroundRows)
+        {
+            DateTimeOffset now = timeProvider.GetUtcNow();
+            ProjectImportValidation queued = new()
+            {
+                Id = Guid.CreateVersion7(now),
+                Status = ProjectImportValidationStatus.Queued,
+                FileName = Path.GetFileName(upload.FileName),
+                FileContent = upload.Content,
+                Plan = JsonSerializer.Serialize(plan, PlanJson),
+                RowCount = rows,
+                CreatedAt = now,
+                CreatedBy = callerId,
+                UpdatedAt = now,
+                UpdatedBy = callerId,
+            };
+            batches.Add(queued);
+            return await batches.SaveAsync(cancellationToken).ConfigureAwait(false)
+                ? new ProjectImportValidationOutcome(null, ValidationDetailOf(queued))
+                : AdministrationError.PreconditionFailed;
+        }
+
         AdministrationResult<ProjectImportEvaluation> evaluation = await EvaluateAsync(upload.Content, plan, scope, cancellationToken).ConfigureAwait(false);
-        return evaluation.Succeeded ? evaluation.Value.Preview : evaluation.Error;
+        return evaluation.Succeeded ? new ProjectImportValidationOutcome(evaluation.Value.Preview, null) : evaluation.Error;
     }
+
+    public async Task<AdministrationResult<ProjectImportValidationDetail>> GetValidationAsync(Guid callerId, Guid validationId, CancellationToken cancellationToken)
+    {
+        ProjectImportValidation? validation = await batches.FindValidationAsync(validationId, null, cancellationToken).ConfigureAwait(false);
+        return validation is null || validation.CreatedBy != callerId ? AdministrationError.NotFound : ValidationDetailOf(validation);
+    }
+
+    public async Task<int> RunAsync(int batchSize, CancellationToken cancellationToken)
+    {
+        int done = 0;
+        foreach ((Guid id, uint version) in await batches.ListQueuedValidationsAsync(batchSize, cancellationToken).ConfigureAwait(false))
+        {
+            batches.Clear();
+
+            // Claimed by saving it RUNNING unchanged since read, so two passes never validate one workbook twice.
+            ProjectImportValidation? validation = await batches.FindValidationAsync(id, version, cancellationToken).ConfigureAwait(false);
+            if (validation is not { Status: ProjectImportValidationStatus.Queued })
+            {
+                continue;
+            }
+
+            validation.Status = ProjectImportValidationStatus.Running;
+            validation.UpdatedAt = timeProvider.GetUtcNow();
+            if (!await batches.SaveAsync(cancellationToken).ConfigureAwait(false))
+            {
+                continue;
+            }
+
+            RecordScope scope = await engine.GetRecordScopeAsync(validation.CreatedBy, PermissionCatalogue.ProjectImport, cancellationToken).ConfigureAwait(false);
+            AdministrationResult<ProjectImportEvaluation> evaluated = scope.IsEmpty
+                ? AdministrationError.Forbidden
+                : await EvaluateAsync(validation.FileContent, PlanOf(validation.Plan), scope, cancellationToken).ConfigureAwait(false);
+            DateTimeOffset now = timeProvider.GetUtcNow();
+            validation.Status = evaluated.Succeeded ? ProjectImportValidationStatus.Completed : ProjectImportValidationStatus.Failed;
+            validation.Result = evaluated.Succeeded ? JsonSerializer.Serialize(evaluated.Value.Preview, PlanJson) : null;
+            validation.FailureCode = evaluated.Succeeded ? null : evaluated.Error.Code ?? ProjectImportErrorCodes.NotWorkbook;
+            validation.FileContent = [];
+            validation.CompletedAt = now;
+            validation.UpdatedAt = now;
+            outbox.Stage(ImportNotifications.Validated(
+                validation.Id, validation.CreatedBy, scope.Clauses.Count > 0 ? scope.Clauses[0].DepartmentId : null, $"/projects/import?validation={validation.Id:D}",
+                [
+                    new NotificationParameter("fileName", validation.FileName),
+                    new NotificationParameter("rowCount", validation.RowCount.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                    new NotificationParameter("outcome", validation.Status == ProjectImportValidationStatus.Completed ? "COMPLETED" : "FAILED"),
+                ],
+                now));
+            if (await batches.SaveAsync(cancellationToken).ConfigureAwait(false))
+            {
+                done++;
+            }
+        }
+
+        return done;
+    }
+
+    /// <summary>The rows after the key row, or null when the file is not a workbook the import reads (the validation then says so).</summary>
+    private int? RowsOf(byte[] content)
+    {
+        if (content.LongLength > ProjectImportLayout.MaxBytes)
+        {
+            return null;
+        }
+
+        using MemoryStream stream = new(content, writable: false);
+        return workbook.Read(stream, ProjectImportLayout.MaxRows + 10) is { } sheet && ProjectImportEvaluator.KeysOf(sheet) is { } keys
+            ? sheet.Rows.Count(r => r.RowNumber > keys.KeyRow)
+            : null;
+    }
+
+    private static ProjectImportValidationDetail ValidationDetailOf(ProjectImportValidation v) => new(
+        v.Id, v.Status, v.FileName, v.RowCount, v.CreatedAt, v.CompletedAt, v.FailureCode,
+        v.Result is null ? null : JsonSerializer.Deserialize<ProjectImportPreview>(v.Result, PlanJson));
 
     public async Task<AdministrationResult<ProjectImportBatchDetail>> SubmitAsync(
         Guid callerId, ProjectImportUpload upload, ProjectImportPlan plan, NarrativeText? note, CancellationToken cancellationToken)
@@ -569,8 +667,9 @@ internal sealed class ProjectImportService(
     private Task<RecordScope> ImporterScopeAsync(ProjectImportBatch batch, CancellationToken cancellationToken) =>
         engine.GetRecordScopeAsync(batch.CreatedBy, PermissionCatalogue.ProjectImport, cancellationToken);
 
-    private static ProjectImportPlan PlanOf(ProjectImportBatch batch) =>
-        JsonSerializer.Deserialize<ProjectImportPlan>(batch.Plan, PlanJson) ?? ProjectImportPlan.Empty;
+    private static ProjectImportPlan PlanOf(ProjectImportBatch batch) => PlanOf(batch.Plan);
+
+    private static ProjectImportPlan PlanOf(string json) => JsonSerializer.Deserialize<ProjectImportPlan>(json, PlanJson) ?? ProjectImportPlan.Empty;
 
     private async Task<Versioned<ProjectImportBatchDetail>> VersionedAsync(Guid callerId, ProjectImportBatch batch, CancellationToken cancellationToken) =>
         new(await DetailAsync(callerId, batch, cancellationToken).ConfigureAwait(false), batches.RowVersionOf(batch));

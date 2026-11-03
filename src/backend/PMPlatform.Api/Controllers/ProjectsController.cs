@@ -29,7 +29,8 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
     /// SCR-025: only projects the caller may see. Filters: <c>status</c> (a set), <c>departmentId</c>, <c>externalEntityId</c>,
     /// <c>projectManagerUserId</c> (SCR-026 My Projects), <c>q</c> (title, Formal Project ID or legacy reference), and the filter bar's
     /// <c>classificationItemId</c>, <c>strategicPortfolioItemId</c>, <c>strategicInitiativeItemId</c>, <c>priorityItemId</c>,
-    /// <c>regionItemId</c> and <c>cityItemId</c> (the 2 Nov 2026 review). Most recently changed first.
+    /// <c>regionItemId</c>, <c>cityItemId</c> and <c>period</c>, a year the planned period touches (the 2 Nov 2026 review). Most recently changed
+    /// first.
     /// </summary>
     [HttpGet]
     [RequirePermission(PermissionCatalogue.ProjectView)]
@@ -39,10 +40,16 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
         [FromQuery] string? status, [FromQuery] Guid? departmentId, [FromQuery] Guid? externalEntityId, [FromQuery] Guid? projectManagerUserId,
         [FromQuery] string? q, [FromQuery] int? page, [FromQuery] int? pageSize, CancellationToken cancellationToken,
         [FromQuery] Guid? classificationItemId = null, [FromQuery] Guid? strategicPortfolioItemId = null, [FromQuery] Guid? strategicInitiativeItemId = null,
-        [FromQuery] Guid? priorityItemId = null, [FromQuery] Guid? regionItemId = null, [FromQuery] Guid? cityItemId = null)
+        [FromQuery] Guid? priorityItemId = null, [FromQuery] Guid? regionItemId = null, [FromQuery] Guid? cityItemId = null,
+        [FromQuery] int? period = null)
     {
         List<FieldError> errors = [];
         RequestValidation.Optional(q, "q", QueryTextLength, errors);
+        if (period is < 1900 or > 2200)
+        {
+            errors.Add(new FieldError("period", FieldError.OutOfRange));
+        }
+
         ProjectQuery query = new(
             QueryParameters.EnumSet<ProjectLifecycleState>(status, "status", errors), departmentId, externalEntityId, projectManagerUserId, q,
             QueryParameters.Page(page, pageSize, errors))
@@ -53,6 +60,7 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
             PriorityItemId = priorityItemId,
             RegionItemId = regionItemId,
             CityItemId = cityItemId,
+            PeriodYear = period,
         };
         return errors.Count > 0 ? ValidationFailed(errors) : Ok(await projects.ListAsync(CallerId, query, cancellationToken));
     }

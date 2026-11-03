@@ -15,7 +15,7 @@ internal sealed class ProjectFollowUpService(
     IProjectRepository repository,
     ProjectAccess access,
     IAuthorizationEngine engine,
-    OnPlanPolicy onPlan,
+    ProjectIndicatorReader indicators,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProjectFollowUpService
 {
@@ -86,15 +86,10 @@ internal sealed class ProjectFollowUpService(
             audit.Stage(ProjectAudit.FollowUpNoteAdded(callerId, project, note));
         }
 
-        if (await repository.SaveAsync(cancellationToken).ConfigureAwait(false) != ProjectSaveOutcome.Saved)
-        {
-            return AdministrationError.PreconditionFailed;
-        }
-
-        OnPlanThresholds thresholds = await onPlan.ThresholdsAsync(now, cancellationToken).ConfigureAwait(false);
-        return new Versioned<ProjectDetail>(
-            ProjectMapping.ToDetail(project, ProjectIndicatorCalculator.Of(project, thresholds, DateOnly.FromDateTime(now.UtcDateTime))),
-            repository.RowVersionOf(project));
+        return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) != ProjectSaveOutcome.Saved
+            ? AdministrationError.PreconditionFailed
+            : new Versioned<ProjectDetail>(
+                ProjectMapping.ToDetail(project, await indicators.OfAsync(project, cancellationToken).ConfigureAwait(false)), repository.RowVersionOf(project));
     }
 
     public async Task<AdministrationResult<ProjectFollowUpNotePage>> ListNotesAsync(
@@ -128,13 +123,12 @@ internal sealed class ProjectFollowUpService(
             return new ProjectFollowUpPage([], query.Page.Page, query.Page.PageSize, 0);
         }
 
-        DateTimeOffset now = timeProvider.GetUtcNow();
-        DateOnly today = DateOnly.FromDateTime(now.UtcDateTime);
-        OnPlanThresholds thresholds = await onPlan.ThresholdsAsync(now, cancellationToken).ConfigureAwait(false);
-        List<ProjectFollowUpItem> due = [.. (await repository.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false))
+        List<ProjectEntity> reached = [.. (await repository.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false))
             .Where(p => (query.DepartmentId is not { } department || p.DepartmentId == department)
-                        && (query.FollowUpOwnerUserId is not { } owner || p.FollowUpOwnerUserId == owner))
-            .Select(p => (Project: p, Indicators: ProjectIndicatorCalculator.Of(p, thresholds, today)))
+                        && (query.FollowUpOwnerUserId is not { } owner || p.FollowUpOwnerUserId == owner))];
+        Func<ProjectEntity, ProjectIndicators> indicatorsOf = await indicators.ForAsync(reached, cancellationToken).ConfigureAwait(false);
+        List<ProjectFollowUpItem> due = [.. reached
+            .Select(p => (Project: p, Indicators: indicatorsOf(p)))
             .Where(r => r.Indicators.FollowUpReasons.Count > 0 && (query.Reason is not { } reason || r.Indicators.FollowUpReasons.Contains(reason)))
             .OrderBy(r => r.Indicators.FollowUpReasons[0])
             .ThenBy(r => r.Project.NextActionDueDate ?? DateOnly.MaxValue)
