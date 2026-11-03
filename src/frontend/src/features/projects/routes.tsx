@@ -8,7 +8,10 @@ import {
 } from '@/features/audit-activity/workspace/ProjectAuditTab.tsx';
 import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 
+import { FollowUpListPage } from './followUp/FollowUpListPage.tsx';
 import { CreateProjectPage, EditProjectPage } from './form/ProjectFormPages.tsx';
+import { ImportBatchPage } from './import/ImportBatchPage.tsx';
+import { ProjectImportPage } from './import/ProjectImportPage.tsx';
 import { MyProjectsPage, ProjectRegisterPage } from './register/ProjectListPages.tsx';
 import { ChangeRequestsTab } from './workspace/ChangeRequestsTab.tsx';
 import { CloseoutTab } from './workspace/CloseoutTab.tsx';
@@ -39,6 +42,9 @@ export const projectRoutes: RouteObject[] = [
   { index: true, element: <ProjectRegisterPage /> }, // SCR-025
   { path: 'mine', element: <MyProjectsPage /> }, // SCR-026
   { path: 'new', element: <CreateProjectPage /> }, // SCR-033
+  { path: 'follow-up', element: <FollowUpListPage /> }, // the 2 Nov 2026 review, R3-5: قائمة المتابعة
+  { path: 'import', element: <ProjectImportPage /> }, // R3-4: Projects → Import and the batches
+  { path: 'import/:batchId', element: <ImportBatchPage /> }, // R3-4: one batch, its approval and rollback
   { path: ':projectId/edit', element: <EditProjectPage /> }, // SCR-034
   {
     path: ':projectId',
@@ -255,4 +261,10 @@ export const projectNavigation: NavigationItem[] = [
   { to: '/projects', label: 'projects.nav.register', end: true, permissions: ['PROJECT_VIEW'] },
   { to: '/projects/mine', label: 'projects.nav.mine', permissions: ['PROJECT_VIEW'] },
   { to: '/projects/new', label: 'projects.nav.create', permissions: ['PROJECT_REGISTER'] },
+  { to: '/projects/follow-up', label: 'projects.followUpList.nav', permissions: ['PROJECT_VIEW'] },
+  {
+    to: '/projects/import',
+    label: 'projects.import.nav',
+    permissions: ['PROJECT_IMPORT', 'PROJECT_IMPORT_APPROVE'],
+  },
 ];

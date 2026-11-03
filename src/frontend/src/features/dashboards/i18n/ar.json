@@ -7,7 +7,7 @@
     "title": "لوحة المعلومات",
     "none": "لا توجد لوحة معلومات منشورة لأدوارك",
     "noneHint": "لا تفتح أدوارك أي لوحة معلومات بعد. استخدم القائمة للوصول إلى السجلات المتاحة لك.",
-    "rendering": "تعرضها {dashboard}",
+    "rendering": "كل المشاريع في نطاقك، حسب القطاع والجهة والموقع",
     "switch": "لوحاتك",
     "landingMarker": " (صفحتك الافتراضية)"
   },
@@ -39,14 +39,34 @@
     "refresh": "تحديث"
   },
   "filter": {
-    "department": "القطاع",
-    "allDepartments": "جميع قطاعاتك",
+    "department": "الإدارة",
+    "allDepartments": "كل الإدارات",
     "entity": "الجهة",
     "allEntities": "كل الجهات",
     "region": "المنطقة",
     "allRegions": "كل المناطق",
     "city": "المدينة",
-    "allCities": "كل المدن"
+    "allCities": "كل المدن",
+    "classificationItemId": "القطاع",
+    "externalEntityId": "الجهة",
+    "departmentId": "الإدارة",
+    "regionItemId": "المنطقة",
+    "cityItemId": "المدينة",
+    "status": "الحالة",
+    "priorityItemId": "الأولوية",
+    "strategicPortfolioItemId": "المحفظة الاستراتيجية",
+    "strategicInitiativeItemId": "المبادرة",
+    "all": {
+      "classificationItemId": "الكل",
+      "externalEntityId": "الكل",
+      "departmentId": "الكل",
+      "regionItemId": "الكل",
+      "cityItemId": "الكل",
+      "status": "الكل",
+      "priorityItemId": "الكل",
+      "strategicPortfolioItemId": "الكل",
+      "strategicInitiativeItemId": "الكل"
+    }
   },
   "locations": {
     "title": "المشاريع حسب الموقع",
@@ -182,7 +202,7 @@
   },
   "problems": {
     "notFound": "لوحة المعلومات هذه غير متاحة لك.",
-    "filterValueUnauthorized": "لا يحق لك التصفية بهذا القطاع. اعرض جميع قطاعاتك بدلًا من ذلك.",
+    "filterValueUnauthorized": "لا يحق لك التصفية بهذه القيمة. اعرض كل المشاريع بدلًا من ذلك.",
     "contextInvalid": "لا يمكن فتح لوحة المعلومات هذه هنا.",
     "personalizationInvalid": "لا يمكن تخصيص سوى العناصر الاختيارية في هذه اللوحة.",
     "permissionDenied": "لا يتيح دورك تخصيص لوحة المعلومات هذه."

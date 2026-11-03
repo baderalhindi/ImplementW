@@ -55,3 +55,9 @@ export function formatSar(amount: string): string {
   const digits = negative ? whole.slice(1) : whole;
   return `${negative ? '-' : ''}${digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
 }
+
+/** A number with at most one decimal, in Latin digits like every figure the platform shows (TASK-032 D-5). */
+export function formatPoints(value: number, signed = false): string {
+  const rounded = Math.round(value * 10) / 10;
+  return `${signed && rounded > 0 ? '+' : ''}${String(rounded)}`;
+}

@@ -6,8 +6,9 @@
     "permissionMatrix": "Permission matrix",
     "roleAssignments": "Role assignments",
     "organization": "Organization structure",
-    "departments": "Sectors",
-    "entities": "External entities"
+    "departments": "Departments",
+    "entities": "External entities",
+    "masterData": "Master data"
   },
   "codeHint": "Capital letters, digits, hyphens and underscores, for example FIN-OPS. The code cannot be changed later.",
   "stepUpNote": "You may be asked for a verification code from your authenticator app before this is applied.",
@@ -44,7 +45,7 @@
   },
   "dataScope": {
     "ALL": "All",
-    "DEPT": "Sector",
+    "DEPT": "Department",
     "OWN": "Own",
     "ASSIGNED": "Assigned",
     "ENTITY": "Entity",
@@ -61,16 +62,16 @@
   "problems": {
     "duplicateKey": "A value you entered is already used by another record. See the highlighted field.",
     "alreadyAssigned": "The user already holds this assignment.",
-    "referenceInvalid": "A selected user, sponsor, sector, entity, project or profile version does not exist or cannot be used. See the highlighted field.",
+    "referenceInvalid": "A selected user, sponsor, department, entity, project or profile version does not exist or cannot be used. See the highlighted field.",
     "externalGrantInvalid": "This assignment does not meet the rules for external users. See the highlighted fields.",
     "scopeAnchorInvalid": "This role needs a different scope: a Department Manager needs a department, a Liaison a project, a Viewer a department or a project, and an internal user no external entity. See the highlighted fields.",
     "profileVersionNotPublished": "Only a published profile version can be assigned.",
     "projectClosed": "The project is closed and cannot take new assignments.",
     "selfAdministration": "You cannot change your own status or assignments. Ask another system administrator.",
     "servicePrincipal": "Service accounts are not managed here.",
-    "directoryAuthoritative": "An internal user's sector, manager and job title come from the directory and cannot be changed here.",
+    "directoryAuthoritative": "An internal user's department, manager and job title come from the directory and cannot be changed here.",
     "invalidPeriod": "An assignment cannot start in the past, and must end after it starts.",
-    "departmentCycle": "A sector cannot be placed under itself or one of its sub-sectors.",
+    "departmentCycle": "A department cannot be placed under itself or one of its sub-departments.",
     "profileGrantInvalid": "This profile names a permission that does not exist, names one twice, or gives its base role something it may never hold (for example business data to the System Administrator, or approvals and reports to an Entity Manager). See the highlighted permissions.",
     "separationOfDuties": "Three different people prepare, validate and publish a profile version: its author edits it, someone else validates it, and a third person publishes it.",
     "selfApproval": "You hold this profile, so you cannot approve a change to it. Ask an administrator who does not hold it.",
@@ -92,9 +93,9 @@
       "mobileNumber": "Mobile number",
       "userType": "User type",
       "status": "Status",
-      "department": "Sector",
+      "department": "Department",
       "externalEntity": "External entity",
-      "organization": "Sector or entity",
+      "organization": "Department or entity",
       "jobTitle": "Job title",
       "directorySubjectId": "Directory identifier",
       "preferredLanguage": "Preferred language",
@@ -127,7 +128,7 @@
       "externalEntityHint": "The entity the person works for. It cannot be changed after the user is created.",
       "mobileNumberHint": "International format, for example +966501234567. The user confirms the number themselves with a code.",
       "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognise them.",
-      "directoryAttributesNote": "The sector, manager and job title of an internal user are read from the AHDA directory each time they sign in."
+      "directoryAttributesNote": "The department, manager and job title of an internal user are read from the AHDA directory each time they sign in."
     },
     "detail": {
       "description": "Profile, status and role assignments.",
@@ -172,8 +173,8 @@
     "endsAtHint": "Leave empty for no end date."
   },
   "assignScope": {
-    "title": "Assign sector/entity",
-    "internalNote": "Optionally limit the assignment to a sector, an external entity or a project.",
+    "title": "Assign department/entity",
+    "internalNote": "Optionally limit the assignment to a department, an external entity or a project.",
     "externalNote": "An external user is assigned within their own entity, normally for one project, with a named AHDA sponsor.",
     "noAnchor": "Not limited",
     "projectId": "Project ID",
@@ -243,33 +244,33 @@
   },
   "organization": {
     "title": "Organization structure",
-    "description": "AHDA's sectors and the external entities that take part in projects.",
+    "description": "AHDA's departments and the external entities that take part in projects.",
     "manage": "Manage"
   },
   "departments": {
-    "title": "Sectors",
-    "description": "AHDA's sectors. A sector linked to a directory reference is assigned to staff automatically at sign-in.",
-    "create": "Create sector",
-    "createTitle": "Create sector",
-    "editTitle": "Edit sector",
+    "title": "Departments",
+    "description": "AHDA's departments. A department linked to a directory reference is assigned to staff automatically at sign-in.",
+    "create": "Create department",
+    "createTitle": "Create department",
+    "editTitle": "Edit department",
     "search": "Search by code or name",
     "code": "Code",
     "name": "Name",
     "nameAr": "Name in Arabic",
     "nameEn": "Name in English",
-    "parent": "Parent sector",
+    "parent": "Parent department",
     "noParent": "None (top level)",
     "directoryReference": "Directory reference",
-    "directoryReferenceHint": "The sector's value in the AHDA directory, if staff should be placed in it automatically.",
+    "directoryReferenceHint": "The department's value in the AHDA directory, if staff should be placed in it automatically.",
     "status": "Status",
     "active": "Active",
     "inactive": "Inactive",
-    "empty": "No sectors have been created yet.",
-    "emptyFiltered": "No sectors match these filters.",
+    "empty": "No departments have been created yet.",
+    "emptyFiltered": "No departments match these filters.",
     "activate": "Activate",
     "deactivate": "Deactivate",
-    "activateTitle": "Activate sector",
-    "deactivateTitle": "Deactivate sector",
+    "activateTitle": "Activate department",
+    "deactivateTitle": "Deactivate department",
     "activateBody": "{name} will be available again for new assignments.",
     "deactivateBody": "{name} will no longer be offered for new assignments. Existing records keep it."
   },
@@ -399,6 +400,30 @@
         "PUBLISHED": "Published: it can be assigned and never changes. To change it, start a new version.",
         "RETIRED": "Retired: it can no longer be assigned."
       }
+    }
+  },
+  "masterData": {
+    "title": "Master data",
+    "description": "The controlled lists forms offer: strategic portfolios and initiatives, sectors, regions and cities, priorities and the rest. A new value is a draft until it is validated and then published, by different people.",
+    "catalogue": "List",
+    "create": "Add value",
+    "createTitle": "Add a value to {catalogue}",
+    "empty": "This list has no value yet.",
+    "code": "Code",
+    "labelAr": "Arabic name",
+    "labelEn": "English name",
+    "state": "State",
+    "sortOrder": "Display order",
+    "codeInvalid": "Use capital letters, digits, hyphens and underscores.",
+    "validate": "Validate",
+    "publish": "Publish",
+    "retire": "Retire",
+    "lifecycleNote": "The value is saved as a draft. Someone else validates it, and a third person publishes it, before forms offer it.",
+    "states": {
+      "DRAFT": "Draft",
+      "VALIDATED": "Validated",
+      "PUBLISHED": "Published",
+      "RETIRED": "Retired"
     }
   }
 }

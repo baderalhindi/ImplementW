@@ -111,7 +111,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     owningDepartment = plain(
       await page
         .getByRole('term')
-        .filter({ hasText: /^Owning sector$/ })
+        .filter({ hasText: /^Owning department$/ })
         .locator('xpath=following-sibling::dd[1]')
         .textContent(),
     );
@@ -145,23 +145,24 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
   await test.step("the dashboards: the department filter offers only the consumer's scope; refresh, switch and layout change nothing at source", async () => {
     // The dashboards are at /dashboards; the Home is the person's own work (home-and-portfolio.md D-1, D-2).
     await page.goto('/dashboards');
-    const filter = page.getByRole('combobox', { name: 'Sector' });
+    // The one filter bar (the 2 Nov 2026 review): the label sits inside each option, with the count of projects in scope.
+    const filter = page.getByRole('combobox', { name: 'Department' });
     await expect(filter.getByRole('option')).toHaveText([
-      'All your sectors',
-      'E2E Journeys Department',
+      /Department\W+All/,
+      /Department\W+E2E Journeys Department\W+\(\d+\)/,
     ]);
-    await filter.selectOption({ label: 'E2E Journeys Department' });
+    await filter.selectOption({ index: 1 });
     await expect(page).toHaveURL(/department=/);
     await page.getByRole('button', { name: 'Refresh' }).click();
     await expect(page.getByRole('region', { name: 'Projects by lifecycle state' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Customise layout' }).click();
-    const layout = page.getByRole('dialog', { name: 'Customise your dashboard' });
+    await page.getByRole('button', { name: 'Customize layout' }).click();
+    const layout = page.getByRole('dialog', { name: 'Customize your dashboard' });
     await layout.getByRole('button', { name: 'Save layout' }).click();
     await expectText(page.getByRole('main'), 'Your layout was saved.');
-    await page.getByRole('button', { name: 'Customise layout' }).click();
+    await page.getByRole('button', { name: 'Customize layout' }).click();
     await page
-      .getByRole('dialog', { name: 'Customise your dashboard' })
+      .getByRole('dialog', { name: 'Customize your dashboard' })
       .getByRole('button', { name: 'Restore the standard layout' })
       .click();
     await expectText(page.getByRole('main'), 'The standard layout was restored.');

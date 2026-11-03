@@ -15,6 +15,7 @@ import {
   valuesOf,
 } from '../registration.ts';
 
+import { FollowUpPanel } from './FollowUpPanel.tsx';
 import { useWorkspace } from './workspaceContext.ts';
 
 /** What comes next from each state, and whose move it is (TASK-041 §3). */
@@ -109,6 +110,7 @@ export function OverviewTab(): ReactElement {
           </Detail>
         )}
       </dl>
+      <FollowUpPanel />
       <ProjectDashboard key={project.id} projectId={project.id} user={user} />
     </>
   );

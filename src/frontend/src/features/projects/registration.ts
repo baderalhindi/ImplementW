@@ -2,6 +2,7 @@ import { checkText } from '@/features/identity-access/forms.ts';
 import { type Language, type TranslationKey } from '@/shared/i18n/i18n.ts';
 
 import {
+  type FundingSource,
   type NarrativeText,
   type NarrativeTextRequest,
   type ParticipationMode,
@@ -28,6 +29,12 @@ export interface RegistrationValues {
   cityItemId: string;
   latitude: string;
   longitude: string;
+  strategicPortfolioItemId: string;
+  strategicInitiativeItemId: string;
+  priorityItemId: string;
+  fundingSource: FundingSource | '';
+  legacyReference: string;
+  followUpOwnerUserId: string;
 }
 
 export type RegistrationField = keyof RegistrationValues;
@@ -48,6 +55,12 @@ export const FIELD_LABELS: Record<RegistrationField, TranslationKey> = {
   cityItemId: 'projects.fields.city',
   latitude: 'projects.fields.latitude',
   longitude: 'projects.fields.longitude',
+  strategicPortfolioItemId: 'projects.fields.strategicPortfolio',
+  strategicInitiativeItemId: 'projects.fields.strategicInitiative',
+  priorityItemId: 'projects.fields.priority',
+  fundingSource: 'projects.fields.fundingSource',
+  legacyReference: 'projects.fields.legacyReference',
+  followUpOwnerUserId: 'projects.fields.followUpOwner',
 };
 
 export const EMPTY_REGISTRATION: RegistrationValues = {
@@ -65,7 +78,16 @@ export const EMPTY_REGISTRATION: RegistrationValues = {
   cityItemId: '',
   latitude: '',
   longitude: '',
+  strategicPortfolioItemId: '',
+  strategicInitiativeItemId: '',
+  priorityItemId: '',
+  fundingSource: '',
+  legacyReference: '',
+  followUpOwnerUserId: '',
 };
+
+/** ProjectRequest's legacy reference length. */
+export const LEGACY_REFERENCE_LENGTH = 100;
 
 /** NarrativeTextRequest.TextLength. */
 export const TEXT_LENGTH = 2000;
@@ -133,6 +155,12 @@ export function checkRegistration(
   ) {
     codes.plannedEndDate ??= 'DATE_BEFORE_START';
   }
+  codes.legacyReference ??= checkText(values.legacyReference, {
+    maxLength: LEGACY_REFERENCE_LENGTH,
+  });
+  if (!isBlank(values.strategicInitiativeItemId) && isBlank(values.strategicPortfolioItemId)) {
+    codes.strategicPortfolioItemId ??= 'REQUIRED';
+  }
   codes.latitude ??= checkCoordinate(values.latitude, 90);
   codes.longitude ??= checkCoordinate(values.longitude, 180);
   return codes;
@@ -168,6 +196,12 @@ export function valuesOf(project: ProjectDetail): RegistrationValues {
     cityItemId: project.cityItemId ?? '',
     latitude: project.latitude === null ? '' : String(project.latitude),
     longitude: project.longitude === null ? '' : String(project.longitude),
+    strategicPortfolioItemId: project.strategicPortfolioItemId ?? '',
+    strategicInitiativeItemId: project.strategicInitiativeItemId ?? '',
+    priorityItemId: project.priorityItemId ?? '',
+    fundingSource: project.fundingSource ?? '',
+    legacyReference: project.legacyReference ?? '',
+    followUpOwnerUserId: project.followUpOwnerUserId ?? '',
   };
 }
 
@@ -223,5 +257,11 @@ export function toRequest(
     cityItemId: optional(values.cityItemId),
     latitude: optionalNumber(values.latitude),
     longitude: optionalNumber(values.longitude),
+    strategicPortfolioItemId: optional(values.strategicPortfolioItemId),
+    strategicInitiativeItemId: optional(values.strategicInitiativeItemId),
+    priorityItemId: optional(values.priorityItemId),
+    fundingSource: values.fundingSource === '' ? null : values.fundingSource,
+    legacyReference: optional(values.legacyReference),
+    followUpOwnerUserId: optional(values.followUpOwnerUserId),
   };
 }

@@ -106,7 +106,7 @@ test('UJ-011 a revoked context denies the operation, direct link, download and e
     await dialog.getByLabel('Profile version').selectOption(profileVersion);
     await dialog.getByRole('button', { name: 'Next' }).click();
     await dialog
-      .getByLabel('Sector', { exact: true })
+      .getByLabel('Department', { exact: true })
       .selectOption({ label: 'E2E Journeys Department' });
     await dialog.getByLabel('Project ID').fill(project.id);
     await dialog.getByRole('button', { name: 'Assign role' }).click();

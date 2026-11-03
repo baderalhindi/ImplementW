@@ -8,9 +8,13 @@ import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { RadioGroupField, SelectField, TextAreaField, TextField } from '@/shared/ui/FormFields.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
+import { type UserSummary } from '@/features/identity-access/api/types.ts';
+import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
+
 import { isInternal, ownEntityId } from '../access.ts';
 import { projectsApi } from '../api/projectsApi.ts';
-import { type ParticipationMode, type ProjectDetail } from '../api/types.ts';
+import { FUNDING_SOURCES, type ParticipationMode, type ProjectDetail } from '../api/types.ts';
 import { LocationFields } from '../components/LocationFields.tsx';
 import { profileMandatoryFields } from '../governance.ts';
 import { projectProblemMessage } from '../problems.ts';
@@ -108,7 +112,14 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
   const ready = !hasErrors(codes);
 
   const set = (field: RegistrationField, value: string) => {
-    setValues((current) => ({ ...current, [field]: value }));
+    // An initiative belongs to one portfolio: another portfolio drops the initiative chosen under the last one.
+    setValues((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === 'strategicPortfolioItemId' && value !== current.strategicPortfolioItemId
+        ? { strategicInitiativeItemId: '' }
+        : {}),
+    }));
   };
   const setter = (field: RegistrationField) => (value: string) => {
     set(field, value);
@@ -197,6 +208,79 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           error={errorOf('governanceProfileItemId')}
         />
       </fieldset>
+
+      {internal && (
+        <fieldset className="form__section">
+          <legend>{t('projects.form.sections.strategy')}</legend>
+          <SelectField
+            label={t('projects.fields.strategicPortfolio')}
+            name="strategicPortfolioItemId"
+            value={values.strategicPortfolioItemId}
+            placeholder={t('common.values.none')}
+            options={lookups.options('STRATEGIC_PORTFOLIO')}
+            hint={t('projects.form.portfolioHint')}
+            onChange={setter('strategicPortfolioItemId')}
+            error={errorOf('strategicPortfolioItemId')}
+          />
+          <SelectField
+            label={t('projects.fields.strategicInitiative')}
+            name="strategicInitiativeItemId"
+            value={values.strategicInitiativeItemId}
+            placeholder={
+              values.strategicPortfolioItemId === ''
+                ? t('projects.form.choosePortfolioFirst')
+                : t('common.values.none')
+            }
+            options={
+              values.strategicPortfolioItemId === ''
+                ? []
+                : lookups
+                    .options('STRATEGIC_INITIATIVE', values.strategicPortfolioItemId)
+                    .filter(
+                      (option) =>
+                        lookups.parentOf(option.value) === values.strategicPortfolioItemId,
+                    )
+            }
+            onChange={setter('strategicInitiativeItemId')}
+            error={errorOf('strategicInitiativeItemId')}
+          />
+          <SelectField
+            label={t('projects.fields.priority')}
+            name="priorityItemId"
+            value={values.priorityItemId}
+            placeholder={t('common.values.none')}
+            options={lookups.options('PRIORITY')}
+            onChange={setter('priorityItemId')}
+            error={errorOf('priorityItemId')}
+          />
+          <SelectField
+            label={t('projects.fields.fundingSource')}
+            name="fundingSource"
+            value={values.fundingSource}
+            placeholder={t('common.values.none')}
+            options={FUNDING_SOURCES.map((source) => ({
+              value: source,
+              label: t(`projects.fundingSource.${source}`),
+            }))}
+            onChange={setter('fundingSource')}
+            error={errorOf('fundingSource')}
+          />
+          <TextField
+            label={t('projects.fields.legacyReference')}
+            name="legacyReference"
+            dir="ltr"
+            value={values.legacyReference}
+            hint={t('projects.form.legacyReferenceHint')}
+            onChange={setter('legacyReference')}
+            error={errorOf('legacyReference')}
+          />
+          <FollowUpOwnerField
+            value={values.followUpOwnerUserId}
+            onChange={setter('followUpOwnerUserId')}
+            error={errorOf('followUpOwnerUserId')}
+          />
+        </fieldset>
+      )}
 
       <fieldset className="form__section">
         <legend>{t('projects.form.sections.organization')}</legend>
@@ -321,5 +405,59 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
         </p>
       )}
     </form>
+  );
+}
+
+/** The RPMO staff member who follows the project up: an active internal user, found by name, or none. */
+function FollowUpOwnerField({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  error: string | undefined;
+}): ReactElement {
+  const { t } = useI18n();
+  const personName = usePersonNames(value === '' ? [] : [value]);
+  const [changing, setChanging] = useState(false);
+  if (value !== '' && !changing) {
+    return (
+      <p className="form__readonly">
+        <span className="field__label">{t('projects.fields.followUpOwner')}</span>
+        {personName(value)}{' '}
+        <button
+          type="button"
+          className="button button--quiet"
+          onClick={() => {
+            setChanging(true);
+          }}
+        >
+          {t('projects.form.changeOwner')}
+        </button>
+        <button
+          type="button"
+          className="button button--quiet"
+          onClick={() => {
+            onChange('');
+          }}
+        >
+          {t('projects.form.clearOwner')}
+        </button>
+      </p>
+    );
+  }
+  return (
+    <UserPicker
+      label={t('projects.fields.followUpOwner')}
+      value={null}
+      userType="INTERNAL"
+      hint={t('projects.form.followUpOwnerHint')}
+      error={error}
+      onChange={(user: UserSummary | null) => {
+        onChange(user?.id ?? '');
+        setChanging(false);
+      }}
+    />
   );
 }

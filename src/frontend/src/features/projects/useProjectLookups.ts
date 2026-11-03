@@ -14,13 +14,22 @@ import { shortId } from './presentation.ts';
 
 /** The catalogues a project names (db/seed codes; TASK-041 D-8). */
 export type ProjectCatalogueCode =
-  'PROJECT_CLASSIFICATION' | 'GOVERNANCE_PROFILE' | 'REGION' | 'CITY';
+  | 'PROJECT_CLASSIFICATION'
+  | 'GOVERNANCE_PROFILE'
+  | 'REGION'
+  | 'CITY'
+  | 'STRATEGIC_PORTFOLIO'
+  | 'STRATEGIC_INITIATIVE'
+  | 'PRIORITY';
 
 const CATALOGUE_CODES: ProjectCatalogueCode[] = [
   'PROJECT_CLASSIFICATION',
   'GOVERNANCE_PROFILE',
   'REGION',
   'CITY',
+  'STRATEGIC_PORTFOLIO',
+  'STRATEGIC_INITIATIVE',
+  'PRIORITY',
 ];
 
 // Module-level loaders, so each is read once per mount. They are separate resources: a caller without one permission
@@ -43,8 +52,13 @@ async function readProfiles(signal: AbortSignal): Promise<GovernanceProfileSetti
 export interface ProjectLookups {
   /** A master data item's label, or "Item 1a2b3c4d" when it cannot be read. */
   itemLabel: (id: string | null) => string | null;
-  /** PUBLISHED items of a catalogue, in display order; CITY narrowed to a region's cities when one is given. */
+  /**
+   * PUBLISHED items of a catalogue, in display order; CITY narrowed to a region's cities and STRATEGIC_INITIATIVE to a portfolio's
+   * initiatives when one is given.
+   */
   options: (code: ProjectCatalogueCode, parentItemId?: string) => SelectOption[];
+  /** A master data item's parent: a city's region, an initiative's portfolio. */
+  parentOf: (id: string) => string | null;
   departmentName: (id: string | null) => string | null;
   entityName: (id: string | null) => string | null;
   /** Active departments and ACTIVE entities: nothing else may be named (TASK-041 D-8). */
@@ -92,6 +106,7 @@ export function useProjectLookups(): ProjectLookups {
             item.parentItemId === parentItemId,
         )
         .map((item) => ({ value: item.id, label: item.label[language] })),
+    parentOf: (id) => items.find((candidate) => candidate.id === id)?.parentItemId ?? null,
     departmentName: (id) => {
       if (id === null) {
         return null;

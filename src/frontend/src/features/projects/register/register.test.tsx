@@ -113,13 +113,15 @@ describe('SCR-025 Project Register', () => {
     const api = openRegister('/projects?page=2', reviewerSession(), PROJECTS, 60);
     await screen.findByRole('table');
 
-    await user.selectOptions(screen.getByLabelText(en('projects.fields.status')), 'ACTIVE');
+    // The filter bar (the 2 Nov 2026 review, R3-1): status is under More filters, and applies as it is chosen.
+    await user.click(screen.getByRole('button', { name: en('common.filters.more') }));
+    await user.selectOptions(screen.getByLabelText(en('dashboards.filter.status')), 'ACTIVE');
     await screen.findByRole('link', { name: 'City park' });
     expect(api.requests.at(-1)?.query.get('status')).toBe('ACTIVE');
     expect(api.requests.at(-1)?.query.get('page')).toBe('1');
 
     await user.selectOptions(
-      screen.getByLabelText(en('projects.fields.department')),
+      screen.getByLabelText(en('dashboards.filter.departmentId')),
       DEPARTMENT_ID,
     );
     await user.type(screen.getByLabelText(en('projects.filters.q')), 'park');
@@ -178,8 +180,8 @@ describe('SCR-025 Project Register', () => {
     openRegister('/projects', entitySession());
     await screen.findByRole('table');
 
-    expect(screen.queryByLabelText(en('projects.fields.externalEntity'))).toBeNull();
-    expect(screen.getByLabelText(en('projects.fields.department'))).toBeTruthy();
+    expect(screen.queryByLabelText(en('dashboards.filter.externalEntityId'))).toBeNull();
+    expect(screen.getByLabelText(en('dashboards.filter.departmentId'))).toBeTruthy();
   });
 
   test('a role without PROJECT_VIEW gets the same empty state as a scope that reaches nothing', async () => {

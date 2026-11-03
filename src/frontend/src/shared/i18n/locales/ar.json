@@ -40,7 +40,15 @@
     "any": "الكل",
     "sort": "الترتيب حسب",
     "apply": "تطبيق التصفية",
-    "clear": "مسح التصفية"
+    "clear": "مسح التصفية",
+    "more": "مزيد من التصفية",
+    "moreCount": "مزيد من التصفية ({count})",
+    "toggle": "التصفية ({count})",
+    "clearAll": "مسح الكل",
+    "remove": "إزالة التصفية {filter}",
+    "active": "التصفية المطبقة",
+    "optionCount": "{label} ({count})",
+    "inline": "{label}: {value}"
   },
   "pagination": {
     "label": "التنقل بين الصفحات",

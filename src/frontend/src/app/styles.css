@@ -5130,3 +5130,124 @@ path.trend__line--ACTUAL_PERCENT {
   color: var(--color-text-muted);
   font-size: 0.875rem;
 }
+
+/* ---------------------------------------------------------------------------------------------- filter bar */
+
+/*
+ * The one filter bar (the 2 Nov 2026 review, R3-1): a full-width row under the page title, kept in view while the page scrolls, of
+ * compact drop-downs about 200 px wide whose label sits inside the control. It wraps to a second row below 1,280 px; on a phone it
+ * folds into a "Filters (n)" button.
+ */
+.filter-bar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 5;
+  margin-block-end: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
+}
+
+.filter-bar__body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.filter-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filter-bar__row[hidden] {
+  display: none;
+}
+
+.filter-bar__select {
+  inline-size: 12.5rem;
+  max-inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-background);
+  color: inherit;
+  font: inherit;
+  text-overflow: ellipsis;
+}
+
+.filter-bar__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: 2.25rem;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface, var(--color-background));
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  unicode-bidi: isolate;
+}
+
+.filter-bar__toggle {
+  display: none;
+}
+
+@media (max-width: 40rem) {
+  .filter-bar {
+    position: static;
+  }
+
+  .filter-bar__toggle {
+    display: inline-flex;
+  }
+
+  .filter-bar:not(.filter-bar--open) .filter-bar__body {
+    display: none;
+  }
+
+  .filter-bar--open .filter-bar__body {
+    margin-block-start: var(--space-3);
+  }
+
+  .filter-bar__select {
+    inline-size: 100%;
+  }
+}
+
+/* A value the platform cannot show, said in words rather than as 0 (R3-3). */
+.value--unavailable {
+  color: var(--color-text-muted);
+}
+
+.notes {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notes > li {
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.notes p {
+  margin: 0;
+}

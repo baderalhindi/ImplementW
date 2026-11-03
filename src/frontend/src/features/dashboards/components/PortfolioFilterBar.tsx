@@ -1,12 +1,13 @@
 import { type ReactElement } from 'react';
 
 import { useOrganizationUnits } from '@/features/identity-access/names/useOrganizationUnits.ts';
+import { type ProjectStatus } from '@/features/projects/api/types.ts';
 import { shortId } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar, type FilterBarField } from '@/shared/ui/FilterBar.tsx';
 
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
-import { type DashboardPlace } from '../api/types.ts';
+import { type DashboardFilter, type DashboardPlace } from '../api/types.ts';
 import { useDepartmentNames } from '../useDepartmentNames.ts';
 import { usePlaceName } from '../usePlaceName.ts';
 
@@ -17,22 +18,39 @@ export interface FilterOptions {
   regions: string[];
   cities: string[];
   places: DashboardPlace[];
+  /** Every filter with its counts, when the API gives them; the four lists above otherwise. */
+  filters: DashboardFilter[];
 }
 
 export type FilterName = keyof PortfolioFilters;
 
+/** The bar's order (review §1): sector, entity, department, region, city; then, under More filters, the rest. */
+const ORDER: { name: FilterName; more: boolean }[] = [
+  { name: 'classificationItemId', more: false },
+  { name: 'externalEntityId', more: false },
+  { name: 'departmentId', more: false },
+  { name: 'regionItemId', more: false },
+  { name: 'cityItemId', more: false },
+  { name: 'status', more: true },
+  { name: 'priorityItemId', more: true },
+  { name: 'strategicPortfolioItemId', more: true },
+  { name: 'strategicInitiativeItemId', more: true },
+];
+
 /**
- * The portfolio's filters (the 27 Oct 2026 review): sector, delivering entity, region and city, each offering only the values of the
- * projects the person may see there. A city is offered under the region chosen. A filter with no value is not shown.
+ * The portfolio's filters (the 27 Oct and 2 Nov 2026 reviews) on the one filter bar: each offers only the values of the projects the person may
+ * see there, with how many have each. A city is offered under the region chosen, an initiative under the portfolio chosen.
  */
 export function PortfolioFilterBar({
   options,
   filters,
   onChange,
+  onClearAll,
 }: {
   options: FilterOptions;
   filters: PortfolioFilters;
   onChange: (name: FilterName, value: string | undefined) => void;
+  onClearAll: () => void;
 }): ReactElement | null {
   const { t, language } = useI18n();
   const departmentName = useDepartmentNames();
@@ -41,71 +59,65 @@ export function PortfolioFilterBar({
   const entityName = (id: string) =>
     externalEntities.find((entity) => entity.id === id)?.name[language] ??
     t('projects.lookups.unknownItem', { id: shortId(id) });
-  const cities = options.cities.filter((id) => {
-    const parent = options.places.find((place) => place.id === id)?.parentItemId ?? null;
-    return filters.regionItemId === undefined || parent === null || parent === filters.regionItemId;
+  const parentOf = (id: string) =>
+    options.places.find((place) => place.id === id)?.parentItemId ?? null;
+
+  const counted = (name: FilterName): { value: string; count?: number }[] => {
+    const filter = options.filters.find((candidate) => candidate.field === name);
+    if (filter !== undefined) {
+      return filter.options.map((option) => ({ value: option.value, count: option.projectCount }));
+    }
+    const legacy: Partial<Record<FilterName, string[]>> = {
+      departmentId: options.departments,
+      externalEntityId: options.entities,
+      regionItemId: options.regions,
+      cityItemId: options.cities,
+    };
+    return (legacy[name] ?? []).map((value) => ({ value }));
+  };
+
+  const fields: FilterBarField[] = ORDER.map(({ name, more }) => {
+    const nameOf =
+      name === 'departmentId'
+        ? departmentName
+        : name === 'externalEntityId'
+          ? entityName
+          : name === 'status'
+            ? (value: string) => t(`projects.status.${value as ProjectStatus}`)
+            : placeName;
+    const parentFilter =
+      name === 'cityItemId'
+        ? filters.regionItemId
+        : name === 'strategicInitiativeItemId'
+          ? filters.strategicPortfolioItemId
+          : undefined;
+    return {
+      name,
+      more,
+      label: t(`dashboards.filter.${name}`),
+      all: t(`dashboards.filter.all.${name}`),
+      options: counted(name)
+        .filter((option) => {
+          const parent = parentOf(option.value);
+          return parentFilter === undefined || parent === null || parent === parentFilter;
+        })
+        .map((option) => ({
+          value: option.value,
+          label: nameOf(option.value),
+          count: option.count,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    };
   });
 
-  const fields: {
-    name: FilterName;
-    label: string;
-    all: string;
-    ids: string[];
-    nameOf: (id: string) => string;
-  }[] = [
-    {
-      name: 'departmentId',
-      label: t('dashboards.filter.department'),
-      all: t('dashboards.filter.allDepartments'),
-      ids: options.departments,
-      nameOf: departmentName,
-    },
-    {
-      name: 'externalEntityId',
-      label: t('dashboards.filter.entity'),
-      all: t('dashboards.filter.allEntities'),
-      ids: options.entities,
-      nameOf: entityName,
-    },
-    {
-      name: 'regionItemId',
-      label: t('dashboards.filter.region'),
-      all: t('dashboards.filter.allRegions'),
-      ids: options.regions,
-      nameOf: placeName,
-    },
-    {
-      name: 'cityItemId',
-      label: t('dashboards.filter.city'),
-      all: t('dashboards.filter.allCities'),
-      ids: cities,
-      nameOf: placeName,
-    },
-  ];
-  const shown = fields.filter((field) => field.ids.length > 0);
-  if (shown.length === 0) {
-    return null;
-  }
   return (
-    <div className="filters filters--inline" role="search" aria-label={t('common.filters.label')}>
-      {shown.map((field) => {
-        const value = filters[field.name];
-        return (
-          <SelectField
-            key={field.name}
-            label={field.label}
-            name={field.name}
-            value={value !== undefined && field.ids.includes(value) ? value : ''}
-            placeholder={field.all}
-            options={field.ids
-              .map((id) => ({ value: id, label: field.nameOf(id) }))
-              .sort((a, b) => a.label.localeCompare(b.label))}
-            onChange={(chosen) => {
-              onChange(field.name, chosen === '' ? undefined : chosen);
-            }}
-          />
-        );
-      })}
-    </div>
+    <FilterBar
+      fields={fields}
+      values={{ ...filters }}
+      onChange={(name, value) => {
+        onChange(name as FilterName, value);
+      }}
+      onClearAll={onClearAll}
+    />
   );
 }

@@ -25,7 +25,53 @@ const FILTER_PARAMS: Record<FilterName, string> = {
   externalEntityId: 'entity',
   regionItemId: 'region',
   cityItemId: 'city',
+  classificationItemId: 'sector',
+  status: 'status',
+  priorityItemId: 'priority',
+  strategicPortfolioItemId: 'portfolio',
+  strategicInitiativeItemId: 'initiative',
 };
+
+/** A child list's filter, dropped when its parent's changes: a city lies in a region, an initiative in a portfolio. */
+const CHILD_FILTER: Partial<Record<FilterName, FilterName>> = {
+  regionItemId: 'cityItemId',
+  strategicPortfolioItemId: 'strategicInitiativeItemId',
+};
+
+/** The filters a person last used on a dashboard, kept in this browser only (review §1: remembered per user per dashboard). */
+function storageKey(userId: string, dashboard: string): string {
+  return `pmplatform.dashboardFilters.${userId}.${dashboard}`;
+}
+
+function readRemembered(key: string): Record<string, string> {
+  try {
+    const stored = localStorage.getItem(key);
+    const parsed: unknown = stored === null ? null : JSON.parse(stored);
+    return parsed !== null && typeof parsed === 'object'
+      ? Object.fromEntries(
+          Object.entries(parsed).filter(
+            (entry): entry is [string, string] => typeof entry[1] === 'string',
+          ),
+        )
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function remember(key: string, params: URLSearchParams): void {
+  try {
+    const kept = Object.fromEntries(
+      Object.values(FILTER_PARAMS).flatMap((param) => {
+        const value = params.get(param);
+        return value === null ? [] : [[param, value]];
+      }),
+    );
+    localStorage.setItem(key, JSON.stringify(kept));
+  } catch {
+    // Storage may be unavailable (a private window); the URL still carries the filters.
+  }
+}
 
 /**
  * The role dashboards (FG-01 §5.1), at /dashboards since the Home became the person's own work (the 24 Oct 2026 review, H2:
@@ -77,27 +123,41 @@ export function DashboardsPage(): ReactElement {
   const role = landingRole(session.user);
   const rendering = entry.isDefaultLanding && role !== null ? ROLE_LANDINGS[role] : undefined;
   const others = hostedEntries(entries);
+  // A link with filters shows those; one without shows the filters this person last used here.
+  const rememberedKey = storageKey(session.user.id, entry.code);
+  const linked = Object.values(FILTER_PARAMS).some((param) => params.has(param));
+  const current = new URLSearchParams(params);
+  if (!linked) {
+    Object.entries(readRemembered(rememberedKey)).forEach(([param, value]) => {
+      if (Object.values(FILTER_PARAMS).includes(param)) {
+        current.set(param, value);
+      }
+    });
+  }
   const filters: PortfolioFilters = Object.fromEntries(
-    Object.entries(FILTER_PARAMS).map(([name, param]) => [name, params.get(param) ?? undefined]),
+    Object.entries(FILTER_PARAMS).map(([name, param]) => [name, current.get(param) ?? undefined]),
   );
   const setFilter = (name: FilterName, value: string | undefined) => {
-    const next = new URLSearchParams(params);
+    const next = new URLSearchParams(current);
     if (value === undefined) {
       next.delete(FILTER_PARAMS[name]);
     } else {
       next.set(FILTER_PARAMS[name], value);
     }
-    // A city belongs to a region: another region drops the city chosen under the last one.
-    if (name === 'regionItemId') {
-      next.delete(FILTER_PARAMS.cityItemId);
+    // A city belongs to a region, an initiative to a portfolio: another parent drops the child chosen under the last one.
+    const child = CHILD_FILTER[name];
+    if (child !== undefined) {
+      next.delete(FILTER_PARAMS[child]);
     }
+    remember(rememberedKey, next);
     setParams(next);
   };
   const clearFilters = () => {
-    const next = new URLSearchParams(params);
+    const next = new URLSearchParams(current);
     Object.values(FILTER_PARAMS).forEach((param) => {
       next.delete(param);
     });
+    remember(rememberedKey, next);
     setParams(next);
   };
 
