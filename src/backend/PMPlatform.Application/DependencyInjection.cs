@@ -43,6 +43,7 @@ using PMPlatform.Application.Features.ChangeRequest.Contracts;
 using PMPlatform.Application.Features.ChangeRequest.EventHandlers;
 using PMPlatform.Application.Features.ExternalParticipation;
 using PMPlatform.Application.Features.ExternalParticipation.MonthlyUpdates;
+using PMPlatform.Application.Features.Project.Insights;
 using PMPlatform.Application.Features.ExternalParticipation.Contracts;
 using PMPlatform.Application.Features.FinancialKpi;
 using PMPlatform.Application.Features.FinancialKpi.Contracts;
@@ -368,6 +369,7 @@ public static class DependencyInjection
         services.AddScoped<IExternalContributionTarget, TaskProgressTarget>();
         services.AddScoped<IExternalContributionTarget, ProjectMonthlyTarget>();
         services.AddScoped<IProjectMonthlyUpdates, ProjectMonthlyUpdates>();
+        services.AddScoped<IPortfolioInsightsService, PortfolioInsightsService>();
         services.AddScoped<UpdateRequestBatchService>();
         services.AddScoped<IUpdateRequestBatchService>(provider => provider.GetRequiredService<UpdateRequestBatchService>());
         services.AddScoped<IMyUpdateRequests, MyUpdateRequests>();
