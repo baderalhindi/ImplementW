@@ -9,6 +9,22 @@ public interface IUserAccessRepository
 
     public Task<UserAccess?> FindByIdAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>A local account's credential by its username; null for a directory account or no account.</summary>
+    public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken);
+
+    public Task<LocalCredential?> FindLocalCredentialByIdAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>Counts a wrong password; the attempt that reaches <paramref name="maxAttempts"/> locks the account until <paramref name="lockedUntil"/> and starts the count again.</summary>
+    public Task RecordFailedPasswordAsync(Guid userId, int maxAttempts, DateTimeOffset lockedUntil, CancellationToken cancellationToken);
+
+    public Task ClearFailedPasswordsAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>The hashes of the account's last passwords, newest first.</summary>
+    public Task<IReadOnlyList<string>> ListPasswordHistoryAsync(Guid userId, int count, CancellationToken cancellationToken);
+
+    /// <summary>Sets a password the person chose: no longer temporary, kept in the history.</summary>
+    public Task ChangePasswordAsync(Guid userId, string passwordHash, CancellationToken cancellationToken);
+
     /// <summary>
     /// Copies the directory-authoritative attributes onto the user (ADR-007). A department or manager the platform
     /// cannot resolve is left as it is and reported, never guessed.

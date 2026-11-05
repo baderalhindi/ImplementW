@@ -1,3 +1,4 @@
+using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using PMPlatform.Application.Common.Auditing;
@@ -22,6 +23,7 @@ namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 internal sealed partial class PermissionProfileAuthoringService(
     IRoleAdministrationRepository roles,
     PermissionCatalogue catalogue,
+    ProfileApprovalPolicy approval,
     IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<PermissionProfileAuthoringService> logger) : IPermissionProfileAuthoringService
@@ -176,12 +178,12 @@ internal sealed partial class PermissionProfileAuthoringService(
             return AdministrationError.NotFound;
         }
 
-        if (await ApprovalRefusalAsync(version, actorId, GovernedLifecycle.CheckValidate(version, actorId), cancellationToken).ConfigureAwait(false) is { } refused)
+        if (await ApprovalRefusalAsync(version, actorId, GovernedLifecycle.CheckValidate(version, actorId, approval.RequiredAdministrators), cancellationToken).ConfigureAwait(false) is { } refused)
         {
             return refused;
         }
 
-        GovernedLifecycle.Validate(version, actorId, timeProvider.GetUtcNow());
+        GovernedLifecycle.Validate(version, actorId, timeProvider.GetUtcNow(), approval.RequiredAdministrators);
         return await TransitionAsync(actorId, version, IdentityAccessAuditEvents.PermissionProfileVersionValidated, GovernedLifecycleState.Draft, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -195,12 +197,12 @@ internal sealed partial class PermissionProfileAuthoringService(
             return AdministrationError.NotFound;
         }
 
-        if (await ApprovalRefusalAsync(version, actorId, GovernedLifecycle.CheckPublish(version, actorId), cancellationToken).ConfigureAwait(false) is { } refused)
+        if (await ApprovalRefusalAsync(version, actorId, GovernedLifecycle.CheckPublish(version, actorId, approval.RequiredAdministrators), cancellationToken).ConfigureAwait(false) is { } refused)
         {
             return refused;
         }
 
-        GovernedLifecycle.Publish(version, actorId, timeProvider.GetUtcNow());
+        GovernedLifecycle.Publish(version, actorId, timeProvider.GetUtcNow(), approval.RequiredAdministrators);
         return await TransitionAsync(actorId, version, IdentityAccessAuditEvents.PermissionProfileVersionPublished, GovernedLifecycleState.Validated, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -275,7 +277,7 @@ internal sealed partial class PermissionProfileAuthoringService(
             return refused;
         }
 
-        if (await roles.HoldsProfileAsync(actorId, version.PermissionProfileId, cancellationToken).ConfigureAwait(false))
+        if (approval.RequiredAdministrators > 1 && await roles.HoldsProfileAsync(actorId, version.PermissionProfileId, cancellationToken).ConfigureAwait(false))
         {
             return AdministrationError.Rule(IdentityAccessErrorCodes.SelfApproval);
         }

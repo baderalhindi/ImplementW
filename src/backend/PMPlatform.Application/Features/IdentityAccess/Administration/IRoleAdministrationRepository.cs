@@ -10,6 +10,20 @@ public interface IRoleAdministrationRepository
 
     public Task<Versioned<RoleDetail>?> FindRoleAsync(Guid roleId, CancellationToken cancellationToken);
 
+    public void AddRole(Role role);
+
+    public void RemoveRole(Role role);
+
+    public Task<bool> IsRoleCodeInUseAsync(string code, CancellationToken cancellationToken);
+
+    /// <summary>Whether anyone has ever held the role, by any version of any of its profiles.</summary>
+    public Task<bool> RoleHasAssignmentsAsync(Guid roleId, CancellationToken cancellationToken);
+
+    /// <summary>The role's published profile version a new role copies: its shipped default first, the newest first.</summary>
+    public Task<Guid?> FindPublishedVersionOfRoleAsync(Guid roleId, CancellationToken cancellationToken);
+
+    public Task RemoveProfilesOfRoleAsync(Guid roleId, CancellationToken cancellationToken);
+
     public Task<Role?> FindRoleForUpdateAsync(Guid roleId, uint expectedVersion, CancellationToken cancellationToken);
 
     public Task<IReadOnlyList<PermissionSummary>> ListPermissionsAsync(CancellationToken cancellationToken);

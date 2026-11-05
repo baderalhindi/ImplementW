@@ -103,6 +103,45 @@ public sealed class UsersController(IUserAdministrationService users, IMobileNum
             : Respond(await users.UpdateAsync(CallerId, userId, changes!, version!.Value, cancellationToken));
     }
 
+    /// <summary>The 5 Nov 2026 review §6.1: a local account's new temporary password, typed or generated, returned this once.</summary>
+    [HttpPost("{userId:guid}/reset-password")]
+    [RequirePermission(PermissionCatalogue.UserManage)]
+    [SensitiveWrite]
+    [ProducesResponseType<UserDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_ResetUserPassword")]
+    public async Task<IActionResult> ResetPassword(Guid userId, UserPasswordResetRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
+            ? Respond(await users.ResetPasswordAsync(CallerId, userId, request.Password, version, cancellationToken))
+            : problem!;
+    }
+
+    /// <summary>The 5 Nov 2026 review §6.1: ends a local account's lockout.</summary>
+    [HttpPost("{userId:guid}/unlock")]
+    [RequirePermission(PermissionCatalogue.UserManage)]
+    [SensitiveWrite]
+    [ProducesResponseType<UserDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_UnlockUser")]
+    public async Task<IActionResult> Unlock(Guid userId, CancellationToken cancellationToken) =>
+        TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
+            ? Respond(await users.UnlockAsync(CallerId, userId, version, cancellationToken))
+            : problem!;
+
+    /// <summary>The 5 Nov 2026 review §6.1: the account's last usable day; empty makes it open-ended.</summary>
+    [HttpPost("{userId:guid}/set-end-date")]
+    [RequirePermission(PermissionCatalogue.UserManage)]
+    [SensitiveWrite]
+    [ProducesResponseType<UserDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_SetUserEndDate")]
+    public async Task<IActionResult> SetEndDate(Guid userId, UserEndDateRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
+            ? Respond(await users.SetEndDateAsync(CallerId, userId, request.EndsOn, version, cancellationToken))
+            : problem!;
+    }
+
     /// <summary>MOD-080: DISABLED → ACTIVE.</summary>
     [HttpPost("{userId:guid}/activate")]
     [RequirePermission(PermissionCatalogue.UserManage)]

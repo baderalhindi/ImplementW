@@ -95,19 +95,20 @@ ON CONFLICT (id) DO NOTHING;
 -- 2. Roles R01–R08. Codes are canonical (ERD F-080). The labels are PROVISIONAL (record F-1): Blueprint Appendix A
 -- is not in the repository, so they follow the role dashboards DSH-001–008. R04 and R08 may be held by an external
 -- entity's people (ADR-013).
-INSERT INTO identity_access.role AS r (id, code, name_ar, name_en, is_system, is_external_eligible, created_at, created_by, updated_at, updated_by)
-SELECT v.id::uuid, v.code, v.name_ar, v.name_en, true, v.is_external_eligible,
+-- allowed_scopes and landing_dashboard_code (R4-6) are the role's own settings: set here for a new role, and an administrator's change stands.
+INSERT INTO identity_access.role AS r (id, code, name_ar, name_en, is_system, is_external_eligible, allowed_scopes, landing_dashboard_code, created_at, created_by, updated_at, updated_by)
+SELECT v.id::uuid, v.code, v.name_ar, v.name_en, true, v.is_external_eligible, v.allowed_scopes::text[], v.landing,
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
 FROM (VALUES
-    ('00000000-0000-4000-8000-000000000001', 'R01', 'مدير النظام',      'System Administrator', false),
-    ('00000000-0000-4000-8000-000000000002', 'R02', 'مدير المحفظة',     'Portfolio Manager',    false),
-    ('00000000-0000-4000-8000-000000000003', 'R03', 'مدير القطاع',      'Sector Manager',       false),
-    ('00000000-0000-4000-8000-000000000004', 'R04', 'مدير المشروع',     'Project Manager',      true),
-    ('00000000-0000-4000-8000-000000000005', 'R05', 'ضابط الاتصال',     'Liaison',              false),
-    ('00000000-0000-4000-8000-000000000006', 'R06', 'مستعرض',           'Viewer',               false),
-    ('00000000-0000-4000-8000-000000000007', 'R07', 'تنفيذي',           'Executive',            false),
-    ('00000000-0000-4000-8000-000000000008', 'R08', 'مستخدم جهة خارجية', 'External Entity User', true)
-) AS v (id, code, name_ar, name_en, is_external_eligible)
+    ('00000000-0000-4000-8000-000000000001', 'R01', 'مدير النظام',      'System Administrator', false, '{ALL,DEPARTMENT,PROJECT}', 'GOVERNANCE'),
+    ('00000000-0000-4000-8000-000000000002', 'R02', 'مدير المحفظة',     'Portfolio Manager',    false, '{ALL,DEPARTMENT,PROJECT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000003', 'R03', 'مدير القطاع',      'Sector Manager',       false, '{DEPARTMENT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000004', 'R04', 'مدير المشروع',     'Project Manager',      true, '{ALL,DEPARTMENT,PROJECT,ENTITY}', 'GOVERNANCE'),
+    ('00000000-0000-4000-8000-000000000005', 'R05', 'ضابط الاتصال',     'Liaison',              false, '{PROJECT}', 'GOVERNANCE'),
+    ('00000000-0000-4000-8000-000000000006', 'R06', 'مستعرض',           'Viewer',               false, '{DEPARTMENT,PROJECT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000007', 'R07', 'تنفيذي',           'Executive',            false, '{ALL,DEPARTMENT,PROJECT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000008', 'R08', 'مستخدم جهة خارجية', 'External Entity User', true, '{ALL,ENTITY,PROJECT}', 'PROJECT')
+) AS v (id, code, name_ar, name_en, is_external_eligible, allowed_scopes, landing)
 ON CONFLICT (code) DO UPDATE SET
     is_system = EXCLUDED.is_system,
     is_external_eligible = EXCLUDED.is_external_eligible,

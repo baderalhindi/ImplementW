@@ -8,4 +8,7 @@ public enum AuthenticationMethod
 
     /// <summary>OpenID Connect single sign-on at AHDA's identity provider.</summary>
     SingleSignOn = 2,
+
+    /// <summary>A local account's password, held by the platform (the 5 Nov 2026 review §6.1).</summary>
+    LocalPassword = 3,
 }

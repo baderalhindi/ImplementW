@@ -76,7 +76,8 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
             new UserDetail(
                 user.Id, user.UserType, user.DirectorySubjectId, user.Username, user.DisplayName, user.Email, user.MobileNumber, user.MobileVerifiedAt,
                 user.JobTitle, user.DepartmentId, user.ManagerUserId, user.ExternalEntityId, LanguageCode.Of(user.PreferredLanguage), user.Status,
-                user.DisabledAt, user.MfaEnrolledAt is not null, user.NafathVerifiedAt, user.CreatedAt, user.CreatedBy, user.UpdatedAt, user.UpdatedBy),
+                user.DisabledAt, user.MfaEnrolledAt is not null, user.NafathVerifiedAt, user.CreatedAt, user.CreatedBy, user.UpdatedAt, user.UpdatedBy,
+                user.AccountSource, user.MustChangePassword, user.LockedUntil, user.AccountEndsOn),
             row.Version);
     }
 

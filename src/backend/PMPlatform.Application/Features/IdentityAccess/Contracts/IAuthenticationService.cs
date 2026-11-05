@@ -13,6 +13,9 @@ public interface IAuthenticationService
     public Task<AuthenticationResult> SignInWithPasswordAsync(string username, string password, CancellationToken cancellationToken);
 
     /// <summary>Starts an SSO sign-in: the identity provider's authorization URL and the sealed transaction the client returns with the code.</summary>
+    /// <summary>A local account's new password in place of its temporary one; then the sign-in continues as any other.</summary>
+    public Task<AuthenticationResult> CompletePasswordChangeAsync(string passwordChangeToken, string newPassword, CancellationToken cancellationToken);
+
     public Task<SsoAuthorizationResult> BeginSsoSignInAsync(CancellationToken cancellationToken);
 
     /// <summary>Completes an SSO sign-in with the authorization code and state the identity provider redirected with.</summary>

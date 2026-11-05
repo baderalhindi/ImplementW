@@ -28,4 +28,12 @@ public sealed record UserDetail(
     DateTimeOffset CreatedAt,
     Guid CreatedBy,
     DateTimeOffset UpdatedAt,
-    Guid UpdatedBy);
+    Guid UpdatedBy,
+    AccountSource AccountSource = AccountSource.Directory,
+    bool MustChangePassword = false,
+    DateTimeOffset? LockedUntil = null,
+    DateOnly? AccountEndsOn = null)
+{
+    /// <summary>A generated or reset temporary password, in the one response that set it; never read back.</summary>
+    public string? TemporaryPassword { get; init; }
+}

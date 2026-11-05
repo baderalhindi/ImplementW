@@ -51,6 +51,27 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
         return SessionResponse(result, StatusCodes.Status201Created);
     }
 
+    /// <summary>Replaces a local account's temporary password; the session follows, or its second factor.</summary>
+    [HttpPost("password-change")]
+    [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
+    [EndpointName("IdentityAccess_CreatePasswordChangeSession")]
+    [ProducesResponseType<SessionDetail>(StatusCodes.Status201Created, "application/json")]
+    [ProducesResponseType<MfaPendingDetail>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> ChangePassword(PasswordChangeRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Validate() is { Count: > 0 } errors)
+        {
+            return ValidationFailed(errors);
+        }
+
+        AuthenticationResult result = await authentication.CompletePasswordChangeAsync(request.PasswordChangeToken!, request.NewPassword!, cancellationToken);
+        return result.PasswordIssue is { } issue
+            ? ValidationFailed([new FieldError("newPassword", issue)])
+            : SessionResponse(result, StatusCodes.Status201Created);
+    }
+
     /// <summary>Starts an SSO sign-in. Nothing is stored server-side; the transaction travels with the client.</summary>
     [HttpGet("sso-authorization")]
     [AllowAnonymous]
@@ -274,6 +295,11 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     private IActionResult SessionResponse(AuthenticationResult result, int successStatus)
     {
         NoStore();
+        if (result.PasswordChangePending is { } passwordChange)
+        {
+            return Ok(new PasswordChangePendingDetail(passwordChange.PasswordChangeToken, passwordChange.ExpiresAt));
+        }
+
         if (result.MultiFactorPending is { } pending)
         {
             return Ok(new MfaPendingDetail(pending.MfaToken, pending.MfaTokenExpiresAt, pending.EnrolmentRequired));

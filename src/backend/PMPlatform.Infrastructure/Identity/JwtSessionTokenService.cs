@@ -104,6 +104,20 @@ internal sealed class JwtSessionTokenService(IConfiguration configuration, IOpti
             : null;
     }
 
+    public PasswordChangePending IssuePasswordChangeToken(Guid userId)
+    {
+        DateTimeOffset now = DateTimeOffset.FromUnixTimeSeconds(timeProvider.GetUtcNow().ToUnixTimeSeconds());
+        DateTimeOffset expiresAt = now + options.Value.IdentityVerificationTokenLifetime;
+        Dictionary<string, object> claims = new(StringComparer.Ordinal) { [SessionTokenClaims.Subject] = userId.ToString() };
+        return new PasswordChangePending(Create(SessionTokenClaims.PasswordChangeAudience, claims, now, expiresAt, Credentials()), expiresAt);
+    }
+
+    public async Task<Guid?> ReadPasswordChangeTokenAsync(string passwordChangeToken)
+    {
+        ClaimsIdentity? identity = await ValidateAsync(passwordChangeToken, SessionTokenClaims.PasswordChangeAudience).ConfigureAwait(false);
+        return identity is not null && Guid.TryParse(identity.FindFirst(SessionTokenClaims.Subject)?.Value, out Guid userId) ? userId : null;
+    }
+
     public IdentityVerificationPending IssueIdentityVerificationToken(PendingIdentityVerification pending)
     {
         ArgumentNullException.ThrowIfNull(pending);

@@ -29,6 +29,10 @@ public static class IdentityServiceCollectionExtensions
 
         // CTL-07's minimum scope is not configurable away: an environment whose policy does not require MFA for R01
         // does not start.
+        services.AddOptions<LocalAccountPolicy>().Bind(configuration.GetSection(LocalAccountPolicy.Section));
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<LocalAccountPolicy>>().Value);
+        services.AddOptions<ProfileApprovalPolicy>().Bind(configuration.GetSection(ProfileApprovalPolicy.Section));
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<ProfileApprovalPolicy>>().Value);
         services.AddOptions<MultiFactorPolicy>()
             .Bind(configuration.GetSection(MultiFactorPolicy.Section))
             .Validate(

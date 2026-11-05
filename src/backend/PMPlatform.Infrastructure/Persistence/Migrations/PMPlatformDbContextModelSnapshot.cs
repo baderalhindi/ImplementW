@@ -4641,6 +4641,13 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.PrimitiveCollection<string[]>("AllowedScopes")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasColumnName("allowed_scopes")
+                        .HasDefaultValueSql("ARRAY['ALL']::text[]");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -4655,6 +4662,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
                     b.Property<bool>("IsExternalEligible")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -4666,6 +4679,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_system");
+
+                    b.Property<string>("LandingDashboardCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("landing_dashboard_code");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4715,6 +4733,18 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateOnly?>("AccountEndsOn")
+                        .HasColumnType("date")
+                        .HasColumnName("account_ends_on");
+
+                    b.Property<string>("AccountSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("DIRECTORY")
+                        .HasColumnName("account_source");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -4752,10 +4782,20 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("external_entity_id");
 
+                    b.Property<int>("FailedSignInCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("failed_sign_in_count");
+
                     b.Property<string>("JobTitle")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("job_title");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
 
                     b.Property<Guid?>("ManagerUserId")
                         .HasColumnType("uuid")
@@ -4774,6 +4814,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("mobile_verified_at");
 
+                    b.Property<bool>("MustChangePassword")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("must_change_password");
+
                     b.Property<string>("NafathVerificationReference")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -4782,6 +4828,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("NafathVerifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("nafath_verified_at");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("password_hash");
 
                     b.Property<string>("PreferredLanguage")
                         .IsRequired()
@@ -4851,7 +4902,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("user", "identity_access", t =>
                         {
+                            t.HasCheckConstraint("ck_user_account_source", "\"account_source\" IN ('DIRECTORY', 'LOCAL')");
+
                             t.HasCheckConstraint("ck_user_external_entity", "user_type <> 'EXTERNAL' OR external_entity_id IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_user_local_password", "account_source <> 'LOCAL' OR password_hash IS NOT NULL");
 
                             t.HasCheckConstraint("ck_user_mobile_number", "mobile_number ~ '^\\+[1-9][0-9]{1,14}$'");
 
@@ -4861,6 +4916,48 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_user_user_type", "\"user_type\" IN ('INTERNAL', 'EXTERNAL', 'SERVICE')");
                         });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPasswordHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_password_history");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .HasDatabaseName("ix_user_password_history_user_id_created_at");
+
+                    b.ToTable("user_password_history", "identity_access");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>
@@ -13390,6 +13487,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ManagerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_user_user_manager_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPasswordHistory", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_password_history_user_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>

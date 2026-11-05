@@ -23,6 +23,52 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
     public Task<UserAccess?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) =>
         FindAsync(u => u.Id == userId, cancellationToken);
 
+    public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken) =>
+        LocalCredentialAsync(u => u.Username == username, cancellationToken);
+
+    public Task<LocalCredential?> FindLocalCredentialByIdAsync(Guid userId, CancellationToken cancellationToken) =>
+        LocalCredentialAsync(u => u.Id == userId, cancellationToken);
+
+    public async Task RecordFailedPasswordAsync(Guid userId, int maxAttempts, DateTimeOffset lockedUntil, CancellationToken cancellationToken)
+    {
+        // One statement, so two wrong passwords at once both count.
+        await context.Set<User>().Where(u => u.Id == userId).ExecuteUpdateAsync(
+            set => set
+                .SetProperty(u => u.LockedUntil, u => u.FailedSignInCount + 1 >= maxAttempts ? lockedUntil : u.LockedUntil)
+                .SetProperty(u => u.FailedSignInCount, u => u.FailedSignInCount + 1 >= maxAttempts ? 0 : u.FailedSignInCount + 1),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task ClearFailedPasswordsAsync(Guid userId, CancellationToken cancellationToken) =>
+        await context.Set<User>().Where(u => u.Id == userId && (u.FailedSignInCount != 0 || u.LockedUntil != null)).ExecuteUpdateAsync(
+            set => set.SetProperty(u => u.FailedSignInCount, 0).SetProperty(u => u.LockedUntil, (DateTimeOffset?)null),
+            cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<string>> ListPasswordHistoryAsync(Guid userId, int count, CancellationToken cancellationToken) =>
+        await context.Set<UserPasswordHistory>().AsNoTracking().Where(h => h.UserId == userId)
+            .OrderByDescending(h => h.CreatedAt).Take(count).Select(h => h.PasswordHash)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task ChangePasswordAsync(Guid userId, string passwordHash, CancellationToken cancellationToken)
+    {
+        User user = await context.Set<User>().SingleAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false);
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        user.PasswordHash = passwordHash;
+        user.MustChangePassword = false;
+        user.FailedSignInCount = 0;
+        user.LockedUntil = null;
+        user.UpdatedAt = now;
+        user.UpdatedBy = userId;
+        context.Add(new UserPasswordHistory { Id = Guid.CreateVersion7(now), UserId = userId, PasswordHash = passwordHash, CreatedAt = now, CreatedBy = userId, UpdatedAt = now, UpdatedBy = userId });
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<LocalCredential?> LocalCredentialAsync(Expression<Func<User, bool>> predicate, CancellationToken cancellationToken) =>
+        await context.Set<User>().AsNoTracking().Where(predicate)
+            .Where(u => u.AccountSource == AccountSource.Local && u.PasswordHash != null)
+            .Select(u => new LocalCredential(u.Id, u.Username, u.PasswordHash!, u.MustChangePassword, u.FailedSignInCount, u.LockedUntil))
+            .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+
     public async Task ApplyDirectoryAttributesAsync(Guid userId, DirectoryEntry entry, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entry);
@@ -130,7 +176,7 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
     {
         var user = await context.Set<User>().AsNoTracking()
             .Where(predicate)
-            .Select(u => new { u.Id, u.UserType, u.Status, u.ExternalEntityId, u.Username, u.DisplayName, u.PreferredLanguage, u.MfaEnrolledAt, u.NafathVerifiedAt })
+            .Select(u => new { u.Id, u.UserType, u.Status, u.AccountEndsOn, u.ExternalEntityId, u.Username, u.DisplayName, u.PreferredLanguage, u.MfaEnrolledAt, u.NafathVerifiedAt })
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
@@ -162,8 +208,10 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
                 select new SessionRoleAssignment(role.Code, assignment.PermissionProfileVersionId, assignment.DepartmentId, assignment.ExternalEntityId, assignment.ProjectId))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
+        // An account past its end date is treated as disabled on every path (R4-6).
+        UserStatus status = user.AccountEndsOn is { } endsOn && endsOn < DateOnly.FromDateTime(now.UtcDateTime) ? UserStatus.Disabled : user.Status;
         return new UserAccess(
-            user.Id, user.UserType, user.Status, entityStatus, user.Username, user.DisplayName, user.PreferredLanguage, user.MfaEnrolledAt is not null,
+            user.Id, user.UserType, status, entityStatus, user.Username, user.DisplayName, user.PreferredLanguage, user.MfaEnrolledAt is not null,
             user.NafathVerifiedAt is not null, assignments);
     }
 

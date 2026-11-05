@@ -13,7 +13,7 @@ internal sealed class RoleAdministrationRepository(PMPlatformDbContext context) 
     public async Task<IReadOnlyList<RoleSummary>> ListRolesAsync(CancellationToken cancellationToken) =>
         await context.Set<Role>().AsNoTracking()
             .OrderBy(r => r.Code)
-            .Select(r => new RoleSummary(r.Id, r.Code, r.Name, r.IsSystem, r.IsExternalEligible))
+            .Select(r => new RoleSummary(r.Id, r.Code, r.Name, r.IsSystem, r.IsExternalEligible, r.IsActive, r.AllowedScopes, r.LandingDashboardCode))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task<Versioned<RoleDetail>?> FindRoleAsync(Guid roleId, CancellationToken cancellationToken)
@@ -31,8 +31,40 @@ internal sealed class RoleAdministrationRepository(PMPlatformDbContext context) 
             .ToListAsync(cancellationToken).ConfigureAwait(false);
         Role role = row.Role;
         return new Versioned<RoleDetail>(
-            new RoleDetail(role.Id, role.Code, role.Name, role.IsSystem, role.IsExternalEligible, profiles, role.UpdatedAt, role.UpdatedBy),
+            new RoleDetail(role.Id, role.Code, role.Name, role.IsSystem, role.IsExternalEligible, profiles, role.UpdatedAt, role.UpdatedBy, role.IsActive, role.AllowedScopes, role.LandingDashboardCode),
             row.Version);
+    }
+
+    public void AddRole(Role role) => context.Add(role);
+
+    public void RemoveRole(Role role) => context.Remove(role);
+
+    public Task<bool> IsRoleCodeInUseAsync(string code, CancellationToken cancellationToken) =>
+        context.Set<Role>().AsNoTracking().AnyAsync(r => r.Code == code, cancellationToken);
+
+    public Task<bool> RoleHasAssignmentsAsync(Guid roleId, CancellationToken cancellationToken) =>
+        (from assignment in context.Set<AccessRelationship>().AsNoTracking()
+         join version in context.Set<PermissionProfileVersion>() on assignment.PermissionProfileVersionId equals version.Id
+         join profile in context.Set<PermissionProfile>() on version.PermissionProfileId equals profile.Id
+         where profile.BaseRoleId == roleId
+         select assignment.Id).AnyAsync(cancellationToken);
+
+    public async Task<Guid?> FindPublishedVersionOfRoleAsync(Guid roleId, CancellationToken cancellationToken) =>
+        await (from version in context.Set<PermissionProfileVersion>().AsNoTracking()
+               join profile in context.Set<PermissionProfile>() on version.PermissionProfileId equals profile.Id
+               where profile.BaseRoleId == roleId && version.LifecycleState == GovernedLifecycleState.Published
+               orderby profile.IsShippedDefault descending, version.VersionNo descending
+               select (Guid?)version.Id).FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task RemoveProfilesOfRoleAsync(Guid roleId, CancellationToken cancellationToken)
+    {
+        List<PermissionProfile> profiles = await context.Set<PermissionProfile>().Where(p => p.BaseRoleId == roleId).ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<Guid> profileIds = [.. profiles.Select(p => p.Id)];
+        List<PermissionProfileVersion> versions = await context.Set<PermissionProfileVersion>().Where(v => profileIds.Contains(v.PermissionProfileId)).ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<Guid> versionIds = [.. versions.Select(v => v.Id)];
+        context.RemoveRange(await context.Set<PermissionProfileGrant>().Where(g => versionIds.Contains(g.PermissionProfileVersionId)).ToListAsync(cancellationToken).ConfigureAwait(false));
+        context.RemoveRange(versions);
+        context.RemoveRange(profiles);
     }
 
     public async Task<Role?> FindRoleForUpdateAsync(Guid roleId, uint expectedVersion, CancellationToken cancellationToken)

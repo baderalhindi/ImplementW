@@ -77,7 +77,7 @@ internal sealed class AccessRelationshipRepository(PMPlatformDbContext context) 
          join profile in context.Set<PermissionProfile>() on version.PermissionProfileId equals profile.Id
          join role in context.Set<Role>() on profile.BaseRoleId equals role.Id
          where version.Id == permissionProfileVersionId
-         select new ProfileVersionFacts(version.LifecycleState, role.Code, role.IsExternalEligible))
+         select new ProfileVersionFacts(version.LifecycleState, role.Code, role.IsExternalEligible, role.IsActive, role.AllowedScopes))
         .SingleOrDefaultAsync(cancellationToken);
 
     /// <summary>

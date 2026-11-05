@@ -17,4 +17,7 @@ public sealed record UserDraft(
     Language PreferredLanguage,
     string? DirectorySubjectId,
     string? JobTitle,
-    Guid? ExternalEntityId);
+    Guid? ExternalEntityId,
+    AccountSource AccountSource = AccountSource.Directory,
+    string? TemporaryPassword = null,
+    bool MustChangePassword = true);

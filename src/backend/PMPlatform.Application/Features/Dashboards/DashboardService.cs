@@ -45,11 +45,17 @@ internal sealed partial class DashboardService(
             .Where(a => callerRoles.Contains(roleCodes[a.RoleId]))
             .ToLookup(a => a.DashboardDefinitionId);
 
+        // The 5 Nov 2026 review §6.2: a role lands where its own setting says, and may open that dashboard whatever a published audience lists.
+        IReadOnlyDictionary<string, string> landings = await LandingsAsync(cancellationToken).ConfigureAwait(false);
+        HashSet<string> landingCodes = [.. callerRoles.Where(landings.ContainsKey).Select(r => landings[r])];
+
         // TBC-DSH-003: with several roles, the landing of the caller's first role (in code order) that lands anywhere.
         Guid? landing = callerRoles
-            .Select(role => audience.SelectMany(g => g).FirstOrDefault(a => a.IsDefaultLanding && roleCodes[a.RoleId] == role)?.DashboardDefinitionId)
+            .Select(role => landings.TryGetValue(role, out string? code)
+                ? published.FirstOrDefault(d => string.Equals(d.Code.ToString(), code, StringComparison.OrdinalIgnoreCase))?.Id
+                : audience.SelectMany(g => g).FirstOrDefault(a => a.IsDefaultLanding && roleCodes[a.RoleId] == role)?.DashboardDefinitionId)
             .FirstOrDefault(id => id is not null);
-        List<DashboardCatalogueEntry> entries = [.. published.Where(d => audience[d.Id].Any()).Select(d => new DashboardCatalogueEntry(
+        List<DashboardCatalogueEntry> entries = [.. published.Where(d => audience[d.Id].Any() || landingCodes.Contains(d.Code.ToString(), StringComparer.OrdinalIgnoreCase)).Select(d => new DashboardCatalogueEntry(
             d.Code, d.Id, d.VersionNo, d.Name, d.Description, DashboardCatalogue.ContextOf(d.Code), d.AllowsPersonalization, d.Id == landing))];
         return new DashboardCataloguePage([.. entries.Skip(page.Skip).Take(page.PageSize)], page.Page, page.PageSize, entries.Count);
     }
@@ -263,7 +269,8 @@ internal sealed partial class DashboardService(
         UserRoles caller = await userRoles.FindAsync(callerId, cancellationToken).ConfigureAwait(false);
         IReadOnlyDictionary<Guid, string> roleCodes = await RoleCodesAsync(cancellationToken).ConfigureAwait(false);
         return DashboardCatalogue.MayOpen(code, caller.IsExternal)
-               && (await repository.ListAudienceAsync([definition.Id], track: false, cancellationToken).ConfigureAwait(false)).Any(a => caller.RoleCodes.Contains(roleCodes[a.RoleId]))
+               && ((await repository.ListAudienceAsync([definition.Id], track: false, cancellationToken).ConfigureAwait(false)).Any(a => caller.RoleCodes.Contains(roleCodes[a.RoleId]))
+                   || (await LandingsAsync(cancellationToken).ConfigureAwait(false)).Any(l => caller.RoleCodes.Contains(l.Key) && string.Equals(l.Value, code.ToString(), StringComparison.OrdinalIgnoreCase)))
             ? definition
             : null;
     }
@@ -358,6 +365,12 @@ internal sealed partial class DashboardService(
 
         return [.. items.OrderBy(p => p.SortOrder).Select(p => new DashboardPlace(p.Id, p.Label, p.ParentItemId))];
     }
+
+    /// <summary>Each role's own landing dashboard (R4-6), by role code; a role without one lands by its published audience.</summary>
+    private async Task<IReadOnlyDictionary<string, string>> LandingsAsync(CancellationToken cancellationToken) =>
+        (await roles.ListRolesAsync(cancellationToken).ConfigureAwait(false))
+            .Where(r => r.LandingDashboardCode is not null)
+            .ToDictionary(r => r.Code, r => r.LandingDashboardCode!, StringComparer.Ordinal);
 
     private async Task<IReadOnlyDictionary<Guid, string>> RoleCodesAsync(CancellationToken cancellationToken) =>
         (await roles.ListRolesAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(r => r.Id, r => r.Code);

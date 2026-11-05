@@ -1,3 +1,5 @@
+using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using Microsoft.Extensions.Logging;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
@@ -19,6 +21,7 @@ internal sealed partial class UserAdministrationService(
     IUserAdministrationRepository users,
     IExternalEntityRepository entities,
     AdministrationAccess access,
+    LocalAccountPolicy localAccounts,
     IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<UserAdministrationService> logger) : IUserAdministrationService
@@ -64,10 +67,25 @@ internal sealed partial class UserAdministrationService(
             return AdministrationError.Rule(IdentityAccessErrorCodes.ReferenceInvalid, entityIssue);
         }
 
+        bool local = draft.AccountSource == AccountSource.Local;
+        if (local && !localAccounts.Enabled)
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.LocalAccountsDisabled);
+        }
+
+        if (local && draft.TemporaryPassword is { } typed && !LocalPassword.MeetsRules(typed, draft.Username))
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.PasswordInvalid, new FieldIssue("temporaryPassword", LocalPassword.TooWeak));
+        }
+
+        string? temporaryPassword = local ? draft.TemporaryPassword ?? LocalPassword.Generate() : null;
         DateTimeOffset now = timeProvider.GetUtcNow();
         User user = new()
         {
             Id = Guid.CreateVersion7(now),
+            AccountSource = draft.AccountSource,
+            PasswordHash = temporaryPassword is null ? null : LocalPassword.Hash(temporaryPassword),
+            MustChangePassword = local && draft.MustChangePassword,
             UserType = draft.UserType,
             DirectorySubjectId = draft.DirectorySubjectId,
             Username = draft.Username,
@@ -94,6 +112,7 @@ internal sealed partial class UserAdministrationService(
             AuditAttribute.WithheldChange("email", null, user.Email),
             AuditAttribute.WithheldChange("mobile_number", null, user.MobileNumber),
             AuditAttribute.Change(IdentityAccessAuditAttributes.Status, null, user.Status),
+            AuditAttribute.Change("account_source", null, user.AccountSource),
         ]));
 
         if ((await users.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
@@ -102,7 +121,8 @@ internal sealed partial class UserAdministrationService(
         }
 
         LogUserChanged(logger, actorId, "created", user.Id);
-        return await DetailAsync(user.Id, cancellationToken).ConfigureAwait(false);
+        AdministrationResult<Versioned<UserDetail>> created = await DetailAsync(user.Id, cancellationToken).ConfigureAwait(false);
+        return created.Value is { } versioned ? versioned with { Value = versioned.Value with { TemporaryPassword = temporaryPassword } } : created;
     }
 
     public async Task<AdministrationResult<Versioned<UserDetail>>> UpdateAsync(
@@ -147,6 +167,74 @@ internal sealed partial class UserAdministrationService(
         user.DirectorySubjectId = changes.DirectorySubjectId;
         user.JobTitle = changes.JobTitle;
         return await SaveAsync(actorId, user, "updated", IdentityAccessAuditEvents.UserUpdated, changed, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<Versioned<UserDetail>>> ResetPasswordAsync(Guid actorId, Guid userId, string? typedPassword, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        User? user = await users.FindForUpdateAsync(userId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (await CheckWritableAsync(actorId, user, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (user!.Id == actorId)
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.SelfAdministration);
+        }
+
+        if (user.AccountSource != AccountSource.Local)
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.NotLocalAccount);
+        }
+
+        if (typedPassword is not null && !LocalPassword.MeetsRules(typedPassword, user.Username))
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.PasswordInvalid, new FieldIssue("password", LocalPassword.TooWeak));
+        }
+
+        string temporary = typedPassword ?? LocalPassword.Generate();
+        user.PasswordHash = LocalPassword.Hash(temporary);
+        user.MustChangePassword = true;
+        user.FailedSignInCount = 0;
+        user.LockedUntil = null;
+        AdministrationResult<Versioned<UserDetail>> saved = await SaveAsync(actorId, user, "password reset", IdentityAccessAuditEvents.PasswordReset, [], cancellationToken).ConfigureAwait(false);
+        return saved.Value is { } versioned ? versioned with { Value = versioned.Value with { TemporaryPassword = temporary } } : saved;
+    }
+
+    public async Task<AdministrationResult<Versioned<UserDetail>>> UnlockAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        User? user = await users.FindForUpdateAsync(userId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (await CheckWritableAsync(actorId, user, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (user!.AccountSource != AccountSource.Local)
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.NotLocalAccount);
+        }
+
+        user.FailedSignInCount = 0;
+        user.LockedUntil = null;
+        return await SaveAsync(actorId, user, "unlocked", IdentityAccessAuditEvents.UserUnlocked, [], cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<Versioned<UserDetail>>> SetEndDateAsync(Guid actorId, Guid userId, DateOnly? endsOn, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        User? user = await users.FindForUpdateAsync(userId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (await CheckWritableAsync(actorId, user, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (user!.Id == actorId)
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.SelfAdministration);
+        }
+
+        AuditAttribute? change = AuditAttribute.Change("account_ends_on", user.AccountEndsOn, endsOn);
+        user.AccountEndsOn = endsOn;
+        return await SaveAsync(actorId, user, "end date set", IdentityAccessAuditEvents.UserEndDateSet, [change], cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<UserDetail>>> ActivateAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken)
