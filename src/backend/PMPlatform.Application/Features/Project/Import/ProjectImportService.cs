@@ -469,6 +469,8 @@ internal sealed class ProjectImportService(
             Id = Guid.CreateVersion7(now),
             FormalProjectId = ProjectApprovalOutcomeHandler.FormalProjectIdOf(await projects.NextFormalProjectNumberAsync(cancellationToken).ConfigureAwait(false)),
             Title = row.Title,
+            TitleEn = row.TitleEn,
+            IsStrategic = row.IsStrategic,
             Description = row.Description,
             ClassificationItemId = row.ClassificationItemId,
             DepartmentId = row.DepartmentId,
@@ -531,6 +533,8 @@ internal sealed class ProjectImportService(
     {
         ProjectDraft before = ProjectMapping.ToDraft(project);
         ProjectFollowUpDetail followUpBefore = ProjectMapping.ToFollowUp(project);
+        project.TitleEn = row.TitleEn;
+        project.IsStrategic = row.IsStrategic;
         project.StrategicPortfolioItemId = row.StrategicPortfolioItemId;
         project.StrategicInitiativeItemId = row.StrategicInitiativeItemId;
         project.PriorityItemId = row.PriorityItemId;

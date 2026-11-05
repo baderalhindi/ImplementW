@@ -8636,6 +8636,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("department_id");
 
+                    b.Property<Guid?>("EntityContactUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_contact_user_id");
+
                     b.Property<bool?>("EntityUpdateCompliant")
                         .HasColumnType("boolean")
                         .HasColumnName("entity_update_compliant");
@@ -8667,6 +8671,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("governance_profile_overridden");
+
+                    b.Property<bool?>("IsStrategic")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_strategic");
 
                     b.Property<decimal?>("Latitude")
                         .HasPrecision(18, 4)
@@ -8743,6 +8751,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(1)
                         .HasColumnName("revision_no");
 
+                    b.Property<string>("SeedSource")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("seed_source");
+
                     b.Property<Guid?>("StrategicInitiativeItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("strategic_initiative_item_id");
@@ -8750,6 +8763,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("StrategicPortfolioItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("strategic_portfolio_item_id");
+
+                    b.Property<string>("TitleEn")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("title_en");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -8841,6 +8859,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("ClassificationItemId")
                         .HasDatabaseName("ix_project_classification_item_id");
 
+                    b.HasIndex("EntityContactUserId")
+                        .HasDatabaseName("ix_project_entity_contact_user_id");
+
                     b.HasIndex("FollowUpOwnerUserId")
                         .HasDatabaseName("ix_project_follow_up_owner_user_id");
 
@@ -8894,7 +8915,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_project_declared_percent_range", "(declared_planned_percent IS NULL OR declared_planned_percent BETWEEN 0 AND 100) AND (declared_actual_percent IS NULL OR declared_actual_percent BETWEEN 0 AND 100) AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100) AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
 
-                            t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL')");
+                            t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL', 'ENTITY_UPDATE')");
 
                             t.HasCheckConstraint("ck_project_description_lang", "\"description_lang\" IN ('ar', 'en')");
 
@@ -8915,6 +8936,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_project_next_action_pair", "(\"next_action\" IS NULL) = (\"next_action_lang\" IS NULL)");
 
                             t.HasCheckConstraint("ck_project_participation_mode", "\"participation_mode\" IN ('ENTITY_MANAGED', 'AHDA_MANAGED')");
+
+                            t.HasCheckConstraint("ck_project_seed_source", "seed_source IS NULL OR seed_source = 'DEMO'");
 
                             t.HasCheckConstraint("ck_project_title_lang", "\"title_lang\" IN ('ar', 'en')");
                         });
@@ -12445,12 +12468,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ScopeExternalEntityId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_audit_event_external_entity_scope_external_entity_id");
-
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ScopeProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_audit_event_project_scope_project_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEventAttribute", b =>
@@ -14133,6 +14150,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_project_department_department_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("EntityContactUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_user_entity_contact_user_id");
 
                     b.HasOne("PMPlatform.Domain.IdentityAccess.ExternalEntity", null)
                         .WithMany()

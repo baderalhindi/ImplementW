@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PMPlatform.Domain.AuditActivity;
 using PMPlatform.Domain.IdentityAccess;
 using PMPlatform.Domain.MasterDataConfig;
-using ProjectEntity = PMPlatform.Domain.Project.Project;
 
 namespace PMPlatform.Infrastructure.Persistence.Configurations.AuditActivity;
 
@@ -27,7 +26,7 @@ internal sealed class AuditEventConfiguration : IEntityTypeConfiguration<AuditEv
         builder.Property(e => e.AttributeDigest).HasColumnType("char(64)");
 
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.ActorUserId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<ProjectEntity>().WithMany().HasForeignKey(e => e.ScopeProjectId).OnDelete(DeleteBehavior.Restrict);
+        // No foreign key to the project (R4-5): the trail is append-only and outlives a project removed by the demo reset or an import rollback.
         builder.HasOne<ExternalEntity>().WithMany().HasForeignKey(e => e.ScopeExternalEntityId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.DataClassificationItemId).OnDelete(DeleteBehavior.Restrict);
 

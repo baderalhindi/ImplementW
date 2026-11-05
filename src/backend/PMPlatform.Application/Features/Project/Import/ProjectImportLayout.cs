@@ -5,7 +5,7 @@ namespace PMPlatform.Application.Features.Project.Import;
 /// <summary>
 /// The columns of RPMO's import workbook (RPMO_Projects_Import_v1, the 2 Nov 2026 review §3): each column is found by the field key in the
 /// key row, never by position, so a column added or moved in RPMO's sheet is read the same. Columns the platform does not hold — the entity
-/// type, the old status, the strategic flag (derived from the portfolio), the project type, the file's own bookkeeping — are read past.
+/// type, the old status, the project type, the file's own bookkeeping — are skipped with an info note (the 5 Nov 2026 review §4.2).
 /// </summary>
 public static class ProjectImportLayout
 {
@@ -37,6 +37,7 @@ public static class ProjectImportLayout
     public const string Status = "platform_status";
     public const string Governance = "governance_level";
     public const string Priority = "priority";
+    public const string Strategic = "is_strategic";
     public const string Budget = "budget_sar";
     public const string Funding = "strategy_funded";
     public const string Start = "start_date";
@@ -55,10 +56,10 @@ public static class ProjectImportLayout
     public const string EntityCommits = "entity_commits";
     public const string Notes = "notes";
 
-    /// <summary>RPMO's own columns the platform reads past: they are kept in the workbook attached to the batch.</summary>
+    /// <summary>RPMO's own columns the platform does not store: each is skipped with an info note, and kept in the workbook attached to the batch.</summary>
     public static IReadOnlySet<string> Ignored { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
-        "entity_type", "legacy_status", "is_strategic", "project_type", "assumed_fields", "validation_warnings",
+        "entity_type", "legacy_status", "project_type", "assumed_fields", "validation_warnings",
     };
 
     /// <summary>Each column the platform reads: its key, Arabic header, whether a row must fill it, and its cell shape.</summary>
@@ -76,6 +77,7 @@ public static class ProjectImportLayout
         (Text(ProjectManager, true), "مدير المشروع"),
         (Text(Status, false), "الحالة في المنصة"),
         (Text(Governance, true), "مستوى الحوكمة"),
+        (Text(Strategic, false), "مشروع استراتيجي؟"),
         (Text(Priority, false), "الأولوية"),
         (new ImportColumn(Budget, ImportValueKind.Money, true, Budget, Budget), "قيمة المشروع (ريال)"),
         (Text(Funding, false), "ممول من ميزانية الاستراتيجية؟"),
