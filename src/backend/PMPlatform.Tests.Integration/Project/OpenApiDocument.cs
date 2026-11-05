@@ -25,6 +25,8 @@ internal sealed class OpenApiDocument(JsonObject root)
     /// </summary>
     public static readonly IReadOnlyList<Regex> OpenPlatformFindings =
     [
+        // The 5 Nov 2026 review §3: a summary of the caller's scope and a card of one item, not collections of rows.
+        KnownFinding(@"C-9: GET /api/v1/portfolio-insights(/cards)?: (collection GET without page/pageSize or cursor/pageSize \(R-28\)|200 schema is not a page envelope.*)"),
         KnownFinding(@"C-4: .*: x-module must equal the module tag"),
         KnownFinding(@"C-5: .*: responses\.default \(ProblemDetails\) is required \(R-53\)"),
         KnownFinding(@"C-7: .*: x-write-class must be 'sensitive' or 'non-sensitive' \(R-35\)"),

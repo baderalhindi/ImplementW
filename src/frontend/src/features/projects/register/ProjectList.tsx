@@ -2,6 +2,7 @@ import { type ReactElement, type SyntheticEvent, useCallback, useState } from 'r
 import { Link, useNavigate } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -24,6 +25,7 @@ import {
   type ProjectLookups,
   useProjectLookups,
 } from '../useProjectLookups.ts';
+import { CreateProjectLink, ImportProjectsLink } from './ProjectActions.tsx';
 
 /** The filters each list offers; `q` and `status` everywhere, the rest of the filter bar on the Register only. */
 const FILTERS = [
@@ -124,7 +126,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
       {projects.loading && <LoadingState label={t('projects.list.loading')} />}
       {/* A role without PROJECT_VIEW sees no project at all: the same answer as a scope that reaches none. */}
       {isForbidden(projects.error) && (
-        <ProjectListEmpty filtered={false} mine={mine} basePath={basePath} />
+        <ProjectListEmpty filtered={false} forbidden mine={mine} basePath={basePath} />
       )}
       {projects.error !== null && !isForbidden(projects.error) && (
         <ErrorState
@@ -135,7 +137,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
       )}
       {projects.data !== undefined &&
         (projects.data.items.length === 0 ? (
-          <ProjectListEmpty filtered={filtered} mine={mine} basePath={basePath} />
+          <ProjectListEmpty filtered={filtered} forbidden={false} mine={mine} basePath={basePath} />
         ) : (
           <>
             <ProjectTable
@@ -157,20 +159,23 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
 }
 
 /**
- * Three different empty answers. Filtered: nothing matches, clear the filters. Unfiltered on the Register: the
- * person's role reaches no project at all, which is said as such (acceptance criterion 2). My Projects: they manage
- * none.
+ * Four different empty answers. Filtered: nothing matches, clear the filters. My Projects: they manage none. A role without PROJECT_VIEW:
+ * it reaches no project at all, which is said as such (acceptance criterion 2). Otherwise the Register has no project yet (the 5 Nov 2026
+ * review §5), with the ways to add one for a role that has them, and otherwise where projects come from.
  */
 function ProjectListEmpty({
   filtered,
+  forbidden,
   mine,
   basePath,
 }: {
   filtered: boolean;
+  forbidden: boolean;
   mine: boolean;
   basePath: string;
 }): ReactElement {
   const { t } = useI18n();
+  const mayAdd = useCan('PROJECT_REGISTER', 'PROJECT_IMPORT', 'PROJECT_IMPORT_APPROVE');
   if (filtered) {
     return (
       <EmptyState title={t('projects.list.emptyFiltered')}>
@@ -186,9 +191,23 @@ function ProjectListEmpty({
       </EmptyState>
     );
   }
+  if (forbidden) {
+    return (
+      <EmptyState title={t('projects.register.emptyForRole')}>
+        <p>{t('projects.register.emptyForRoleDescription')}</p>
+      </EmptyState>
+    );
+  }
   return (
-    <EmptyState title={t('projects.register.emptyForRole')}>
-      <p>{t('projects.register.emptyForRoleDescription')}</p>
+    <EmptyState title={t('projects.register.empty')}>
+      {mayAdd ? (
+        <div className="form__actions">
+          <ImportProjectsLink />
+          <CreateProjectLink />
+        </div>
+      ) : (
+        <p>{t('projects.register.emptyForRoleDescription')}</p>
+      )}
     </EmptyState>
   );
 }

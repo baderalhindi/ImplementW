@@ -5,8 +5,9 @@ import { describe, expect, test } from 'vitest';
 import { translate } from '@/shared/i18n/i18n.ts';
 import { catalogueFor, withDashboards } from '@/test/dashboardFixtures.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
-import { mockApi, SHELL_INBOX_COUNT } from '@/test/mockApi.ts';
+import { mockApi, SHELL_INBOX_COUNT, SHELL_PERMISSIONS } from '@/test/mockApi.ts';
 import { notificationSession, withInbox } from '@/test/notificationFixtures.ts';
+import { shippedPermissions } from '@/test/permissionFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
 import { findMainMenu, findOpenMenu, mainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
 
@@ -223,6 +224,17 @@ describe('the master navigation', () => {
         .getByText(en('common.menu.portfolioDashboard'))
         .getAttribute('aria-current'),
     ).toBe('page');
+  });
+
+  test('a created role the catalogue offers the Portfolio Dashboard is given the Portfolio menu, as R06 is', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R06']) }).on('GET', SHELL_PERMISSIONS, {
+      body: shippedPermissions(sessionFor(['R06']).user),
+    });
+    renderApp({ path: '/', session: sessionFor(['R09']) });
+
+    await waitFor(() => {
+      expect(menuLink('common.menu.portfolio')).toBeTruthy();
+    });
   });
 
   test('a Project Manager is given no Portfolio menu: its KPIs are its projects’ (the review, finding 1b)', async () => {

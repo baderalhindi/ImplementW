@@ -45,10 +45,24 @@ export interface MultiFactorChallenge {
   provisioningUri: string | null;
 }
 
+/** A local account signed in with a temporary password: no session until a new password is set. */
+export interface PasswordChangePending {
+  passwordChangeToken: string;
+  expiresAt: string;
+}
+
 export type SignInResult = Session | MultiFactorPending;
 
-export function isMultiFactorPending(result: SignInResult): result is MultiFactorPending {
+export function isMultiFactorPending(
+  result: SignInResult | PasswordChangePending,
+): result is MultiFactorPending {
   return 'mfaToken' in result;
+}
+
+export function isPasswordChangePending(
+  result: SignInResult | PasswordChangePending,
+): result is PasswordChangePending {
+  return 'passwordChangeToken' in result;
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -57,7 +71,9 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 export const sessionApi = {
   signIn: (username: string, password: string) =>
-    post<SignInResult>('/sessions', { username, password }),
+    post<SignInResult | PasswordChangePending>('/sessions', { username, password }),
+  changePassword: (passwordChangeToken: string, newPassword: string) =>
+    post<SignInResult>('/sessions/password-change', { passwordChangeToken, newPassword }),
   beginMultiFactor: (mfaToken: string) =>
     post<MultiFactorChallenge>('/sessions/mfa-challenge', { mfaToken }),
   completeMultiFactor: (mfaToken: string, challengeId: string, code: string) =>

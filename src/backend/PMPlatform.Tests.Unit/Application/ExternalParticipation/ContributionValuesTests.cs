@@ -85,10 +85,10 @@ public sealed class ContributionValuesTests
     /// names none. The task's percentage is the WF-04 field ADR-009 bounds 0–100.
     /// </summary>
     [Fact]
-    public void EverySchemaIsTypedAndOnlyTheTaskProgressSchemaReachesASource()
+    public void EverySchemaIsTypedAndATargetIsWhatItsModeWrites()
     {
-        Assert.Equal([ContributionSchemas.ProjectInformation, ContributionSchemas.TaskProgress], ContributionSchemas.All.Select(s => s.Code).Order(StringComparer.Ordinal));
-        Assert.All(ContributionSchemas.All, s => Assert.Equal(s.HasTarget, s.Mode == ContributionApplicationMode.UpdateAllowedSourceFields));
+        Assert.Equal([ContributionSchemas.MonthlyUpdate, ContributionSchemas.ProjectInformation, ContributionSchemas.TaskProgress], ContributionSchemas.All.Select(s => s.Code).Order(StringComparer.Ordinal));
+        Assert.All(ContributionSchemas.All, s => Assert.Equal(s.HasTarget, s.Mode is ContributionApplicationMode.UpdateAllowedSourceFields or ContributionApplicationMode.ApplyOnAccept));
         Assert.Equal((TaskProgressTarget.Module, TaskProgressTarget.Type), (TaskProgress.TargetModule, TaskProgress.TargetType));
         Assert.Equal((0m, 100m, true), (TaskProgress.Field(ContributionSchemas.ActualPercentComplete)!.Minimum, TaskProgress.Field(ContributionSchemas.ActualPercentComplete)!.Maximum,
             TaskProgress.Field(ContributionSchemas.ActualPercentComplete)!.Required));

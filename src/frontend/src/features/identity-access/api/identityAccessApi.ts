@@ -24,7 +24,9 @@ import {
   type PermissionProfileSummary,
   type PermissionProfileVersion,
   type PermissionSummary,
+  type RoleCreateRequest,
   type RoleDetail,
+  type RoleSettingsRequest,
   type RoleSummary,
   type UserCreateRequest,
   type UserDetail,
@@ -73,6 +75,19 @@ export const usersApi = {
     apiRequest<UserDetail>(`/users/${id}`, { method: 'PUT', body: request, ifMatch: etag }),
   activate: (id: string, etag: string | null) => command<UserDetail>(`/users/${id}/activate`, etag),
   disable: (id: string, etag: string | null) => command<UserDetail>(`/users/${id}/disable`, etag),
+  resetPassword: (id: string, password: string | null, etag: string | null) =>
+    apiRequest<UserDetail>(`/users/${id}/reset-password`, {
+      method: 'POST',
+      body: { password },
+      ifMatch: etag,
+    }),
+  unlock: (id: string, etag: string | null) => command<UserDetail>(`/users/${id}/unlock`, etag),
+  setEndDate: (id: string, endsOn: string | null, etag: string | null) =>
+    apiRequest<UserDetail>(`/users/${id}/set-end-date`, {
+      method: 'POST',
+      body: { endsOn },
+      ifMatch: etag,
+    }),
 };
 
 // ADM-010, MOD-081, MOD-082
@@ -98,8 +113,22 @@ export const accessRelationshipsApi = {
 export const rolesApi = {
   list: (signal?: AbortSignal) => data(apiRequest<RoleSummary[]>('/roles', { signal })),
   get: (id: string, signal?: AbortSignal) => apiRequest<RoleDetail>(`/roles/${id}`, { signal }),
+  create: (request: RoleCreateRequest) =>
+    data(apiRequest<RoleDetail>('/roles', { method: 'POST', body: request })),
   update: (id: string, name: BilingualLabel, etag: string | null) =>
     apiRequest<RoleDetail>(`/roles/${id}`, { method: 'PUT', body: { name }, ifMatch: etag }),
+  updateSettings: (id: string, request: RoleSettingsRequest, etag: string | null) =>
+    apiRequest<RoleDetail>(`/roles/${id}/update-settings`, {
+      method: 'POST',
+      body: request,
+      ifMatch: etag,
+    }),
+  deactivate: (id: string, etag: string | null) =>
+    command<RoleDetail>(`/roles/${id}/deactivate`, etag),
+  reactivate: (id: string, etag: string | null) =>
+    command<RoleDetail>(`/roles/${id}/reactivate`, etag),
+  delete: (id: string, etag: string | null) =>
+    apiRequest<undefined>(`/roles/${id}`, { method: 'DELETE', ifMatch: etag }),
   listPermissions: (signal?: AbortSignal) =>
     data(apiRequest<PermissionSummary[]>('/permissions', { signal })),
   listProfiles: (signal?: AbortSignal) =>

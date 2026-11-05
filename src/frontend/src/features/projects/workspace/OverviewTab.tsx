@@ -48,6 +48,7 @@ export function OverviewTab(): ReactElement {
         ])
       : [];
   const none = t('common.values.none');
+  const notAvailable = t('projects.followUp.notAvailable');
 
   return (
     <>
@@ -63,6 +64,20 @@ export function OverviewTab(): ReactElement {
         </div>
       )}
       <dl className="details">
+        <Detail term={t('projects.fields.titleEn')}>
+          {project.titleEn == null ? (
+            notAvailable
+          ) : (
+            <span lang="en" dir="ltr">
+              {project.titleEn}
+            </span>
+          )}
+        </Detail>
+        <Detail term={t('projects.fields.isStrategic')}>
+          {project.isStrategic == null
+            ? notAvailable
+            : t(project.isStrategic ? 'common.values.yes' : 'common.values.no')}
+        </Detail>
         <Detail term={t('projects.fields.participation')}>
           {t(`projects.participationMode.${project.participationMode}`)}
           {project.externalEntityId !== null && (

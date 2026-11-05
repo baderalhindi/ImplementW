@@ -54,7 +54,7 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
         List<UserSummary> items = await ordered
             .Skip(query.Page.Skip)
             .Take(query.Page.PageSize)
-            .Select(u => new UserSummary(u.Id, u.UserType, u.Username, u.DisplayName, u.Email, u.Status, u.DepartmentId, u.ExternalEntityId))
+            .Select(u => new UserSummary(u.Id, u.UserType, u.Username, u.DisplayName, u.Email, u.Status, u.DepartmentId, u.ExternalEntityId, u.AccountSource))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
         return new UserPage(items, query.Page.Page, query.Page.PageSize, totalCount);

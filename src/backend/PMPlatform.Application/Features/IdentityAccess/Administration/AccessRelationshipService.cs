@@ -309,7 +309,7 @@ internal sealed partial class AccessRelationshipService(
 
     /// <summary>
     /// An internal user's assignment carries the anchor its role's scope needs (the 24 Oct 2026 review, M-6), as the role's allowed scopes say (the 5 Nov 2026 review §6.2): no
-    /// external entity, which is ADR-013's anchor for external users only; and unless the role allows ALL, one of the department or project it allows, and none it does not.
+    /// external entity, which is ADR-013's anchor for external users only; and unless the role allows ALL, a department or project it allows.
     /// Every rule the draft breaks, at once.
     /// </summary>
     private static FieldIssue[] InternalGrantIssues(ProfileVersionFacts version, AccessRelationshipDraft draft)
@@ -321,9 +321,7 @@ internal sealed partial class AccessRelationshipService(
         FieldIssue?[] issues =
         [
             draft.ExternalEntityId is null ? null : new FieldIssue("externalEntityId", FieldIssue.NotAllowed),
-            !any && !department && draft.DepartmentId is not null ? new FieldIssue("departmentId", FieldIssue.NotAllowed) : null,
-            !any && !project && draft.ProjectId is not null ? new FieldIssue("projectId", FieldIssue.NotAllowed) : null,
-            !any && draft.DepartmentId is null && draft.ProjectId is null && (department || project)
+            !any && (department || project) && !(department && draft.DepartmentId is not null) && !(project && draft.ProjectId is not null)
                 ? new FieldIssue(department ? "departmentId" : "projectId", FieldIssue.Required)
                 : null,
         ];

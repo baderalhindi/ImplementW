@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
 import { useInboxCount } from '@/features/approvals/useInboxCount.ts';
 import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
+import { useDashboardCatalogue } from '@/features/dashboards/useDashboardCatalogue.ts';
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { PermissionsProvider } from '@/features/identity-access/permissions/PermissionsProvider.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
@@ -512,7 +513,12 @@ function SignedOutLayout(): ReactElement {
 function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
   const { t } = useI18n();
   const { pathname, search } = useLocation();
-  const menus = menusFor(user, usePermissions(), useAuditAccess().data ?? null);
+  const menus = menusFor(
+    user,
+    usePermissions(),
+    useAuditAccess().data ?? null,
+    useDashboardCatalogue().data ?? [],
+  );
   const current = activeMenu(menus, pathname, search);
   const [collapsed, setCollapsed] = useState(readCollapsed);
   // The drawer is open on the page it was opened on, so choosing a screen closes it.

@@ -6,6 +6,8 @@ import { type Language, type TranslationKey } from '@/shared/i18n/i18n.ts';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
 import {
+  type DashboardView,
+  type DashboardWidgetResult,
   type ProjectionSemanticState,
   type WidgetFigure,
   type WidgetUnknownReason,
@@ -250,3 +252,33 @@ export const UNKNOWN_REASONS: Record<
     explanation: 'dashboards.unknown.SOURCE_UNAVAILABLE.explanation',
   },
 };
+
+function isBlankFigure(figure: WidgetFigure): boolean {
+  return figure.isMasked || figure.value === null || Number(figure.value) === 0;
+}
+
+function isBlankWidget(widget: DashboardWidgetResult): boolean {
+  if (widget.data === null) {
+    // A source that could not answer is not the same as nothing to show: its widget says so itself.
+    return widget.unknownReason !== 'SOURCE_UNAVAILABLE';
+  }
+  return (
+    (widget.coverageDetail?.eligibleCount ?? 0) === 0 &&
+    widget.data.state === null &&
+    widget.data.distribution.every((bucket) => bucket.count === 0) &&
+    widget.data.figures.every(isBlankFigure) &&
+    widget.data.series.every((point) => point.figures.every(isBlankFigure))
+  );
+}
+
+/**
+ * Whether a portfolio view covers no project at all (the 5 Nov 2026 review §5): it then says "No data" rather than drawing zeros. `locations`
+ * counts every project the view reaches, one with no place recorded included, so a zero among real projects is always still shown.
+ */
+export function hasNoData(view: DashboardView): boolean {
+  return (
+    view.contextKind === 'PORTFOLIO' &&
+    view.locations.every((location) => location.projectCount === 0) &&
+    view.widgets.every(isBlankWidget)
+  );
+}

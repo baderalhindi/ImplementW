@@ -1,14 +1,21 @@
 import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
-import { catalogueEntry, catalogueFor, widget } from '@/test/dashboardFixtures.ts';
+import {
+  catalogueEntry,
+  catalogueFor,
+  dashboardView,
+  unknownWidget,
+  widget,
+} from '@/test/dashboardFixtures.ts';
+import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
 
 import { bucketColors, chartForm } from './charts.ts';
 import { drillPath } from './drill.ts';
 import { landingEntry, landingRole, mayPersonalize, selectedEntry } from './landing.ts';
 import { arrangedWidgets, drawnSpan, filledSpans, visibleWidgets } from './layout.ts';
-import { formatFigure, isStatusScale, labelOfValue } from './presentation.ts';
+import { formatFigure, hasNoData, isStatusScale, labelOfValue } from './presentation.ts';
 
 const t = (key: string, params?: Record<string, string | number>) => translate('en', key, params);
 const user = (roles: string[]) => sessionFor(roles).user;
@@ -40,14 +47,61 @@ describe('the landing (Blueprint §20.2, TBC-DSH-003)', () => {
     expect(landingEntry([catalogueEntry('PROJECT')])).toBeNull();
   });
 
-  test('personalisation is offered on a personalisable dashboard to R02, R03 and R07, never on PROJECT', () => {
+  test('personalisation is offered on a personalisable dashboard to a holder of LAYOUT_PERSONALIZE, never on PROJECT', () => {
+    const holder = permissionsOf({
+      permissions: [{ code: 'LAYOUT_PERSONALIZE', scopes: ['OWN'] }],
+    });
+    const other = permissionsOf({ permissions: [{ code: 'PROJECT_VIEW', scopes: ['ALL'] }] });
     const portfolio = catalogueEntry('PORTFOLIO');
-    expect(mayPersonalize(user(['R03']), portfolio)).toBe(true);
-    expect(mayPersonalize(user(['R06']), portfolio)).toBe(false);
-    expect(mayPersonalize(user(['R02']), catalogueEntry('GOVERNANCE'))).toBe(false);
+    expect(mayPersonalize(holder, portfolio)).toBe(true);
+    expect(mayPersonalize(other, portfolio)).toBe(false);
+    expect(mayPersonalize(holder, catalogueEntry('GOVERNANCE'))).toBe(false);
+    expect(mayPersonalize(holder, catalogueEntry('PROJECT', { allowsPersonalization: true }))).toBe(
+      false,
+    );
+  });
+});
+
+describe('a portfolio with no project says "No data" (the 5 Nov 2026 review §5)', () => {
+  const zero = (measure: string) => ({ measure, value: '0', unit: 'COUNT', isMasked: false });
+  const blank = widget({
+    data: {
+      state: null,
+      figures: [
+        zero('OPEN_RISKS'),
+        { measure: 'BUDGET', value: null, unit: 'SAR', isMasked: true },
+      ],
+      distribution: [{ key: 'ACTIVE', label: null, count: 0 }],
+      series: [],
+    },
+  });
+
+  test('zeros, masked and missing values over no project are no data', () => {
     expect(
-      mayPersonalize(user(['R02']), catalogueEntry('PROJECT', { allowsPersonalization: true })),
+      hasNoData(dashboardView('PORTFOLIO', { widgets: [blank, unknownWidget('MISSING')] })),
+    ).toBe(true);
+  });
+
+  test('a real zero stays when a project exists, even one with no place recorded', () => {
+    expect(
+      hasNoData(
+        dashboardView('PORTFOLIO', {
+          widgets: [blank],
+          locations: [{ regionItemId: null, cityItemId: null, projectCount: 1 }],
+        }),
+      ),
     ).toBe(false);
+  });
+
+  test('any figure, count or state keeps the widgets; a failed source is not "no data"', () => {
+    expect(hasNoData(dashboardView('PORTFOLIO', { widgets: [blank, widget()] }))).toBe(false);
+    expect(
+      hasNoData(dashboardView('PORTFOLIO', { widgets: [unknownWidget('SOURCE_UNAVAILABLE')] })),
+    ).toBe(false);
+  });
+
+  test('a project dashboard is never replaced', () => {
+    expect(hasNoData(dashboardView('PROJECT', { widgets: [blank] }))).toBe(false);
   });
 });
 

@@ -5,7 +5,8 @@ import { describe, expect, test } from 'vitest';
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
-import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
+import { sessionFor } from '@/test/identityAccessFixtures.ts';
+import { type MockApi, mockApi, problem, SHELL_PERMISSIONS } from '@/test/mockApi.ts';
 import {
   DEPARTMENT_ID,
   entitySession,
@@ -159,13 +160,53 @@ describe('SCR-025 Project Register', () => {
     ).toBe('2');
   });
 
-  test('a role that reaches no project gets its own empty state, not the filtered one', async () => {
-    openRegister('/projects', reviewerSession(), []);
+  test('an empty register says there are no projects yet, not the filtered answer', async () => {
+    openRegister('/projects', sessionFor(['R06']), []);
 
-    expect(await screen.findByText(en('projects.register.emptyForRole'))).toBeTruthy();
+    expect(await screen.findByText(en('projects.register.empty'))).toBeTruthy();
     expect(screen.getByText(en('projects.register.emptyForRoleDescription'))).toBeTruthy();
     expect(screen.queryByText(en('projects.list.emptyFiltered'))).toBeNull();
     expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.queryByRole('link', { name: en('projects.import.open') })).toBeNull();
+    expect(screen.queryByRole('link', { name: en('projects.create.action') })).toBeNull();
+  });
+
+  test('an empty register offers Import and Create to a role that has them', async () => {
+    openRegister('/projects', sessionFor(['R02']), []);
+
+    const empty = (await screen.findByText(en('projects.register.empty'))).parentElement;
+    const actions = within(empty ?? document.body);
+    expect(
+      actions.getByRole('link', { name: en('projects.import.open') }).getAttribute('href'),
+    ).toBe('/projects/import');
+    expect(
+      actions.getByRole('link', { name: en('projects.create.action') }).getAttribute('href'),
+    ).toBe('/projects/new');
+  });
+
+  test.each(['R02', 'R03'])('%s sees Import on the register', async (role) => {
+    openRegister('/projects', sessionFor([role]));
+
+    expect(await screen.findByRole('link', { name: en('projects.import.open') })).toBeTruthy();
+  });
+
+  test('a holder of PROJECT_IMPORT_APPROVE alone sees Import on the register', async () => {
+    withProjectLookups(mockApi())
+      .on('GET', SHELL_PERMISSIONS, {
+        body: {
+          permissions: [
+            { code: 'PROJECT_VIEW', scopes: ['ALL'] },
+            { code: 'PROJECT_IMPORT_APPROVE', scopes: ['ALL'] },
+          ],
+        },
+      })
+      .on('GET', /^\/projects$/, { body: { items: [], page: 1, pageSize: 25, totalCount: 0 } });
+    renderApp({ path: '/projects', session: sessionFor(['R09']) });
+
+    expect(await screen.findAllByRole('link', { name: en('projects.import.open') })).toHaveLength(
+      2,
+    );
+    expect(screen.queryByRole('link', { name: en('projects.create.action') })).toBeNull();
   });
 
   test('a filter that matches nothing says so and offers to clear it', async () => {

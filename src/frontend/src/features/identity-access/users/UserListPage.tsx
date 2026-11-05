@@ -308,6 +308,7 @@ export function UserListPage(): ReactElement {
                   <th scope="col">{t('identityAccess.users.fields.username')}</th>
                   <th scope="col">{t('identityAccess.users.fields.email')}</th>
                   <th scope="col">{t('identityAccess.users.fields.userType')}</th>
+                  <th scope="col">{t('identityAccess.users.fields.accountSource')}</th>
                   <th scope="col">{t('identityAccess.users.fields.organization')}</th>
                   <th scope="col">{t('identityAccess.users.fields.status')}</th>
                 </tr>
@@ -325,6 +326,11 @@ export function UserListPage(): ReactElement {
                       {user.email}
                     </td>
                     <td>{t(`identityAccess.userType.${user.userType}`)}</td>
+                    <td>
+                      {user.accountSource === undefined
+                        ? '—'
+                        : t(`identityAccess.accountSource.${user.accountSource}`)}
+                    </td>
                     <td>
                       {lookups?.departmentName(user.departmentId) ??
                         lookups?.entityName(user.externalEntityId) ??

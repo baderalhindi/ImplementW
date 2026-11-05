@@ -69,6 +69,10 @@ function user(
     createdBy: ADMIN_ID,
     updatedAt: '2026-09-01T08:00:00Z',
     updatedBy: ADMIN_ID,
+    accountSource: 'DIRECTORY',
+    mustChangePassword: false,
+    lockedUntil: null,
+    accountEndsOn: null,
     ...overrides,
   };
 }
@@ -99,7 +103,16 @@ export const externalUser = user({
 export const users = [internalUser, sponsorUser, externalUser];
 
 function role(code: string, en: string, ar: string, isExternalEligible = false): RoleSummary {
-  return { id: `role-${code}`, code, name: { ar, en }, isSystem: true, isExternalEligible };
+  return {
+    id: `role-${code}`,
+    code,
+    name: { ar, en },
+    isSystem: true,
+    isExternalEligible,
+    isActive: true,
+    allowedScopes: ['ALL'],
+    landingDashboardCode: null,
+  };
 }
 
 export const roles: RoleSummary[] = [

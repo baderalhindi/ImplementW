@@ -166,6 +166,9 @@ export interface ProjectFollowUpItem {
 /** The project the workspace (SCR-040–043) shows, with the ETag every change sends back. */
 export interface ProjectDetail extends ProjectSummary {
   description: NarrativeText | null;
+  /** The English title and strategic flag of an imported project (the 5 Nov 2026 review §5); null when not recorded. */
+  titleEn?: string | null;
+  isStrategic?: boolean | null;
   revisionNo: number;
   governanceProfileItemId: string;
   registrationBudgetSar: string | null;

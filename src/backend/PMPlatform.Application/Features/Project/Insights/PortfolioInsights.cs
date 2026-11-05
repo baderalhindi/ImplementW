@@ -135,7 +135,7 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
             _ => throw new ArgumentOutOfRangeException(nameof(dimension), dimension, "Unknown card dimension."),
         };
         List<Row> rows = [.. (await RowsAsync(scope, new PortfolioInsightFilters(), cancellationToken).ConfigureAwait(false)).Where(r => key(r.Project) == itemId)];
-        return rows.Count == 0 ? AdministrationError.NotFound : new PortfolioCard(dimension, itemId, RowOf(itemId, null, rows, amounts, thresholds, sector: dimension == PortfolioCardDimension.Sector), [.. rows
+        return new PortfolioCard(dimension, itemId, RowOf(itemId, null, rows, amounts, thresholds, sector: dimension == PortfolioCardDimension.Sector), [.. rows
             .OrderBy(r => r.Project.LegacyReference ?? r.Project.FormalProjectId, StringComparer.Ordinal)
             .Select(r => new PortfolioCardProject(
                 r.Project.Id, r.Project.FormalProjectId, r.Project.LegacyReference, r.Project.Title, r.Project.LifecycleState, r.Project.DepartmentId, r.Project.ExternalEntityId,

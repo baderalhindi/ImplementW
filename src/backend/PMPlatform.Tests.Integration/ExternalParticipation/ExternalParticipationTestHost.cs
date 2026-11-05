@@ -49,17 +49,18 @@ public sealed class ExternalParticipationTestHost : IAsyncLifetime
         CROSS JOIN master_data_config.master_data_catalogue c WHERE c.code = 'CONTRIBUTION_TYPE';
 
         INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, lifecycle_state, created_at, created_by, updated_at, updated_by)
-        SELECT '{ParticipationVersionId}', f.id, 1, 'DRAFT', now(), '{Seed}', now(), '{Seed}'
+        SELECT '{ParticipationVersionId}', f.id, 2, 'DRAFT', now(), '{Seed}', now(), '{Seed}'
         FROM master_data_config.configuration_family f WHERE f.code = 'PARTICIPATION';
 
         INSERT INTO master_data_config.participation_contribution_rule (id, configuration_version_id, participation_mode, contribution_type_item_id, is_enabled, created_at, created_by, updated_at, updated_by)
         SELECT gen_random_uuid(), '{ParticipationVersionId}', r.mode, r.type_id::uuid, r.enabled, now(), '{Seed}', now(), '{Seed}'
         FROM (VALUES ('ENTITY_MANAGED', '{TaskProgressTypeId}', true), ('AHDA_MANAGED', '{TaskProgressTypeId}', true),
                      ('ENTITY_MANAGED', '{InformationTypeId}', true), ('AHDA_MANAGED', '{InformationTypeId}', false),
-                     ('ENTITY_MANAGED', '{UntypedTypeId}', true), ('AHDA_MANAGED', '{UntypedTypeId}', true)) AS r (mode, type_id, enabled);
+                     ('ENTITY_MANAGED', '{UntypedTypeId}', true), ('AHDA_MANAGED', '{UntypedTypeId}', true),
+                     ('ENTITY_MANAGED', md5('master_data_item:CONTRIBUTION_TYPE:MONTHLY_UPDATE')::uuid::text, true), ('AHDA_MANAGED', md5('master_data_item:CONTRIBUTION_TYPE:MONTHLY_UPDATE')::uuid::text, true)) AS r (mode, type_id, enabled);
 
         UPDATE master_data_config.configuration_version
-        SET lifecycle_state = 'PUBLISHED', published_at = now() - interval '1 hour', effective_from = now() - interval '1 hour'
+        SET lifecycle_state = 'PUBLISHED', published_at = clock_timestamp(), effective_from = clock_timestamp()
         WHERE id = '{ParticipationVersionId}';
         """;
 

@@ -11145,6 +11145,150 @@
         }
       }
     },
+    "/api/v1/portfolio-insights": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Each section answers only for a caller holding its permission, at that permission's scope; the others are null.",
+        "operationId": "Project_GetPortfolioInsights",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "externalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "classificationItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "regionItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/ProjectLifecycleState"
+            }
+          },
+          {
+            "name": "priorityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicPortfolioItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicInitiativeItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioInsights"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio-insights/cards": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "A printable portfolio, initiative or sector card: a summary, then every project in the caller's scope.",
+        "operationId": "Project_GetPortfolioCard",
+        "parameters": [
+          {
+            "name": "dimension",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PortfolioCardDimension"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioCard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/post-project-obligations": {
       "get": {
         "tags": [
@@ -16042,11 +16186,50 @@
       }
     },
     "/api/v1/roles": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The 5 Nov 2026 review §6.2: a new role and its draft profile, empty or copied from another role.",
+        "operationId": "IdentityAccess_CreateRole",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleDetail"
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "Unpaged (R-28): the closed set of eight canonical roles.",
+        "summary": "Unpaged (R-28): the roles, the eight canonical ones and any created.",
         "operationId": "IdentityAccess_ListRoles",
         "responses": {
           "200": {
@@ -16065,7 +16248,146 @@
         }
       }
     },
+    "/api/v1/roles/{roleId}/update-settings": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The 5 Nov 2026 review §6.2: the role's allowed scopes and landing dashboard. Requires `If-Match`.",
+        "operationId": "IdentityAccess_UpdateRoleSettings",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleSettingsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleSettingsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/roles/{roleId}/deactivate": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Retires a created role: offered for no new assignment. Requires `If-Match`.",
+        "operationId": "IdentityAccess_DeactivateRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/roles/{roleId}/reactivate": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Brings a retired role back. Requires `If-Match`.",
+        "operationId": "IdentityAccess_ReactivateRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/roles/{roleId}": {
+      "delete": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Deletes a created role nobody ever held; one with assignments is deactivated instead. Requires `If-Match`.",
+        "operationId": "IdentityAccess_DeleteRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      },
       "get": {
         "tags": [
           "IdentityAccess"
@@ -16845,6 +17167,57 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/SessionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaPendingDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/password-change": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Replaces a local account's temporary password; the session follows, or its second factor.",
+        "operationId": "IdentityAccess_CreatePasswordChangeSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChangeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChangeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChangeRequest"
               }
             }
           },
@@ -18060,6 +18433,275 @@
         }
       }
     },
+    "/api/v1/update-request-batches": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "operationId": "ExternalParticipation_ListUpdateRequestBatches",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateRequestBatchPage"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "All or nothing: every project that cannot be sent to is named in the 422.",
+        "operationId": "ExternalParticipation_SendUpdateRequestBatch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequestBatchRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequestBatchRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequestBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateRequestBatchDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/update-request-batches/{batchId}": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "operationId": "ExternalParticipation_GetUpdateRequestBatch",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateRequestBatchDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/update-request-batches/{batchId}/remind-late": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "operationId": "ExternalParticipation_RemindLateUpdateRequests",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateRequestBatchDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/update-request-batches/{batchId}/withdraw": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "operationId": "ExternalParticipation_WithdrawUpdateRequestBatch",
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequestBatchWithdrawRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequestBatchWithdrawRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRequestBatchWithdrawRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateRequestBatchDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/my-update-requests": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "operationId": "ExternalParticipation_ListMyUpdateRequests",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyUpdateRequestPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/my-update-requests/{requestId}/mark-opened": {
+      "post": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "Records that the responder opened this project's form: the batch page's \"opened\".",
+        "operationId": "ExternalParticipation_MarkUpdateRequestOpened",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "get": {
         "tags": [
@@ -18304,6 +18946,142 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/UserUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/reset-password": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The 5 Nov 2026 review §6.1: a local account's new temporary password, typed or generated, returned this once.",
+        "operationId": "IdentityAccess_ResetUserPassword",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPasswordResetRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPasswordResetRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPasswordResetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/unlock": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The 5 Nov 2026 review §6.1: ends a local account's lockout.",
+        "operationId": "IdentityAccess_UnlockUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/set-end-date": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The 5 Nov 2026 review §6.1: the account's last usable day; empty makes it open-ended.",
+        "operationId": "IdentityAccess_SetUserEndDate",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserEndDateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserEndDateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserEndDateRequest"
               }
             }
           },
@@ -18793,6 +19571,14 @@
           }
         },
         "description": "A row of ADM-010 Role Assignment: a user bound to a profile version with its scope anchors (ADR-018)."
+      },
+      "AccountSource": {
+        "enum": [
+          "DIRECTORY",
+          "LOCAL"
+        ],
+        "description": "Who holds the account's credentials (the 5 Nov 2026 review, R4-6): AHDA's directory, or the platform for a local account.",
+        "default": "DIRECTORY"
       },
       "ActionDueStatus": {
         "enum": [
@@ -20433,7 +21219,8 @@
       "AuthenticationMethod": {
         "enum": [
           "DIRECTORY",
-          "SINGLE_SIGN_ON"
+          "SINGLE_SIGN_ON",
+          "LOCAL_PASSWORD"
         ],
         "description": "How the session's user proved their identity."
       },
@@ -20678,6 +21465,19 @@
           "DECLARED"
         ],
         "description": "ERD `project_baseline.baseline_type`: the Approved Baseline, or ADR-014's Declared Baseline."
+      },
+      "BatchRowState": {
+        "enum": [
+          "SENT",
+          "OPENED",
+          "DRAFT",
+          "SUBMITTED",
+          "ACCEPTED",
+          "RETURNED",
+          "REJECTED",
+          "WITHDRAWN"
+        ],
+        "description": "Where a project of a batch stands, as the batch page shows it."
       },
       "BilingualLabel": {
         "required": [
@@ -23238,7 +24038,8 @@
       "ContributionApplicationMode": {
         "enum": [
           "REFERENCE_ONLY",
-          "UPDATE_ALLOWED_SOURCE_FIELDS"
+          "UPDATE_ALLOWED_SOURCE_FIELDS",
+          "APPLY_ON_ACCEPT"
         ],
         "description": "WF-13 §7.1: what an accepted answer does to its source. REFERENCE_ONLY keeps it as information and changes no source; UPDATE_ALLOWED_SOURCE_FIELDS\nsets narrowly allowlisted fields of one source record through the owning module's typed command, after revalidation."
       },
@@ -24628,6 +25429,7 @@
         "enum": [
           "IMPORT",
           "MANUAL",
+          "ENTITY_UPDATE",
           null
         ]
       },
@@ -31215,6 +32017,198 @@
         "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
         "type": "string"
       },
+      "MyUpdateRequest": {
+        "required": [
+          "requestId",
+          "requestVersion",
+          "projectId",
+          "formalProjectId",
+          "legacyReference",
+          "projectTitle",
+          "dueDate",
+          "overdue",
+          "status",
+          "instructions",
+          "contributionId",
+          "contributionVersion",
+          "contributionStatus",
+          "returnReason",
+          "previouslyReturned",
+          "plannedProgressPercent",
+          "prefill",
+          "prefillLanguages"
+        ],
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requestVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "uint32"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formalProjectId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "legacyReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "projectTitle": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "overdue": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExternalUpdateRequestStatus"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "contributionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "contributionVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "uint32"
+          },
+          "contributionStatus": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ExternalContributionStatus"
+              }
+            ]
+          },
+          "returnReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "previouslyReturned": {
+            "type": "boolean"
+          },
+          "plannedProgressPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "prefill": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "prefillLanguages": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Language"
+            }
+          }
+        },
+        "description": "A request waiting on its responder, with what the window pre-fills: the open draft's values, or last month's from the project."
+      },
+      "MyUpdateRequestPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "overdueCount",
+          "earliestDueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyUpdateRequest"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "overdueCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "earliestDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "What the bell and the window need: the due requests, soonest first, with how many are late."
+      },
       "NarrativeText": {
         "required": [
           "text",
@@ -32676,6 +33670,28 @@
           }
         }
       },
+      "PasswordChangeRequest": {
+        "required": [
+          "passwordChangeToken",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "passwordChangeToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newPassword": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A local account's new password, with the token its sign-in answered."
+      },
       "PermissionGrantRequest": {
         "required": [
           "permissionCode",
@@ -33074,6 +34090,796 @@
           },
           "displayName": {
             "type": "string"
+          }
+        }
+      },
+      "PortfolioBreakdown": {
+        "required": [
+          "rows",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioBreakdownRow"
+            }
+          },
+          "total": {
+            "$ref": "#/components/schemas/PortfolioBreakdownRow"
+          }
+        }
+      },
+      "PortfolioBreakdownRow": {
+        "required": [
+          "itemId",
+          "parentItemId",
+          "projects",
+          "valueSar",
+          "valueEntered",
+          "measured",
+          "averagePlannedPercent",
+          "averageActualPercent",
+          "gapPoints",
+          "onPlan",
+          "needingFollowUp"
+        ],
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "parentItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "valueSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valueEntered": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "measured": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "averagePlannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averageActualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "gapPoints": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "onPlan": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OnPlanStatus"
+              }
+            ]
+          },
+          "needingFollowUp": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "averagePlannedSpendPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averageActualSpendPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "spendMeasured": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32",
+            "default": 0
+          },
+          "portfolioSplit": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioSplit"
+            }
+          }
+        },
+        "description": "A row of a breakdown: by portfolio, initiative or sector. A total row is calculated from the projects, never from the rows' averages."
+      },
+      "PortfolioCard": {
+        "required": [
+          "dimension",
+          "itemId",
+          "summary",
+          "projects"
+        ],
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "$ref": "#/components/schemas/PortfolioCardDimension"
+          },
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PortfolioBreakdownRow"
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioCardProject"
+            }
+          }
+        },
+        "description": "A printable portfolio, initiative or sector card (§3 row 11): a summary, then every project."
+      },
+      "PortfolioCardDimension": {
+        "enum": [
+          "PORTFOLIO",
+          "INITIATIVE",
+          "SECTOR"
+        ]
+      },
+      "PortfolioCardProject": {
+        "required": [
+          "projectId",
+          "formalProjectId",
+          "legacyReference",
+          "title",
+          "status",
+          "departmentId",
+          "externalEntityId",
+          "valueSar",
+          "plannedStartDate",
+          "plannedEndDate",
+          "plannedPercent",
+          "actualPercent",
+          "gapPoints",
+          "onPlan",
+          "currentObstacle",
+          "nextAction",
+          "nextActionOwner",
+          "nextActionDueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formalProjectId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "legacyReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectLifecycleState"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "externalEntityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "valueSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "plannedStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "actualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "gapPoints": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "onPlan": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OnPlanStatus"
+              }
+            ]
+          },
+          "currentObstacle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "nextAction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "nextActionOwner": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextActionDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "A project of a printable group card."
+      },
+      "PortfolioFollowUpReasons": {
+        "required": [
+          "stalled",
+          "suspended",
+          "late",
+          "overdueAction",
+          "openObstacle",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "stalled": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "suspended": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "late": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "overdueAction": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "openObstacle": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "Each project counted once, under its first reason in the Follow-up list's order."
+      },
+      "PortfolioHeadline": {
+        "required": [
+          "registeredProjects",
+          "inProgressProjects",
+          "totalValueSar",
+          "valueEntered",
+          "averagePlannedPercent",
+          "averageActualPercent",
+          "measured",
+          "gapPoints",
+          "onPlan",
+          "needingFollowUp",
+          "overdueActions"
+        ],
+        "type": "object",
+        "properties": {
+          "registeredProjects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "inProgressProjects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalValueSar": {
+            "pattern": "^-?[0-9]{1,16}\\.[0-9]{2}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valueEntered": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "averagePlannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averageActualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "measured": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "gapPoints": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "onPlan": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OnPlanStatus"
+              }
+            ]
+          },
+          "needingFollowUp": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "overdueActions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "RPMO's six headline cards (the 5 Nov 2026 review §3 row 1). A value is null when the caller may not see amounts; an average is null when nothing is measured."
+      },
+      "PortfolioInsights": {
+        "required": [
+          "headline",
+          "byPortfolio",
+          "byInitiative",
+          "bySector",
+          "stages",
+          "onPlan",
+          "followUpReasons",
+          "topFollowUp"
+        ],
+        "type": "object",
+        "properties": {
+          "headline": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioHeadline"
+              }
+            ]
+          },
+          "byPortfolio": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioBreakdown"
+              }
+            ]
+          },
+          "byInitiative": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioBreakdown"
+              }
+            ]
+          },
+          "bySector": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioBreakdown"
+              }
+            ]
+          },
+          "stages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioStageCount"
+            }
+          },
+          "onPlan": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioOnPlan"
+              }
+            ]
+          },
+          "followUpReasons": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PortfolioFollowUpReasons"
+              }
+            ]
+          },
+          "topFollowUp": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PortfolioTopProject"
+            }
+          }
+        },
+        "description": "What the Excel's dashboard answers (the 5 Nov 2026 review §3). A section is null when the caller holds no permission for it: permissions decide, never a role code. Averages are simple\naverages of project percentages. A project without both percentages is unmeasured, never zero."
+      },
+      "PortfolioOnPlan": {
+        "required": [
+          "onTrack",
+          "late",
+          "stalled",
+          "notMeasured"
+        ],
+        "type": "object",
+        "properties": {
+          "onTrack": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "late": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "stalled": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "notMeasured": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PortfolioSplit": {
+        "required": [
+          "portfolioItemId",
+          "projects"
+        ],
+        "type": "object",
+        "properties": {
+          "portfolioItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "projects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PortfolioStageCount": {
+        "required": [
+          "status",
+          "projects",
+          "percent"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ProjectLifecycleState"
+          },
+          "projects": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "percent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "PortfolioTopProject": {
+        "required": [
+          "projectId",
+          "formalProjectId",
+          "legacyReference",
+          "title",
+          "portfolioItemId",
+          "reason",
+          "currentObstacle",
+          "nextAction",
+          "nextActionOwner",
+          "nextActionDueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formalProjectId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "legacyReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "portfolioItemId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/FollowUpReason"
+          },
+          "currentObstacle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "nextAction": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "nextActionOwner": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nextActionDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           }
         }
       },
@@ -34182,6 +35988,25 @@
           },
           "indicators": {
             "$ref": "#/components/schemas/ProjectIndicators"
+          },
+          "titleEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isStrategic": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "entityContactUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
         "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart. DateTimeOffset? ProjectDetail.ClosedAt is when WF-10's\nclosure took effect (TASK-063); a closed project's completion date, or its having been terminated without one, is its closure cases'."
@@ -36356,6 +38181,13 @@
           },
           "indicators": {
             "$ref": "#/components/schemas/ProjectIndicators"
+          },
+          "entityContactUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
         "description": "A row of SCR-025 Project Register, with RPMO's calculated columns (R3-3)."
@@ -40623,6 +42455,65 @@
         },
         "description": "A role the session holds: the canonical role code, the profile version it is bound to (ADR-018) and its scope anchors."
       },
+      "RoleCreateRequest": {
+        "required": [
+          "code",
+          "nameAr",
+          "nameEn",
+          "isExternalEligible",
+          "allowedScopes"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nameAr": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "nameEn": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isExternalEligible": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "allowedScopes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "sourceRoleId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "landingDashboardCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "New Role (the 5 Nov 2026 review §6.2)."
+      },
       "RoleDetail": {
         "required": [
           "id",
@@ -40665,9 +42556,52 @@
           "updatedBy": {
             "type": "string",
             "format": "uuid"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          },
+          "allowedScopes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "landingDashboardCode": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "description": "ADM-007 Role Detail, with the permission profiles rooted at the role (ADR-018)."
+      },
+      "RoleSettingsRequest": {
+        "required": [
+          "allowedScopes"
+        ],
+        "type": "object",
+        "properties": {
+          "allowedScopes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "landingDashboardCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A role's allowed scopes and landing dashboard."
       },
       "RoleSummary": {
         "required": [
@@ -40694,9 +42628,28 @@
           },
           "isExternalEligible": {
             "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          },
+          "allowedScopes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "landingDashboardCode": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "A row of ADM-006 Roles: one of the canonical R01–R08."
+        "description": "A row of ADM-006 Roles."
       },
       "RoleUpdateRequest": {
         "required": [
@@ -42838,6 +44791,323 @@
           }
         }
       },
+      "UpdateRequestBatchDetail": {
+        "required": [
+          "batch",
+          "instructions",
+          "rows"
+        ],
+        "type": "object",
+        "properties": {
+          "batch": {
+            "$ref": "#/components/schemas/UpdateRequestBatchSummary"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdateRequestBatchRow"
+            }
+          }
+        }
+      },
+      "UpdateRequestBatchItemRequest": {
+        "required": [
+          "projectId"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "responsibleUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "One project of a batch; a responder given here is for a project with no entity contact, and becomes it."
+      },
+      "UpdateRequestBatchPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdateRequestBatchSummary"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "UpdateRequestBatchRequest": {
+        "required": [
+          "items",
+          "dueDate",
+          "repeatMonthly",
+          "repeatDay",
+          "instructions",
+          "reviewerUserId"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/UpdateRequestBatchItemRequest"
+            }
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "repeatMonthly": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "repeatDay": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "instructions": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reviewerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "The monthly request: the projects, the due date, whether it repeats and on which day, instructions and the reviewer."
+      },
+      "UpdateRequestBatchRow": {
+        "required": [
+          "requestId",
+          "projectId",
+          "formalProjectId",
+          "legacyReference",
+          "projectTitle",
+          "externalEntityId",
+          "responsibleUserId",
+          "state",
+          "overdue",
+          "requestVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "formalProjectId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "legacyReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "projectTitle": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "externalEntityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsibleUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "state": {
+            "$ref": "#/components/schemas/BatchRowState"
+          },
+          "overdue": {
+            "type": "boolean"
+          },
+          "requestVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "uint32"
+          }
+        }
+      },
+      "UpdateRequestBatchSummary": {
+        "required": [
+          "id",
+          "seriesId",
+          "dueDate",
+          "repeatMonthly",
+          "repeatDay",
+          "nextRunOn",
+          "withdrawnAt",
+          "reviewerUserId",
+          "createdBy",
+          "createdAt",
+          "projectCount",
+          "entityCount",
+          "openCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "seriesId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "repeatMonthly": {
+            "type": "boolean"
+          },
+          "repeatDay": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "nextRunOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "withdrawnAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reviewerUserId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdBy": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "projectCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "entityCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "openCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "UpdateRequestBatchWithdrawRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "UserCreateRequest": {
         "required": [
           "userType",
@@ -42910,6 +45180,28 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "accountSource": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AccountSource"
+              }
+            ]
+          },
+          "temporaryPassword": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mustChangePassword": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         },
         "description": "ADM-004 Create User. An internal user is linked to the directory by string? UserCreateRequest.DirectorySubjectId, which sign-in\nmatches (ADR-007); an external user belongs to Guid? UserCreateRequest.ExternalEntityId (ADR-013). string? UserCreateRequest.PreferredLanguage\ndefaults to `ar`."
@@ -43040,9 +45332,50 @@
           "updatedBy": {
             "type": "string",
             "format": "uuid"
+          },
+          "accountSource": {
+            "$ref": "#/components/schemas/AccountSource"
+          },
+          "mustChangePassword": {
+            "type": "boolean",
+            "default": false
+          },
+          "lockedUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "accountEndsOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "temporaryPassword": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "A generated or reset temporary password, in the one response that set it; never read back."
           }
         },
         "description": "ADM-003 User Detail. DateTimeOffset? UserDetail.MobileVerifiedAt is null until the holder of the number has confirmed it (ADR-004);\nstring UserDetail.PreferredLanguage is `ar` or `en`. A disabled user keeps every attribute, so a record they owned\nor acted on still names them (Appendix A.1). The Nafath reference itself is never returned (OQ-007)."
+      },
+      "UserEndDateRequest": {
+        "type": "object",
+        "properties": {
+          "endsOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        },
+        "description": "The account's last usable day; null makes it open-ended."
       },
       "UserMobileVerificationCommand": {
         "required": [
@@ -43108,6 +45441,18 @@
         },
         "description": "One page of ADM-002 (R-29)."
       },
+      "UserPasswordResetRequest": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A temporary password the administrator typed; left out, the platform generates one."
+      },
       "UserStatus": {
         "enum": [
           "ACTIVE",
@@ -43160,6 +45505,9 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "accountSource": {
+            "$ref": "#/components/schemas/AccountSource"
           }
         },
         "description": "A row of ADM-002 User List."
@@ -43544,13 +45892,13 @@
       "name": "Notifications"
     },
     {
+      "name": "Project"
+    },
+    {
       "name": "Progress"
     },
     {
       "name": "Schedule"
-    },
-    {
-      "name": "Project"
     },
     {
       "name": "Reports"

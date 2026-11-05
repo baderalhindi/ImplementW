@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
 import {
@@ -125,4 +126,40 @@ test('the permission matrix heads each permission group as a row group (WCAG 1.3
   expect(group?.textContent).toBe('IDENTITY_ACCESS');
   expect(group?.getAttribute('scope')).toBe('rowgroup');
   expect(document.querySelector('th[scope="colgroup"]')).toBeNull();
+});
+
+describe('master data', () => {
+  const catalogues = [
+    { id: 'c-region', code: 'REGION', name: { ar: 'المناطق', en: 'Regions' } },
+    { id: 'c-priority', code: 'PRIORITY', name: { ar: 'الأولويات', en: 'Priorities' } },
+  ].map((catalogue) => ({
+    ...catalogue,
+    allowsHierarchy: false,
+    isSystem: true,
+    parentCatalogueId: null,
+  }));
+
+  test('the catalogue is chosen outside the filters: a required choice, always visible', async () => {
+    const api = withIdentityAccessData(mockApi())
+      .on('GET', /^\/master-data-catalogues$/, { body: catalogues })
+      .on('GET', /^\/master-data-items$/, { body: page([]) })
+      .on('GET', /^\/project-import\/value-requests$/, { body: page([]) })
+      .on('GET', /value-requests/, { body: page([]) });
+    renderApp({ path: '/admin/master-data', session: R01 });
+    const user = userEvent.setup();
+
+    const select = await screen.findByRole('combobox', { name: /Catalogue|List/ });
+    expect(select.closest('[hidden]')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Filters/ })).toBeNull();
+    await user.selectOptions(select, 'PRIORITY');
+
+    await waitFor(() => {
+      expect(
+        api
+          .requestsTo('GET', /^\/master-data-items$/)
+          .at(-1)
+          ?.query.get('catalogueId'),
+      ).toBe('c-priority');
+    });
+  });
 });

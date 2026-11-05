@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 
 import { sessionStore } from '@/features/identity-access/session/sessionStore.ts';
 
+import { catalogueFor } from './dashboardFixtures.ts';
 import { shippedPermissions } from './permissionFixtures.ts';
 
 // A route table standing in for the API: each handler answers one method and path, and every request is recorded
@@ -41,6 +42,8 @@ export interface MockApi {
   shellInboxCountReads: RecordedRequest[];
   /** The shell's permission reads (see SHELL_PERMISSIONS). */
   shellPermissionReads: RecordedRequest[];
+  /** The dashboard catalogue's reads (see DASHBOARD_CATALOGUE). */
+  catalogueReads: RecordedRequest[];
 }
 
 /**
@@ -67,6 +70,26 @@ export const SHELL_PERMISSIONS = /^\/sessions\/current\/permissions$/;
 
 function isShellPermissions(method: string, url: URL): boolean {
   return method === 'GET' && url.pathname === '/api/v1/sessions/current/permissions';
+}
+
+/**
+ * The shell and the Home follow the dashboard catalogue on every screen (`useDashboardCatalogue`). With no handler for it, it answers what the
+ * session's roles are seeded with (dashboardFixtures.ts), as permissions do; it is kept out of `requests` for the same reason.
+ */
+function isDashboardCatalogue(method: string, url: URL): boolean {
+  return method === 'GET' && url.pathname === '/api/v1/dashboards';
+}
+
+function seededCatalogue(): MockReply {
+  const user = sessionStore.getSnapshot().session?.user;
+  return {
+    body: page(
+      catalogueFor(
+        (user?.roleAssignments ?? []).map((assignment) => assignment.roleCode),
+        user?.userType === 'EXTERNAL',
+      ),
+    ),
+  };
 }
 
 /**
@@ -156,6 +179,7 @@ export function mockApi(): MockApi {
   const requests: RecordedRequest[] = [];
   const shellInboxCountReads: RecordedRequest[] = [];
   const shellPermissionReads: RecordedRequest[] = [];
+  const catalogueReads: RecordedRequest[] = [];
 
   const answer = async (
     method: string,
@@ -173,9 +197,15 @@ export function mockApi(): MockApi {
     };
     const shellCount = isShellInboxCount(method, url);
     const shellPermissions = isShellPermissions(method, url);
-    (shellCount ? shellInboxCountReads : shellPermissions ? shellPermissionReads : requests).push(
-      recorded,
-    );
+    const dashboardCatalogue = isDashboardCatalogue(method, url);
+    (shellCount
+      ? shellInboxCountReads
+      : shellPermissions
+        ? shellPermissionReads
+        : dashboardCatalogue
+          ? catalogueReads
+          : requests
+    ).push(recorded);
     const routed = shellCount ? '/approval-tasks?pageSize=1' : recorded.path;
     const find = (wanted: string, path: string) =>
       [...routes]
@@ -184,7 +214,13 @@ export function mockApi(): MockApi {
     const route = find(method, routed);
     const emulated =
       route === undefined && method === 'GET' ? await emulatedNames(find, recorded) : undefined;
-    if (route === undefined && emulated === undefined && !shellCount && !shellPermissions) {
+    if (
+      route === undefined &&
+      emulated === undefined &&
+      !shellCount &&
+      !shellPermissions &&
+      !dashboardCatalogue
+    ) {
       throw new Error(`No mock for ${method} ${recorded.path}`);
     }
     const reply =
@@ -193,7 +229,9 @@ export function mockApi(): MockApi {
         : (emulated ??
           (shellPermissions
             ? { body: shippedPermissions(sessionStore.getSnapshot().session?.user) }
-            : { body: page([], 1) }));
+            : dashboardCatalogue
+              ? seededCatalogue()
+              : { body: page([], 1) }));
     const status = reply.status ?? 200;
     if (reply.body instanceof Blob) {
       // The bytes, not the Blob: Node's Response does not recognise jsdom's Blob.
@@ -293,6 +331,7 @@ export function mockApi(): MockApi {
     requests,
     shellInboxCountReads,
     shellPermissionReads,
+    catalogueReads,
     requestsTo: (method, pattern) =>
       requests.filter((request) => request.method === method && pattern.test(request.path)),
   };

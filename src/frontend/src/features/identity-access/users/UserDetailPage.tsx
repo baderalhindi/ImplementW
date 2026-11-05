@@ -12,15 +12,31 @@ import { type UserDetail } from '../api/types.ts';
 import { AssignmentsTable } from '../assignments/AssignmentsTable.tsx';
 import { useUserNames } from '../assignments/useUserNames.ts';
 import { AssignRoleDialog } from '../assignments/AssignRoleDialog.tsx';
+import { ConfirmDialog, type Confirmation } from '../components/ConfirmDialog.tsx';
 import { type OrganizationLookups, useOrganizationLookups } from '../lookups.ts';
+import { useCan } from '../permissions/permissions.ts';
 import { problemMessage } from '../problems.ts';
+import { TemporaryPasswordNotice } from './TemporaryPasswordNotice.tsx';
+import { ResetPasswordDialog, SetEndDateDialog } from './UserAccountDialogs.tsx';
 import { UserStatusDialog } from './UserStatusDialog.tsx';
 
-type Notice = 'created' | 'updated' | 'statusChanged' | 'assigned' | 'ended';
+type Notice =
+  | 'created'
+  | 'updated'
+  | 'statusChanged'
+  | 'assigned'
+  | 'ended'
+  | 'passwordReset'
+  | 'unlocked'
+  | 'endDateSet';
 
 function noticeFromState(state: unknown): Notice | null {
   const notice = (state as { notice?: unknown } | null)?.notice;
   return notice === 'created' || notice === 'updated' ? notice : null;
+}
+
+function isLocked(user: UserDetail): boolean {
+  return user.lockedUntil !== null && new Date(user.lockedUntil) > new Date();
 }
 
 function Detail({ term, children }: { term: string; children: ReactNode }): ReactElement {
@@ -40,6 +56,12 @@ export function UserDetailPage(): ReactElement {
   const [notice, setNotice] = useState<Notice | null>(() => noticeFromState(location.state));
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [endDateDialogOpen, setEndDateDialogOpen] = useState(false);
+  const [unlock, setUnlock] = useState<Confirmation | null>(null);
+  // In memory only, and gone with the screen: the API returns a temporary password once.
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
+  const mayManage = useCan('USER_MANAGE');
 
   const loadUser = useCallback((signal: AbortSignal) => usersApi.get(userId, signal), [userId]);
   const user = useApiResource(loadUser);
@@ -68,6 +90,8 @@ export function UserDetailPage(): ReactElement {
 
   const detail = user.data.data;
   const administrable = detail.userType !== 'SERVICE';
+  const etag = user.data.etag;
+  const managesLocal = administrable && mayManage && detail.accountSource === 'LOCAL';
 
   return (
     <>
@@ -91,6 +115,47 @@ export function UserDetailPage(): ReactElement {
                   ? t('identityAccess.userStatusDialog.disable')
                   : t('identityAccess.userStatusDialog.activate')}
               </button>
+              {managesLocal && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => {
+                    setResetDialogOpen(true);
+                  }}
+                >
+                  {t('identityAccess.users.account.resetPassword')}
+                </button>
+              )}
+              {managesLocal && isLocked(detail) && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => {
+                    setUnlock({
+                      title: t('identityAccess.users.account.unlockTitle', {
+                        name: detail.displayName,
+                      }),
+                      body: t('identityAccess.users.account.unlockBody'),
+                      confirmLabel: t('identityAccess.users.account.unlock'),
+                      destructive: false,
+                      action: () => usersApi.unlock(detail.id, etag),
+                    });
+                  }}
+                >
+                  {t('identityAccess.users.account.unlock')}
+                </button>
+              )}
+              {mayManage && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => {
+                    setEndDateDialogOpen(true);
+                  }}
+                >
+                  {t('identityAccess.users.account.setEndDate')}
+                </button>
+              )}
             </>
           ) : undefined
         }
@@ -99,6 +164,16 @@ export function UserDetailPage(): ReactElement {
         <p className="notice" role="status">
           {t(`identityAccess.users.detail.notice.${notice}`)}
         </p>
+      )}
+
+      {temporaryPassword !== null && (
+        <TemporaryPasswordNotice
+          name={detail.displayName}
+          password={temporaryPassword}
+          onDismiss={() => {
+            setTemporaryPassword(null);
+          }}
+        />
       )}
 
       <UserSummaryDetails user={detail} lookups={lookups} />
@@ -159,6 +234,44 @@ export function UserDetailPage(): ReactElement {
           user.reload();
         }}
       />
+      <ResetPasswordDialog
+        open={resetDialogOpen}
+        user={detail}
+        etag={etag}
+        onClose={() => {
+          setResetDialogOpen(false);
+        }}
+        onDone={(response) => {
+          setResetDialogOpen(false);
+          setTemporaryPassword(response.data.temporaryPassword ?? null);
+          setNotice('passwordReset');
+          user.reload();
+        }}
+      />
+      <SetEndDateDialog
+        open={endDateDialogOpen}
+        user={detail}
+        etag={etag}
+        onClose={() => {
+          setEndDateDialogOpen(false);
+        }}
+        onDone={() => {
+          setEndDateDialogOpen(false);
+          setNotice('endDateSet');
+          user.reload();
+        }}
+      />
+      <ConfirmDialog
+        confirmation={unlock}
+        onClose={() => {
+          setUnlock(null);
+        }}
+        onDone={() => {
+          setUnlock(null);
+          setNotice('unlocked');
+          user.reload();
+        }}
+      />
       <AssignRoleDialog
         open={assignDialogOpen}
         user={detail}
@@ -199,6 +312,27 @@ function UserSummaryDetails({
       </Detail>
       <Detail term={t('identityAccess.users.fields.userType')}>
         {t(`identityAccess.userType.${user.userType}`)}
+      </Detail>
+      <Detail term={t('identityAccess.users.fields.accountSource')}>
+        {t(`identityAccess.accountSource.${user.accountSource}`)}
+      </Detail>
+      {user.accountSource === 'LOCAL' && (
+        <Detail term={t('identityAccess.users.fields.mustChangePassword')}>
+          {user.mustChangePassword ? t('common.values.yes') : t('common.values.no')}
+        </Detail>
+      )}
+      {isLocked(user) && user.lockedUntil !== null && (
+        <Detail term={t('identityAccess.users.fields.lockedUntil')}>
+          <StatusBadge label={t('identityAccess.users.account.locked')} tone="negative" />
+          <span className="details__aside">{formatDateTime(user.lockedUntil)}</span>
+        </Detail>
+      )}
+      <Detail term={t('identityAccess.users.fields.accountEndsOn')}>
+        {user.accountEndsOn === null ? (
+          t('identityAccess.users.account.noEndDate')
+        ) : (
+          <span dir="ltr">{user.accountEndsOn}</span>
+        )}
       </Detail>
       <Detail term={t('identityAccess.users.fields.username')}>
         <span dir="ltr">{user.username}</span>

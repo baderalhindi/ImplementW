@@ -9,6 +9,7 @@ import {
   externalUser,
   internalUser,
   PROJECT_ID,
+  roles,
   sessionFor,
   sponsorUser,
   withIdentityAccessData,
@@ -38,6 +39,35 @@ async function openAssignDialog(path: string, heading: string) {
 }
 
 describe('MOD-081 and MOD-082 assign role', () => {
+  test("the scope step follows the role's allowed scopes, not its code", async () => {
+    const { api, user, dialog } = await openAssignDialog(
+      `/admin/users/${internalUser.id}`,
+      internalUser.displayName,
+    );
+    api.on('GET', /^\/roles$/, {
+      body: roles.map((role) =>
+        role.code === 'R03' ? { ...role, allowedScopes: ['PROJECT'] } : role,
+      ),
+    });
+    // The dialog read the roles as it opened: close and open it again on this answer.
+    await user.click(within(dialog).getByRole('button', { name: en('common.actions.cancel') }));
+    await user.click(screen.getByRole('button', { name: en('identityAccess.assignRole.open') }));
+    const opened = await screen.findByRole('dialog', {
+      name: en('identityAccess.assignRole.title'),
+    });
+
+    await user.selectOptions(
+      await within(opened).findByRole('combobox', { name: /Role and permission profile/ }),
+      'profile-R03',
+    );
+    await within(opened).findByRole('combobox', { name: /Profile version/ });
+    await user.click(within(opened).getByRole('button', { name: en('common.actions.next') }));
+
+    expect(within(opened).getByText(en('identityAccess.assignScope.anchorProject'))).toBeTruthy();
+    expect(within(opened).queryByRole('combobox', { name: /^Department/ })).toBeNull();
+    expect(within(opened).getByRole('textbox', { name: /Project ID/ })).toBeTruthy();
+  });
+
   test('an internal user is given a published profile version, scoped to a department', async () => {
     const { api, user, dialog } = await openAssignDialog(
       `/admin/users/${internalUser.id}`,

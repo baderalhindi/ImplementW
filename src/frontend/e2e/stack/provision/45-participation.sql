@@ -20,11 +20,12 @@ INSERT INTO master_data_config.participation_contribution_rule (id, configuratio
 SELECT md5('e2e-participation:' || r.mode || ':' || r.type_id)::uuid, '00000000-e2e8-4000-8000-000000000301', r.mode, r.type_id::uuid, true,
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
 FROM (VALUES ('ENTITY_MANAGED', '00000000-e2e9-4000-8000-000000000301'), ('AHDA_MANAGED', '00000000-e2e9-4000-8000-000000000301'),
-             ('ENTITY_MANAGED', '00000000-e2e9-4000-8000-000000000302'), ('AHDA_MANAGED', '00000000-e2e9-4000-8000-000000000302')) AS r (mode, type_id);
+             ('ENTITY_MANAGED', '00000000-e2e9-4000-8000-000000000302'), ('AHDA_MANAGED', '00000000-e2e9-4000-8000-000000000302'),
+             ('ENTITY_MANAGED', md5('master_data_item:CONTRIBUTION_TYPE:MONTHLY_UPDATE')::uuid::text), ('AHDA_MANAGED', md5('master_data_item:CONTRIBUTION_TYPE:MONTHLY_UPDATE')::uuid::text)) AS r (mode, type_id);
 
 UPDATE master_data_config.configuration_version
-SET lifecycle_state = 'PUBLISHED', published_by_user_id = '00000000-0000-4000-8000-0000000000ff', published_at = now() - interval '1 hour',
-    effective_from = now() - interval '1 hour'
+SET lifecycle_state = 'PUBLISHED', published_by_user_id = '00000000-0000-4000-8000-0000000000ff', published_at = clock_timestamp(),
+    effective_from = clock_timestamp()
 WHERE id = '00000000-e2e8-4000-8000-000000000301';
 
 \endif

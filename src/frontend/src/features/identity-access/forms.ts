@@ -20,6 +20,25 @@ export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0
 export const NAME_LENGTH = 200;
 export const CODE_LENGTH = 50;
 
+/** A created role's code (RoleCreateRequest): a letter first, as the API checks it. */
+export const ROLE_CODE_PATTERN = /^[A-Z][A-Z0-9_-]{1,39}$/;
+export const ROLE_CODE_LENGTH = 40;
+
+const PASSWORD_MINIMUM_LENGTH = 12;
+
+/** The API's rule for a local account's password (LocalPassword.MeetsRules); it stays the authority. */
+export function checkPassword(password: string, username: string): string | null {
+  if (password === '') {
+    return 'REQUIRED';
+  }
+  const meetsRules =
+    password.length >= PASSWORD_MINIMUM_LENGTH &&
+    /\p{L}/u.test(password) &&
+    /\p{Nd}/u.test(password) &&
+    password.toLowerCase() !== username.trim().toLowerCase();
+  return meetsRules ? null : 'PASSWORD_TOO_WEAK';
+}
+
 export type Validator = (value: string) => string | null;
 
 /** The API code of the first failed check, or null: REQUIRED, MAX_LENGTH or MALFORMED. */

@@ -208,5 +208,6 @@
     "contextInvalid": "This dashboard cannot be opened here.",
     "personalizationInvalid": "Only the optional widgets of this dashboard can be customized.",
     "permissionDenied": "Your role cannot customize this dashboard."
-  }
+  },
+  "noData": "No data"
 }

@@ -1,4 +1,4 @@
-import { Navigate, Outlet, type RouteObject } from 'react-router';
+import { Outlet, type RouteObject } from 'react-router';
 
 import { approvalRoutes } from '@/features/approvals/routes.tsx';
 import { auditActivityRoutes } from '@/features/audit-activity/routes.tsx';
@@ -17,10 +17,10 @@ import { identityAccessRoutes } from '@/features/identity-access/routes.tsx';
 import { integrationAdminRoutes } from '@/features/integration-admin/routes.tsx';
 import { issuesChallengesRoutes } from '@/features/issues-challenges/routes.tsx';
 import { milestoneRoutes } from '@/features/milestones/routes.tsx';
-import { RequireRole } from '@/features/identity-access/session/RequireRole.tsx';
+import { type PermissionCode } from '@/features/identity-access/permissions/permissionCodes.ts';
+import { RequirePermission } from '@/features/identity-access/session/RequirePermission.tsx';
 import { RequireSession } from '@/features/identity-access/session/RequireSession.tsx';
 import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
-import { SYSTEM_ADMINISTRATOR_ROLE } from '@/features/identity-access/session/useSession.ts';
 import { notificationRoutes } from '@/features/notifications/routes.tsx';
 import { projectRoutes } from '@/features/projects/routes.tsx';
 import { reportRoutes } from '@/features/reports/routes.tsx';
@@ -31,7 +31,13 @@ import { RouteErrorPage } from '@/shared/observability/RouteErrorPage.tsx';
 
 import { AppLayout } from './AppLayout.tsx';
 import { helpRoutes } from './help/routes.tsx';
-import { NotFoundPage } from './pages.tsx';
+import { administrationNavigation } from './menus.ts';
+import { AdministrationIndex, NotFoundPage } from './pages.tsx';
+
+/** What opens /admin: any permission of a screen the Administration menu offers there. */
+const ADMINISTRATION_PERMISSIONS: readonly PermissionCode[] = administrationNavigation.flatMap(
+  (item) => item.permissions ?? [],
+);
 
 export const appRoutes: RouteObject[] = [
   {
@@ -55,18 +61,18 @@ export const appRoutes: RouteObject[] = [
         children: [
           {
             element: (
-              <RequireRole roleCode={SYSTEM_ADMINISTRATOR_ROLE}>
+              <RequirePermission codes={ADMINISTRATION_PERMISSIONS}>
                 <Outlet />
-              </RequireRole>
+              </RequirePermission>
             ),
             children: [
-              { index: true, element: <Navigate to="users" replace /> },
+              { index: true, element: <AdministrationIndex /> },
               ...identityAccessRoutes,
-              ...integrationAdminRoutes, // FG-05 (TASK-076): R01 holds its permissions
-              ...dataImportRoutes, // TASK-102: DATA_IMPORT is R01's
+              ...integrationAdminRoutes, // FG-05 (TASK-076)
+              ...dataImportRoutes, // TASK-102
             ],
           },
-          // FG-06's screens open on audit permissions, not on R01 (TASK-074; each guards itself).
+          // FG-06's screens open on audit permissions, not on this guard (TASK-074; each guards itself).
           ...auditActivityRoutes,
         ],
       },

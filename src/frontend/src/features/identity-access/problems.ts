@@ -41,6 +41,12 @@ const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   IDENTITY_ACCESS_PROFILE_VERSION_IN_USE: 'identityAccess.problems.profileVersionInUse',
   IDENTITY_ACCESS_PROFILE_DRAFT_OPEN: 'identityAccess.problems.profileDraftOpen',
   IDENTITY_ACCESS_MIGRATION_TARGET_INVALID: 'identityAccess.problems.migrationTargetInvalid',
+  IDENTITY_ACCESS_LOCAL_ACCOUNTS_DISABLED: 'identityAccess.problems.localAccountsDisabled',
+  IDENTITY_ACCESS_NOT_LOCAL_ACCOUNT: 'identityAccess.problems.notLocalAccount',
+  IDENTITY_ACCESS_PASSWORD_INVALID: 'identityAccess.problems.passwordInvalid',
+  IDENTITY_ACCESS_ROLE_IN_USE: 'identityAccess.problems.roleInUse',
+  IDENTITY_ACCESS_ROLE_INACTIVE: 'identityAccess.problems.roleInactive',
+  IDENTITY_ACCESS_ROLE_SYSTEM: 'identityAccess.problems.roleSystem',
 };
 
 const FIELD_MESSAGES: Record<string, TranslationKey> = {
@@ -56,6 +62,9 @@ const FIELD_MESSAGES: Record<string, TranslationKey> = {
   OUTSIDE_ENTITY: 'identityAccess.fieldErrors.outsideEntity',
   NOT_EXTERNAL_ELIGIBLE: 'identityAccess.fieldErrors.notExternalEligible',
   DATE_BEFORE_START: 'identityAccess.fieldErrors.dateBeforeStart',
+  PASSWORD_TOO_WEAK: 'identityAccess.fieldErrors.passwordTooWeak',
+  PASSWORD_REUSED: 'identityAccess.fieldErrors.passwordReused',
+  PASSWORD_MISMATCH: 'identityAccess.fieldErrors.passwordMismatch',
 };
 
 export function problemMessage(error: unknown, t: Translate): string {

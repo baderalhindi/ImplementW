@@ -57,14 +57,17 @@
     "duplicate": "This value is already used by another record.",
     "outsideEntity": "An external user can only be assigned within their own entity.",
     "notExternalEligible": "This role cannot be assigned to an external user.",
-    "dateBeforeStart": "The end must be after the start."
+    "dateBeforeStart": "The end must be after the start.",
+    "passwordTooWeak": "Use at least 12 characters, mixing letters and digits, and not the username.",
+    "passwordReused": "This is one of your last 5 passwords. Choose a different one.",
+    "passwordMismatch": "The two passwords do not match."
   },
   "problems": {
     "duplicateKey": "A value you entered is already used by another record. See the highlighted field.",
     "alreadyAssigned": "The user already holds this assignment.",
     "referenceInvalid": "A selected user, sponsor, department, entity, project or profile version does not exist or cannot be used. See the highlighted field.",
     "externalGrantInvalid": "This assignment does not meet the rules for external users. See the highlighted fields.",
-    "scopeAnchorInvalid": "This role needs a different scope: a Department Manager needs a department, a Liaison a project, a Viewer a department or a project, and an internal user no external entity. See the highlighted fields.",
+    "scopeAnchorInvalid": "The assignment's scope does not fit what the role allows. An internal user takes no external entity. See the highlighted fields.",
     "profileVersionNotPublished": "Only a published profile version can be assigned.",
     "projectClosed": "The project is closed and cannot take new assignments.",
     "selfAdministration": "You cannot change your own status or assignments. Ask another system administrator.",
@@ -77,7 +80,13 @@
     "selfApproval": "You hold this profile, so you cannot approve a change to it. Ask an administrator who does not hold it.",
     "profileVersionInUse": "This version cannot be withdrawn: people still hold it (move them to the newest version first), or it is the only published version of a shipped role profile.",
     "profileDraftOpen": "This profile already has a version being prepared. Finish or abandon it first.",
-    "migrationTargetInvalid": "Assignments can only be moved to the profile's newest published version."
+    "migrationTargetInvalid": "Assignments can only be moved to the profile's newest published version.",
+    "localAccountsDisabled": "Local accounts are turned off on this platform. Create a directory account instead.",
+    "notLocalAccount": "This is a directory account: its password and lockout are managed in the directory.",
+    "passwordInvalid": "The password does not meet the rules. See the highlighted field.",
+    "roleInUse": "People have held this role, so it cannot be deleted. Deactivate it instead.",
+    "roleInactive": "This role is deactivated and cannot be assigned.",
+    "roleSystem": "A built-in role cannot be deactivated or deleted."
   },
   "userPicker": {
     "searchLabel": "Search by name, username or email",
@@ -100,7 +109,11 @@
       "directorySubjectId": "Directory identifier",
       "preferredLanguage": "Preferred language",
       "multiFactor": "Authenticator app enrolled",
-      "updatedAt": "Last updated"
+      "updatedAt": "Last updated",
+      "accountSource": "Account type",
+      "mustChangePassword": "Must change password at next sign-in",
+      "lockedUntil": "Locked until",
+      "accountEndsOn": "Account end date"
     },
     "list": {
       "title": "Users",
@@ -128,7 +141,14 @@
       "externalEntityHint": "The entity the person works for. It cannot be changed after the user is created.",
       "mobileNumberHint": "International format, for example +966501234567. The user confirms the number themselves with a code.",
       "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognise them.",
-      "directoryAttributesNote": "The department, manager and job title of an internal user are read from the AHDA directory each time they sign in."
+      "directoryAttributesNote": "The department, manager and job title of an internal user are read from the AHDA directory each time they sign in.",
+      "accountSourceDirectory": "Directory account",
+      "accountSourceLocal": "Local account",
+      "accountSourceHint": "A directory account signs in with the AHDA directory. A local account signs in with a password kept on this platform. The type cannot be changed later.",
+      "passwordMode": "Temporary password",
+      "passwordGenerated": "Generate one for me",
+      "passwordTyped": "Type one",
+      "temporaryPassword": "Temporary password"
     },
     "detail": {
       "description": "Profile, status and role assignments.",
@@ -143,8 +163,34 @@
         "updated": "The changes were saved.",
         "statusChanged": "The user's status was changed.",
         "assigned": "The role was assigned.",
-        "ended": "The assignment was ended."
+        "ended": "The assignment was ended.",
+        "passwordReset": "The password was reset.",
+        "unlocked": "The account was unlocked.",
+        "endDateSet": "The account end date was saved."
       }
+    },
+    "temporaryPassword": {
+      "title": "Temporary password for {name}",
+      "note": "It is shown only this once and cannot be read back. Copy it now and give it to the person securely.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFailed": "Could not copy. Select the password and copy it yourself.",
+      "dismiss": "I have copied it",
+      "openUser": "Open the user"
+    },
+    "account": {
+      "locked": "Locked",
+      "resetPassword": "Reset password",
+      "resetTitle": "Reset the password of {name}",
+      "resetBody": "The current password stops working, any lockout ends, and the person must set a new password at their next sign-in.",
+      "unlock": "Unlock account",
+      "unlockTitle": "Unlock the account of {name}",
+      "unlockBody": "The person can try to sign in again straight away.",
+      "setEndDate": "Set end date",
+      "setEndDateTitle": "Account end date of {name}",
+      "endsOn": "Last usable day",
+      "endsOnHint": "Leave empty for no end date.",
+      "noEndDate": "No end date"
     }
   },
   "userStatusDialog": {
@@ -181,7 +227,10 @@
     "projectIdHint": "The project's identifier, for example 3f2b8c1e-0000-4000-8000-000000000000. Required for a project manager from an external entity.",
     "sponsor": "AHDA sponsor",
     "sponsorHint": "An active AHDA staff member who is accountable for this external user's access.",
-    "submit": "Assign role"
+    "submit": "Assign role",
+    "anchorDepartment": "This role needs a department.",
+    "anchorProject": "This role needs a project.",
+    "anchorDepartmentOrProject": "This role needs a department or a project."
   },
   "assignments": {
     "title": "Role assignments",
@@ -209,12 +258,16 @@
       "name": "Name",
       "nameAr": "Name in Arabic",
       "nameEn": "Name in English",
-      "externalEligible": "Can be held by external users"
+      "externalEligible": "Can be held by external users",
+      "state": "State",
+      "allowedScopes": "Allowed scopes",
+      "landing": "Landing dashboard"
     },
     "list": {
       "title": "Roles",
-      "description": "The platform's eight roles. What each role may do is set by its permission profiles.",
-      "empty": "No roles are available."
+      "description": "The platform's built-in roles and those created here. What each role may do is set by its permission profiles.",
+      "empty": "No roles are available.",
+      "create": "New role"
     },
     "detail": {
       "profiles": "Permission profiles",
@@ -223,8 +276,51 @@
     },
     "edit": {
       "title": "Edit role",
-      "description": "Roles are fixed; only their names can be changed here. New access levels are created as permission profiles."
-    }
+      "description": "Change the role's names here. What it may do is set by its permission profiles."
+    },
+    "state": {
+      "active": "Active",
+      "inactive": "Deactivated"
+    },
+    "scope": {
+      "ALL": "All projects",
+      "DEPARTMENT": "Department",
+      "PROJECT": "Project",
+      "ENTITY": "External entity"
+    },
+    "landing": {
+      "PORTFOLIO": "Portfolio Dashboard",
+      "PROJECT": "Project Dashboard",
+      "GOVERNANCE": "Governance Dashboard",
+      "none": "No landing dashboard"
+    },
+    "create": {
+      "title": "New role",
+      "description": "A new role starts with a draft permission profile. It grants nothing until that profile is validated and published.",
+      "codeHint": "Capital letters, digits, - and _, starting with a letter. It cannot be changed later.",
+      "source": "Copy permissions from",
+      "sourceNone": "Start empty",
+      "sourceHint": "Copies the role's published profile, scopes, landing dashboard and external setting. You can change them below.",
+      "submit": "Create role"
+    },
+    "settings": {
+      "open": "Scopes and landing",
+      "title": "Scopes and landing dashboard",
+      "scopesHint": "Limits what an assignment of this role may be anchored to.",
+      "saved": "The settings were saved."
+    },
+    "actions": {
+      "deactivate": "Deactivate",
+      "deactivateTitle": "Deactivate {name}",
+      "deactivateBody": "The role is no longer offered for new assignments. Existing assignments continue until they are ended.",
+      "reactivate": "Reactivate",
+      "reactivateTitle": "Reactivate {name}",
+      "reactivateBody": "The role is offered for new assignments again.",
+      "delete": "Delete",
+      "deleteTitle": "Delete {name}",
+      "deleteBody": "The role and its permission profiles are removed for good. A role someone has held cannot be deleted, only deactivated."
+    },
+    "scopeSeparator": ", "
   },
   "permissionMatrix": {
     "title": "Permission matrix",
@@ -348,7 +444,16 @@
       "nationalIdPlaceholder": "Enter your national ID or Iqama number",
       "submit": "Sign in with biometrics"
     },
-    "copyright": "© {year} Al Ahsa Development Authority. All rights reserved."
+    "copyright": "© {year} Al Ahsa Development Authority. All rights reserved.",
+    "wrongCredentials": "The username or password is wrong.",
+    "wrongCode": "The verification code is wrong or has expired.",
+    "passwordChangeExpired": "The time to set a new password has run out. Go back and sign in again.",
+    "newPasswordTitle": "Set a new password",
+    "newPasswordInstructions": "Your password is temporary. Choose a new one to continue.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm the new password",
+    "setNewPassword": "Set password and continue",
+    "backToSignIn": "Back to sign-in"
   },
   "stepUp": {
     "title": "Confirm it is you",
@@ -435,5 +540,11 @@
       "added": "Mark added",
       "declined": "Decline"
     }
-  }
+  },
+  "passwordRules": "At least 12 characters, mixing letters and digits, not the username, and none of your last 5 passwords.",
+  "accountSource": {
+    "DIRECTORY": "Directory",
+    "LOCAL": "Local"
+  },
+  "temporaryPasswordRules": "At least 12 characters, mixing letters and digits, and not the username."
 }

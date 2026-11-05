@@ -8,7 +8,6 @@ import { type MasterDataItemSummary } from '@/shared/api/masterData.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
-import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
@@ -108,21 +107,14 @@ export function MasterDataPage(): ReactElement {
       {catalogues.loading && <LoadingState />}
       {chosen !== undefined && (
         <>
-          <FilterBar
-            fields={[
-              {
-                name: 'catalogue',
-                label: t('identityAccess.masterData.catalogue'),
-                all: sorted[0]?.name[language] ?? '',
-                options: sorted.slice(1).map((c) => ({ value: c.code, label: c.name[language] })),
-              },
-            ]}
-            values={{ catalogue: chosen === sorted[0] ? undefined : chosen.code }}
-            onChange={(_name, value) => {
-              setParams(value === undefined ? {} : { catalogue: value });
-            }}
-            onClearAll={() => {
-              setParams({});
+          {/* The list being looked at, always one: a required choice, so not a filter folded behind the Filters button. */}
+          <SelectField
+            label={t('identityAccess.masterData.catalogue')}
+            name="catalogue"
+            value={chosen.code}
+            options={sorted.map((c) => ({ value: c.code, label: c.name[language] }))}
+            onChange={(value) => {
+              setParams({ catalogue: value });
             }}
           />
           <CatalogueItems key={chosen.id} catalogue={chosen} parentCatalogue={parentCatalogue} />
