@@ -129,8 +129,9 @@ export function EditExternalRequestPage(): ReactElement {
 /** The CONTRIBUTION_TYPE items, PUBLISHED, with their codes; null without MASTER_DATA_VIEW (R01 only, TASK-038 F-1). */
 async function readContributionTypes(signal: AbortSignal) {
   try {
+    // A monthly update is sent as a batch (the 5 Nov 2026 review §2.2), never from this form.
     return (await readCatalogueItems(['CONTRIBUTION_TYPE'], signal)).CONTRIBUTION_TYPE.filter(
-      isPublished,
+      (item) => isPublished(item) && item.code !== 'MONTHLY_UPDATE',
     );
   } catch (error) {
     if (error instanceof ApiError && error.status === 403) {

@@ -4,6 +4,8 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useInboxCount } from '@/features/approvals/useInboxCount.ts';
 import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
 import { useDashboardCatalogue } from '@/features/dashboards/useDashboardCatalogue.ts';
+import { MonthlyUpdateWindow } from '@/features/external-participation/monthly/MonthlyUpdateWindow.tsx';
+import { useMyUpdates } from '@/features/external-participation/monthly/myUpdatesStore.ts';
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { PermissionsProvider } from '@/features/identity-access/permissions/PermissionsProvider.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
@@ -201,7 +203,9 @@ function CreateMenu(): ReactElement | null {
  */
 function NotificationBell(): ReactElement {
   const { t } = useI18n();
-  const unread = useUnreadCount().count ?? 0;
+  // The pinned monthly update counts as one item while anything is due (the 5 Nov 2026 review §2.1).
+  const pinned = (useMyUpdates().page?.totalCount ?? 0) > 0 ? 1 : 0;
+  const unread = (useUnreadCount().count ?? 0) + pinned;
   const { open, setOpen, containerRef, buttonRef, menuId } = usePopover();
 
   return (
@@ -615,6 +619,7 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
         </main>
       </div>
       <StepUpDialog />
+      <MonthlyUpdateWindow />
     </div>
   );
 }

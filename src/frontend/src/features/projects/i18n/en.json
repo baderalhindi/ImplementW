@@ -295,7 +295,8 @@
     "declaredFrom": "Declared on {date}, source: {source}",
     "source": {
       "IMPORT": "import",
-      "MANUAL": "entered here"
+      "MANUAL": "entered here",
+      "ENTITY_UPDATE": "The entity's update"
     },
     "compliance": "Entity keeps to its updates",
     "yes": "Yes",
@@ -465,5 +466,10 @@
     "backgroundDone": "{file} was validated in the background. To submit it, choose the same file again.",
     "askToAdd": "Ask an administrator to add it to {list}",
     "askedToAdd": "Requested from an administrator"
+  },
+  "card": {
+    "open": "Project card for printing",
+    "title": "Project card",
+    "back": "Back to the project"
   }
 }

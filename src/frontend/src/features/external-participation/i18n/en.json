@@ -5,7 +5,8 @@
     "applications": "Source application monitoring",
     "monitor": "Participation monitor",
     "mine": "My update requests",
-    "contributions": "My contributions"
+    "contributions": "My contributions",
+    "batches": "Monthly update batches"
   },
   "forbidden": "You do not have access to this project's update requests.",
   "internalOnly": {
@@ -49,11 +50,13 @@
   },
   "schema": {
     "TASK_PROGRESS": "Task progress",
-    "PROJECT_INFORMATION": "Project information"
+    "PROJECT_INFORMATION": "Project information",
+    "MONTHLY_UPDATE": "Monthly update"
   },
   "applicationMode": {
     "REFERENCE_ONLY": "Reference only: kept as accepted input, applied to no record",
-    "UPDATE_ALLOWED_SOURCE_FIELDS": "Applied to its source record after acceptance"
+    "UPDATE_ALLOWED_SOURCE_FIELDS": "Applied to its source record after acceptance",
+    "APPLY_ON_ACCEPT": "Written to the project when accepted"
   },
   "applicationState": {
     "PENDING": "Pending application",
@@ -110,7 +113,13 @@
     "actualPercentComplete": "Actual percent complete",
     "progressNote": "Progress note",
     "response": "Response",
-    "asOfDate": "As of"
+    "asOfDate": "As of",
+    "actualProgressPercent": "Actual progress (%)",
+    "actualSpendPercent": "Actual spend (%)",
+    "currentObstacle": "Current obstacle",
+    "nextAction": "Next action",
+    "nextActionDueDate": "Next action due",
+    "note": "Note"
   },
   "values": {
     "notAnswered": "Not answered"
@@ -261,7 +270,8 @@
     "submittedValue": "Submitted",
     "currentValue": "Source record now",
     "previousValue": "Revision {revision}",
-    "notMapped": "Not applied to the record"
+    "notMapped": "Not applied to the record",
+    "applyOnAccept": "Accepting writes these values to the project at once; there is no separate Apply step."
   },
   "applications": {
     "title": "Source application monitoring",
@@ -363,7 +373,8 @@
     },
     "accept": {
       "title": "Accept the response",
-      "consequence": "The response is accepted as submitted. An answer for a source record waits to be applied to it; a reference-only answer is complete."
+      "consequence": "The response is accepted as submitted. An answer for a source record waits to be applied to it; a reference-only answer is complete.",
+      "consequenceOnAccept": "The response is accepted as submitted and its values are written to the project at once."
     },
     "return": {
       "title": "Return for correction",
@@ -467,6 +478,150 @@
     "configurationMissing": "AHDA has not configured external participation yet (no participation rule is published).",
     "invalidTransition": "The request or response is no longer in a state that allows this.",
     "terminalState": "The request is closed or cancelled.",
-    "permissionDenied": "You do not have permission to do this."
+    "permissionDenied": "You do not have permission to do this.",
+    "batchInvalid": "Some of these projects cannot be sent to. Each is marked below.",
+    "projectHasNoEntity": "This project has no external entity to answer it."
+  },
+  "counts": {
+    "projects": {
+      "one": "{count} project",
+      "two": "{count} projects",
+      "few": "{count} projects",
+      "many": "{count} projects",
+      "other": "{count} projects"
+    },
+    "dueProjects": {
+      "one": "{count} project due",
+      "two": "{count} projects due",
+      "few": "{count} projects due",
+      "many": "{count} projects due",
+      "other": "{count} projects due"
+    },
+    "entities": {
+      "one": "{count} entity",
+      "two": "{count} entities",
+      "few": "{count} entities",
+      "many": "{count} entities",
+      "other": "{count} entities"
+    },
+    "requests": {
+      "one": "{count} request",
+      "two": "{count} requests",
+      "few": "{count} requests",
+      "many": "{count} requests",
+      "other": "{count} requests"
+    }
+  },
+  "monthly": {
+    "overdue": "Overdue",
+    "bell": "Monthly update: {projects}",
+    "state": {
+      "submitted": "Submitted",
+      "unsaved": "Not saved yet",
+      "returned": "Returned",
+      "draft": "Draft saved",
+      "notStarted": "Not started"
+    },
+    "window": {
+      "title": "{month} update",
+      "titleGeneric": "Monthly update",
+      "summary": "{projects} waiting for your update, due by {date}",
+      "summaryNoDate": "{projects} waiting for your update",
+      "progress": "{done} of {total} done",
+      "choose": "Choose a project to update.",
+      "allDone": "Everything is submitted. Thank you.",
+      "due": "Due {date}",
+      "close": "Close",
+      "closeNote": "Closing keeps your drafts. The bell brings this window back."
+    },
+    "form": {
+      "submit": "Submit",
+      "saved": "Draft saved.",
+      "returned": "Returned for correction:",
+      "planned": "Planned progress: {percent}%",
+      "plannedUnknown": "Planned progress: not available"
+    }
+  },
+  "batch": {
+    "new": "Request an update",
+    "description": "A monthly update request to one, several or all projects, sent as one batch.",
+    "listDescription": "Monthly update requests sent as one batch, and where each stands.",
+    "empty": "No batch has been sent yet.",
+    "sentAt": "Sent",
+    "projects": "Projects",
+    "entities": "Entities",
+    "open": "Still open",
+    "repeat": "Repeats",
+    "noRepeat": "Does not repeat",
+    "repeatsOn": "Every month on day {day}",
+    "withdrawn": "Withdrawn",
+    "sent": "The batch was sent.",
+    "detailTitle": "Monthly update batch",
+    "detailDescription": "{projects} across {entities}",
+    "notFound": "This batch was not found.",
+    "backToList": "All batches",
+    "countsLabel": "Projects by state",
+    "nextRun": "Next sending",
+    "rowsCaption": "The batch's projects and where each stands",
+    "remind": "Remind the late ones ({count})",
+    "remindTitle": "Remind the late responders",
+    "remindConsequence": "A reminder goes today to the responders of {count} late requests. Anyone already reminded today is skipped.",
+    "reminded": "The reminders were sent.",
+    "withdraw": "Withdraw",
+    "withdrawConsequence": "Cancels every request still open and stops the repeat. Answers already submitted stay with their reviewer.",
+    "withdrawnDone": "The batch was withdrawn.",
+    "state": {
+      "SENT": "Sent",
+      "OPENED": "Opened",
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "ACCEPTED": "Accepted",
+      "RETURNED": "Returned",
+      "REJECTED": "Rejected",
+      "WITHDRAWN": "Withdrawn"
+    },
+    "ineligible": {
+      "STATUS": "Cannot be requested: only approved, active or suspended projects can.",
+      "NO_ENTITY": "Cannot be requested: it has no external entity."
+    },
+    "rowIssue": {
+      "responderRequired": "Name who answers this project.",
+      "responderIneligible": "This person cannot answer for this project.",
+      "notReachable": "You cannot send a request for this project. Remove it.",
+      "status": "This project is no longer approved, active or suspended. Remove it.",
+      "noEntity": "This project has no external entity. Remove it.",
+      "other": "This project cannot be sent to. Remove it."
+    },
+    "step1": {
+      "title": "Choose projects",
+      "rule": "Only approved, active or suspended projects with an external entity can be requested.",
+      "selected": "Selected: {projects} across {entities}",
+      "selectAll": "Select all matching the filter",
+      "clear": "Clear selection",
+      "excluded": "{count} matching projects were left out: they cannot be requested.",
+      "choose": "Choose"
+    },
+    "step2": {
+      "title": "Set the request",
+      "type": "Request type",
+      "repeat": "Repeat every month",
+      "repeatDay": "Day of the month",
+      "reviewerHint": "Reviews every answer of this batch. You, unless you name someone else.",
+      "responders": "Who answers each project",
+      "responder": "Responder",
+      "responderFor": "Responder for {project}",
+      "responderHint": "Becomes the project's contact for its entity.",
+      "noResponder": "No responder",
+      "flagged": "{count} projects need attention before sending.",
+      "applyToEntity": "Apply to the {count} other flagged projects of this entity",
+      "remove": "Remove",
+      "typeHint": "Answered per project, reviewed, and written to the project when accepted."
+    },
+    "step3": {
+      "title": "Review and send",
+      "summaryRepeating": "{requests} to {entities}, repeating monthly on day {day}",
+      "summaryOnce": "{requests} to {entities}, once",
+      "send": "Send"
+    }
   }
 }

@@ -1,9 +1,15 @@
 import { type ReactElement, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 
+import { useCounted } from '@/features/external-participation/monthly/counts.ts';
+import {
+  myUpdatesStore,
+  useMyUpdates,
+} from '@/features/external-participation/monthly/myUpdatesStore.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { LoadingState } from '@/shared/ui/States.tsx';
+import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import { notificationsApi } from '../api/notificationsApi.ts';
 import { type NotificationSummary } from '../api/types.ts';
@@ -12,6 +18,42 @@ import { unreadCountStore } from '../unreadCount.ts';
 
 /** How many of the newest notifications the top bar lists. */
 export const RECENT_COUNT = 6;
+
+/**
+ * The monthly update, pinned above the notifications while anything is due (the 5 Nov 2026 review §2.1). It is no notification: reading it
+ * does not clear it, only submitting the last project does.
+ */
+function MonthlyUpdatePinned({ onClose }: { onClose: () => void }): ReactElement | null {
+  const { t } = useI18n();
+  const { page } = useMyUpdates();
+  const counted = useCounted();
+  if (page === null || page.totalCount === 0) {
+    return null;
+  }
+  return (
+    <button
+      type="button"
+      className="notification-menu__item notification-menu__item--pinned"
+      onClick={() => {
+        onClose();
+        myUpdatesStore.openWindow();
+      }}
+    >
+      <span className="notification-menu__text">
+        <span>
+          {t('externalParticipation.monthly.bell', {
+            projects: counted('dueProjects', page.totalCount),
+          })}
+        </span>
+        {page.overdueCount > 0 && (
+          <span>
+            <StatusBadge label={t('externalParticipation.monthly.overdue')} tone="negative" />
+          </span>
+        )}
+      </span>
+    </button>
+  );
+}
 
 /**
  * The top bar's notification list (the 27 Oct 2026 review): the newest notifications, unread ones marked. Choosing one reads it and opens
@@ -43,6 +85,7 @@ export function RecentNotifications({ onClose }: { onClose: () => void }): React
   return (
     <div className="notification-menu">
       <p className="notification-menu__title">{t('notifications.bell.title')}</p>
+      <MonthlyUpdatePinned onClose={onClose} />
       {recent.data === undefined ? (
         recent.loading ? (
           <LoadingState label={t('notifications.list.loading')} />

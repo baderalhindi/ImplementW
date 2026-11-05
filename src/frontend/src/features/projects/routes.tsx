@@ -13,6 +13,7 @@ import { CreateProjectPage, EditProjectPage } from './form/ProjectFormPages.tsx'
 import { ImportBatchPage } from './import/ImportBatchPage.tsx';
 import { ProjectImportPage } from './import/ProjectImportPage.tsx';
 import { MyProjectsPage, ProjectRegisterPage } from './register/ProjectListPages.tsx';
+import { ProjectCardPage } from './workspace/ProjectCardPage.tsx';
 import { ChangeRequestsTab } from './workspace/ChangeRequestsTab.tsx';
 import { CloseoutTab } from './workspace/CloseoutTab.tsx';
 import { DocumentsTab } from './workspace/DocumentsTab.tsx';
@@ -47,6 +48,7 @@ export const projectRoutes: RouteObject[] = [
   { path: 'import/validations/:validationId', element: <ProjectImportPage /> }, // a background validation, from its notification
   { path: 'import/:batchId', element: <ImportBatchPage /> }, // R3-4: one batch, its approval and rollback
   { path: ':projectId/edit', element: <EditProjectPage /> }, // SCR-034
+  { path: ':projectId/card', element: <ProjectCardPage /> }, // the 5 Nov 2026 review §3 row 11: one printable page
   {
     path: ':projectId',
     element: <ProjectWorkspace />, // SCR-040 shell, MOD-001, MOD-002, MOD-003

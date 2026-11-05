@@ -17,6 +17,7 @@ import {
 } from './components/PortfolioFilterBar.tsx';
 import { ProjectLocations } from './components/ProjectLocations.tsx';
 import { mayPersonalize } from './landing.ts';
+import { PortfolioInsightsSection } from './insights/PortfolioInsightsSection.tsx';
 import { hasNoData } from './presentation.ts';
 import { PersonalizeDialog } from './PersonalizeDialog.tsx';
 import { dashboardProblemMessage } from './problems.ts';
@@ -161,6 +162,12 @@ export function HostedDashboard({
         }
       />
       <PageNotice notice={notice} />
+      {entry.code === 'PORTFOLIO' && (
+        <PortfolioInsightsSection
+          filters={filters}
+          emptySaidElsewhere={view.data !== undefined && hasNoData(view.data)}
+        />
+      )}
       {view.data === undefined ? (
         view.loading ? (
           <LoadingState />

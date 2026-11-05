@@ -5,7 +5,8 @@
     "applications": "متابعة التطبيق على السجلات",
     "monitor": "متابعة المشاركة",
     "mine": "طلبات التحديث الخاصة بي",
-    "contributions": "مساهماتي"
+    "contributions": "مساهماتي",
+    "batches": "دفعات التحديث الشهري"
   },
   "forbidden": "ليست لديك صلاحية الاطلاع على طلبات التحديث لهذا المشروع.",
   "internalOnly": {
@@ -49,11 +50,13 @@
   },
   "schema": {
     "TASK_PROGRESS": "تقدم المهمة",
-    "PROJECT_INFORMATION": "معلومات المشروع"
+    "PROJECT_INFORMATION": "معلومات المشروع",
+    "MONTHLY_UPDATE": "تحديث شهري"
   },
   "applicationMode": {
     "REFERENCE_ONLY": "مرجعي فقط: يُحفظ مدخلًا مقبولًا ولا يُطبَّق على أي سجل",
-    "UPDATE_ALLOWED_SOURCE_FIELDS": "يُطبَّق على سجله المصدر بعد القبول"
+    "UPDATE_ALLOWED_SOURCE_FIELDS": "يُطبَّق على سجله المصدر بعد القبول",
+    "APPLY_ON_ACCEPT": "يُكتب في المشروع عند القبول"
   },
   "applicationState": {
     "PENDING": "بانتظار التطبيق",
@@ -110,7 +113,13 @@
     "actualPercentComplete": "نسبة الإنجاز الفعلية",
     "progressNote": "ملاحظة التقدم",
     "response": "الرد",
-    "asOfDate": "بتاريخ"
+    "asOfDate": "بتاريخ",
+    "actualProgressPercent": "الإنجاز الفعلي (%)",
+    "actualSpendPercent": "الصرف الفعلي (%)",
+    "currentObstacle": "العائق الحالي",
+    "nextAction": "الإجراء التالي",
+    "nextActionDueDate": "موعد الإجراء التالي",
+    "note": "ملاحظة"
   },
   "values": {
     "notAnswered": "لم يُجَب"
@@ -261,7 +270,8 @@
     "submittedValue": "المقدَّم",
     "currentValue": "السجل المصدر الآن",
     "previousValue": "النسخة {revision}",
-    "notMapped": "لا يُطبَّق على السجل"
+    "notMapped": "لا يُطبَّق على السجل",
+    "applyOnAccept": "القبول يكتب هذه القيم في المشروع مباشرة؛ لا توجد خطوة تطبيق منفصلة."
   },
   "applications": {
     "title": "متابعة التطبيق على السجلات",
@@ -363,7 +373,8 @@
     },
     "accept": {
       "title": "قبول الرد",
-      "consequence": "يُقبل الرد كما قُدِّم. الرد المتعلق بسجل مصدر ينتظر تطبيقه عليه؛ والرد المرجعي يكتمل بالقبول."
+      "consequence": "يُقبل الرد كما قُدِّم. الرد المتعلق بسجل مصدر ينتظر تطبيقه عليه؛ والرد المرجعي يكتمل بالقبول.",
+      "consequenceOnAccept": "يُقبل الرد كما قُدِّم وتُكتب قيمه في المشروع مباشرة."
     },
     "return": {
       "title": "إعادة للتصحيح",
@@ -467,6 +478,150 @@
     "configurationMissing": "لم تُعِدّ الهيئة مشاركة الجهات الخارجية بعد (لا توجد قاعدة مشاركة منشورة).",
     "invalidTransition": "لم يعد الطلب أو الرد في حالة تسمح بذلك.",
     "terminalState": "الطلب مغلق أو ملغى.",
-    "permissionDenied": "ليست لديك صلاحية تنفيذ ذلك."
+    "permissionDenied": "ليست لديك صلاحية تنفيذ ذلك.",
+    "batchInvalid": "تعذّر الإرسال إلى بعض هذه المشاريع. كلٌّ منها موضَّح أدناه.",
+    "projectHasNoEntity": "لا توجد جهة خارجية مرتبطة بهذا المشروع للرد عليه."
+  },
+  "counts": {
+    "projects": {
+      "one": "{count} مشروع",
+      "two": "{count} مشروعان",
+      "few": "{count} مشاريع",
+      "many": "{count} مشروعًا",
+      "other": "{count} مشروع"
+    },
+    "dueProjects": {
+      "one": "{count} مشروع مستحق",
+      "two": "{count} مشروعان مستحقان",
+      "few": "{count} مشاريع مستحقة",
+      "many": "{count} مشروعًا مستحقًا",
+      "other": "{count} مشروع مستحق"
+    },
+    "entities": {
+      "one": "{count} جهة",
+      "two": "{count} جهتان",
+      "few": "{count} جهات",
+      "many": "{count} جهة",
+      "other": "{count} جهة"
+    },
+    "requests": {
+      "one": "{count} طلب",
+      "two": "{count} طلبان",
+      "few": "{count} طلبات",
+      "many": "{count} طلبًا",
+      "other": "{count} طلب"
+    }
+  },
+  "monthly": {
+    "overdue": "متأخر",
+    "bell": "تحديث الشهر — {projects}",
+    "state": {
+      "submitted": "أُرسل",
+      "unsaved": "لم يُحفظ بعد",
+      "returned": "مُعاد",
+      "draft": "مسودة محفوظة",
+      "notStarted": "لم يبدأ"
+    },
+    "window": {
+      "title": "تحديث شهر {month}",
+      "titleGeneric": "التحديث الشهري",
+      "summary": "{projects} بانتظار تحديثك، آخر موعد {date}",
+      "summaryNoDate": "{projects} بانتظار تحديثك",
+      "progress": "أُنجز {done} من {total}",
+      "choose": "اختر مشروعًا لتحديثه.",
+      "allDone": "أُرسل كل شيء. شكرًا لك.",
+      "due": "الموعد {date}",
+      "close": "إغلاق",
+      "closeNote": "الإغلاق يحفظ مسوداتك. يعيد الجرس فتح هذه النافذة."
+    },
+    "form": {
+      "submit": "إرسال",
+      "saved": "حُفظت المسودة.",
+      "returned": "أُعيد للتصحيح:",
+      "planned": "الإنجاز المخطط: {percent}%",
+      "plannedUnknown": "الإنجاز المخطط: غير متوفر"
+    }
+  },
+  "batch": {
+    "new": "طلب تحديث",
+    "description": "طلب تحديث شهري إلى مشروع أو عدة مشاريع أو جميعها، يُرسل دفعة واحدة.",
+    "listDescription": "طلبات التحديث الشهري المرسلة دفعة واحدة، وموقف كل منها.",
+    "empty": "لم تُرسل أي دفعة بعد.",
+    "sentAt": "أُرسلت",
+    "projects": "المشاريع",
+    "entities": "الجهات",
+    "open": "ما زال مفتوحًا",
+    "repeat": "التكرار",
+    "noRepeat": "لا يتكرر",
+    "repeatsOn": "كل شهر في يوم {day}",
+    "withdrawn": "مسحوبة",
+    "sent": "أُرسلت الدفعة.",
+    "detailTitle": "دفعة تحديث شهري",
+    "detailDescription": "{projects} لدى {entities}",
+    "notFound": "لم يُعثر على هذه الدفعة.",
+    "backToList": "جميع الدفعات",
+    "countsLabel": "المشاريع حسب الحالة",
+    "nextRun": "الإرسال التالي",
+    "rowsCaption": "مشاريع الدفعة وموقف كل منها",
+    "remind": "تذكير المتأخرين ({count})",
+    "remindTitle": "تذكير المستجيبين المتأخرين",
+    "remindConsequence": "يُرسل اليوم تذكير إلى مستجيبي {count} طلبات متأخرة. ويُستثنى من ذُكّر اليوم.",
+    "reminded": "أُرسلت التذكيرات.",
+    "withdraw": "سحب",
+    "withdrawConsequence": "يلغي كل طلب ما زال مفتوحًا ويوقف التكرار. وتبقى الردود المقدَّمة لدى مراجعها.",
+    "withdrawnDone": "سُحبت الدفعة.",
+    "state": {
+      "SENT": "أُرسل",
+      "OPENED": "فُتح",
+      "DRAFT": "مسودة",
+      "SUBMITTED": "قُدِّم",
+      "ACCEPTED": "مقبول",
+      "RETURNED": "مُعاد",
+      "REJECTED": "مرفوض",
+      "WITHDRAWN": "مسحوب"
+    },
+    "ineligible": {
+      "STATUS": "لا يمكن طلبه: يقتصر الطلب على المشاريع المعتمدة أو النشطة أو المعلقة.",
+      "NO_ENTITY": "لا يمكن طلبه: لا توجد له جهة خارجية."
+    },
+    "rowIssue": {
+      "responderRequired": "حدّد من يرد على هذا المشروع.",
+      "responderIneligible": "لا يمكن لهذا الشخص الرد عن هذا المشروع.",
+      "notReachable": "لا يمكنك إرسال طلب لهذا المشروع. احذفه.",
+      "status": "لم يعد هذا المشروع معتمدًا أو نشطًا أو معلقًا. احذفه.",
+      "noEntity": "لا توجد جهة خارجية لهذا المشروع. احذفه.",
+      "other": "تعذّر الإرسال إلى هذا المشروع. احذفه."
+    },
+    "step1": {
+      "title": "اختيار المشاريع",
+      "rule": "يقتصر الطلب على المشاريع المعتمدة أو النشطة أو المعلقة التي لها جهة خارجية.",
+      "selected": "محدد: {projects} لدى {entities}",
+      "selectAll": "تحديد كل ما يطابق التصفية",
+      "clear": "إلغاء التحديد",
+      "excluded": "استُثني {count} من المشاريع المطابقة: لا يمكن طلبها.",
+      "choose": "تحديد"
+    },
+    "step2": {
+      "title": "إعداد الطلب",
+      "type": "نوع الطلب",
+      "repeat": "يتكرر كل شهر",
+      "repeatDay": "يوم الشهر",
+      "reviewerHint": "يراجع كل ردود هذه الدفعة. أنت، ما لم تحدد غيرك.",
+      "responders": "من يرد على كل مشروع",
+      "responder": "المستجيب",
+      "responderFor": "المستجيب عن {project}",
+      "responderHint": "يصبح جهة اتصال المشروع لدى جهته.",
+      "noResponder": "لا يوجد مستجيب",
+      "flagged": "{count} من المشاريع تحتاج إلى معالجة قبل الإرسال.",
+      "applyToEntity": "تطبيق على {count} من المشاريع المعلَّمة الأخرى لهذه الجهة",
+      "remove": "حذف",
+      "typeHint": "يُجاب عنه لكل مشروع، ثم يُراجع، ويُكتب في المشروع عند قبوله."
+    },
+    "step3": {
+      "title": "المراجعة والإرسال",
+      "summaryRepeating": "{requests} إلى {entities}، يتكرر شهريًا في يوم {day}",
+      "summaryOnce": "{requests} إلى {entities}، مرة واحدة",
+      "send": "إرسال"
+    }
   }
 }

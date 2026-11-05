@@ -2,6 +2,11 @@ import { apiRequest } from '@/shared/api/httpClient.ts';
 import { readAllPages } from '@/shared/api/paging.ts';
 
 import {
+  type PortfolioCard,
+  type PortfolioCardDimension,
+  type PortfolioInsights,
+} from './insightTypes.ts';
+import {
   type DashboardCatalogueEntry,
   type DashboardCode,
   type DashboardPersonalizationDetail,
@@ -35,6 +40,18 @@ export interface DashboardContext extends PortfolioFilters {
 }
 
 export const dashboardsApi = {
+  /** The Portfolio Dashboard's figures from RPMO's Excel (the 5 Nov 2026 review §3): each section null without its permission. */
+  insights: async (filters: PortfolioFilters, signal?: AbortSignal) =>
+    (await apiRequest<PortfolioInsights>('/portfolio-insights', { query: { ...filters }, signal }))
+      .data,
+  /** A printable portfolio, initiative or sector card: its summary, then every project. */
+  card: async (dimension: PortfolioCardDimension, itemId: string, signal?: AbortSignal) =>
+    (
+      await apiRequest<PortfolioCard>('/portfolio-insights/cards', {
+        query: { dimension, itemId },
+        signal,
+      })
+    ).data,
   /** The role-aware Home's catalogue: the dashboards the caller may open, the landing marked. At most three. */
   catalogue: (signal?: AbortSignal) =>
     readAllPages<DashboardCatalogueEntry>('/dashboards', {}, signal),

@@ -11,6 +11,12 @@ const FIELD_LABELS: Partial<Record<string, TranslationKey>> = {
   progressNote: 'externalParticipation.fields.progressNote',
   response: 'externalParticipation.fields.response',
   asOfDate: 'externalParticipation.fields.asOfDate',
+  actualProgressPercent: 'externalParticipation.fields.actualProgressPercent',
+  actualSpendPercent: 'externalParticipation.fields.actualSpendPercent',
+  currentObstacle: 'externalParticipation.fields.currentObstacle',
+  nextAction: 'externalParticipation.fields.nextAction',
+  nextActionDueDate: 'externalParticipation.fields.nextActionDueDate',
+  note: 'externalParticipation.fields.note',
 };
 
 export function useFieldLabel(): (fieldCode: string) => string {
@@ -27,7 +33,7 @@ export function usePurpose(): (
 ) => string {
   const { t } = useI18n();
   return ({ contributionSchemaCode: code }) =>
-    code === 'TASK_PROGRESS' || code === 'PROJECT_INFORMATION'
+    code === 'TASK_PROGRESS' || code === 'PROJECT_INFORMATION' || code === 'MONTHLY_UPDATE'
       ? t(`externalParticipation.schema.${code}`)
       : code;
 }

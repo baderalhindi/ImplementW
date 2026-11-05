@@ -44,6 +44,8 @@ export interface MockApi {
   shellPermissionReads: RecordedRequest[];
   /** The dashboard catalogue's reads (see DASHBOARD_CATALOGUE). */
   catalogueReads: RecordedRequest[];
+  /** The shell's reads of the monthly updates (see isShellMyUpdates). */
+  shellMyUpdateReads: RecordedRequest[];
 }
 
 /**
@@ -79,6 +81,23 @@ function isShellPermissions(method: string, url: URL): boolean {
 function isDashboardCatalogue(method: string, url: URL): boolean {
   return method === 'GET' && url.pathname === '/api/v1/dashboards';
 }
+
+/**
+ * The shell polls `GET /my-update-requests` for the window and the bell, on every screen, as it does the unread count. With no handler for it
+ * nothing is due, and it is kept out of `requests` as the other shell reads are.
+ */
+function isShellMyUpdates(method: string, url: URL): boolean {
+  return method === 'GET' && url.pathname === '/api/v1/my-update-requests';
+}
+
+const NOTHING_DUE = {
+  items: [],
+  page: 1,
+  pageSize: 200,
+  totalCount: 0,
+  overdueCount: 0,
+  earliestDueDate: null,
+};
 
 function seededCatalogue(): MockReply {
   const user = sessionStore.getSnapshot().session?.user;
@@ -180,6 +199,7 @@ export function mockApi(): MockApi {
   const shellInboxCountReads: RecordedRequest[] = [];
   const shellPermissionReads: RecordedRequest[] = [];
   const catalogueReads: RecordedRequest[] = [];
+  const shellMyUpdateReads: RecordedRequest[] = [];
 
   const answer = async (
     method: string,
@@ -198,13 +218,16 @@ export function mockApi(): MockApi {
     const shellCount = isShellInboxCount(method, url);
     const shellPermissions = isShellPermissions(method, url);
     const dashboardCatalogue = isDashboardCatalogue(method, url);
+    const shellMyUpdates = isShellMyUpdates(method, url);
     (shellCount
       ? shellInboxCountReads
       : shellPermissions
         ? shellPermissionReads
         : dashboardCatalogue
           ? catalogueReads
-          : requests
+          : shellMyUpdates
+            ? shellMyUpdateReads
+            : requests
     ).push(recorded);
     const routed = shellCount ? '/approval-tasks?pageSize=1' : recorded.path;
     const find = (wanted: string, path: string) =>
@@ -219,7 +242,8 @@ export function mockApi(): MockApi {
       emulated === undefined &&
       !shellCount &&
       !shellPermissions &&
-      !dashboardCatalogue
+      !dashboardCatalogue &&
+      !shellMyUpdates
     ) {
       throw new Error(`No mock for ${method} ${recorded.path}`);
     }
@@ -231,7 +255,9 @@ export function mockApi(): MockApi {
             ? { body: shippedPermissions(sessionStore.getSnapshot().session?.user) }
             : dashboardCatalogue
               ? seededCatalogue()
-              : { body: page([], 1) }));
+              : shellMyUpdates
+                ? { body: NOTHING_DUE }
+                : { body: page([], 1) }));
     const status = reply.status ?? 200;
     if (reply.body instanceof Blob) {
       // The bytes, not the Blob: Node's Response does not recognise jsdom's Blob.
@@ -332,6 +358,7 @@ export function mockApi(): MockApi {
     shellInboxCountReads,
     shellPermissionReads,
     catalogueReads,
+    shellMyUpdateReads,
     requestsTo: (method, pattern) =>
       requests.filter((request) => request.method === method && pattern.test(request.path)),
   };

@@ -5254,3 +5254,271 @@ path.trend__line--ACTUAL_PERCENT {
 .notes p {
   margin: 0;
 }
+
+/* ------------------------------------------------------------------------------- the monthly update (the 5 Nov 2026 review §2) */
+
+.dialog--wide {
+  inline-size: min(64rem, calc(100vw - 2rem));
+}
+
+.monthly-window {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.monthly-window__progress {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.monthly-window__panes {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .monthly-window__panes {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+}
+
+.monthly-window__list {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.monthly-window__row {
+  display: grid;
+  gap: var(--space-1);
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-background);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+}
+
+button.monthly-window__row {
+  cursor: pointer;
+}
+
+.monthly-window__row--current {
+  border-color: var(--color-primary);
+  border-inline-start-width: 4px;
+}
+
+.monthly-window__row--done {
+  opacity: 0.8;
+}
+
+.monthly-window__name {
+  display: grid;
+}
+
+.monthly-window__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.monthly-window__heading {
+  margin: 0;
+}
+
+.notification-menu__item--pinned {
+  border-inline-start: 4px solid var(--chart-warning);
+  font-weight: 600;
+}
+
+/* The three steps of "طلب تحديث". */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style-position: inside;
+}
+
+.steps__step {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.steps__step--current {
+  border-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.steps__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}
+
+.steps__counter {
+  margin: 0;
+  font-weight: 600;
+}
+
+tr[data-flagged='true'] {
+  background: var(--color-danger-surface, rgb(200 40 40 / 6%));
+}
+
+.batch-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ------------------------------------------------------------------------------- portfolio insights (the 5 Nov 2026 review §3) */
+
+.insights {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.insights__section {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.insights__section h2 {
+  margin: 0;
+}
+
+.insights__coverage {
+  display: block;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.insights__group th {
+  background: var(--chart-track);
+  font-weight: 600;
+}
+
+.insights__split {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.insights__charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: var(--space-4);
+}
+
+.grouped-columns {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.grouped-columns__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.grouped-columns__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.grouped-columns__plot {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+}
+
+.grouped-columns__group {
+  display: grid;
+  flex: 1 0 6rem;
+  gap: var(--space-1);
+  min-inline-size: 6rem;
+  text-align: center;
+}
+
+.grouped-columns__bars {
+  display: flex;
+  gap: 2px;
+  block-size: 10rem;
+}
+
+.grouped-columns__track {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  min-inline-size: 0;
+  padding-block-start: 1.5rem;
+}
+
+/* Above the bar's highest reach, so a full bar never covers it. */
+.grouped-columns__value {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.grouped-columns__bar {
+  display: block;
+  border-radius: 4px 4px 0 0;
+  background: var(--chart-color, var(--chart-single));
+}
+
+/* --------------------------------------------------------------------------------------------- printing a card */
+
+@media print {
+  .rail,
+  .rail__backdrop,
+  .topbar,
+  .skip-link,
+  .print-hide {
+    display: none !important;
+  }
+
+  .app,
+  .app__column,
+  .app__main {
+    display: block;
+    margin: 0;
+    padding: 0;
+    background: none;
+  }
+
+  .print-card .table-container {
+    overflow: visible;
+  }
+
+  .print-card .table {
+    font-size: 0.8rem;
+  }
+}

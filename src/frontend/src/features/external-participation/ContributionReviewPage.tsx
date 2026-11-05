@@ -303,7 +303,11 @@ function RevisionReview({
       {(dialog === 'accept' || dialog === 'return' || dialog === 'reject') && (
         <WordsDialog
           title={t(DECISION_TEXT[dialog].title)}
-          consequence={t(DECISION_TEXT[dialog].consequence)}
+          consequence={t(
+            dialog === 'accept' && request.applicationMode === 'APPLY_ON_ACCEPT'
+              ? 'externalParticipation.command.accept.consequenceOnAccept'
+              : DECISION_TEXT[dialog].consequence,
+          )}
           confirmLabel={t(DECISION_TEXT[dialog].action)}
           reason={dialog === 'accept' ? 'none' : 'required'}
           internalNote
@@ -344,6 +348,9 @@ function SourceIndicator({
   const { t } = useI18n();
   if (request.applicationMode === 'REFERENCE_ONLY') {
     return <p className="form__note">{t('externalParticipation.review.referenceOnly')}</p>;
+  }
+  if (request.applicationMode === 'APPLY_ON_ACCEPT') {
+    return <p className="form__note">{t('externalParticipation.review.applyOnAccept')}</p>;
   }
   if (loading) {
     return <LoadingState />;

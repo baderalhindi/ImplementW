@@ -33,8 +33,8 @@ export function DocumentLinks({
   );
   const links = useApiResource(load);
   return (
-    <section className="section" aria-labelledby="document-links">
-      <h2 id="document-links">{t('documents.links.title')}</h2>
+    <section className="section">
+      <h2>{t('documents.links.title')}</h2>
       {links.loading && <LoadingState label={t('documents.links.loading')} />}
       {links.error !== null && (
         <ErrorState

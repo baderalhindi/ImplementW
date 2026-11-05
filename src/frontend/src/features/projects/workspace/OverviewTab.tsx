@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { type ReactElement } from 'react';
 
 import { ProjectDashboard } from '@/features/dashboards/ProjectDashboard.tsx';
@@ -53,6 +54,9 @@ export function OverviewTab(): ReactElement {
   return (
     <>
       <p className="workspace__next">{t(NEXT_STEPS[project.status])}</p>
+      <p>
+        <Link to={`/projects/${project.id}/card`}>{t('projects.card.open')}</Link>
+      </p>
       {missing.length > 0 && (
         <div className="notice notice--warning" role="status">
           <p>{t('projects.overview.missingForSubmission')}</p>

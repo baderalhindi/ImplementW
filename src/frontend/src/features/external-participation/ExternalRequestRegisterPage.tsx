@@ -1,6 +1,7 @@
 import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -11,7 +12,9 @@ import { RequestRegisterView } from './components/RequestRegisterView.tsx';
 import {
   APPLICATION_MONITOR_PATH,
   EXTERNAL_REQUESTS_PATH,
+  NEW_UPDATE_BATCH_PATH,
   PARTICIPATION_MONITOR_PATH,
+  UPDATE_BATCHES_PATH,
 } from './paths.ts';
 import { participationProblemMessage } from './problems.ts';
 import { useEntityNames, useRequestList } from './useExternalParticipationData.ts';
@@ -19,8 +22,9 @@ import { useEntityNames, useRequestList } from './useExternalParticipationData.t
 /**
  * SCR-160 External Update Requests: AHDA's register of every request the person may see (DEPT, OWN or ALL as the API
  * scopes it), drafts included, with their status, due condition, responder and reviewer. Narrowed to one project and
- * entity from SCR-167 (`?projectId=&externalEntityId=`). A request is created from its project's workspace (SCR-161
- * needs the project); cancelling and reassigning are on its detail (SCR-162).
+ * entity from SCR-167 (`?projectId=&externalEntityId=`). Its "new" is the monthly update to one or many projects (the 5 Nov 2026 review
+ * §2.2); any other request is created from its project's workspace (SCR-161 needs the project). Cancelling and reassigning are on its
+ * detail (SCR-162).
  */
 export function ExternalRequestRegisterPage(): ReactElement | null {
   const { t } = useI18n();
@@ -30,6 +34,7 @@ export function ExternalRequestRegisterPage(): ReactElement | null {
   const externalEntityId = params.get('externalEntityId') ?? undefined;
   const requests = useRequestList({ projectId, externalEntityId });
   const entityName = useEntityNames();
+  const maySend = useCan('UPDATE_REQUEST_SEND');
 
   if (session === null) {
     return null;
@@ -44,6 +49,16 @@ export function ExternalRequestRegisterPage(): ReactElement | null {
         description={t('externalParticipation.register.description')}
         actions={
           <>
+            {maySend && (
+              <>
+                <Link className="button button--primary" to={NEW_UPDATE_BATCH_PATH}>
+                  {t('externalParticipation.batch.new')}
+                </Link>
+                <Link className="button" to={UPDATE_BATCHES_PATH}>
+                  {t('externalParticipation.nav.batches')}
+                </Link>
+              </>
+            )}
             <Link className="button" to={APPLICATION_MONITOR_PATH}>
               {t('externalParticipation.nav.applications')}
             </Link>

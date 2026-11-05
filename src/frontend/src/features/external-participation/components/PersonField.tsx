@@ -11,8 +11,8 @@ interface PersonFieldProps {
   label: string;
   /** The API's field, so its refusal (…_INELIGIBLE) lands here. */
   name: 'responsibleUserId' | 'reviewerUserId';
-  /** A responder is an entity user of the addressed entity; a reviewer an AHDA user (TASK-066 D-7, D-11). */
-  userType: 'EXTERNAL' | 'INTERNAL';
+  /** A responder is an entity user of the addressed entity; a reviewer an AHDA user (TASK-066 D-7, D-11); a monthly update's responder either. */
+  userType: 'EXTERNAL' | 'INTERNAL' | 'ANY';
   user: SessionUser;
   value: AssigneeValue;
   onChange: (value: AssigneeValue) => void;
@@ -89,7 +89,7 @@ export function PersonField({
           <UserPicker
             label={t('externalParticipation.people.find')}
             value={value.found}
-            userType={userType}
+            {...(userType === 'ANY' ? {} : { userType })}
             onChange={(found) => {
               onChange({ ...value, found });
             }}

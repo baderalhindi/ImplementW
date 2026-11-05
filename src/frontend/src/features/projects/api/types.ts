@@ -63,6 +63,8 @@ export interface ProjectSummary {
   currentObstacle?: NarrativeText | null;
   /** RPMO's calculated columns, from the declared values and the on-plan thresholds in force. */
   indicators?: ProjectIndicators;
+  /** Who answers the project's monthly update for its entity (the 5 Nov 2026 review §2.2). */
+  entityContactUserId?: string | null;
 }
 
 /** RPMO's on-plan indicator (مؤشر الالتزام بالخطة). */
@@ -119,7 +121,7 @@ export interface ProjectFollowUp {
   declaredPlannedSpendPercent: number | null;
   declaredActualSpendPercent: number | null;
   declaredAsOf: string | null;
-  declaredSource: 'IMPORT' | 'MANUAL' | null;
+  declaredSource: 'IMPORT' | 'MANUAL' | 'ENTITY_UPDATE' | null;
   entityUpdateCompliant: boolean | null;
 }
 
