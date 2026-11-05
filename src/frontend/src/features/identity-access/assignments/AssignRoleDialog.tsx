@@ -125,7 +125,9 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
   // No allowed scopes reported, or ALL: the assignment is limited as the administrator chooses (AccessRelationshipService).
   const anyAnchor = scopes === null || scopes.includes('ALL');
   const departmentAllowed = anyAnchor || scopes.includes('DEPARTMENT');
-  const projectAllowed = external || anyAnchor || scopes.includes('PROJECT');
+  // A department role may also be narrowed to one of the department's projects.
+  const projectAllowed =
+    external || anyAnchor || scopes.includes('PROJECT') || scopes.includes('DEPARTMENT');
   const anchorNote = anyAnchor
     ? null
     : departmentAllowed && projectAllowed

@@ -35,6 +35,14 @@ import { administrationNavigation } from './menus.ts';
 import { AdministrationIndex, NotFoundPage } from './pages.tsx';
 
 /** What opens /admin: any permission of a screen the Administration menu offers there. */
+const INTEGRATION_PERMISSIONS: readonly PermissionCode[] = [
+  'INTEGRATION_VIEW',
+  'INTEGRATION_LOG_VIEW',
+  'INTEGRATION_OPERATE',
+  'INTEGRATION_ALERT_MANAGE',
+  'INTEGRATION_CONFIGURE',
+];
+
 const ADMINISTRATION_PERMISSIONS: readonly PermissionCode[] = administrationNavigation.flatMap(
   (item) => item.permissions ?? [],
 );
@@ -68,7 +76,15 @@ export const appRoutes: RouteObject[] = [
             children: [
               { index: true, element: <AdministrationIndex /> },
               ...identityAccessRoutes,
-              ...integrationAdminRoutes, // FG-05 (TASK-076)
+              {
+                // FG-05 (TASK-076): another administration permission does not open these.
+                element: (
+                  <RequirePermission codes={INTEGRATION_PERMISSIONS}>
+                    <Outlet />
+                  </RequirePermission>
+                ),
+                children: integrationAdminRoutes,
+              },
               ...dataImportRoutes, // TASK-102
             ],
           },
