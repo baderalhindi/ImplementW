@@ -2845,6 +2845,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("issued_by_user_id");
 
+                    b.Property<DateOnly?>("LastRemindedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("last_reminded_on");
+
+                    b.Property<DateTimeOffset?>("OpenedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("opened_at");
+
                     b.Property<string>("Origin")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2886,6 +2894,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("target_type");
+
+                    b.Property<Guid?>("UpdateRequestBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("update_request_batch_id");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2946,6 +2958,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ReviewerUserId")
                         .HasDatabaseName("ix_external_update_request_reviewer_user_id");
+
+                    b.HasIndex("UpdateRequestBatchId")
+                        .HasDatabaseName("ix_external_update_request_update_request_batch_id");
 
                     b.HasIndex("UpdatedAt", "Id")
                         .HasDatabaseName("ix_external_update_request_updated_at_id");
@@ -3107,6 +3122,101 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_source_application_revalidated", "(revalidated_at IS NULL OR status = 'CONFLICT') AND (revalidated_at IS NULL) = (revalidated_by_user_id IS NULL) AND (revalidated_at IS NULL) = (revalidated_target_revision_no IS NULL)");
 
                             t.HasCheckConstraint("ck_source_application_status", "\"status\" IN ('APPLIED', 'CONFLICT', 'FAILED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.UpdateRequestBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<DateOnly?>("NextRunOn")
+                        .HasColumnType("date")
+                        .HasColumnName("next_run_on");
+
+                    b.Property<int?>("RepeatDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("repeat_day");
+
+                    b.Property<bool>("RepeatMonthly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("repeat_monthly");
+
+                    b.Property<Guid>("ReviewerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewer_user_id");
+
+                    b.Property<Guid>("SeriesId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("series_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset?>("WithdrawnAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("withdrawn_at");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Instructions", "PMPlatform.Domain.ExternalParticipation.UpdateRequestBatch.Instructions#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("instructions_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("instructions");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_update_request_batch");
+
+                    b.HasIndex("NextRunOn")
+                        .HasDatabaseName("ix_update_request_batch_next_run_on")
+                        .HasFilter("next_run_on IS NOT NULL");
+
+                    b.HasIndex("ReviewerUserId")
+                        .HasDatabaseName("ix_update_request_batch_reviewer_user_id");
+
+                    b.HasIndex("UpdatedAt", "Id")
+                        .HasDatabaseName("ix_update_request_batch_updated_at_id");
+
+                    b.ToTable("update_request_batch", "external_participation", t =>
+                        {
+                            t.HasCheckConstraint("ck_update_request_batch_instructions_lang", "\"instructions_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_update_request_batch_repeat", "repeat_monthly = (repeat_day IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_update_request_batch_repeat_day", "repeat_day IS NULL OR repeat_day BETWEEN 1 AND 28");
                         });
                 });
 
@@ -13071,6 +13181,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ReviewerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_external_update_request_user_reviewer_user_id");
+
+                    b.HasOne("PMPlatform.Domain.ExternalParticipation.UpdateRequestBatch", null)
+                        .WithMany()
+                        .HasForeignKey("UpdateRequestBatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_external_update_request_update_request_batch_update_request");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.SourceApplication", b =>
@@ -13094,6 +13210,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("RevalidatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_source_application_user_revalidated_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.UpdateRequestBatch", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_update_request_batch_user_reviewer_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialCommitment", b =>

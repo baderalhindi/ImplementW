@@ -27,6 +27,16 @@ internal static class ContributionSchemas
     /// <summary>Information AHDA asks an entity for, kept as accepted input and applied to no source (REFERENCE_ONLY).</summary>
     public const string ProjectInformation = "PROJECT_INFORMATION";
 
+    /// <summary>The monthly update of a project (the 5 Nov 2026 review §2.1), written to the project when its reviewer accepts it.</summary>
+    public const string MonthlyUpdate = "MONTHLY_UPDATE";
+
+    public const string ActualProgressPercent = "actualProgressPercent";
+    public const string ActualSpendPercent = "actualSpendPercent";
+    public const string CurrentObstacle = "currentObstacle";
+    public const string NextAction = "nextAction";
+    public const string NextActionDueDate = "nextActionDueDate";
+    public const string Note = "note";
+
     public const string ActualPercentComplete = "actualPercentComplete";
     public const string ProgressNote = "progressNote";
     public const string Response = "response";
@@ -42,6 +52,19 @@ internal static class ContributionSchemas
             [
                 new(ActualPercentComplete, ContributionFieldType.Number, Required: true, Minimum: 0m, Maximum: 100m),
                 new(ProgressNote, ContributionFieldType.Narrative, Required: false, Minimum: null, Maximum: null),
+            ]),
+        [MonthlyUpdate] = new(
+            MonthlyUpdate,
+            ContributionApplicationMode.ApplyOnAccept,
+            ProjectMonthlyTarget.Module,
+            ProjectMonthlyTarget.Type,
+            [
+                new(ActualProgressPercent, ContributionFieldType.Number, Required: true, Minimum: 0m, Maximum: 100m),
+                new(ActualSpendPercent, ContributionFieldType.Number, Required: false, Minimum: 0m, Maximum: 100m),
+                new(CurrentObstacle, ContributionFieldType.Narrative, Required: false, Minimum: null, Maximum: null),
+                new(NextAction, ContributionFieldType.Narrative, Required: false, Minimum: null, Maximum: null),
+                new(NextActionDueDate, ContributionFieldType.Date, Required: false, Minimum: null, Maximum: null),
+                new(Note, ContributionFieldType.Narrative, Required: false, Minimum: null, Maximum: null),
             ]),
         [ProjectInformation] = new(
             ProjectInformation,

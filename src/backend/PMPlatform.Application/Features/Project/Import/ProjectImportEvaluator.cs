@@ -282,7 +282,12 @@ internal static class ProjectImportEvaluator
             if (resolved is not null && _existing is not null && _action == ProjectImportRowAction.Update)
             {
                 Compare(resolved, _existing);
-                if (_changes.Count == 0)
+                if (_changes.Count > 0 && _existing.LifecycleState == ProjectLifecycleState.Closed)
+                {
+                    Error(LegacyRef, ProjectImportIssueCodes.ProjectClosed);
+                    resolved = null;
+                }
+                else if (_changes.Count == 0)
                 {
                     _action = ProjectImportRowAction.Skip;
                     Info(LegacyRef, ProjectImportIssueCodes.NoChange);
@@ -309,11 +314,6 @@ internal static class ProjectImportEvaluator
             }
 
             _action = ProjectImportRowAction.Update;
-            if (_existing.LifecycleState == ProjectLifecycleState.Closed)
-            {
-                Error(LegacyRef, ProjectImportIssueCodes.ProjectClosed);
-            }
-
             if (!context.InScope(_existing.DepartmentId, _existing.ExternalEntityId))
             {
                 Error(LegacyRef, ProjectImportIssueCodes.OutsideScope);

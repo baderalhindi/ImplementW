@@ -276,6 +276,9 @@ public sealed class PermissionCatalogue
     /// <summary>WF-13 (TASK-066): draft and submit the answer to a request the holder is the named responder of (EXT-CC-04).</summary>
     public const string ExternalContributionRespond = "EXTERNAL_CONTRIBUTION_RESPOND";
 
+    /// <summary>Send a batch of monthly update requests (the 5 Nov 2026 review §2.2). AHDA decides whether the Liaison gets it.</summary>
+    public const string UpdateRequestSend = "UPDATE_REQUEST_SEND";
+
     /// <summary>
     /// WF-13 (TASK-066): start the review of a submitted contribution revision and accept, return or reject it, as the request's assigned
     /// reviewer. Internal users only; never an edit of the submitted values (EXT-P-10).
@@ -467,6 +470,7 @@ public sealed class PermissionCatalogue
             new(ExternalRequestView, "EXTERNAL_PARTICIPATION", AccessMode.Read),
             new(ExternalRequestManage, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(ExternalContributionRespond, "EXTERNAL_PARTICIPATION", AccessMode.Write),
+            new(UpdateRequestSend, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(ExternalContributionReview, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(ExternalContributionApply, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
@@ -513,7 +517,7 @@ public sealed class PermissionCatalogue
         ProgressView, ProgressReview, ScheduleView, TaskView, MilestoneView, RiskView, RiskManage, RiskAssess, RiskAccept, RiskReopen,
         ConcernView, ConcernRaise, ConcernEscalationResolve, ChangeRequestView, ChangeRequestRaise, ChangeRequestReview,
         SuspensionView, SuspensionRaise, SuspensionReview, CloseoutView, CloseoutRaise, CloseoutReview, CloseoutWaive,
-        ExternalRequestView, ExternalRequestManage, ExternalContributionReview,
+        ExternalRequestView, ExternalRequestManage, ExternalContributionReview, UpdateRequestSend,
         FinancialView, FinancialViewSensitive, FinancialReview, KpiView, KpiManage, KpiReview,
         DocumentView, DocumentUpload, DocumentManage, ActivityView, AuditBusinessView,
     ];
@@ -620,6 +624,7 @@ public sealed class PermissionCatalogue
         new("R08", TaskView, DataScope.Assigned),
         new("R08", TaskUpdate, DataScope.Assigned),
         new("R08", ExternalContributionRespond, DataScope.Assigned),
+        new("R04", ExternalContributionRespond, DataScope.Assigned),
     ];
 
     private static IEnumerable<ShippedGrant> Role(string roleCode, DataScope scope, IEnumerable<string> permissions) =>

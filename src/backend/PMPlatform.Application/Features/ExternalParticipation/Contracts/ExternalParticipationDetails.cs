@@ -133,6 +133,9 @@ public enum ContributionApplicationMode
 {
     ReferenceOnly = 1,
     UpdateAllowedSourceFields = 2,
+
+    /// <summary>Accepting the revision writes it to its source in the one step: the monthly update (the 5 Nov 2026 review §2.2).</summary>
+    ApplyOnAccept = 3,
 }
 
 /// <summary>WF-13 §5.2's item types the platform's schemas use: free text with its language, a number in a range, a date.</summary>

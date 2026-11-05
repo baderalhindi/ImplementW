@@ -10,13 +10,13 @@ internal static class ProjectMapping
         p.LifecycleState, p.RevisionNo, p.GovernanceProfileItemId, p.ParticipationMode, p.RegistrationBudgetSar, p.PlannedStartDate, p.PlannedEndDate,
         p.RegionItemId, p.CityItemId, p.Latitude, p.Longitude, p.LegacyIntakeDate, p.ActivatedAt, p.ClosedAt, p.CreatedAt, p.CreatedBy, p.UpdatedAt, p.UpdatedBy,
         p.StrategicPortfolioItemId, p.StrategicInitiativeItemId, p.PriorityItemId, p.FundingSource, p.LegacyReference, p.FollowUpOwnerUserId,
-        p.ProjectImportBatchId, ToFollowUp(p), indicators);
+        p.ProjectImportBatchId, ToFollowUp(p), indicators, p.TitleEn, p.IsStrategic, p.EntityContactUserId);
 
     public static ProjectSummary ToSummary(ProjectEntity p, ProjectIndicators indicators) => new(
         p.Id, p.FormalProjectId, p.Title, p.ClassificationItemId, p.DepartmentId, p.ExternalEntityId, p.ProjectManagerUserId, p.LifecycleState,
         p.ParticipationMode, p.LegacyIntakeDate, p.UpdatedAt, p.LegacyReference, p.StrategicPortfolioItemId, p.StrategicInitiativeItemId,
         p.PriorityItemId, p.RegionItemId, p.CityItemId, p.ProjectImportBatchId, p.DeclaredPlannedPercent, p.DeclaredActualPercent,
-        p.CurrentObstacle, indicators);
+        p.CurrentObstacle, indicators, p.EntityContactUserId);
 
     public static ProjectFollowUpDetail ToFollowUp(ProjectEntity p) => new(
         p.CurrentObstacle, p.NextAction, p.NextActionOwner, p.NextActionDueDate, p.DeclaredPlannedPercent, p.DeclaredActualPercent,

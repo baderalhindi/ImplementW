@@ -1,3 +1,4 @@
+using PMPlatform.Infrastructure.ExternalParticipation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -202,6 +203,8 @@ public static class DependencyInjection
         services.AddHostedService<ReportJobWorker>();
 
         // TASK-062: WF-09's suspension schema, and the pass that activates approved requests on their effective date.
+        services.AddOptions<MonthlyUpdateOptions>().Bind(configuration.GetSection(MonthlyUpdateOptions.Section));
+        services.AddHostedService<MonthlyUpdateWorker>();
         services.AddScoped<ISuspensionRepository, SuspensionRepository>();
         services.AddOptions<SuspensionActivationOptions>()
             .Bind(configuration.GetSection(SuspensionActivationOptions.Section))

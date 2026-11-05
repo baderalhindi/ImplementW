@@ -44,4 +44,7 @@ public sealed record ProjectDetail(
     Guid? FollowUpOwnerUserId,
     Guid? ProjectImportBatchId,
     ProjectFollowUpDetail FollowUp,
-    ProjectIndicators Indicators);
+    ProjectIndicators Indicators,
+    string? TitleEn = null,
+    bool? IsStrategic = null,
+    Guid? EntityContactUserId = null);

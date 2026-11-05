@@ -229,6 +229,7 @@ FROM (VALUES
     ('EXTERNAL_REQUEST_VIEW',       'عرض طلبات تحديث الجهات الخارجية', 'View external update requests', 'EXTERNAL_PARTICIPATION', false),
     ('EXTERNAL_REQUEST_MANAGE',     'إدارة طلبات تحديث الجهات الخارجية', 'Manage external update requests', 'EXTERNAL_PARTICIPATION', false),
     ('EXTERNAL_CONTRIBUTION_RESPOND', 'الرد على طلبات التحديث', 'Respond to external update requests', 'EXTERNAL_PARTICIPATION', false),
+    ('UPDATE_REQUEST_SEND',         'إرسال طلبات التحديث الشهري', 'Send monthly update requests', 'EXTERNAL_PARTICIPATION', false),
     ('EXTERNAL_CONTRIBUTION_REVIEW', 'مراجعة مساهمات الجهات الخارجية', 'Review external contributions', 'EXTERNAL_PARTICIPATION', false),
     ('EXTERNAL_CONTRIBUTION_APPLY', 'تطبيق المساهمات المقبولة', 'Apply accepted contributions', 'EXTERNAL_PARTICIPATION', false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
@@ -324,6 +325,7 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R02', 'CLOSEOUT_WAIVE',                'ALL'),
     ('R02', 'EXTERNAL_REQUEST_VIEW',         'ALL'),
     ('R02', 'EXTERNAL_REQUEST_MANAGE',       'ALL'),
+    ('R02', 'UPDATE_REQUEST_SEND',           'ALL'),
     ('R02', 'EXTERNAL_CONTRIBUTION_REVIEW',  'ALL'),
     ('R02', 'FINANCIAL_VIEW',                'ALL'),
     ('R02', 'FINANCIAL_VIEW_SENSITIVE',      'ALL'),
@@ -374,6 +376,7 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R03', 'CLOSEOUT_WAIVE',                'DEPT'),
     ('R03', 'EXTERNAL_REQUEST_VIEW',         'DEPT'),
     ('R03', 'EXTERNAL_REQUEST_MANAGE',       'DEPT'),
+    ('R03', 'UPDATE_REQUEST_SEND',           'DEPT'),
     ('R03', 'EXTERNAL_CONTRIBUTION_REVIEW',  'DEPT'),
     ('R03', 'FINANCIAL_VIEW',                'DEPT'),
     ('R03', 'FINANCIAL_VIEW_SENSITIVE',      'DEPT'),
@@ -499,6 +502,7 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R08', 'ACTIVITY_VIEW',                 'ENTITY'),
     ('R08', 'TASK_VIEW',                     'ASSIGNED'),
     ('R08', 'TASK_UPDATE',                   'ASSIGNED'),
+    ('R04', 'EXTERNAL_CONTRIBUTION_RESPOND', 'ASSIGNED'),
     ('R08', 'EXTERNAL_CONTRIBUTION_RESPOND', 'ASSIGNED');
 
 INSERT INTO identity_access.permission_profile_grant AS pg (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
@@ -591,7 +595,9 @@ FROM (VALUES
     ('IMPACT_DIMENSION',     'COST',             'التكلفة',          'Cost',             1),
     ('IMPACT_DIMENSION',     'SCHEDULE',         'الجدول الزمني',    'Schedule',         2),
     ('IMPACT_DIMENSION',     'REPUTATION',       'السمعة',           'Reputation',       3),
-    ('IMPACT_DIMENSION',     'OPERATIONAL',      'التشغيل',          'Operational',      4)
+    ('IMPACT_DIMENSION',     'OPERATIONAL',      'التشغيل',          'Operational',      4),
+    -- The 5 Nov 2026 review (R4-2): the monthly update, a typed contribution of WF-13
+    ('CONTRIBUTION_TYPE',    'MONTHLY_UPDATE',   'تحديث شهري',       'Monthly update',   1)
 ) AS v (catalogue_code, code, label_ar, label_en, sort_order)
 JOIN master_data_config.master_data_catalogue c ON c.code = v.catalogue_code
 ON CONFLICT (catalogue_id, code) DO UPDATE SET
@@ -620,6 +626,39 @@ FROM (VALUES
     ('WORKFLOW_POLICY',      'سياسة سير العمل',            'Workflow policy')
 ) AS v (code, name_ar, name_en)
 ON CONFLICT (code) DO NOTHING;
+
+-- The monthly update must work without a governance round first (the 5 Nov 2026 review §2.2): a PARTICIPATION version enabling it in both modes, once, when the family's
+-- version in force has no rule for it. An AHDA version published later decides from then on.
+DO $$
+DECLARE
+    item uuid := md5('master_data_item:CONTRIBUTION_TYPE:MONTHLY_UPDATE')::uuid;
+    family uuid := (SELECT id FROM master_data_config.configuration_family WHERE code = 'PARTICIPATION');
+    version uuid := md5('configuration_version:PARTICIPATION:monthly-update')::uuid;
+    source uuid := (SELECT id FROM master_data_config.configuration_version WHERE configuration_family_id = (SELECT id FROM master_data_config.configuration_family WHERE code = 'PARTICIPATION')
+                    AND lifecycle_state = 'PUBLISHED' ORDER BY version_no DESC LIMIT 1);
+BEGIN
+    IF EXISTS (SELECT 1 FROM master_data_config.configuration_version WHERE id = version)
+       OR EXISTS (SELECT 1 FROM master_data_config.participation_contribution_rule WHERE configuration_version_id = source AND contribution_type_item_id = item) THEN
+        RETURN;
+    END IF;
+
+    INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, change_summary_lang, change_summary, lifecycle_state, created_at, created_by, updated_at, updated_by)
+    SELECT version, family, 1 + count(*), 'en', 'Monthly update enabled (seed, R4-2).', 'DRAFT', now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM master_data_config.configuration_version WHERE configuration_family_id = family;
+
+    INSERT INTO master_data_config.participation_contribution_rule (id, configuration_version_id, participation_mode, contribution_type_item_id, is_enabled, created_at, created_by, updated_at, updated_by)
+    SELECT md5(version::text || r.participation_mode || r.contribution_type_item_id::text)::uuid, version, r.participation_mode, r.contribution_type_item_id, r.is_enabled,
+           now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM master_data_config.participation_contribution_rule r WHERE r.configuration_version_id = source;
+
+    INSERT INTO master_data_config.participation_contribution_rule (id, configuration_version_id, participation_mode, contribution_type_item_id, is_enabled, created_at, created_by, updated_at, updated_by)
+    SELECT md5(version::text || m.mode || item::text)::uuid, version, m.mode, item, true, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM (VALUES ('AHDA_MANAGED'), ('ENTITY_MANAGED')) AS m (mode);
+
+    UPDATE master_data_config.configuration_version
+    SET lifecycle_state = 'PUBLISHED', published_by_user_id = '00000000-0000-4000-8000-0000000000ff', published_at = now(), effective_from = now()
+    WHERE id = version;
+END $$;
 
 -- 5. The risk and issue scale, generically (ADR-011; OQ-006). Version 1 of RISK_MATRIX stays DRAFT: resolution
 -- reads PUBLISHED versions only and fails closed without one (TASK-034), so nothing resolves against a scale AHDA

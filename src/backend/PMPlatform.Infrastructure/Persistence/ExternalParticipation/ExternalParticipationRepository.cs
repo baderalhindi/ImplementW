@@ -1,3 +1,4 @@
+using PMPlatform.Application.Features.ExternalParticipation.MonthlyUpdates;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -48,6 +49,72 @@ internal sealed class ExternalParticipationRepository(PMPlatformDbContext contex
 
         return request;
     }
+
+    public void Add(UpdateRequestBatch batch) => context.Add(batch);
+
+    public Task<UpdateRequestBatch?> FindBatchAsync(Guid batchId, CancellationToken cancellationToken) =>
+        context.Set<UpdateRequestBatch>().AsNoTracking().SingleOrDefaultAsync(b => b.Id == batchId, cancellationToken);
+
+    public Task<UpdateRequestBatch?> FindBatchForUpdateAsync(Guid batchId, CancellationToken cancellationToken) =>
+        context.Set<UpdateRequestBatch>().SingleOrDefaultAsync(b => b.Id == batchId, cancellationToken);
+
+    public async Task<(IReadOnlyList<UpdateRequestBatchSummary> Items, int TotalCount)> PageBatchesAsync(RecordScope scope, PageRequest page, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        IQueryable<AnchoredRequest> reached = (
+            from r in context.Set<ExternalUpdateRequest>().AsNoTracking()
+            join p in context.Set<ProjectEntity>() on r.ProjectId equals p.Id
+            select new AnchoredRequest { Request = r, DepartmentId = p.DepartmentId, ProjectManagerUserId = p.ProjectManagerUserId }).Where(Reached(scope));
+        IQueryable<Guid> ids = reached.Where(a => a.Request.UpdateRequestBatchId != null).Select(a => a.Request.UpdateRequestBatchId!.Value).Distinct();
+        int total = await ids.CountAsync(cancellationToken).ConfigureAwait(false);
+        List<UpdateRequestBatch> batches = await context.Set<UpdateRequestBatch>().AsNoTracking().Where(b => ids.Contains(b.Id))
+            .OrderByDescending(b => b.CreatedAt).ThenByDescending(b => b.Id).Skip(page.Skip).Take(page.PageSize).ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<Guid> pageIds = [.. batches.Select(b => b.Id)];
+        var counts = await reached.Where(a => a.Request.UpdateRequestBatchId != null && pageIds.Contains(a.Request.UpdateRequestBatchId!.Value))
+            .GroupBy(a => a.Request.UpdateRequestBatchId!.Value)
+            .Select(g => new
+            {
+                Id = g.Key,
+                Projects = g.Count(),
+                Entities = g.Select(a => a.Request.ExternalEntityId).Distinct().Count(),
+                Open = g.Count(a => a.Request.Status == ExternalUpdateRequestStatus.Issued || a.Request.Status == ExternalUpdateRequestStatus.InProgress),
+            }).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return ([.. batches.Select(b =>
+        {
+            var c = counts.First(x => x.Id == b.Id);
+            return new UpdateRequestBatchSummary(b.Id, b.SeriesId, b.DueDate, b.RepeatMonthly, b.RepeatDay, b.NextRunOn, b.WithdrawnAt, b.ReviewerUserId, b.CreatedBy, b.CreatedAt, c.Projects, c.Entities, c.Open);
+        })], total);
+    }
+
+    public async Task<IReadOnlyList<ExternalUpdateRequest>> ListRequestsOfBatchAsync(Guid batchId, CancellationToken cancellationToken) =>
+        await context.Set<ExternalUpdateRequest>().AsNoTracking().Where(r => r.UpdateRequestBatchId == batchId).OrderBy(r => r.Id).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyDictionary<Guid, ExternalContribution>> FindLatestContributionsAsync(IReadOnlyCollection<Guid> requestIds, CancellationToken cancellationToken)
+    {
+        List<ExternalContribution> rows = await context.Set<ExternalContribution>().AsNoTracking().Where(c => requestIds.Contains(c.ExternalUpdateRequestId)).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return rows.GroupBy(c => c.ExternalUpdateRequestId).ToDictionary(g => g.Key, g => g.MaxBy(c => c.RevisionNo)!);
+    }
+
+    public Task<ExternalContribution?> FindContributionByRevisionAsync(Guid requestId, int revisionNo, CancellationToken cancellationToken) =>
+        context.Set<ExternalContribution>().AsNoTracking().SingleOrDefaultAsync(c => c.ExternalUpdateRequestId == requestId && c.RevisionNo == revisionNo, cancellationToken);
+
+    public async Task<IReadOnlyList<ExternalUpdateRequest>> ListOpenMonthlyUpdatesAsync(Guid responsibleUserId, CancellationToken cancellationToken) =>
+        await context.Set<ExternalUpdateRequest>().AsNoTracking()
+            .Where(r => r.ResponsibleUserId == responsibleUserId && r.UpdateRequestBatchId != null
+                        && (r.Status == ExternalUpdateRequestStatus.Issued || r.Status == ExternalUpdateRequestStatus.InProgress))
+            .OrderBy(r => r.DueDate).ThenBy(r => r.Id).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<ExternalUpdateRequest>> ListRemindableMonthlyUpdatesAsync(DateOnly today, DateOnly dueBy, int limit, CancellationToken cancellationToken) =>
+        await context.Set<ExternalUpdateRequest>()
+            .Where(r => r.UpdateRequestBatchId != null && r.DueDate <= dueBy && (r.LastRemindedOn == null || r.LastRemindedOn < today)
+                        && (r.Status == ExternalUpdateRequestStatus.Issued || r.Status == ExternalUpdateRequestStatus.InProgress))
+            .OrderBy(r => r.DueDate).ThenBy(r => r.Id).Take(limit).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<UpdateRequestBatch>> ListRepeatingBatchesDueAsync(DateOnly today, int limit, CancellationToken cancellationToken) =>
+        await context.Set<UpdateRequestBatch>().AsNoTracking().Where(b => b.NextRunOn != null && b.NextRunOn <= today).OrderBy(b => b.NextRunOn).Take(limit)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public uint RowVersionOf(UpdateRequestBatch batch) => context.Entry(batch).Property<uint>(EntityTypeBuilderExtensions.RowVersion).CurrentValue;
 
     public async Task<(IReadOnlyList<ExternalUpdateRequest> Items, int TotalCount)> PageRequestsAsync(
         RecordScope scope, ExternalUpdateRequestQuery query, bool issuedOnly, PageRequest page, CancellationToken cancellationToken)

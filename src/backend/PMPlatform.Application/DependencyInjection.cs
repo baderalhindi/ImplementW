@@ -42,6 +42,7 @@ using PMPlatform.Application.Features.ChangeRequest;
 using PMPlatform.Application.Features.ChangeRequest.Contracts;
 using PMPlatform.Application.Features.ChangeRequest.EventHandlers;
 using PMPlatform.Application.Features.ExternalParticipation;
+using PMPlatform.Application.Features.ExternalParticipation.MonthlyUpdates;
 using PMPlatform.Application.Features.ExternalParticipation.Contracts;
 using PMPlatform.Application.Features.FinancialKpi;
 using PMPlatform.Application.Features.FinancialKpi.Contracts;
@@ -365,6 +366,12 @@ public static class DependencyInjection
         services.AddScoped<ExternalParticipationReferences>();
         services.AddScoped<ExternalParticipationViews>();
         services.AddScoped<IExternalContributionTarget, TaskProgressTarget>();
+        services.AddScoped<IExternalContributionTarget, ProjectMonthlyTarget>();
+        services.AddScoped<IProjectMonthlyUpdates, ProjectMonthlyUpdates>();
+        services.AddScoped<UpdateRequestBatchService>();
+        services.AddScoped<IUpdateRequestBatchService>(provider => provider.GetRequiredService<UpdateRequestBatchService>());
+        services.AddScoped<IMyUpdateRequests, MyUpdateRequests>();
+        services.AddScoped<IMonthlyUpdateMaintenance, MonthlyUpdateMaintenance>();
         services.AddScoped<ContributionTargets>();
         services.AddScoped<IExternalUpdateRequestService, ExternalUpdateRequestService>();
         // The 2 Nov 2026 review: the entity's on-time answers to its update requests, from which the project module decides compliance.

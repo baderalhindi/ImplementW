@@ -64,6 +64,32 @@ public interface IExternalParticipationRepository
 
     public void Add(ExternalUpdateRequest request);
 
+    public void Add(UpdateRequestBatch batch);
+
+    public Task<UpdateRequestBatch?> FindBatchAsync(Guid batchId, CancellationToken cancellationToken);
+
+    public Task<UpdateRequestBatch?> FindBatchForUpdateAsync(Guid batchId, CancellationToken cancellationToken);
+
+    /// <summary>The batches holding a request the scope reaches, newest first, with their counts.</summary>
+    public Task<(IReadOnlyList<MonthlyUpdates.UpdateRequestBatchSummary> Items, int TotalCount)> PageBatchesAsync(RecordScope scope, PageRequest page, DateTimeOffset now, CancellationToken cancellationToken);
+
+    public Task<IReadOnlyList<ExternalUpdateRequest>> ListRequestsOfBatchAsync(Guid batchId, CancellationToken cancellationToken);
+
+    /// <summary>Each request's newest revision, by request.</summary>
+    public Task<IReadOnlyDictionary<Guid, ExternalContribution>> FindLatestContributionsAsync(IReadOnlyCollection<Guid> requestIds, CancellationToken cancellationToken);
+
+    public Task<ExternalContribution?> FindContributionByRevisionAsync(Guid requestId, int revisionNo, CancellationToken cancellationToken);
+
+    /// <summary>The monthly updates waiting on <paramref name="responsibleUserId"/>: issued or in progress, soonest due first.</summary>
+    public Task<IReadOnlyList<ExternalUpdateRequest>> ListOpenMonthlyUpdatesAsync(Guid responsibleUserId, CancellationToken cancellationToken);
+
+    /// <summary>Open monthly updates due by <paramref name="dueBy"/> and not reminded today, tracked.</summary>
+    public Task<IReadOnlyList<ExternalUpdateRequest>> ListRemindableMonthlyUpdatesAsync(DateOnly today, DateOnly dueBy, int limit, CancellationToken cancellationToken);
+
+    public Task<IReadOnlyList<UpdateRequestBatch>> ListRepeatingBatchesDueAsync(DateOnly today, int limit, CancellationToken cancellationToken);
+
+    public uint RowVersionOf(UpdateRequestBatch batch);
+
     public void Add(ExternalContribution contribution);
 
     public void Add(ExternalContributionField field);
