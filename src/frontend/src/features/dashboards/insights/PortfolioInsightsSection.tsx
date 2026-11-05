@@ -212,13 +212,16 @@ function Card({
   label,
   children,
   tone,
+  wide = false,
 }: {
   label: string;
   children: ReactNode;
   tone?: StatusTone | undefined;
+  /** A SAR figure takes two columns, so it stays inside its tile. */
+  wide?: boolean;
 }): ReactElement {
   return (
-    <li className="home__tile insights__card" data-tone={tone}>
+    <li className={`home__tile insights__card${wide ? ' home__tile--wide' : ''}`} data-tone={tone}>
       <span className="home__tile-label">{label}</span>
       {children}
     </li>
@@ -247,7 +250,7 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
           </span>
         </Card>
         {headline.totalValueSar !== null && (
-          <Card label={t('dashboards.insights.totalValue')}>
+          <Card label={t('dashboards.insights.totalValue')} wide>
             {headline.valueEntered === 0 ? (
               <Percent value={null} />
             ) : (
