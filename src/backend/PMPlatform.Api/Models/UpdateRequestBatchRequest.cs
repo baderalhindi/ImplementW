@@ -10,7 +10,7 @@ public sealed record UpdateRequestBatchItemRequest(Guid? ProjectId, Guid? Respon
 
 /// <summary>The monthly request: the projects, the due date, whether it repeats and on which day, instructions and the reviewer.</summary>
 public sealed record UpdateRequestBatchRequest(
-    IReadOnlyList<UpdateRequestBatchItemRequest>? Items, DateOnly? DueDate, bool? RepeatMonthly, int? RepeatDay, string? Instructions, Guid? ReviewerUserId)
+    IReadOnlyList<UpdateRequestBatchItemRequest>? Items, DateOnly? DueDate, bool? RepeatMonthly, int? RepeatDay, string? Instructions, Guid? ReviewerUserId, string? InstructionsLanguage = null)
 {
     private const int MaxInstructions = 4000;
 
@@ -33,23 +33,25 @@ public sealed record UpdateRequestBatchRequest(
         }
 
         RequestValidation.RequireText(Instructions, "instructions", MaxInstructions, errors);
+        Language language = RequestValidation.Language(InstructionsLanguage, "instructionsLanguage", Language.Ar, errors);
         RequestValidation.RequireId(ReviewerUserId, "reviewerUserId", errors);
         draft = errors.Count > 0
             ? null
             : new UpdateRequestBatchDraft(
                 [.. Items!.Select(i => new UpdateRequestBatchItem(i.ProjectId!.Value, i.ResponsibleUserId))], DueDate!.Value, RepeatMonthly == true,
-                RepeatMonthly == true ? RepeatDay : null, new NarrativeText(Instructions!, Language.Ar), ReviewerUserId!.Value);
+                RepeatMonthly == true ? RepeatDay : null, new NarrativeText(Instructions!, language), ReviewerUserId!.Value);
         return errors;
     }
 }
 
-public sealed record UpdateRequestBatchWithdrawRequest(string? Reason)
+public sealed record UpdateRequestBatchWithdrawRequest(string? Reason, string? ReasonLanguage = null)
 {
     internal List<FieldError> Validate(out NarrativeText? reason)
     {
         List<FieldError> errors = [];
         RequestValidation.RequireText(Reason, "reason", 2000, errors);
-        reason = errors.Count > 0 ? null : new NarrativeText(Reason!, Language.Ar);
+        Language language = RequestValidation.Language(ReasonLanguage, "reasonLanguage", Language.Ar, errors);
+        reason = errors.Count > 0 ? null : new NarrativeText(Reason!, language);
         return errors;
     }
 }

@@ -45,6 +45,10 @@ public sealed record MyUpdateRequest(
 /// <summary>What the bell and the window need: the due requests, soonest first, with how many are late.</summary>
 public sealed record MyUpdateRequestPage(IReadOnlyList<MyUpdateRequest> Items, int Page, int PageSize, int TotalCount, int OverdueCount, DateOnly? EarliestDueDate);
 
+public sealed record UpdateRequestResponder(Guid UserId, string DisplayName);
+
+public sealed record UpdateRequestResponderPage(IReadOnlyList<UpdateRequestResponder> Items, int Page, int PageSize, int TotalCount);
+
 public interface IUpdateRequestBatchService
 {
     public Task<AdministrationResult<UpdateRequestBatchDetail>> SendAsync(Guid callerId, UpdateRequestBatchDraft draft, CancellationToken cancellationToken);

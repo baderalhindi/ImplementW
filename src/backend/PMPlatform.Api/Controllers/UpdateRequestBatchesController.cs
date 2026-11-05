@@ -13,9 +13,28 @@ namespace PMPlatform.Api.Controllers;
 /// <summary>The 5 Nov 2026 review §2.2: monthly update requests sent to one, several or all projects as one batch, and the batch's page.</summary>
 [Route(Collection)]
 [Tags("ExternalParticipation")]
-public sealed class UpdateRequestBatchesController(IUpdateRequestBatchService batches) : AdministrationControllerBase
+public sealed class UpdateRequestBatchesController(IUpdateRequestBatchService batches, IUserLookup users) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/update-request-batches";
+
+    /// <summary>The people of an entity a sender may name as a project's responder: a sender holds no user search. Whether one is eligible is decided on sending.</summary>
+    [HttpGet("~/api/v1/update-request-responders")]
+    [RequirePermission(PermissionCatalogue.UpdateRequestSend)]
+    [ProducesResponseType<UpdateRequestResponderPage>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("ExternalParticipation_ListUpdateRequestResponders")]
+    public async Task<IActionResult> ListResponders([FromQuery] Guid externalEntityId, [FromQuery] int? page, [FromQuery] int? pageSize, CancellationToken cancellationToken)
+    {
+        List<FieldError> errors = [];
+        PageRequest request = QueryParameters.Page(page, pageSize, errors);
+        if (errors.Count > 0)
+        {
+            return ValidationFailed(errors);
+        }
+
+        IReadOnlyList<UserIdentity> people = await users.ListActiveOfEntityAsync(externalEntityId, cancellationToken);
+        return Ok(new UpdateRequestResponderPage(
+            [.. people.Skip(request.Skip).Take(request.PageSize).Select(p => new UpdateRequestResponder(p.Id, p.DisplayName))], request.Page, request.PageSize, people.Count));
+    }
 
     [HttpGet]
     [RequirePermission(PermissionCatalogue.ExternalRequestView)]

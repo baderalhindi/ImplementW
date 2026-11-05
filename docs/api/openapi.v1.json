@@ -18433,6 +18433,61 @@
         }
       }
     },
+    "/api/v1/update-request-responders": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "The people of an entity a sender may name as a project's responder: a sender holds no user search. Whether one is eligible is decided on sending.",
+        "operationId": "ExternalParticipation_ListUpdateRequestResponders",
+        "parameters": [
+          {
+            "name": "externalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateRequestResponderPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/update-request-batches": {
       "get": {
         "tags": [
@@ -44931,6 +44986,12 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "instructionsLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
         "description": "The monthly request: the projects, the due date, whether it repeats and on which day, instructions and the reviewer."
@@ -45105,6 +45166,69 @@
               "null",
               "string"
             ]
+          },
+          "reasonLanguage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "UpdateRequestResponder": {
+        "required": [
+          "userId",
+          "displayName"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateRequestResponderPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpdateRequestResponder"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },

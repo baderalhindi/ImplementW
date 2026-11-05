@@ -100,7 +100,7 @@ function initialValues(user: SessionUser): RequestValues {
  * API takes the batch as a whole: a refusal names each project it cannot send to, and those rows come back flagged at step 2.
  */
 export function NewBatchPage(): ReactElement | null {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { session } = useSession();
   const navigate = useNavigate();
   const lookups = useProjectLookups();
@@ -140,6 +140,7 @@ export function NewBatchPage(): ReactElement | null {
         repeatMonthly: request.repeatMonthly,
         repeatDay: request.repeatMonthly ? Number(request.repeatDay) : null,
         instructions: request.instructions.trim(),
+        instructionsLanguage: language,
         reviewerUserId: assigneeOf(request.reviewer, canSearch).userId ?? '',
       }),
     );
@@ -492,7 +493,33 @@ function SetRequest({
   onNext: () => void;
 }): ReactElement {
   const { t } = useI18n();
-  const personName = usePersonNames(projects.map((project) => project.entityContactUserId ?? null));
+  const personName = usePersonNames(
+    projects.flatMap((project) => [
+      project.entityContactUserId ?? null,
+      project.projectManagerUserId,
+    ]),
+  );
+  const entityIds = [
+    ...new Set(
+      projects
+        .filter((project) => (project.entityContactUserId ?? null) === null)
+        .map((project) => project.externalEntityId)
+        .filter((id): id is string => id !== null),
+    ),
+  ]
+    .sort()
+    .join(',');
+  const loadPeople = useCallback(
+    async (signal: AbortSignal) => {
+      const ids = entityIds === '' ? [] : entityIds.split(',');
+      const lists = await Promise.all(
+        ids.map((id) => updateRequestBatchesApi.responders(id, signal)),
+      );
+      return Object.fromEntries(ids.map((id, index) => [id, lists[index] ?? []]));
+    },
+    [entityIds],
+  );
+  const entityPeople = useApiResource(loadPeople).data ?? {};
   const errorOf = (field: string): string | undefined => {
     const client = codes[field] ?? null;
     const code = (attempted ? client : null) ?? formIssues[field] ?? null;
@@ -631,6 +658,25 @@ function SetRequest({
                         user={user}
                         value={chosen ?? { choice: OTHER, found: null, typedId: '' }}
                         canSearch={canSearch}
+                        suggestions={[
+                          ...(entityPeople[project.externalEntityId ?? ''] ?? []).map((person) => ({
+                            id: person.userId,
+                            label: person.displayName,
+                          })),
+                          ...(project.projectManagerUserId === null
+                            ? []
+                            : [
+                                {
+                                  id: project.projectManagerUserId,
+                                  label: t(
+                                    'externalParticipation.batch.step2.projectManagerOption',
+                                    {
+                                      name: personName(project.projectManagerUserId),
+                                    },
+                                  ),
+                                },
+                              ]),
+                        ]}
                         allowNone={false}
                         hint={t('externalParticipation.batch.step2.responderHint')}
                         error={

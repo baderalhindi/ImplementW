@@ -77,8 +77,16 @@ public static partial class DemoDataReset
             SELECT id FROM {ProjectTable} {(includeUnmarked ? string.Empty : "WHERE seed_source = 'DEMO'")}
             """, cancellationToken).ConfigureAwait(false);
 
-        // A role assignment anchored on a removed project keeps the person's role (review §5 keeps users and their assignments), without the anchor.
-        await ExecuteAsync(connection, npgsqlTransaction, "UPDATE identity_access.access_relationship a SET project_id = NULL FROM removed_project r WHERE a.project_id = r.id", cancellationToken).ConfigureAwait(false);
+        // The review keeps users and their assignments (§5). An internal person's last assignment, anchored on a removed project, keeps the role without the anchor: ASSIGNED and OWN then
+        // reach nothing. Any other goes with its project: clearing an external user's project anchor would widen it to their whole entity.
+        await ExecuteAsync(connection, npgsqlTransaction, """
+            UPDATE identity_access.access_relationship a SET project_id = NULL
+            FROM removed_project r
+            WHERE a.project_id = r.id AND a.external_entity_id IS NULL
+            AND NOT EXISTS (SELECT 1 FROM identity_access.access_relationship o
+                            WHERE o.user_id = a.user_id AND o.id <> a.id AND o.status = 'ACTIVE'
+                            AND (o.project_id IS NULL OR o.project_id NOT IN (SELECT id FROM removed_project)))
+            """, cancellationToken).ConfigureAwait(false);
 
         SortedDictionary<string, long> counts = new(StringComparer.Ordinal);
         await RemoveOutsideForeignKeysAsync(connection, npgsqlTransaction, counts, cancellationToken).ConfigureAwait(false);

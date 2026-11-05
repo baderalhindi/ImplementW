@@ -135,7 +135,7 @@ public sealed class MonthlyUpdateTests(ExternalParticipationTestHost host)
         Assert.Equal(1, await CountAsync($"SELECT count(*)::text FROM external_participation.update_request_batch WHERE id = '{batchId}' AND next_run_on IS NULL"));
     }
 
-    /// <summary>The 5 Nov 2026 review §5: a project marked DEMO goes with what hangs on it; another stays; the assignment keeps the person's role; the trail stays and gains one entry.</summary>
+    /// <summary>The 5 Nov 2026 review §5: a project marked DEMO goes with what hangs on it; another stays; an external user's assignment on it goes, never widened to the entity; the trail stays and gains one entry.</summary>
     [Fact]
     public async Task TheResetRemovesMarkedProjectsAndWhatHangsOnThemOnly()
     {
@@ -158,6 +158,7 @@ public sealed class MonthlyUpdateTests(ExternalParticipationTestHost host)
         Assert.Equal(1, await CountAsync($"SELECT count(*)::text FROM project.project WHERE id = '{real}'"));
         Assert.Equal(0, await CountAsync($"SELECT count(*)::text FROM external_participation.external_update_request WHERE id = '{request}'"));
         Assert.Equal(0, await CountAsync($"SELECT count(*)::text FROM external_participation.external_contribution WHERE external_update_request_id = '{request}'"));
+        Assert.Equal(0, await CountAsync($"SELECT count(*)::text FROM identity_access.access_relationship WHERE user_id = '{Person(8)}' AND external_entity_id IS NOT NULL AND project_id IS NULL AND status = 'ACTIVE'"));
         Assert.True(await CountAsync("SELECT count(*)::text FROM audit_activity.audit_event") > auditBefore);
         Assert.Equal(1, await CountAsync($"SELECT count(*)::text FROM audit_activity.audit_event WHERE event_type = '{DemoDataReset.RemovedEvent}'"));
     }

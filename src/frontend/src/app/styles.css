@@ -5397,6 +5397,32 @@ tr[data-flagged='true'] {
   min-inline-size: 0;
 }
 
+.insights__counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.insights__counts > div {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+}
+
+.insights__counts dt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.insights__counts dd {
+  margin: var(--space-1) 0 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: start;
+}
+
 .insights__section h2 {
   margin: 0;
 }

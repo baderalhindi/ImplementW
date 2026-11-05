@@ -496,11 +496,11 @@ function CountList({
   rows: { key: string; label: string; count: number }[];
 }): ReactElement {
   return (
-    <dl className="details">
+    <dl className="insights__counts">
       {rows.map((row) => (
         <div key={row.key} data-row={row.key}>
           <dt>{row.label}</dt>
-          <dd dir="ltr">{row.count}</dd>
+          <dd>{row.count}</dd>
         </div>
       ))}
     </dl>

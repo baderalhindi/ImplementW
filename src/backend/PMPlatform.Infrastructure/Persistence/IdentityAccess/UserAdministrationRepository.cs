@@ -97,6 +97,13 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
     public Task<Guid?> FindIdByUsernameAsync(string username, CancellationToken cancellationToken) =>
         context.Set<User>().AsNoTracking().Where(u => u.Username == username).Select(u => (Guid?)u.Id).SingleOrDefaultAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<UserIdentity>> ListActiveIdentitiesOfEntityAsync(Guid externalEntityId, CancellationToken cancellationToken) =>
+        await context.Set<User>().AsNoTracking()
+            .Where(u => u.Status == UserStatus.Active && u.UserType == UserType.External && u.ExternalEntityId == externalEntityId)
+            .OrderBy(u => u.DisplayName)
+            .Select(u => new UserIdentity(u.Id, u.Username, u.DisplayName, u.Email, u.UserType))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public async Task<IReadOnlyList<UserIdentity>> ListActiveIdentitiesAsync(CancellationToken cancellationToken) =>
         await context.Set<User>().AsNoTracking().Where(u => u.Status == UserStatus.Active).OrderBy(u => u.Username)
             .Select(u => new UserIdentity(u.Id, u.Username, u.DisplayName, u.Email, u.UserType)).ToListAsync(cancellationToken).ConfigureAwait(false);

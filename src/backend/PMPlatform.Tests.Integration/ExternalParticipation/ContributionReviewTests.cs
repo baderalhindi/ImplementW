@@ -31,7 +31,7 @@ public sealed class ContributionReviewTests(ExternalParticipationTestHost host)
         Guid first = AdministrationApi.IdOf(submitted);
         await client.OkOrFailAsync(sessions.ProjectManager, $"{Contributions}/{first}/start-review");
 
-        using (HttpResponseMessage reviewerEdit = await client.PutAsync($"{Contributions}/{first}", sessions.ProjectManager, new { fields = Information("Handover on 30 November.") }, null))
+        using (HttpResponseMessage reviewerEdit = await client.PutAsync($"{Contributions}/{first}", sessions.ProjectManager, new { fields = Information("Handover on 30 November.") }, "\"1\""))
         {
             Assert.Equal((HttpStatusCode.Forbidden, "PERMISSION_DENIED"), await reviewerEdit.RefusalAsync());
         }

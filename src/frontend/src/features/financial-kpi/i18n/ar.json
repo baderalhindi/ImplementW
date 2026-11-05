@@ -76,7 +76,7 @@
   },
   "assignmentStatus": {
     "ACTIVE": "نشط",
-    "SUSPENDED": "معلّق",
+    "SUSPENDED": "موقوف",
     "RETIRED": "متقاعد"
   },
   "direction": {

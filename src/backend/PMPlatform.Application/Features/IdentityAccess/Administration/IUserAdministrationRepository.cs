@@ -19,6 +19,8 @@ public interface IUserAdministrationRepository
     /// <summary>Every ACTIVE user's identity, by username. Not tracked.</summary>
     public Task<IReadOnlyList<UserIdentity>> ListActiveIdentitiesAsync(CancellationToken cancellationToken);
 
+    public Task<IReadOnlyList<UserIdentity>> ListActiveIdentitiesOfEntityAsync(Guid externalEntityId, CancellationToken cancellationToken);
+
     public Task<IReadOnlyList<UserName>> ListNamesAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
     public void Add(User user);

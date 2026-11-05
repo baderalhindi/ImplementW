@@ -16,6 +16,9 @@ public interface IUserLookup
     /// to an account (the 2 Nov 2026 review, R3-4).
     /// </summary>
     public Task<IReadOnlyList<UserIdentity>> ListActiveAsync(CancellationToken cancellationToken);
+
+    /// <summary>The ACTIVE external users of an entity, whom a monthly update's sender may name as its responder (the 5 Nov 2026 review §2.2).</summary>
+    public Task<IReadOnlyList<UserIdentity>> ListActiveOfEntityAsync(Guid externalEntityId, CancellationToken cancellationToken);
 }
 
 public sealed record UserIdentity(Guid Id, string Username, string DisplayName, string Email, UserType UserType);

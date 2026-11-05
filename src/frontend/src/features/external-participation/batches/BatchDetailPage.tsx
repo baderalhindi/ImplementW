@@ -248,7 +248,9 @@ function BatchDetail({
           reason="required"
           internalNote={false}
           danger
-          run={({ reason }) => updateRequestBatchesApi.withdraw(batch.id, reason?.text ?? '')}
+          run={({ reason }) =>
+            updateRequestBatchesApi.withdraw(batch.id, reason?.text ?? '', reason?.language ?? 'ar')
+          }
           isStale={isStale}
           onClose={() => {
             setDialog(null);

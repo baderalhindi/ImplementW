@@ -30,6 +30,14 @@ export const myUpdateRequestsApi = {
 };
 
 export const updateRequestBatchesApi = {
+  /** The people of an entity a sender may name as a project's responder. */
+  responders: async (externalEntityId: string, signal?: AbortSignal) =>
+    (
+      await apiRequest<{ items: { userId: string; displayName: string }[] }>(
+        '/update-request-responders',
+        { query: { externalEntityId, pageSize: MAX_PAGE_SIZE }, signal },
+      )
+    ).data.items,
   list: async (page: number, pageSize: number, signal?: AbortSignal) =>
     (
       await apiRequest<UpdateRequestBatchPage>('/update-request-batches', {
@@ -52,9 +60,9 @@ export const updateRequestBatchesApi = {
       method: 'POST',
     }),
   /** Cancels what is still open and stops the series; answers already submitted stay with their reviewer. */
-  withdraw: (id: string, reason: string) =>
+  withdraw: (id: string, reason: string, reasonLanguage: string) =>
     apiRequest<UpdateRequestBatchDetail>(`/update-request-batches/${id}/withdraw`, {
       method: 'POST',
-      body: { reason },
+      body: { reason, reasonLanguage },
     }),
 };

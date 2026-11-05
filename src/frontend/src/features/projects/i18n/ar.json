@@ -10,9 +10,9 @@
     "SUBMITTED": "مقدَّم",
     "UNDER_REVIEW": "قيد المراجعة",
     "RETURNED": "مُعاد",
-    "APPROVED_PLANNED": "معتمد – مخطط",
+    "APPROVED_PLANNED": "معتمد – تخطيط",
     "ACTIVE": "نشط",
-    "SUSPENDED": "معلّق",
+    "SUSPENDED": "موقوف",
     "COMPLETED": "مكتمل",
     "CLOSED": "مغلق"
   },

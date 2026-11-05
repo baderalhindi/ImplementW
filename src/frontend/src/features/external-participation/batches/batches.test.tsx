@@ -231,6 +231,7 @@ describe('steps 2 and 3', () => {
       repeatMonthly: true,
       repeatDay: 5,
       instructions: 'Report the month.',
+      instructionsLanguage: 'en',
       reviewerUserId: REVIEWER_ID,
     });
   });
@@ -343,7 +344,9 @@ describe('the batch page', () => {
       within(dialog).getByRole('button', { name: en('externalParticipation.batch.withdraw') }),
     );
     await screen.findByText(en('externalParticipation.batch.withdrawnDone'));
-    expect(api.requestsTo('POST', /withdraw$/)[0]?.body).toEqual({ reason: 'Sent by mistake' });
+    expect(api.requestsTo('POST', /withdraw$/)[0]?.body).toMatchObject({
+      reason: 'Sent by mistake',
+    });
   });
 
   test("the sender's commands are not offered once withdrawn", async () => {

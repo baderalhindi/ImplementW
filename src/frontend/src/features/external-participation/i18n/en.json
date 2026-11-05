@@ -330,6 +330,7 @@
     "taskIdHint": "You cannot list this project's tasks: enter the task's ID.",
     "instructionsHint": "What the entity should answer and how. The entity reads this text.",
     "dueDateHint": "Required to issue; not before today.",
+    "projectManagerOption": "{name} (project manager)",
     "responderHint": "An active user of the entity, assigned to this project. Required to issue.",
     "reviewerHint": "The AHDA user who reviews the response. Required to issue.",
     "loadingChoices": "Loading the choices for {field}…"
@@ -615,7 +616,8 @@
       "flagged": "{count} projects need attention before sending.",
       "applyToEntity": "Apply to the {count} other flagged projects of this entity",
       "remove": "Remove",
-      "typeHint": "Answered per project, reviewed, and written to the project when accepted."
+      "typeHint": "Answered per project, reviewed, and written to the project when accepted.",
+      "projectManagerOption": "{name} (project manager)"
     },
     "step3": {
       "title": "Review and send",

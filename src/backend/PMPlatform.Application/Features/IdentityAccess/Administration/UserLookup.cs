@@ -7,4 +7,7 @@ internal sealed class UserLookup(IUserAdministrationRepository users) : IUserLoo
     public Task<Guid?> FindIdByUsernameAsync(string username, CancellationToken cancellationToken) => users.FindIdByUsernameAsync(username, cancellationToken);
 
     public Task<IReadOnlyList<UserIdentity>> ListActiveAsync(CancellationToken cancellationToken) => users.ListActiveIdentitiesAsync(cancellationToken);
+
+    public Task<IReadOnlyList<UserIdentity>> ListActiveOfEntityAsync(Guid externalEntityId, CancellationToken cancellationToken) =>
+        users.ListActiveIdentitiesOfEntityAsync(externalEntityId, cancellationToken);
 }

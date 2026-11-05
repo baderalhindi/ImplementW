@@ -104,5 +104,6 @@ export interface UpdateRequestBatchRequest {
   repeatMonthly: boolean;
   repeatDay: number | null;
   instructions: string;
+  instructionsLanguage: string;
   reviewerUserId: string;
 }
