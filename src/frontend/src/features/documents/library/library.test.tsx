@@ -11,7 +11,12 @@ import {
   withDocumentLookups,
 } from '@/test/documentFixtures.ts';
 import { type MockApi, mockApi, page, problem } from '@/test/mockApi.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 import { findMainMenu, openMenu } from '@/test/shell.ts';
 
 // SCR-120 Document Library, SCR-121 Project Documents and SCR-122 Recent Documents.
@@ -81,6 +86,7 @@ describe('SCR-120 Document Library', () => {
     const user = userEvent.setup();
     await screen.findByRole('table');
 
+    await openFilters();
     await user.type(
       screen.getByRole('searchbox', { name: en('documents.filters.title') }),
       'CLEAN',

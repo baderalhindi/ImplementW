@@ -30,7 +30,12 @@ import {
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 import { COST_DIMENSION_ID, SCHEDULE_DIMENSION_ID } from '@/test/riskFixtures.ts';
 import { day } from '@/test/taskFixtures.ts';
 
@@ -134,6 +139,7 @@ describe('SCR-083 Issue Register and SCR-085 Challenge Register', () => {
     });
     expect(titlesIn(table)).toHaveLength(2);
 
+    await openFilters();
     await userEvent.selectOptions(
       screen.getByRole('combobox', { name: en('issuesChallenges.filter.view') }),
       'closed',
@@ -150,7 +156,10 @@ describe('SCR-083 Issue Register and SCR-085 Challenge Register', () => {
     );
     await userEvent.selectOptions(
       screen.getByRole('combobox', { name: en('issuesChallenges.filter.severity') }),
-      en('issuesChallenges.severity.none'),
+      en('common.filters.inline', {
+        label: en('issuesChallenges.filter.severity'),
+        value: en('issuesChallenges.severity.none'),
+      }),
     );
     expect(
       titlesIn(screen.getByRole('region', { name: en('issuesChallenges.issues.projectCaption') })),
@@ -578,12 +587,17 @@ describe('SCR-087 Escalations (acceptance criterion 2)', () => {
     const table = await screen.findByRole('region', {
       name: en('issuesChallenges.escalations.caption'),
     });
+    await openFilters();
     const status = screen.getByRole('combobox', {
       name: en('issuesChallenges.escalations.filter.status'),
     });
-    expect((status as HTMLSelectElement).value).toBe('open');
+    // The default is what the filter reads with nothing chosen, so it does not count as a filter.
+    expect((status as HTMLSelectElement).value).toBe('');
     expect(within(status).getByRole('option', { selected: true }).textContent).toBe(
-      en('issuesChallenges.escalations.filter.views.open'),
+      en('common.filters.inline', {
+        label: en('issuesChallenges.escalations.filter.status'),
+        value: en('issuesChallenges.escalations.filter.views.open'),
+      }),
     );
     const rows = rowsOf(table);
     expect(rows.map((row) => row.dataset.escalation)).toEqual([CULVERT_OPEN_ESCALATION_ID]);
@@ -603,6 +617,7 @@ describe('SCR-087 Escalations (acceptance criterion 2)', () => {
     open(ESCALATIONS_PATH, {}, { session: reviewerSession() });
     await screen.findByRole('region', { name: en('issuesChallenges.escalations.caption') });
 
+    await openFilters();
     await userEvent.selectOptions(
       screen.getByRole('combobox', { name: en('issuesChallenges.escalations.filter.status') }),
       'all',
@@ -637,7 +652,7 @@ describe('SCR-087 Escalations (acceptance criterion 2)', () => {
 
     await userEvent.selectOptions(
       screen.getByRole('combobox', { name: en('issuesChallenges.escalations.filter.status') }),
-      'open',
+      '',
     );
     await waitFor(() => {
       expect(

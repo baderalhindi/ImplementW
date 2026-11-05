@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 import { ProjectStatusBadge } from '@/features/projects/components/ProjectStatusBadge.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
@@ -49,37 +49,46 @@ export function CloseoutRegisterView({
 
   return (
     <>
-      <div className="filters">
-        <SelectField
-          label={t('suspensionClosure.closeout.filter.stage')}
-          name="stage"
-          value={stage}
-          placeholder={t('suspensionClosure.closeout.filter.allStages')}
-          options={CLOSEOUT_STAGES.map((value, index) => ({
-            value,
-            label: t('suspensionClosure.stages.numbered', {
-              number: index + 1,
-              name: t(`suspensionClosure.stages.name.${value}`),
-            }),
-          }))}
-          onChange={(value) => {
+      <FilterBar
+        fields={[
+          {
+            name: 'stage',
+            label: t('suspensionClosure.closeout.filter.stage'),
+            all: t('suspensionClosure.closeout.filter.allStages'),
+            options: CLOSEOUT_STAGES.map((value, index) => ({
+              value,
+              label: t('suspensionClosure.stages.numbered', {
+                number: index + 1,
+                name: t(`suspensionClosure.stages.name.${value}`),
+              }),
+            })),
+          },
+          {
+            name: 'readiness',
+            label: t('suspensionClosure.closeout.filter.readiness'),
+            all: t('suspensionClosure.closeout.filter.allReadiness'),
+            options: READINESS_STATUSES.map((value) => ({
+              value,
+              label: t(`suspensionClosure.readiness.status.${value}`),
+            })),
+          },
+        ]}
+        values={{
+          stage: stage === '' ? undefined : stage,
+          readiness: readiness === '' ? undefined : readiness,
+        }}
+        onChange={(name, value) => {
+          if (name === 'stage') {
             setStage(CLOSEOUT_STAGES.find((candidate) => candidate === value) ?? '');
-          }}
-        />
-        <SelectField
-          label={t('suspensionClosure.closeout.filter.readiness')}
-          name="readiness"
-          value={readiness}
-          placeholder={t('suspensionClosure.closeout.filter.allReadiness')}
-          options={READINESS_STATUSES.map((value) => ({
-            value,
-            label: t(`suspensionClosure.readiness.status.${value}`),
-          }))}
-          onChange={(value) => {
+          } else {
             setReadiness(READINESS_STATUSES.find((candidate) => candidate === value) ?? '');
-          }}
-        />
-      </div>
+          }
+        }}
+        onClearAll={() => {
+          setStage('');
+          setReadiness('');
+        }}
+      />
       <p className="list-order" role="status">
         {t('suspensionClosure.closeout.filter.showing', {
           shown: shown.length,

@@ -28,7 +28,12 @@ import {
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 import { findMainMenu, menuLink, openMenuNames } from '@/test/shell.ts';
 
 // TASK-074, the FG-06 Audit & Activity UI over TASK-073's API. Acceptance criteria: (1) SCR-057 Activity and SCR-058
@@ -243,7 +248,7 @@ describe('acceptance criterion 3: ADM-052 is a narrow technical view', () => {
     ).toBeTruthy();
     expect(within(scope as HTMLElement).getByText(en('auditActivity.system.scope'))).toBeTruthy();
     expect(await screen.findByText('AUDIT_EVENT_INVALID')).toBeTruthy();
-    expect(screen.queryByRole('form', { name: en('common.filters.label') })).toBeNull();
+    expect(screen.queryByRole('button', { name: en('common.filters.button') })).toBeNull();
     expect(auditReads(api)).toEqual([]);
     await expectAccessible();
   });
@@ -286,6 +291,7 @@ describe('ADM-050 Audit Trail and ADM-051 Audit Event Detail', () => {
     expect(
       document.querySelector('[data-held-categories]')?.getAttribute('data-held-categories'),
     ).toBe('ADMINISTRATION');
+    await openFilters();
     expect(
       screen.queryByRole('combobox', { name: en('auditActivity.fields.category') }),
     ).toBeNull();
@@ -309,6 +315,7 @@ describe('ADM-050 Audit Trail and ADM-051 Audit Event Detail', () => {
     const api = open('/admin/audit-trail', reviewer(), { access: AUDIT_REVIEWER_ACCESS });
     await screen.findByRole('table', { name: en('auditActivity.trail.title') });
 
+    await openFilters();
     await userEvent.selectOptions(
       screen.getByRole('combobox', { name: en('auditActivity.fields.category') }),
       'BUSINESS',
@@ -414,6 +421,7 @@ describe('SCR-057 Activity', () => {
     const api = open(workspace('activity-history'), reviewer(), { access: PROJECT_MANAGER_ACCESS });
     await screen.findByRole('list', { name: en('auditActivity.activity.title') });
 
+    await openFilters();
     await userEvent.selectOptions(
       screen.getByRole('combobox', { name: en('auditActivity.activity.domain') }),
       'RISK',

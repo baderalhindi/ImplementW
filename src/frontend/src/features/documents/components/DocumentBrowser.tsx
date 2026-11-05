@@ -4,7 +4,8 @@ import { useSearchParams } from 'react-router';
 import { pageFrom, PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
+import { TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -75,6 +76,15 @@ export function DocumentBrowser({
     setFilter('q', text.trim());
   };
 
+  const clearFilters = () => {
+    const updated = new URLSearchParams(params);
+    updated.delete('page');
+    updated.delete('q');
+    updated.delete('status');
+    setText('');
+    setParams(updated);
+  };
+
   const goToPage = (next: number) => {
     const updated = new URLSearchParams(params);
     updated.set('page', String(next));
@@ -109,39 +119,57 @@ export function DocumentBrowser({
       )}
       <PageNotice notice={notice} />
 
-      <form
-        className="filters"
-        role="search"
-        aria-label={t('common.filters.label')}
-        onSubmit={applySearch}
+      <FilterBar
+        fields={[
+          {
+            name: 'status',
+            label: t('documents.fields.status'),
+            all: t('common.filters.any'),
+            options: DOCUMENT_STATUSES.map((value) => ({
+              value,
+              label: t(`documents.status.${value}`),
+            })),
+          },
+        ]}
+        values={{ status }}
+        onChange={(name, value) => {
+          setFilter(name, value ?? '');
+        }}
+        onClearAll={clearFilters}
+        chips={
+          q === ''
+            ? []
+            : [
+                {
+                  name: 'q',
+                  text: t('common.filters.inline', {
+                    label: t('documents.filters.title'),
+                    value: q,
+                  }),
+                  onRemove: () => {
+                    setText('');
+                    setFilter('q', '');
+                  },
+                },
+              ]
+        }
       >
-        <TextField
-          label={t('documents.filters.title')}
-          name="q"
-          type="search"
-          value={text}
-          onChange={setText}
-          dir="auto"
-        />
-        <SelectField
-          label={t('documents.fields.status')}
-          name="status"
-          value={status ?? ''}
-          placeholder={t('common.filters.any')}
-          options={DOCUMENT_STATUSES.map((value) => ({
-            value,
-            label: t(`documents.status.${value}`),
-          }))}
-          onChange={(value) => {
-            setFilter('status', value);
-          }}
-        />
-        <div className="filters__actions">
-          <button type="submit" className="button">
-            {t('common.filters.apply')}
-          </button>
-        </div>
-      </form>
+        <form className="filters" onSubmit={applySearch}>
+          <TextField
+            label={t('documents.filters.title')}
+            name="q"
+            type="search"
+            value={text}
+            onChange={setText}
+            dir="auto"
+          />
+          <div className="filters__actions">
+            <button type="submit" className="button">
+              {t('common.filters.apply')}
+            </button>
+          </div>
+        </form>
+      </FilterBar>
 
       {documents.loading && <LoadingState label={t('documents.list.loading')} />}
       {documents.error !== null && (

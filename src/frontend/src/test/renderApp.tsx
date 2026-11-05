@@ -1,4 +1,5 @@
-import { render, type RenderResult } from '@testing-library/react';
+import { render, type RenderResult, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
@@ -7,6 +8,14 @@ import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { sessionStore } from '@/features/identity-access/session/sessionStore.ts';
 import { type Language } from '@/shared/i18n/i18n.ts';
 import { I18nProvider } from '@/shared/i18n/I18nProvider.tsx';
+
+/** Opens the page's folded filter panel (the 5 Nov 2026 review, R4-1), unless it is already open. */
+export async function openFilters(): Promise<void> {
+  const toggle = await screen.findByRole('button', { name: /^Filters/ });
+  if (toggle.getAttribute('aria-expanded') !== 'true') {
+    await userEvent.click(toggle);
+  }
+}
 
 interface RenderAppOptions {
   path: string;

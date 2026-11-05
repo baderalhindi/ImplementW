@@ -7,7 +7,7 @@ import { Detail } from '@/features/projects/components/Detail.tsx';
 import { ConfirmCommandDialog } from '@/features/risks/dialogs/ConfirmCommandDialog.tsx';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -109,21 +109,26 @@ export function SourceApplicationMonitorPage(): ReactElement | null {
         </EmptyState>
       ) : (
         <>
-          <div className="filters">
-            <SelectField
-              label={t('externalParticipation.filter.applicationState')}
-              name="state"
-              value={isApplicationState(stateFilter) ? stateFilter : ''}
-              placeholder={t('externalParticipation.filter.allStates')}
-              options={APPLICATION_STATES.map((state) => ({
-                value: state,
-                label: t(`externalParticipation.applicationState.${state}`),
-              }))}
-              onChange={(value) => {
-                setFilter('state', value);
-              }}
-            />
-          </div>
+          <FilterBar
+            fields={[
+              {
+                name: 'state',
+                label: t('externalParticipation.filter.applicationState'),
+                all: t('externalParticipation.filter.allStates'),
+                options: APPLICATION_STATES.map((state) => ({
+                  value: state,
+                  label: t(`externalParticipation.applicationState.${state}`),
+                })),
+              },
+            ]}
+            values={{ state: isApplicationState(stateFilter) ? stateFilter : undefined }}
+            onChange={(name, value) => {
+              setFilter(name, value ?? '');
+            }}
+            onClearAll={() => {
+              setFilter('state', '');
+            }}
+          />
           <p className="list-order" role="status">
             {APPLICATION_STATES.map((state) => ({
               state,

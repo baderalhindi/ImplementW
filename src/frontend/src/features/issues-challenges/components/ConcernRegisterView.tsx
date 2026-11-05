@@ -3,7 +3,7 @@ import { type ReactElement, useState } from 'react';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
 
 import {
@@ -22,9 +22,7 @@ import { type ConcernLookups } from '../useConcernData.ts';
 
 import { ConcernTable } from './ConcernTable.tsx';
 
-function isRegisterView(value: string): value is RegisterView {
-  return (REGISTER_VIEWS as readonly string[]).includes(value);
-}
+const DEFAULT_VIEW: RegisterView = 'open';
 
 /** The distinct ids, in first-seen order. */
 function distinct(ids: (string | null)[]): string[] {
@@ -52,7 +50,7 @@ export function ConcernRegisterView({
   caption,
 }: ConcernRegisterViewProps): ReactElement {
   const { t } = useI18n();
-  const [view, setView] = useState<RegisterView>('open');
+  const [view, setView] = useState<RegisterView>(DEFAULT_VIEW);
   const [severity, setSeverity] = useState(ANY);
   const [priority, setPriority] = useState(ANY);
   const today = todayUtc();
@@ -87,49 +85,59 @@ export function ConcernRegisterView({
           </div>
         ))}
       </dl>
-      <div className="filters filters--inline">
-        <SelectField
-          label={t('issuesChallenges.filter.view')}
-          name="view"
-          value={view}
-          options={REGISTER_VIEWS.map((value) => ({
-            value,
-            label: t(`issuesChallenges.filter.views.${value}`),
-          }))}
-          onChange={(chosen) => {
-            if (isRegisterView(chosen)) {
-              setView(chosen);
-            }
-          }}
-        />
-        <SelectField
-          label={t('issuesChallenges.filter.severity')}
-          name="severity"
-          value={severity}
-          options={[
-            { value: ANY, label: t('common.filters.any') },
-            ...distinct(concerns.map((concern) => concern.severityItemId)).map((id) => ({
+      <FilterBar
+        fields={[
+          {
+            name: 'view',
+            label: t('issuesChallenges.filter.view'),
+            all: t(`issuesChallenges.filter.views.${DEFAULT_VIEW}`),
+            options: REGISTER_VIEWS.filter((value) => value !== DEFAULT_VIEW).map((value) => ({
+              value,
+              label: t(`issuesChallenges.filter.views.${value}`),
+            })),
+          },
+          {
+            name: 'severity',
+            label: t('issuesChallenges.filter.severity'),
+            all: t('common.filters.any'),
+            options: [
+              ...distinct(concerns.map((concern) => concern.severityItemId)).map((id) => ({
+                value: id,
+                label: lookups.itemLabel(id),
+              })),
+              { value: UNASSESSED, label: t('issuesChallenges.severity.none') },
+            ],
+          },
+          {
+            name: 'priority',
+            label: t('issuesChallenges.filter.priority'),
+            all: t('common.filters.any'),
+            options: distinct(concerns.map((concern) => concern.priorityItemId)).map((id) => ({
               value: id,
               label: lookups.itemLabel(id),
             })),
-            { value: UNASSESSED, label: t('issuesChallenges.severity.none') },
-          ]}
-          onChange={setSeverity}
-        />
-        <SelectField
-          label={t('issuesChallenges.filter.priority')}
-          name="priority"
-          value={priority}
-          options={[
-            { value: ANY, label: t('common.filters.any') },
-            ...distinct(concerns.map((concern) => concern.priorityItemId)).map((id) => ({
-              value: id,
-              label: lookups.itemLabel(id),
-            })),
-          ]}
-          onChange={setPriority}
-        />
-      </div>
+          },
+        ]}
+        values={{
+          view: view === DEFAULT_VIEW ? undefined : view,
+          severity: severity === ANY ? undefined : severity,
+          priority: priority === ANY ? undefined : priority,
+        }}
+        onChange={(name, value) => {
+          if (name === 'view') {
+            setView(REGISTER_VIEWS.find((candidate) => candidate === value) ?? DEFAULT_VIEW);
+          } else if (name === 'severity') {
+            setSeverity(value ?? ANY);
+          } else {
+            setPriority(value ?? ANY);
+          }
+        }}
+        onClearAll={() => {
+          setView(DEFAULT_VIEW);
+          setSeverity(ANY);
+          setPriority(ANY);
+        }}
+      />
       {shown.length === 0 ? (
         <EmptyState title={t('issuesChallenges.empty.filtered')} />
       ) : (

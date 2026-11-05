@@ -27,7 +27,12 @@ import {
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 
 // SCR-105 Change Requests, SCR-106 Create Change Request and SCR-107 Change Request Detail (TASK-061) against the
 // TASK-060 API, with WF-11's MOD-040–042 and MOD-044 reused. Acceptance criteria: (1) the form surfaces the computed
@@ -520,6 +525,7 @@ describe('SCR-105 Change Requests', () => {
       screen.getByRole('link', { name: en('changeRequests.actions.raise') }).getAttribute('href'),
     ).toBe(NEW_PATH);
 
+    await openFilters();
     await user.selectOptions(
       screen.getByRole('combobox', { name: en('changeRequests.filter.status') }),
       'UNDER_REVIEW',

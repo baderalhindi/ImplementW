@@ -24,7 +24,12 @@ import {
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 
 import { type DashboardWidgetResult } from './api/types.ts';
 
@@ -617,6 +622,7 @@ describe('the department filter narrows the population and never widens it', () 
     // The filter bar (the 2 Nov 2026 review, R3-1): the label sits inside each option, "Department: Roads".
     const label = en('dashboards.filter.departmentId');
     const inline = (value: string) => en('common.filters.inline', { label, value });
+    await openFilters();
     const select = await screen.findByRole('combobox', { name: label });
     await waitFor(() => {
       expect(within(select).getByRole('option', { name: inline('Roads') })).toBeTruthy();

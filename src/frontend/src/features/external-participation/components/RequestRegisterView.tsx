@@ -2,7 +2,8 @@ import { type ReactElement } from 'react';
 
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { CheckboxField, SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
+import { CheckboxField } from '@/shared/ui/FormFields.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
 
 import { type ExternalUpdateRequestDetail } from '../api/types.ts';
@@ -32,7 +33,7 @@ export function RequestRegisterView({
   showProject = true,
 }: RequestRegisterViewProps): ReactElement {
   const { t } = useI18n();
-  const { params, setFilter } = useListParams();
+  const { params, setFilter, setFilters } = useListParams();
   const status = params.get('status') ?? '';
   const due = params.get('due') ?? '';
   const mine = params.get('mine') === 'true';
@@ -49,48 +50,70 @@ export function RequestRegisterView({
           : request.responsibleUserId === userId)),
   );
 
+  const mineLabel = t(
+    audience === 'internal'
+      ? 'externalParticipation.filter.mineToReview'
+      : 'externalParticipation.filter.mineToAnswer',
+  );
+
   return (
     <>
-      <div className="filters">
-        <SelectField
-          label={t('externalParticipation.filter.status')}
-          name="status"
-          value={status}
-          placeholder={t('externalParticipation.filter.allStatuses')}
-          options={present.map((value) => ({
-            value,
-            label: t(`externalParticipation.requestStatus.${value}`),
-          }))}
-          onChange={(value) => {
-            setFilter('status', value);
-          }}
-        />
-        <SelectField
-          label={t('externalParticipation.filter.due')}
-          name="due"
-          value={due}
-          placeholder={t('externalParticipation.filter.anyDue')}
-          options={DUE_CONDITIONS.map((value) => ({
-            value,
-            label: t(`externalParticipation.dueCondition.${value}`),
-          }))}
-          onChange={(value) => {
-            setFilter('due', value);
-          }}
-        />
-        <CheckboxField
-          label={t(
-            audience === 'internal'
-              ? 'externalParticipation.filter.mineToReview'
-              : 'externalParticipation.filter.mineToAnswer',
-          )}
-          name="mine"
-          checked={mine}
-          onChange={(checked) => {
-            setFilter('mine', checked ? 'true' : '');
-          }}
-        />
-      </div>
+      <FilterBar
+        fields={[
+          {
+            name: 'status',
+            label: t('externalParticipation.filter.status'),
+            all: t('externalParticipation.filter.allStatuses'),
+            options: present.map((value) => ({
+              value,
+              label: t(`externalParticipation.requestStatus.${value}`),
+            })),
+          },
+          {
+            name: 'due',
+            label: t('externalParticipation.filter.due'),
+            all: t('externalParticipation.filter.anyDue'),
+            options: DUE_CONDITIONS.map((value) => ({
+              value,
+              label: t(`externalParticipation.dueCondition.${value}`),
+            })),
+          },
+        ]}
+        values={{
+          status: status === '' ? undefined : status,
+          due: due === '' ? undefined : due,
+        }}
+        onChange={(name, value) => {
+          setFilter(name, value ?? '');
+        }}
+        onClearAll={() => {
+          setFilters({ status: '', due: '', mine: '' });
+        }}
+        chips={
+          mine
+            ? [
+                {
+                  name: 'mine',
+                  text: mineLabel,
+                  onRemove: () => {
+                    setFilter('mine', '');
+                  },
+                },
+              ]
+            : []
+        }
+      >
+        <div className="filters filters--inline">
+          <CheckboxField
+            label={mineLabel}
+            name="mine"
+            checked={mine}
+            onChange={(checked) => {
+              setFilter('mine', checked ? 'true' : '');
+            }}
+          />
+        </div>
+      </FilterBar>
       <p className="list-order" role="status">
         {t('externalParticipation.filter.showing', { shown: shown.length, total: requests.length })}
       </p>

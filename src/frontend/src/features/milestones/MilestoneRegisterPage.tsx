@@ -3,7 +3,7 @@ import { type ReactElement, useState } from 'react';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -20,9 +20,7 @@ import {
 import { isForbidden, milestoneProblemMessage } from './problems.ts';
 import { useMilestoneLookups, useMilestonePortfolio } from './useMilestoneData.ts';
 
-function isRegisterFilter(value: string): value is RegisterFilter {
-  return (REGISTER_FILTERS as string[]).includes(value);
-}
+const DEFAULT_FILTER: RegisterFilter = 'all';
 
 /**
  * SCR-062 Milestone Register: every milestone of every project the person may see, earliest forecast first, with its
@@ -35,7 +33,7 @@ export function MilestoneRegisterPage(): ReactElement | null {
   const { session } = useSession();
   const portfolio = useMilestonePortfolio();
   const lookups = useMilestoneLookups();
-  const [filter, setFilter] = useState<RegisterFilter>('all');
+  const [filter, setFilter] = useState<RegisterFilter>(DEFAULT_FILTER);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [open, setOpen] = useState<{ projectId: string; dialog: MilestoneDialog } | null>(null);
 
@@ -92,22 +90,30 @@ export function MilestoneRegisterPage(): ReactElement | null {
         </EmptyState>
       ) : (
         <>
-          <div className="filters filters--inline">
-            <SelectField
-              label={t('milestones.filter.label')}
-              name="filter"
-              value={filter}
-              options={REGISTER_FILTERS.map((value) => ({
-                value,
-                label: t(`milestones.filter.${value}`),
-              }))}
-              onChange={(chosen) => {
-                if (isRegisterFilter(chosen)) {
-                  setFilter(chosen);
-                }
-              }}
-            />
-          </div>
+          <FilterBar
+            fields={[
+              {
+                name: 'filter',
+                label: t('milestones.filter.label'),
+                all: t(`milestones.filter.${DEFAULT_FILTER}`),
+                options: REGISTER_FILTERS.filter((value) => value !== DEFAULT_FILTER).map(
+                  (value) => ({
+                    value,
+                    label: t(`milestones.filter.${value}`),
+                  }),
+                ),
+              },
+            ]}
+            values={{ filter: filter === DEFAULT_FILTER ? undefined : filter }}
+            onChange={(_name, value) => {
+              setFilter(
+                REGISTER_FILTERS.find((candidate) => candidate === value) ?? DEFAULT_FILTER,
+              );
+            }}
+            onClearAll={() => {
+              setFilter(DEFAULT_FILTER);
+            }}
+          />
           {shown.length === 0 ? (
             <EmptyState title={t('milestones.empty.filtered.title')}>
               <p>{t('milestones.empty.filtered.body')}</p>

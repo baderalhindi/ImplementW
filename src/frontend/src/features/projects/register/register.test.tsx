@@ -15,7 +15,12 @@ import {
   reviewerSession,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 
 // SCR-025 Project Register and SCR-026 My Projects.
 
@@ -114,6 +119,7 @@ describe('SCR-025 Project Register', () => {
     await screen.findByRole('table');
 
     // The filter bar (the 2 Nov 2026 review, R3-1): status is under More filters, and applies as it is chosen.
+    await openFilters();
     await user.click(screen.getByRole('button', { name: en('common.filters.more') }));
     await user.selectOptions(screen.getByLabelText(en('dashboards.filter.status')), 'ACTIVE');
     await screen.findByRole('link', { name: 'City park' });

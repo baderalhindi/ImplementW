@@ -1,4 +1,4 @@
-import { type ReactElement } from 'react';
+import { type ReactElement, type ReactNode } from 'react';
 
 import { useOrganizationUnits } from '@/features/identity-access/names/useOrganizationUnits.ts';
 import { type ProjectStatus } from '@/features/projects/api/types.ts';
@@ -47,11 +47,14 @@ export function PortfolioFilterBar({
   filters,
   onChange,
   onClearAll,
+  actions,
 }: {
   options: FilterOptions;
   filters: PortfolioFilters;
   onChange: (name: FilterName, value: string | undefined) => void;
   onClearAll: () => void;
+  /** The dashboard's "Updated…", Refresh and Customize layout, on the Filters button's row. */
+  actions?: ReactNode;
 }): ReactElement | null {
   const { t, language } = useI18n();
   const departmentName = useDepartmentNames();
@@ -123,6 +126,7 @@ export function PortfolioFilterBar({
         onChange(name as FilterName, value);
       }}
       onClearAll={onClearAll}
+      actions={actions}
     />
   );
 }

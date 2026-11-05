@@ -4,6 +4,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { PageNotice } from '@/shared/ui/PageNotice.tsx';
@@ -120,15 +121,15 @@ function ReportWorkspace({
   const result = useApiResource(load);
   const name = report.name[language];
 
-  const run = (nextComposition: Composition = composition) => {
-    const required = missingRequired(report, values);
+  const run = (nextComposition: Composition = composition, nextValues = values) => {
+    const required = missingRequired(report, nextValues);
     setMissing(required);
     if (required.length > 0) {
       return;
     }
     setPage(1);
     setRequest({
-      parameters: toParameters(values),
+      parameters: toParameters(nextValues),
       columns: toColumns(nextComposition, options),
       sort: toSort(nextComposition, options),
     });
@@ -138,6 +139,14 @@ function ReportWorkspace({
     report.parameters
       .find((parameter) => parameter.code === code)
       ?.options.find((option) => option.value === value)?.label[language] ?? value;
+
+  // A removed chip changes what ran, so the result follows it; a value chosen in the panel waits for Run.
+  const dropParameters = (next: Record<string, string>) => {
+    setValues(next);
+    if (request !== null) {
+      run(composition, next);
+    }
+  };
 
   const saveView = async (saved: SaveViewValues, update: boolean) => {
     const body = savedViewRequest(saved, {
@@ -226,44 +235,70 @@ function ReportWorkspace({
       </p>
       {view !== null && <SavedViewNotice view={view} isOwn={isOwnView} />}
 
-      <form
-        className="filters report-parameters"
-        aria-label={t('reports.parameters.label')}
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          run();
-        }}
-      >
-        {report.parameters.length === 0 && (
-          <p className="form__note">{t('reports.parameters.none')}</p>
-        )}
-        {report.parameters.map((parameter) => (
-          <SelectField
-            key={parameter.code}
-            label={parameter.label[language]}
-            name={parameter.code}
-            required={parameter.isRequired}
-            value={values[parameter.code] ?? ''}
-            placeholder={
-              parameter.isRequired ? t('common.form.choose') : t('reports.parameters.all')
-            }
-            error={missing.includes(parameter.code) ? t('common.fieldErrors.required') : undefined}
-            onChange={(value) => {
-              setValues((current) => ({ ...current, [parameter.code]: value }));
+      <FilterBar
+        actions={
+          <button
+            type="button"
+            className="button button--primary"
+            onClick={() => {
+              run();
             }}
-            options={parameter.options.map((option) => ({
-              value: option.value,
-              label: option.label[language],
-            }))}
-          />
-        ))}
-        <div className="filters__actions">
-          <button type="submit" className="button button--primary">
+          >
             {t('reports.actions.run')}
           </button>
-        </div>
-      </form>
+        }
+        // A report that cannot run until a required parameter is chosen shows the parameter and its error.
+        forceOpen={request === null || missing.length > 0}
+        chips={report.parameters
+          .filter((parameter) => (values[parameter.code] ?? '') !== '')
+          .map((parameter) => ({
+            name: parameter.code,
+            text: t('common.filters.inline', {
+              label: parameter.label[language],
+              value: optionLabel(parameter.code, values[parameter.code] ?? ''),
+            }),
+            onRemove: () => {
+              dropParameters({ ...values, [parameter.code]: '' });
+            },
+          }))}
+        onClearAll={() => {
+          dropParameters({});
+        }}
+      >
+        {report.parameters.length === 0 ? undefined : (
+          <div
+            className="filters report-parameters"
+            role="group"
+            aria-label={t('reports.parameters.label')}
+          >
+            {report.parameters.map((parameter) => (
+              <SelectField
+                key={parameter.code}
+                label={parameter.label[language]}
+                name={parameter.code}
+                required={parameter.isRequired}
+                value={values[parameter.code] ?? ''}
+                placeholder={
+                  parameter.isRequired ? t('common.form.choose') : t('reports.parameters.all')
+                }
+                error={
+                  missing.includes(parameter.code) ? t('common.fieldErrors.required') : undefined
+                }
+                onChange={(value) => {
+                  setValues((current) => ({ ...current, [parameter.code]: value }));
+                }}
+                options={parameter.options.map((option) => ({
+                  value: option.value,
+                  label: option.label[language],
+                }))}
+              />
+            ))}
+          </div>
+        )}
+      </FilterBar>
+      {report.parameters.length === 0 && (
+        <p className="form__note">{t('reports.parameters.none')}</p>
+      )}
 
       {request !== null && (
         <section className="report-summary" aria-label={t('reports.summary.label')}>

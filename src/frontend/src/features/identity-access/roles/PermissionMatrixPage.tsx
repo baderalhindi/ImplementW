@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
@@ -105,48 +105,65 @@ export function PermissionMatrixPage(): ReactElement {
     }),
   );
 
+  const shownVersion = columns[0]?.version;
+  // A profile opens on the version versionFor picks, so only another version counts as a filter.
+  const defaultVersion = selected === undefined ? undefined : versionFor(selected, null);
+  const versionLabel = (version: PermissionProfileVersion) =>
+    t('identityAccess.permissionMatrix.versionLabel', {
+      version: version.versionNo,
+      state: t(`identityAccess.lifecycleState.${version.lifecycleState}`),
+    });
+
   return (
     <>
       {header}
-      <div className="filters">
-        <SelectField
-          label={t('identityAccess.permissionMatrix.profile')}
-          name="profileId"
-          value={selected?.id ?? ''}
-          placeholder={t('identityAccess.permissionMatrix.allProfiles')}
-          options={profiles.map((profile) => ({
-            value: profile.id,
-            label: `${profile.baseRoleCode} — ${labelOf(profile.name, language)}`,
-          }))}
-          onChange={(value) => {
-            choose('profileId', value);
-          }}
-        />
-        {selected !== undefined && (
-          <SelectField
-            label={t('identityAccess.permissionMatrix.version')}
-            name="versionId"
-            value={columns[0]?.version?.id ?? ''}
-            options={selected.versions.map((version) => ({
-              value: version.id,
-              label: t('identityAccess.permissionMatrix.versionLabel', {
-                version: version.versionNo,
-                state: t(`identityAccess.lifecycleState.${version.lifecycleState}`),
-              }),
-            }))}
-            onChange={(value) => {
-              choose('versionId', value);
-            }}
-          />
-        )}
-        {selected !== undefined && columns[0]?.version !== undefined && (
-          <Link className="button" to={versionPath(columns[0].version.id)}>
-            {canManage
-              ? t('identityAccess.permissionMatrix.openToEdit')
-              : t('identityAccess.permissionMatrix.open')}
-          </Link>
-        )}
-      </div>
+      <FilterBar
+        fields={[
+          {
+            name: 'profileId',
+            label: t('identityAccess.permissionMatrix.profile'),
+            all: t('identityAccess.permissionMatrix.allProfiles'),
+            options: profiles.map((profile) => ({
+              value: profile.id,
+              label: `${profile.baseRoleCode} — ${labelOf(profile.name, language)}`,
+            })),
+          },
+          ...(selected === undefined || defaultVersion === undefined
+            ? []
+            : [
+                {
+                  name: 'versionId',
+                  label: t('identityAccess.permissionMatrix.version'),
+                  all: versionLabel(defaultVersion),
+                  options: selected.versions
+                    .filter((version) => version.id !== defaultVersion.id)
+                    .map((version) => ({ value: version.id, label: versionLabel(version) })),
+                },
+              ]),
+        ]}
+        values={{
+          profileId: selected?.id,
+          versionId:
+            selected === undefined || shownVersion?.id === defaultVersion?.id
+              ? undefined
+              : shownVersion?.id,
+        }}
+        onChange={(name, value) => {
+          choose(name === 'versionId' ? 'versionId' : 'profileId', value ?? '');
+        }}
+        onClearAll={() => {
+          setParams(new URLSearchParams());
+        }}
+        actions={
+          selected !== undefined && shownVersion !== undefined ? (
+            <Link className="button" to={versionPath(shownVersion.id)}>
+              {canManage
+                ? t('identityAccess.permissionMatrix.openToEdit')
+                : t('identityAccess.permissionMatrix.open')}
+            </Link>
+          ) : undefined
+        }
+      />
 
       {permissions.length === 0 || columns.length === 0 ? (
         <EmptyState title={t('identityAccess.permissionMatrix.empty')} />

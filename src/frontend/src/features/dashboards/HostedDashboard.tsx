@@ -131,34 +131,34 @@ export function HostedDashboard({
 
   return (
     <div className="dashboard">
-      <div className="dashboard__toolbar">
-        {view.data !== undefined && (
-          <p className="dashboard__meta">
-            <span>
-              {t('dashboards.refreshedAt', { date: formatDateTime(view.data.refreshedAt) })}
-            </span>
-            <button type="button" className="button button--quiet" onClick={view.reload}>
-              {t('dashboards.actions.refresh')}
-            </button>
-            {mayPersonalize(user, entry) && (
-              <button
-                type="button"
-                className="button"
-                onClick={() => {
-                  setPersonalizing(true);
-                }}
-              >
-                {t('dashboards.personalize.open')}
-              </button>
-            )}
-          </p>
-        )}
-      </div>
       <PortfolioFilterBar
         options={options}
         filters={filters}
         onChange={onFilterChange}
         onClearAll={onClearFilters}
+        actions={
+          view.data === undefined ? undefined : (
+            <p className="dashboard__meta">
+              <span>
+                {t('dashboards.refreshedAt', { date: formatDateTime(view.data.refreshedAt) })}
+              </span>
+              <button type="button" className="button button--quiet" onClick={view.reload}>
+                {t('dashboards.actions.refresh')}
+              </button>
+              {mayPersonalize(user, entry) && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => {
+                    setPersonalizing(true);
+                  }}
+                >
+                  {t('dashboards.personalize.open')}
+                </button>
+              )}
+            </p>
+          )
+        }
       />
       <PageNotice notice={notice} />
       {view.data === undefined ? (

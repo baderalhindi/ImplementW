@@ -43,6 +43,7 @@
     "clear": "مسح التصفية",
     "more": "مزيد من التصفية",
     "moreCount": "مزيد من التصفية ({count})",
+    "button": "التصفية",
     "toggle": "التصفية ({count})",
     "clearAll": "مسح الكل",
     "remove": "إزالة التصفية {filter}",

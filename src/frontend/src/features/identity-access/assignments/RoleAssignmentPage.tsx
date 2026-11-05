@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router';
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
@@ -144,7 +145,7 @@ interface AssignmentFiltersProps {
 
 function AssignmentFilters({ status, projectId }: AssignmentFiltersProps): ReactElement {
   const { t } = useI18n();
-  const [, setParams] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [draftStatus, setDraftStatus] = useState<string>(status ?? '');
   const [draftProject, setDraftProject] = useState(projectId ?? '');
   const [projectError, setProjectError] = useState<string | undefined>(undefined);
@@ -166,35 +167,78 @@ function AssignmentFilters({ status, projectId }: AssignmentFiltersProps): React
     setParams(next);
   };
 
+  const remove = (name: 'status' | 'projectId') => {
+    const next = new URLSearchParams(params);
+    next.delete('page');
+    next.delete(name);
+    setParams(next);
+  };
+
   return (
-    <form className="filters" noValidate onSubmit={apply} aria-label={t('common.filters.label')}>
-      <FormAlert
-        message={projectError === undefined ? null : t('common.form.fixErrors', { count: 1 })}
-      />
-      <SelectField
-        label={t('identityAccess.assignments.status')}
-        name="status"
-        value={draftStatus}
-        placeholder={t('common.filters.any')}
-        options={STATUSES.map((value) => ({
-          value,
-          label: t(`identityAccess.assignmentStatus.${value}`),
-        }))}
-        onChange={setDraftStatus}
-      />
-      <TextField
-        label={t('identityAccess.assignScope.projectId')}
-        name="projectId"
-        dir="ltr"
-        value={draftProject}
-        onChange={setDraftProject}
-        error={projectError}
-      />
-      <div className="filters__actions">
-        <button type="submit" className="button button--primary">
-          {t('common.filters.apply')}
-        </button>
-      </div>
-    </form>
+    <FilterBar
+      onClearAll={() => {
+        setParams(new URLSearchParams());
+      }}
+      chips={[
+        ...(status === undefined
+          ? []
+          : [
+              {
+                name: 'status',
+                text: t('common.filters.inline', {
+                  label: t('identityAccess.assignments.status'),
+                  value: t(`identityAccess.assignmentStatus.${status}`),
+                }),
+                onRemove: () => {
+                  remove('status');
+                },
+              },
+            ]),
+        ...(projectId === undefined
+          ? []
+          : [
+              {
+                name: 'projectId',
+                text: t('common.filters.inline', {
+                  label: t('identityAccess.assignScope.projectId'),
+                  value: projectId,
+                }),
+                onRemove: () => {
+                  remove('projectId');
+                },
+              },
+            ]),
+      ]}
+    >
+      <form className="filters" noValidate onSubmit={apply}>
+        <FormAlert
+          message={projectError === undefined ? null : t('common.form.fixErrors', { count: 1 })}
+        />
+        <SelectField
+          label={t('identityAccess.assignments.status')}
+          name="status"
+          value={draftStatus}
+          placeholder={t('common.filters.any')}
+          options={STATUSES.map((value) => ({
+            value,
+            label: t(`identityAccess.assignmentStatus.${value}`),
+          }))}
+          onChange={setDraftStatus}
+        />
+        <TextField
+          label={t('identityAccess.assignScope.projectId')}
+          name="projectId"
+          dir="ltr"
+          value={draftProject}
+          onChange={setDraftProject}
+          error={projectError}
+        />
+        <div className="filters__actions">
+          <button type="submit" className="button button--primary">
+            {t('common.filters.apply')}
+          </button>
+        </div>
+      </form>
+    </FilterBar>
   );
 }

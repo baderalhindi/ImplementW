@@ -42,7 +42,12 @@ import {
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 import { findMainMenu, openMenuNames } from '@/test/shell.ts';
 
 // SCR-160 to SCR-167 (TASK-067) against the TASK-066 API. Acceptance criteria: (1) the external-facing view of SCR-162
@@ -870,6 +875,7 @@ describe('SCR-160 and SCR-161: AHDA’s register and request form', () => {
     expect(within(table).getAllByRole('row')).toHaveLength(4);
     expect(within(table).getByText(en('externalParticipation.dueCondition.OVERDUE'))).toBeTruthy();
 
+    await openFilters();
     await userEvent
       .setup()
       .selectOptions(

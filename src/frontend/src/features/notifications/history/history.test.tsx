@@ -7,7 +7,12 @@ import { translate } from '@/shared/i18n/i18n.ts';
 import { shownAt } from '@/test/documentFixtures.ts';
 import { historyItem, notificationSession, withInbox } from '@/test/notificationFixtures.ts';
 import { type MockApi, mockApi, page } from '@/test/mockApi.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 
 // SCR-153 Notification History.
 
@@ -90,6 +95,7 @@ describe('SCR-153 Notification History', () => {
     const user = userEvent.setup();
     await screen.findByRole('table');
 
+    await openFilters();
     await user.selectOptions(
       screen.getByRole('combobox', { name: en('notifications.filters.channel') }),
       'SMS',

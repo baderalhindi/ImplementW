@@ -2,7 +2,15 @@ import { randomUUID } from 'node:crypto';
 
 import { runFixture } from '../support/fixtures.ts';
 import { activeProject } from '../support/projects.ts';
-import { expect, expectText, plain, test, unique, utcDate } from '../support/journey.ts';
+import {
+  expect,
+  expectText,
+  openFilters,
+  plain,
+  test,
+  unique,
+  utcDate,
+} from '../support/journey.ts';
 import {
   csvRows,
   exportThroughTheDialog,
@@ -247,6 +255,7 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
 
   await test.step("scope across the department: the register export holds the department's projects only", async () => {
     await page.goto('/reports/department/PROJECT_REGISTER');
+    await openFilters(page);
     await reportParameter(page, 'Sector').selectOption({ label: 'E2E Journeys Department' });
     await page.getByRole('button', { name: 'Run report' }).click();
     await expectText(

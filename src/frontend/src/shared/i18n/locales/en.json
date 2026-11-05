@@ -43,6 +43,7 @@
     "clear": "Clear filters",
     "more": "More filters",
     "moreCount": "More filters ({count})",
+    "button": "Filters",
     "toggle": "Filters ({count})",
     "clearAll": "Clear all",
     "remove": "Remove filter {filter}",

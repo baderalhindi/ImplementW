@@ -5,7 +5,7 @@ import { ConfirmDialog } from '@/features/identity-access/components/ConfirmDial
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -41,6 +41,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * The measures window. One day is the API's own default, so nothing is sent; a longer one is sent as its bounds, taken
  * when the read starts so the loader does not change on every render.
  */
+const DEFAULT_WINDOW: MetricsWindow = 1;
+
 function windowBounds(days: MetricsWindow): { from?: string; to?: string } {
   if (days === 1) {
     return {};
@@ -255,20 +257,26 @@ function DetailContent({
       </Section>
 
       <Section title={t('integrationAdmin.measures.title')}>
-        <div className="filters filters--inline">
-          <SelectField
-            label={t('integrationAdmin.measures.windowChoice')}
-            name="window"
-            value={String(days)}
-            options={METRICS_WINDOWS.map((value) => ({
-              value: String(value),
-              label: t('integrationAdmin.measures.lastDays', { days: value }),
-            }))}
-            onChange={(value) => {
-              onWindowChange(Number(value) as MetricsWindow);
-            }}
-          />
-        </div>
+        <FilterBar
+          fields={[
+            {
+              name: 'window',
+              label: t('integrationAdmin.measures.windowChoice'),
+              all: t('integrationAdmin.measures.lastDays', { days: DEFAULT_WINDOW }),
+              options: METRICS_WINDOWS.filter((value) => value !== DEFAULT_WINDOW).map((value) => ({
+                value: String(value),
+                label: t('integrationAdmin.measures.lastDays', { days: value }),
+              })),
+            },
+          ]}
+          values={{ window: days === DEFAULT_WINDOW ? undefined : String(days) }}
+          onChange={(_name, value) => {
+            onWindowChange(value === undefined ? DEFAULT_WINDOW : (Number(value) as MetricsWindow));
+          }}
+          onClearAll={() => {
+            onWindowChange(DEFAULT_WINDOW);
+          }}
+        />
         <MetricsPanel metrics={detail.metrics} instances={integration.instances} />
       </Section>
 

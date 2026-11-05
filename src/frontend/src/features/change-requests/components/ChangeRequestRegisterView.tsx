@@ -1,7 +1,7 @@
 import { type ReactElement, useState } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
 
 import { type ChangeRequestStatus } from '../api/types.ts';
@@ -30,21 +30,26 @@ export function ChangeRequestRegisterView({
 
   return (
     <>
-      <div className="filters">
-        <SelectField
-          label={t('changeRequests.filter.status')}
-          name="status"
-          value={status}
-          placeholder={t('changeRequests.filter.allStatuses')}
-          options={present.map((value) => ({
-            value,
-            label: t(`changeRequests.status.${value}`),
-          }))}
-          onChange={(value) => {
-            setStatus(CHANGE_REQUEST_STATUSES.find((candidate) => candidate === value) ?? '');
-          }}
-        />
-      </div>
+      <FilterBar
+        fields={[
+          {
+            name: 'status',
+            label: t('changeRequests.filter.status'),
+            all: t('changeRequests.filter.allStatuses'),
+            options: present.map((value) => ({
+              value,
+              label: t(`changeRequests.status.${value}`),
+            })),
+          },
+        ]}
+        values={{ status: status === '' ? undefined : status }}
+        onChange={(_name, value) => {
+          setStatus(CHANGE_REQUEST_STATUSES.find((candidate) => candidate === value) ?? '');
+        }}
+        onClearAll={() => {
+          setStatus('');
+        }}
+      />
       <p className="list-order" role="status">
         {t('changeRequests.filter.showing', { shown: shown.length, total: entries.length })}
       </p>

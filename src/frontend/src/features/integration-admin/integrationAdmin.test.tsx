@@ -26,7 +26,12 @@ import {
   withIntegrations,
 } from '@/test/integrationAdminFixtures.ts';
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 import { findMainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
 
 // TASK-076, the FG-05 Integration Administration UI over TASK-075's API. Acceptance criteria: (1) the Test Integration
@@ -580,6 +585,7 @@ describe('ADM-046 Integration Detail', () => {
     const api = open(`/admin/integration-detail-configuration/${DIRECTORY_ID}`);
     const user = userEvent.setup();
 
+    await openFilters();
     const window = await screen.findByRole('combobox', {
       name: en('integrationAdmin.measures.windowChoice'),
     });
@@ -713,6 +719,7 @@ describe('ADM-048 Integration Logs', () => {
     await screen.findByRole('table');
     const reads = () => api.requestsTo('GET', /^\/integration-invocations$/);
     const before = reads().length;
+    await openFilters();
     const correlation = screen.getByRole('textbox', {
       name: en('integrationAdmin.fields.correlationId'),
     });

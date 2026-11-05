@@ -5,6 +5,7 @@ import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
@@ -112,7 +113,7 @@ function Recent({ catalogue }: { catalogue: ReportCatalogueEntry[] }): ReactElem
 export function ReportsCenterPage(): ReactElement {
   const { t } = useI18n();
   const compose = useCan('REPORT_COMPOSE');
-  const { params, setFilter } = useListParams();
+  const { params, setFilter, setFilters } = useListParams();
   const query = params.get('q') ?? '';
   const family = familyOfSlug(params.get('family') ?? undefined);
   const catalogue = useApiResource(reportsApi.catalogue);
@@ -133,44 +134,60 @@ export function ReportsCenterPage(): ReactElement {
           ) : undefined
         }
       />
-      <form
-        className="filters filters--inline"
-        role="search"
-        aria-label={t('reports.center.searchLabel')}
-        onSubmit={(event) => {
-          event.preventDefault();
+      <FilterBar
+        fields={[
+          {
+            name: 'family',
+            label: t('reports.center.family'),
+            all: t('reports.center.allFamilies'),
+            options: FAMILY_ORDER.map((candidate) => ({
+              value: FAMILIES[candidate].slug,
+              label: t(FAMILIES[candidate].label),
+            })),
+          },
+        ]}
+        values={{ family: family === null ? undefined : FAMILIES[family].slug }}
+        onChange={(name, value) => {
+          setFilter(name, value ?? '');
         }}
+        onClearAll={() => {
+          setFilters({ q: '', family: '' });
+        }}
+        chips={
+          query === ''
+            ? []
+            : [
+                {
+                  name: 'q',
+                  text: t('common.filters.inline', {
+                    label: t('reports.center.search'),
+                    value: query,
+                  }),
+                  onRemove: () => {
+                    setFilter('q', '');
+                  },
+                },
+              ]
+        }
       >
-        <TextField
-          label={t('reports.center.search')}
-          name="q"
-          type="search"
-          value={query}
-          onChange={(value) => {
-            setFilter('q', value);
+        <form
+          className="filters filters--inline"
+          aria-label={t('reports.center.searchLabel')}
+          onSubmit={(event) => {
+            event.preventDefault();
           }}
-        />
-        <div className="field">
-          <label className="field__label" htmlFor="report-family">
-            {t('reports.center.family')}
-          </label>
-          <select
-            id="report-family"
-            className="field__input"
-            value={family === null ? '' : FAMILIES[family].slug}
-            onChange={(event) => {
-              setFilter('family', event.target.value);
+        >
+          <TextField
+            label={t('reports.center.search')}
+            name="q"
+            type="search"
+            value={query}
+            onChange={(value) => {
+              setFilter('q', value);
             }}
-          >
-            <option value="">{t('reports.center.allFamilies')}</option>
-            {FAMILY_ORDER.map((candidate) => (
-              <option key={candidate} value={FAMILIES[candidate].slug}>
-                {t(FAMILIES[candidate].label)}
-              </option>
-            ))}
-          </select>
-        </div>
-      </form>
+          />
+        </form>
+      </FilterBar>
 
       {catalogue.loading ? (
         <LoadingState />

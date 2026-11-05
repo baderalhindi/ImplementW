@@ -4,7 +4,7 @@ import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
@@ -28,7 +28,7 @@ import { useNotificationFamilies } from '../useNotificationFamilies.ts';
  */
 export function NotificationHistoryPage(): ReactElement {
   const { t, language, formatDateTime } = useI18n();
-  const { params, page, setFilter, goToPage } = useListParams();
+  const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const channel = CHANNELS.find((candidate) => candidate === params.get('channel'));
   const status = DELIVERY_STATUSES.find((candidate) => candidate === params.get('status'));
   const load = useCallback(
@@ -61,34 +61,35 @@ export function NotificationHistoryPage(): ReactElement {
         title={t('notifications.history.title')}
         description={t('notifications.history.description')}
       />
-      <div className="filters" role="search" aria-label={t('common.filters.label')}>
-        <SelectField
-          label={t('notifications.filters.channel')}
-          name="channel"
-          value={channel ?? ''}
-          placeholder={t('common.filters.any')}
-          options={CHANNELS.map((value) => ({
-            value,
-            label: t(`notifications.channel.${value}`),
-          }))}
-          onChange={(value) => {
-            setFilter('channel', value);
-          }}
-        />
-        <SelectField
-          label={t('notifications.fields.status')}
-          name="status"
-          value={status ?? ''}
-          placeholder={t('common.filters.any')}
-          options={DELIVERY_STATUSES.map((value) => ({
-            value,
-            label: t(`notifications.status.${value}`),
-          }))}
-          onChange={(value) => {
-            setFilter('status', value);
-          }}
-        />
-      </div>
+      <FilterBar
+        fields={[
+          {
+            name: 'channel',
+            label: t('notifications.filters.channel'),
+            all: t('common.filters.any'),
+            options: CHANNELS.map((value) => ({
+              value,
+              label: t(`notifications.channel.${value}`),
+            })),
+          },
+          {
+            name: 'status',
+            label: t('notifications.fields.status'),
+            all: t('common.filters.any'),
+            options: DELIVERY_STATUSES.map((value) => ({
+              value,
+              label: t(`notifications.status.${value}`),
+            })),
+          },
+        ]}
+        values={{ channel, status }}
+        onChange={(name, value) => {
+          setFilter(name, value ?? '');
+        }}
+        onClearAll={() => {
+          setFilters({ channel: '', status: '' });
+        }}
+      />
 
       {history.loading && <LoadingState label={t('notifications.history.loading')} />}
       {history.error !== null && (

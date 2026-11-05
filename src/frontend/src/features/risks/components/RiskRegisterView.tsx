@@ -3,7 +3,7 @@ import { type ReactElement, useState } from 'react';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
 
 import {
@@ -22,9 +22,7 @@ import { type RiskLookups } from '../useRiskData.ts';
 import { RiskSummaryCards } from './RiskSummaryCards.tsx';
 import { RiskTable } from './RiskTable.tsx';
 
-function isRegisterView(value: string): value is RegisterView {
-  return (REGISTER_VIEWS as readonly string[]).includes(value);
-}
+const DEFAULT_VIEW: RegisterView = 'open';
 
 interface RiskRegisterViewProps {
   entries: RiskEntry[];
@@ -47,7 +45,7 @@ export function RiskRegisterView({
   caption,
 }: RiskRegisterViewProps): ReactElement {
   const { t, language } = useI18n();
-  const [view, setView] = useState<RegisterView>('open');
+  const [view, setView] = useState<RegisterView>(DEFAULT_VIEW);
   const [rating, setRating] = useState(ANY_RATING);
   const today = todayUtc();
   const risks = entries.map((entry) => entry.risk);
@@ -60,35 +58,43 @@ export function RiskRegisterView({
   return (
     <>
       <RiskSummaryCards summary={summary} />
-      <div className="filters filters--inline">
-        <SelectField
-          label={t('risks.filter.view')}
-          name="view"
-          value={view}
-          options={REGISTER_VIEWS.map((value) => ({
-            value,
-            label: t(`risks.filter.views.${value}`),
-          }))}
-          onChange={(chosen) => {
-            if (isRegisterView(chosen)) {
-              setView(chosen);
-            }
-          }}
-        />
-        <SelectField
-          label={t('risks.filter.rating')}
-          name="rating"
-          value={rating}
-          options={[
-            { value: ANY_RATING, label: t('common.filters.any') },
-            ...summary.byRating.map((entry) => ({
+      <FilterBar
+        fields={[
+          {
+            name: 'view',
+            label: t('risks.filter.view'),
+            all: t(`risks.filter.views.${DEFAULT_VIEW}`),
+            options: REGISTER_VIEWS.filter((value) => value !== DEFAULT_VIEW).map((value) => ({
+              value,
+              label: t(`risks.filter.views.${value}`),
+            })),
+          },
+          {
+            name: 'rating',
+            label: t('risks.filter.rating'),
+            all: t('common.filters.any'),
+            options: summary.byRating.map((entry) => ({
               value: entry.code,
               label: entry.label[language],
             })),
-          ]}
-          onChange={setRating}
-        />
-      </div>
+          },
+        ]}
+        values={{
+          view: view === DEFAULT_VIEW ? undefined : view,
+          rating: rating === ANY_RATING ? undefined : rating,
+        }}
+        onChange={(name, value) => {
+          if (name === 'view') {
+            setView(REGISTER_VIEWS.find((candidate) => candidate === value) ?? DEFAULT_VIEW);
+          } else {
+            setRating(value ?? ANY_RATING);
+          }
+        }}
+        onClearAll={() => {
+          setView(DEFAULT_VIEW);
+          setRating(ANY_RATING);
+        }}
+      />
       {shown.length === 0 ? (
         <EmptyState title={t('risks.empty.filtered')} />
       ) : (

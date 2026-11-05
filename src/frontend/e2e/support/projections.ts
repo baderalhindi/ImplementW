@@ -332,6 +332,6 @@ export function pdfTexts(bytes: Buffer): string[] {
 /** A parameter of the report shown (SCR-131–137's Parameter Panel), by its label. */
 export function reportParameter(page: Page, label: string): Locator {
   return page
-    .getByRole('form', { name: 'Report parameters' })
+    .getByRole('group', { name: 'Report parameters' })
     .getByRole('combobox', { name: new RegExp(`^${label}`) });
 }

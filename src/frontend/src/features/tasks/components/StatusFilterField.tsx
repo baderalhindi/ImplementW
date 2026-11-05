@@ -1,14 +1,12 @@
 import { type ReactElement } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 
 import { TASK_STATUSES } from '../presentation.ts';
 import { type StatusFilter } from '../taskRules.ts';
 
-function isStatusFilter(value: string): value is StatusFilter {
-  return value === 'open' || value === 'all' || (TASK_STATUSES as string[]).includes(value);
-}
+const DEFAULT_FILTER: StatusFilter = 'open';
 
 /** Open work by default; any one state, or every task. */
 export function StatusFilterField({
@@ -20,22 +18,32 @@ export function StatusFilterField({
 }): ReactElement {
   const { t } = useI18n();
   return (
-    <div className="filters filters--inline">
-      <SelectField
-        label={t('tasks.filter.label')}
-        name="status"
-        value={value}
-        options={[
-          { value: 'open', label: t('tasks.filter.open') },
-          ...TASK_STATUSES.map((status) => ({ value: status, label: t(`tasks.status.${status}`) })),
-          { value: 'all', label: t('tasks.filter.all') },
-        ]}
-        onChange={(chosen) => {
-          if (isStatusFilter(chosen)) {
-            onChange(chosen);
-          }
-        }}
-      />
-    </div>
+    <FilterBar
+      fields={[
+        {
+          name: 'status',
+          label: t('tasks.filter.label'),
+          all: t('tasks.filter.open'),
+          options: [
+            ...TASK_STATUSES.map((status) => ({
+              value: status,
+              label: t(`tasks.status.${status}`),
+            })),
+            { value: 'all', label: t('tasks.filter.all') },
+          ],
+        },
+      ]}
+      values={{ status: value === DEFAULT_FILTER ? undefined : value }}
+      onChange={(_name, chosen) => {
+        onChange(
+          chosen === 'all'
+            ? 'all'
+            : (TASK_STATUSES.find((status) => status === chosen) ?? DEFAULT_FILTER),
+        );
+      }}
+      onClearAll={() => {
+        onChange(DEFAULT_FILTER);
+      }}
+    />
   );
 }

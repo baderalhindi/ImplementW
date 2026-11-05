@@ -4850,11 +4850,6 @@ path.trend__line--ACTUAL_PERCENT {
   margin: 0;
 }
 
-.kpi-register__list-header .field {
-  inline-size: min(100%, 22rem);
-  margin: 0;
-}
-
 .kpi-register .figure-stack .details__aside {
   white-space: nowrap;
 }
@@ -5134,15 +5129,35 @@ path.trend__line--ACTUAL_PERCENT {
 /* ---------------------------------------------------------------------------------------------- filter bar */
 
 /*
- * The one filter bar (the 2 Nov 2026 review, R3-1): a full-width row under the page title, kept in view while the page scrolls, of
- * compact drop-downs about 200 px wide whose label sits inside the control. It wraps to a second row below 1,280 px; on a phone it
- * folds into a "Filters (n)" button.
+ * The one filter component (the 5 Nov 2026 review, R4-1): a Filters button on the page's toolbar row, closed by default at every screen
+ * size; the panel of compact drop-downs opens below it, and the active filters stay as chips under the button when it is closed.
  */
 .filter-bar {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 5;
   margin-block-end: var(--space-4);
+}
+
+.filter-bar__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.filter-bar__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filter-bar__icon {
+  flex: none;
+}
+
+.filter-bar__body {
+  display: grid;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-card);
@@ -5150,9 +5165,17 @@ path.trend__line--ACTUAL_PERCENT {
   box-shadow: var(--shadow-card);
 }
 
-.filter-bar__body {
-  display: grid;
-  gap: var(--space-3);
+.filter-bar__body[hidden] {
+  display: none;
+}
+
+/* The panel is the card: a form passed as children draws no second one inside it. */
+.filter-bar__body .filters {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .filter-bar__row {
@@ -5184,7 +5207,7 @@ path.trend__line--ACTUAL_PERCENT {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin: 0;
+  margin: var(--space-3) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -5204,27 +5227,7 @@ path.trend__line--ACTUAL_PERCENT {
   unicode-bidi: isolate;
 }
 
-.filter-bar__toggle {
-  display: none;
-}
-
 @media (max-width: 40rem) {
-  .filter-bar {
-    position: static;
-  }
-
-  .filter-bar__toggle {
-    display: inline-flex;
-  }
-
-  .filter-bar:not(.filter-bar--open) .filter-bar__body {
-    display: none;
-  }
-
-  .filter-bar--open .filter-bar__body {
-    margin-block-start: var(--space-3);
-  }
-
   .filter-bar__select {
     inline-size: 100%;
   }
