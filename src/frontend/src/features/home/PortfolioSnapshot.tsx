@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 import { dashboardsApi } from '@/features/dashboards/api/dashboardsApi.ts';
 import {
@@ -50,6 +50,7 @@ interface Tile {
  */
 export function PortfolioSnapshot(): ReactElement | null {
   const { t, language } = useI18n();
+  const navigate = useNavigate();
   const portfolio = useApiResource(readPortfolio);
   const view = portfolio.data;
   if (view === undefined || view === null) {
@@ -140,6 +141,16 @@ export function PortfolioSnapshot(): ReactElement | null {
         locations={view.locations}
         places={view.places}
         linkTo={(region) => `${PORTFOLIO_DASHBOARD_PATH}&region=${encodeURIComponent(region)}`}
+        map={{
+          filters: {},
+          onFilterCity: (city) => {
+            void navigate(
+              city === undefined
+                ? PORTFOLIO_DASHBOARD_PATH
+                : `${PORTFOLIO_DASHBOARD_PATH}&city=${encodeURIComponent(city)}`,
+            );
+          },
+        }}
       />
     </section>
   );
