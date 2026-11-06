@@ -6908,6 +6908,36 @@
         }
       }
     },
+    "/api/v1/search": {
+      "get": {
+        "tags": [
+          "GlobalSearch"
+        ],
+        "summary": "The records matching `q` that the caller may read, at most five of each kind. Under two characters finds nothing.",
+        "operationId": "GlobalSearch_Search",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlobalSearchResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/identity-integration": {
       "get": {
         "tags": [
@@ -28536,6 +28566,79 @@
         ],
         "description": "A generated output's lifecycle (ERD §6): AVAILABLE until it expires; PURGED once its file is deleted, the record kept."
       },
+      "GlobalSearchHit": {
+        "required": [
+          "type",
+          "id",
+          "projectId",
+          "title",
+          "projectTitle",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/GlobalSearchRecordType"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "projectId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "title": {
+            "$ref": "#/components/schemas/NarrativeText"
+          },
+          "projectTitle": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "One record the caller may open. Guid? GlobalSearchHit.ProjectId is its project (null for a library document), NarrativeText? GlobalSearchHit.ProjectTitle says which\nproject it belongs to where the row can name it, and string? GlobalSearchHit.Reference is a project's formal id."
+      },
+      "GlobalSearchRecordType": {
+        "enum": [
+          "PROJECT",
+          "PROJECT_TASK",
+          "RISK",
+          "MANAGEMENT_CONCERN",
+          "CHANGE_REQUEST",
+          "DOCUMENT"
+        ],
+        "description": "The kinds of record the header search finds."
+      },
+      "GlobalSearchResult": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlobalSearchHit"
+            }
+          }
+        },
+        "description": "The most recently changed matches of each kind, kind by kind."
+      },
       "GovernanceProfileEntry": {
         "required": [
           "governanceProfileItemId",
@@ -46059,6 +46162,9 @@
     },
     {
       "name": "FinancialKpi"
+    },
+    {
+      "name": "GlobalSearch"
     },
     {
       "name": "Milestone"

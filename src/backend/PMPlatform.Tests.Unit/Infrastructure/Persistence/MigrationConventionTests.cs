@@ -61,7 +61,7 @@ public sealed partial class MigrationConventionTests : IDisposable
             .Select(o => o.Name)
             .Where(name => name != CommonSchema)
             .Order(StringComparer.Ordinal)];
-        string[] modules = [.. ModuleRegistry.Modules.Select(SnakeCase).Order(StringComparer.Ordinal)];
+        string[] modules = [.. ModuleRegistry.Modules.Except(ModuleRegistry.ModulesWithoutSchema).Select(SnakeCase).Order(StringComparer.Ordinal)];
 
         Assert.Equal(modules, created);
     }

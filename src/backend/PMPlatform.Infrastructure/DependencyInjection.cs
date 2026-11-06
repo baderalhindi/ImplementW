@@ -1,3 +1,5 @@
+using PMPlatform.Application.Features.GlobalSearch;
+using PMPlatform.Infrastructure.Persistence.GlobalSearch;
 using PMPlatform.Infrastructure.ExternalParticipation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -165,6 +167,9 @@ public static class DependencyInjection
 
         // TASK-052: WF-14's financial_kpi schema.
         services.AddScoped<IFinancialKpiRepository, FinancialKpiRepository>();
+
+        // The header search: a read across the project record schemas.
+        services.AddScoped<IGlobalSearchRepository, GlobalSearchRepository>();
 
         // TASK-055: WF-06's risk schema, and the pass that expires lapsed risk acceptances.
         services.AddScoped<IRiskRepository, RiskRepository>();
