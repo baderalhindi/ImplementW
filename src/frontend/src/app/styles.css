@@ -1318,6 +1318,25 @@ h3 {
   color: var(--color-text-muted);
 }
 
+/* Master data: the list selector, its actions and the table, one even gap apart. minmax(0, 1fr) keeps a wide table scrolling inside its container. */
+.master-data {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.section + .master-data {
+  margin-block-start: var(--space-6);
+}
+
+.master-data > .field {
+  max-inline-size: 24rem;
+}
+
+.master-data > .form__actions {
+  margin-block-start: 0;
+}
+
 .form__readonly {
   display: grid;
   gap: var(--space-1);
