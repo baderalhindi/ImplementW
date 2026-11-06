@@ -130,6 +130,11 @@ erDiagram
         varchar status
         uuid sponsor_user_id FK
     }
+    UserPasswordHistory {
+        uuid id PK
+        uuid user_id FK
+    }
+    User ||--o{ UserPasswordHistory : "user_id"
     User {
         uuid id PK
         varchar directory_subject_id UK
@@ -201,6 +206,7 @@ erDiagram
 | **Department** | `identity_access.department` | AHDA organisation structure node (ADM-011/012). Directory is authoritative for membership (ADR-007). | — | RETAIN | referenceable |
 | **ExternalEntity** | `identity_access.external_entity` | An organisation delivering a regional project: government entity, public authority or private company (ADR-013, ADM-013). | `status` → ACTIVE · SUSPENDED · RETIRED | RETAIN | referenceable |
 | **User** | `identity_access.user` | Platform user. Deactivation never rewrites historical attribution (Appendix A.1, TASK-031). | `status` → ACTIVE · DISABLED | RETAIN | referenceable |
+| **UserPasswordHistory** | `identity_access.user_password_history` | The hashes a local account has used, so none of the last five comes back (5 Nov 2026 review, R4-6). | — | RETAIN | — |
 | **Role** | `identity_access.role` | Canonical role R01–R08: shipped, undeletable, referenced by routing, landing dashboards and notification matrices. | — | RETAIN | referenceable |
 | **Permission** | `identity_access.permission` | Protected permission catalogue (Appendix A). A profile may only select from it (TASK-110). | — | RETAIN | referenceable |
 | **PermissionProfile** | `identity_access.permission_profile` | A named composition of catalogue permissions rooted at a canonical role. R01–R08 defaults are profiles with is_shipped_default (ADR-018, TASK-110). | — | RETAIN | referenceable |
@@ -1032,6 +1038,11 @@ Path A (direct source action by an assigned entity Project Manager) is authoriza
 
 ```mermaid
 erDiagram
+    UpdateRequestBatch {
+        uuid id PK
+        uuid series_id
+        date due_date
+    }
     ExternalUpdateRequest {
         uuid id PK
         uuid project_id FK
@@ -1064,6 +1075,7 @@ erDiagram
         varchar status
     }
     Project ||..o{ ExternalUpdateRequest : "project_id"
+    UpdateRequestBatch |o--o{ ExternalUpdateRequest : "update_request_batch_id"
     ExternalUpdateRequest ||--o{ ExternalContribution : "external_update_request_id"
     Project ||..o{ ExternalContribution : "project_id"
     ExternalContribution |o--o{ ExternalContribution : "previous_revision_id"
@@ -1074,6 +1086,7 @@ erDiagram
 | Entity | Table | Purpose | Lifecycle column → states | Delete policy | Identity |
 | --- | --- | --- | --- | --- | --- |
 | **ExternalUpdateRequest** | `external_participation.external_update_request` | AHDA-issued or entity-initiated update request within entity and project scope (TASK-066, ADR-013). | `status` → DRAFT · ISSUED · IN_PROGRESS · RESPONDED · CLOSED · CANCELLED · EXPIRED | HARD_DRAFT | referenceable |
+| **UpdateRequestBatch** | `external_participation.update_request_batch` | One sending of monthly update requests, one per project, tracked together; a repeating batch names the next sending's day (5 Nov 2026 review, R4-2). | — | RETAIN | referenceable |
 | **ExternalContribution** | `external_participation.external_contribution` | Path B staged contribution: immutable once submitted; review produces Accept / Return / Reject and a new revision, never an in-place edit (TASK-066). | `status` → DRAFT · SUBMITTED · UNDER_REVIEW · RETURNED · REJECTED · ACCEPTED_PENDING_APPLICATION · APPLIED · APPLICATION_FAILED | HARD_DRAFT | referenceable |
 | **ExternalContributionField** | `external_participation.external_contribution_field` | One proposed field value inside a contribution; normalised, immutable after submission. | — | CASCADE | — |
 | **SourceApplication** | `external_participation.source_application` | One attempt to apply an accepted contribution to its source through the typed adapter, with revalidation, idempotency and conflict state (SCR-166). | `status` → PENDING · REVALIDATING · APPLIED · CONFLICT · FAILED · RETRY_SCHEDULED | RETAIN | — |
@@ -1825,3 +1838,4 @@ On Q1 and Q6, the E-1 reconciliation is run, the crosswalk's Appendix D columns 
 | 2026-10-12 | §5.22, `erd.dbml`, §8: the `audit_activity` schema completed by TASK-073 (`audit-activity.md` D-5, D-8), migrations `TASK-073_CreateActivityProjection` and `TASK-073_AddActivityProjectionCrossModuleForeignKeys`. Added: `audit_event.attribute_digest` (SHA-256 over the event's attributes, now covered by `event_hash`; null for events stored before it, whose hash is unchanged) and `ActivityProjectionCheckpoint` (how far the projection has read the store), so 124 tables. `BusinessActivityEntry` built as listed; a rebuild may replace or remove a line. No `event_id` column (event-conventions S-8): the stored event's `id` is the captured event's id, so a repeated delivery finds it. | Backend (TASK-073) |
 | 2026-10-13 | §5.21, `erd.dbml`: the `integration_monitoring` schema built by TASK-075 (`integration-monitoring.md` D-1), migrations `TASK-075_CreateIntegrationMonitoringTables`, `…_AddIntegrationMonitoringCrossModuleForeignKeys`, `…_AddAuditForwardingInvocationForeignKey` and `…_GuardIntegrationMonitoringHistory`. Added: `invocation.failure_category` (technical, business or security: only technical counts against availability, FG-05 DC-INT-04), `invocation.next_attempt_at` (a scheduled retry), the unique key `(integration_instance_id, operation_code, idempotency_key, attempt_no)` (one attempt per number in a lineage), `operational_alert.acknowledged_at` (FG-05 §13.3 records who and when) and the partial unique index of one live alert per instance and type. Renamed: `integration_instance.health_evaluated_at` → `evaluated_at` (a column named for health is WF-02's or WF-03's alone, M-12). `audit_forwarding_record.invocation_id` now references `invocation` (TASK-033 F-3). Table count unchanged (124). | Backend (TASK-075) |
 | 2026-10-21 | §5.21, `erd.dbml`: `integration_monitoring.integration_instance.availability_changed_at` (since when the current availability has held, so an availability alert can wait for a configured delay, TBC-INT-08) and the `operational_alert.alert_type` value `QUEUE_BACKLOG` (FG-05 §10.1's backlog family, TBC-INT-11), migration `TASK-092_AddIntegrationQueueStateAndAlertThresholds`, which also adds the worker-owned partial index `ix_invocation_queue_state` behind ADM-047's queue state (`docs/operations/operational-dashboards.md`). Table count unchanged (124). | Observability (TASK-092) |
+| 2026-11-05 | §5.16, §5.1, `erd.dbml`: the 5 Nov 2026 review (R4-2, R4-4, R4-5, R4-6): `update_request_batch` and `user_password_history`; local account columns on `user`; a role's allowed scopes, landing and activation; `project.title_en`, `is_strategic`, `entity_contact_user_id`, `seed_source`; `audit_event.scope_project_id` loses its foreign key, as the trail outlives a removed project. |

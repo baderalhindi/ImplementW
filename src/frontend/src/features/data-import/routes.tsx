@@ -4,7 +4,7 @@ import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 
 import { DataMigrationPage } from './DataMigrationPage.tsx';
 
-/** TASK-102, mounted under /admin behind the R01 guard: DATA_IMPORT is R01's alone. */
+/** TASK-102, mounted under /admin behind the administration guard, offered on DATA_IMPORT. */
 export const dataImportRoutes: RouteObject[] = [
   { path: 'data-migration', element: <DataMigrationPage /> },
 ];

@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 import { dashboardsApi } from '@/features/dashboards/api/dashboardsApi.ts';
 import {
@@ -9,9 +9,10 @@ import {
 } from '@/features/dashboards/api/types.ts';
 import { ProjectLocations } from '@/features/dashboards/components/ProjectLocations.tsx';
 import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
-import { formatFigure, labelOfValue } from '@/features/dashboards/presentation.ts';
+import { formatFigure, hasNoData, labelOfValue } from '@/features/dashboards/presentation.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { EmptyState } from '@/shared/ui/States.tsx';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
 /** The Portfolio Dashboard, when the person's roles open it; null otherwise (the snapshot is then not shown). */
@@ -49,10 +50,22 @@ interface Tile {
  */
 export function PortfolioSnapshot(): ReactElement | null {
   const { t, language } = useI18n();
+  const navigate = useNavigate();
   const portfolio = useApiResource(readPortfolio);
   const view = portfolio.data;
   if (view === undefined || view === null) {
     return null;
+  }
+
+  if (hasNoData(view)) {
+    return (
+      <section className="home__portfolio" aria-labelledby="home-portfolio">
+        <div className="section__header">
+          <h2 id="home-portfolio">{t('home.portfolio.title')}</h2>
+        </div>
+        <EmptyState title={t('dashboards.noData')} />
+      </section>
+    );
   }
 
   const tiles: Tile[] = [];
@@ -128,6 +141,16 @@ export function PortfolioSnapshot(): ReactElement | null {
         locations={view.locations}
         places={view.places}
         linkTo={(region) => `${PORTFOLIO_DASHBOARD_PATH}&region=${encodeURIComponent(region)}`}
+        map={{
+          filters: {},
+          onFilterCity: (city) => {
+            void navigate(
+              city === undefined
+                ? PORTFOLIO_DASHBOARD_PATH
+                : `${PORTFOLIO_DASHBOARD_PATH}&city=${encodeURIComponent(city)}`,
+            );
+          },
+        }}
       />
     </section>
   );

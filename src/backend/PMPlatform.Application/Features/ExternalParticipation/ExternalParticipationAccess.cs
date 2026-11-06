@@ -87,16 +87,22 @@ internal sealed class ExternalParticipationAccess(IAuthorizationEngine engine, I
         engine.GetRecordScopeAsync(callerId, PermissionCatalogue.ExternalRequestView, cancellationToken);
 
     /// <summary>AHDA's people get the internal view; anyone else — an external user, or a caller the engine does not know — the external projection.</summary>
+    /// <summary>Whether the caller holds the send permission over the project (the 5 Nov 2026 review §2.2), and is on AHDA's side. A project out of reach reads as not found.</summary>
+    public async Task<bool> CanSendBatchAsync(Guid callerId, ProjectFacts project, Guid externalEntityId, CancellationToken cancellationToken) =>
+        await IsInternalAsync(callerId, cancellationToken).ConfigureAwait(false)
+        && (await engine.EvaluateAsync(callerId, new AuthorizationRequest(PermissionCatalogue.UpdateRequestSend, SubjectOf(project, externalEntityId, null, null)), cancellationToken).ConfigureAwait(false)).IsAllowed;
+
     public async Task<bool> IsInternalAsync(Guid userId, CancellationToken cancellationToken) =>
         await engine.GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false) is { IsActive: true, UserType: UserType.Internal };
 
     /// <summary>
     /// WF-13 §5.3, EXT-CC-03: a responder is an active external user of the request's entity whose own grants let them answer this request
     /// once named on it — so their assignment covers its project (the explicit project grant) and nothing is extended to make them eligible.
+    /// A monthly update may also go to an internal user holding the grant, such as an internal project manager (the 5 Nov 2026 review §2.1).
     /// </summary>
-    public async Task<bool> IsEligibleResponderAsync(Guid userId, ProjectFacts project, Guid externalEntityId, CancellationToken cancellationToken) =>
-        await engine.GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false) is { IsActive: true, UserType: UserType.External } principal
-        && principal.ExternalEntityId == externalEntityId
+    public async Task<bool> IsEligibleResponderAsync(Guid userId, ProjectFacts project, Guid externalEntityId, CancellationToken cancellationToken, bool allowInternal = false) =>
+        await engine.GetPrincipalAsync(userId, cancellationToken).ConfigureAwait(false) is { IsActive: true } principal
+        && ((principal.UserType == UserType.External && principal.ExternalEntityId == externalEntityId) || (allowInternal && principal.UserType == UserType.Internal))
         && (await engine.EvaluateAsync(
                 userId,
                 new AuthorizationRequest(PermissionCatalogue.ExternalContributionRespond, SubjectOf(project, externalEntityId, userId, null, [userId])),

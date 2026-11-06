@@ -13,12 +13,20 @@ import {
 } from '@/test/notificationFixtures.ts';
 import { withDashboards } from '@/test/dashboardFixtures.ts';
 import { mockApi, problem } from '@/test/mockApi.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 import { findMainMenu, findOpenMenu, mainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
 
 // SCR-150 All Notifications, SCR-151 Alerts, SCR-152 Escalations and MOD-070 Notification Detail.
 
 const en = (key: string, params?: Record<string, string | number>) => translate('en', key, params);
+
+const inlineFamily = (value: string) =>
+  en('common.filters.inline', { label: en('notifications.filters.family'), value });
 
 describe('SCR-150 All Notifications', () => {
   test('shows exactly the notifications the API returns, unread ones marked, with family labels', async () => {
@@ -49,6 +57,7 @@ describe('SCR-150 All Notifications', () => {
     const user = userEvent.setup();
     await screen.findByRole('table');
 
+    await openFilters();
     await user.selectOptions(
       screen.getByRole('combobox', { name: en('notifications.filters.readState') }),
       'unread',
@@ -69,13 +78,15 @@ describe('SCR-150 All Notifications', () => {
     )
       .getAllByRole('option')
       .map((option) => option.textContent);
-    expect(families).toEqual([
-      en('common.filters.any'),
-      'Approval tasks',
-      'Security alerts',
-      'Budget alerts',
-      'Concern escalations',
-    ]);
+    expect(families).toEqual(
+      [
+        en('common.filters.any'),
+        'Approval tasks',
+        'Security alerts',
+        'Budget alerts',
+        'Concern escalations',
+      ].map(inlineFamily),
+    );
   });
 
   test('an empty inbox says so', async () => {
@@ -108,6 +119,7 @@ describe('SCR-150 All Notifications', () => {
     renderApp({ path: '/notifications', session: notificationSession() });
     const table = await screen.findByRole('table');
     expect(await within(table).findByText('APPROVAL_TASK')).toBeTruthy();
+    await openFilters();
     expect(screen.queryByRole('combobox', { name: en('notifications.filters.family') })).toBeNull();
   });
 
@@ -141,12 +153,13 @@ describe('SCR-151 Alerts and SCR-152 Escalations', () => {
       await screen.findByRole('heading', { level: 1, name: en('notifications.alert.title') }),
     ).toBeTruthy();
     expect(await screen.findByRole('button', { name: 'Sign-in from a new device' })).toBeTruthy();
+    await openFilters();
     const options = within(
       screen.getByRole('combobox', { name: en('notifications.filters.family') }),
     )
       .getAllByRole('option')
       .map((option) => option.textContent);
-    expect(options).toEqual(['Security alerts', 'Budget alerts']);
+    expect(options).toEqual(['Security alerts', 'Budget alerts'].map(inlineFamily));
     expect(
       api
         .requestsTo('GET', /^\/notifications$/)
@@ -164,12 +177,9 @@ describe('SCR-151 Alerts and SCR-152 Escalations', () => {
       session: notificationSession(),
     });
     await screen.findByText(en('notifications.list.empty'));
-    const options = within(
-      screen.getByRole('combobox', { name: en('notifications.filters.family') }),
-    )
-      .getAllByRole('option')
-      .map((option) => option.textContent);
-    expect(options).toEqual(['Concern escalations']);
+    // The one family is what the list shows: there is nothing else to choose, so no family filter.
+    await openFilters();
+    expect(screen.queryByRole('combobox', { name: en('notifications.filters.family') })).toBeNull();
     expect(
       api
         .requestsTo('GET', /^\/notifications$/)

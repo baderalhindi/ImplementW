@@ -11,6 +11,16 @@ export const APPLICATION_MONITOR_PATH = '/external-requests/applications';
 /** SCR-167 External Participation Monitor. */
 export const PARTICIPATION_MONITOR_PATH = '/external-requests/monitor';
 
+/** The monthly update batches (the 5 Nov 2026 review §2.2). */
+export const UPDATE_BATCHES_PATH = '/external-requests/batches';
+
+/** The three-step "طلب تحديث". */
+export const NEW_UPDATE_BATCH_PATH = '/external-requests/batches/new';
+
+export function updateBatchPath(batchId: string): string {
+  return `/external-requests/batches/${batchId}`;
+}
+
 /** SCR-163 My External Requests. */
 export const MY_EXTERNAL_REQUESTS_PATH = '/my-external-requests';
 

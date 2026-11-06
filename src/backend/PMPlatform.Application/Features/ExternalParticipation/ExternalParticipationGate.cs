@@ -16,7 +16,7 @@ internal sealed class ExternalParticipationGate(IExternalParticipationRepository
 {
     private static readonly HashSet<string> AhdaOnly = new(StringComparer.Ordinal)
     {
-        PermissionCatalogue.ExternalRequestManage, PermissionCatalogue.ExternalContributionReview, PermissionCatalogue.ExternalContributionApply,
+        PermissionCatalogue.ExternalRequestManage, PermissionCatalogue.ExternalContributionReview, PermissionCatalogue.ExternalContributionApply, PermissionCatalogue.UpdateRequestSend,
     };
 
     public async Task<ParticipationAudience> AudienceAsync(Guid callerId, CancellationToken cancellationToken) =>

@@ -2,6 +2,7 @@ import { type ReactElement, type SyntheticEvent, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 
 import { type AuditCategory } from '../api/types.ts';
@@ -17,6 +18,18 @@ import {
 const PROBLEM_MESSAGES: Record<FilterProblem, TranslationKey> = {
   malformed: 'auditActivity.filters.malformed',
   dateBeforeStart: 'auditActivity.filters.dateBeforeStart',
+};
+
+const FILTER_LABELS: Record<AuditFilterName, TranslationKey> = {
+  category: 'auditActivity.fields.category',
+  eventClass: 'auditActivity.fields.eventClass',
+  outcome: 'auditActivity.fields.outcome',
+  from: 'auditActivity.filters.from',
+  to: 'auditActivity.filters.to',
+  eventType: 'auditActivity.fields.eventType',
+  projectId: 'auditActivity.fields.projectId',
+  actorUserId: 'auditActivity.fields.actorUserId',
+  correlationId: 'auditActivity.fields.correlationId',
 };
 
 interface AuditFiltersProps {
@@ -76,115 +89,154 @@ export function AuditFilters({ fields, categories, values }: AuditFiltersProps):
     setParams(next);
   };
 
+  const chipValue = (name: AuditFilterName, value: string): string => {
+    const category = categories.find((candidate) => candidate === value);
+    const eventClass = AUDIT_EVENT_CLASSES.find((candidate) => candidate === value);
+    const outcome = AUDIT_OUTCOMES.find((candidate) => candidate === value);
+    if (name === 'category' && category !== undefined) {
+      return t(`auditActivity.category.${category}`);
+    }
+    if (name === 'eventClass' && eventClass !== undefined) {
+      return t(`auditActivity.eventClass.${eventClass}`);
+    }
+    if (name === 'outcome' && outcome !== undefined) {
+      return t(`auditActivity.outcome.${outcome}`);
+    }
+    return value;
+  };
+
+  const remove = (name: AuditFilterName) => {
+    const next = new URLSearchParams(params);
+    next.delete('page');
+    next.delete(name);
+    setParams(next);
+  };
+
   return (
-    <form className="filters" onSubmit={apply} aria-label={t('common.filters.label')} noValidate>
-      {offered('category') && categories.length > 1 && (
-        <SelectField
-          label={t('auditActivity.fields.category')}
-          name="category"
-          value={draft.category}
-          placeholder={t('auditActivity.filters.anyHeldCategory')}
-          options={categories.map((value) => ({
-            value,
-            label: t(`auditActivity.category.${value}`),
-          }))}
-          onChange={set('category')}
-        />
-      )}
-      {offered('eventClass') && (
-        <SelectField
-          label={t('auditActivity.fields.eventClass')}
-          name="eventClass"
-          value={draft.eventClass}
-          placeholder={t('common.filters.any')}
-          options={AUDIT_EVENT_CLASSES.map((value) => ({
-            value,
-            label: t(`auditActivity.eventClass.${value}`),
-          }))}
-          onChange={set('eventClass')}
-        />
-      )}
-      {offered('outcome') && (
-        <SelectField
-          label={t('auditActivity.fields.outcome')}
-          name="outcome"
-          value={draft.outcome}
-          placeholder={t('common.filters.any')}
-          options={AUDIT_OUTCOMES.map((value) => ({
-            value,
-            label: t(`auditActivity.outcome.${value}`),
-          }))}
-          onChange={set('outcome')}
-        />
-      )}
-      {offered('from') && (
-        <TextField
-          label={t('auditActivity.filters.from')}
-          name="from"
-          type="date"
-          value={draft.from}
-          error={error('from')}
-          onChange={set('from')}
-        />
-      )}
-      {offered('to') && (
-        <TextField
-          label={t('auditActivity.filters.to')}
-          name="to"
-          type="date"
-          value={draft.to}
-          error={error('to')}
-          onChange={set('to')}
-        />
-      )}
-      {offered('eventType') && (
-        <TextField
-          label={t('auditActivity.fields.eventType')}
-          name="eventType"
-          value={draft.eventType}
-          hint={t('auditActivity.filters.eventTypeHint')}
-          dir="ltr"
-          onChange={set('eventType')}
-        />
-      )}
-      {offered('projectId') && (
-        <TextField
-          label={t('auditActivity.fields.projectId')}
-          name="projectId"
-          value={draft.projectId}
-          error={error('projectId')}
-          dir="ltr"
-          onChange={set('projectId')}
-        />
-      )}
-      {offered('actorUserId') && (
-        <TextField
-          label={t('auditActivity.fields.actorUserId')}
-          name="actorUserId"
-          value={draft.actorUserId}
-          error={error('actorUserId')}
-          dir="ltr"
-          onChange={set('actorUserId')}
-        />
-      )}
-      {offered('correlationId') && (
-        <TextField
-          label={t('auditActivity.fields.correlationId')}
-          name="correlationId"
-          value={draft.correlationId}
-          error={error('correlationId')}
-          dir="ltr"
-          onChange={set('correlationId')}
-        />
-      )}
-      <div className="filters__actions">
-        <button type="submit" className="button button--primary">
-          {t('common.filters.apply')}
-        </button>
-        <button type="button" className="button" onClick={clear}>
-          {t('common.filters.clear')}
-        </button>
-      </div>
-    </form>
+    <FilterBar
+      onClearAll={clear}
+      chips={fields
+        .filter((name) => values[name] !== '')
+        .map((name) => ({
+          name,
+          text: t('common.filters.inline', {
+            label: t(FILTER_LABELS[name]),
+            value: chipValue(name, values[name]),
+          }),
+          onRemove: () => {
+            remove(name);
+          },
+        }))}
+    >
+      <form className="filters" onSubmit={apply} noValidate>
+        {offered('category') && categories.length > 1 && (
+          <SelectField
+            label={t('auditActivity.fields.category')}
+            name="category"
+            value={draft.category}
+            placeholder={t('auditActivity.filters.anyHeldCategory')}
+            options={categories.map((value) => ({
+              value,
+              label: t(`auditActivity.category.${value}`),
+            }))}
+            onChange={set('category')}
+          />
+        )}
+        {offered('eventClass') && (
+          <SelectField
+            label={t('auditActivity.fields.eventClass')}
+            name="eventClass"
+            value={draft.eventClass}
+            placeholder={t('common.filters.any')}
+            options={AUDIT_EVENT_CLASSES.map((value) => ({
+              value,
+              label: t(`auditActivity.eventClass.${value}`),
+            }))}
+            onChange={set('eventClass')}
+          />
+        )}
+        {offered('outcome') && (
+          <SelectField
+            label={t('auditActivity.fields.outcome')}
+            name="outcome"
+            value={draft.outcome}
+            placeholder={t('common.filters.any')}
+            options={AUDIT_OUTCOMES.map((value) => ({
+              value,
+              label: t(`auditActivity.outcome.${value}`),
+            }))}
+            onChange={set('outcome')}
+          />
+        )}
+        {offered('from') && (
+          <TextField
+            label={t('auditActivity.filters.from')}
+            name="from"
+            type="date"
+            value={draft.from}
+            error={error('from')}
+            onChange={set('from')}
+          />
+        )}
+        {offered('to') && (
+          <TextField
+            label={t('auditActivity.filters.to')}
+            name="to"
+            type="date"
+            value={draft.to}
+            error={error('to')}
+            onChange={set('to')}
+          />
+        )}
+        {offered('eventType') && (
+          <TextField
+            label={t('auditActivity.fields.eventType')}
+            name="eventType"
+            value={draft.eventType}
+            hint={t('auditActivity.filters.eventTypeHint')}
+            dir="ltr"
+            onChange={set('eventType')}
+          />
+        )}
+        {offered('projectId') && (
+          <TextField
+            label={t('auditActivity.fields.projectId')}
+            name="projectId"
+            value={draft.projectId}
+            error={error('projectId')}
+            dir="ltr"
+            onChange={set('projectId')}
+          />
+        )}
+        {offered('actorUserId') && (
+          <TextField
+            label={t('auditActivity.fields.actorUserId')}
+            name="actorUserId"
+            value={draft.actorUserId}
+            error={error('actorUserId')}
+            dir="ltr"
+            onChange={set('actorUserId')}
+          />
+        )}
+        {offered('correlationId') && (
+          <TextField
+            label={t('auditActivity.fields.correlationId')}
+            name="correlationId"
+            value={draft.correlationId}
+            error={error('correlationId')}
+            dir="ltr"
+            onChange={set('correlationId')}
+          />
+        )}
+        <div className="filters__actions">
+          <button type="submit" className="button button--primary">
+            {t('common.filters.apply')}
+          </button>
+          <button type="button" className="button" onClick={clear}>
+            {t('common.filters.clear')}
+          </button>
+        </div>
+      </form>
+    </FilterBar>
   );
 }

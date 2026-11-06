@@ -36,6 +36,9 @@ public enum AuthenticationFailureReason
     /// <summary>The sign-in method, MFA provider or identity verification provider is not configured in this environment.</summary>
     NotConfigured = 10,
 
+    /// <summary>A local account locked after too many wrong passwords (the 5 Nov 2026 review §6.1).</summary>
+    AccountLocked = 14,
+
     /// <summary>The user must have their identity verified by Nafath and the session never had it (TASK-068).</summary>
     IdentityVerificationMissing = 11,
 

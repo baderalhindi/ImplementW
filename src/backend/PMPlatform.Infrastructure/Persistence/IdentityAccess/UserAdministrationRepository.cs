@@ -54,7 +54,7 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
         List<UserSummary> items = await ordered
             .Skip(query.Page.Skip)
             .Take(query.Page.PageSize)
-            .Select(u => new UserSummary(u.Id, u.UserType, u.Username, u.DisplayName, u.Email, u.Status, u.DepartmentId, u.ExternalEntityId))
+            .Select(u => new UserSummary(u.Id, u.UserType, u.Username, u.DisplayName, u.Email, u.Status, u.DepartmentId, u.ExternalEntityId, u.AccountSource))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
         return new UserPage(items, query.Page.Page, query.Page.PageSize, totalCount);
@@ -76,7 +76,8 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
             new UserDetail(
                 user.Id, user.UserType, user.DirectorySubjectId, user.Username, user.DisplayName, user.Email, user.MobileNumber, user.MobileVerifiedAt,
                 user.JobTitle, user.DepartmentId, user.ManagerUserId, user.ExternalEntityId, LanguageCode.Of(user.PreferredLanguage), user.Status,
-                user.DisabledAt, user.MfaEnrolledAt is not null, user.NafathVerifiedAt, user.CreatedAt, user.CreatedBy, user.UpdatedAt, user.UpdatedBy),
+                user.DisabledAt, user.MfaEnrolledAt is not null, user.NafathVerifiedAt, user.CreatedAt, user.CreatedBy, user.UpdatedAt, user.UpdatedBy,
+                user.AccountSource, user.MustChangePassword, user.LockedUntil, user.AccountEndsOn),
             row.Version);
     }
 
@@ -95,6 +96,13 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
 
     public Task<Guid?> FindIdByUsernameAsync(string username, CancellationToken cancellationToken) =>
         context.Set<User>().AsNoTracking().Where(u => u.Username == username).Select(u => (Guid?)u.Id).SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<UserIdentity>> ListActiveIdentitiesOfEntityAsync(Guid externalEntityId, CancellationToken cancellationToken) =>
+        await context.Set<User>().AsNoTracking()
+            .Where(u => u.Status == UserStatus.Active && u.UserType == UserType.External && u.ExternalEntityId == externalEntityId)
+            .OrderBy(u => u.DisplayName)
+            .Select(u => new UserIdentity(u.Id, u.Username, u.DisplayName, u.Email, u.UserType))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task<IReadOnlyList<UserIdentity>> ListActiveIdentitiesAsync(CancellationToken cancellationToken) =>
         await context.Set<User>().AsNoTracking().Where(u => u.Status == UserStatus.Active).OrderBy(u => u.Username)

@@ -66,5 +66,19 @@
       "none": "لا يوجد مستخدمون نشطون بعد.",
       "counts": "{internal} داخليون · {external} خارجيون · {disabled} معطلون"
     }
+  },
+  "managed": {
+    "title": "المشاريع التي تديرها",
+    "nextActionDue": "موعد الإجراء التالي",
+    "requestsWaiting": "طلبات التحديث المنتظرة",
+    "all": "عرض الكل ({count})"
+  },
+  "entity": {
+    "title": "مشاريع جهتك",
+    "none": "لا يوجد",
+    "noProjects": "لا توجد مشاريع بعد.",
+    "lastUpdate": "آخر تحديث مُرسل",
+    "nextDue": "الموعد التالي",
+    "openWindow": "فتح التحديث الشهري: {projects}"
   }
 }

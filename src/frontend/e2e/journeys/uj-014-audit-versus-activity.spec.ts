@@ -1,7 +1,15 @@
 import { type Page, type Request } from '@playwright/test';
 
 import { auditEvents, type AuditEvent } from '../support/access-audit.ts';
-import { expect, expectText, plain, test, unique, utcDate } from '../support/journey.ts';
+import {
+  expect,
+  expectText,
+  openFilters,
+  plain,
+  test,
+  unique,
+  utcDate,
+} from '../support/journey.ts';
 import { activeProject } from '../support/projects.ts';
 
 // UJ-014 — Audit versus activity (Step 18; FG-06; BPK-008, BPK-028; ICD-15).
@@ -204,6 +212,7 @@ test('UJ-014 formal audit, activity and operational evidence stay distinct, corr
     );
     expect(new Set(categories)).toEqual(new Set(['Administration']));
     // The business record's own correlation id finds nothing for the administrator.
+    await openFilters(trail);
     await trail.getByLabel('Correlation ID').fill(correlationId);
     await trail.getByRole('button', { name: 'Apply filters' }).click();
     await expectText(trail.getByRole('main'), 'No audit events match these filters.');

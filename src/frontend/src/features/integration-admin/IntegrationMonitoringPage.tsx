@@ -2,7 +2,7 @@ import { type ReactElement, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 
 import { type IntegrationCatalogueView, type OperationalAlertStatus } from './api/types.ts';
 import { ALERT_STATUSES, LIVE_ALERT_STATUSES } from './catalogue.ts';
@@ -75,6 +75,15 @@ export function IntegrationMonitoringPage(): ReactElement {
   const [deadLetterPage, setDeadLetterPage] = useState(1);
   const alertStatus = params.get('alertStatus') ?? '';
   const title = t('integrationAdmin.monitoring.title');
+  const chooseAlertStatus = (value: string | undefined) => {
+    const next = new URLSearchParams(params);
+    if (value === undefined) {
+      next.delete('alertStatus');
+    } else {
+      next.set('alertStatus', value);
+    }
+    setParams(next);
+  };
   return (
     <CataloguePage
       title={title}
@@ -103,27 +112,26 @@ export function IntegrationMonitoringPage(): ReactElement {
             />
           </Section>
           <Section title={t('integrationAdmin.alerts.title')}>
-            <div className="filters filters--inline">
-              <SelectField
-                label={t('integrationAdmin.fields.alertStatus')}
-                name="alertStatus"
-                value={alertStatus}
-                placeholder={t('integrationAdmin.alerts.live')}
-                options={ALERT_STATUSES.map((status) => ({
-                  value: status,
-                  label: t(`integrationAdmin.alertStatus.${status}`),
-                }))}
-                onChange={(value) => {
-                  const next = new URLSearchParams(params);
-                  if (value === '') {
-                    next.delete('alertStatus');
-                  } else {
-                    next.set('alertStatus', value);
-                  }
-                  setParams(next);
-                }}
-              />
-            </div>
+            <FilterBar
+              fields={[
+                {
+                  name: 'alertStatus',
+                  label: t('integrationAdmin.fields.alertStatus'),
+                  all: t('integrationAdmin.alerts.live'),
+                  options: ALERT_STATUSES.map((status) => ({
+                    value: status,
+                    label: t(`integrationAdmin.alertStatus.${status}`),
+                  })),
+                },
+              ]}
+              values={{ alertStatus: alertStatus === '' ? undefined : alertStatus }}
+              onChange={(_name, value) => {
+                chooseAlertStatus(value);
+              }}
+              onClearAll={() => {
+                chooseAlertStatus(undefined);
+              }}
+            />
             <AlertList
               key={alertStatus}
               query={{ statuses: alertStatusesFrom(params) }}

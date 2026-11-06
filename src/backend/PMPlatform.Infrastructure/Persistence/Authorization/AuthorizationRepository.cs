@@ -16,7 +16,7 @@ internal sealed class AuthorizationRepository(PMPlatformDbContext context, TimeP
     {
         var user = await context.Set<User>().AsNoTracking()
             .Where(u => u.Id == userId)
-            .Select(u => new { u.Id, u.UserType, u.Status, u.DepartmentId, u.ExternalEntityId })
+            .Select(u => new { u.Id, u.UserType, u.Status, u.AccountEndsOn, u.DepartmentId, u.ExternalEntityId })
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
@@ -34,6 +34,7 @@ internal sealed class AuthorizationRepository(PMPlatformDbContext context, TimeP
         // entity is; a SERVICE principal never acts through the API.
         bool external = user.UserType == UserType.External;
         bool isActive = user.Status == UserStatus.Active
+                        && (user.AccountEndsOn is null || user.AccountEndsOn >= DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime))
                         && user.UserType != UserType.Service
                         && (!external || entityStatus == ExternalEntityStatus.Active);
 

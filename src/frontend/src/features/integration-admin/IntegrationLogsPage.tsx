@@ -6,6 +6,7 @@ import { Detail } from '@/features/projects/components/Detail.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -37,6 +38,17 @@ const PROBLEM_MESSAGES: Record<LogFilterProblem, TranslationKey> = {
   malformed: 'integrationAdmin.filters.malformed',
   tooLong: 'integrationAdmin.filters.tooLong',
   dateBeforeStart: 'integrationAdmin.filters.dateBeforeStart',
+};
+
+const FILTER_LABELS: Record<LogFilterName, TranslationKey> = {
+  integrationId: 'integrationAdmin.fields.integration',
+  status: 'integrationAdmin.fields.invocationStatus',
+  operationCode: 'integrationAdmin.fields.operation',
+  correlationId: 'integrationAdmin.fields.correlationId',
+  idempotencyKey: 'integrationAdmin.fields.idempotencyKey',
+  sourceReference: 'integrationAdmin.fields.sourceReference',
+  from: 'integrationAdmin.filters.from',
+  to: 'integrationAdmin.filters.to',
 };
 
 /**
@@ -100,60 +112,93 @@ function LogFilters({
     />
   );
 
+  const chipValue = (name: LogFilterName, value: string): string => {
+    const integration = integrations.find((candidate) => candidate.id === value);
+    const status = INVOCATION_STATUSES.find((candidate) => candidate === value);
+    if (name === 'integrationId' && integration !== undefined) {
+      return labelIn(integration.name, language);
+    }
+    if (name === 'status' && status !== undefined) {
+      return t(`integrationAdmin.invocationStatus.${status}`);
+    }
+    return value;
+  };
+
+  const remove = (name: LogFilterName) => {
+    const next = new URLSearchParams(params);
+    next.delete('page');
+    next.delete(name);
+    setParams(next);
+  };
+
   return (
-    <form className="filters" onSubmit={apply} aria-label={t('common.filters.label')} noValidate>
-      <SelectField
-        label={t('integrationAdmin.fields.integration')}
-        name="integrationId"
-        value={draft.integrationId}
-        placeholder={t('common.filters.any')}
-        error={error('integrationId')}
-        options={integrations.map((integration) => ({
-          value: integration.id,
-          label: labelIn(integration.name, language),
-        }))}
-        onChange={set('integrationId')}
-      />
-      <SelectField
-        label={t('integrationAdmin.fields.invocationStatus')}
-        name="status"
-        value={draft.status}
-        placeholder={t('common.filters.any')}
-        options={INVOCATION_STATUSES.map((status) => ({
-          value: status,
-          label: t(`integrationAdmin.invocationStatus.${status}`),
-        }))}
-        onChange={set('status')}
-      />
-      {text('operationCode', 'integrationAdmin.fields.operation')}
-      {text('correlationId', 'integrationAdmin.fields.correlationId')}
-      {text('idempotencyKey', 'integrationAdmin.fields.idempotencyKey')}
-      {text('sourceReference', 'integrationAdmin.fields.sourceReference')}
-      <TextField
-        label={t('integrationAdmin.filters.from')}
-        name="from"
-        type="date"
-        value={draft.from}
-        error={error('from')}
-        onChange={set('from')}
-      />
-      <TextField
-        label={t('integrationAdmin.filters.to')}
-        name="to"
-        type="date"
-        value={draft.to}
-        error={error('to')}
-        onChange={set('to')}
-      />
-      <div className="filters__actions">
-        <button type="submit" className="button button--primary">
-          {t('common.filters.apply')}
-        </button>
-        <button type="button" className="button" onClick={clear}>
-          {t('common.filters.clear')}
-        </button>
-      </div>
-    </form>
+    <FilterBar
+      onClearAll={clear}
+      chips={LOG_FILTER_NAMES.filter((name) => values[name] !== '').map((name) => ({
+        name,
+        text: t('common.filters.inline', {
+          label: t(FILTER_LABELS[name]),
+          value: chipValue(name, values[name]),
+        }),
+        onRemove: () => {
+          remove(name);
+        },
+      }))}
+    >
+      <form className="filters" onSubmit={apply} noValidate>
+        <SelectField
+          label={t('integrationAdmin.fields.integration')}
+          name="integrationId"
+          value={draft.integrationId}
+          placeholder={t('common.filters.any')}
+          error={error('integrationId')}
+          options={integrations.map((integration) => ({
+            value: integration.id,
+            label: labelIn(integration.name, language),
+          }))}
+          onChange={set('integrationId')}
+        />
+        <SelectField
+          label={t('integrationAdmin.fields.invocationStatus')}
+          name="status"
+          value={draft.status}
+          placeholder={t('common.filters.any')}
+          options={INVOCATION_STATUSES.map((status) => ({
+            value: status,
+            label: t(`integrationAdmin.invocationStatus.${status}`),
+          }))}
+          onChange={set('status')}
+        />
+        {text('operationCode', 'integrationAdmin.fields.operation')}
+        {text('correlationId', 'integrationAdmin.fields.correlationId')}
+        {text('idempotencyKey', 'integrationAdmin.fields.idempotencyKey')}
+        {text('sourceReference', 'integrationAdmin.fields.sourceReference')}
+        <TextField
+          label={t('integrationAdmin.filters.from')}
+          name="from"
+          type="date"
+          value={draft.from}
+          error={error('from')}
+          onChange={set('from')}
+        />
+        <TextField
+          label={t('integrationAdmin.filters.to')}
+          name="to"
+          type="date"
+          value={draft.to}
+          error={error('to')}
+          onChange={set('to')}
+        />
+        <div className="filters__actions">
+          <button type="submit" className="button button--primary">
+            {t('common.filters.apply')}
+          </button>
+          <button type="button" className="button" onClick={clear}>
+            {t('common.filters.clear')}
+          </button>
+        </div>
+      </form>
+    </FilterBar>
   );
 }
 

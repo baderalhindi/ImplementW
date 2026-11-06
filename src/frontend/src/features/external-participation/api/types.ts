@@ -31,8 +31,12 @@ export type ResponseDueCondition = 'NOT_APPLICABLE' | 'NOT_DUE' | 'DUE' | 'OVERD
 /** AHDA's full view, or the external least-disclosure projection (WF-13 §8.2). */
 export type ParticipationAudience = 'INTERNAL' | 'EXTERNAL';
 
-/** A typed source is applied after review; a reference-only answer is kept as accepted input (TASK-066 D-8). */
-export type ContributionApplicationMode = 'REFERENCE_ONLY' | 'UPDATE_ALLOWED_SOURCE_FIELDS';
+/**
+ * A typed source is applied after review; a reference-only answer is kept as accepted input (TASK-066 D-8); a monthly update is written to
+ * its project by the acceptance itself, with no Apply step (the 5 Nov 2026 review §2.1).
+ */
+export type ContributionApplicationMode =
+  'REFERENCE_ONLY' | 'UPDATE_ALLOWED_SOURCE_FIELDS' | 'APPLY_ON_ACCEPT';
 
 export type ContributionFieldType = 'NARRATIVE' | 'NUMBER' | 'DATE';
 
@@ -60,7 +64,7 @@ export interface ExternalUpdateRequestDetail {
   externalEntityId: string;
   origin: 'AHDA_ISSUED';
   contributionTypeItemId: string;
-  /** The typed schema it is answered in, pinned when drafted: TASK_PROGRESS or PROJECT_INFORMATION. */
+  /** The typed schema it is answered in, pinned when drafted: TASK_PROGRESS, PROJECT_INFORMATION or MONTHLY_UPDATE. */
   contributionSchemaCode: string;
   applicationMode: ContributionApplicationMode;
   targetModule: string | null;

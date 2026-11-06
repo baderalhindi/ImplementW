@@ -179,7 +179,6 @@ export function DashboardsPage(): ReactElement {
         <HostedDashboard
           key={entry.code}
           entry={entry}
-          user={session.user}
           filters={filters}
           onFilterChange={setFilter}
           onClearFilters={clearFilters}

@@ -11,4 +11,7 @@ public sealed record RoleDetail(
     bool IsExternalEligible,
     IReadOnlyList<PermissionProfileSummary> Profiles,
     DateTimeOffset UpdatedAt,
-    Guid UpdatedBy);
+    Guid UpdatedBy,
+    bool IsActive = true,
+    IReadOnlyList<string>? AllowedScopes = null,
+    string? LandingDashboardCode = null);

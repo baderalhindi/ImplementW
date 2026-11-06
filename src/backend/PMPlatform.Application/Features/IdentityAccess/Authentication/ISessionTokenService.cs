@@ -18,6 +18,10 @@ public interface ISessionTokenService
     public Task<PendingSignIn?> ReadMultiFactorTokenAsync(string mfaToken);
 
     /// <summary>A short-lived token that proves every factor passed and admits the person to the Nafath identity verification only (TASK-068).</summary>
+    public PasswordChangePending IssuePasswordChangeToken(Guid userId);
+
+    public Task<Guid?> ReadPasswordChangeTokenAsync(string passwordChangeToken);
+
     public IdentityVerificationPending IssueIdentityVerificationToken(PendingIdentityVerification pending);
 
     /// <summary>The sign-in a verification token belongs to, or null if the token is not a valid, unexpired verification token.</summary>

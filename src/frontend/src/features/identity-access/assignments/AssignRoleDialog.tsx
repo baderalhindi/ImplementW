@@ -97,7 +97,7 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
   const external = user?.userType === 'EXTERNAL';
   const eligibleRoleIds = new Set(
     (catalogue.data?.roles ?? [])
-      .filter((role) => !external || role.isExternalEligible)
+      .filter((role) => role.isActive && (!external || role.isExternalEligible))
       .map((role) => role.id),
   );
   const profileOptions = (catalogue.data?.profiles ?? [])
@@ -118,6 +118,25 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
     setVersionId('');
     setExternalEntityId(next?.userType === 'EXTERNAL' ? (next.externalEntityId ?? '') : '');
   };
+
+  const chosenProfile = catalogue.data?.profiles.find((p) => p.id === profileId);
+  const chosenRole = catalogue.data?.roles.find((role) => role.id === chosenProfile?.baseRoleId);
+  const scopes = chosenRole?.allowedScopes ?? null;
+  // No allowed scopes reported, or ALL: the assignment is limited as the administrator chooses (AccessRelationshipService).
+  const anyAnchor = scopes === null || scopes.includes('ALL');
+  const departmentAllowed = anyAnchor || scopes.includes('DEPARTMENT');
+  // A department role may also be narrowed to one of the department's projects.
+  const projectAllowed =
+    external || anyAnchor || scopes.includes('PROJECT') || scopes.includes('DEPARTMENT');
+  const anchorNote = anyAnchor
+    ? null
+    : departmentAllowed && projectAllowed
+      ? t('identityAccess.assignScope.anchorDepartmentOrProject')
+      : departmentAllowed
+        ? t('identityAccess.assignScope.anchorDepartment')
+        : projectAllowed
+          ? t('identityAccess.assignScope.anchorProject')
+          : null;
 
   const selectedVersionId = versionId === '' ? (publishedVersions[0]?.id ?? '') : versionId;
 
@@ -152,9 +171,9 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
       accessRelationshipsApi.create({
         userId: user.id,
         permissionProfileVersionId: selectedVersionId,
-        departmentId: external || departmentId === '' ? null : departmentId,
+        departmentId: external || !departmentAllowed || departmentId === '' ? null : departmentId,
         externalEntityId: external ? (user.externalEntityId ?? null) : externalEntityId || null,
-        projectId: projectId.trim() === '' ? null : projectId.trim(),
+        projectId: !projectAllowed || projectId.trim() === '' ? null : projectId.trim(),
         sponsorUserId: sponsor?.id ?? null,
         startsAt: toIsoOrNull(startsAt),
         endsAt: toIsoOrNull(endsAt),
@@ -289,6 +308,7 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
           ? t('identityAccess.assignScope.externalNote')
           : t('identityAccess.assignScope.internalNote')}
       </p>
+      {!external && anchorNote !== null && <p className="form__note">{anchorNote}</p>}
       <FormAlert message={save.formError} />
       {external ? (
         <p className="form__readonly">
@@ -297,17 +317,19 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
         </p>
       ) : (
         <>
-          <SelectField
-            label={t('identityAccess.users.fields.department')}
-            name="departmentId"
-            value={departmentId}
-            placeholder={t('identityAccess.assignScope.noAnchor')}
-            options={(lookups?.departments ?? [])
-              .filter((d) => d.isActive)
-              .map((d) => ({ value: d.id, label: labelOf(d.name, language) }))}
-            onChange={setDepartmentId}
-            error={save.fieldErrors.departmentId}
-          />
+          {departmentAllowed && (
+            <SelectField
+              label={t('identityAccess.users.fields.department')}
+              name="departmentId"
+              value={departmentId}
+              placeholder={t('identityAccess.assignScope.noAnchor')}
+              options={(lookups?.departments ?? [])
+                .filter((d) => d.isActive)
+                .map((d) => ({ value: d.id, label: labelOf(d.name, language) }))}
+              onChange={setDepartmentId}
+              error={save.fieldErrors.departmentId}
+            />
+          )}
           <SelectField
             label={t('identityAccess.users.fields.externalEntity')}
             name="externalEntityId"
@@ -324,16 +346,18 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
       {external && save.fieldErrors.externalEntityId !== undefined && (
         <p className="field__error">{save.fieldErrors.externalEntityId}</p>
       )}
-      <TextField
-        label={t('identityAccess.assignScope.projectId')}
-        name="projectId"
-        dir="ltr"
-        value={projectId}
-        onChange={setProjectId}
-        autoComplete="off"
-        hint={t('identityAccess.assignScope.projectIdHint')}
-        error={save.fieldErrors.projectId}
-      />
+      {projectAllowed && (
+        <TextField
+          label={t('identityAccess.assignScope.projectId')}
+          name="projectId"
+          dir="ltr"
+          value={projectId}
+          onChange={setProjectId}
+          autoComplete="off"
+          hint={t('identityAccess.assignScope.projectIdHint')}
+          error={save.fieldErrors.projectId}
+        />
+      )}
       {external && (
         <UserPicker
           label={t('identityAccess.assignScope.sponsor')}

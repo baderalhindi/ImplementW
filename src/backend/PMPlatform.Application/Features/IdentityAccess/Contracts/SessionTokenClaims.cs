@@ -38,6 +38,11 @@ public static class SessionTokenClaims
     /// <summary>Single sign-on at AHDA's identity provider.</summary>
     public const string SingleSignOnMethod = "sso";
 
+    /// <summary>RFC 8176 "pwd" is the directory's; a local account's password says so apart.</summary>
+    public const string LocalPasswordMethod = "local-pwd";
+
+    public const string PasswordChangeAudience = "pmplatform-session-password-change";
+
     /// <summary>RFC 8176 "mfa": a second factor has been passed.</summary>
     public const string MultiFactorMethod = "mfa";
 
@@ -45,6 +50,7 @@ public static class SessionTokenClaims
     {
         Contracts.AuthenticationMethod.Directory => DirectoryMethod,
         Contracts.AuthenticationMethod.SingleSignOn => SingleSignOnMethod,
+        Contracts.AuthenticationMethod.LocalPassword => LocalPasswordMethod,
         _ => throw new ArgumentOutOfRangeException(nameof(method), method, null),
     };
 
@@ -52,6 +58,7 @@ public static class SessionTokenClaims
     {
         DirectoryMethod => Contracts.AuthenticationMethod.Directory,
         SingleSignOnMethod => Contracts.AuthenticationMethod.SingleSignOn,
+        LocalPasswordMethod => Contracts.AuthenticationMethod.LocalPassword,
         _ => null,
     };
 

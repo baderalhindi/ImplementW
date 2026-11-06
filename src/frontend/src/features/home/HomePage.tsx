@@ -7,6 +7,7 @@ import { DATE_LOCALES, useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { LoadingState } from '@/shared/ui/States.tsx';
 
+import { EntityProjects, ManagedProjects } from './MyProjects.tsx';
 import { MyWork, StartOrOpen } from './MyWork.tsx';
 import { AdministrationActions, PlatformHealth } from './PlatformHealth.tsx';
 import { PortfolioSnapshot } from './PortfolioSnapshot.tsx';
@@ -53,6 +54,8 @@ export function HomePage(): ReactElement {
       ) : (
         <>
           <PortfolioSnapshot />
+          {session.user.userType === 'EXTERNAL' && <EntityProjects />}
+          {permissions.can('PROJECT_VIEW') && <ManagedProjects userId={session.user.id} />}
           <MyWork user={session.user} />
         </>
       )}

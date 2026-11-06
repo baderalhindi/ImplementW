@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { pageFrom, PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
@@ -48,21 +48,26 @@ export function MyRequestsPage(): ReactElement {
       />
       <PageNotice notice={notice} />
 
-      <div className="filters" role="search" aria-label={t('common.filters.label')}>
-        <SelectField
-          label={t('approvals.fields.status')}
-          name="status"
-          value={status ?? ''}
-          placeholder={t('common.filters.any')}
-          options={INSTANCE_STATUSES.map((value) => ({
-            value,
-            label: t(`approvals.instanceStatus.${value}`),
-          }))}
-          onChange={(value) => {
-            setParams(value === '' ? {} : { status: value });
-          }}
-        />
-      </div>
+      <FilterBar
+        fields={[
+          {
+            name: 'status',
+            label: t('approvals.fields.status'),
+            all: t('common.filters.any'),
+            options: INSTANCE_STATUSES.map((value) => ({
+              value,
+              label: t(`approvals.instanceStatus.${value}`),
+            })),
+          },
+        ]}
+        values={{ status }}
+        onChange={(_name, value) => {
+          setParams(value === undefined ? {} : { status: value });
+        }}
+        onClearAll={() => {
+          setParams({});
+        }}
+      />
 
       {requests.loading && <LoadingState label={t('approvals.requests.loading')} />}
       {requests.error !== null && (

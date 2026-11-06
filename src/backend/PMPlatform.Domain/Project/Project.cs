@@ -17,6 +17,9 @@ public sealed class Project : AuditedEntity
     /// <summary>Free text in the language entered (ADR-012; ERD E-7).</summary>
     public required NarrativeText Title { get; set; }
 
+    /// <summary>The English title RPMO's register gives beside the Arabic one (the 5 Nov 2026 review §4.2). Optional.</summary>
+    public string? TitleEn { get; set; }
+
     public NarrativeText? Description { get; set; }
 
     /// <summary>Master data item of catalogue PROJECT_CLASSIFICATION.</summary>
@@ -81,6 +84,15 @@ public sealed class Project : AuditedEntity
     /// <summary>The RPMO staff member who follows the project up (the register's portfolio owner), an internal user.</summary>
     public Guid? FollowUpOwnerUserId { get; set; }
 
+    /// <summary>RPMO's strategic flag, as the register records it (the 5 Nov 2026 review §4.2). A blank is not known, not "no".</summary>
+    public bool? IsStrategic { get; set; }
+
+    /// <summary>Who answers the project's update requests by default (the 5 Nov 2026 review §2.2): a user of the delivering entity, or an internal one.</summary>
+    public Guid? EntityContactUserId { get; set; }
+
+    /// <summary>Where the row came from when a seed or a fixture made it (<see cref="DemoSeedSource"/>); null for real data. The reset command deletes by it.</summary>
+    public string? SeedSource { get; set; }
+
     /// <summary>The project import batch that created the project, which labels it Imported (R3-4).</summary>
     public Guid? ProjectImportBatchId { get; set; }
 
@@ -124,4 +136,7 @@ public sealed class Project : AuditedEntity
 
     /// <summary>Whether the delivering entity keeps to its periodic updates, as RPMO records it.</summary>
     public bool? EntityUpdateCompliant { get; set; }
+
+    /// <summary>The <see cref="SeedSource"/> of demonstration data.</summary>
+    public const string DemoSeedSource = "DEMO";
 }

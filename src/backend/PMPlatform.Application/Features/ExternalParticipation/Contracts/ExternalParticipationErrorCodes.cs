@@ -86,4 +86,8 @@ public static class ExternalParticipationErrorCodes
 
     /// <summary>422 (R-37): the <c>Idempotency-Key</c> already made an attempt, for another contribution.</summary>
     public const string IdempotencyKeyReused = "IDEMPOTENCY_KEY_REUSED";
+
+    public const string BatchInvalid = "EXTERNAL_PARTICIPATION_BATCH_INVALID";
+
+    public const string ProjectHasNoEntity = "PROJECT_HAS_NO_ENTITY";
 }

@@ -1,7 +1,7 @@
 # Quality gates (TASK-015). One stage, three jobs, every one of them a required status check on the
 # protected branches (TASK-012, .github/branch-protection/protected-branches.ruleset.json).
 # A lint error, a format violation, a type error, an analyzer warning or a failing unit test fails the PR.
-# `timeout-minutes: 10` holds each job to the agreed gate budget.
+# `timeout-minutes` holds each job to its budget: 10, and 15 for backend and backend-risk-governance (ci-quality-gates.md).
 name: ci-quality-gates
 
 on:
@@ -30,7 +30,7 @@ jobs:
   backend:
     name: backend
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -162,7 +162,7 @@ jobs:
   backend-risk-governance:
     name: backend-risk-governance
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -540,6 +540,14 @@ jobs:
         run: >-
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Dashboards.
+
+      # The header search: every role finds a record exactly when its page opens (global-search.md D-2).
+      - name: Header search integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.GlobalSearch.
 
       # TASK-071: FG-02's reports — a field outside the SCR-138 allowlist refused by a direct call, an output authorised again at download on
       # the rules of its data, an entity's report set on its own projects with financials masked, the catalogue fixed at ADR-006's ten,

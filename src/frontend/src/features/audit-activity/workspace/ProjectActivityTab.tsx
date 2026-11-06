@@ -6,6 +6,7 @@ import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { Pagination } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -52,55 +53,83 @@ function ActivityFilters({ values }: { values: ActivityFilterValues }): ReactEle
     setParams(next);
   };
 
+  const clear = () => {
+    setParams(new URLSearchParams());
+  };
+
+  const chip = (name: 'kind' | 'from' | 'to', label: string, value: string) => ({
+    name,
+    text: t('common.filters.inline', { label, value }),
+    onRemove: () => {
+      const next = new URLSearchParams(params);
+      next.delete('page');
+      next.delete(name);
+      setParams(next);
+    },
+  });
+
   return (
-    <form className="filters" onSubmit={apply} aria-label={t('common.filters.label')} noValidate>
-      <SelectField
-        label={t('auditActivity.activity.domain')}
-        name="kind"
-        value={draft.kind}
-        placeholder={t('common.filters.any')}
-        options={ACTIVITY_KINDS.map((value) => ({
-          value,
-          label: t(`auditActivity.activityKind.${value}`),
-        }))}
-        onChange={(kind) => {
-          setDraft({ ...draft, kind });
-        }}
-      />
-      <TextField
-        label={t('auditActivity.filters.from')}
-        name="from"
-        type="date"
-        value={draft.from}
-        onChange={(from) => {
-          setDraft({ ...draft, from });
-        }}
-      />
-      <TextField
-        label={t('auditActivity.filters.to')}
-        name="to"
-        type="date"
-        value={draft.to}
-        error={toError}
-        onChange={(to) => {
-          setDraft({ ...draft, to });
-        }}
-      />
-      <div className="filters__actions">
-        <button type="submit" className="button button--primary">
-          {t('common.filters.apply')}
-        </button>
-        <button
-          type="button"
-          className="button"
-          onClick={() => {
-            setParams(new URLSearchParams());
+    <FilterBar
+      onClearAll={clear}
+      chips={[
+        ...(values.kind === ''
+          ? []
+          : [
+              chip(
+                'kind',
+                t('auditActivity.activity.domain'),
+                isActivityKind(values.kind)
+                  ? t(`auditActivity.activityKind.${values.kind}`)
+                  : values.kind,
+              ),
+            ]),
+        ...(values.from === '' ? [] : [chip('from', t('auditActivity.filters.from'), values.from)]),
+        ...(values.to === '' ? [] : [chip('to', t('auditActivity.filters.to'), values.to)]),
+      ]}
+    >
+      <form className="filters" onSubmit={apply} noValidate>
+        <SelectField
+          label={t('auditActivity.activity.domain')}
+          name="kind"
+          value={draft.kind}
+          placeholder={t('common.filters.any')}
+          options={ACTIVITY_KINDS.map((value) => ({
+            value,
+            label: t(`auditActivity.activityKind.${value}`),
+          }))}
+          onChange={(kind) => {
+            setDraft({ ...draft, kind });
           }}
-        >
-          {t('common.filters.clear')}
-        </button>
-      </div>
-    </form>
+        />
+        <TextField
+          label={t('auditActivity.filters.from')}
+          name="from"
+          type="date"
+          value={draft.from}
+          onChange={(from) => {
+            setDraft({ ...draft, from });
+          }}
+        />
+        <TextField
+          label={t('auditActivity.filters.to')}
+          name="to"
+          type="date"
+          value={draft.to}
+          error={toError}
+          onChange={(to) => {
+            setDraft({ ...draft, to });
+          }}
+        />
+        <div className="filters__actions">
+          <button type="submit" className="button button--primary">
+            {t('common.filters.apply')}
+          </button>
+          <button type="button" className="button" onClick={clear}>
+            {t('common.filters.clear')}
+          </button>
+        </div>
+      </form>
+    </FilterBar>
   );
 }
 

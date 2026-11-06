@@ -101,7 +101,7 @@ public sealed class ConfigurationResolutionTests(MasterDataConfigTestHost host) 
     {
         using HttpClient client = host.Api.CreateClient();
         Crew crew = await client.SignInCrewAsync();
-        (Guid version, string eTag) = await client.CreateVersionAsync(crew, "PARTICIPATION");
+        (Guid version, string eTag) = await client.CreateVersionAsync(crew, "EVIDENCE_POLICY");
         object content = ConfigurationApi.Values(("CONTRIBUTION_REVIEW_DAYS", "DURATION_DAYS", "3"));
 
         await AssertRefusedAsync("MASTER_DATA_CONFIG_SEPARATION_OF_DUTIES", client.PutAsync($"{ConfigurationApi.Versions}/{version}", crew.Reviewer, ConfigurationApi.Update(content), eTag));

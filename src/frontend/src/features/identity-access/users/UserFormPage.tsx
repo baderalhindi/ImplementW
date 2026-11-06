@@ -3,13 +3,14 @@ import { Link, useNavigate, useParams } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { RadioGroupField, SelectField, TextField } from '@/shared/ui/FormFields.tsx';
+import { CheckboxField, RadioGroupField, SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 
 import { usersApi } from '../api/identityAccessApi.ts';
-import { type LanguageCode, type UserDetail } from '../api/types.ts';
+import { type AccountSource, type LanguageCode, type UserDetail } from '../api/types.ts';
 import {
+  checkPassword,
   checkText,
   E164_PATTERN,
   EMAIL_PATTERN,
@@ -19,6 +20,8 @@ import {
 } from '../forms.ts';
 import { labelOf, useOrganizationLookups } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
+import { TemporaryPasswordNotice } from './TemporaryPasswordNotice.tsx';
+import { type PasswordMode, PasswordModeField } from './UserAccountDialogs.tsx';
 
 type CreatableUserType = 'INTERNAL' | 'EXTERNAL';
 
@@ -32,6 +35,10 @@ interface UserFormValues {
   directorySubjectId: string;
   jobTitle: string;
   externalEntityId: string;
+  accountSource: AccountSource;
+  passwordMode: PasswordMode;
+  temporaryPassword: string;
+  mustChangePassword: boolean;
 }
 
 const EMPTY_VALUES: UserFormValues = {
@@ -44,6 +51,10 @@ const EMPTY_VALUES: UserFormValues = {
   directorySubjectId: '',
   jobTitle: '',
   externalEntityId: '',
+  accountSource: 'DIRECTORY',
+  passwordMode: 'GENERATED',
+  temporaryPassword: '',
+  mustChangePassword: true,
 };
 
 function valuesOf(user: UserDetail): UserFormValues {
@@ -57,6 +68,10 @@ function valuesOf(user: UserDetail): UserFormValues {
     directorySubjectId: user.directorySubjectId ?? '',
     jobTitle: user.jobTitle ?? '',
     externalEntityId: user.externalEntityId ?? '',
+    accountSource: user.accountSource,
+    passwordMode: 'GENERATED',
+    temporaryPassword: '',
+    mustChangePassword: user.mustChangePassword,
   };
 }
 
@@ -68,7 +83,8 @@ interface UserFormProps {
 /**
  * ADM-004 and ADM-005. The user type and an external user's entity are chosen once, at creation (D-4): the entity
  * is MOD-082's assignment for an external user. An internal user's job title, department and manager come from the
- * directory (ADR-007), so the form shows them and never sends a change.
+ * directory (ADR-007), so the form shows them and never sends a change. A local account (the 5 Nov 2026 review §6.1) has no directory
+ * identifier: it signs in with a temporary password, typed or generated, shown once when the API returns it.
  */
 function UserForm({ existing }: UserFormProps): ReactElement {
   const { t, language } = useI18n();
@@ -80,9 +96,12 @@ function UserForm({ existing }: UserFormProps): ReactElement {
   const save = useSaveAction();
   const { lookups } = useOrganizationLookups(language);
   useFocusFirstError(formRef, save.fieldErrors);
+  const [created, setCreated] = useState<UserDetail | null>(null);
 
   const creating = existing === undefined;
   const internal = values.userType === 'INTERNAL';
+  const local = values.accountSource === 'LOCAL';
+  const typedPassword = creating && local && values.passwordMode === 'TYPED';
   const set = (field: keyof UserFormValues) => (value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
   };
@@ -94,7 +113,12 @@ function UserForm({ existing }: UserFormProps): ReactElement {
       displayName: checkText(values.displayName, { required: true }),
       email: checkText(values.email, { required: true, pattern: EMAIL_PATTERN }),
       mobileNumber: checkText(values.mobileNumber, { maxLength: 16, pattern: E164_PATTERN }),
-      directorySubjectId: checkText(values.directorySubjectId, { required: internal }),
+      directorySubjectId: local
+        ? null
+        : checkText(values.directorySubjectId, { required: internal }),
+      temporaryPassword: typedPassword
+        ? checkPassword(values.temporaryPassword, values.username)
+        : null,
       jobTitle: internal ? null : checkText(values.jobTitle, {}),
       externalEntityId: creating && !internal && values.externalEntityId === '' ? 'REQUIRED' : null,
     });
@@ -107,7 +131,7 @@ function UserForm({ existing }: UserFormProps): ReactElement {
       email: values.email.trim(),
       mobileNumber: optionalText(values.mobileNumber),
       preferredLanguage: values.preferredLanguage,
-      directorySubjectId: optionalText(values.directorySubjectId),
+      directorySubjectId: local ? null : optionalText(values.directorySubjectId),
       // An internal user's job title is the directory's: an edit resends what the API returned, a creation none.
       jobTitle: internal ? (existing?.user.jobTitle ?? null) : optionalText(values.jobTitle),
     };
@@ -117,10 +141,20 @@ function UserForm({ existing }: UserFormProps): ReactElement {
             ...common,
             userType: values.userType,
             externalEntityId: internal ? null : values.externalEntityId,
+            accountSource: values.accountSource,
+            ...(local
+              ? {
+                  temporaryPassword: typedPassword ? values.temporaryPassword : null,
+                  mustChangePassword: values.mustChangePassword,
+                }
+              : {}),
           })
         : usersApi.update(existing.user.id, common, existing.etag),
     );
-    if (result.ok) {
+    if (result.ok && result.value.data.temporaryPassword != null) {
+      // Never through the router's state, which the browser keeps in its session history.
+      setCreated(result.value.data);
+    } else if (result.ok) {
       void navigate(`/admin/users/${result.value.data.id}`, {
         state: { notice: creating ? 'created' : 'updated' },
       });
@@ -129,6 +163,22 @@ function UserForm({ existing }: UserFormProps): ReactElement {
 
   const activeEntities = (lookups?.entities ?? []).filter((entity) => entity.status === 'ACTIVE');
   const cancelTo = existing === undefined ? '/admin/users' : `/admin/users/${existing.user.id}`;
+
+  if (created?.temporaryPassword != null) {
+    return (
+      <>
+        <p className="notice" role="status">
+          {t('identityAccess.users.detail.notice.created')}
+        </p>
+        <TemporaryPasswordNotice name={created.displayName} password={created.temporaryPassword} />
+        <div className="form__actions">
+          <Link className="button button--primary" to={`/admin/users/${created.id}`}>
+            {t('identityAccess.users.temporaryPassword.openUser')}
+          </Link>
+        </div>
+      </>
+    );
+  }
 
   return (
     <form ref={formRef} className="form" noValidate onSubmit={(event) => void submit(event)}>
@@ -152,6 +202,32 @@ function UserForm({ existing }: UserFormProps): ReactElement {
         <p className="form__readonly">
           <span className="field__label">{t('identityAccess.users.fields.userType')}</span>
           {t(`identityAccess.userType.${existing.user.userType}`)}
+        </p>
+      )}
+
+      {creating ? (
+        <RadioGroupField
+          label={t('identityAccess.users.fields.accountSource')}
+          name="accountSource"
+          required
+          value={values.accountSource}
+          hint={t('identityAccess.users.form.accountSourceHint')}
+          options={[
+            { value: 'DIRECTORY', label: t('identityAccess.users.form.accountSourceDirectory') },
+            { value: 'LOCAL', label: t('identityAccess.users.form.accountSourceLocal') },
+          ]}
+          onChange={(value) => {
+            setValues((current) => ({
+              ...current,
+              accountSource: value === 'LOCAL' ? 'LOCAL' : 'DIRECTORY',
+            }));
+          }}
+          error={save.fieldErrors.accountSource}
+        />
+      ) : (
+        <p className="form__readonly">
+          <span className="field__label">{t('identityAccess.users.fields.accountSource')}</span>
+          {t(`identityAccess.accountSource.${existing.user.accountSource}`)}
         </p>
       )}
 
@@ -220,19 +296,56 @@ function UserForm({ existing }: UserFormProps): ReactElement {
         hint={t('identityAccess.users.form.mobileNumberHint')}
         error={save.fieldErrors.mobileNumber}
       />
-      <TextField
-        label={t('identityAccess.users.fields.directorySubjectId')}
-        name="directorySubjectId"
-        required={internal}
-        dir="ltr"
-        value={values.directorySubjectId}
-        onChange={set('directorySubjectId')}
-        autoComplete="off"
-        hint={t('identityAccess.users.form.directorySubjectIdHint')}
-        error={save.fieldErrors.directorySubjectId}
-      />
+      {local ? (
+        creating && (
+          <>
+            <PasswordModeField
+              mode={values.passwordMode}
+              onChange={(passwordMode) => {
+                setValues((current) => ({ ...current, passwordMode }));
+              }}
+            />
+            {typedPassword && (
+              <TextField
+                label={t('identityAccess.users.form.temporaryPassword')}
+                name="temporaryPassword"
+                required
+                dir="ltr"
+                value={values.temporaryPassword}
+                onChange={set('temporaryPassword')}
+                autoComplete="off"
+                hint={t('identityAccess.temporaryPasswordRules')}
+                error={save.fieldErrors.temporaryPassword}
+              />
+            )}
+            <CheckboxField
+              label={t('identityAccess.users.fields.mustChangePassword')}
+              name="mustChangePassword"
+              checked={values.mustChangePassword}
+              onChange={(mustChangePassword) => {
+                setValues((current) => ({ ...current, mustChangePassword }));
+              }}
+              error={save.fieldErrors.mustChangePassword}
+            />
+          </>
+        )
+      ) : (
+        <TextField
+          label={t('identityAccess.users.fields.directorySubjectId')}
+          name="directorySubjectId"
+          required={internal}
+          dir="ltr"
+          value={values.directorySubjectId}
+          onChange={set('directorySubjectId')}
+          autoComplete="off"
+          hint={t('identityAccess.users.form.directorySubjectIdHint')}
+          error={save.fieldErrors.directorySubjectId}
+        />
+      )}
       {internal ? (
-        <p className="form__note">{t('identityAccess.users.form.directoryAttributesNote')}</p>
+        !local && (
+          <p className="form__note">{t('identityAccess.users.form.directoryAttributesNote')}</p>
+        )
       ) : (
         <TextField
           label={t('identityAccess.users.fields.jobTitle')}

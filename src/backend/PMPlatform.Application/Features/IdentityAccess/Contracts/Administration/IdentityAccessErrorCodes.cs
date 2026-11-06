@@ -30,6 +30,18 @@ public static class IdentityAccessErrorCodes
     /// <summary>422: an administrator may not disable themselves or change their own assignments.</summary>
     public const string SelfAdministration = "IDENTITY_ACCESS_SELF_ADMINISTRATION";
 
+    public const string LocalAccountsDisabled = "IDENTITY_ACCESS_LOCAL_ACCOUNTS_DISABLED";
+
+    public const string NotLocalAccount = "IDENTITY_ACCESS_NOT_LOCAL_ACCOUNT";
+
+    public const string PasswordInvalid = "IDENTITY_ACCESS_PASSWORD_INVALID";
+
+    public const string RoleInactive = "IDENTITY_ACCESS_ROLE_INACTIVE";
+
+    public const string RoleInUse = "IDENTITY_ACCESS_ROLE_IN_USE";
+
+    public const string RoleSystem = "IDENTITY_ACCESS_ROLE_SYSTEM";
+
     /// <summary>422: a SERVICE principal is not administered through the API.</summary>
     public const string ServicePrincipal = "IDENTITY_ACCESS_SERVICE_PRINCIPAL";
 

@@ -107,17 +107,16 @@ export function MasterDataPage(): ReactElement {
       {catalogues.loading && <LoadingState />}
       {chosen !== undefined && (
         <>
-          <div className="filters filters--inline">
-            <SelectField
-              label={t('identityAccess.masterData.catalogue')}
-              name="catalogue"
-              value={chosen.code}
-              options={sorted.map((c) => ({ value: c.code, label: c.name[language] }))}
-              onChange={(value) => {
-                setParams({ catalogue: value });
-              }}
-            />
-          </div>
+          {/* The list being looked at, always one: a required choice, so not a filter folded behind the Filters button. */}
+          <SelectField
+            label={t('identityAccess.masterData.catalogue')}
+            name="catalogue"
+            value={chosen.code}
+            options={sorted.map((c) => ({ value: c.code, label: c.name[language] }))}
+            onChange={(value) => {
+              setParams({ catalogue: value });
+            }}
+          />
           <CatalogueItems key={chosen.id} catalogue={chosen} parentCatalogue={parentCatalogue} />
         </>
       )}

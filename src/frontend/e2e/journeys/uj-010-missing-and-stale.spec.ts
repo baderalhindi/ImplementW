@@ -2,7 +2,15 @@ import { type Locator, type Page } from '@playwright/test';
 
 import { runFixture } from '../support/fixtures.ts';
 import { activeProject, type ProjectDetail } from '../support/projects.ts';
-import { expect, expectText, plain, test, unique, utcDate } from '../support/journey.ts';
+import {
+  expect,
+  expectText,
+  openFilters,
+  plain,
+  test,
+  unique,
+  utcDate,
+} from '../support/journey.ts';
 import {
   assignedKpi,
   type Measurement,
@@ -213,6 +221,7 @@ test('UJ-010 missing, stale, Unknown and N/A stay distinguishable from a genuine
 
   await test.step('FG-02 keeps the same meanings apart: the KPI Performance report, row by row', async () => {
     await page.goto('/reports/financial/KPI_PERFORMANCE');
+    await openFilters(page);
     await reportParameter(page, 'Sector').selectOption({ label: 'E2E Journeys Department' });
     // The newest projects first, so this run's five are on the first page whoever else is reporting.
     await page.getByRole('button', { name: 'Choose columns' }).click();

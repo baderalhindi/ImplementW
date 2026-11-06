@@ -45,10 +45,35 @@ export interface MultiFactorChallenge {
   provisioningUri: string | null;
 }
 
+/** A local account signed in with a temporary password: no session until a new password is set. */
+export interface PasswordChangePending {
+  passwordChangeToken: string;
+  expiresAt: string;
+}
+
 export type SignInResult = Session | MultiFactorPending;
 
-export function isMultiFactorPending(result: SignInResult): result is MultiFactorPending {
+/** The sign-in methods this environment offers beyond the password. */
+export interface SignInOptions {
+  singleSignOnAvailable: boolean;
+}
+
+export interface SsoAuthorization {
+  authorizationUrl: string;
+  /** Sealed by the API: kept until the identity provider redirects back, then returned with the code. */
+  transaction: string;
+}
+
+export function isMultiFactorPending(
+  result: SignInResult | PasswordChangePending,
+): result is MultiFactorPending {
   return 'mfaToken' in result;
+}
+
+export function isPasswordChangePending(
+  result: SignInResult | PasswordChangePending,
+): result is PasswordChangePending {
+  return 'passwordChangeToken' in result;
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -57,7 +82,16 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 export const sessionApi = {
   signIn: (username: string, password: string) =>
-    post<SignInResult>('/sessions', { username, password }),
+    post<SignInResult | PasswordChangePending>('/sessions', { username, password }),
+  getSignInOptions: async (signal: AbortSignal) =>
+    (await apiRequest<SignInOptions>('/sessions/sign-in-options', { anonymous: true, signal }))
+      .data,
+  beginSso: async () =>
+    (await apiRequest<SsoAuthorization>('/sessions/sso-authorization', { anonymous: true })).data,
+  completeSso: (code: string, state: string, transaction: string) =>
+    post<SignInResult>('/sessions/sso', { code, state, transaction }),
+  changePassword: (passwordChangeToken: string, newPassword: string) =>
+    post<SignInResult>('/sessions/password-change', { passwordChangeToken, newPassword }),
   beginMultiFactor: (mfaToken: string) =>
     post<MultiFactorChallenge>('/sessions/mfa-challenge', { mfaToken }),
   completeMultiFactor: (mfaToken: string, challengeId: string, code: string) =>

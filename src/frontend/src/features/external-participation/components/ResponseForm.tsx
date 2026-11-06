@@ -216,7 +216,7 @@ function ResponseFields({
   );
 }
 
-function ResponseInput({
+export function ResponseInput({
   definition,
   label,
   value,

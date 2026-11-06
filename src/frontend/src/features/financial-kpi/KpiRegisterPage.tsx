@@ -2,6 +2,7 @@ import { type ReactElement, useState } from 'react';
 
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -131,14 +132,38 @@ export function KpiRegisterPage(): ReactElement {
           <section className="section" aria-labelledby="kpi-register-list">
             <div className="kpi-register__list-header">
               <h2 id="kpi-register-list">{t('financialKpi.register.listTitle')}</h2>
-              <TextField
-                label={t('financialKpi.register.search')}
-                name="search"
-                type="search"
-                value={search}
-                onChange={setSearch}
-              />
             </div>
+            <FilterBar
+              chips={
+                search.trim() === ''
+                  ? []
+                  : [
+                      {
+                        name: 'search',
+                        text: t('common.filters.inline', {
+                          label: t('financialKpi.register.search'),
+                          value: search.trim(),
+                        }),
+                        onRemove: () => {
+                          setSearch('');
+                        },
+                      },
+                    ]
+              }
+              onClearAll={() => {
+                setSearch('');
+              }}
+            >
+              <div className="filters filters--inline">
+                <TextField
+                  label={t('financialKpi.register.search')}
+                  name="search"
+                  type="search"
+                  value={search}
+                  onChange={setSearch}
+                />
+              </div>
+            </FilterBar>
             {shown.length === 0 ? (
               <EmptyState title={t('financialKpi.register.filteredEmpty')}>
                 <p>{t('financialKpi.register.filteredEmptyBody')}</p>

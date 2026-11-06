@@ -180,6 +180,63 @@ export function BarChart({
   );
 }
 
+/** Two or more percentages side by side for each group, on one 0–100 scale; a value not measured has no bar and says so. */
+export function GroupedColumnChart({
+  groups,
+  series,
+  missing,
+}: {
+  groups: { key: string; text: string; values: (number | null)[] }[];
+  series: { key: string; text: string; color: string }[];
+  missing: string;
+}): ReactElement {
+  return (
+    <div className="grouped-columns" aria-hidden="true">
+      <ul className="grouped-columns__legend">
+        {series.map((entry) => (
+          <li key={entry.key}>
+            <span
+              className="distribution__key"
+              style={{ '--chart-color': entry.color } as CSSProperties}
+            />
+            {entry.text}
+          </li>
+        ))}
+      </ul>
+      <div className="grouped-columns__plot">
+        {groups.map((group) => (
+          <div key={group.key} className="grouped-columns__group">
+            <div className="grouped-columns__bars">
+              {series.map((entry, index) => {
+                const value = group.values[index] ?? null;
+                return (
+                  <div key={entry.key} className="grouped-columns__track">
+                    <span className="grouped-columns__value" dir="ltr">
+                      {value === null ? missing : `${String(Math.round(value * 10) / 10)}%`}
+                    </span>
+                    {value !== null && (
+                      <span
+                        className="grouped-columns__bar"
+                        style={
+                          {
+                            blockSize: `${String(Math.min(100, Math.max(0, value)))}%`,
+                            '--chart-color': entry.color,
+                          } as CSSProperties
+                        }
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <span className="columns__label">{group.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const GAUGE_SIZE = 152;
 const RINGS = [
   { radius: 64, stroke: 14 },

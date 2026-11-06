@@ -16,6 +16,7 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.Property(e => e.FormalProjectId).HasMaxLength(50);
         builder.HasIndex(e => e.FormalProjectId).IsUnique();
         builder.HasNarrative(e => e.Title, "title");
+        builder.Property(e => e.TitleEn).HasMaxLength(2000);
         builder.HasNarrative(e => e.Description, "description");
         builder.Property(e => e.RevisionNo).HasDatabaseDefault(1);
         builder.Property(e => e.GovernanceProfileOverridden).HasDatabaseDefault(false);
@@ -24,6 +25,9 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.Property(e => e.Longitude).HasPrecision(18, 4);
 
         // The 2 Nov 2026 review (R3-3): strategy classification, legacy reference and RPMO's follow-up.
+        // The 5 Nov 2026 review (R4-5): the seed marker the reset command deletes by; only demonstration data carries one.
+        builder.Property(e => e.SeedSource).HasMaxLength(20);
+        builder.HasCheck("seed_source", "seed_source IS NULL OR seed_source = 'DEMO'");
         builder.Property(e => e.LegacyReference).HasMaxLength(100);
         builder.HasIndex(e => e.LegacyReference).IsUnique().HasFilter("legacy_reference IS NOT NULL");
         builder.HasNarrative(e => e.CurrentObstacle, "current_obstacle");
@@ -55,6 +59,7 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.StrategicInitiativeItemId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.PriorityItemId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.FollowUpOwnerUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(e => e.EntityContactUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<ProjectImportBatch>().WithMany().HasForeignKey(e => e.ProjectImportBatchId).OnDelete(DeleteBehavior.Restrict);
 
         // TASK-026 (indexing-strategy.md I-01 to I-05): SCR-025/SCR-026 sort by updated_at desc, id desc under each

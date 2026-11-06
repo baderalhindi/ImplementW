@@ -33,6 +33,9 @@ const approvalRoles: RoleSummary[] = [
     name: { ar: 'مدير المحفظة', en: 'Portfolio Manager' },
     isSystem: true,
     isExternalEligible: false,
+    isActive: true,
+    allowedScopes: ['ALL'],
+    landingDashboardCode: null,
   },
   {
     id: ESCALATION_ROLE_ID,
@@ -40,6 +43,9 @@ const approvalRoles: RoleSummary[] = [
     name: { ar: 'المدير التنفيذي', en: 'Executive Director' },
     isSystem: true,
     isExternalEligible: false,
+    isActive: true,
+    allowedScopes: ['ALL'],
+    landingDashboardCode: null,
   },
 ];
 

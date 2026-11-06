@@ -47,4 +47,20 @@ public sealed class User : AuditedEntity
     public string? NafathVerificationReference { get; set; }
 
     public DateTimeOffset? NafathVerifiedAt { get; set; }
+
+    // The 5 Nov 2026 review (R4-6): a local account signs in with a password the platform holds, never the plain text.
+    public AccountSource AccountSource { get; set; } = AccountSource.Directory;
+
+    /// <summary>PBKDF2 hash; set on a local account only.</summary>
+    public string? PasswordHash { get; set; }
+
+    /// <summary>The password is temporary: sign-in issues no session until it is changed.</summary>
+    public bool MustChangePassword { get; set; }
+
+    public int FailedSignInCount { get; set; }
+
+    public DateTimeOffset? LockedUntil { get; set; }
+
+    /// <summary>The last day the account may be used, on any sign-in path; null when open-ended.</summary>
+    public DateOnly? AccountEndsOn { get; set; }
 }

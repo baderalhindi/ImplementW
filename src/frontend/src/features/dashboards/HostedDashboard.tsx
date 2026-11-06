@@ -1,11 +1,11 @@
 import { type ReactElement, useCallback, useState } from 'react';
 
-import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { ApiError } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
-import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { dashboardsApi, type PortfolioFilters } from './api/dashboardsApi.ts';
 import { type DashboardCatalogueEntry, type DashboardView } from './api/types.ts';
@@ -17,6 +17,8 @@ import {
 } from './components/PortfolioFilterBar.tsx';
 import { ProjectLocations } from './components/ProjectLocations.tsx';
 import { mayPersonalize } from './landing.ts';
+import { PortfolioInsightsSection } from './insights/PortfolioInsightsSection.tsx';
+import { hasNoData } from './presentation.ts';
 import { PersonalizeDialog } from './PersonalizeDialog.tsx';
 import { dashboardProblemMessage } from './problems.ts';
 
@@ -59,18 +61,17 @@ const NO_OPTIONS: FilterOptions = {
  */
 export function HostedDashboard({
   entry,
-  user,
   filters,
   onFilterChange,
   onClearFilters,
 }: {
   entry: DashboardCatalogueEntry;
-  user: SessionUser;
   filters: PortfolioFilters;
   onFilterChange: (name: FilterName, value: string | undefined) => void;
   onClearFilters: () => void;
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
+  const permissions = usePermissions();
   const {
     departmentId,
     externalEntityId,
@@ -131,36 +132,42 @@ export function HostedDashboard({
 
   return (
     <div className="dashboard">
-      <div className="dashboard__toolbar">
-        {view.data !== undefined && (
-          <p className="dashboard__meta">
-            <span>
-              {t('dashboards.refreshedAt', { date: formatDateTime(view.data.refreshedAt) })}
-            </span>
-            <button type="button" className="button button--quiet" onClick={view.reload}>
-              {t('dashboards.actions.refresh')}
-            </button>
-            {mayPersonalize(user, entry) && (
-              <button
-                type="button"
-                className="button"
-                onClick={() => {
-                  setPersonalizing(true);
-                }}
-              >
-                {t('dashboards.personalize.open')}
-              </button>
-            )}
-          </p>
-        )}
-      </div>
       <PortfolioFilterBar
         options={options}
         filters={filters}
         onChange={onFilterChange}
         onClearAll={onClearFilters}
+        actions={
+          view.data === undefined ? undefined : (
+            <p className="dashboard__meta">
+              <span>
+                {t('dashboards.refreshedAt', { date: formatDateTime(view.data.refreshedAt) })}
+              </span>
+              <button type="button" className="button button--quiet" onClick={view.reload}>
+                {t('dashboards.actions.refresh')}
+              </button>
+              {mayPersonalize(permissions, entry) && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => {
+                    setPersonalizing(true);
+                  }}
+                >
+                  {t('dashboards.personalize.open')}
+                </button>
+              )}
+            </p>
+          )
+        }
       />
       <PageNotice notice={notice} />
+      {entry.code === 'PORTFOLIO' && (
+        <PortfolioInsightsSection
+          filters={filters}
+          emptySaidElsewhere={view.data !== undefined && hasNoData(view.data)}
+        />
+      )}
       {view.data === undefined ? (
         view.loading ? (
           <LoadingState />
@@ -171,6 +178,8 @@ export function HostedDashboard({
             onRetry={filterRefused ? onClearFilters : view.reload}
           />
         )
+      ) : hasNoData(view.data) ? (
+        <EmptyState title={t('dashboards.noData')} />
       ) : (
         <>
           {entry.code === 'PORTFOLIO' && (
@@ -180,6 +189,12 @@ export function HostedDashboard({
               selectedRegion={regionItemId}
               onSelectRegion={(region) => {
                 onFilterChange('regionItemId', region);
+              }}
+              map={{
+                filters,
+                onFilterCity: (city) => {
+                  onFilterChange('cityItemId', city);
+                },
               }}
             />
           )}

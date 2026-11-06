@@ -66,5 +66,19 @@
       "none": "No active person yet.",
       "counts": "{internal} internal · {external} external · {disabled} disabled"
     }
+  },
+  "managed": {
+    "title": "Projects you manage",
+    "nextActionDue": "Next action due",
+    "requestsWaiting": "Update requests waiting",
+    "all": "See all {count}"
+  },
+  "entity": {
+    "title": "Your entity's projects",
+    "none": "None",
+    "noProjects": "No project yet.",
+    "lastUpdate": "Last update submitted",
+    "nextDue": "Next one due",
+    "openWindow": "Open the monthly update: {projects}"
   }
 }

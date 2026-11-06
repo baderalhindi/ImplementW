@@ -5,6 +5,7 @@ import { approvalInstancesApi, approvalTasksApi } from '@/features/approvals/api
 import { SubjectSummary } from '@/features/approvals/components/SubjectSummary.tsx';
 import { isOverdue } from '@/features/approvals/presentation.ts';
 import { DASHBOARDS_PATH, PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
+import { useDashboardCatalogue } from '@/features/dashboards/useDashboardCatalogue.ts';
 import { externalRequestsApi } from '@/features/external-participation/api/externalParticipationApi.ts';
 import { MY_EXTERNAL_REQUESTS_PATH } from '@/features/external-participation/paths.ts';
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
@@ -32,9 +33,6 @@ function daysAfter(day: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** The Portfolio Dashboard's audience (dashboards.md D-2), offered it as a quick way to the analysis. */
-const PORTFOLIO_ROLES: readonly string[] = ['R02', 'R03', 'R06', 'R07'];
-
 /**
  * The person's own work on the Home (the 24 Oct 2026 review, H2: "Home = my work, for every role"): approvals waiting for
  * them with their due dates, their tasks due this week and overdue, update requests waiting for their answer, the requests
@@ -61,6 +59,8 @@ export function MyWork({ user }: { user: SessionUser }): ReactElement {
 export function StartOrOpen({ user }: { user: SessionUser }): ReactElement {
   const { t } = useI18n();
   const { can } = usePermissions();
+  // The Portfolio Dashboard's audience (dashboards.md D-2) is offered it as a quick way to the analysis.
+  const dashboards = useDashboardCatalogue().data ?? [];
   return (
     <nav className="home__actions-bar" aria-label={t('home.actions.title')}>
       <ul className="home__actions">
@@ -79,14 +79,11 @@ export function StartOrOpen({ user }: { user: SessionUser }): ReactElement {
             <Link to="/projects">{t('projects.nav.register')}</Link>
           </li>
         )}
-        {user.userType !== 'EXTERNAL' &&
-          user.roleAssignments.some((assignment) =>
-            PORTFOLIO_ROLES.includes(assignment.roleCode),
-          ) && (
-            <li>
-              <Link to={PORTFOLIO_DASHBOARD_PATH}>{t('common.menu.portfolioDashboard')}</Link>
-            </li>
-          )}
+        {dashboards.some((entry) => entry.code === 'PORTFOLIO') && (
+          <li>
+            <Link to={PORTFOLIO_DASHBOARD_PATH}>{t('common.menu.portfolioDashboard')}</Link>
+          </li>
+        )}
         {user.userType !== 'EXTERNAL' && can('PROJECT_VIEW') && (
           <li>
             <Link to={DASHBOARDS_PATH}>{t('common.menu.dashboards')}</Link>

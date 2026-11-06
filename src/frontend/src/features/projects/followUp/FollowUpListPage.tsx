@@ -5,7 +5,7 @@ import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
@@ -28,7 +28,7 @@ function isReason(value: string | null): value is FollowUpReason {
  */
 export function FollowUpListPage(): ReactElement {
   const { t } = useI18n();
-  const { params, page, setFilter, goToPage } = useListParams();
+  const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const lookups = useProjectLookups();
   const reasonParam = params.get('reason');
   const reason = isReason(reasonParam) ? reasonParam : undefined;
@@ -46,33 +46,36 @@ export function FollowUpListPage(): ReactElement {
         title={t('projects.followUpList.title')}
         description={t('projects.followUpList.description')}
       />
-      <div className="filters" role="search" aria-label={t('common.filters.label')}>
-        <SelectField
-          label={t('projects.followUpList.reason')}
-          name="reason"
-          value={reason ?? ''}
-          placeholder={t('projects.followUpList.allReasons')}
-          options={FOLLOW_UP_REASONS.map((value) => ({
-            value,
-            label: t(`projects.followUpReason.${value}`),
-          }))}
-          onChange={(value) => {
-            setFilter('reason', value);
-          }}
-        />
-        {lookups.organizationError === null && (
-          <SelectField
-            label={t('projects.fields.department')}
-            name="departmentId"
-            value={departmentId ?? ''}
-            placeholder={t('common.filters.any')}
-            options={lookups.departmentOptions}
-            onChange={(value) => {
-              setFilter('departmentId', value);
-            }}
-          />
-        )}
-      </div>
+      <FilterBar
+        fields={[
+          {
+            name: 'reason',
+            label: t('projects.followUpList.reason'),
+            all: t('projects.followUpList.allReasons'),
+            options: FOLLOW_UP_REASONS.map((value) => ({
+              value,
+              label: t(`projects.followUpReason.${value}`),
+            })),
+          },
+          ...(lookups.organizationError === null
+            ? [
+                {
+                  name: 'departmentId',
+                  label: t('projects.fields.department'),
+                  all: t('common.filters.any'),
+                  options: lookups.departmentOptions,
+                },
+              ]
+            : []),
+        ]}
+        values={{ reason, departmentId }}
+        onChange={(name, value) => {
+          setFilter(name, value ?? '');
+        }}
+        onClearAll={() => {
+          setFilters({ reason: '', departmentId: '' });
+        }}
+      />
       {items.loading && <LoadingState />}
       {items.error !== null && (
         <ErrorState

@@ -6,7 +6,12 @@ import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 import { findMainMenu, openMenuNames } from '@/test/shell.ts';
 import {
   ALLOWLIST,
@@ -409,6 +414,7 @@ describe("acceptance criterion 3: another user's views are seen only when shared
     });
     expect(await screen.findByText(en('reports.savedView.incompatible'))).toBeTruthy();
     expect(screen.getByText(en('reports.issues.NOT_ALLOWED'), { exact: false })).toBeTruthy();
+    await openFilters();
     expect(
       screen.getByRole<HTMLSelectElement>('combobox', { name: 'Financial condition' }).value,
     ).toBe('');
@@ -424,6 +430,7 @@ describe('SCR-130 and SCR-131 to SCR-137', () => {
         .getAllByRole('link', { name: /Performance$/ })
         .map((link) => link.getAttribute('href')),
     ).toEqual(['/reports/financial/FINANCIAL_PERFORMANCE', '/reports/financial/KPI_PERFORMANCE']);
+    await openFilters();
     await userEvent.type(
       screen.getByRole('searchbox', { name: en('reports.center.search') }),
       'register',

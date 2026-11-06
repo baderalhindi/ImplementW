@@ -1,14 +1,13 @@
-import { type ReactElement, type SyntheticEvent, useCallback, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { type ReactElement, useCallback } from 'react';
+import { Link } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { FilterBar, type FilterBarField } from '@/shared/ui/FilterBar.tsx';
-import { TextField } from '@/shared/ui/FormFields.tsx';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
@@ -17,13 +16,11 @@ import { projectsApi } from '../api/projectsApi.ts';
 import { type ProjectSummary } from '../api/types.ts';
 import { GapValue, ImportedLabel, OnPlanBadge } from '../components/FollowUpBadges.tsx';
 import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
-import { isProjectStatus, PROJECT_STATUSES } from '../presentation.ts';
 import { isForbidden, projectProblemMessage } from '../problems.ts';
-import {
-  type ProjectCatalogueCode,
-  type ProjectLookups,
-  useProjectLookups,
-} from '../useProjectLookups.ts';
+import { type ProjectLookups, useProjectLookups } from '../useProjectLookups.ts';
+import { CreateProjectLink, ImportProjectsLink } from './ProjectActions.tsx';
+import { ProjectFilters } from './ProjectFilters.tsx';
+import { useProjectFilterValues } from './projectFilterValues.ts';
 
 /** The filters each list offers; `q` and `status` everywhere, the rest of the filter bar on the Register only. */
 const FILTERS = [
@@ -31,17 +28,6 @@ const FILTERS = [
   'status',
   'departmentId',
   'externalEntityId',
-  'classificationItemId',
-  'strategicPortfolioItemId',
-  'strategicInitiativeItemId',
-  'priorityItemId',
-  'regionItemId',
-  'cityItemId',
-  'period',
-] as const;
-
-/** The register's filter bar parameters besides `q`, `status` and the two organization ones (the 2 Nov 2026 review, R3-1). */
-const ITEM_FILTERS = [
   'classificationItemId',
   'strategicPortfolioItemId',
   'strategicInitiativeItemId',
@@ -68,16 +54,9 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
   const { t } = useI18n();
   const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const lookups = useProjectLookups();
-  const q = params.get('q') ?? '';
-  const statusParam = params.get('status') ?? '';
-  const status = isProjectStatus(statusParam) ? statusParam : undefined;
-  const departmentId = mine ? undefined : (params.get('departmentId') ?? undefined);
-  const externalEntityId = mine ? undefined : (params.get('externalEntityId') ?? undefined);
+  const { q, status, departmentId, externalEntityId, itemFilters, itemKey } =
+    useProjectFilterValues(mine);
   const projectManagerUserId = mine ? user.id : undefined;
-  const itemFilters = Object.fromEntries(
-    ITEM_FILTERS.map((name) => [name, mine ? undefined : (params.get(name) ?? undefined)]),
-  ) as Record<(typeof ITEM_FILTERS)[number], string | undefined>;
-  const itemKey = ITEM_FILTERS.map((name) => itemFilters[name] ?? '').join('|');
 
   const load = useCallback(
     (signal: AbortSignal) =>
@@ -124,7 +103,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
       {projects.loading && <LoadingState label={t('projects.list.loading')} />}
       {/* A role without PROJECT_VIEW sees no project at all: the same answer as a scope that reaches none. */}
       {isForbidden(projects.error) && (
-        <ProjectListEmpty filtered={false} mine={mine} basePath={basePath} />
+        <ProjectListEmpty filtered={false} forbidden mine={mine} basePath={basePath} />
       )}
       {projects.error !== null && !isForbidden(projects.error) && (
         <ErrorState
@@ -135,7 +114,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
       )}
       {projects.data !== undefined &&
         (projects.data.items.length === 0 ? (
-          <ProjectListEmpty filtered={filtered} mine={mine} basePath={basePath} />
+          <ProjectListEmpty filtered={filtered} forbidden={false} mine={mine} basePath={basePath} />
         ) : (
           <>
             <ProjectTable
@@ -157,20 +136,23 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
 }
 
 /**
- * Three different empty answers. Filtered: nothing matches, clear the filters. Unfiltered on the Register: the
- * person's role reaches no project at all, which is said as such (acceptance criterion 2). My Projects: they manage
- * none.
+ * Four different empty answers. Filtered: nothing matches, clear the filters. My Projects: they manage none. A role without PROJECT_VIEW:
+ * it reaches no project at all, which is said as such (acceptance criterion 2). Otherwise the Register has no project yet (the 5 Nov 2026
+ * review §5), with the ways to add one for a role that has them, and otherwise where projects come from.
  */
 function ProjectListEmpty({
   filtered,
+  forbidden,
   mine,
   basePath,
 }: {
   filtered: boolean;
+  forbidden: boolean;
   mine: boolean;
   basePath: string;
 }): ReactElement {
   const { t } = useI18n();
+  const mayAdd = useCan('PROJECT_REGISTER', 'PROJECT_IMPORT', 'PROJECT_IMPORT_APPROVE');
   if (filtered) {
     return (
       <EmptyState title={t('projects.list.emptyFiltered')}>
@@ -186,193 +168,25 @@ function ProjectListEmpty({
       </EmptyState>
     );
   }
+  if (forbidden) {
+    return (
+      <EmptyState title={t('projects.register.emptyForRole')}>
+        <p>{t('projects.register.emptyForRoleDescription')}</p>
+      </EmptyState>
+    );
+  }
   return (
-    <EmptyState title={t('projects.register.emptyForRole')}>
-      <p>{t('projects.register.emptyForRoleDescription')}</p>
+    <EmptyState title={t('projects.register.empty')}>
+      {mayAdd ? (
+        <div className="form__actions">
+          <ImportProjectsLink />
+          <CreateProjectLink />
+        </div>
+      ) : (
+        <p>{t('projects.register.emptyForRoleDescription')}</p>
+      )}
     </EmptyState>
   );
-}
-
-interface ProjectFiltersProps {
-  q: string;
-  values: Partial<Record<string, string | undefined>>;
-  organizationFilters: boolean;
-  /** An external user sees one entity's projects only (ADR-013), so has nothing to filter by. */
-  entityFilter: boolean;
-  lookups: ProjectLookups;
-  basePath: string;
-  onSearch: (text: string) => void;
-  onFilter: (changes: Record<string, string>) => void;
-}
-
-/**
- * The register's search and the one filter bar the dashboards use (the 2 Nov 2026 review, R3-1): sector, entity, department, region and
- * city in its first row, status, priority, strategic portfolio and initiative under More filters. A filter applies as it is chosen. Keyed on
- * the search text, so Back resets the search box to what the list is showing.
- */
-function ProjectFilters({
-  q,
-  values,
-  organizationFilters,
-  entityFilter,
-  lookups,
-  basePath,
-  onSearch,
-  onFilter,
-}: ProjectFiltersProps): ReactElement {
-  const { t } = useI18n();
-  const navigate = useNavigate();
-  const [text, setText] = useState(q);
-
-  const applySearch = (event: SyntheticEvent) => {
-    event.preventDefault();
-    onSearch(text.trim());
-  };
-
-  // A department or entity filter needs their names; without them it is not offered (F-1).
-  const organizationReadable = lookups.organizationError === null;
-  const items = (code: ProjectCatalogueCode, parent?: string) =>
-    lookups
-      .options(code, parent)
-      .filter((option) => parent === undefined || lookups.parentOf(option.value) === parent);
-  const fields: FilterBarField[] = organizationFilters
-    ? [
-        {
-          name: 'classificationItemId',
-          label: t('dashboards.filter.classificationItemId'),
-          all: t('dashboards.filter.all.classificationItemId'),
-          options: items('PROJECT_CLASSIFICATION'),
-        },
-        ...(entityFilter && organizationReadable
-          ? [
-              {
-                name: 'externalEntityId',
-                label: t('dashboards.filter.externalEntityId'),
-                all: t('dashboards.filter.all.externalEntityId'),
-                options: lookups.entityOptions,
-              },
-            ]
-          : []),
-        ...(organizationReadable
-          ? [
-              {
-                name: 'departmentId',
-                label: t('dashboards.filter.departmentId'),
-                all: t('dashboards.filter.all.departmentId'),
-                options: lookups.departmentOptions,
-              },
-            ]
-          : []),
-        {
-          name: 'regionItemId',
-          label: t('dashboards.filter.regionItemId'),
-          all: t('dashboards.filter.all.regionItemId'),
-          options: items('REGION'),
-        },
-        {
-          name: 'cityItemId',
-          label: t('dashboards.filter.cityItemId'),
-          all: t('dashboards.filter.all.cityItemId'),
-          options: items('CITY', values.regionItemId),
-        },
-        {
-          name: 'status',
-          more: true,
-          label: t('dashboards.filter.status'),
-          all: t('dashboards.filter.all.status'),
-          options: STATUS_OPTIONS(t),
-        },
-        {
-          name: 'priorityItemId',
-          more: true,
-          label: t('dashboards.filter.priorityItemId'),
-          all: t('dashboards.filter.all.priorityItemId'),
-          options: items('PRIORITY'),
-        },
-        {
-          name: 'strategicPortfolioItemId',
-          more: true,
-          label: t('dashboards.filter.strategicPortfolioItemId'),
-          all: t('dashboards.filter.all.strategicPortfolioItemId'),
-          options: items('STRATEGIC_PORTFOLIO'),
-        },
-        {
-          name: 'strategicInitiativeItemId',
-          more: true,
-          label: t('dashboards.filter.strategicInitiativeItemId'),
-          all: t('dashboards.filter.all.strategicInitiativeItemId'),
-          options:
-            values.strategicPortfolioItemId === undefined
-              ? []
-              : items('STRATEGIC_INITIATIVE', values.strategicPortfolioItemId),
-        },
-        {
-          name: 'period',
-          more: true,
-          label: t('dashboards.filter.period'),
-          all: t('dashboards.filter.all.period'),
-          options: PERIOD_OPTIONS,
-        },
-      ]
-    : [
-        {
-          name: 'status',
-          label: t('dashboards.filter.status'),
-          all: t('dashboards.filter.all.status'),
-          options: STATUS_OPTIONS(t),
-        },
-      ];
-  return (
-    <>
-      <form
-        className="filters filters--inline"
-        role="search"
-        aria-label={t('common.actions.search')}
-        onSubmit={applySearch}
-      >
-        <TextField
-          label={t('projects.filters.q')}
-          name="q"
-          type="search"
-          dir="auto"
-          value={text}
-          onChange={setText}
-        />
-        <div className="filters__actions">
-          <button type="submit" className="button">
-            {t('common.actions.search')}
-          </button>
-        </div>
-      </form>
-      <FilterBar
-        fields={fields}
-        values={values}
-        onChange={(name, value) => {
-          // A city lies in a region, an initiative in a portfolio: another parent drops the child chosen under the last one.
-          onFilter({
-            [name]: value ?? '',
-            ...(name === 'regionItemId' ? { cityItemId: '' } : {}),
-            ...(name === 'strategicPortfolioItemId' ? { strategicInitiativeItemId: '' } : {}),
-          });
-        }}
-        onClearAll={() => {
-          void navigate(basePath);
-        }}
-      />
-    </>
-  );
-}
-
-/** The register cannot count projects per year, so it offers the ten years either side of this one. */
-const PERIOD_OPTIONS = Array.from({ length: 21 }, (_, i) =>
-  String(new Date().getFullYear() + 10 - i),
-).map((year) => ({
-  value: year,
-  label: year,
-}));
-
-function STATUS_OPTIONS(t: ReturnType<typeof useI18n>['t']) {
-  return PROJECT_STATUSES.map((value) => ({ value, label: t(`projects.status.${value}`) }));
 }
 
 function ProjectTable({

@@ -9,6 +9,11 @@ export type AccessRelationshipStatus = 'ACTIVE' | 'ENDED';
 export type ExternalEntityStatus = 'ACTIVE' | 'SUSPENDED' | 'RETIRED';
 export type GovernedLifecycleState = 'DRAFT' | 'VALIDATED' | 'PUBLISHED' | 'RETIRED';
 export type LanguageCode = 'ar' | 'en';
+export type AccountSource = 'DIRECTORY' | 'LOCAL';
+/** What a role's assignments may be scoped to (the 5 Nov 2026 review §6.2). */
+export type RoleScope = 'ALL' | 'DEPARTMENT' | 'PROJECT' | 'ENTITY';
+/** The dashboard a role lands on, one of ADR-006's three. */
+export type RoleLandingDashboard = 'PORTFOLIO' | 'PROJECT' | 'GOVERNANCE';
 export type UserSort = 'displayName:asc' | 'displayName:desc' | 'username:asc' | 'username:desc';
 
 export interface BilingualLabel {
@@ -32,9 +37,16 @@ export interface UserSummary {
   status: UserStatus;
   departmentId: string | null;
   externalEntityId: string | null;
+  accountSource?: AccountSource;
 }
 
 export interface UserDetail extends UserSummary {
+  accountSource: AccountSource;
+  mustChangePassword: boolean;
+  lockedUntil: string | null;
+  accountEndsOn: string | null;
+  /** In the one response that set it, never read back: shown once and never stored. */
+  temporaryPassword?: string | null;
   directorySubjectId: string | null;
   mobileNumber: string | null;
   mobileVerifiedAt: string | null;
@@ -71,9 +83,17 @@ export interface UserCreateRequest {
   directorySubjectId: string | null;
   jobTitle: string | null;
   externalEntityId: string | null;
+  /** The API takes DIRECTORY when left out. */
+  accountSource?: AccountSource;
+  /** LOCAL only; null has the platform generate one. */
+  temporaryPassword?: string | null;
+  mustChangePassword?: boolean;
 }
 
-export type UserUpdateRequest = Omit<UserCreateRequest, 'userType' | 'externalEntityId'>;
+export type UserUpdateRequest = Omit<
+  UserCreateRequest,
+  'userType' | 'externalEntityId' | 'accountSource' | 'temporaryPassword' | 'mustChangePassword'
+>;
 
 export interface RoleSummary {
   id: string;
@@ -81,6 +101,25 @@ export interface RoleSummary {
   name: BilingualLabel;
   isSystem: boolean;
   isExternalEligible: boolean;
+  isActive: boolean;
+  allowedScopes: RoleScope[] | null;
+  landingDashboardCode: RoleLandingDashboard | null;
+}
+
+/** A new role, with its draft profile: empty, or copying `sourceRoleId`'s published one. */
+export interface RoleCreateRequest {
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  isExternalEligible: boolean;
+  allowedScopes: RoleScope[];
+  sourceRoleId: string | null;
+  landingDashboardCode: RoleLandingDashboard | null;
+}
+
+export interface RoleSettingsRequest {
+  allowedScopes: RoleScope[];
+  landingDashboardCode: RoleLandingDashboard | null;
 }
 
 export interface PermissionProfileSummary {

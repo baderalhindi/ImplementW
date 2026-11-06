@@ -1,3 +1,6 @@
+using PMPlatform.Application.Features.GlobalSearch;
+using PMPlatform.Infrastructure.Persistence.GlobalSearch;
+using PMPlatform.Infrastructure.ExternalParticipation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -165,6 +168,9 @@ public static class DependencyInjection
         // TASK-052: WF-14's financial_kpi schema.
         services.AddScoped<IFinancialKpiRepository, FinancialKpiRepository>();
 
+        // The header search: a read across the project record schemas.
+        services.AddScoped<IGlobalSearchRepository, GlobalSearchRepository>();
+
         // TASK-055: WF-06's risk schema, and the pass that expires lapsed risk acceptances.
         services.AddScoped<IRiskRepository, RiskRepository>();
         services.AddOptions<RiskMaintenanceOptions>()
@@ -202,6 +208,8 @@ public static class DependencyInjection
         services.AddHostedService<ReportJobWorker>();
 
         // TASK-062: WF-09's suspension schema, and the pass that activates approved requests on their effective date.
+        services.AddOptions<MonthlyUpdateOptions>().Bind(configuration.GetSection(MonthlyUpdateOptions.Section));
+        services.AddHostedService<MonthlyUpdateWorker>();
         services.AddScoped<ISuspensionRepository, SuspensionRepository>();
         services.AddOptions<SuspensionActivationOptions>()
             .Bind(configuration.GetSection(SuspensionActivationOptions.Section))

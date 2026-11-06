@@ -36,7 +36,8 @@ internal sealed record SourceApplicationCommand(
     Guid ExternalEntityId,
     Guid ExternalContributionId,
     int RevisionNo,
-    Guid SourceApplicationId);
+    Guid SourceApplicationId,
+    IReadOnlyDictionary<string, Language>? Languages = null);
 
 /// <summary>
 /// The attempt's outcome: APPLIED; CONFLICT with the version found; or FAILED with the safe code of the refusal, <see cref="Terminal"/> when the

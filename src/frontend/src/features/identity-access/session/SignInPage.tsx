@@ -9,41 +9,41 @@ import {
 } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
+import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { isAppPath } from '@/shared/navigation/appPath.ts';
 import { TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
-import { checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
+import { checkPassword, checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
+import { SecondFactorForm } from './SecondFactorForm.tsx';
 import {
-  isMultiFactorPending,
-  type MultiFactorChallenge,
-  type MultiFactorPending,
+  isPasswordChangePending,
+  type PasswordChangePending,
   type Session,
   sessionApi,
 } from './sessionApi.ts';
 import { sessionStore } from './sessionStore.ts';
+import { describeRefusal, nextStep, type PendingSecondFactor } from './signInSteps.ts';
+import { identityProviderRedirect, ssoTransaction } from './ssoTransaction.ts';
 import { useSession } from './useSession.ts';
-
-interface PendingSecondFactor {
-  pending: MultiFactorPending;
-  challenge: MultiFactorChallenge;
-}
 
 type AccountTab = 'microsoft' | 'directory';
 
 const accountTabs: readonly AccountTab[] = ['microsoft', 'directory'];
 
 /**
- * The directory owns passwords, so the platform neither resets nor changes one: it links to AHDA's reset page when the
- * build names it, and otherwise says where to go. Only an absolute https URL is used, so the link can never carry
+ * The directory owns its accounts' passwords, so the platform neither resets nor changes one: it links to AHDA's reset page when
+ * the build names it, and otherwise says where to go. Only an absolute https URL is used, so the link can never carry
  * javascript: or a relative path (TASK-077).
  */
 function passwordResetUrl(): string | null {
   const value = import.meta.env.VITE_PASSWORD_RESET_URL ?? '';
   return URL.canParse(value) && new URL(value).protocol === 'https:' ? new URL(value).href : null;
 }
+
+const loadSignInOptions = (signal: AbortSignal) => sessionApi.getSignInOptions(signal);
 
 function redirectTarget(state: unknown): string {
   const from = (state as { from?: unknown } | null)?.from;
@@ -211,9 +211,10 @@ function NafathPanel(): ReactElement {
 }
 
 /**
- * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Only the directory
- * account works; Nafath, Microsoft and biometric sign-in are shown disabled until their integrations exist. The
- * directory sign-in keeps its second factor (TASK-028, TASK-029); R01 always requires MFA.
+ * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Nafath and biometric
+ * sign-in are shown disabled until their integrations exist; Microsoft is offered where the API says single sign-on is
+ * configured. Every method keeps its second factor (TASK-028, TASK-029); R01 always requires MFA. A local account on a temporary
+ * password sets a new one first (the 5 Nov 2026 review §6.1), then continues to its second factor or its session.
  */
 export function SignInPage(): ReactElement {
   const { t } = useI18n();
@@ -221,7 +222,15 @@ export function SignInPage(): ReactElement {
   const location = useLocation();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
-  const save = useSaveAction();
+  const [passwordChange, setPasswordChange] = useState<PasswordChangePending | null>(null);
+  const [secondFactor, setSecondFactor] = useState<PendingSecondFactor | null>(null);
+  const save = useSaveAction(
+    describeRefusal(
+      passwordChange !== null
+        ? 'identityAccess.signIn.passwordChangeExpired'
+        : 'identityAccess.signIn.wrongCredentials',
+    ),
+  );
   useFocusFirstError(formRef, save.fieldErrors);
   const tabsId = useId();
   const tabRefs = useRef<Record<AccountTab, HTMLButtonElement | null>>({
@@ -232,9 +241,12 @@ export function SignInPage(): ReactElement {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [code, setCode] = useState('');
-  const [secondFactor, setSecondFactor] = useState<PendingSecondFactor | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [tab, setTab] = useState<AccountTab>('microsoft');
+
+  const signInOptions = useApiResource(loadSignInOptions);
+  const singleSignOnAvailable = signInOptions.data?.singleSignOnAvailable === true;
 
   const resetUrl = passwordResetUrl();
   const target = redirectTarget(location.state);
@@ -245,6 +257,17 @@ export function SignInPage(): ReactElement {
   const finish = (session: Session) => {
     sessionStore.setSession(session);
     void navigate(target, { replace: true });
+  };
+
+  const startSingleSignOn = async () => {
+    const result = await save.run(async () => {
+      const { authorizationUrl, transaction } = await sessionApi.beginSso();
+      ssoTransaction.save({ transaction, returnTo: target });
+      return authorizationUrl;
+    });
+    if (result.ok) {
+      identityProviderRedirect.go(result.value);
+    }
   };
 
   const submitCredentials = async (event: SyntheticEvent) => {
@@ -258,16 +281,47 @@ export function SignInPage(): ReactElement {
     }
     const result = await save.run(async () => {
       const signedIn = await sessionApi.signIn(username.trim(), password);
-      if (!isMultiFactorPending(signedIn)) {
-        return { session: signedIn };
-      }
-      const challenge = await sessionApi.beginMultiFactor(signedIn.mfaToken);
-      return { secondFactor: { pending: signedIn, challenge } };
+      return isPasswordChangePending(signedIn) ? { passwordChange: signedIn } : nextStep(signedIn);
     });
     if (!result.ok) {
       return;
     }
     setPassword('');
+    if ('passwordChange' in result.value) {
+      setPasswordChange(result.value.passwordChange);
+    } else if ('session' in result.value) {
+      finish(result.value.session);
+    } else {
+      setSecondFactor(result.value.secondFactor);
+    }
+  };
+
+  const submitNewPassword = async (event: SyntheticEvent) => {
+    event.preventDefault();
+    if (passwordChange === null) {
+      return;
+    }
+    const valid = save.validate({
+      newPassword: checkPassword(newPassword, username),
+      confirmPassword:
+        confirmPassword === ''
+          ? 'REQUIRED'
+          : confirmPassword === newPassword
+            ? null
+            : 'PASSWORD_MISMATCH',
+    });
+    if (!valid) {
+      return;
+    }
+    const result = await save.run(async () =>
+      nextStep(await sessionApi.changePassword(passwordChange.passwordChangeToken, newPassword)),
+    );
+    if (!result.ok) {
+      return;
+    }
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordChange(null);
     if ('session' in result.value) {
       finish(result.value.session);
     } else {
@@ -275,21 +329,10 @@ export function SignInPage(): ReactElement {
     }
   };
 
-  const submitCode = async (event: SyntheticEvent) => {
-    event.preventDefault();
-    if (secondFactor === null || !save.validate({ code: code.trim() === '' ? 'REQUIRED' : null })) {
-      return;
-    }
-    const result = await save.run(() =>
-      sessionApi.completeMultiFactor(
-        secondFactor.pending.mfaToken,
-        secondFactor.challenge.challengeId,
-        code.trim(),
-      ),
-    );
-    if (result.ok && !isMultiFactorPending(result.value)) {
-      finish(result.value);
-    }
+  const backToCredentials = () => {
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordChange(null);
   };
 
   // The WAI-ARIA tabs pattern: arrow keys move between the tabs, which are one Tab stop.
@@ -370,10 +413,64 @@ export function SignInPage(): ReactElement {
           <PageHeader
             title={t('identityAccess.signIn.title')}
             description={
-              secondFactor === null ? t('identityAccess.signIn.chooseMethod') : undefined
+              secondFactor === null && passwordChange === null
+                ? t('identityAccess.signIn.chooseMethod')
+                : undefined
             }
           />
-          {secondFactor === null ? (
+          {passwordChange !== null ? (
+            <form
+              ref={formRef}
+              className="form sign-in__form"
+              noValidate
+              aria-label={t('identityAccess.signIn.newPasswordTitle')}
+              onSubmit={(event) => void submitNewPassword(event)}
+            >
+              <h2 className="sign-in__subtitle">{t('identityAccess.signIn.newPasswordTitle')}</h2>
+              <p>{t('identityAccess.signIn.newPasswordInstructions')}</p>
+              <FormAlert message={save.formError} />
+              <TextField
+                label={t('identityAccess.signIn.newPassword')}
+                name="newPassword"
+                type="password"
+                required
+                dir="ltr"
+                autoComplete="new-password"
+                hint={t('identityAccess.passwordRules')}
+                value={newPassword}
+                onChange={setNewPassword}
+                error={save.fieldErrors.newPassword}
+              />
+              <TextField
+                label={t('identityAccess.signIn.confirmPassword')}
+                name="confirmPassword"
+                type="password"
+                required
+                dir="ltr"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                error={save.fieldErrors.confirmPassword}
+              />
+              <button
+                type="submit"
+                className="button button--primary sign-in__wide"
+                disabled={save.saving}
+              >
+                {save.saving
+                  ? t('common.states.saving')
+                  : t('identityAccess.signIn.setNewPassword')}
+              </button>
+              <button
+                type="button"
+                className="button button--quiet sign-in__wide"
+                disabled={save.saving}
+                onClick={backToCredentials}
+              >
+                {t('identityAccess.signIn.backToSignIn')}
+              </button>
+            </form>
+          ) : secondFactor === null ? (
             <div className="sign-in__tabs">
               <div
                 className="sign-in__tablist"
@@ -411,7 +508,12 @@ export function SignInPage(): ReactElement {
               >
                 {tab === 'microsoft' && (
                   <>
-                    <button type="button" className="sign-in__provider" disabled>
+                    <button
+                      type="button"
+                      className="sign-in__provider"
+                      disabled={!singleSignOnAvailable || save.saving}
+                      onClick={() => void startSingleSignOn()}
+                    >
                       <MicrosoftMark />
                       <span className="sign-in__provider-text">
                         <span>{t('identityAccess.signIn.microsoft.submit')}</span>
@@ -419,9 +521,11 @@ export function SignInPage(): ReactElement {
                           {t('identityAccess.signIn.microsoft.hint')}
                         </span>
                       </span>
-                      <span className="badge sign-in__soon">
-                        {t('identityAccess.signIn.comingSoon')}
-                      </span>
+                      {!singleSignOnAvailable && !signInOptions.loading && (
+                        <span className="badge sign-in__soon">
+                          {t('identityAccess.signIn.comingSoon')}
+                        </span>
+                      )}
                     </button>
                     <p className="sign-in__divider">{t('identityAccess.signIn.or')}</p>
                   </>
@@ -431,47 +535,7 @@ export function SignInPage(): ReactElement {
               </div>
             </div>
           ) : (
-            <form
-              ref={formRef}
-              className="form sign-in__form"
-              noValidate
-              onSubmit={(event) => void submitCode(event)}
-            >
-              <FormAlert message={save.formError} />
-              <p>
-                {secondFactor.pending.enrolmentRequired
-                  ? t('identityAccess.signIn.enrolInstructions')
-                  : t('identityAccess.signIn.codeInstructions')}
-              </p>
-              {secondFactor.challenge.provisioningUri !== null && (
-                <p className="form__readonly">
-                  <span className="field__label">{t('identityAccess.signIn.provisioningUri')}</span>
-                  <code dir="ltr" className="break-all">
-                    {secondFactor.challenge.provisioningUri}
-                  </code>
-                </p>
-              )}
-              <TextField
-                label={t('identityAccess.signIn.code')}
-                name="code"
-                required
-                dir="ltr"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={code}
-                onChange={setCode}
-                error={save.fieldErrors.code}
-              />
-              <button
-                type="submit"
-                className="button button--primary sign-in__wide"
-                disabled={save.saving}
-              >
-                {save.saving
-                  ? t('identityAccess.signIn.verifying')
-                  : t('identityAccess.signIn.verify')}
-              </button>
-            </form>
+            <SecondFactorForm secondFactor={secondFactor} onSession={finish} />
           )}
         </section>
         <NafathPanel />

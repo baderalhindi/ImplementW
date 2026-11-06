@@ -22,6 +22,11 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(e => e.JobTitle).HasMaxLength(200);
         builder.Property(e => e.PreferredLanguage).HasDatabaseDefault(Language.Ar);
         builder.Property(e => e.NafathVerificationReference).HasMaxLength(200);
+        builder.Property(e => e.AccountSource).HasDatabaseDefault(AccountSource.Directory);
+        builder.Property(e => e.PasswordHash).HasMaxLength(200);
+        builder.Property(e => e.MustChangePassword).HasDatabaseDefault(false);
+        builder.Property(e => e.FailedSignInCount).HasDatabaseDefault(0);
+        builder.HasCheck("local_password", "account_source <> 'LOCAL' OR password_hash IS NOT NULL");
 
         // ADR-004: E.164, a plus sign and up to fifteen digits.
         builder.HasCheck("mobile_number", "mobile_number ~ '^\\+[1-9][0-9]{1,14}$'");

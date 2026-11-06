@@ -11,4 +11,5 @@ public sealed record UserSummary(
     string Email,
     UserStatus Status,
     Guid? DepartmentId,
-    Guid? ExternalEntityId);
+    Guid? ExternalEntityId,
+    AccountSource AccountSource = AccountSource.Directory);

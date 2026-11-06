@@ -11,7 +11,12 @@ import {
   withApprovalNames,
 } from '@/test/approvalFixtures.ts';
 import { mockApi, page, problem } from '@/test/mockApi.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 
 // SCR-101 My Requests and MOD-044 Withdraw.
 
@@ -70,6 +75,7 @@ describe('SCR-101 My Requests', () => {
     const user = userEvent.setup();
     await screen.findByRole('table');
 
+    await openFilters();
     await user.selectOptions(
       screen.getByRole('combobox', { name: en('approvals.fields.status') }),
       'RETURNED',

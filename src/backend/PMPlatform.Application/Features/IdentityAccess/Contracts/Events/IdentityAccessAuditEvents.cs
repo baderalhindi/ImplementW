@@ -33,6 +33,30 @@ public static class IdentityAccessAuditEvents
     public const string UserUpdated = "IdentityAccess.UserUpdated";
     public const string UserActivated = "IdentityAccess.UserActivated";
     public const string UserDisabled = "IdentityAccess.UserDisabled";
+
+    /// <summary>AUTHENTICATION: a local account changed its temporary password.</summary>
+    public const string PasswordChanged = "IdentityAccess.PasswordChanged";
+
+    /// <summary>PRIVILEGED_ACTION: an administrator issued a local account a new temporary password.</summary>
+    public const string PasswordReset = "IdentityAccess.PasswordReset";
+
+    /// <summary>PRIVILEGED_ACTION: an administrator unlocked a local account.</summary>
+    public const string UserUnlocked = "IdentityAccess.UserUnlocked";
+
+    /// <summary>PRIVILEGED_ACTION: an administrator set or cleared an account's end date.</summary>
+    public const string UserEndDateSet = "IdentityAccess.UserEndDateSet";
+
+    /// <summary>PRIVILEGED_ACTION: an administrator created a role.</summary>
+    public const string RoleCreated = "IdentityAccess.RoleCreated";
+
+    /// <summary>PRIVILEGED_ACTION: an administrator changed a role's allowed scopes or landing dashboard.</summary>
+    public const string RoleSettingsChanged = "IdentityAccess.RoleSettingsChanged";
+
+    /// <summary>PRIVILEGED_ACTION: an administrator deactivated or reactivated a role.</summary>
+    public const string RoleActivationChanged = "IdentityAccess.RoleActivationChanged";
+
+    /// <summary>PRIVILEGED_ACTION: an administrator deleted a created role that was never assigned.</summary>
+    public const string RoleDeleted = "IdentityAccess.RoleDeleted";
     public const string RoleRenamed = "IdentityAccess.RoleRenamed";
     public const string PermissionProfileCreated = "IdentityAccess.PermissionProfileCreated";
     public const string PermissionProfileVersionDrafted = "IdentityAccess.PermissionProfileVersionDrafted";

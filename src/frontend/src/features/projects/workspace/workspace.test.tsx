@@ -204,6 +204,28 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
     expect(api.requestsTo('GET', /^\/documents$/)[0]?.query.get('projectId')).toBe(PROJECT_ID);
   });
 
+  test('the overview shows an imported English title and strategic flag', async () => {
+    openWorkspace(projectDetail({ titleEn: 'Coastal road', isStrategic: true }), reviewerSession());
+
+    const title = await screen.findByText(en('projects.fields.titleEn'));
+    expect(title.closest('.details__row')?.textContent).toContain('Coastal road');
+    const flag = screen.getByText(en('projects.fields.isStrategic'));
+    expect(flag.closest('.details__row')?.textContent).toContain(en('common.values.yes'));
+  });
+
+  test('the overview says not available when the API has neither', async () => {
+    openWorkspace(projectDetail({ titleEn: null }), reviewerSession());
+
+    const title = await screen.findByText(en('projects.fields.titleEn'));
+    expect(title.closest('.details__row')?.textContent).toContain(
+      en('projects.followUp.notAvailable'),
+    );
+    const flag = screen.getByText(en('projects.fields.isStrategic'));
+    expect(flag.closest('.details__row')?.textContent).toContain(
+      en('projects.followUp.notAvailable'),
+    );
+  });
+
   test('has no axe violation', async () => {
     openWorkspace(projectDetail(), reviewerSession());
     await screen.findByRole('heading', { level: 1 });

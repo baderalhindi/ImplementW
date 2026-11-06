@@ -162,6 +162,19 @@ if (args is [string auditCommand] && AuditCommands.IsCommand(auditCommand))
     return;
 }
 
+// The 5 Nov 2026 review: `reset-demo-data` removes the demonstration projects; `load-rpmo-lists <file>` loads the lists of RPMO's import file.
+if (DemoDataReset.IsCommand(args))
+{
+    Environment.ExitCode = await RunToCompletionAsync(args[0], () => DemoDataReset.RunAsync(app.Services, args)).ConfigureAwait(false);
+    return;
+}
+
+if (RpmoListsLoader.IsCommand(args))
+{
+    Environment.ExitCode = await RunToCompletionAsync(args[0], () => RpmoListsLoader.RunAsync(app.Services, args)).ConfigureAwait(false);
+    return;
+}
+
 app.UseForwardedHeaders();
 app.UseMiddleware<SecurityHeaders>();
 app.UseMiddleware<CorrelationId>();

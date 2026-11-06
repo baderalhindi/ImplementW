@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import {
+  catalogueEntry,
   catalogueFor,
   DEPARTMENT_A,
   DEPARTMENT_B,
@@ -15,7 +16,7 @@ import {
   type DashboardState,
 } from '@/test/dashboardFixtures.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
-import { type MockApi, mockApi, page, problem } from '@/test/mockApi.ts';
+import { type MockApi, mockApi, page, problem, SHELL_PERMISSIONS } from '@/test/mockApi.ts';
 import {
   entitySession,
   projectDetail,
@@ -24,7 +25,12 @@ import {
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 
 import { type DashboardWidgetResult } from './api/types.ts';
 
@@ -617,6 +623,7 @@ describe('the department filter narrows the population and never widens it', () 
     // The filter bar (the 2 Nov 2026 review, R3-1): the label sits inside each option, "Department: Roads".
     const label = en('dashboards.filter.departmentId');
     const inline = (value: string) => en('common.filters.inline', { label, value });
+    await openFilters();
     const select = await screen.findByRole('combobox', { name: label });
     await waitFor(() => {
       expect(within(select).getByRole('option', { name: inline('Roads') })).toBeTruthy();
@@ -776,6 +783,66 @@ describe('ADR-019: the Portfolio Dashboard alone is personalised, by the roles t
     expect(
       [...document.querySelectorAll('.widget')].map((region) => region.getAttribute('data-widget')),
     ).toEqual(['SCHEDULE_HEALTH', 'CURRENT_HEALTH']);
+  });
+});
+
+describe('a dashboard over no project (the 5 Nov 2026 review §5)', () => {
+  const zeroWidget = widget({
+    code: 'PROJECTS_BY_LIFECYCLE',
+    title: { en: 'Projects by lifecycle', ar: 'المشاريع حسب المرحلة' },
+    widgetType: 'STATUS_DISTRIBUTION',
+    data: {
+      state: null,
+      figures: [{ measure: 'OPEN_RISKS', value: '0', unit: 'COUNT', isMasked: false }],
+      distribution: [{ key: 'ACTIVE', label: null, count: 0 }],
+      series: [],
+    },
+  });
+
+  test('reads "No data" in both languages, with no widget drawn', async () => {
+    withDashboards(mockApi(), {
+      catalogue: catalogueFor(['R02']),
+      views: { PORTFOLIO: dashboardView('PORTFOLIO', { widgets: [zeroWidget] }) },
+    });
+    renderApp({ path: '/dashboards', session: sessionFor(['R02']) });
+
+    expect(await screen.findByText(en('dashboards.noData'))).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Projects by lifecycle' })).toBeNull();
+    expect(translate('ar', 'dashboards.noData')).toBe('لا توجد بيانات');
+  });
+
+  test('a real zero among existing projects is still drawn', async () => {
+    withDashboards(mockApi(), {
+      catalogue: catalogueFor(['R02']),
+      views: {
+        PORTFOLIO: dashboardView('PORTFOLIO', {
+          widgets: [zeroWidget],
+          locations: [{ regionItemId: null, cityItemId: null, projectCount: 3 }],
+        }),
+      },
+    });
+    renderApp({ path: '/dashboards', session: sessionFor(['R02']) });
+
+    expect(await screen.findByRole('region', { name: 'Projects by lifecycle' })).toBeTruthy();
+    expect(screen.queryByText(en('dashboards.noData'))).toBeNull();
+  });
+});
+
+describe('a created role on the dashboards', () => {
+  test('its landing is named after the dashboard, and Customize layout follows LAYOUT_PERSONALIZE', async () => {
+    withDashboards(mockApi(), {
+      catalogue: [catalogueEntry('PORTFOLIO', { isDefaultLanding: true })],
+    }).on('GET', SHELL_PERMISSIONS, {
+      body: { permissions: [{ code: 'LAYOUT_PERSONALIZE', scopes: ['OWN'] }] },
+    });
+    renderApp({ path: '/dashboards', session: sessionFor(['R09']) });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Portfolio Dashboard' }),
+    ).toBeTruthy();
+    expect(
+      await screen.findByRole('button', { name: en('dashboards.personalize.open') }),
+    ).toBeTruthy();
   });
 });
 

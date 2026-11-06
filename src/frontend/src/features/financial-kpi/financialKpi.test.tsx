@@ -42,7 +42,12 @@ import {
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
 import { OTHER_PROJECT_ID } from '@/test/taskFixtures.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 
 // SCR-049 Project Financials, SCR-071 Financial Progress, SCR-050 Project KPIs, SCR-072 KPI Register, SCR-073 KPI
 // History/Trend, MOD-023 and MOD-024 (TASK-053), against the WF-14 API (TASK-052). Acceptance criteria: (1) a value
@@ -800,6 +805,7 @@ describe('SCR-072 KPI Register', () => {
 
   test('the search keeps the KPIs whose project matches, and the cards count only those', async () => {
     openRegister();
+    await openFilters();
     await userEvent.type(
       await screen.findByRole('searchbox', { name: en('financialKpi.register.search') }),
       'harbour',

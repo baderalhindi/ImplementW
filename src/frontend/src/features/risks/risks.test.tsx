@@ -16,7 +16,12 @@ import {
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
-import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import {
+  accessibilityViolations,
+  describeViolations,
+  openFilters,
+  renderApp,
+} from '@/test/renderApp.tsx';
 import {
   ACTION_ETAG,
   BARRIER_ACTION_ID,
@@ -160,12 +165,18 @@ describe('SCR-080 Risk Register', () => {
     open(RISKS_PATH);
     await screen.findByRole('region', { name: en('risks.project.caption') });
 
+    await openFilters();
     const ratingFilter = screen.getByRole('combobox', { name: en('risks.filter.rating') });
+    const label = en('risks.filter.rating');
     expect(
       within(ratingFilter)
         .getAllByRole('option')
         .map((option) => option.textContent),
-    ).toEqual([en('common.filters.any'), 'Low', 'Medium', 'High', 'Critical']);
+    ).toEqual(
+      [en('common.filters.any'), 'Low', 'Medium', 'High', 'Critical'].map((value) =>
+        en('common.filters.inline', { label, value }),
+      ),
+    );
     await userEvent.selectOptions(ratingFilter, 'MEDIUM');
     expect(titlesIn(screen.getByRole('region', { name: en('risks.project.caption') }))).toEqual([
       'Asphalt price rise',

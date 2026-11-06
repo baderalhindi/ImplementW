@@ -19,6 +19,8 @@ internal sealed record ResolvedRow(
     ProjectImportRowAction Action,
     ProjectEntity? Existing,
     NarrativeText Title,
+    string? TitleEn,
+    bool? IsStrategic,
     NarrativeText? Description,
     Guid ExternalEntityId,
     Guid DepartmentId,
@@ -112,7 +114,7 @@ internal static class ProjectImportEvaluator
         }
 
         HashSet<string> known = [.. Columns.Select(c => c.Column.Key)];
-        fileIssues.AddRange(keys.Values.Where(k => !known.Contains(k) && !Ignored.Contains(k)).Distinct(StringComparer.Ordinal)
+        fileIssues.AddRange(keys.Values.Where(k => !known.Contains(k)).Distinct(StringComparer.Ordinal)
             .Select(k => new ProjectImportIssue(k, ProjectImportIssueCodes.ColumnIgnored, ProjectImportIssueLevel.Info)));
         fileIssues.AddRange(Columns.Where(c => c.Column.Required && !keys.ContainsValue(c.Column.Key))
             .Select(c => new ProjectImportIssue(c.Column.Key, ProjectImportIssueCodes.ColumnMissing, ProjectImportIssueLevel.Error)));
@@ -190,6 +192,8 @@ internal static class ProjectImportEvaluator
         {
             string? reference = Text(LegacyRef);
             string? title = Text(NameAr);
+            string? titleEn = Text(NameEn);
+            bool? strategic = YesNo(Strategic);
             if (reference is not null && legacyCount.GetValueOrDefault(reference) > 1)
             {
                 Error(LegacyRef, ProjectImportIssueCodes.DuplicateInFile);
@@ -269,7 +273,7 @@ internal static class ProjectImportEvaluator
             bool failed = _issues.Any(x => x.Level == ProjectImportIssueLevel.Error);
             ResolvedRow? resolved = failed ? null : new ResolvedRow(
                 row.RowNumber, reference!, _action, _existing,
-                new NarrativeText(title!, Language.Ar), description is null ? null : new NarrativeText(description, Language.Ar),
+                new NarrativeText(title!, Language.Ar), titleEn, strategic, description is null ? null : new NarrativeText(description, Language.Ar),
                 entity!.Value, department!.Value, sector!.Value, portfolio!.Value, initiative, owner, manager!.Value, status!.Value, governance!.Value,
                 priority, budget!.Value, funding, start!.Value, end!.Value, region!.Value, city!.Value,
                 planned, actual, plannedSpend, actualSpend,
@@ -278,7 +282,12 @@ internal static class ProjectImportEvaluator
             if (resolved is not null && _existing is not null && _action == ProjectImportRowAction.Update)
             {
                 Compare(resolved, _existing);
-                if (_changes.Count == 0)
+                if (_changes.Count > 0 && _existing.LifecycleState == ProjectLifecycleState.Closed)
+                {
+                    Error(LegacyRef, ProjectImportIssueCodes.ProjectClosed);
+                    resolved = null;
+                }
+                else if (_changes.Count == 0)
                 {
                     _action = ProjectImportRowAction.Skip;
                     Info(LegacyRef, ProjectImportIssueCodes.NoChange);
@@ -305,11 +314,6 @@ internal static class ProjectImportEvaluator
             }
 
             _action = ProjectImportRowAction.Update;
-            if (_existing.LifecycleState == ProjectLifecycleState.Closed)
-            {
-                Error(LegacyRef, ProjectImportIssueCodes.ProjectClosed);
-            }
-
             if (!context.InScope(_existing.DepartmentId, _existing.ExternalEntityId))
             {
                 Error(LegacyRef, ProjectImportIssueCodes.OutsideScope);
@@ -323,6 +327,8 @@ internal static class ProjectImportEvaluator
             ProjectImportReferences refs = context.References;
             Change("strategicPortfolioItemId", refs.LabelOf(ProjectImportDimension.Portfolio, Id(p.StrategicPortfolioItemId)), refs.LabelOf(ProjectImportDimension.Portfolio, Id(row.StrategicPortfolioItemId)));
             Change("strategicInitiativeItemId", refs.LabelOf(ProjectImportDimension.Initiative, Id(p.StrategicInitiativeItemId)), refs.LabelOf(ProjectImportDimension.Initiative, Id(row.StrategicInitiativeItemId)));
+            Change("titleEn", p.TitleEn, row.TitleEn);
+            Change("isStrategic", p.IsStrategic?.ToString(), row.IsStrategic?.ToString());
             Change("priorityItemId", refs.LabelOf(ProjectImportDimension.Priority, Id(p.PriorityItemId)), refs.LabelOf(ProjectImportDimension.Priority, Id(row.PriorityItemId)));
             Change("fundingSource", p.FundingSource?.ToString(), row.Funding?.ToString());
             Change("followUpOwnerUserId", refs.LabelOf(ProjectImportDimension.FollowUpOwner, Id(p.FollowUpOwnerUserId)), refs.LabelOf(ProjectImportDimension.FollowUpOwner, Id(row.FollowUpOwnerUserId)));

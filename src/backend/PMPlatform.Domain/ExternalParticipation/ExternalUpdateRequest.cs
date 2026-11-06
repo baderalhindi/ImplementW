@@ -48,6 +48,15 @@ public sealed class ExternalUpdateRequest : AuditedEntity
 
     public DateOnly? DueDate { get; set; }
 
+    /// <summary>The batch it was sent in (the 5 Nov 2026 review §2.2); null for a request issued alone.</summary>
+    public Guid? UpdateRequestBatchId { get; set; }
+
+    /// <summary>When its responder first opened it.</summary>
+    public DateTimeOffset? OpenedAt { get; set; }
+
+    /// <summary>The day the last reminder went out, so a day gets one.</summary>
+    public DateOnly? LastRemindedOn { get; set; }
+
     public ExternalUpdateRequestStatus Status { get; set; }
 
     public Guid? IssuedByUserId { get; set; }

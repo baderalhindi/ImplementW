@@ -50,6 +50,18 @@ describe('SCR-011 User Guide', () => {
     );
   });
 
+  test('a created role, which no article names, still reads the guide', async () => {
+    mockApi();
+    renderApp({ path: '/help/guide', session: sessionFor(['R09']) });
+
+    const forYou = await screen.findByRole('region', { name: en('common.help.guide.forYou') });
+    expect(
+      within(forYou).getByRole('link', {
+        name: helpContent.en.guide['getting-started']?.title ?? '',
+      }),
+    ).toBeTruthy();
+  });
+
   test('an external user is offered only the articles written for them', async () => {
     mockApi();
     renderApp({ path: '/help/guide', session: externalSession() });

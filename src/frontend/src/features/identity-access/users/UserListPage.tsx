@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -58,7 +59,7 @@ interface UserFiltersProps {
 /** Keyed on the URL, so Clear filters or Back resets the inputs to what the list is showing. */
 function UserFilters({ query, filtered, lookups }: UserFiltersProps): ReactElement {
   const { t, language } = useI18n();
-  const [, setParams] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [draft, setDraft] = useState({
     q: query.q ?? '',
     status: query.status ?? '',
@@ -79,92 +80,156 @@ function UserFilters({ query, filtered, lookups }: UserFiltersProps): ReactEleme
     setParams(next);
   };
 
+  const chip = (name: string, label: TranslationKey, value: string) => ({
+    name,
+    text: t('common.filters.inline', { label: t(label), value }),
+    onRemove: () => {
+      const next = new URLSearchParams(params);
+      next.delete('page');
+      next.delete(name);
+      setParams(next);
+    },
+  });
+  const nameOf = (
+    list: { id: string; name: Parameters<typeof labelOf>[0] }[] | undefined,
+    id: string,
+  ) => {
+    const found = list?.find((candidate) => candidate.id === id);
+    return found === undefined ? id : labelOf(found.name, language);
+  };
+  const { q, status, userType, departmentId, externalEntityId } = query;
+
   return (
-    <form className="filters" onSubmit={applyFilters} aria-label={t('common.filters.label')}>
-      <TextField
-        label={t('identityAccess.users.list.search')}
-        name="q"
-        type="search"
-        value={draft.q}
-        onChange={(value) => {
-          setDraft({ ...draft, q: value });
-        }}
-      />
-      <SelectField
-        label={t('identityAccess.users.fields.status')}
-        name="status"
-        value={draft.status}
-        placeholder={t('common.filters.any')}
-        options={USER_STATUSES.map((value) => ({
-          value,
-          label: t(`identityAccess.userStatus.${value}`),
-        }))}
-        onChange={(value) => {
-          setDraft({ ...draft, status: oneOf(value, USER_STATUSES) ?? '' });
-        }}
-      />
-      <SelectField
-        label={t('identityAccess.users.fields.userType')}
-        name="userType"
-        value={draft.userType}
-        placeholder={t('common.filters.any')}
-        options={USER_TYPES.map((value) => ({
-          value,
-          label: t(`identityAccess.userType.${value}`),
-        }))}
-        onChange={(value) => {
-          setDraft({ ...draft, userType: oneOf(value, USER_TYPES) ?? '' });
-        }}
-      />
-      <SelectField
-        label={t('identityAccess.users.fields.department')}
-        name="departmentId"
-        value={draft.departmentId}
-        placeholder={t('common.filters.any')}
-        options={(lookups?.departments ?? []).map((d) => ({
-          value: d.id,
-          label: labelOf(d.name, language),
-        }))}
-        onChange={(value) => {
-          setDraft({ ...draft, departmentId: value });
-        }}
-      />
-      <SelectField
-        label={t('identityAccess.users.fields.externalEntity')}
-        name="externalEntityId"
-        value={draft.externalEntityId}
-        placeholder={t('common.filters.any')}
-        options={(lookups?.entities ?? []).map((e) => ({
-          value: e.id,
-          label: labelOf(e.name, language),
-        }))}
-        onChange={(value) => {
-          setDraft({ ...draft, externalEntityId: value });
-        }}
-      />
-      <SelectField
-        label={t('common.filters.sort')}
-        name="sort"
-        value={draft.sort}
-        options={USER_SORTS.map((value) => ({
-          value,
-          label: t(SORT_LABELS[value]),
-        }))}
-        onChange={(value) => {
-          setDraft({ ...draft, sort: oneOf(value, USER_SORTS) ?? 'displayName:asc' });
-        }}
-      />
-      <div className="filters__actions">
-        <button type="submit" className="button button--primary">
-          {t('common.filters.apply')}
-        </button>
-        {filtered && (
-          <Link className="button" to="/admin/users">
-            {t('common.filters.clear')}
-          </Link>
-        )}
-      </div>
-    </form>
+    <FilterBar
+      onClearAll={() => {
+        setParams(new URLSearchParams());
+      }}
+      chips={[
+        ...(q === undefined ? [] : [chip('q', 'identityAccess.users.list.search', q)]),
+        ...(status === undefined
+          ? []
+          : [
+              chip(
+                'status',
+                'identityAccess.users.fields.status',
+                t(`identityAccess.userStatus.${status}`),
+              ),
+            ]),
+        ...(userType === undefined
+          ? []
+          : [
+              chip(
+                'userType',
+                'identityAccess.users.fields.userType',
+                t(`identityAccess.userType.${userType}`),
+              ),
+            ]),
+        ...(departmentId === undefined
+          ? []
+          : [
+              chip(
+                'departmentId',
+                'identityAccess.users.fields.department',
+                nameOf(lookups?.departments, departmentId),
+              ),
+            ]),
+        ...(externalEntityId === undefined
+          ? []
+          : [
+              chip(
+                'externalEntityId',
+                'identityAccess.users.fields.externalEntity',
+                nameOf(lookups?.entities, externalEntityId),
+              ),
+            ]),
+      ]}
+    >
+      <form className="filters" onSubmit={applyFilters}>
+        <TextField
+          label={t('identityAccess.users.list.search')}
+          name="q"
+          type="search"
+          value={draft.q}
+          onChange={(value) => {
+            setDraft({ ...draft, q: value });
+          }}
+        />
+        <SelectField
+          label={t('identityAccess.users.fields.status')}
+          name="status"
+          value={draft.status}
+          placeholder={t('common.filters.any')}
+          options={USER_STATUSES.map((value) => ({
+            value,
+            label: t(`identityAccess.userStatus.${value}`),
+          }))}
+          onChange={(value) => {
+            setDraft({ ...draft, status: oneOf(value, USER_STATUSES) ?? '' });
+          }}
+        />
+        <SelectField
+          label={t('identityAccess.users.fields.userType')}
+          name="userType"
+          value={draft.userType}
+          placeholder={t('common.filters.any')}
+          options={USER_TYPES.map((value) => ({
+            value,
+            label: t(`identityAccess.userType.${value}`),
+          }))}
+          onChange={(value) => {
+            setDraft({ ...draft, userType: oneOf(value, USER_TYPES) ?? '' });
+          }}
+        />
+        <SelectField
+          label={t('identityAccess.users.fields.department')}
+          name="departmentId"
+          value={draft.departmentId}
+          placeholder={t('common.filters.any')}
+          options={(lookups?.departments ?? []).map((d) => ({
+            value: d.id,
+            label: labelOf(d.name, language),
+          }))}
+          onChange={(value) => {
+            setDraft({ ...draft, departmentId: value });
+          }}
+        />
+        <SelectField
+          label={t('identityAccess.users.fields.externalEntity')}
+          name="externalEntityId"
+          value={draft.externalEntityId}
+          placeholder={t('common.filters.any')}
+          options={(lookups?.entities ?? []).map((e) => ({
+            value: e.id,
+            label: labelOf(e.name, language),
+          }))}
+          onChange={(value) => {
+            setDraft({ ...draft, externalEntityId: value });
+          }}
+        />
+        <SelectField
+          label={t('common.filters.sort')}
+          name="sort"
+          value={draft.sort}
+          options={USER_SORTS.map((value) => ({
+            value,
+            label: t(SORT_LABELS[value]),
+          }))}
+          onChange={(value) => {
+            setDraft({ ...draft, sort: oneOf(value, USER_SORTS) ?? 'displayName:asc' });
+          }}
+        />
+        <div className="filters__actions">
+          <button type="submit" className="button button--primary">
+            {t('common.filters.apply')}
+          </button>
+          {filtered && (
+            <Link className="button" to="/admin/users">
+              {t('common.filters.clear')}
+            </Link>
+          )}
+        </div>
+      </form>
+    </FilterBar>
   );
 }
 
@@ -243,6 +308,7 @@ export function UserListPage(): ReactElement {
                   <th scope="col">{t('identityAccess.users.fields.username')}</th>
                   <th scope="col">{t('identityAccess.users.fields.email')}</th>
                   <th scope="col">{t('identityAccess.users.fields.userType')}</th>
+                  <th scope="col">{t('identityAccess.users.fields.accountSource')}</th>
                   <th scope="col">{t('identityAccess.users.fields.organization')}</th>
                   <th scope="col">{t('identityAccess.users.fields.status')}</th>
                 </tr>
@@ -260,6 +326,11 @@ export function UserListPage(): ReactElement {
                       {user.email}
                     </td>
                     <td>{t(`identityAccess.userType.${user.userType}`)}</td>
+                    <td>
+                      {user.accountSource === undefined
+                        ? '—'
+                        : t(`identityAccess.accountSource.${user.accountSource}`)}
+                    </td>
                     <td>
                       {lookups?.departmentName(user.departmentId) ??
                         lookups?.entityName(user.externalEntityId) ??

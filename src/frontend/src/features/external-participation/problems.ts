@@ -40,6 +40,8 @@ const PROBLEMS: Record<string, TranslationKey> = {
   INVALID_TRANSITION: 'externalParticipation.problems.invalidTransition',
   TERMINAL_STATE: 'externalParticipation.problems.terminalState',
   PERMISSION_DENIED: 'externalParticipation.problems.permissionDenied',
+  EXTERNAL_PARTICIPATION_BATCH_INVALID: 'externalParticipation.problems.batchInvalid',
+  PROJECT_HAS_NO_ENTITY: 'externalParticipation.problems.projectHasNoEntity',
 };
 
 export function participationProblemMessage(error: unknown, t: Translate): string {

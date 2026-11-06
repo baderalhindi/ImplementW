@@ -28,6 +28,7 @@ internal sealed partial class AuthenticationService(
     ISessionTokenService tokens,
     MultiFactorPolicy multiFactorPolicy,
     IdentityVerificationPolicy identityVerificationPolicy,
+    LocalAccountPolicy localAccounts,
     IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<AuthenticationService> logger) : IAuthenticationService
@@ -41,6 +42,13 @@ internal sealed partial class AuthenticationService(
 
     public async Task<AuthenticationResult> SignInWithPasswordAsync(string username, string password, CancellationToken cancellationToken)
     {
+        if (!string.IsNullOrWhiteSpace(username)
+            && await users.FindLocalCredentialAsync(username.Trim(), cancellationToken).ConfigureAwait(false) is { } credential)
+        {
+            Attempt local = Attempt.SignIn(AuthenticationMethod.LocalPassword, username);
+            return await WithRejectionFloorAsync(() => AuthenticateLocalAsync(local, credential, password, cancellationToken), cancellationToken).ConfigureAwait(false);
+        }
+
         Attempt attempt = Attempt.SignIn(AuthenticationMethod.Directory, username);
         if (!directory.IsConfigured)
         {
@@ -55,6 +63,33 @@ internal sealed partial class AuthenticationService(
                 cancellationToken)
             .ConfigureAwait(false);
     }
+
+    public async Task<AuthenticationResult> CompletePasswordChangeAsync(string passwordChangeToken, string newPassword, CancellationToken cancellationToken)
+    {
+        Attempt attempt = Attempt.SignIn(AuthenticationMethod.LocalPassword);
+        if (await tokens.ReadPasswordChangeTokenAsync(passwordChangeToken).ConfigureAwait(false) is not { } userId
+            || await users.FindLocalCredentialByIdAsync(userId, cancellationToken).ConfigureAwait(false) is not { MustChangePassword: true } credential)
+        {
+            return await FailAsync(attempt, AuthenticationFailureReason.TokenInvalid, userId: null).ConfigureAwait(false);
+        }
+
+        if (!LocalPassword.MeetsRules(newPassword, credential.Username))
+        {
+            return AuthenticationResult.PasswordRejected(LocalPassword.TooWeak);
+        }
+
+        IReadOnlyList<string> history = await users.ListPasswordHistoryAsync(userId, LocalPassword.RememberedPasswords, cancellationToken).ConfigureAwait(false);
+        if (LocalPassword.Verify(newPassword, credential.PasswordHash) || history.Any(h => LocalPassword.Verify(newPassword, h)))
+        {
+            return AuthenticationResult.PasswordRejected(LocalPassword.Reused);
+        }
+
+        await users.ChangePasswordAsync(userId, LocalPassword.Hash(newPassword), cancellationToken).ConfigureAwait(false);
+        await audit.RecordAsync(Entry(attempt, IdentityAccessAuditEvents.PasswordChanged, AuditOutcome.Success, userId, userId)).ConfigureAwait(false);
+        return await StartLocalSessionAsync(attempt, userId, cancellationToken).ConfigureAwait(false);
+    }
+
+    public bool IsSingleSignOnAvailable => singleSignOn.IsConfigured;
 
     public Task<SsoAuthorizationResult> BeginSsoSignInAsync(CancellationToken cancellationToken) =>
         singleSignOn.IsConfigured
@@ -214,6 +249,52 @@ internal sealed partial class AuthenticationService(
         return await SucceedAsync(Attempt.SignIn(pending!.Authentication.Method), access, pending.Authentication, continuation: null).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// A local account's sign-in (the 5 Nov 2026 review §6.1). Every refusal answers as a wrong password does, and says why only in the audit event: a locked account, an
+    /// account past its date or a switched-off feature tells a guesser nothing.
+    /// </summary>
+    private async Task<AuthenticationResult> AuthenticateLocalAsync(Attempt attempt, LocalCredential credential, string password, CancellationToken cancellationToken)
+    {
+        if (!localAccounts.Enabled)
+        {
+            return await FailAsync(attempt, AuthenticationFailureReason.AccountInactive, credential.UserId).ConfigureAwait(false);
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        if (credential.LockedUntil > now)
+        {
+            return await FailAsync(attempt, AuthenticationFailureReason.AccountLocked, credential.UserId).ConfigureAwait(false);
+        }
+
+        if (string.IsNullOrEmpty(password) || !LocalPassword.Verify(password, credential.PasswordHash))
+        {
+            await users.RecordFailedPasswordAsync(credential.UserId, localAccounts.MaxFailedAttempts, now + localAccounts.LockoutDuration, cancellationToken).ConfigureAwait(false);
+            return await FailAsync(attempt, AuthenticationFailureReason.CredentialsRejected, credential.UserId).ConfigureAwait(false);
+        }
+
+        await users.ClearFailedPasswordsAsync(credential.UserId, cancellationToken).ConfigureAwait(false);
+        if (credential.MustChangePassword)
+        {
+            if (await users.FindByIdAsync(credential.UserId, cancellationToken).ConfigureAwait(false) is not { MaySignIn: true })
+            {
+                return await FailAsync(attempt, AuthenticationFailureReason.AccountInactive, credential.UserId).ConfigureAwait(false);
+            }
+
+            await audit.RecordAsync(Entry(attempt, IdentityAccessAuditEvents.FirstFactorPassed, AuditOutcome.Success, credential.UserId, credential.UserId)).ConfigureAwait(false);
+            return AuthenticationResult.PasswordChangeRequired(tokens.IssuePasswordChangeToken(credential.UserId));
+        }
+
+        return await StartLocalSessionAsync(attempt, credential.UserId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<AuthenticationResult> StartLocalSessionAsync(Attempt attempt, Guid userId, CancellationToken cancellationToken)
+    {
+        UserAccess? access = await users.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        return access is { MaySignIn: true }
+            ? await ContinueSignInAsync(attempt, access, verifiedByIdentityProvider: null).ConfigureAwait(false)
+            : await FailAsync(attempt, AuthenticationFailureReason.AccountInactive, userId).ConfigureAwait(false);
+    }
+
     private async Task<AuthenticationResult> AuthenticateWithDirectoryAsync(Attempt attempt, string username, string password, CancellationToken cancellationToken)
     {
         DirectoryResult result = await directory.AuthenticateAsync(username, password, cancellationToken).ConfigureAwait(false);
@@ -245,6 +326,13 @@ internal sealed partial class AuthenticationService(
             await RefreshDirectoryAttributesAsync(access.UserId, subjectId, knownEntry, cancellationToken).ConfigureAwait(false);
         }
 
+        return await ContinueSignInAsync(attempt, access, verifiedByIdentityProvider).ConfigureAwait(false);
+    }
+
+    /// <summary>The first factor has passed, by any method: the second factor and the identity verification the person requires, then the session.</summary>
+    private async Task<AuthenticationResult> ContinueSignInAsync(Attempt attempt, UserAccess access, SessionAuthentication? verifiedByIdentityProvider)
+    {
+        AuthenticationMethod method = attempt.Method!.Value;
         if (verifiedByIdentityProvider is not null)
         {
             return await AdmitAsync(attempt, access, verifiedByIdentityProvider).ConfigureAwait(false);

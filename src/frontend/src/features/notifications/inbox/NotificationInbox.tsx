@@ -4,7 +4,7 @@ import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -154,7 +154,7 @@ function NotificationList({
   kind,
 }: NotificationListProps): ReactElement {
   const { t, language, formatDateTime } = useI18n();
-  const { params, page, setFilter, goToPage } = useListParams();
+  const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const [openId, setOpenId] = useState<string | null>(null);
   const readState = READ_STATES.find((candidate) => candidate === params.get('state'));
   const requested = params.get('family');
@@ -181,38 +181,44 @@ function NotificationList({
   useReloadOnUnreadChange(notifications.reload);
 
   const filtered = readState !== undefined || (kind === null && family !== undefined);
+  // On SCR-151 and SCR-152 the first family is what an unfiltered list shows, so it does not count as a filter.
+  const defaultFamily = kind === null ? undefined : choosable[0];
   return (
     <>
-      <div className="filters" role="search" aria-label={t('common.filters.label')}>
-        <SelectField
-          label={t('notifications.filters.readState')}
-          name="state"
-          value={readState ?? ''}
-          placeholder={t('common.filters.any')}
-          options={READ_STATES.map((value: ReadState) => ({
-            value,
-            label: t(`notifications.readState.${value}`),
-          }))}
-          onChange={(value) => {
-            setFilter('state', value);
-          }}
-        />
-        {choosable.length > 0 && (
-          <SelectField
-            label={t('notifications.filters.family')}
-            name="family"
-            value={family ?? ''}
-            placeholder={kind === null ? t('common.filters.any') : undefined}
-            options={choosable.map((candidate) => ({
-              value: candidate.eventFamilyCode,
-              label: candidate.label[language],
-            }))}
-            onChange={(value) => {
-              setFilter('family', value);
-            }}
-          />
-        )}
-      </div>
+      <FilterBar
+        fields={[
+          {
+            name: 'state',
+            label: t('notifications.filters.readState'),
+            all: t('common.filters.any'),
+            options: READ_STATES.map((value: ReadState) => ({
+              value,
+              label: t(`notifications.readState.${value}`),
+            })),
+          },
+          {
+            name: 'family',
+            label: t('notifications.filters.family'),
+            all: defaultFamily?.label[language] ?? t('common.filters.any'),
+            options: choosable
+              .filter((candidate) => candidate !== defaultFamily)
+              .map((candidate) => ({
+                value: candidate.eventFamilyCode,
+                label: candidate.label[language],
+              })),
+          },
+        ]}
+        values={{
+          state: readState,
+          family: family === defaultFamily?.eventFamilyCode ? undefined : family,
+        }}
+        onChange={(name, value) => {
+          setFilter(name, value ?? '');
+        }}
+        onClearAll={() => {
+          setFilters({ state: '', family: '' });
+        }}
+      />
 
       {notifications.loading && <LoadingState label={t('notifications.list.loading')} />}
       {notifications.error !== null && (

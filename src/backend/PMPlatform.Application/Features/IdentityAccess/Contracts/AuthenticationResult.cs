@@ -4,8 +4,11 @@ namespace PMPlatform.Application.Features.IdentityAccess.Contracts;
 public sealed record AuthenticationResult
 {
     private AuthenticationResult(
-        PlatformSession? session, MultiFactorPending? multiFactorPending, IdentityVerificationPending? identityVerificationPending, AuthenticationFailure? failure)
+        PlatformSession? session, MultiFactorPending? multiFactorPending, IdentityVerificationPending? identityVerificationPending, AuthenticationFailure? failure,
+        PasswordChangePending? passwordChangePending = null, string? passwordIssue = null)
     {
+        PasswordChangePending = passwordChangePending;
+        PasswordIssue = passwordIssue;
         Session = session;
         MultiFactorPending = multiFactorPending;
         IdentityVerificationPending = identityVerificationPending;
@@ -19,6 +22,15 @@ public sealed record AuthenticationResult
     public IdentityVerificationPending? IdentityVerificationPending { get; }
 
     public AuthenticationFailure? Failure { get; }
+
+    public PasswordChangePending? PasswordChangePending { get; }
+
+    /// <summary>The rule a new password broke: <see cref="Authentication.LocalPassword.TooWeak"/> or <see cref="Authentication.LocalPassword.Reused"/>.</summary>
+    public string? PasswordIssue { get; }
+
+    public static AuthenticationResult PasswordChangeRequired(PasswordChangePending pending) => new(null, null, null, null, pending);
+
+    public static AuthenticationResult PasswordRejected(string issue) => new(null, null, null, null, null, issue);
 
     public static AuthenticationResult Succeeded(PlatformSession session) => new(session, null, null, null);
 

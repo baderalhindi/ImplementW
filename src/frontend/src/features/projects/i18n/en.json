@@ -65,7 +65,9 @@
     "priority": "Priority",
     "fundingSource": "Funded from the strategy budget",
     "legacyReference": "Legacy reference",
-    "followUpOwner": "Follow-up owner"
+    "followUpOwner": "Follow-up owner",
+    "titleEn": "English title",
+    "isStrategic": "Strategic project"
   },
   "filters": {
     "q": "Title or Formal Project ID"
@@ -79,7 +81,8 @@
     "title": "Project register",
     "description": "Every project your role can see, at any stage.",
     "emptyForRole": "Your role does not give you access to any project yet.",
-    "emptyForRoleDescription": "You see the projects your role assignments reach: those of your sector, your entity or the projects you are assigned to. When a project in that scope is registered, it appears here. If you expected to see projects, ask your administrator to check your role assignments."
+    "emptyForRoleDescription": "You see the projects your role assignments reach: those of your sector, your entity or the projects you are assigned to. When a project in that scope is registered, it appears here. If you expected to see projects, ask your administrator to check your role assignments.",
+    "empty": "No projects yet"
   },
   "mine": {
     "title": "My projects",
@@ -292,7 +295,8 @@
     "declaredFrom": "Declared on {date}, source: {source}",
     "source": {
       "IMPORT": "import",
-      "MANUAL": "entered here"
+      "MANUAL": "entered here",
+      "ENTITY_UPDATE": "The entity's update"
     },
     "compliance": "Entity keeps to its updates",
     "yes": "Yes",
@@ -446,7 +450,7 @@
       "PERCENT_SCALED": "Read as a percentage",
       "NO_CHANGE": "Matches the project already: nothing to change",
       "SKIPPED_BY_IMPORTER": "Skipped",
-      "COLUMN_IGNORED": "The platform does not read this column",
+      "COLUMN_IGNORED": "The platform does not store this column and skips it",
       "COLUMN_MISSING": "A required column is missing",
       "TEMPLATE_OUTDATED": "This workbook was made from an older template: download it again",
       "REQUIRED": "Required",
@@ -462,5 +466,10 @@
     "backgroundDone": "{file} was validated in the background. To submit it, choose the same file again.",
     "askToAdd": "Ask an administrator to add it to {list}",
     "askedToAdd": "Requested from an administrator"
+  },
+  "card": {
+    "open": "Project card for printing",
+    "title": "Project card",
+    "back": "Back to the project"
   }
 }

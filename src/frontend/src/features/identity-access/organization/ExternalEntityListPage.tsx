@@ -5,6 +5,7 @@ import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
@@ -83,6 +84,13 @@ export function ExternalEntityListPage(): ReactElement {
     setParams(next);
   };
 
+  const removeFilter = (name: 'q' | 'status') => {
+    const next = new URLSearchParams(params);
+    next.delete('page');
+    next.delete(name);
+    setParams(next);
+  };
+
   const confirm = (entity: ExternalEntitySummary, transition: ExternalEntityTransition) => {
     const name = labelOf(entity.name, language);
     setConfirmation({
@@ -119,31 +127,71 @@ export function ExternalEntityListPage(): ReactElement {
         }
       />
 
-      <form className="filters" onSubmit={applyFilters} aria-label={t('common.filters.label')}>
-        <TextField
-          label={t('identityAccess.entities.search')}
-          name="q"
-          type="search"
-          value={draftQ}
-          onChange={setDraftQ}
-        />
-        <SelectField
-          label={t('identityAccess.entities.status')}
-          name="status"
-          value={draftStatus}
-          placeholder={t('common.filters.any')}
-          options={STATUSES.map((value) => ({
-            value,
-            label: t(`identityAccess.entityStatus.${value}`),
-          }))}
-          onChange={setDraftStatus}
-        />
-        <div className="filters__actions">
-          <button type="submit" className="button button--primary">
-            {t('common.filters.apply')}
-          </button>
-        </div>
-      </form>
+      <FilterBar
+        onClearAll={() => {
+          setDraftQ('');
+          setDraftStatus('');
+          setParams(new URLSearchParams());
+        }}
+        chips={[
+          ...(q === undefined
+            ? []
+            : [
+                {
+                  name: 'q',
+                  text: t('common.filters.inline', {
+                    label: t('identityAccess.entities.search'),
+                    value: q,
+                  }),
+                  onRemove: () => {
+                    setDraftQ('');
+                    removeFilter('q');
+                  },
+                },
+              ]),
+          ...(status === undefined
+            ? []
+            : [
+                {
+                  name: 'status',
+                  text: t('common.filters.inline', {
+                    label: t('identityAccess.entities.status'),
+                    value: t(`identityAccess.entityStatus.${status}`),
+                  }),
+                  onRemove: () => {
+                    setDraftStatus('');
+                    removeFilter('status');
+                  },
+                },
+              ]),
+        ]}
+      >
+        <form className="filters" onSubmit={applyFilters}>
+          <TextField
+            label={t('identityAccess.entities.search')}
+            name="q"
+            type="search"
+            value={draftQ}
+            onChange={setDraftQ}
+          />
+          <SelectField
+            label={t('identityAccess.entities.status')}
+            name="status"
+            value={draftStatus}
+            placeholder={t('common.filters.any')}
+            options={STATUSES.map((value) => ({
+              value,
+              label: t(`identityAccess.entityStatus.${value}`),
+            }))}
+            onChange={setDraftStatus}
+          />
+          <div className="filters__actions">
+            <button type="submit" className="button button--primary">
+              {t('common.filters.apply')}
+            </button>
+          </div>
+        </form>
+      </FilterBar>
 
       {entities.loading && <LoadingState />}
       {entities.error !== null && (

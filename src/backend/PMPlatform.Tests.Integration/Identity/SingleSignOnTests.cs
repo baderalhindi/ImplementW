@@ -16,6 +16,7 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
         host.Clock.Reset();
         host.IdentityProvider.NextSubject = TestDirectory.Subject(1);
         host.IdentityProvider.NonceOverride = null;
+        host.IdentityProvider.ExtraClaims = new Dictionary<string, object>();
     }
 
     [Fact]
@@ -69,6 +70,48 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
         Assert.Equal(TestIdentityProvider.CallbackUrl, query["redirect_uri"]);
         Assert.False(query.ContainsKey("code_verifier"));
         Assert.DoesNotContain(authorization.Transaction, authorization.AuthorizationUrl.AbsoluteUri, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TheSignInOptionsOfferSsoOnlyWhereItsClientIsComplete()
+    {
+        await using IdentityApiFactory unconfigured = host.CreateApi(new Dictionary<string, string?> { ["SSO_OIDC_CLIENT_SECRET"] = null });
+        using HttpClient configuredClient = host.Api.CreateClient();
+        using HttpClient unconfiguredClient = unconfigured.CreateClient();
+
+        using HttpResponseMessage configured = await configuredClient.GetAsync(SessionApi.SignInOptions);
+        using HttpResponseMessage notConfigured = await unconfiguredClient.GetAsync(SessionApi.SignInOptions);
+
+        Assert.Equal(HttpStatusCode.OK, configured.StatusCode);
+        Assert.True((await configured.ReadAsync<SignInOptions>()).SingleSignOnAvailable);
+        Assert.False((await notConfigured.ReadAsync<SignInOptions>()).SingleSignOnAvailable);
+    }
+
+    /// <summary>
+    /// The Microsoft Entra ID setup (sso-directory-integration.md §4.1): the person is matched on the <c>oid</c> claim, which
+    /// Entra sends only under the <c>profile</c> scope. A configured scope adds to the default <c>openid</c>.
+    /// </summary>
+    [Fact]
+    public async Task AnEntraSetupMatchesThePersonOnTheirObjectId()
+    {
+        host.IdentityProvider.NextSubject = "the-pairwise-sub-entra-issues-per-application";
+        host.IdentityProvider.ExtraClaims = new Dictionary<string, object> { ["oid"] = TestDirectory.Subject(2) };
+        await using IdentityApiFactory entra = host.CreateApi(new Dictionary<string, string?>
+        {
+            ["Identity:Sso:SubjectClaim"] = "oid",
+            ["Identity:Sso:Scopes:0"] = "profile",
+        });
+        using HttpClient client = entra.CreateClient();
+        using HttpResponseMessage started = await client.GetAsync(SessionApi.SsoAuthorization);
+        SsoAuthorization authorization = await started.ReadAsync<SsoAuthorization>();
+        Assert.Equal("openid profile", QueryHelpers.ParseQuery(authorization.AuthorizationUrl.Query)["scope"]);
+
+        Callback callback = await AuthorizeAsync(client, "the-pairwise-sub-entra-issues-per-application");
+        using HttpResponseMessage response = await client.PostAsJsonAsync(SessionApi.SsoSessions, callback);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Session session = await response.ReadAsync<Session>();
+        Assert.Equal(Guid.Parse(IdentityDatabase.UserId(2)), session.User.Id);
     }
 
     [Fact]

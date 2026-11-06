@@ -276,6 +276,21 @@ public sealed class PermissionCatalogue
     /// <summary>WF-13 (TASK-066): draft and submit the answer to a request the holder is the named responder of (EXT-CC-04).</summary>
     public const string ExternalContributionRespond = "EXTERNAL_CONTRIBUTION_RESPOND";
 
+    /// <summary>Send a batch of monthly update requests (the 5 Nov 2026 review §2.2). AHDA decides whether the Liaison gets it.</summary>
+    public const string UpdateRequestSend = "UPDATE_REQUEST_SEND";
+
+    /// <summary>The dashboard's headline cards and table by portfolio (the 5 Nov 2026 review §3). A new role sees them through this, never through its code.</summary>
+    public const string PortfolioSummaryView = "PORTFOLIO_SUMMARY_VIEW";
+
+    /// <summary>The tables by initiative and sector and the printable group cards (§3).</summary>
+    public const string PortfolioBreakdownView = "PORTFOLIO_BREAKDOWN_VIEW";
+
+    /// <summary>Projects by stage and the on-plan indicator (§3).</summary>
+    public const string PortfolioStatusView = "PORTFOLIO_STATUS_VIEW";
+
+    /// <summary>Why projects need follow-up and the top 10 (§3).</summary>
+    public const string PortfolioFollowUpView = "PORTFOLIO_FOLLOW_UP_VIEW";
+
     /// <summary>
     /// WF-13 (TASK-066): start the review of a submitted contribution revision and accept, return or reject it, as the request's assigned
     /// reviewer. Internal users only; never an edit of the submitted values (EXT-P-10).
@@ -467,6 +482,11 @@ public sealed class PermissionCatalogue
             new(ExternalRequestView, "EXTERNAL_PARTICIPATION", AccessMode.Read),
             new(ExternalRequestManage, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(ExternalContributionRespond, "EXTERNAL_PARTICIPATION", AccessMode.Write),
+            new(UpdateRequestSend, "EXTERNAL_PARTICIPATION", AccessMode.Write),
+            new(PortfolioSummaryView, "PROJECT", AccessMode.Read),
+            new(PortfolioBreakdownView, "PROJECT", AccessMode.Read),
+            new(PortfolioStatusView, "PROJECT", AccessMode.Read),
+            new(PortfolioFollowUpView, "PROJECT", AccessMode.Read),
             new(ExternalContributionReview, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(ExternalContributionApply, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
@@ -513,7 +533,8 @@ public sealed class PermissionCatalogue
         ProgressView, ProgressReview, ScheduleView, TaskView, MilestoneView, RiskView, RiskManage, RiskAssess, RiskAccept, RiskReopen,
         ConcernView, ConcernRaise, ConcernEscalationResolve, ChangeRequestView, ChangeRequestRaise, ChangeRequestReview,
         SuspensionView, SuspensionRaise, SuspensionReview, CloseoutView, CloseoutRaise, CloseoutReview, CloseoutWaive,
-        ExternalRequestView, ExternalRequestManage, ExternalContributionReview,
+        ExternalRequestView, ExternalRequestManage, ExternalContributionReview, UpdateRequestSend,
+        PortfolioSummaryView, PortfolioBreakdownView, PortfolioStatusView, PortfolioFollowUpView,
         FinancialView, FinancialViewSensitive, FinancialReview, KpiView, KpiManage, KpiReview,
         DocumentView, DocumentUpload, DocumentManage, ActivityView, AuditBusinessView,
     ];
@@ -574,7 +595,7 @@ public sealed class PermissionCatalogue
         new("R04", MasterDataView, DataScope.All),
         .. Role("R04", DataScope.Own,
         [
-            ApprovalView, ReportExport, ProjectView, ProjectRegister, ProgressView, ProgressSubmit, ScheduleView, ScheduleEdit,
+            PortfolioStatusView, ApprovalView, ReportExport, ProjectView, ProjectRegister, ProgressView, ProgressSubmit, ScheduleView, ScheduleEdit,
             TaskView, TaskUpdate, TaskManage, TaskReopen, MilestoneView, MilestoneSubmit, RiskView, RiskManage,
             ConcernView, ConcernRaise, ConcernManage, ConcernEscalate, ChangeRequestView, ChangeRequestRaise, ChangeRequestImplement,
             SuspensionView, SuspensionRaise, CloseoutView, CloseoutRaise,
@@ -587,7 +608,7 @@ public sealed class PermissionCatalogue
         new("R05", MasterDataView, DataScope.All),
         .. Role("R05", DataScope.Assigned,
         [
-            ReportExport, ProjectView, ProgressView, ScheduleView, TaskView, MilestoneView, RiskView, ConcernView, SuspensionView, CloseoutView,
+            PortfolioStatusView, PortfolioFollowUpView, ReportExport, ProjectView, ProgressView, ScheduleView, TaskView, MilestoneView, RiskView, ConcernView, SuspensionView, CloseoutView,
             ExternalRequestView, ExternalRequestManage, ExternalContributionReview, KpiView, DocumentView, DocumentUpload, ActivityView, AuditBusinessView,
         ]),
 
@@ -595,6 +616,7 @@ public sealed class PermissionCatalogue
         new("R06", MasterDataView, DataScope.All),
         .. Role("R06", DataScope.Dept,
         [
+            PortfolioSummaryView, PortfolioStatusView,
             ProjectView, ProgressView, ScheduleView, TaskView, MilestoneView, RiskView, ConcernView, ChangeRequestView, SuspensionView, CloseoutView,
             FinancialView, KpiView, DocumentView, AuditBusinessView,
         ]),
@@ -606,6 +628,7 @@ public sealed class PermissionCatalogue
         new("R07", ReportCompose, DataScope.Own),
         .. Role("R07", DataScope.All,
         [
+            PortfolioSummaryView, PortfolioBreakdownView, PortfolioStatusView, PortfolioFollowUpView,
             ApprovalView, ApprovalDecide, ReportExport, ProjectView, ProgressView, ScheduleView, TaskView, MilestoneView, RiskView,
             ConcernView, ConcernEscalationResolve, ChangeRequestView, SuspensionView, CloseoutView,
             FinancialView, FinancialViewSensitive, KpiView, DocumentView, ActivityView, AuditBusinessView,
@@ -620,6 +643,7 @@ public sealed class PermissionCatalogue
         new("R08", TaskView, DataScope.Assigned),
         new("R08", TaskUpdate, DataScope.Assigned),
         new("R08", ExternalContributionRespond, DataScope.Assigned),
+        new("R04", ExternalContributionRespond, DataScope.Assigned),
     ];
 
     private static IEnumerable<ShippedGrant> Role(string roleCode, DataScope scope, IEnumerable<string> permissions) =>

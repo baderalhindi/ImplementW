@@ -2845,6 +2845,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("issued_by_user_id");
 
+                    b.Property<DateOnly?>("LastRemindedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("last_reminded_on");
+
+                    b.Property<DateTimeOffset?>("OpenedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("opened_at");
+
                     b.Property<string>("Origin")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -2886,6 +2894,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("target_type");
+
+                    b.Property<Guid?>("UpdateRequestBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("update_request_batch_id");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2946,6 +2958,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ReviewerUserId")
                         .HasDatabaseName("ix_external_update_request_reviewer_user_id");
+
+                    b.HasIndex("UpdateRequestBatchId")
+                        .HasDatabaseName("ix_external_update_request_update_request_batch_id");
 
                     b.HasIndex("UpdatedAt", "Id")
                         .HasDatabaseName("ix_external_update_request_updated_at_id");
@@ -3107,6 +3122,101 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_source_application_revalidated", "(revalidated_at IS NULL OR status = 'CONFLICT') AND (revalidated_at IS NULL) = (revalidated_by_user_id IS NULL) AND (revalidated_at IS NULL) = (revalidated_target_revision_no IS NULL)");
 
                             t.HasCheckConstraint("ck_source_application_status", "\"status\" IN ('APPLIED', 'CONFLICT', 'FAILED')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.UpdateRequestBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<DateOnly?>("NextRunOn")
+                        .HasColumnType("date")
+                        .HasColumnName("next_run_on");
+
+                    b.Property<int?>("RepeatDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("repeat_day");
+
+                    b.Property<bool>("RepeatMonthly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("repeat_monthly");
+
+                    b.Property<Guid>("ReviewerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewer_user_id");
+
+                    b.Property<Guid>("SeriesId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("series_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<DateTimeOffset?>("WithdrawnAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("withdrawn_at");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Instructions", "PMPlatform.Domain.ExternalParticipation.UpdateRequestBatch.Instructions#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("instructions_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("instructions");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_update_request_batch");
+
+                    b.HasIndex("NextRunOn")
+                        .HasDatabaseName("ix_update_request_batch_next_run_on")
+                        .HasFilter("next_run_on IS NOT NULL");
+
+                    b.HasIndex("ReviewerUserId")
+                        .HasDatabaseName("ix_update_request_batch_reviewer_user_id");
+
+                    b.HasIndex("UpdatedAt", "Id")
+                        .HasDatabaseName("ix_update_request_batch_updated_at_id");
+
+                    b.ToTable("update_request_batch", "external_participation", t =>
+                        {
+                            t.HasCheckConstraint("ck_update_request_batch_instructions_lang", "\"instructions_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_update_request_batch_repeat", "repeat_monthly = (repeat_day IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_update_request_batch_repeat_day", "repeat_day IS NULL OR repeat_day BETWEEN 1 AND 28");
                         });
                 });
 
@@ -4641,6 +4751,13 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.PrimitiveCollection<string[]>("AllowedScopes")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasColumnName("allowed_scopes")
+                        .HasDefaultValueSql("ARRAY['ALL']::text[]");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -4655,6 +4772,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
                     b.Property<bool>("IsExternalEligible")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -4666,6 +4789,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_system");
+
+                    b.Property<string>("LandingDashboardCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("landing_dashboard_code");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4715,6 +4843,18 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateOnly?>("AccountEndsOn")
+                        .HasColumnType("date")
+                        .HasColumnName("account_ends_on");
+
+                    b.Property<string>("AccountSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("DIRECTORY")
+                        .HasColumnName("account_source");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -4752,10 +4892,20 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("external_entity_id");
 
+                    b.Property<int>("FailedSignInCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("failed_sign_in_count");
+
                     b.Property<string>("JobTitle")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("job_title");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("locked_until");
 
                     b.Property<Guid?>("ManagerUserId")
                         .HasColumnType("uuid")
@@ -4774,6 +4924,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("mobile_verified_at");
 
+                    b.Property<bool>("MustChangePassword")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("must_change_password");
+
                     b.Property<string>("NafathVerificationReference")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -4782,6 +4938,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("NafathVerifiedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("nafath_verified_at");
+
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("password_hash");
 
                     b.Property<string>("PreferredLanguage")
                         .IsRequired()
@@ -4851,7 +5012,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("user", "identity_access", t =>
                         {
+                            t.HasCheckConstraint("ck_user_account_source", "\"account_source\" IN ('DIRECTORY', 'LOCAL')");
+
                             t.HasCheckConstraint("ck_user_external_entity", "user_type <> 'EXTERNAL' OR external_entity_id IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_user_local_password", "account_source <> 'LOCAL' OR password_hash IS NOT NULL");
 
                             t.HasCheckConstraint("ck_user_mobile_number", "mobile_number ~ '^\\+[1-9][0-9]{1,14}$'");
 
@@ -4861,6 +5026,48 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_user_user_type", "\"user_type\" IN ('INTERNAL', 'EXTERNAL', 'SERVICE')");
                         });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPasswordHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("password_hash");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_password_history");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .HasDatabaseName("ix_user_password_history_user_id_created_at");
+
+                    b.ToTable("user_password_history", "identity_access");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>
@@ -6784,11 +6991,21 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_system");
 
+                    b.Property<decimal?>("Latitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("numeric(9,6)")
+                        .HasColumnName("latitude");
+
                     b.Property<string>("LifecycleState")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("lifecycle_state");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("numeric(9,6)")
+                        .HasColumnName("longitude");
 
                     b.Property<Guid?>("ParentItemId")
                         .HasColumnType("uuid")
@@ -6887,6 +7104,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("master_data_item", "master_data_config", t =>
                         {
+                            t.HasCheckConstraint("ck_master_data_item_coordinates", "(latitude IS NULL) = (longitude IS NULL) AND (latitude IS NULL OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180))");
+
                             t.HasCheckConstraint("ck_master_data_item_description", "(\"description_ar\" IS NULL) = (\"description_en\" IS NULL)");
 
                             t.HasCheckConstraint("ck_master_data_item_lifecycle_state", "\"lifecycle_state\" IN ('DRAFT', 'VALIDATED', 'PUBLISHED', 'RETIRED')");
@@ -8636,6 +8855,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("department_id");
 
+                    b.Property<Guid?>("EntityContactUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_contact_user_id");
+
                     b.Property<bool?>("EntityUpdateCompliant")
                         .HasColumnType("boolean")
                         .HasColumnName("entity_update_compliant");
@@ -8667,6 +8890,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("governance_profile_overridden");
+
+                    b.Property<bool?>("IsStrategic")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_strategic");
 
                     b.Property<decimal?>("Latitude")
                         .HasPrecision(18, 4)
@@ -8743,6 +8970,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(1)
                         .HasColumnName("revision_no");
 
+                    b.Property<string>("SeedSource")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("seed_source");
+
                     b.Property<Guid?>("StrategicInitiativeItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("strategic_initiative_item_id");
@@ -8750,6 +8982,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("StrategicPortfolioItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("strategic_portfolio_item_id");
+
+                    b.Property<string>("TitleEn")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("title_en");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -8841,6 +9078,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("ClassificationItemId")
                         .HasDatabaseName("ix_project_classification_item_id");
 
+                    b.HasIndex("EntityContactUserId")
+                        .HasDatabaseName("ix_project_entity_contact_user_id");
+
                     b.HasIndex("FollowUpOwnerUserId")
                         .HasDatabaseName("ix_project_follow_up_owner_user_id");
 
@@ -8894,7 +9134,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_project_declared_percent_range", "(declared_planned_percent IS NULL OR declared_planned_percent BETWEEN 0 AND 100) AND (declared_actual_percent IS NULL OR declared_actual_percent BETWEEN 0 AND 100) AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100) AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
 
-                            t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL')");
+                            t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL', 'ENTITY_UPDATE')");
 
                             t.HasCheckConstraint("ck_project_description_lang", "\"description_lang\" IN ('ar', 'en')");
 
@@ -8915,6 +9155,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_project_next_action_pair", "(\"next_action\" IS NULL) = (\"next_action_lang\" IS NULL)");
 
                             t.HasCheckConstraint("ck_project_participation_mode", "\"participation_mode\" IN ('ENTITY_MANAGED', 'AHDA_MANAGED')");
+
+                            t.HasCheckConstraint("ck_project_seed_source", "seed_source IS NULL OR seed_source = 'DEMO'");
 
                             t.HasCheckConstraint("ck_project_title_lang", "\"title_lang\" IN ('ar', 'en')");
                         });
@@ -12445,12 +12687,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ScopeExternalEntityId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_audit_event_external_entity_scope_external_entity_id");
-
-                    b.HasOne("PMPlatform.Domain.Project.Project", null)
-                        .WithMany()
-                        .HasForeignKey("ScopeProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_audit_event_project_scope_project_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEventAttribute", b =>
@@ -12957,6 +13193,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ReviewerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_external_update_request_user_reviewer_user_id");
+
+                    b.HasOne("PMPlatform.Domain.ExternalParticipation.UpdateRequestBatch", null)
+                        .WithMany()
+                        .HasForeignKey("UpdateRequestBatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_external_update_request_update_request_batch_update_request");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.SourceApplication", b =>
@@ -12980,6 +13222,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("RevalidatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_source_application_user_revalidated_by_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.ExternalParticipation.UpdateRequestBatch", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_update_request_batch_user_reviewer_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.FinancialKpi.FinancialCommitment", b =>
@@ -13373,6 +13625,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ManagerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_user_user_manager_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPasswordHistory", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_password_history_user_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>
@@ -14133,6 +14395,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_project_department_department_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("EntityContactUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_user_entity_contact_user_id");
 
                     b.HasOne("PMPlatform.Domain.IdentityAccess.ExternalEntity", null)
                         .WithMany()

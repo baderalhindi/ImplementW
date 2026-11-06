@@ -3,7 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
-import { internalUser, sessionFor, withIdentityAccessData } from '@/test/identityAccessFixtures.ts';
+import {
+  externalUser,
+  internalUser,
+  sessionFor,
+  withIdentityAccessData,
+} from '@/test/identityAccessFixtures.ts';
 import { mockApi, problem } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
 
@@ -119,5 +124,162 @@ describe('MOD-080 disable user', () => {
         en('identityAccess.problems.selfAdministration'),
       );
     });
+  });
+});
+
+describe('a local account on ADM-003 (the 5 Nov 2026 review §6.1)', () => {
+  const localUser = {
+    ...internalUser,
+    accountSource: 'LOCAL',
+    directorySubjectId: null,
+    mustChangePassword: true,
+    lockedUntil: '2099-01-01T00:00:00Z',
+  };
+
+  async function openLocalUser(roles = ['R01']) {
+    const api = withIdentityAccessData(mockApi()).on(
+      'GET',
+      new RegExp(`^/users/${internalUser.id}$`),
+      { body: localUser, headers: { ETag: '"7"' } },
+    );
+    renderApp({ path: `/admin/users/${internalUser.id}`, session: sessionFor(roles) });
+    await screen.findByRole('heading', { level: 1, name: internalUser.displayName });
+    return api;
+  }
+
+  test('a reset shows the new temporary password once, and it is gone when dismissed', async () => {
+    const api = await openLocalUser();
+    api.on('POST', /\/reset-password$/, {
+      body: { ...localUser, lockedUntil: null, temporaryPassword: 'Reset-Pass-123456' },
+    });
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.users.account.resetPassword') }),
+    );
+    const dialog = screen.getByRole('dialog');
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: en('identityAccess.users.account.resetPassword'),
+      }),
+    );
+
+    expect(await screen.findByText('Reset-Pass-123456')).toBeTruthy();
+    const [request] = api.requestsTo('POST', /\/reset-password$/);
+    expect(request?.body).toEqual({ password: null });
+    expect(request?.headers.get('If-Match')).toBe('"7"');
+
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.users.temporaryPassword.dismiss') }),
+    );
+    expect(screen.queryByText('Reset-Pass-123456')).toBeNull();
+  });
+
+  test('a password the rules refuse is named on its field', async () => {
+    const api = await openLocalUser();
+    api.on(
+      'POST',
+      /\/reset-password$/,
+      problem(422, 'IDENTITY_ACCESS_PASSWORD_INVALID', [
+        { field: 'password', code: 'PASSWORD_TOO_WEAK' },
+      ]),
+    );
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.users.account.resetPassword') }),
+    );
+    const dialog = screen.getByRole('dialog');
+    await user.click(
+      within(dialog).getByRole('radio', { name: en('identityAccess.users.form.passwordTyped') }),
+    );
+    await user.type(
+      within(dialog).getByRole('textbox', { name: /Temporary password/ }),
+      'long-enough-pass-1',
+    );
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: en('identityAccess.users.account.resetPassword'),
+      }),
+    );
+
+    expect(
+      await within(dialog).findByText(en('identityAccess.problems.passwordInvalid')),
+    ).toBeTruthy();
+    expect(within(dialog).getByText(en('identityAccess.fieldErrors.passwordTooWeak'))).toBeTruthy();
+  });
+
+  test('a locked account is said to be, and unlocking sends the ETag', async () => {
+    const api = await openLocalUser();
+    api.on('POST', /\/unlock$/, { body: { ...localUser, lockedUntil: null } });
+    const user = userEvent.setup();
+
+    expect(screen.getByText(en('identityAccess.users.account.locked'))).toBeTruthy();
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.users.account.unlock') }),
+    );
+    const dialog = screen.getByRole('dialog');
+    await user.click(
+      within(dialog).getByRole('button', { name: en('identityAccess.users.account.unlock') }),
+    );
+
+    expect(await screen.findByText(en('identityAccess.users.detail.notice.unlocked'))).toBeTruthy();
+    expect(api.requestsTo('POST', /\/unlock$/)[0]?.headers.get('If-Match')).toBe('"7"');
+  });
+
+  test('the end date is set, and emptied, by date', async () => {
+    const api = await openLocalUser();
+    api.on('POST', /\/set-end-date$/, { body: localUser });
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.users.account.setEndDate') }),
+    );
+    const dialog = screen.getByRole('dialog');
+    await user.type(within(dialog).getByLabelText(/Last usable day/), '2027-03-31');
+    await user.click(within(dialog).getByRole('button', { name: en('common.actions.save') }));
+
+    await waitFor(() => {
+      expect(api.requestsTo('POST', /\/set-end-date$/)).toHaveLength(1);
+    });
+    expect(api.requestsTo('POST', /\/set-end-date$/)[0]?.body).toEqual({ endsOn: '2027-03-31' });
+  });
+
+  test('a directory account offers no reset or unlock, and names a refusal if one comes', async () => {
+    await openUser();
+
+    expect(
+      screen.queryByRole('button', { name: en('identityAccess.users.account.resetPassword') }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: en('identityAccess.users.account.unlock') }),
+    ).toBeNull();
+    expect(en('identityAccess.problems.notLocalAccount')).not.toBe(
+      'identityAccess.problems.notLocalAccount',
+    );
+  });
+
+  test('the user list marks each account local or directory', async () => {
+    withIdentityAccessData(mockApi()).on('GET', /^\/users$/, {
+      body: {
+        items: [
+          { ...internalUser, accountSource: 'LOCAL' },
+          { ...externalUser, accountSource: 'DIRECTORY' },
+        ],
+        page: 1,
+        pageSize: 25,
+        totalCount: 2,
+      },
+    });
+    renderApp({ path: '/admin/users', session: sessionFor(['R01']) });
+
+    const row = (await screen.findByRole('link', { name: internalUser.displayName })).closest('tr');
+    expect(
+      within(row as HTMLElement).getByText(en('identityAccess.accountSource.LOCAL')),
+    ).toBeTruthy();
+    const other = screen.getByRole('link', { name: externalUser.displayName }).closest('tr');
+    expect(
+      within(other as HTMLElement).getByText(en('identityAccess.accountSource.DIRECTORY')),
+    ).toBeTruthy();
   });
 });

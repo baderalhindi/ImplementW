@@ -11,13 +11,15 @@ interface PersonFieldProps {
   label: string;
   /** The API's field, so its refusal (…_INELIGIBLE) lands here. */
   name: 'responsibleUserId' | 'reviewerUserId';
-  /** A responder is an entity user of the addressed entity; a reviewer an AHDA user (TASK-066 D-7, D-11). */
-  userType: 'EXTERNAL' | 'INTERNAL';
+  /** A responder is an entity user of the addressed entity; a reviewer an AHDA user (TASK-066 D-7, D-11); a monthly update's responder either. */
+  userType: 'EXTERNAL' | 'INTERNAL' | 'ANY';
   user: SessionUser;
   value: AssigneeValue;
   onChange: (value: AssigneeValue) => void;
   /** Whether the person may search people (USER_VIEW, R01 only today); otherwise someone is named by user id. */
   canSearch: boolean;
+  /** People to offer by name besides the person themself and whoever is named now. */
+  suggestions?: { id: string; label: string }[];
   /** A draft may leave the person unnamed until it is issued. */
   allowNone: boolean;
   hint: string;
@@ -37,6 +39,7 @@ export function PersonField({
   value,
   onChange,
   canSearch,
+  suggestions = [],
   allowNone,
   hint,
   error,
@@ -46,8 +49,11 @@ export function PersonField({
   const named = value.choice !== NONE && value.choice !== OTHER ? value.choice : null;
   const personName = usePersonNames([named]);
   const self = userType === 'INTERNAL' && user.userType !== 'EXTERNAL' ? user.id : null;
-  const people = [...new Set([self, named].filter((p): p is string => p !== null))];
+  const people = [...new Set([self, named].filter((p): p is string => p !== null))].filter(
+    (personId) => !suggestions.some((suggestion) => suggestion.id === personId),
+  );
   const options = [
+    ...suggestions.map((suggestion) => ({ value: suggestion.id, label: suggestion.label })),
     ...people.map((personId) => ({
       value: personId,
       label:
@@ -89,7 +95,7 @@ export function PersonField({
           <UserPicker
             label={t('externalParticipation.people.find')}
             value={value.found}
-            userType={userType}
+            {...(userType === 'ANY' ? {} : { userType })}
             onChange={(found) => {
               onChange({ ...value, found });
             }}

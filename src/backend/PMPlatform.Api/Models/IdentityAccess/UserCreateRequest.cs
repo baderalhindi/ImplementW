@@ -18,7 +18,10 @@ public sealed record UserCreateRequest(
     string? PreferredLanguage,
     string? DirectorySubjectId,
     string? JobTitle,
-    Guid? ExternalEntityId)
+    Guid? ExternalEntityId,
+    AccountSource? AccountSource = null,
+    string? TemporaryPassword = null,
+    bool? MustChangePassword = null)
 {
     internal List<FieldError> Validate(out UserDraft? draft)
     {
@@ -31,7 +34,18 @@ public sealed record UserCreateRequest(
         UserRequestValidation.Common(Username, DisplayName, Email, MobileNumber, DirectorySubjectId, JobTitle, errors);
         Domain.Common.Language language = RequestValidation.Language(PreferredLanguage, "preferredLanguage", Domain.Common.Language.Ar, errors);
 
-        if (UserType == Domain.IdentityAccess.UserType.Internal && DirectorySubjectId is null)
+        bool local = AccountSource == Domain.IdentityAccess.AccountSource.Local;
+        if (local && DirectorySubjectId is not null)
+        {
+            errors.Add(new FieldError("directorySubjectId", FieldError.NotAllowed));
+        }
+
+        if (!local && TemporaryPassword is not null)
+        {
+            errors.Add(new FieldError("temporaryPassword", FieldError.NotAllowed));
+        }
+
+        if (!local && UserType == Domain.IdentityAccess.UserType.Internal && DirectorySubjectId is null)
         {
             errors.Add(new FieldError("directorySubjectId", FieldError.Required));
         }
@@ -47,7 +61,7 @@ public sealed record UserCreateRequest(
 
         draft = errors.Count > 0
             ? null
-            : new UserDraft(UserType!.Value, Username!, DisplayName!, Email!, MobileNumber, language, DirectorySubjectId, JobTitle, ExternalEntityId);
+            : new UserDraft(UserType!.Value, Username!, DisplayName!, Email!, MobileNumber, language, DirectorySubjectId, JobTitle, ExternalEntityId, AccountSource ?? Domain.IdentityAccess.AccountSource.Directory, TemporaryPassword, MustChangePassword ?? true);
         return errors;
     }
 }

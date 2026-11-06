@@ -130,3 +130,11 @@ export function utcDate(daysFromToday = 0): string {
   date.setUTCDate(date.getUTCDate() + daysFromToday);
   return date.toISOString().slice(0, 10);
 }
+
+/** Opens the page's folded filter panel (the 5 Nov 2026 review, R4-1), unless it is already open. */
+export async function openFilters(page: Page): Promise<void> {
+  const toggle = page.locator('.filter-bar__toggle');
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.click();
+  }
+}

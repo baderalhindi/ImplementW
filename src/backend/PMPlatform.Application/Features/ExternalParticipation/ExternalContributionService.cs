@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Correlation;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.ExternalParticipation.Contracts;
@@ -262,6 +263,41 @@ internal sealed class ExternalContributionService(
         }
 
         await using IExternalParticipationWork work = await repository.BeginAsync(cancellationToken).ConfigureAwait(false);
+        ContributionSchema schema = ContributionSchemas.Of(request.ContributionSchemaCode);
+        if (schema.Mode == ContributionApplicationMode.ApplyOnAccept && contribution.Status == ExternalContributionStatus.Applied)
+        {
+            IReadOnlyList<ExternalContributionField> answered = await repository.ListFieldsAsync([contribution.Id], cancellationToken).ConfigureAwait(false);
+            Dictionary<string, string> values = answered.ToDictionary(f => f.FieldCode, f => f.ProposedValue, StringComparer.Ordinal);
+            Dictionary<string, Domain.Common.Language> languages = answered.Where(f => f.ProposedValueLanguage is not null)
+                .ToDictionary(f => f.FieldCode, f => f.ProposedValueLanguage!.Value, StringComparer.Ordinal);
+            SourceApplicationResult applied = await targets.Of(schema)!.StageAsync(
+                new SourceApplicationCommand(request.TargetId!.Value, 1, values, callerId, request.ExternalEntityId, contribution.Id, contribution.RevisionNo, Guid.Empty, languages),
+                cancellationToken).ConfigureAwait(false);
+            if (applied.Status != SourceApplicationStatus.Applied)
+            {
+                return AdministrationError.Rule(applied.FailureCode ?? ExternalParticipationErrorCodes.SourceInvalid);
+            }
+
+            // The revision's one applied attempt, as the schema's invariant requires: an accepted answer and its writing are one step here.
+            repository.Add(new SourceApplication
+            {
+                Id = Guid.CreateVersion7(now),
+                ExternalContributionId = contribution.Id,
+                AttemptNo = 1,
+                IdempotencyKey = $"accept:{contribution.Id:D}",
+                CorrelationId = CorrelationScope.Current ?? Guid.CreateVersion7(now),
+                ExpectedTargetRevisionNo = contribution.TargetVersion,
+                AttemptedByUserId = callerId,
+                AttemptedAt = now,
+                Status = SourceApplicationStatus.Applied,
+                CompletedAt = now,
+                CreatedAt = now,
+                CreatedBy = callerId,
+                UpdatedAt = now,
+                UpdatedBy = callerId,
+            });
+        }
+
         Guid? nextRevisionId = null;
         switch (contribution.Status)
         {

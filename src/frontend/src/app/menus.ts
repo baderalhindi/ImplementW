@@ -11,6 +11,7 @@ import {
   MY_EXTERNAL_REQUESTS_PATH,
 } from '@/features/external-participation/paths.ts';
 import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
+import { type DashboardCatalogueEntry } from '@/features/dashboards/api/types.ts';
 import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
 import { dashboardNavigation } from '@/features/dashboards/routes.tsx';
 import { dataImportNavigation } from '@/features/data-import/routes.tsx';
@@ -72,21 +73,14 @@ export function isCurrent(to: string, pathname: string, search: string): boolean
 }
 
 /**
- * The Portfolio Dashboard's audience (dashboards.md D-2): R02, R03, R06 and R07 land on it and see the portfolio
- * reports. A dashboard's audience is its roles (ADR-006), not a permission.
- */
-const PORTFOLIO_ROLES: readonly string[] = ['R02', 'R03', 'R06', 'R07'];
-
-/**
  * Blueprint §20.1's Portfolio menu as far as it is built: the Portfolio Dashboard, which has no route of its own and is
  * the Home's rendering of it (dashboards-ui.md D-1), the portfolio report family (SCR-132), and the KPI register — all
- * of it the portfolio audience's only, so a Project Manager is not given a Portfolio menu (the review, finding 1b).
+ * of it the audience's only, so a Project Manager is not given a Portfolio menu (the review, finding 1b). A dashboard's
+ * audience is its roles (ADR-006), not a permission, and only the API knows a created role's: whoever its catalogue offers
+ * the Portfolio Dashboard (dashboards.md D-2).
  */
-function portfolioNavigation(user: SessionUser): NavigationItem[] {
-  const audience =
-    user.userType !== 'EXTERNAL' &&
-    user.roleAssignments.some((assignment) => PORTFOLIO_ROLES.includes(assignment.roleCode));
-  return audience
+function portfolioNavigation(dashboards: readonly DashboardCatalogueEntry[]): NavigationItem[] {
+  return dashboards.some((entry) => entry.code === 'PORTFOLIO')
     ? [
         { to: PORTFOLIO_DASHBOARD_PATH, label: 'common.menu.portfolioDashboard', end: true },
         {
@@ -102,6 +96,13 @@ function portfolioNavigation(user: SessionUser): NavigationItem[] {
 /** The audit categories that are platform evidence (FG-06 §7.2): their holders read the audit trail under Administration. */
 const ADMINISTRATIVE_AUDIT: readonly string[] = ['ADMINISTRATION', 'SECURITY', 'INTEGRATION'];
 
+/** The screens under /admin's guard, each offered on its own permission: holding any of them is what makes an administrator. */
+export const administrationNavigation: readonly NavigationItem[] = [
+  ...identityAccessNavigation,
+  ...integrationAdminNavigation,
+  ...dataImportNavigation,
+];
+
 function menu(
   id: MenuId,
   label: TranslationKey,
@@ -114,12 +115,14 @@ function menu(
 /**
  * The menus this session sees: every screen whose permission `permissions` holds, in the menus left with one. `audit` is
  * GET /audit-access: the audit trail sits under Administration for a holder of an administrative audit category and under
- * Projects for one who reads business audit only, so a business role is never given an Administration menu.
+ * Projects for one who reads business audit only, so a business role is never given an Administration menu. `dashboards` is the
+ * catalogue the API offers this person.
  */
 export function menusFor(
   user: SessionUser,
   permissions: Permissions,
   audit: AuditAccessView | null,
+  dashboards: readonly DashboardCatalogueEntry[],
 ): Menu[] {
   const auditItems = auditNavigation(audit);
   const administrative =
@@ -128,9 +131,7 @@ export function menusFor(
     ? []
     : auditItems.filter((item) => item.to === AUDIT_TRAIL_PATH);
   const administration = [
-    ...identityAccessNavigation,
-    ...integrationAdminNavigation,
-    ...dataImportNavigation,
+    ...administrationNavigation,
     ...(administrative ? auditItems : auditItems.filter((item) => item.to !== AUDIT_TRAIL_PATH)),
   ];
   const menus = [
@@ -139,7 +140,7 @@ export function menusFor(
       'portfolio',
       'common.menu.portfolio',
       ['/kpis', '/reports/portfolio'],
-      portfolioNavigation(user),
+      portfolioNavigation(dashboards),
     ),
     menu(
       'projects',

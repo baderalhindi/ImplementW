@@ -113,7 +113,7 @@ const DISMISS = new Set([
 ]);
 
 /**
- * The controls that start a change: enabled buttons and button-styled links. A filter form's controls and a table's
+ * The controls that start a change: enabled buttons and button-styled links. The filter bar's controls and a table's
  * paging only change what is shown; a record's title opens its detail; a dialog's close only closes it.
  */
 function writeControls(container: HTMLElement): string[] {
@@ -125,7 +125,8 @@ function writeControls(container: HTMLElement): string[] {
     .filter(
       (element) =>
         !openers.has(element) &&
-        element.closest('.filters, .pagination, nav') === null &&
+        element.closest('.filters, .filter-bar__toggle, .filter-bar__body, .pagination, nav') ===
+          null &&
         !DISMISS.has(element.textContent.trim()) &&
         !READS.has(element.textContent.trim()) &&
         !(element instanceof HTMLButtonElement && element.disabled),

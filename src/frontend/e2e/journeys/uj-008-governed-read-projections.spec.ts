@@ -1,7 +1,15 @@
 import { type Locator, type Page } from '@playwright/test';
 
 import { type PlatformApi } from '../support/api.ts';
-import { expect, expectText, plain, test, unique, utcDate } from '../support/journey.ts';
+import {
+  expect,
+  expectText,
+  openFilters,
+  plain,
+  test,
+  unique,
+  utcDate,
+} from '../support/journey.ts';
 import { activeProject } from '../support/projects.ts';
 import {
   assignedKpi,
@@ -146,6 +154,7 @@ test('UJ-008 read projections keep source ownership, scope and freshness, and wr
     // The dashboards are at /dashboards; the Home is the person's own work (home-and-portfolio.md D-1, D-2).
     await page.goto('/dashboards');
     // The one filter bar (the 2 Nov 2026 review): the label sits inside each option, with the count of projects in scope.
+    await openFilters(page);
     const filter = page.getByRole('combobox', { name: 'Department' });
     await expect(filter.getByRole('option')).toHaveText([
       /Department\W+All/,

@@ -68,13 +68,13 @@ The rate limiter runs after authentication, so it knows the user, and before aut
 
 ### 3.2 The SPA's header set
 
-The SPA's production build is served with the same nine headers, but its CSP allows its own origin: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. The bundle has no inline script or style tag (React sets `style` through the DOM, which CSP allows). The set is in `src/frontend/vite.config.ts`, applied to `vite preview`, which served the build for the scans. The deployed host must serve the same set (F-3). The dev server sets none, because Vite's hot reload injects inline scripts.
+The SPA's production build is served with the same nine headers, but its CSP allows its own origin: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. The bundle has no inline script or style tag (React sets `style` through the DOM, which CSP allows). The set is in `src/frontend/vite.config.ts`, applied to `vite preview`, which served the build for the scans. The deployed host must serve the same set (F-3). The dev server sets none, because Vite's hot reload injects inline scripts.
 
 ### 3.3 Configuration
 
 | Setting | Shipped | Development | Tests |
 | --- | --- | --- | --- |
-| `RateLimiting:Policies:{SignIn,SessionRefresh,SensitiveWrite,ClientErrorReport}` | 30 / 120 / 120 / 30 per `00:01:00` (`ClientErrorReport` since TASK-090: the SPA's anonymous error report, `apm-error-tracking.md` D-7) | same | 1,000,000 (`IdentityApiFactory.UnreachableRateLimits`), so no suite throttles itself; the rate-limiting tests set their own |
+| `RateLimiting:Policies:{SignIn,SessionRefresh,SensitiveWrite,ClientErrorReport,SignInOptions}` | 30 / 120 / 120 / 30 / 120 per `00:01:00` (`ClientErrorReport` since TASK-090: the SPA's anonymous error report, `apm-error-tracking.md` D-7; `SignInOptions` since 2026-11-06: read on every load of the sign-in page, `sso-directory-integration.md` D-13) | same | 1,000,000 (`IdentityApiFactory.UnreachableRateLimits`), so no suite throttles itself; the rate-limiting tests set their own |
 | `ClientAddress:TrustedProxyHops` | 2 | 0 | 2 in the hardening tests |
 | `CORS_ALLOWED_ORIGINS` | `APP_BASE_URL` (Terraform) | `http://localhost:5173` (compose) | empty, or the test's origin |
 | `RATE_LIMIT_STORE_CONNECTION_STRING` | secret store, SIT/UAT/PROD | empty → in memory | `RATE_LIMIT_TEST_REDIS` for the shared-store tests only |

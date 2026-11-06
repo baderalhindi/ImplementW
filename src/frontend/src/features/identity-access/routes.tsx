@@ -12,19 +12,20 @@ import {
   PermissionProfileCreatePage,
   PermissionProfileVersionPage,
 } from './roles/PermissionProfilePages.tsx';
-import { RoleDetailPage, RoleEditPage, RoleListPage } from './roles/RolePages.tsx';
+import { RoleCreatePage, RoleDetailPage, RoleEditPage, RoleListPage } from './roles/RolePages.tsx';
 import { UserDetailPage } from './users/UserDetailPage.tsx';
 import { UserCreatePage, UserEditPage } from './users/UserFormPage.tsx';
 import { UserListPage } from './users/UserListPage.tsx';
 import { type PermissionCode } from './permissions/permissionCodes.ts';
 
-/** FG-03 administration, mounted under /admin behind the R01 guard (TASK-032 acceptance criterion 1). */
+/** FG-03 administration, mounted under /admin behind the administration guard (app/routes.tsx). */
 export const identityAccessRoutes: RouteObject[] = [
   { path: 'users', element: <UserListPage /> }, // ADM-002
   { path: 'users/new', element: <UserCreatePage /> }, // ADM-004
   { path: 'users/:userId', element: <UserDetailPage /> }, // ADM-003, MOD-080, MOD-081, MOD-082
   { path: 'users/:userId/edit', element: <UserEditPage /> }, // ADM-005
   { path: 'roles', element: <RoleListPage /> }, // ADM-006
+  { path: 'roles/new', element: <RoleCreatePage /> }, // the 5 Nov 2026 review §6.2
   { path: 'roles/:roleId', element: <RoleDetailPage /> }, // ADM-007
   { path: 'roles/:roleId/edit', element: <RoleEditPage /> }, // ADM-008
   { path: 'permission-matrix', element: <PermissionMatrixPage /> }, // ADM-009

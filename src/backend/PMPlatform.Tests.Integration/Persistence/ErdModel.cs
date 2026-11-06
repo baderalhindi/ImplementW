@@ -119,7 +119,7 @@ internal static partial class ErdModel
     [GeneratedRegex(@"^Table (?<schema>\w+)\.(?<table>\w+) \{$", RegexOptions.CultureInvariant)]
     private static partial Regex TableStart();
 
-    [GeneratedRegex(@"^  (?<name>\w+) (?<type>[\w(),]+)(?: \[(?<attributes>.*)\])?$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^  (?<name>\w+) (?<type>[\w(),]+(?:\[\])?)(?: \[(?<attributes>.*)\])?$", RegexOptions.CultureInvariant)]
     private static partial Regex Column();
 
     [GeneratedRegex(@"^\s+\((?<columns>[\w, ]+)\) \[unique\]$", RegexOptions.CultureInvariant)]

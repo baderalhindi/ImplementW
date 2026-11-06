@@ -1,3 +1,4 @@
+using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using Microsoft.Extensions.Logging.Abstractions;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
@@ -36,10 +37,10 @@ internal sealed class AdministrationFixture
     {
         foreach (int n in Enumerable.Range(1, 8))
         {
-            Assignments.ProfileVersions[VersionOf(n)] = new ProfileVersionFacts(GovernedLifecycleState.Published, $"R0{n}", n is 4 or 8);
+            Assignments.ProfileVersions[VersionOf(n)] = new ProfileVersionFacts(GovernedLifecycleState.Published, $"R0{n}", n is 4 or 8, true, ScopesOf(n));
         }
 
-        Assignments.ProfileVersions[DraftR06Version] = new ProfileVersionFacts(GovernedLifecycleState.Draft, "R06", false);
+        Assignments.ProfileVersions[DraftR06Version] = new ProfileVersionFacts(GovernedLifecycleState.Draft, "R06", false, true, ScopesOf(6));
         Assignments.Projects[ProjectId] = new ProjectFacts(EntityId, IsClosed: false);
         Assignments.Projects[OtherEntityProjectId] = new ProjectFacts(OtherEntityId, IsClosed: false);
         Assignments.Projects[ClosedProjectId] = new ProjectFacts(EntityId, IsClosed: true);
@@ -102,8 +103,17 @@ internal sealed class AdministrationFixture
     public static AuthorizationPrincipal Principal(Guid id, UserType userType, Guid? departmentId, Guid? entityId, IReadOnlyList<EffectiveGrant> grants) =>
         new(id, userType, IsActive: true, departmentId, entityId, grants);
 
+    /// <summary>The seeded roles' allowed scopes (db/seed).</summary>
+    private static string[] ScopesOf(int role) => role switch
+    {
+        3 => [RoleScopes.Department],
+        5 => [RoleScopes.Project],
+        6 => [RoleScopes.Department, RoleScopes.Project],
+        _ => [RoleScopes.All, RoleScopes.Department, RoleScopes.Project, RoleScopes.Entity],
+    };
+
     public UserAdministrationService UserService() =>
-        new(Users, Entities, Access(), Audit, Clock, NullLogger<UserAdministrationService>.Instance);
+        new(Users, Entities, Access(), new LocalAccountPolicy(), Audit, Clock, NullLogger<UserAdministrationService>.Instance);
 
     public AccessRelationshipService AssignmentService() =>
         new(Assignments, Users, Departments, Entities, Access(), Audit, Clock, NullLogger<AccessRelationshipService>.Instance);

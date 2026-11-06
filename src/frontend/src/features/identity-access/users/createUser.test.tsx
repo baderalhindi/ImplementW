@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
 import {
@@ -101,6 +101,7 @@ describe('ADM-004 Create User', () => {
       directorySubjectId: 'dir-sara',
       jobTitle: null,
       externalEntityId: null,
+      accountSource: 'DIRECTORY',
     });
     expect(request?.headers.get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/);
     expect(request?.headers.get('Authorization')).toBe('Bearer test-access-token');
@@ -158,6 +159,125 @@ describe('ADM-004 Create User', () => {
       directorySubjectId: null,
       jobTitle: 'Site engineer',
     });
+  });
+
+  const localAccount = en('identityAccess.users.form.accountSourceLocal');
+
+  async function fillLocalAccount(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('radio', { name: localAccount }));
+    await user.type(screen.getByRole('textbox', { name: /Full name/ }), 'Local Person');
+    await user.type(screen.getByRole('textbox', { name: /Username/ }), 'local.person');
+    await user.type(screen.getByRole('textbox', { name: /Email/ }), 'local@example.test');
+  }
+
+  test('a local account has no directory id, and its generated password is shown once and can be copied', async () => {
+    const api = await openCreateUser();
+    api.on('POST', /^\/users$/, {
+      status: 201,
+      body: { ...internalUser, accountSource: 'LOCAL', temporaryPassword: 'shown-once' },
+    });
+    const writeText = vi.fn(() => Promise.resolve());
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+
+    await fillLocalAccount(user);
+    expect(screen.queryByRole('textbox', { name: /Directory identifier/ })).toBeNull();
+    const mustChange = screen.getByRole('checkbox', {
+      name: en('identityAccess.users.fields.mustChangePassword'),
+    });
+    expect((mustChange as HTMLInputElement).checked).toBe(true);
+    await user.click(screen.getByRole('button', { name: en('common.actions.save') }));
+
+    expect(await screen.findByText('shown-once')).toBeTruthy();
+    expect(api.requestsTo('POST', /^\/users$/)[0]?.body).toMatchObject({
+      accountSource: 'LOCAL',
+      directorySubjectId: null,
+      temporaryPassword: null,
+      mustChangePassword: true,
+    });
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.users.temporaryPassword.copy') }),
+    );
+    expect(writeText).toHaveBeenCalledWith('shown-once');
+    expect(
+      await screen.findByRole('button', {
+        name: en('identityAccess.users.temporaryPassword.copied'),
+      }),
+    ).toBeTruthy();
+    // Nothing in the browser keeps it: not the URL, not the history state, not storage.
+    expect(JSON.stringify(window.history.state)).not.toContain('shown-once');
+    const stored = [localStorage, sessionStorage].flatMap((storage) =>
+      Array.from({ length: storage.length }, (_, index) =>
+        storage.getItem(storage.key(index) ?? ''),
+      ),
+    );
+    expect(stored.join()).not.toContain('shown-once');
+    expect(
+      screen.getByRole('link', { name: en('identityAccess.users.temporaryPassword.openUser') }),
+    ).toBeTruthy();
+  });
+
+  test('a typed temporary password follows the rules, and the first-sign-in change can be switched off', async () => {
+    const api = await openCreateUser();
+    api.on('POST', /^\/users$/, {
+      status: 201,
+      body: { ...internalUser, accountSource: 'LOCAL', temporaryPassword: 'typed-password-12' },
+    });
+    const user = userEvent.setup();
+
+    await fillLocalAccount(user);
+    await user.click(
+      screen.getByRole('radio', { name: en('identityAccess.users.form.passwordTyped') }),
+    );
+    await user.type(screen.getByRole('textbox', { name: /Temporary password/ }), 'short');
+    await user.click(screen.getByRole('button', { name: en('common.actions.save') }));
+    expect(screen.getByText(en('identityAccess.fieldErrors.passwordTooWeak'))).toBeTruthy();
+    expect(api.requestsTo('POST', /^\/users$/)).toHaveLength(0);
+
+    await user.clear(screen.getByRole('textbox', { name: /Temporary password/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /Temporary password/ }),
+      'typed-password-12',
+    );
+    await user.click(
+      screen.getByRole('checkbox', { name: en('identityAccess.users.fields.mustChangePassword') }),
+    );
+    await user.click(screen.getByRole('button', { name: en('common.actions.save') }));
+
+    await waitFor(() => {
+      expect(api.requestsTo('POST', /^\/users$/)).toHaveLength(1);
+    });
+    expect(api.requestsTo('POST', /^\/users$/)[0]?.body).toMatchObject({
+      temporaryPassword: 'typed-password-12',
+      mustChangePassword: false,
+    });
+  });
+
+  test('a local external user still needs the entity', async () => {
+    const api = await openCreateUser();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('radio', { name: en('identityAccess.userType.EXTERNAL') }));
+    await fillLocalAccount(user);
+    await user.click(screen.getByRole('button', { name: en('common.actions.save') }));
+
+    expect(
+      screen.getByRole('combobox', { name: /External entity/ }).getAttribute('aria-invalid'),
+    ).toBe('true');
+    expect(api.requestsTo('POST', /^\/users$/)).toHaveLength(0);
+  });
+
+  test('local accounts turned off are named', async () => {
+    const api = await openCreateUser();
+    api.on('POST', /^\/users$/, problem(422, 'IDENTITY_ACCESS_LOCAL_ACCOUNTS_DISABLED'));
+    const user = userEvent.setup();
+
+    await fillLocalAccount(user);
+    await user.click(screen.getByRole('button', { name: en('common.actions.save') }));
+
+    expect(
+      await screen.findByText(en('identityAccess.problems.localAccountsDisabled')),
+    ).toBeTruthy();
   });
 
   test.each(['en', 'ar'] as const)(

@@ -1,6 +1,8 @@
 import { type RouteObject } from 'react-router';
 
+import { PortfolioCardPage } from '@/features/dashboards/insights/PortfolioCardPage.tsx';
 import { type NavigationItem } from '@/features/identity-access/routes.tsx';
+import { RequirePermission } from '@/features/identity-access/session/RequirePermission.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 
 import { isInternal } from '@/features/projects/access.ts';
@@ -21,6 +23,14 @@ export const reportRoutes: RouteObject[] = [
   { path: 'explorer', element: <ExplorerPage /> }, // SCR-138, MOD-060, MOD-061, MOD-062
   { path: 'saved-views', element: <SavedViewsPage /> }, // SCR-139, MOD-062
   { path: 'exports', element: <ExportHistoryPage /> }, // SCR-140
+  {
+    path: 'cards/:dimension/:itemId', // the 5 Nov 2026 review §3 row 11
+    element: (
+      <RequirePermission codes={['PORTFOLIO_BREAKDOWN_VIEW']}>
+        <PortfolioCardPage />
+      </RequirePermission>
+    ),
+  },
   { path: ':family', element: <ReportFamilyPage /> }, // SCR-131 to SCR-137
   { path: ':family/:reportCode', element: <ReportPage /> }, // SCR-131 to SCR-137, MOD-060, MOD-061, MOD-062
 ];

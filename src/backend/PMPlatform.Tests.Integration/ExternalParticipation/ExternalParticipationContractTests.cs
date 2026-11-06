@@ -30,7 +30,7 @@ public sealed class ExternalParticipationContractTests(ExternalParticipationTest
 
         Assert.True(JsonNode.DeepEquals(OpenApiDocument.Snapshot().Surface(Tag), built),
             $"{OpenApiDocument.SnapshotPath} does not describe the {Tag} API as built. Run with {OpenApiDocument.UpdateVariable}=1 and commit the file.");
-        Assert.Equal(22, built["paths"]!.AsObject().Count);
+        Assert.Equal(30, built["paths"]!.AsObject().Count);
     }
 
     [Fact]

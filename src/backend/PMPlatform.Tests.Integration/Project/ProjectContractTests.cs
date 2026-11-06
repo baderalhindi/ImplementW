@@ -51,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(28, built["paths"]!.AsObject().Count);
+        Assert.Equal(30, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -183,6 +183,14 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             ImportApi.Workbook(["legacy_id", "title"], ["CONTRACT-1", "Contract check"]), commit: false);
         Assert.Equal(HttpStatusCode.OK, validated.StatusCode);
         await responses.CheckAsync("POST", $"{ProjectDriver.Projects}/imports", validated);
+
+        // The 5 Nov 2026 review §3: the figures of RPMO's Excel, and a card of a portfolio nobody's project holds.
+        string manager = (await client.SignInOrFailAsync(2)).AccessToken;
+        using HttpResponseMessage insights = await client.GetAsync("/api/v1/portfolio-insights", manager);
+        Assert.Equal(HttpStatusCode.OK, insights.StatusCode);
+        await responses.CheckAsync("GET", "/api/v1/portfolio-insights", insights);
+        using HttpResponseMessage card = await client.GetAsync($"/api/v1/portfolio-insights/cards?dimension=PORTFOLIO&itemId={Guid.NewGuid()}", manager);
+        await responses.CheckAsync("GET", "/api/v1/portfolio-insights/cards", card);
 
         Assert.Equal(document.Operations(Tag).Select(o => o.Name).Order(), responses.Operations.Order());
         Assert.Empty(responses.Violations);

@@ -5,6 +5,7 @@ import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
@@ -62,6 +63,13 @@ export function DepartmentListPage(): ReactElement {
     setParams(next);
   };
 
+  const removeFilter = (name: 'q' | 'isActive') => {
+    const next = new URLSearchParams(params);
+    next.delete('page');
+    next.delete(name);
+    setParams(next);
+  };
+
   const toggle = (department: DepartmentSummary) => {
     const name = labelOf(department.name, language);
     setConfirmation(
@@ -108,31 +116,75 @@ export function DepartmentListPage(): ReactElement {
         }
       />
 
-      <form className="filters" onSubmit={applyFilters} aria-label={t('common.filters.label')}>
-        <TextField
-          label={t('identityAccess.departments.search')}
-          name="q"
-          type="search"
-          value={draftQ}
-          onChange={setDraftQ}
-        />
-        <SelectField
-          label={t('identityAccess.departments.status')}
-          name="isActive"
-          value={draftActive}
-          placeholder={t('common.filters.any')}
-          options={[
-            { value: 'true', label: t('identityAccess.departments.active') },
-            { value: 'false', label: t('identityAccess.departments.inactive') },
-          ]}
-          onChange={setDraftActive}
-        />
-        <div className="filters__actions">
-          <button type="submit" className="button button--primary">
-            {t('common.filters.apply')}
-          </button>
-        </div>
-      </form>
+      <FilterBar
+        onClearAll={() => {
+          setDraftQ('');
+          setDraftActive('');
+          setParams(new URLSearchParams());
+        }}
+        chips={[
+          ...(q === undefined
+            ? []
+            : [
+                {
+                  name: 'q',
+                  text: t('common.filters.inline', {
+                    label: t('identityAccess.departments.search'),
+                    value: q,
+                  }),
+                  onRemove: () => {
+                    setDraftQ('');
+                    removeFilter('q');
+                  },
+                },
+              ]),
+          ...(isActive === undefined
+            ? []
+            : [
+                {
+                  name: 'isActive',
+                  text: t('common.filters.inline', {
+                    label: t('identityAccess.departments.status'),
+                    value: t(
+                      isActive
+                        ? 'identityAccess.departments.active'
+                        : 'identityAccess.departments.inactive',
+                    ),
+                  }),
+                  onRemove: () => {
+                    setDraftActive('');
+                    removeFilter('isActive');
+                  },
+                },
+              ]),
+        ]}
+      >
+        <form className="filters" onSubmit={applyFilters}>
+          <TextField
+            label={t('identityAccess.departments.search')}
+            name="q"
+            type="search"
+            value={draftQ}
+            onChange={setDraftQ}
+          />
+          <SelectField
+            label={t('identityAccess.departments.status')}
+            name="isActive"
+            value={draftActive}
+            placeholder={t('common.filters.any')}
+            options={[
+              { value: 'true', label: t('identityAccess.departments.active') },
+              { value: 'false', label: t('identityAccess.departments.inactive') },
+            ]}
+            onChange={setDraftActive}
+          />
+          <div className="filters__actions">
+            <button type="submit" className="button button--primary">
+              {t('common.filters.apply')}
+            </button>
+          </div>
+        </form>
+      </FilterBar>
 
       {departments.loading && <LoadingState />}
       {departments.error !== null && (

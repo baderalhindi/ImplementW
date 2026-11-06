@@ -95,19 +95,20 @@ ON CONFLICT (id) DO NOTHING;
 -- 2. Roles R01–R08. Codes are canonical (ERD F-080). The labels are PROVISIONAL (record F-1): Blueprint Appendix A
 -- is not in the repository, so they follow the role dashboards DSH-001–008. R04 and R08 may be held by an external
 -- entity's people (ADR-013).
-INSERT INTO identity_access.role AS r (id, code, name_ar, name_en, is_system, is_external_eligible, created_at, created_by, updated_at, updated_by)
-SELECT v.id::uuid, v.code, v.name_ar, v.name_en, true, v.is_external_eligible,
+-- allowed_scopes and landing_dashboard_code (R4-6) are the role's own settings: set here for a new role, and an administrator's change stands.
+INSERT INTO identity_access.role AS r (id, code, name_ar, name_en, is_system, is_external_eligible, allowed_scopes, landing_dashboard_code, created_at, created_by, updated_at, updated_by)
+SELECT v.id::uuid, v.code, v.name_ar, v.name_en, true, v.is_external_eligible, v.allowed_scopes::text[], v.landing,
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
 FROM (VALUES
-    ('00000000-0000-4000-8000-000000000001', 'R01', 'مدير النظام',      'System Administrator', false),
-    ('00000000-0000-4000-8000-000000000002', 'R02', 'مدير المحفظة',     'Portfolio Manager',    false),
-    ('00000000-0000-4000-8000-000000000003', 'R03', 'مدير القطاع',      'Sector Manager',       false),
-    ('00000000-0000-4000-8000-000000000004', 'R04', 'مدير المشروع',     'Project Manager',      true),
-    ('00000000-0000-4000-8000-000000000005', 'R05', 'ضابط الاتصال',     'Liaison',              false),
-    ('00000000-0000-4000-8000-000000000006', 'R06', 'مستعرض',           'Viewer',               false),
-    ('00000000-0000-4000-8000-000000000007', 'R07', 'تنفيذي',           'Executive',            false),
-    ('00000000-0000-4000-8000-000000000008', 'R08', 'مستخدم جهة خارجية', 'External Entity User', true)
-) AS v (id, code, name_ar, name_en, is_external_eligible)
+    ('00000000-0000-4000-8000-000000000001', 'R01', 'مدير النظام',      'System Administrator', false, '{ALL,DEPARTMENT,PROJECT}', 'GOVERNANCE'),
+    ('00000000-0000-4000-8000-000000000002', 'R02', 'مدير المحفظة',     'Portfolio Manager',    false, '{ALL,DEPARTMENT,PROJECT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000003', 'R03', 'مدير القطاع',      'Sector Manager',       false, '{DEPARTMENT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000004', 'R04', 'مدير المشروع',     'Project Manager',      true, '{ALL,DEPARTMENT,PROJECT,ENTITY}', 'GOVERNANCE'),
+    ('00000000-0000-4000-8000-000000000005', 'R05', 'ضابط الاتصال',     'Liaison',              false, '{PROJECT}', 'GOVERNANCE'),
+    ('00000000-0000-4000-8000-000000000006', 'R06', 'مستعرض',           'Viewer',               false, '{DEPARTMENT,PROJECT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000007', 'R07', 'تنفيذي',           'Executive',            false, '{ALL,DEPARTMENT,PROJECT}', 'PORTFOLIO'),
+    ('00000000-0000-4000-8000-000000000008', 'R08', 'مستخدم جهة خارجية', 'External Entity User', true, '{ALL,ENTITY,PROJECT}', 'PROJECT')
+) AS v (id, code, name_ar, name_en, is_external_eligible, allowed_scopes, landing)
 ON CONFLICT (code) DO UPDATE SET
     is_system = EXCLUDED.is_system,
     is_external_eligible = EXCLUDED.is_external_eligible,
@@ -228,6 +229,11 @@ FROM (VALUES
     ('EXTERNAL_REQUEST_VIEW',       'عرض طلبات تحديث الجهات الخارجية', 'View external update requests', 'EXTERNAL_PARTICIPATION', false),
     ('EXTERNAL_REQUEST_MANAGE',     'إدارة طلبات تحديث الجهات الخارجية', 'Manage external update requests', 'EXTERNAL_PARTICIPATION', false),
     ('EXTERNAL_CONTRIBUTION_RESPOND', 'الرد على طلبات التحديث', 'Respond to external update requests', 'EXTERNAL_PARTICIPATION', false),
+    ('UPDATE_REQUEST_SEND',         'إرسال طلبات التحديث الشهري', 'Send monthly update requests', 'EXTERNAL_PARTICIPATION', false),
+    ('PORTFOLIO_SUMMARY_VIEW',      'عرض ملخص المحافظ',     'View portfolio summary',      'PROJECT',         false),
+    ('PORTFOLIO_BREAKDOWN_VIEW',    'عرض التفصيل حسب المبادرة والقطاع', 'View initiative and sector breakdowns', 'PROJECT', false),
+    ('PORTFOLIO_STATUS_VIEW',       'عرض مراحل المشاريع ومؤشر الخطة', 'View project stages and on-plan indicator', 'PROJECT', false),
+    ('PORTFOLIO_FOLLOW_UP_VIEW',    'عرض أسباب المتابعة وأهم المشاريع', 'View follow-up reasons and top projects', 'PROJECT', false),
     ('EXTERNAL_CONTRIBUTION_REVIEW', 'مراجعة مساهمات الجهات الخارجية', 'Review external contributions', 'EXTERNAL_PARTICIPATION', false),
     ('EXTERNAL_CONTRIBUTION_APPLY', 'تطبيق المساهمات المقبولة', 'Apply accepted contributions', 'EXTERNAL_PARTICIPATION', false),
     ('FINANCIAL_VIEW',              'عرض البيانات المالية', 'View financial progress',     'FINANCIAL',       false),
@@ -323,6 +329,11 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R02', 'CLOSEOUT_WAIVE',                'ALL'),
     ('R02', 'EXTERNAL_REQUEST_VIEW',         'ALL'),
     ('R02', 'EXTERNAL_REQUEST_MANAGE',       'ALL'),
+    ('R02', 'UPDATE_REQUEST_SEND',           'ALL'),
+    ('R02', 'PORTFOLIO_SUMMARY_VIEW',        'ALL'),
+    ('R02', 'PORTFOLIO_BREAKDOWN_VIEW',      'ALL'),
+    ('R02', 'PORTFOLIO_STATUS_VIEW',         'ALL'),
+    ('R02', 'PORTFOLIO_FOLLOW_UP_VIEW',      'ALL'),
     ('R02', 'EXTERNAL_CONTRIBUTION_REVIEW',  'ALL'),
     ('R02', 'FINANCIAL_VIEW',                'ALL'),
     ('R02', 'FINANCIAL_VIEW_SENSITIVE',      'ALL'),
@@ -373,6 +384,11 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R03', 'CLOSEOUT_WAIVE',                'DEPT'),
     ('R03', 'EXTERNAL_REQUEST_VIEW',         'DEPT'),
     ('R03', 'EXTERNAL_REQUEST_MANAGE',       'DEPT'),
+    ('R03', 'UPDATE_REQUEST_SEND',           'DEPT'),
+    ('R03', 'PORTFOLIO_SUMMARY_VIEW',        'DEPT'),
+    ('R03', 'PORTFOLIO_BREAKDOWN_VIEW',      'DEPT'),
+    ('R03', 'PORTFOLIO_STATUS_VIEW',         'DEPT'),
+    ('R03', 'PORTFOLIO_FOLLOW_UP_VIEW',      'DEPT'),
     ('R03', 'EXTERNAL_CONTRIBUTION_REVIEW',  'DEPT'),
     ('R03', 'FINANCIAL_VIEW',                'DEPT'),
     ('R03', 'FINANCIAL_VIEW_SENSITIVE',      'DEPT'),
@@ -498,6 +514,16 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R08', 'ACTIVITY_VIEW',                 'ENTITY'),
     ('R08', 'TASK_VIEW',                     'ASSIGNED'),
     ('R08', 'TASK_UPDATE',                   'ASSIGNED'),
+    ('R04', 'EXTERNAL_CONTRIBUTION_RESPOND', 'ASSIGNED'),
+    ('R04', 'PORTFOLIO_STATUS_VIEW',         'OWN'),
+    ('R05', 'PORTFOLIO_STATUS_VIEW',         'ASSIGNED'),
+    ('R05', 'PORTFOLIO_FOLLOW_UP_VIEW',      'ASSIGNED'),
+    ('R06', 'PORTFOLIO_SUMMARY_VIEW',        'DEPT'),
+    ('R06', 'PORTFOLIO_STATUS_VIEW',         'DEPT'),
+    ('R07', 'PORTFOLIO_SUMMARY_VIEW',        'ALL'),
+    ('R07', 'PORTFOLIO_BREAKDOWN_VIEW',      'ALL'),
+    ('R07', 'PORTFOLIO_STATUS_VIEW',         'ALL'),
+    ('R07', 'PORTFOLIO_FOLLOW_UP_VIEW',      'ALL'),
     ('R08', 'EXTERNAL_CONTRIBUTION_RESPOND', 'ASSIGNED');
 
 INSERT INTO identity_access.permission_profile_grant AS pg (id, permission_profile_version_id, permission_id, data_scope, created_at, created_by, updated_at, updated_by)
@@ -590,7 +616,9 @@ FROM (VALUES
     ('IMPACT_DIMENSION',     'COST',             'التكلفة',          'Cost',             1),
     ('IMPACT_DIMENSION',     'SCHEDULE',         'الجدول الزمني',    'Schedule',         2),
     ('IMPACT_DIMENSION',     'REPUTATION',       'السمعة',           'Reputation',       3),
-    ('IMPACT_DIMENSION',     'OPERATIONAL',      'التشغيل',          'Operational',      4)
+    ('IMPACT_DIMENSION',     'OPERATIONAL',      'التشغيل',          'Operational',      4),
+    -- The 5 Nov 2026 review (R4-2): the monthly update, a typed contribution of WF-13
+    ('CONTRIBUTION_TYPE',    'MONTHLY_UPDATE',   'تحديث شهري',       'Monthly update',   1)
 ) AS v (catalogue_code, code, label_ar, label_en, sort_order)
 JOIN master_data_config.master_data_catalogue c ON c.code = v.catalogue_code
 ON CONFLICT (catalogue_id, code) DO UPDATE SET
@@ -619,6 +647,39 @@ FROM (VALUES
     ('WORKFLOW_POLICY',      'سياسة سير العمل',            'Workflow policy')
 ) AS v (code, name_ar, name_en)
 ON CONFLICT (code) DO NOTHING;
+
+-- The monthly update must work without a governance round first (the 5 Nov 2026 review §2.2): a PARTICIPATION version enabling it in both modes, once, when the family's
+-- version in force has no rule for it. An AHDA version published later decides from then on.
+DO $$
+DECLARE
+    item uuid := md5('master_data_item:CONTRIBUTION_TYPE:MONTHLY_UPDATE')::uuid;
+    family uuid := (SELECT id FROM master_data_config.configuration_family WHERE code = 'PARTICIPATION');
+    version uuid := md5('configuration_version:PARTICIPATION:monthly-update')::uuid;
+    source uuid := (SELECT id FROM master_data_config.configuration_version WHERE configuration_family_id = (SELECT id FROM master_data_config.configuration_family WHERE code = 'PARTICIPATION')
+                    AND lifecycle_state = 'PUBLISHED' ORDER BY version_no DESC LIMIT 1);
+BEGIN
+    IF EXISTS (SELECT 1 FROM master_data_config.configuration_version WHERE id = version)
+       OR EXISTS (SELECT 1 FROM master_data_config.participation_contribution_rule WHERE configuration_version_id = source AND contribution_type_item_id = item) THEN
+        RETURN;
+    END IF;
+
+    INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, change_summary_lang, change_summary, lifecycle_state, created_at, created_by, updated_at, updated_by)
+    SELECT version, family, 1 + count(*), 'en', 'Monthly update enabled (seed, R4-2).', 'DRAFT', now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM master_data_config.configuration_version WHERE configuration_family_id = family;
+
+    INSERT INTO master_data_config.participation_contribution_rule (id, configuration_version_id, participation_mode, contribution_type_item_id, is_enabled, created_at, created_by, updated_at, updated_by)
+    SELECT md5(version::text || r.participation_mode || r.contribution_type_item_id::text)::uuid, version, r.participation_mode, r.contribution_type_item_id, r.is_enabled,
+           now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM master_data_config.participation_contribution_rule r WHERE r.configuration_version_id = source;
+
+    INSERT INTO master_data_config.participation_contribution_rule (id, configuration_version_id, participation_mode, contribution_type_item_id, is_enabled, created_at, created_by, updated_at, updated_by)
+    SELECT md5(version::text || m.mode || item::text)::uuid, version, m.mode, item, true, now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM (VALUES ('AHDA_MANAGED'), ('ENTITY_MANAGED')) AS m (mode);
+
+    UPDATE master_data_config.configuration_version
+    SET lifecycle_state = 'PUBLISHED', published_by_user_id = '00000000-0000-4000-8000-0000000000ff', published_at = now(), effective_from = now()
+    WHERE id = version;
+END $$;
 
 -- 5. The risk and issue scale, generically (ADR-011; OQ-006). Version 1 of RISK_MATRIX stays DRAFT: resolution
 -- reads PUBLISHED versions only and fails closed without one (TASK-034), so nothing resolves against a scale AHDA

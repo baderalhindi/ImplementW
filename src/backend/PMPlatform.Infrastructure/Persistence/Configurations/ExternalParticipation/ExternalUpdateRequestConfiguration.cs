@@ -26,6 +26,8 @@ internal sealed class ExternalUpdateRequestConfiguration : IEntityTypeConfigurat
         builder.HasIndex(e => new { e.ProjectId, e.UpdatedAt, e.Id });
         builder.HasIndex(e => new { e.UpdatedAt, e.Id });
         builder.HasIndex(e => e.ResponsibleUserId);
+        builder.HasIndex(e => e.UpdateRequestBatchId);
+        builder.HasOne<UpdateRequestBatch>().WithMany().HasForeignKey(e => e.UpdateRequestBatchId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(e => e.ReviewerUserId);
 
         // A request past DRAFT was issued, by someone, to a named responder with a named reviewer, under the PARTICIPATION version that

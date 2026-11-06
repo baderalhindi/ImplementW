@@ -628,7 +628,117 @@ h3 {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.global-search {
+  position: relative;
+  flex: 0 1 26rem;
+  min-inline-size: 12rem;
   margin-inline-start: auto;
+}
+
+.global-search__icon {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: var(--space-3);
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.global-search__input {
+  inline-size: 100%;
+  min-block-size: 2.5rem;
+  padding-block: var(--space-1);
+  padding-inline: calc(var(--space-3) + 1.6rem) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.global-search__input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.global-search__panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline: 0;
+  z-index: 20;
+  overflow-y: auto;
+  min-inline-size: min(24rem, calc(100vw - 2rem));
+  max-block-size: min(32rem, 70vh);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: 0 8px 24px rgb(16 24 40 / 16%);
+}
+
+.global-search__group {
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.global-search__option {
+  display: grid;
+  gap: 0.1rem;
+  justify-items: start;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.global-search__option:hover,
+.global-search__option[aria-selected='true'] {
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.global-search__primary {
+  overflow-wrap: anywhere;
+}
+
+.global-search__secondary {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.global-search__message {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+}
+
+/* On a phone the search takes its own row under the bar's other controls. */
+@media (max-width: 48rem) {
+  .topbar {
+    flex-wrap: wrap;
+  }
+
+  .topbar__actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-inline-size: 0;
+    margin-inline-start: auto;
+  }
+
+  .global-search {
+    flex: 1 1 100%;
+    order: 1;
+    margin-inline-start: 0;
+  }
 }
 
 .topbar .topbar__control {
@@ -1737,6 +1847,18 @@ select.field__input {
   box-shadow: var(--shadow-card);
 }
 
+/* The return from the identity provider: the account panel alone. */
+.sign-in__card.sign-in__card--single {
+  grid-template-columns: minmax(0, 1fr);
+  max-inline-size: 32rem;
+  margin-inline: auto;
+}
+
+.sign-in__card--single .sign-in__account {
+  padding-inline: 0;
+  border-inline: 0;
+}
+
 @media (min-width: 56rem) {
   .sign-in__card {
     grid-template-columns: 1fr 1fr;
@@ -1883,6 +2005,10 @@ select.field__input {
   color: var(--color-text);
   font: inherit;
   text-align: center;
+}
+
+.sign-in__provider:not(:disabled) {
+  cursor: pointer;
 }
 
 .sign-in__provider:disabled {
@@ -3620,8 +3746,8 @@ select.field__input {
   gap: var(--space-4) var(--space-6);
 }
 
-/* In a narrow card (its body under 27rem) the legend goes under its donut, whatever the window's width. */
-@container widget (max-width: 27rem) {
+/* In a narrow card (its body under 22rem) the legend goes under its donut, whatever the window's width. */
+@container widget (max-width: 22rem) {
   .distribution--donut {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
@@ -4691,7 +4817,7 @@ path.trend__line--ACTUAL_PERCENT {
 /* Across projects: one card per KPI, as many to a row as fit. */
 .kpi-aggregates {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
   gap: var(--space-4);
   margin: 0;
   padding: 0;
@@ -4847,11 +4973,6 @@ path.trend__line--ACTUAL_PERCENT {
 }
 
 .kpi-register__list-header h2 {
-  margin: 0;
-}
-
-.kpi-register__list-header .field {
-  inline-size: min(100%, 22rem);
   margin: 0;
 }
 
@@ -5017,9 +5138,10 @@ path.trend__line--ACTUAL_PERCENT {
   margin: 0;
 }
 
+/* Tiles share each row's width, the last row's too, so no row ends in an empty column. */
 .home__tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
   margin: 0;
   padding: 0;
@@ -5027,6 +5149,7 @@ path.trend__line--ACTUAL_PERCENT {
 }
 
 .home__tile {
+  flex: 1 1 min(100%, 13rem);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -5094,13 +5217,149 @@ path.trend__line--ACTUAL_PERCENT {
   margin-block-end: var(--space-4);
 }
 
-.locations__regions {
+.locations__map-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  gap: var(--space-4);
+  margin-block-end: var(--space-4);
+}
+
+@media (max-width: 60rem) {
+  .locations__map-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.locations-map {
+  min-block-size: 30rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface, var(--color-background));
+  z-index: 0;
+}
+
+.map-bubble__anchor {
+  background: none;
+  border: 0;
+}
+
+.map-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  block-size: 100%;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: rgba(15, 118, 110, 0.82);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.map-bubble--selected {
+  background: rgba(194, 65, 12, 0.92);
+  outline: 3px solid rgba(194, 65, 12, 0.35);
+}
+
+.leaflet-marker-icon:focus-visible .map-bubble {
+  outline: 3px solid var(--color-focus, #1d4ed8);
+  outline-offset: 2px;
+}
+
+/* The panel scrolls beside the map. A scrollbar that overlays the content, as macOS draws it, needs a little room kept for it. */
+.locations__side {
+  min-inline-size: 0;
+  block-size: 30rem;
+  overflow-y: auto;
+  padding-inline-end: var(--space-3);
+}
+
+.location-details {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.location-details__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.location-details h3,
+.location-details h4,
+.location-details__region,
+.location-details__count {
+  margin: 0;
+}
+
+.location-details__region {
+  color: var(--color-text-muted);
+}
+
+.location-details__count {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.location-details .insights__counts {
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+.location-details .insights__counts > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.location-details .insights__counts dd {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.location-details__projects {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.location-details__projects li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.locations__regions {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.locations__region {
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+}
+
+/* Beside the map the list is one column, as tall as the map. */
+.locations__side .locations__regions {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.locations__side .locations__region {
+  flex: none;
 }
 
 .locations__region {
@@ -5134,15 +5393,42 @@ path.trend__line--ACTUAL_PERCENT {
 /* ---------------------------------------------------------------------------------------------- filter bar */
 
 /*
- * The one filter bar (the 2 Nov 2026 review, R3-1): a full-width row under the page title, kept in view while the page scrolls, of
- * compact drop-downs about 200 px wide whose label sits inside the control. It wraps to a second row below 1,280 px; on a phone it
- * folds into a "Filters (n)" button.
+ * The one filter component (the 5 Nov 2026 review, R4-1): a Filters button on the page's toolbar row, closed by default at every screen
+ * size; the panel of compact drop-downs opens below it, and the active filters stay as chips under the button when it is closed.
  */
 .filter-bar {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 5;
   margin-block-end: var(--space-4);
+}
+
+.filter-bar__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.filter-bar__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filter-bar__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filter-bar__icon {
+  flex: none;
+}
+
+.filter-bar__body {
+  display: grid;
+  gap: var(--space-3);
+  margin-block-start: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-card);
@@ -5150,9 +5436,17 @@ path.trend__line--ACTUAL_PERCENT {
   box-shadow: var(--shadow-card);
 }
 
-.filter-bar__body {
-  display: grid;
-  gap: var(--space-3);
+.filter-bar__body[hidden] {
+  display: none;
+}
+
+/* The panel is the card: a form passed as children draws no second one inside it. */
+.filter-bar__body .filters {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .filter-bar__row {
@@ -5184,7 +5478,7 @@ path.trend__line--ACTUAL_PERCENT {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin: 0;
+  margin: var(--space-3) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -5204,27 +5498,7 @@ path.trend__line--ACTUAL_PERCENT {
   unicode-bidi: isolate;
 }
 
-.filter-bar__toggle {
-  display: none;
-}
-
 @media (max-width: 40rem) {
-  .filter-bar {
-    position: static;
-  }
-
-  .filter-bar__toggle {
-    display: inline-flex;
-  }
-
-  .filter-bar:not(.filter-bar--open) .filter-bar__body {
-    display: none;
-  }
-
-  .filter-bar--open .filter-bar__body {
-    margin-block-start: var(--space-3);
-  }
-
   .filter-bar__select {
     inline-size: 100%;
   }
@@ -5250,4 +5524,333 @@ path.trend__line--ACTUAL_PERCENT {
 
 .notes p {
   margin: 0;
+}
+
+/* ------------------------------------------------------------------------------- the monthly update (the 5 Nov 2026 review §2) */
+
+.dialog--wide {
+  inline-size: min(64rem, calc(100vw - 2rem));
+}
+
+.monthly-window {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.monthly-window__progress {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.monthly-window__panes {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .monthly-window__panes {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+}
+
+.monthly-window__list {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.monthly-window__row {
+  display: grid;
+  gap: var(--space-1);
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-background);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+}
+
+button.monthly-window__row {
+  cursor: pointer;
+}
+
+.monthly-window__row--current {
+  border-color: var(--color-primary);
+  border-inline-start-width: 4px;
+}
+
+.monthly-window__row--done {
+  opacity: 0.8;
+}
+
+.monthly-window__name {
+  display: grid;
+}
+
+.monthly-window__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.monthly-window__heading {
+  margin: 0;
+}
+
+.notification-menu__item--pinned {
+  border-inline-start: 4px solid var(--chart-warning);
+  font-weight: 600;
+}
+
+/* The three steps of "طلب تحديث". */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style-position: inside;
+}
+
+.steps__step {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.steps__step--current {
+  border-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.steps__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}
+
+.steps__counter {
+  margin: 0;
+  font-weight: 600;
+}
+
+tr[data-flagged='true'] {
+  background: var(--color-danger-surface, rgb(200 40 40 / 6%));
+}
+
+.batch-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ------------------------------------------------------------------------------- portfolio insights (the 5 Nov 2026 review §3) */
+
+.insights {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.insights__section {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.insights__counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.insights__counts > div {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+}
+
+.insights__counts dt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.insights__counts dd {
+  margin: var(--space-1) 0 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: start;
+}
+
+.insights__section h2 {
+  margin: 0;
+}
+
+.insights__coverage {
+  display: block;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.insights__group th {
+  background: var(--chart-track);
+  font-weight: 600;
+}
+
+.insights__split {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+/* Many columns of figures: headers wrap and cells tighten, so the whole table fits; a name keeps enough width not to run down the row. */
+.insights__section table {
+  font-size: 0.875rem;
+}
+
+.insights__section th,
+.insights__section td {
+  padding-inline: var(--space-2);
+}
+
+.insights__section thead th {
+  white-space: normal;
+  vertical-align: bottom;
+}
+
+.insights__section tbody th[scope='row'],
+.insights__section tfoot th[scope='row'] {
+  min-inline-size: 10rem;
+}
+
+.insights__headline .home__tile {
+  flex-basis: min(100%, 18rem);
+}
+
+@media (min-width: 60rem) {
+  .insights__headline .home__tile {
+    flex-basis: calc((100% - 2 * var(--space-3)) / 3);
+  }
+}
+
+/* Two charts a row at most, and an odd one takes the row. */
+.insights__charts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.insights__charts > * {
+  flex: 1 1 calc(50% - var(--space-4));
+  min-inline-size: min(100%, 22rem);
+}
+
+.grouped-columns {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.grouped-columns__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.grouped-columns__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.grouped-columns__plot {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.grouped-columns__group {
+  display: grid;
+  flex: 1 1 0;
+  gap: var(--space-1);
+  min-inline-size: 0;
+  text-align: center;
+}
+
+.grouped-columns__bars {
+  display: flex;
+  gap: 2px;
+  block-size: 10rem;
+}
+
+.grouped-columns__track {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  min-inline-size: 0;
+  padding-block-start: 1.5rem;
+}
+
+/* Above the bar's highest reach, so a full bar never covers it. */
+.grouped-columns__value {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.grouped-columns__bar {
+  display: block;
+  border-radius: 4px 4px 0 0;
+  background: var(--chart-color, var(--chart-single));
+}
+
+/* --------------------------------------------------------------------------------------------- printing a card */
+
+@media print {
+  .rail,
+  .rail__backdrop,
+  .topbar,
+  .skip-link,
+  .print-hide {
+    display: none !important;
+  }
+
+  .app,
+  .app__column,
+  .app__main {
+    display: block;
+    margin: 0;
+    padding: 0;
+    background: none;
+  }
+
+  .print-card .table-container {
+    overflow: visible;
+  }
+
+  .print-card .table {
+    font-size: 0.8rem;
+  }
 }

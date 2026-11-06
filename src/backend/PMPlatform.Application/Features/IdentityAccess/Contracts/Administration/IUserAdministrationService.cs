@@ -17,6 +17,14 @@ public interface IUserAdministrationService
         Guid actorId, Guid userId, UserChanges changes, uint expectedVersion, CancellationToken cancellationToken);
 
     /// <summary>DISABLED → ACTIVE. <paramref name="expectedVersion"/> is honoured when present (R-21).</summary>
+    /// <summary>A local account's new temporary password, typed or generated; the response carries it, this once.</summary>
+    public Task<AdministrationResult<Versioned<UserDetail>>> ResetPasswordAsync(Guid actorId, Guid userId, string? typedPassword, uint? expectedVersion, CancellationToken cancellationToken);
+
+    public Task<AdministrationResult<Versioned<UserDetail>>> UnlockAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken);
+
+    /// <summary>The account's last usable day; null makes it open-ended.</summary>
+    public Task<AdministrationResult<Versioned<UserDetail>>> SetEndDateAsync(Guid actorId, Guid userId, DateOnly? endsOn, uint? expectedVersion, CancellationToken cancellationToken);
+
     public Task<AdministrationResult<Versioned<UserDetail>>> ActivateAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken);
 
     /// <summary>ACTIVE → DISABLED. The user can neither sign in nor pass the engine from the next request on.</summary>

@@ -58,7 +58,7 @@ internal static class ExternalParticipationWorkflow
             (ContributionCommand.Submit, ExternalContributionStatus.Draft) => new StatusOf(ExternalContributionStatus.Submitted),
             (ContributionCommand.Submit, _) => AdministrationError.Conflict(ExternalParticipationErrorCodes.ContributionAlreadySubmitted),
             (ContributionCommand.StartReview, ExternalContributionStatus.Submitted) => new StatusOf(ExternalContributionStatus.UnderReview),
-            (ContributionCommand.Accept, ExternalContributionStatus.UnderReview) => new StatusOf(mode == ContributionApplicationMode.ReferenceOnly
+            (ContributionCommand.Accept, ExternalContributionStatus.UnderReview) => new StatusOf(mode is ContributionApplicationMode.ReferenceOnly or ContributionApplicationMode.ApplyOnAccept
                 ? ExternalContributionStatus.Applied
                 : ExternalContributionStatus.AcceptedPendingApplication),
             (ContributionCommand.Return, ExternalContributionStatus.UnderReview) => new StatusOf(ExternalContributionStatus.Returned),

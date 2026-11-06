@@ -3,7 +3,7 @@ import { type ReactElement, useState } from 'react';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { isForbidden } from '@/features/risks/problems.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
@@ -20,10 +20,6 @@ import {
 } from './concernRules.ts';
 import { concernProblemMessage } from './problems.ts';
 import { useConcernLookups, useEscalationQueue, useRoleNames } from './useConcernData.ts';
-
-function isEscalationView(value: string): value is EscalationView {
-  return (ESCALATION_VIEWS as readonly string[]).includes(value);
-}
 
 const TYPES: readonly ConcernType[] = ['ISSUE', 'CHALLENGE'];
 
@@ -50,32 +46,44 @@ export function EscalationsPage(): ReactElement {
   );
 
   const filters = (
-    <div className="filters filters--inline">
-      <SelectField
-        label={t('issuesChallenges.escalations.filter.status')}
-        name="status"
-        value={view}
-        options={ESCALATION_VIEWS.map((value) => ({
-          value,
-          label: t(`issuesChallenges.escalations.filter.views.${value}`),
-        }))}
-        onChange={(chosen) => {
-          if (isEscalationView(chosen)) {
-            setView(chosen);
-          }
-        }}
-      />
-      <SelectField
-        label={t('issuesChallenges.escalations.filter.type')}
-        name="type"
-        value={type}
-        options={[
-          { value: ANY, label: t('common.filters.any') },
-          ...TYPES.map((value) => ({ value, label: t(`issuesChallenges.type.${value}`) })),
-        ]}
-        onChange={setType}
-      />
-    </div>
+    <FilterBar
+      fields={[
+        {
+          name: 'status',
+          label: t('issuesChallenges.escalations.filter.status'),
+          all: t(`issuesChallenges.escalations.filter.views.${DEFAULT_ESCALATION_VIEW}`),
+          options: ESCALATION_VIEWS.filter((value) => value !== DEFAULT_ESCALATION_VIEW).map(
+            (value) => ({
+              value,
+              label: t(`issuesChallenges.escalations.filter.views.${value}`),
+            }),
+          ),
+        },
+        {
+          name: 'type',
+          label: t('issuesChallenges.escalations.filter.type'),
+          all: t('common.filters.any'),
+          options: TYPES.map((value) => ({ value, label: t(`issuesChallenges.type.${value}`) })),
+        },
+      ]}
+      values={{
+        status: view === DEFAULT_ESCALATION_VIEW ? undefined : view,
+        type: type === ANY ? undefined : type,
+      }}
+      onChange={(name, value) => {
+        if (name === 'status') {
+          setView(
+            ESCALATION_VIEWS.find((candidate) => candidate === value) ?? DEFAULT_ESCALATION_VIEW,
+          );
+        } else {
+          setType(value ?? ANY);
+        }
+      }}
+      onClearAll={() => {
+        setView(DEFAULT_ESCALATION_VIEW);
+        setType(ANY);
+      }}
+    />
   );
 
   const header = (

@@ -22,5 +22,10 @@ public sealed class MasterDataItem : GovernedEntity
 
     public int SortOrder { get; set; }
 
+    /// <summary>Where a place is on the map, for an item of a place catalogue; null when not placed.</summary>
+    public decimal? Latitude { get; set; }
+
+    public decimal? Longitude { get; set; }
+
     public bool IsSystem { get; set; }
 }

@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using PMPlatform.Application.Features.GlobalSearch;
+using PMPlatform.Application.Features.GlobalSearch.Contracts;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.DataImport;
@@ -42,6 +44,8 @@ using PMPlatform.Application.Features.ChangeRequest;
 using PMPlatform.Application.Features.ChangeRequest.Contracts;
 using PMPlatform.Application.Features.ChangeRequest.EventHandlers;
 using PMPlatform.Application.Features.ExternalParticipation;
+using PMPlatform.Application.Features.ExternalParticipation.MonthlyUpdates;
+using PMPlatform.Application.Features.Project.Insights;
 using PMPlatform.Application.Features.ExternalParticipation.Contracts;
 using PMPlatform.Application.Features.FinancialKpi;
 using PMPlatform.Application.Features.FinancialKpi.Contracts;
@@ -287,6 +291,10 @@ public static class DependencyInjection
         services.AddScoped<RiskViews>();
         services.AddScoped<RiskGate>();
         services.AddScoped<IRiskService, RiskService>();
+
+        // The header search.
+        services.AddScoped<IGlobalSearchService, GlobalSearchService>();
+
         services.AddScoped<IRiskLifecycleService, RiskLifecycleService>();
         services.AddScoped<IRiskTreatmentService, RiskTreatmentService>();
         services.AddScoped<IRiskMaintenance, RiskMaintenance>();
@@ -365,6 +373,13 @@ public static class DependencyInjection
         services.AddScoped<ExternalParticipationReferences>();
         services.AddScoped<ExternalParticipationViews>();
         services.AddScoped<IExternalContributionTarget, TaskProgressTarget>();
+        services.AddScoped<IExternalContributionTarget, ProjectMonthlyTarget>();
+        services.AddScoped<IProjectMonthlyUpdates, ProjectMonthlyUpdates>();
+        services.AddScoped<IPortfolioInsightsService, PortfolioInsightsService>();
+        services.AddScoped<UpdateRequestBatchService>();
+        services.AddScoped<IUpdateRequestBatchService>(provider => provider.GetRequiredService<UpdateRequestBatchService>());
+        services.AddScoped<IMyUpdateRequests, MyUpdateRequests>();
+        services.AddScoped<IMonthlyUpdateMaintenance, MonthlyUpdateMaintenance>();
         services.AddScoped<ContributionTargets>();
         services.AddScoped<IExternalUpdateRequestService, ExternalUpdateRequestService>();
         // The 2 Nov 2026 review: the entity's on-time answers to its update requests, from which the project module decides compliance.

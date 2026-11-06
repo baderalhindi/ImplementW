@@ -52,8 +52,34 @@ function actions(): HTMLElement {
 }
 
 describe('the Home', () => {
+  test('a portfolio with no project reads "No data", never zero tiles', async () => {
+    withDashboards(homeApi(), {
+      catalogue: catalogueFor(['R02']),
+      views: {
+        PORTFOLIO: dashboardView('PORTFOLIO', {
+          widgets: [
+            widget({
+              code: 'PROJECTS_BY_LIFECYCLE',
+              data: {
+                state: null,
+                figures: [],
+                distribution: [{ key: 'ACTIVE', label: null, count: 0 }],
+                series: [],
+              },
+            }),
+          ],
+        }),
+      },
+    });
+    renderApp({ path: '/', session: sessionFor(['R02']) });
+
+    const section = await screen.findByRole('region', { name: en('home.portfolio.title') });
+    expect(await within(section).findByText(en('dashboards.noData'))).toBeTruthy();
+    expect(within(section).queryByText(en('home.portfolio.projects'))).toBeNull();
+  });
+
   test('a Portfolio Manager sees what waits for its decision and its own requests, and is offered the portfolio analysis', async () => {
-    homeApi();
+    withDashboards(homeApi(), { catalogue: catalogueFor(['R02']) });
     renderApp({ path: '/', session: sessionFor(['R02']) });
 
     expect(
@@ -69,9 +95,11 @@ describe('the Home', () => {
     // No task of its own to update: the tasks card is the doers'.
     expect(screen.queryByRole('region', { name: en('home.tasks.title') })).toBeNull();
     expect(
-      within(actions())
-        .getByRole('link', { name: en('common.menu.portfolioDashboard') })
-        .getAttribute('href'),
+      (
+        await within(actions()).findByRole('link', {
+          name: en('common.menu.portfolioDashboard'),
+        })
+      ).getAttribute('href'),
     ).toBe('/dashboards?dashboard=PORTFOLIO');
     // The Home is not a dashboard: it reads none.
     expect(

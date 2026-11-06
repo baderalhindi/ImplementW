@@ -100,6 +100,12 @@ Table identity_access.user {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   user_type varchar(50) [not null, note: 'INTERNAL | EXTERNAL | SERVICE — EXTERNAL covers contributors and entity Project Managers (ADR-013); SERVICE is a non-human principal']
   directory_subject_id varchar(200) [unique, note: 'Directory/IdP subject; unique when present']
+  account_source varchar(50) [not null, default: 'DIRECTORY', note: 'DIRECTORY | LOCAL (R4-6)']
+  password_hash varchar(200) [note: 'PBKDF2 hash of a local account password; never the plain text']
+  must_change_password boolean [not null, default: false, note: 'Temporary: no session until changed']
+  failed_sign_in_count integer [not null, default: 0]
+  locked_until timestamptz [note: 'Local account lockout']
+  account_ends_on date [note: 'Last usable day; null is open-ended']
   username varchar(100) [not null, unique]
   display_name varchar(200) [not null, note: 'As held by the directory (internal) or as registered (external)']
   email varchar(200) [not null, unique]
@@ -124,11 +130,14 @@ Table identity_access.user {
 
 Table identity_access.role {
   id uuid [pk, not null, note: 'Primary key (D-1)']
-  code varchar(50) [not null, unique, note: 'R01 … R08']
+  code varchar(50) [not null, unique, note: 'R01 … R08, or a created role (R4-6)']
   name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
   name_en varchar(200) [not null, note: 'English label (ADR-012)']
   is_system boolean [not null, default: true, note: 'Shipped defaults cannot be deleted (TASK-110)']
   is_external_eligible boolean [not null, default: false, note: 'R04 and R08 only (ADR-013)']
+  is_active boolean [not null, default: true, note: 'False once retired: no new assignment (R4-6)']
+  allowed_scopes text[] [not null, note: 'ALL | DEPARTMENT | PROJECT | ENTITY']
+  landing_dashboard_code varchar(50) [note: 'Dashboard its holders land on']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -246,6 +255,8 @@ Table master_data_config.master_data_item {
   description_ar varchar(200) [note: 'Arabic label (ADR-012)']
   description_en varchar(200) [note: 'English label (ADR-012)']
   parent_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Hierarchy when the catalogue allows it']
+  latitude numeric(9,6) [note: 'A place on the dashboard map; null when not placed']
+  longitude numeric(9,6) [note: 'A place on the dashboard map; null when not placed']
   sort_order integer [not null, default: 0]
   is_system boolean [not null, default: false]
   lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']
@@ -622,6 +633,10 @@ Table project.project {
   formal_project_id varchar(50) [unique, note: 'Authoritative identifier, issued on AHDA approval; unique; null while DRAFT/SUBMITTED (TASK-041, ADR-013)']
   title text [not null, note: 'Narrative, stored as entered (ADR-012)']
   title_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  title_en varchar(2000) [note: 'English title from RPMO register (5 Nov 2026 review, R4-4)']
+  is_strategic boolean [note: 'RPMO strategic flag; null is not known (R4-4)']
+  entity_contact_user_id uuid [ref: > identity_access.user.id, note: 'Who answers the project update requests by default (R4-2)']
+  seed_source varchar(20) [note: 'DEMO marks demonstration data, which the reset command removes (R4-5)']
   description text [note: 'Narrative, stored as entered (ADR-012)']
   description_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
   classification_item_id uuid [not null, ref: > master_data_config.master_data_item.id, note: 'Catalogue PROJECT_CLASSIFICATION']
@@ -1683,6 +1698,9 @@ Table external_participation.external_update_request {
   instructions text [note: 'Narrative, stored as entered (ADR-012)']
   instructions_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
   status varchar(50) [not null, note: 'DRAFT | ISSUED | IN_PROGRESS | RESPONDED | CLOSED | CANCELLED | EXPIRED']
+  update_request_batch_id uuid [ref: > external_participation.update_request_batch.id, note: 'The batch it was sent in (R4-2)']
+  opened_at timestamptz [note: 'When its responder first opened it']
+  last_reminded_on date [note: 'One reminder a day']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -2511,7 +2529,7 @@ Table audit_activity.audit_event {
   subject_module varchar(50)
   subject_type varchar(100)
   subject_id uuid [note: 'Identifier only']
-  scope_project_id uuid [ref: > project.project.id, note: 'Scope anchor for audit authorisation']
+  scope_project_id uuid [note: 'Scope anchor for audit authorisation. No foreign key: the append-only trail outlives a removed project (R4-5)']
   scope_external_entity_id uuid [ref: > identity_access.external_entity.id]
   correlation_id uuid [not null]
   outcome varchar(50) [not null, note: 'SUCCESS | DENIED | FAILED']
@@ -2772,4 +2790,35 @@ TableGroup audit_activity {
   audit_activity.audit_forwarding_record
   audit_activity.business_activity_entry
   audit_activity.activity_projection_checkpoint
+}
+
+Table external_participation.update_request_batch {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  series_id uuid [not null, note: 'The first batch of a repeating series']
+  due_date date [not null]
+  instructions text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  instructions_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  reviewer_user_id uuid [not null, ref: > identity_access.user.id]
+  repeat_monthly boolean [not null]
+  repeat_day integer [note: '1 to 28']
+  next_run_on date [note: 'When the next batch goes out; null once sent or withdrawn']
+  withdrawn_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'One sending of monthly update requests (5 Nov 2026 review, R4-2). Delete policy: RETAIN.'
+}
+
+Table identity_access.user_password_history {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  password_hash varchar(200) [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'The hashes a local account has used (R4-6). Delete policy: RETAIN.'
 }

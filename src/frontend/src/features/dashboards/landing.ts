@@ -1,3 +1,4 @@
+import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type TranslationKey } from '@/shared/i18n/i18n.ts';
 
@@ -74,20 +75,15 @@ export function selectedEntry(
   return hostedEntries(entries).find((entry) => entry.code === requested) ?? landingEntry(entries);
 }
 
-/** ADR-019's `LAYOUT_PERSONALIZE` ships to R02, R03 and R07 (OWN, `authorization-engine.md` D-9). */
-const PERSONALIZING_ROLES = new Set(['R02', 'R03', 'R07']);
-
 /**
  * Whether the Home offers "Customize layout" on a dashboard: only one the API says is personalisable (the Portfolio
- * Dashboard, by its CHECK) and only to a holder of the permission. The Project Dashboard never is (ADR-019).
+ * Dashboard, by its CHECK) and only to a holder of ADR-019's `LAYOUT_PERSONALIZE`. The Project Dashboard never is (ADR-019).
  */
 export function mayPersonalize(
-  user: SessionUser,
+  permissions: Pick<Permissions, 'can'>,
   entry: { allowsPersonalization: boolean; code: DashboardCode },
 ): boolean {
   return (
-    entry.allowsPersonalization &&
-    entry.code !== 'PROJECT' &&
-    user.roleAssignments.some((assignment) => PERSONALIZING_ROLES.has(assignment.roleCode))
+    entry.allowsPersonalization && entry.code !== 'PROJECT' && permissions.can('LAYOUT_PERSONALIZE')
   );
 }

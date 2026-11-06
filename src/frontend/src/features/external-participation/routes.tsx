@@ -1,9 +1,13 @@
 import { type RouteObject } from 'react-router';
 
 import { type NavigationItem } from '@/features/identity-access/routes.tsx';
+import { RequirePermission } from '@/features/identity-access/session/RequirePermission.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { isInternal } from '@/features/projects/access.ts';
 
+import { BatchDetailPage } from './batches/BatchDetailPage.tsx';
+import { BatchesPage } from './batches/BatchesPage.tsx';
+import { NewBatchPage } from './batches/NewBatchPage.tsx';
 import { InternalOnly } from './components/InternalOnly.tsx';
 import { ContributionReviewPage } from './ContributionReviewPage.tsx';
 import { ExternalRequestDetailPage } from './ExternalRequestDetailPage.tsx';
@@ -18,6 +22,7 @@ import {
   MY_CONTRIBUTIONS_PATH,
   MY_EXTERNAL_REQUESTS_PATH,
   PARTICIPATION_MONITOR_PATH,
+  UPDATE_BATCHES_PATH,
 } from './paths.ts';
 import { SourceApplicationMonitorPage } from './SourceApplicationMonitorPage.tsx';
 
@@ -60,6 +65,30 @@ export const externalRequestRoutes: RouteObject[] = [
       </InternalOnly>
     ),
   },
+  {
+    path: 'batches', // the 5 Nov 2026 review §2.2
+    element: (
+      <RequirePermission codes={['EXTERNAL_REQUEST_VIEW']}>
+        <BatchesPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: 'batches/new',
+    element: (
+      <RequirePermission codes={['UPDATE_REQUEST_SEND']}>
+        <NewBatchPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: 'batches/:batchId',
+    element: (
+      <RequirePermission codes={['EXTERNAL_REQUEST_VIEW']}>
+        <BatchDetailPage />
+      </RequirePermission>
+    ),
+  },
   { path: ':requestId', element: <ExternalRequestDetailPage /> }, // SCR-162, both audiences
   {
     path: ':requestId/edit', // SCR-161 for a DRAFT
@@ -95,6 +124,11 @@ const INTERNAL_NAVIGATION: NavigationItem[] = [
     label: 'externalParticipation.nav.register',
     end: true,
     permissions: ['EXTERNAL_REQUEST_VIEW'],
+  },
+  {
+    to: UPDATE_BATCHES_PATH,
+    label: 'externalParticipation.nav.batches',
+    permissions: ['UPDATE_REQUEST_SEND'],
   },
   {
     to: APPLICATION_MONITOR_PATH,

@@ -334,6 +334,7 @@ public sealed class RepresentativeVolume : IAsyncLifetime
         "integer" or "smallint" or "bigint" => "1",
         "boolean" => "false",
         "jsonb" => "'{}'::jsonb",
+        "text[]" => "ARRAY['ALL']::text[]",
         "bytea" => "'\\x00'::bytea",
         _ when column.Type.StartsWith("character varying", StringComparison.Ordinal) => column.Unique ? "'key-' || n" : "'x'",
         _ when column.Type.StartsWith("character(", StringComparison.Ordinal) => "'en'",

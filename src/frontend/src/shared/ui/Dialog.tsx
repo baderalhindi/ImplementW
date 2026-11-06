@@ -7,6 +7,8 @@ interface DialogProps {
   children: ReactNode;
   /** `drawer`: a panel along the inline-end edge, for a record read and worked on at length (MOD-019). */
   variant?: 'modal' | 'drawer';
+  /** A modal with room for a list beside a form. */
+  wide?: boolean;
 }
 
 /**
@@ -20,6 +22,7 @@ export function Dialog({
   onClose,
   children,
   variant = 'modal',
+  wide = false,
 }: DialogProps): ReactElement {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -39,7 +42,9 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className={variant === 'drawer' ? 'dialog dialog--drawer' : 'dialog'}
+      className={
+        variant === 'drawer' ? 'dialog dialog--drawer' : wide ? 'dialog dialog--wide' : 'dialog'
+      }
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();

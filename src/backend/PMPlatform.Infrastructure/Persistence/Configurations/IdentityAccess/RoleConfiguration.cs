@@ -15,5 +15,8 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
         builder.HasBilingualLabel(e => e.Name, "name");
         builder.Property(e => e.IsSystem).HasDatabaseDefault(true);
         builder.Property(e => e.IsExternalEligible).HasDatabaseDefault(false);
+        builder.Property(e => e.IsActive).HasDatabaseDefault(true);
+        builder.Property(e => e.LandingDashboardCode).HasMaxLength(50);
+        builder.Property(e => e.AllowedScopes).HasDefaultValueSql("ARRAY['ALL']::text[]");
     }
 }

@@ -2,7 +2,7 @@ import { type ReactElement, useState } from 'react';
 import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { SelectField } from '@/shared/ui/FormFields.tsx';
+import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
 
@@ -42,34 +42,43 @@ export function SuspensionRegisterView({
 
   return (
     <>
-      <div className="filters">
-        <SelectField
-          label={t('suspensionClosure.suspension.filter.view')}
-          name="view"
-          value={view}
-          placeholder={t('suspensionClosure.suspension.filter.allViews')}
-          options={SUSPENSION_VIEWS.map((value) => ({
-            value,
-            label: t(`suspensionClosure.suspension.view.${value}`),
-          }))}
-          onChange={(value) => {
+      <FilterBar
+        fields={[
+          {
+            name: 'view',
+            label: t('suspensionClosure.suspension.filter.view'),
+            all: t('suspensionClosure.suspension.filter.allViews'),
+            options: SUSPENSION_VIEWS.map((value) => ({
+              value,
+              label: t(`suspensionClosure.suspension.view.${value}`),
+            })),
+          },
+          {
+            name: 'requestType',
+            label: t('suspensionClosure.suspension.filter.type'),
+            all: t('suspensionClosure.suspension.filter.allTypes'),
+            options: SUSPENSION_REQUEST_TYPES.map((value) => ({
+              value,
+              label: t(`suspensionClosure.suspension.type.${value}`),
+            })),
+          },
+        ]}
+        values={{
+          view: view === '' ? undefined : view,
+          requestType: type === '' ? undefined : type,
+        }}
+        onChange={(name, value) => {
+          if (name === 'view') {
             setView(SUSPENSION_VIEWS.find((candidate) => candidate === value) ?? '');
-          }}
-        />
-        <SelectField
-          label={t('suspensionClosure.suspension.filter.type')}
-          name="requestType"
-          value={type}
-          placeholder={t('suspensionClosure.suspension.filter.allTypes')}
-          options={SUSPENSION_REQUEST_TYPES.map((value) => ({
-            value,
-            label: t(`suspensionClosure.suspension.type.${value}`),
-          }))}
-          onChange={(value) => {
+          } else {
             setType(SUSPENSION_REQUEST_TYPES.find((candidate) => candidate === value) ?? '');
-          }}
-        />
-      </div>
+          }
+        }}
+        onClearAll={() => {
+          setView('');
+          setType('');
+        }}
+      />
       <p className="list-order" role="status">
         {t('suspensionClosure.suspension.filter.showing', {
           shown: shown.length,

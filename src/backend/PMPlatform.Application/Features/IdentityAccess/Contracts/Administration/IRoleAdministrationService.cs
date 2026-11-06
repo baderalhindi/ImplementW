@@ -17,6 +17,15 @@ public interface IRoleAdministrationService
     public Task<AdministrationResult<Versioned<RoleDetail>>> RenameRoleAsync(
         Guid actorId, Guid roleId, BilingualLabel name, uint expectedVersion, CancellationToken cancellationToken);
 
+    public Task<AdministrationResult<Versioned<RoleDetail>>> CreateRoleAsync(Guid actorId, RoleCreateDraft draft, CancellationToken cancellationToken);
+
+    public Task<AdministrationResult<Versioned<RoleDetail>>> UpdateSettingsAsync(
+        Guid actorId, Guid roleId, IReadOnlyList<string> allowedScopes, string? landingDashboardCode, uint expectedVersion, CancellationToken cancellationToken);
+
+    public Task<AdministrationResult<Versioned<RoleDetail>>> SetActiveAsync(Guid actorId, Guid roleId, bool active, uint expectedVersion, CancellationToken cancellationToken);
+
+    public Task<AdministrationError?> DeleteRoleAsync(Guid actorId, Guid roleId, uint expectedVersion, CancellationToken cancellationToken);
+
     public Task<IReadOnlyList<PermissionSummary>> ListPermissionsAsync(CancellationToken cancellationToken);
 
     public Task<PermissionProfilePage> ListProfilesAsync(Guid? baseRoleId, PageRequest page, CancellationToken cancellationToken);
