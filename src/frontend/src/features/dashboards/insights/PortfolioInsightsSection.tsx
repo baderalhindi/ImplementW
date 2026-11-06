@@ -177,8 +177,8 @@ function Sections({ insights }: { insights: PortfolioInsights }): ReactElement {
             dimension="sector"
             nameHeader={t('dashboards.insights.sector')}
             itemName={itemName}
-            sector
           />
+          <SectorSpend breakdown={bySector} itemName={itemName} />
         </InsightSection>
       )}
       {stages !== null && stages.length > 0 && <Stages stages={stages} />}
@@ -212,16 +212,13 @@ function Card({
   label,
   children,
   tone,
-  wide = false,
 }: {
   label: string;
   children: ReactNode;
   tone?: StatusTone | undefined;
-  /** A SAR figure takes two columns, so it stays inside its tile. */
-  wide?: boolean;
 }): ReactElement {
   return (
-    <li className={`home__tile insights__card${wide ? ' home__tile--wide' : ''}`} data-tone={tone}>
+    <li className="home__tile insights__card" data-tone={tone}>
       <span className="home__tile-label">{label}</span>
       {children}
     </li>
@@ -240,7 +237,7 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
   const measured = <Coverage kind="progress" count={headline.measured} of={total} />;
   return (
     <section className="insights__section" aria-label={t('dashboards.insights.headlineLabel')}>
-      <ul className="home__tiles" data-section="headline">
+      <ul className="home__tiles insights__headline" data-section="headline">
         <Card label={t('dashboards.insights.registered')}>
           <span className="home__tile-value" dir="ltr">
             {total}
@@ -250,7 +247,7 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
           </span>
         </Card>
         {headline.totalValueSar !== null && (
-          <Card label={t('dashboards.insights.totalValue')} wide>
+          <Card label={t('dashboards.insights.totalValue')}>
             {headline.valueEntered === 0 ? (
               <Percent value={null} />
             ) : (
@@ -304,15 +301,10 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
 function RowFigures({
   row,
   showValue,
-  sector,
-  itemName,
 }: {
   row: PortfolioBreakdownRow;
   showValue: boolean;
-  sector: boolean;
-  itemName: ItemName;
 }): ReactElement {
-  const { t } = useI18n();
   return (
     <>
       <td dir="ltr" className="cell--ltr">
@@ -345,31 +337,6 @@ function RowFigures({
       <td dir="ltr" className="cell--ltr">
         {row.needingFollowUp}
       </td>
-      {sector && (
-        <>
-          <td>
-            <Percent value={row.averagePlannedSpendPercent} />
-          </td>
-          <td>
-            <Percent value={row.averageActualSpendPercent} />
-            <Coverage kind="spend" count={row.spendMeasured ?? 0} of={row.projects} />
-          </td>
-          <td>
-            {row.itemId !== null && (
-              <ul className="insights__split">
-                {(row.portfolioSplit ?? []).map((split) => (
-                  <li key={split.portfolioItemId ?? 'none'}>
-                    {t('dashboards.insights.splitRow', {
-                      portfolio: itemName(split.portfolioItemId),
-                      count: split.projects,
-                    })}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </td>
-        </>
-      )}
     </>
   );
 }
@@ -381,7 +348,6 @@ function BreakdownTable({
   nameHeader,
   itemName,
   grouped = false,
-  sector = false,
 }: {
   caption: string;
   breakdown: PortfolioBreakdown;
@@ -390,13 +356,12 @@ function BreakdownTable({
   itemName: ItemName;
   /** Under each row's parent: an initiative under its portfolio. */
   grouped?: boolean;
-  sector?: boolean;
 }): ReactElement {
   const { t } = useI18n();
   const mayOpenCards = useCan('PORTFOLIO_BREAKDOWN_VIEW');
   const { rows, total } = breakdown;
   const showValue = total.valueSar !== null;
-  const columns = 8 + (showValue ? 1 : 0) + (sector ? 3 : 0);
+  const columns = 8 + (showValue ? 1 : 0);
   const parents = grouped ? [...new Set(rows.map((row) => row.parentItemId))] : [null];
 
   const line = (row: PortfolioBreakdownRow) => (
@@ -408,7 +373,7 @@ function BreakdownTable({
           itemName(row.itemId)
         )}
       </th>
-      <RowFigures row={row} showValue={showValue} sector={sector} itemName={itemName} />
+      <RowFigures row={row} showValue={showValue} />
     </tr>
   );
 
@@ -426,13 +391,6 @@ function BreakdownTable({
             <th scope="col">{t('dashboards.insights.gap')}</th>
             <th scope="col">{t('dashboards.insights.label')}</th>
             <th scope="col">{t('dashboards.insights.needingFollowUp')}</th>
-            {sector && (
-              <>
-                <th scope="col">{t('dashboards.insights.plannedSpend')}</th>
-                <th scope="col">{t('dashboards.insights.actualSpend')}</th>
-                <th scope="col">{t('dashboards.insights.split')}</th>
-              </>
-            )}
           </tr>
         </thead>
         {parents.map((parent) => (
@@ -450,7 +408,7 @@ function BreakdownTable({
         <tfoot>
           <tr data-row="total">
             <th scope="row">{t('dashboards.insights.total')}</th>
-            <RowFigures row={total} showValue={showValue} sector={sector} itemName={itemName} />
+            <RowFigures row={total} showValue={showValue} />
           </tr>
         </tfoot>
       </TableContainer>
@@ -458,6 +416,60 @@ function BreakdownTable({
         {showValue && <Coverage kind="value" count={total.valueEntered} of={total.projects} />}{' '}
         <Coverage kind="progress" count={total.measured} of={total.projects} />{' '}
         <span>{t('dashboards.insights.simpleAverage')}</span>
+      </p>
+    </>
+  );
+}
+
+/** Each sector's spend and its split by portfolio, apart: beside the figures above they would run the table off the page. */
+function SectorSpend({
+  breakdown,
+  itemName,
+}: {
+  breakdown: PortfolioBreakdown;
+  itemName: ItemName;
+}): ReactElement {
+  const { t } = useI18n();
+  const { rows, total } = breakdown;
+  return (
+    <>
+      <TableContainer caption={t('dashboards.insights.sectorSpend')}>
+        <thead>
+          <tr>
+            <th scope="col">{t('dashboards.insights.sector')}</th>
+            <th scope="col">{t('dashboards.insights.plannedSpend')}</th>
+            <th scope="col">{t('dashboards.insights.actualSpend')}</th>
+            <th scope="col">{t('dashboards.insights.split')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.itemId ?? 'none'}>
+              <th scope="row">{itemName(row.itemId)}</th>
+              <td>
+                <Percent value={row.averagePlannedSpendPercent} />
+              </td>
+              <td>
+                <Percent value={row.averageActualSpendPercent} />
+              </td>
+              <td>
+                <ul className="insights__split">
+                  {(row.portfolioSplit ?? []).map((split) => (
+                    <li key={split.portfolioItemId ?? 'none'}>
+                      {t('dashboards.insights.splitRow', {
+                        portfolio: itemName(split.portfolioItemId),
+                        count: split.projects,
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </TableContainer>
+      <p className="insights__coverage">
+        <Coverage kind="spend" count={total.spendMeasured ?? 0} of={total.projects} />
       </p>
     </>
   );

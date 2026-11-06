@@ -67,6 +67,84 @@ export function ProjectLocations({
     locations.reduce((sum, location) => sum + location.projectCount, 0) -
     points.reduce((sum, point) => sum + point.projectCount, 0);
   const selected = locations.find((location) => location.cityItemId === selectedCity) ?? null;
+  const regionList = (
+    <ul className="locations__regions">
+      {groups.map((group) => {
+        const regionName =
+          group.regionItemId === null
+            ? t('dashboards.locations.noRegion')
+            : placeName(group.regionItemId);
+        const selected = group.regionItemId !== null && group.regionItemId === selectedRegion;
+        return (
+          <li key={group.regionItemId ?? 'none'} className="locations__region">
+            <div className="locations__region-header">
+              {group.regionItemId === null ||
+              (onSelectRegion === undefined && linkTo === undefined) ? (
+                <span className="locations__region-name">{regionName}</span>
+              ) : linkTo !== undefined ? (
+                <Link className="locations__region-name" to={linkTo(group.regionItemId)}>
+                  {regionName}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className="button button--link locations__region-name"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    onSelectRegion?.(selected ? undefined : (group.regionItemId ?? undefined));
+                  }}
+                >
+                  {regionName}
+                </button>
+              )}
+              <span className="locations__total">
+                {t('dashboards.locations.projects', { count: group.total })}
+              </span>
+            </div>
+            <ul className="bars">
+              {group.cities.map((city) => (
+                <li key={city.cityItemId ?? 'none'} className="bars__item">
+                  <span className="bars__label">
+                    {city.cityItemId === null ? (
+                      t('dashboards.locations.noCity')
+                    ) : showMap ? (
+                      <button
+                        type="button"
+                        className="button button--link"
+                        aria-pressed={selectedCity === city.cityItemId}
+                        onClick={() => {
+                          setSelectedCity(city.cityItemId);
+                        }}
+                      >
+                        {placeName(city.cityItemId)}
+                      </button>
+                    ) : (
+                      placeName(city.cityItemId)
+                    )}
+                  </span>
+                  <span className="bars__value" dir="ltr">
+                    {city.projectCount}
+                  </span>
+                  <span className="widget__bar-track" aria-hidden="true">
+                    <span
+                      className="widget__bar"
+                      style={
+                        {
+                          inlineSize: `${String((city.projectCount / largest) * 100)}%`,
+                          '--chart-color': 'var(--chart-category-1)',
+                        } as CSSProperties
+                      }
+                    />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
     <section className="widget locations" aria-labelledby="portfolio-locations">
       <div className="widget__header">
@@ -109,7 +187,7 @@ export function ProjectLocations({
                 }}
               />
             ) : (
-              <p className="state">{t('dashboards.locations.pressCircle')}</p>
+              regionList
             )}
           </div>
         </div>
@@ -119,81 +197,7 @@ export function ProjectLocations({
           {t('dashboards.locations.unplaced', { count: unplaced })}
         </p>
       )}
-      <ul className="locations__regions">
-        {groups.map((group) => {
-          const regionName =
-            group.regionItemId === null
-              ? t('dashboards.locations.noRegion')
-              : placeName(group.regionItemId);
-          const selected = group.regionItemId !== null && group.regionItemId === selectedRegion;
-          return (
-            <li key={group.regionItemId ?? 'none'} className="locations__region">
-              <div className="locations__region-header">
-                {group.regionItemId === null ||
-                (onSelectRegion === undefined && linkTo === undefined) ? (
-                  <span className="locations__region-name">{regionName}</span>
-                ) : linkTo !== undefined ? (
-                  <Link className="locations__region-name" to={linkTo(group.regionItemId)}>
-                    {regionName}
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    className="button button--link locations__region-name"
-                    aria-pressed={selected}
-                    onClick={() => {
-                      onSelectRegion?.(selected ? undefined : (group.regionItemId ?? undefined));
-                    }}
-                  >
-                    {regionName}
-                  </button>
-                )}
-                <span className="locations__total">
-                  {t('dashboards.locations.projects', { count: group.total })}
-                </span>
-              </div>
-              <ul className="bars">
-                {group.cities.map((city) => (
-                  <li key={city.cityItemId ?? 'none'} className="bars__item">
-                    <span className="bars__label">
-                      {city.cityItemId === null ? (
-                        t('dashboards.locations.noCity')
-                      ) : showMap ? (
-                        <button
-                          type="button"
-                          className="button button--link"
-                          aria-pressed={selectedCity === city.cityItemId}
-                          onClick={() => {
-                            setSelectedCity(city.cityItemId);
-                          }}
-                        >
-                          {placeName(city.cityItemId)}
-                        </button>
-                      ) : (
-                        placeName(city.cityItemId)
-                      )}
-                    </span>
-                    <span className="bars__value" dir="ltr">
-                      {city.projectCount}
-                    </span>
-                    <span className="widget__bar-track" aria-hidden="true">
-                      <span
-                        className="widget__bar"
-                        style={
-                          {
-                            inlineSize: `${String((city.projectCount / largest) * 100)}%`,
-                            '--chart-color': 'var(--chart-category-1)',
-                          } as CSSProperties
-                        }
-                      />
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          );
-        })}
-      </ul>
+      {!showMap && regionList}
     </section>
   );
 }

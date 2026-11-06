@@ -3620,8 +3620,8 @@ select.field__input {
   gap: var(--space-4) var(--space-6);
 }
 
-/* In a narrow card (its body under 27rem) the legend goes under its donut, whatever the window's width. */
-@container widget (max-width: 27rem) {
+/* In a narrow card (its body under 22rem) the legend goes under its donut, whatever the window's width. */
+@container widget (max-width: 22rem) {
   .distribution--donut {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
@@ -4691,7 +4691,7 @@ path.trend__line--ACTUAL_PERCENT {
 /* Across projects: one card per KPI, as many to a row as fit. */
 .kpi-aggregates {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
   gap: var(--space-4);
   margin: 0;
   padding: 0;
@@ -5012,9 +5012,10 @@ path.trend__line--ACTUAL_PERCENT {
   margin: 0;
 }
 
+/* Tiles share each row's width, the last row's too, so no row ends in an empty column. */
 .home__tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
   margin: 0;
   padding: 0;
@@ -5022,6 +5023,7 @@ path.trend__line--ACTUAL_PERCENT {
 }
 
 .home__tile {
+  flex: 1 1 min(100%, 13rem);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -5141,13 +5143,12 @@ path.trend__line--ACTUAL_PERCENT {
   outline-offset: 2px;
 }
 
-/* The panel scrolls beside the map. A scrollbar that overlays the content, as macOS draws it, needs room kept for it. */
+/* The panel scrolls beside the map. A scrollbar that overlays the content, as macOS draws it, needs a little room kept for it. */
 .locations__side {
   min-inline-size: 0;
-  max-block-size: 30rem;
+  block-size: 30rem;
   overflow-y: auto;
-  scrollbar-gutter: stable;
-  padding-inline-end: var(--space-4);
+  padding-inline-end: var(--space-3);
 }
 
 .location-details {
@@ -5212,12 +5213,27 @@ path.trend__line--ACTUAL_PERCENT {
 }
 
 .locations__regions {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.locations__region {
+  flex: 1 1 16rem;
+  min-inline-size: 0;
+}
+
+/* Beside the map the list is one column, as tall as the map. */
+.locations__side .locations__regions {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.locations__side .locations__region {
+  flex: none;
 }
 
 .locations__region {
@@ -5568,10 +5584,46 @@ tr[data-flagged='true'] {
   font-size: 0.85rem;
 }
 
+/* Many columns of figures: headers wrap and cells tighten, so the whole table fits; a name keeps enough width not to run down the row. */
+.insights__section table {
+  font-size: 0.875rem;
+}
+
+.insights__section th,
+.insights__section td {
+  padding-inline: var(--space-2);
+}
+
+.insights__section thead th {
+  white-space: normal;
+  vertical-align: bottom;
+}
+
+.insights__section tbody th[scope='row'],
+.insights__section tfoot th[scope='row'] {
+  min-inline-size: 10rem;
+}
+
+.insights__headline .home__tile {
+  flex-basis: min(100%, 18rem);
+}
+
+@media (min-width: 60rem) {
+  .insights__headline .home__tile {
+    flex-basis: calc((100% - 2 * var(--space-3)) / 3);
+  }
+}
+
+/* Two charts a row at most, and an odd one takes the row. */
 .insights__charts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
+}
+
+.insights__charts > * {
+  flex: 1 1 calc(50% - var(--space-4));
+  min-inline-size: min(100%, 22rem);
 }
 
 .grouped-columns {
