@@ -1,5 +1,6 @@
 import { type ReactElement, useState } from 'react';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -69,6 +70,12 @@ export function ProjectTasks({
           <h2 id="project-tasks">{t('tasks.project.title')}</h2>
           {manager && (
             <span className="tasks__actions">
+              <ImportAction
+                collectionPath="/project-tasks"
+                registerName={t('dataImport.registers.PROJECT_TASK.name')}
+                permission="TASK_MANAGE"
+                onImported={board.reload}
+              />
               <button
                 type="button"
                 className="button button--primary"

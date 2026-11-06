@@ -644,6 +644,13 @@ public sealed class PermissionCatalogue
         new("R08", TaskUpdate, DataScope.Assigned),
         new("R08", ExternalContributionRespond, DataScope.Assigned),
         new("R04", ExternalContributionRespond, DataScope.Assigned),
+
+        // Project import: every business role prepares a batch at its own scope; only R02 approves one (data-import threat DI-T14).
+        new("R04", ProjectImport, DataScope.Own),
+        new("R05", ProjectImport, DataScope.Assigned),
+        new("R06", ProjectImport, DataScope.Dept),
+        new("R07", ProjectImport, DataScope.All),
+        new("R08", ProjectImport, DataScope.Entity),
     ];
 
     private static IEnumerable<ShippedGrant> Role(string roleCode, DataScope scope, IEnumerable<string> permissions) =>

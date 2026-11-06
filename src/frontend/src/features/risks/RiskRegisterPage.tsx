@@ -1,5 +1,6 @@
 import { type ReactElement } from 'react';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -20,7 +21,18 @@ export function RiskRegisterPage(): ReactElement {
   const lookups = useRiskLookups();
 
   const header = (
-    <PageHeader title={t('risks.register.title')} description={t('risks.register.description')} />
+    <PageHeader
+      title={t('risks.register.title')}
+      description={t('risks.register.description')}
+      actions={
+        <ImportAction
+          collectionPath="/risks"
+          registerName={t('dataImport.registers.RISK.name')}
+          permission="RISK_MANAGE"
+          onImported={portfolio.reload}
+        />
+      }
+    />
   );
   if (portfolio.data === undefined) {
     return (

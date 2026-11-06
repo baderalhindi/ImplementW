@@ -120,7 +120,7 @@ internal sealed class ProjectImportRegister(
         new(SpendColumn, ImportValueKind.Money, Required: true, "Spend to date at intake, in SAR.", "الصرف حتى تاريخ الإدخال بالريال."),
     ];
 
-    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(Guid actorId, CancellationToken cancellationToken) =>
         new Dictionary<string, IReadOnlyList<ImportReferenceValue>>
         {
             [ClassificationColumn] = await catalogues.ReferenceValuesAsync(MasterDataCatalogueCodes.ProjectClassification, cancellationToken).ConfigureAwait(false),

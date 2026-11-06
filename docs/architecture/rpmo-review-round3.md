@@ -65,7 +65,7 @@ ordered stalled, suspended, late, overdue action, open obstacle, then by the ear
 
 | Permission | Shipped to | Does |
 | --- | --- | --- |
-| `PROJECT_IMPORT` | R02 ALL, R03 DEPT | Template, validation, submission. A row outside the importer's scope is an error |
+| `PROJECT_IMPORT` | R02 ALL, R03 DEPT; since 6 Nov 2026 also R04 OWN, R05 ASSIGNED, R06 DEPT, R07 ALL, R08 ENTITY | Template, validation, submission. A row outside the importer's scope is an error: a new row at OWN must name the importer as its manager, an update must be of a project the importer reaches |
 | `PROJECT_IMPORT_APPROVE` | R02 ALL | Approve (applies the batch) or return with a reason; roll back. Never one's own batch |
 
 An administrator grants either to another profile in the profile editor, through the usual prepare, verify and publish route.

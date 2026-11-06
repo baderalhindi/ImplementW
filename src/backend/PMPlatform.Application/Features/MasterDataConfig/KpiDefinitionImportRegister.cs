@@ -40,7 +40,7 @@ internal sealed class KpiDefinitionImportRegister(
         ImportColumn.ChoiceOf<KpiDirection>(DirectionColumn, required: true, "Which way is better.", "أي اتجاه أفضل."),
     ];
 
-    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(Guid actorId, CancellationToken cancellationToken) =>
         new Dictionary<string, IReadOnlyList<ImportReferenceValue>>
         {
             [UnitColumn] = await catalogues.ReferenceValuesAsync(MasterDataCatalogueCodes.KpiUnit, cancellationToken).ConfigureAwait(false),

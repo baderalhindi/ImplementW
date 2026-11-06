@@ -200,6 +200,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectSuspensionCommands, ProjectSuspensionCommands>();
         services.AddScoped<IProjectCloseoutCommands, ProjectCloseoutCommands>();
         services.AddScoped<IProjectFactsReader, ProjectFactsReader>();
+        services.AddScoped<ProjectImportScope>();
 
         // TASK-044: WF-02 progress reporting and Overall Project Health (ICD-03). The repository is Infrastructure's. The
         // inputs other modules own have no source until WF-03, WF-04 and WF-14 and their ADR-003 edges exist
@@ -225,6 +226,7 @@ public static class DependencyInjection
         services.AddScoped<RebaselineAuthorization>();
         services.AddScoped<IApprovedBaselineSource, ApprovedBaselineSource>();
         services.AddScoped<IScheduleService, ScheduleService>();
+        services.AddScoped<IImportRegister, ScheduleActivityImportRegister>();
         services.AddScoped<IBaselineService, BaselineService>();
         services.AddScoped<IApprovalOutcomeHandler, BaselineApprovalOutcomeHandler>();
         services.AddScoped<IProjectActivationPrecondition, BaselineActivationPrecondition>();
@@ -237,6 +239,7 @@ public static class DependencyInjection
         // TASK-050: WF-03's side of the shared milestone (ICD-04) — the milestones of the schedule, and the contract WF-05 reads
         // and records an acceptance through (edge 10).
         services.AddScoped<IProjectMilestoneService, ProjectMilestoneService>();
+        services.AddScoped<IImportRegister, ProjectMilestoneImportRegister>();
         services.AddScoped<IProjectMilestoneReader, ProjectMilestoneReader>();
         services.AddScoped<IMilestoneAchievementRecorder, MilestoneAchievementRecorder>();
 
@@ -247,6 +250,7 @@ public static class DependencyInjection
         services.AddScoped<ActivityProgressProjection>();
         services.AddScoped<ProjectTaskGate>();
         services.AddScoped<IProjectTaskService, ProjectTaskService>();
+        services.AddScoped<IImportRegister, ProjectTaskImportRegister>();
         services.AddScoped<ITaskExecutionService, TaskExecutionService>();
         services.AddScoped<ITaskDependencyService, TaskDependencyService>();
         services.AddScoped<IProjectTaskCloseoutReader, ProjectTaskCloseoutReader>();
@@ -277,6 +281,7 @@ public static class DependencyInjection
         services.AddScoped<IKpiAssignmentService, KpiAssignmentService>();
         services.AddScoped<IKpiTargetVersionService, KpiTargetVersionService>();
         services.AddScoped<IKpiMeasurementService, KpiMeasurementService>();
+        services.AddScoped<IImportRegister, KpiMeasurementImportRegister>();
         services.AddScoped<IApprovalOutcomeHandler, FinancialKpiApprovalOutcomeHandler>();
         services.AddScoped<FinancialOpeningPosition>();
         services.AddScoped<IProjectIntakeHandler, FinancialKpiIntakeHandler>();
@@ -291,6 +296,7 @@ public static class DependencyInjection
         services.AddScoped<RiskViews>();
         services.AddScoped<RiskGate>();
         services.AddScoped<IRiskService, RiskService>();
+        services.AddScoped<IImportRegister, RiskImportRegister>();
 
         // The header search.
         services.AddScoped<IGlobalSearchService, GlobalSearchService>();
@@ -312,6 +318,7 @@ public static class DependencyInjection
         services.AddScoped<ConcernGate>();
         services.AddScoped<ConcernIntake>();
         services.AddScoped<IManagementConcernService, ManagementConcernService>();
+        services.AddScoped<IImportRegister, ManagementConcernImportRegister>();
         services.AddScoped<IConcernLifecycleService, ConcernLifecycleService>();
         services.AddScoped<IConcernEscalationService, ConcernEscalationService>();
         services.AddScoped<IApprovalOutcomeHandler, ConcernValidationOutcomeHandler>();

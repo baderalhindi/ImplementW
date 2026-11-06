@@ -38,7 +38,7 @@ internal sealed class DepartmentImportRegister(IDepartmentAdministrationService 
         new(IsActiveColumn, ImportValueKind.Boolean, Required: false, "FALSE for a department no longer in use. Empty means TRUE.", "FALSE للإدارة غير المستخدمة. الفارغ يعني TRUE."),
     ];
 
-    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(Guid actorId, CancellationToken cancellationToken) =>
         new Dictionary<string, IReadOnlyList<ImportReferenceValue>>
         {
             [ParentCodeColumn] = [.. (await directory.ListActiveDepartmentCodesAsync(cancellationToken).ConfigureAwait(false)).Select(d => new ImportReferenceValue(d.Code, d.Name.Ar, d.Name.En))],

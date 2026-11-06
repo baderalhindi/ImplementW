@@ -11,6 +11,9 @@ public interface IProjectFactsReader
     /// <summary>Null when there is no such project.</summary>
     public Task<ProjectFacts?> FindAsync(Guid projectId, CancellationToken cancellationToken);
 
+    /// <summary>The project with this Formal Project ID, as a workbook names it; null when there is none.</summary>
+    public Task<ProjectFacts?> FindByFormalProjectIdAsync(string formalProjectId, CancellationToken cancellationToken);
+
     /// <summary>
     /// Every project <paramref name="scope"/> reaches, as the authorization engine built it for the caller (edge 47): the population an
     /// FG-01 aggregate is counted over, so authorization is applied before aggregation (DSH-CC-04). Empty for an empty scope.

@@ -20,10 +20,10 @@ public sealed class ExecutionContractTests(ScheduleTestHost host)
     public static TheoryData<string, int> Modules => new()
     {
         { "Progress", 11 },
-        { "Schedule", 25 },
-        { "ProjectTask", 15 },
+        { "Schedule", 29 },
+        { "ProjectTask", 17 },
         { "Milestone", 9 },
-        { "FinancialKpi", 46 },
+        { "FinancialKpi", 48 },
     };
 
     public static TheoryData<string> Tags => [.. Modules.Select(m => (string)m[0])];

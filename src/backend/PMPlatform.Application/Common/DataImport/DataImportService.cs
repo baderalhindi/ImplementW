@@ -66,7 +66,7 @@ internal sealed partial class DataImportService(
             return registers.Any(r => r.Code == registerCode) ? DataImportRefusal.Forbidden : DataImportRefusal.NotFound;
         }
 
-        IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>> references = await register.ReferenceValuesAsync(cancellationToken).ConfigureAwait(false);
+        IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>> references = await register.ReferenceValuesAsync(actorId, cancellationToken).ConfigureAwait(false);
         return workbook.WriteTemplate(ColumnsOf(register), references);
     }
 
@@ -198,7 +198,16 @@ internal sealed partial class DataImportService(
                 continue;
             }
 
-            if (await repository.FindImportedAsync(register.Code, record.LegacyId, cancellationToken).ConfigureAwait(false) is { } existing)
+            ImportRowScope scope = await register.ScopeAsync(record, context, cancellationToken).ConfigureAwait(false);
+            if (scope.Issues.Count > 0)
+            {
+                issues.AddRange(scope.Issues.Select(i => new ImportIssue(row.RowNumber, i.Column, i.Code)));
+                outcomes.Add(new ImportRowOutcome(row.RowNumber, record.LegacyId, ImportRowStatus.Rejected, null));
+                continue;
+            }
+
+            string lineageKey = scope.LineageKey(record.LegacyId);
+            if (await repository.FindImportedAsync(register.Code, lineageKey, cancellationToken).ConfigureAwait(false) is { } existing)
             {
                 skipped++;
                 outcomes.Add(new ImportRowOutcome(row.RowNumber, record.LegacyId, ImportRowStatus.Skipped, existing));
@@ -206,7 +215,7 @@ internal sealed partial class DataImportService(
             }
 
             await work.MarkRowAsync(cancellationToken).ConfigureAwait(false);
-            ImportRowResult result = await register.ApplyAsync(record, context, cancellationToken).ConfigureAwait(false);
+            ImportRowResult result = await register.ApplyAsync(record.In(scope), context, cancellationToken).ConfigureAwait(false);
             if (result.EntityId is not { } entityId)
             {
                 await work.UndoRowAsync(cancellationToken).ConfigureAwait(false);
@@ -216,13 +225,13 @@ internal sealed partial class DataImportService(
             }
 
             await work.EndRowAsync(cancellationToken).ConfigureAwait(false);
-            loaded[(register.Code, record.LegacyId)] = entityId;
+            loaded[(register.Code, lineageKey)] = entityId;
             lineage.Add(new ImportedRecord
             {
                 Id = Guid.CreateVersion7(now),
                 ImportBatchId = batchId,
                 RegisterCode = register.Code,
-                LegacyId = record.LegacyId,
+                LegacyId = lineageKey,
                 EntityId = entityId,
                 RowNumber = row.RowNumber,
                 CreatedAt = now,
@@ -254,7 +263,9 @@ internal sealed partial class DataImportService(
             UpdatedAt = now,
             UpdatedBy = actorId,
         };
-        audit.Stage(new AuditEntry(AuditEventClass.PrivilegedAction, $"{register.OwningModule}.RecordsImported", AuditOutcome.Success)
+        // A migration is an administrator's privileged act; a project team's import is a change to its own data, read with its project's audit.
+        AuditEventClass eventClass = register.Permission == PermissionCatalogue.DataImport ? AuditEventClass.PrivilegedAction : AuditEventClass.DataChange;
+        audit.Stage(new AuditEntry(eventClass, $"{register.OwningModule}.RecordsImported", AuditOutcome.Success)
         {
             ActorUserId = actorId,
             Subject = new AuditSubject(register.OwningModule, nameof(ImportBatch), batch.Id),
@@ -274,13 +285,22 @@ internal sealed partial class DataImportService(
             [.. outcomes.Select(o => o.Status == ImportRowStatus.Ready ? o with { Status = ImportRowStatus.Created } : o)]);
     }
 
-    /// <summary>The register, when it exists and the actor may import (DATA_IMPORT is platform-wide: there is no record to scope).</summary>
-    private async Task<IImportRegister?> RegisterAsync(Guid actorId, string registerCode, CancellationToken cancellationToken) =>
-        registers.FirstOrDefault(r => r.Code == registerCode) is { } register
-        && (await authorization.AuthorizeAsync(actorId, new AuthorizationRequest(PermissionCatalogue.DataImport, new AuthorizationSubject()), cancellationToken)
-            .ConfigureAwait(false)).IsAllowed
-            ? register
-            : null;
+    /// <summary>
+    /// The register, when it exists and the actor may import. DATA_IMPORT is platform-wide: there is no record to scope. A project register
+    /// admits whoever holds its permission over any project; each row is then decided on its own project (data-import.md D-12).
+    /// </summary>
+    private async Task<IImportRegister?> RegisterAsync(Guid actorId, string registerCode, CancellationToken cancellationToken)
+    {
+        if (registers.FirstOrDefault(r => r.Code == registerCode) is not { } register)
+        {
+            return null;
+        }
+
+        bool admitted = register.Permission == PermissionCatalogue.DataImport
+            ? (await authorization.AuthorizeAsync(actorId, new AuthorizationRequest(register.Permission, new AuthorizationSubject()), cancellationToken).ConfigureAwait(false)).IsAllowed
+            : !(await authorization.GetRecordScopeAsync(actorId, register.Permission, cancellationToken).ConfigureAwait(false)).IsEmpty;
+        return admitted ? register : null;
+    }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Data import: {ActorId} imported register {RegisterCode} as batch {BatchId}: {Created} created, {Skipped} skipped.")]
     private static partial void LogImported(ILogger logger, Guid actorId, string registerCode, Guid batchId, int created, int skipped);

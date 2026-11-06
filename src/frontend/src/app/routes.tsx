@@ -39,6 +39,7 @@ import { RouteErrorPage } from '@/shared/observability/RouteErrorPage.tsx';
 import { AppLayout } from './AppLayout.tsx';
 import { helpRoutes } from './help/routes.tsx';
 import { administrationNavigation } from './menus.ts';
+import { MenuOverview } from './MenuOverview.tsx';
 import { AdministrationIndex, NotFoundPage } from './pages.tsx';
 
 /** What opens /admin: any permission of a screen the Administration menu offers there. */
@@ -60,7 +61,7 @@ export const appRoutes: RouteObject[] = [
     // TASK-090: a screen that throws is reported to the APM and replaced by an explanation.
     errorElement: <RouteErrorPage />,
     children: [
-      { index: true, element: <HomePage /> }, // the person's own work, or platform health for the administrator (review H2, M-1)
+      { index: true, element: <HomePage menuOverview={<MenuOverview />} /> }, // the person's own work, or platform health for the administrator (review H2, M-1)
       {
         path: 'dashboards', // DSH-001–008, DSH-010–012
         element: (

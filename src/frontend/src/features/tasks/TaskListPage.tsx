@@ -1,5 +1,6 @@
 import { type ReactElement, useState } from 'react';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
@@ -91,7 +92,20 @@ export function TaskListPage({ list }: { list: TaskListKind }): ReactElement | n
     return null;
   }
   const user = session.user;
-  const header = <PageHeader title={t(copy.title)} description={t(copy.description)} />;
+  const header = (
+    <PageHeader
+      title={t(copy.title)}
+      description={t(copy.description)}
+      actions={
+        <ImportAction
+          collectionPath="/project-tasks"
+          registerName={t('dataImport.registers.PROJECT_TASK.name')}
+          permission="TASK_MANAGE"
+          onImported={portfolio.reload}
+        />
+      }
+    />
+  );
 
   if (portfolio.data === undefined) {
     return (

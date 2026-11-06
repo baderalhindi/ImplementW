@@ -13,4 +13,10 @@ public static class ImportRegisterCodes
     public const string KpiDefinition = "KPI_DEFINITION";
     public const string Project = "PROJECT";
     public const string RoleAssignment = "ROLE_ASSIGNMENT";
+    public const string ScheduleActivity = "SCHEDULE_ACTIVITY";
+    public const string ProjectMilestone = "PROJECT_MILESTONE";
+    public const string ProjectTask = "PROJECT_TASK";
+    public const string Risk = "RISK";
+    public const string ManagementConcern = "MANAGEMENT_CONCERN";
+    public const string KpiMeasurement = "KPI_MEASUREMENT";
 }

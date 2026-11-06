@@ -146,3 +146,5 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | 2026-10-25 | Appendix A applied to the shipped profiles (`shipped-permission-matrix.md`); P-2's Appendix A half closed. No finding's status changes |
 | 2026-11-05 | The 5 Nov 2026 review: local accounts (AUTH-T29, AUTH-T30); SR-81, SR-82. One more open High |
 | 2026-11-06 | Self-service password change and reset (AUTH-T31, AUTH-T32); SR-83. One more open High |
+| 2026-11-06 | A project's registers in the import (DI-T12, DI-T13), both mitigated; no new finding |
+| 2026-11-06 | Every business role may prepare a project import batch (DI-T14), mitigated by R02's approval; no new finding |

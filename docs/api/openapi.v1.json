@@ -7964,6 +7964,57 @@
         }
       }
     },
+    "/api/v1/kpi-measurements/import-template/content": {
+      "get": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "The workbook template for this project register: its columns, and the projects and codes this person may name.",
+        "operationId": "FinancialKpi_DownloadKpiMeasurementImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/kpi-measurements/imports": {
+      "post": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Validates the workbook in part `file`, or with `commit=true` imports it, all rows or none. Each row is decided on its own project, as the form's would be.",
+        "operationId": "FinancialKpi_ImportKpiMeasurement",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/kpi-measurements": {
       "get": {
         "tags": [
@@ -8447,6 +8498,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/KpiTargetVersionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns/import-template/content": {
+      "get": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "The workbook template for this project register: its columns, and the projects and codes this person may name.",
+        "operationId": "ManagementConcern_DownloadManagementConcernImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/management-concerns/imports": {
+      "post": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "Validates the workbook in part `file`, or with `commit=true` imports it, all rows or none. Each row is decided on its own project, as the form's would be.",
+        "operationId": "ManagementConcern_ImportManagementConcern",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
                 }
               }
             }
@@ -13054,6 +13156,57 @@
         }
       }
     },
+    "/api/v1/project-milestones/import-template/content": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The workbook template for this project register: its columns, and the projects and codes this person may name.",
+        "operationId": "Schedule_DownloadProjectMilestoneImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-milestones/imports": {
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Validates the workbook in part `file`, or with `commit=true` imports it, all rows or none. Each row is decided on its own project, as the form's would be.",
+        "operationId": "Schedule_ImportProjectMilestone",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/project-milestones": {
       "get": {
         "tags": [
@@ -13888,6 +14041,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/import-template/content": {
+      "get": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "The workbook template for this project register: its columns, and the projects and codes this person may name.",
+        "operationId": "ProjectTask_DownloadProjectTaskImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-tasks/imports": {
+      "post": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "Validates the workbook in part `file`, or with `commit=true` imports it, all rows or none. Each row is decided on its own project, as the form's would be.",
+        "operationId": "ProjectTask_ImportProjectTask",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
                 }
               }
             }
@@ -15423,6 +15627,57 @@
         }
       }
     },
+    "/api/v1/risks/import-template/content": {
+      "get": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "The workbook template for this project register: its columns, and the projects and codes this person may name.",
+        "operationId": "Risk_DownloadRiskImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/imports": {
+      "post": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "Validates the workbook in part `file`, or with `commit=true` imports it, all rows or none. Each row is decided on its own project, as the form's would be.",
+        "operationId": "Risk_ImportRisk",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/risks": {
       "get": {
         "tags": [
@@ -16756,6 +17011,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReportResultPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-activities/import-template/content": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "The workbook template for this project register: its columns, and the projects and codes this person may name.",
+        "operationId": "Schedule_DownloadScheduleActivityImportTemplate",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileStreamResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedule-activities/imports": {
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Validates the workbook in part `file`, or with `commit=true` imports it, all rows or none. Each row is decided on its own project, as the form's would be.",
+        "operationId": "Schedule_ImportScheduleActivity",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
                 }
               }
             }

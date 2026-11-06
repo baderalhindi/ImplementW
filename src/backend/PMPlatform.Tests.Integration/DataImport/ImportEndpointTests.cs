@@ -6,12 +6,12 @@ using PMPlatform.Tests.Integration.Identity;
 
 namespace PMPlatform.Tests.Integration.DataImport;
 
-/// <summary>TASK-102: every register a workbook can load has its template and its import, and both answer DATA_IMPORT alone.</summary>
+/// <summary>TASK-102: every register a workbook can load has its template and its import, each protected: DATA_IMPORT for a platform register, the create permission for a project's.</summary>
 [Collection(IdentitySuite.Name)]
 public sealed class ImportEndpointTests(IdentityTestHost host)
 {
     [Fact]
-    public void EveryRegisterHasATemplateAndAnImportBothProtectedByDataImport()
+    public void EveryRegisterHasATemplateAndAnImportBothProtectedByItsOwnPermission()
     {
         Dictionary<string, string?> imports = host.Api.Services.GetRequiredService<EndpointDataSource>().Endpoints
             .OfType<RouteEndpoint>()
@@ -24,7 +24,12 @@ public sealed class ImportEndpointTests(IdentityTestHost host)
         int registers = scope.ServiceProvider.GetServices<IImportRegister>().Count();
 
         Assert.Equal(2 * registers, imports.Count);
-        Assert.All(imports, e => Assert.Equal("permission:DATA_IMPORT", e.Value));
+        using IServiceScope permissions = host.Api.Services.CreateScope();
+        string[] allowed = [.. permissions.ServiceProvider.GetServices<IImportRegister>().Select(r => $"permission:{r.Permission}").Distinct()];
+        Assert.All(imports, e => Assert.Contains(e.Value, allowed));
+        Assert.Equal(
+            ["permission:CONCERN_RAISE", "permission:DATA_IMPORT", "permission:KPI_RECORD", "permission:RISK_MANAGE", "permission:SCHEDULE_EDIT", "permission:TASK_MANAGE"],
+            allowed.Order(StringComparer.Ordinal));
         Assert.Equal(
             imports.Keys.Where(k => k.EndsWith("/imports", StringComparison.Ordinal)).Select(k => k[..^"/imports".Length]).Order(),
             imports.Keys.Where(k => k.EndsWith("/import-template/content", StringComparison.Ordinal)).Select(k => k[..^"/import-template/content".Length]).Order());

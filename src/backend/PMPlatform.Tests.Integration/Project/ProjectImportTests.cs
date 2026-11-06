@@ -105,6 +105,35 @@ public sealed class ProjectImportTests(ProjectTestHost host)
     }
 
     [Fact]
+    public async Task AProjectManagerImportsOnlyProjectsTheyWouldManage()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+        string manager = (await client.SignInOrFailAsync(5)).AccessToken;
+        string reference = $"AHP-{Guid.NewGuid():N}"[..20];
+
+        // Their own project: a batch they may submit, and which still waits for the approver.
+        byte[] own = await WorkbookAsync([await RowAsync(reference, status: "نشط")]);
+        JsonObject preview = await ValidateAsync(client, manager, own);
+        Assert.True(preview["submittable"]!.GetValue<bool>(), preview.ToJsonString());
+        using HttpResponseMessage submitted = await SubmitAsync(client, manager, own, "{\"mappings\":[],\"skippedRows\":[]}");
+        Assert.Equal(HttpStatusCode.Created, submitted.StatusCode);
+        Guid batchId = AdministrationApi.IdOf(JsonNode.Parse(await submitted.Content.ReadAsStringAsync())!.AsObject());
+        Assert.Empty(await host.Database.QueryAsync($"SELECT id::text FROM project.project WHERE legacy_reference = '{reference}'"));
+        using HttpResponseMessage selfApproved = await PostAsync(client, manager, $"{Batches}/{batchId}/approve");
+        Assert.Equal(HttpStatusCode.Forbidden, selfApproved.StatusCode);
+        using HttpResponseMessage approved = await PostAsync(client, sessions.Approver, $"{Batches}/{batchId}/approve");
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        Assert.Equal(["ACTIVE"], await host.Database.QueryAsync($"SELECT lifecycle_state FROM project.project WHERE legacy_reference = '{reference}'"));
+
+        // A project for someone else to manage is outside their scope.
+        string?[] other = await RowAsync($"AHP-{Guid.NewGuid():N}"[..20], status: "نشط");
+        other[Array.IndexOf(Keys, "project_manager")] = "local.r08";
+        JsonObject refused = await ValidateAsync(client, manager, await WorkbookAsync([other]));
+        Assert.Contains(refused["rows"]![0]!["issues"]!.AsArray(), i => i!["code"]!.GetValue<string>() == "OUTSIDE_SCOPE");
+    }
+
+    [Fact]
     public async Task AnInitiativeOfAnotherPortfolioIsAnError()
     {
         using HttpClient client = host.Api.CreateClient();
@@ -117,12 +146,13 @@ public sealed class ProjectImportTests(ProjectTestHost host)
     }
 
     [Fact]
-    public async Task WithoutTheImportPermissionTheTemplateIsForbidden()
+    public async Task TheAdministratorHoldsNoProjectImportAndIsRefusedTheTemplate()
     {
         using HttpClient client = host.Api.CreateClient();
         Sessions sessions = await client.SignInAsync();
         using HttpRequestMessage request = new(HttpMethod.Get, $"{Batches}/import-template/content");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", sessions.Entity);
+        // Every business role holds it; R01 cannot, whatever a profile grants (GrantPolicy).
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", (await client.SignInOrFailAsync(1)).AccessToken);
         using HttpResponseMessage refused = await client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);

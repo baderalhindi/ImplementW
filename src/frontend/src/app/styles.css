@@ -522,34 +522,6 @@ h3 {
   text-align: center;
 }
 
-.rail__nav .rail__items {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding-block: var(--space-1) var(--space-2);
-  padding-inline-start: 2.75rem;
-}
-
-.rail__item {
-  display: block;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius);
-  color: var(--color-rail-muted);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  text-decoration: none;
-}
-
-.rail__item:hover {
-  background: var(--color-rail-hover);
-  color: var(--color-rail-text);
-}
-
-.rail__item[aria-current='page'] {
-  color: var(--color-rail-text);
-  font-weight: 600;
-}
-
 .rail__footer {
   display: flex;
   flex-direction: column;
@@ -2226,6 +2198,11 @@ select.field__input {
   padding-block-start: var(--space-4);
 }
 
+/* A menu's screens over the page, the same distance above its heading as the workspace's panel. */
+.section-tabs {
+  margin-block-end: var(--space-4);
+}
+
 /* The dashboard switch has no panel around the dashboard below it, so it keeps the same gap itself. */
 .dashboard__switch {
   margin-block-end: var(--space-4);
@@ -2552,9 +2529,10 @@ select.field__input {
   gap: var(--space-4);
 }
 
-/* One filter on its own: a single bounded column rather than the filter bar's grid. */
+/* One filter on its own: a bounded box rather than the filter bar's grid, with its Search button, if any, beside it. */
 .filters--inline {
-  grid-template-columns: minmax(0, 24rem);
+  grid-template-columns: minmax(0, 24rem) auto;
+  justify-content: start;
 }
 
 .task__title {
@@ -5150,6 +5128,80 @@ path.trend__line--ACTUAL_PERCENT {
 
 .home__actions-bar a:focus-visible {
   outline-color: var(--color-sand);
+}
+
+/* The Home's map of the platform: a card per menu. Cards share each row's width, so no row ends in an empty column. */
+.home__menus {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.home__menus h2 {
+  margin: 0;
+}
+
+.home__menu-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home__menu-card {
+  flex: 1 1 min(100%, 16rem);
+  min-inline-size: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+}
+
+.home__menu-card--wide {
+  flex-basis: 100%;
+}
+
+.home__menu-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+}
+
+.home__menu-icon {
+  display: inline-flex;
+  flex: none;
+  padding: var(--space-1);
+  border-radius: 8px;
+  background: var(--color-neutral-surface);
+  color: var(--color-primary);
+}
+
+/* Links take as many columns as the card's width holds, so a wide card reads as a short block. */
+.home__menu-links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: 13rem;
+  column-gap: var(--space-3);
+}
+
+.home__menu-links li {
+  break-inside: avoid;
+}
+
+.home__menu-links a {
+  display: block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.home__menu-links a:hover {
+  background: var(--color-neutral-surface);
+  text-decoration: underline;
 }
 
 /* The portfolio snapshot: headline figures as tiles, health tiles marked by their tone on the start edge. */

@@ -46,7 +46,7 @@ internal sealed class MasterDataItemImportRegister(IMasterDataAdministrationServ
         new(SortOrderColumn, ImportValueKind.WholeNumber, Required: false, "The display order. Empty means 0.", "ترتيب العرض. الفارغ يعني 0."),
     ];
 
-    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(Guid actorId, CancellationToken cancellationToken) =>
         new Dictionary<string, IReadOnlyList<ImportReferenceValue>>
         {
             [CatalogueColumn] = [.. (await masterData.ListCataloguesAsync(cancellationToken).ConfigureAwait(false)).Select(c => new ImportReferenceValue(c.Code, c.Name.Ar, c.Name.En))],

@@ -202,7 +202,7 @@ public sealed class DataImportServiceTests
 
         public Guid IdOf(string name) => _ids.TryGetValue(name, out Guid id) ? id : _ids[name] = Guid.NewGuid();
 
-        public Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(CancellationToken cancellationToken) =>
+        public Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(Guid actorId, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>>(new Dictionary<string, IReadOnlyList<ImportReferenceValue>>());
 
         public async Task<ImportRowResult> ApplyAsync(ImportRecord record, ImportContext context, CancellationToken cancellationToken)

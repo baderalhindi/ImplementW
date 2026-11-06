@@ -1666,8 +1666,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("LegacyId")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
+                        .HasMaxLength(133)
+                        .HasColumnType("character varying(133)")
                         .HasColumnName("legacy_id");
 
                     b.Property<string>("RegisterCode")

@@ -63,7 +63,8 @@ internal static class ProjectImportEvaluator
     /// <summary>The input a validation needs besides the sheet: who imports and where, and the projects the rows may match.</summary>
     public sealed record Context(
         ProjectImportReferences References,
-        Func<Guid, Guid?, bool> InScope,
+        Func<Guid, Guid?, Guid?, bool> InScope,
+        Func<Guid, bool> Reaches,
         Func<Guid, Guid?, bool> IsProjectManager,
         IReadOnlyDictionary<string, ProjectEntity> ByLegacyReference,
         IReadOnlyDictionary<string, ProjectEntity> ByFormalId,
@@ -247,7 +248,7 @@ internal static class ProjectImportEvaluator
                 Error(Budget, ProjectImportIssueCodes.NotPositive);
             }
 
-            if (department is { } d && !context.InScope(d, entity))
+            if (department is { } d && _existing is null && !context.InScope(d, entity, manager))
             {
                 Error(Department, ProjectImportIssueCodes.OutsideScope);
             }
@@ -314,7 +315,7 @@ internal static class ProjectImportEvaluator
             }
 
             _action = ProjectImportRowAction.Update;
-            if (!context.InScope(_existing.DepartmentId, _existing.ExternalEntityId))
+            if (!context.Reaches(_existing.Id))
             {
                 Error(LegacyRef, ProjectImportIssueCodes.OutsideScope);
             }

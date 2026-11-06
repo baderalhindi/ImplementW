@@ -45,6 +45,20 @@ internal static class ImportApi
         return [.. firstRow.Split("<t xml:space=\"preserve\">").Skip(1).Select(t => t[..t.IndexOf('<', StringComparison.Ordinal)])];
     }
 
+    /// <summary>Every sheet's text, for a test that a value is or is not offered anywhere in the template.</summary>
+    public static string AllText(byte[] workbook)
+    {
+        using ZipArchive zip = new(new MemoryStream(workbook));
+        StringBuilder text = new();
+        foreach (ZipArchiveEntry entry in zip.Entries.Where(e => e.FullName.EndsWith(".xml", StringComparison.Ordinal)))
+        {
+            using StreamReader reader = new(entry.Open());
+            text.Append(reader.ReadToEnd());
+        }
+
+        return text.ToString();
+    }
+
     /// <summary>A workbook as a spreadsheet application saves one: a Data sheet of inline strings, the header first.</summary>
     public static byte[] Workbook(string[] header, params string?[][] rows)
     {

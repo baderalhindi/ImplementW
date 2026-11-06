@@ -602,9 +602,12 @@ internal sealed class ProjectImportService(
         }
 
         IReadOnlyList<ProjectEntity> reachable = await projects.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false);
+        HashSet<Guid> reached = [.. reachable.Select(p => p.Id)];
         ProjectImportEvaluator.Context context = new(
             references,
-            (department, entity) => scope.Matches(new AuthorizationSubject { DepartmentId = department, ExternalEntityId = entity }),
+            // A new project as its importer would hold it: an OWN holder may name only themself as its manager (project-registration D-5's owner).
+            (department, entity, manager) => scope.Matches(new AuthorizationSubject { DepartmentId = department, ExternalEntityId = entity, OwnerUserId = manager }),
+            reached.Contains,
             (user, department) => department is { } d && managers.TryGetValue(d, out HashSet<Guid>? holding) && holding.Contains(user),
             await projects.ListByLegacyReferencesAsync(legacy, cancellationToken).ConfigureAwait(false),
             await projects.ListByFormalProjectIdsAsync(legacy, cancellationToken).ConfigureAwait(false),

@@ -9,4 +9,7 @@ internal sealed class ScheduleActivityReader(IScheduleRepository repository) : I
         await repository.ReadActivityAsync(activityId, cancellationToken).ConfigureAwait(false) is ({ } a, Guid projectId)
             ? new ScheduleActivityFacts(a.Id, projectId, a.ActivityKind, a.Status, a.PlannedStartDate, a.PlannedFinishDate, a.PlannedDurationDays)
             : null;
+
+    public Task<Guid?> FindIdByWbsCodeAsync(Guid projectId, string wbsCode, CancellationToken cancellationToken) =>
+        repository.FindActivityIdByWbsCodeAsync(projectId, wbsCode, cancellationToken);
 }

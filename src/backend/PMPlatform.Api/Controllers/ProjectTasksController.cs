@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
+using PMPlatform.Api.Models.DocumentManagement;
 using PMPlatform.Api.Models.Progress;
 using PMPlatform.Api.Models.ProjectTask;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.ProjectTask.Contracts;
 using PMPlatform.Domain.Common;
@@ -16,9 +18,26 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route(Collection)]
 [Tags("ProjectTask")]
-public sealed class ProjectTasksController(IProjectTaskService tasks, ITaskExecutionService execution) : AdministrationControllerBase
+public sealed class ProjectTasksController(IProjectTaskService tasks, ITaskExecutionService execution, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/project-tasks";
+
+    /// <summary>The workbook template for this project register: its columns, and the projects and codes this person may name.</summary>
+    [HttpGet("import-template/content")]
+    [RequirePermission(PermissionCatalogue.TaskManage)]
+    [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK, "application/octet-stream")]
+    [EndpointName("ProjectTask_DownloadProjectTaskImportTemplate")]
+    public Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken) => ImportTemplateAsync(imports, ImportRegisterCodes.ProjectTask, cancellationToken);
+
+    /// <summary>Validates the workbook in part <c>file</c>, or with <c>commit=true</c> imports it, all rows or none. Each row is decided on its own project, as the form's would be.</summary>
+    [HttpPost("imports")]
+    [RequirePermission(PermissionCatalogue.TaskManage)]
+    [SensitiveWrite]
+    [DisableFormValueModelBinding]
+    [ProducesResponseType<ImportReport>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("ProjectTask_ImportProjectTask")]
+    public Task<IActionResult> Import([FromQuery] bool? commit, CancellationToken cancellationToken) =>
+        ImportAsync(imports, ImportRegisterCodes.ProjectTask, commit == true, cancellationToken);
 
     /// <summary>
     /// The project's tasks, each parent followed by its subtasks. <c>projectId</c> is required (R-3). A caller who may not see the

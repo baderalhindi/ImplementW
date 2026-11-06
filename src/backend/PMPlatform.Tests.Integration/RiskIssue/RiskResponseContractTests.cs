@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using PMPlatform.Tests.Integration.DataImport;
 using PMPlatform.Tests.Integration.Identity;
 using PMPlatform.Tests.Integration.Project;
 using PMPlatform.Tests.Integration.Risk;
@@ -69,6 +70,12 @@ public sealed class RiskResponseContractTests(RiskTestHost host)
         Assert.Single(materialised["materialisedIssueIds"]!.AsArray());
         await CommandAsync("close", sessions.EntityManager, RiskDriver.Rationale("Mobilisation completed."));
         Assert.Equal("ASSESSED", (await CommandAsync("reopen", sessions.Reopener)).Text("status"));
+
+        // The workbook: its template and a report, here of a sheet missing its columns.
+        using HttpResponseMessage template = await client.TemplateAsync(RiskDriver.Risks, sessions.EntityManager);
+        await responses.CheckAsync("GET", $"{RiskDriver.Risks}/import-template/content", template);
+        using HttpResponseMessage imported = await client.UploadAsync(RiskDriver.Risks, sessions.EntityManager, ImportApi.Workbook(["legacy_id"]), commit: false);
+        await responses.CheckAsync("POST", $"{RiskDriver.Risks}/imports", imported);
 
         Assert.Equal((await OpenApiDocument.FetchAsync(client)).Operations(RiskIssueApi.RiskTag).Select(o => o.Name).Order(), responses.Operations.Order());
         Assert.Empty(responses.Violations);

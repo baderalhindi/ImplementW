@@ -1,11 +1,13 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
+import { catalogueFor, withDashboards } from '@/test/dashboardFixtures.ts';
 import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixtures.ts';
 import { mockApi, problem } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
+import { findMainMenu } from '@/test/shell.ts';
 
 import { type ImportReport } from './api.ts';
 
@@ -175,5 +177,48 @@ describe('TASK-102 migration import', () => {
 
     expect(within(dialog).getByText(en('dataImport.check.noFile'))).toBeTruthy();
     expect(api.requestsTo('POST', /imports/)).toHaveLength(0);
+  });
+});
+
+// A project register's Import is offered on its own create permission, not on DATA_IMPORT (data-import.md D-12).
+describe('a project register’s import', () => {
+  test('a Project Manager is offered it on the risk register and an Executive, who may not register risks, is not', async () => {
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) });
+    const manager = renderApp({ path: '/risks', session: sessionFor(['R04']) });
+    await screen.findByRole('heading', { level: 1, name: en('risks.register.title') });
+    expect(await screen.findByRole('button', { name: /^Import/ })).toBeTruthy();
+    manager.unmount();
+    cleanup();
+
+    withDashboards(mockApi(), { catalogue: catalogueFor(['R07']) });
+    renderApp({ path: '/risks', session: sessionFor(['R07']) });
+    await screen.findByRole('heading', { level: 1, name: en('risks.register.title') });
+    await findMainMenu();
+    expect(screen.queryByRole('button', { name: /^Import/ })).toBeNull();
+  });
+
+  test('its template and its check go to the register’s own collection', async () => {
+    const api = withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) })
+      .on('GET', /^\/risks\/import-template\/content$/, {
+        body: new Uint8Array([1]),
+        headers: { 'content-disposition': 'attachment; filename="risk-import-template.xlsx"' },
+      })
+      .on('POST', /^\/risks\/imports$/, { body: report({ registerCode: 'RISK' }) });
+    renderApp({ path: '/risks', session: sessionFor(['R04']) });
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: /^Import/ }));
+    const dialog = screen.getByRole('dialog', {
+      name: en('dataImport.title', { register: en('dataImport.registers.RISK.name') }),
+    });
+    await user.upload(within(dialog).getByLabelText(en('dataImport.file.label')), workbook());
+    await user.click(within(dialog).getByRole('button', { name: en('dataImport.check.run') }));
+
+    expect(
+      await within(dialog).findByRole('button', {
+        name: en('dataImport.commit.run', { count: 2 }),
+      }),
+    ).toBeTruthy();
+    expect(api.requests.some((r) => r.method === 'POST' && r.path === '/risks/imports')).toBe(true);
   });
 });

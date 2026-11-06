@@ -43,7 +43,7 @@ internal sealed class ExternalEntityImportRegister(
             ExternalEntityStatus.Active, ExternalEntityStatus.Suspended, ExternalEntityStatus.Retired),
     ];
 
-    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(Guid actorId, CancellationToken cancellationToken) =>
         new Dictionary<string, IReadOnlyList<ImportReferenceValue>>
         {
             [EntityTypeColumn] = await catalogues.ReferenceValuesAsync(MasterDataCatalogueCodes.ExternalEntityType, cancellationToken).ConfigureAwait(false),

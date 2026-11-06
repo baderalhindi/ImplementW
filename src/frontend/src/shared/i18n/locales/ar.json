@@ -117,6 +117,7 @@
   },
   "menu": {
     "label": "القائمة الرئيسية",
+    "sections": "شاشات هذا القسم",
     "home": "الرئيسية",
     "portfolio": "المحفظة",
     "portfolioDashboard": "لوحة المحفظة",

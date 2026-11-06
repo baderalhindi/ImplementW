@@ -35,11 +35,35 @@
     "ROLE_ASSIGNMENT": {
       "name": "Role assignments",
       "description": "Who holds which permission profile, over a department, an entity or an imported project. Loaded after projects."
+    },
+    "SCHEDULE_ACTIVITY": {
+      "name": "Schedule activities",
+      "description": "Activities of your projects' schedules, parents named by WBS code."
+    },
+    "PROJECT_MILESTONE": {
+      "name": "Milestones",
+      "description": "Planned milestones of your projects. Achievements are still claimed on screen, with evidence."
+    },
+    "PROJECT_TASK": {
+      "name": "Tasks",
+      "description": "Tasks of your projects, as if entered one by one."
+    },
+    "RISK": {
+      "name": "Risks",
+      "description": "Risks of your projects, identified and awaiting assessment."
+    },
+    "MANAGEMENT_CONCERN": {
+      "name": "Issues and challenges",
+      "description": "Issues and challenges of your projects. Impacts are assessed on screen."
+    },
+    "KPI_MEASUREMENT": {
+      "name": "KPI measurements",
+      "description": "Draft figures for KPIs assigned to your projects, still submitted for review."
     }
   },
   "action": "Import",
   "title": "Import {register}",
-  "intro": "Bring records over from the legacy system. Fill in the template, then check the file: nothing is saved until every row passes.",
+  "intro": "Bring many records in at once. Fill in the template, then check the file: nothing is saved until every row passes.",
   "template": {
     "heading": "1. Download the template",
     "hint": "Required columns are highlighted. The Columns sheet describes each column; the Reference values sheet lists the codes you can use.",

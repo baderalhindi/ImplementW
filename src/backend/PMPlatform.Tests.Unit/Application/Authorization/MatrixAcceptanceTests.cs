@@ -43,7 +43,8 @@ public sealed class MatrixAcceptanceTests
         Assert.Equal(AuthorizationDecision.Allowed, await viewer.AuthorizeAsync(PermissionCatalogue.ProjectView, Project(DepartmentId)));
         Assert.Equal(AuthorizationOutcome.NotFound, (await viewer.AuthorizeAsync(PermissionCatalogue.ProjectView, Project(OtherDepartmentId))).Outcome);
         Assert.All(
-            PermissionCatalogue.Platform.Definitions.Where(p => p.Mode == AccessMode.Write),
+            // Its one write: preparing a project import batch, which changes nothing until R02 approves it (threat DI-T14).
+            PermissionCatalogue.Platform.Definitions.Where(p => p.Mode == AccessMode.Write && p.Code != PermissionCatalogue.ProjectImport),
             permission => Assert.DoesNotContain(PermissionCatalogue.ShippedDefaultGrants, g => g.RoleCode == "R06" && g.PermissionCode == permission.Code));
         Assert.DoesNotContain(PermissionCatalogue.ShippedDefaultGrants, g => g.RoleCode == "R06" && g.PermissionCode == PermissionCatalogue.FinancialViewSensitive);
     }
