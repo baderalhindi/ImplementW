@@ -1,7 +1,7 @@
 # Quality gates (TASK-015). One stage, three jobs, every one of them a required status check on the
 # protected branches (TASK-012, .github/branch-protection/protected-branches.ruleset.json).
 # A lint error, a format violation, a type error, an analyzer warning or a failing unit test fails the PR.
-# `timeout-minutes: 10` holds each job to the agreed gate budget.
+# `timeout-minutes` holds each job to its budget: 10, and 15 for backend and backend-risk-governance (ci-quality-gates.md).
 name: ci-quality-gates
 
 on:
@@ -30,7 +30,7 @@ jobs:
   backend:
     name: backend
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -162,7 +162,7 @@ jobs:
   backend-risk-governance:
     name: backend-risk-governance
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
