@@ -96,14 +96,6 @@ jobs:
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Identity
 
-      # The header search: every role finds a record exactly when its page opens (global-search.md D-2).
-      - name: Header search integration tests
-        env:
-          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
-        run: >-
-          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
-          --filter FullyQualifiedName~PMPlatform.Tests.Integration.GlobalSearch.
-
       # TASK-102: the migration import — each register's template, validation and all-or-nothing import through the API, the lineage
       # that makes a second load skip what the first created, a project taken in by ADR-014's intake and its facts written by
       # Schedule, Progress and FinancialKpi, and DATA_IMPORT on every import endpoint. Its tests share the identity and project
@@ -548,6 +540,14 @@ jobs:
         run: >-
           dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
           --filter FullyQualifiedName~PMPlatform.Tests.Integration.Dashboards.
+
+      # The header search: every role finds a record exactly when its page opens (global-search.md D-2).
+      - name: Header search integration tests
+        env:
+          DB_CONNECTION_STRING: Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=scratch
+        run: >-
+          dotnet test src/backend/PMPlatform.Tests.Integration --no-build --configuration Release
+          --filter FullyQualifiedName~PMPlatform.Tests.Integration.GlobalSearch.
 
       # TASK-071: FG-02's reports — a field outside the SCR-138 allowlist refused by a direct call, an output authorised again at download on
       # the rules of its data, an entity's report set on its own projects with financials masked, the catalogue fixed at ADR-006's ten,
