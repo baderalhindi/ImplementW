@@ -170,6 +170,9 @@ export interface DashboardPlace {
   id: string;
   label: BilingualLabel;
   parentItemId: string | null;
+  /** Where the place is on the map; absent when it is not placed. */
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 /** ADR-019: one optional widget's presentation choice. */

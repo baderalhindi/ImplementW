@@ -363,7 +363,7 @@ internal sealed partial class DashboardService(
             }
         }
 
-        return [.. items.OrderBy(p => p.SortOrder).Select(p => new DashboardPlace(p.Id, p.Label, p.ParentItemId))];
+        return [.. items.OrderBy(p => p.SortOrder).Select(p => new DashboardPlace(p.Id, p.Label, p.ParentItemId, p.Latitude, p.Longitude))];
     }
 
     /// <summary>Each role's own landing dashboard (R4-6), by role code; a role without one lands by its published audience.</summary>

@@ -24897,6 +24897,24 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "latitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "longitude": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         },
         "description": "A master data value a portfolio dashboard's filters offer — a region, a city, a sector, a priority, a strategic portfolio or initiative —\nwith its name; a city's parent is its region, an initiative's its portfolio."

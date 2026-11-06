@@ -190,6 +190,12 @@ export function HostedDashboard({
               onSelectRegion={(region) => {
                 onFilterChange('regionItemId', region);
               }}
+              map={{
+                filters,
+                onFilterCity: (city) => {
+                  onFilterChange('cityItemId', city);
+                },
+              }}
             />
           )}
           <DashboardCanvas view={view.data} headingLevel={2} />

@@ -369,3 +369,67 @@ describe('the Home views', () => {
     expect(row.textContent).not.toContain('2026-10-31');
   });
 });
+
+describe('Projects by location', () => {
+  const CITY = '00000000-0000-4000-8000-00000000c001';
+  const REGION = '00000000-0000-4000-8000-00000000c002';
+
+  function mapApi(latitude: number | null): MockApi {
+    const api = mockApi();
+    withProjectLookups(api);
+    withDashboards(api, {
+      views: {
+        PORTFOLIO: {
+          ...dashboardView('PORTFOLIO'),
+          locations: [{ regionItemId: REGION, cityItemId: CITY, projectCount: 7 }],
+          places: [
+            { id: REGION, label: { ar: 'الحاضرة', en: 'Hadira' }, parentItemId: null },
+            {
+              id: CITY,
+              label: { ar: 'الهفوف', en: 'Hofuf' },
+              parentItemId: REGION,
+              latitude,
+              longitude: latitude === null ? null : 49.587,
+            },
+          ],
+        },
+      },
+    });
+    api.on('GET', /^\/portfolio-insights$/, { body: fullInsights() });
+    api.on('GET', /^\/projects$/, { body: page([projectSummary()]) });
+    return api;
+  }
+
+  test('pressing a city opens its figures and projects, read for that city', async () => {
+    const user = userEvent.setup();
+    const api = mapApi(25.3647);
+    renderApp({ path: DASHBOARD, session: sessionFor(['R02']) });
+
+    expect(
+      await screen.findByRole('region', { name: en('dashboards.locations.mapLabel') }),
+    ).toBeTruthy();
+    await user.click(await screen.findByRole('button', { name: 'Hofuf' }));
+
+    await waitFor(() => {
+      expect(
+        api
+          .requestsTo('GET', /^\/portfolio-insights$/)
+          .some((r) => r.query.get('cityItemId') === CITY),
+      ).toBe(true);
+    });
+    expect(
+      api.requestsTo('GET', /^\/projects$/).some((r) => r.query.get('cityItemId') === CITY),
+    ).toBe(true);
+    expect(await screen.findByRole('heading', { name: 'Hofuf' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: en('dashboards.locations.close') }));
+    expect(screen.queryByRole('heading', { name: 'Hofuf' })).toBeNull();
+  });
+
+  test('with no coordinates there is no map, and the list still shows', async () => {
+    mapApi(null);
+    renderApp({ path: DASHBOARD, session: sessionFor(['R02']) });
+
+    expect(await screen.findByText('Hofuf')).toBeTruthy();
+    expect(screen.queryByRole('region', { name: en('dashboards.locations.mapLabel') })).toBeNull();
+  });
+});

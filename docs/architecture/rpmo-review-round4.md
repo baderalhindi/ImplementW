@@ -64,6 +64,8 @@ Run over `RPMO_Projects_Import_v1.xlsx` on 5 Nov 2026: 167 projects, 97 measured
 **Departure from the review.** Projects by stage reads the platform's status, not the file's old status, which is not stored (the review's own §4.2).
 The Excel's "in progress 104, other 3, not set 2" therefore reads as active 109: the file maps those five rows to active.
 
+**Projects by location is a map** (asked for after the review). `master_data_item.latitude` and `longitude` place a city, and the dashboard's `places` carry them. The Portfolio dashboard draws one circle per city, sized by its project count, under the filters in force; pressing a circle, or the city in the list below it, opens the place's figures and first projects, each as the person's permissions allow. The base map is OpenStreetMap's tile service, so the SPA's CSP allows its images, and the browser sends it the site's origin as referrer, which its tile policy asks for. That service suits a pilot, not production traffic: production needs a tile provider AHDA approves. `load-rpmo-lists` sets the 13 cities' coordinates: approximate town centres, for AHDA to correct. There is no screen to edit them yet. Decision 5 in §7.
+
 ## 4. Project import (request 4)
 
 The import was already granted to R02 and R03 in `db/seed`. The client could not see it because **the showcase database was migrated but never
@@ -120,3 +122,4 @@ running until ended.
 2. What may an entity upload as evidence? (§2)
 3. Accepting local accounts against CS-011, and until when. (SR-81)
 4. Publish NOTIFICATION_ROUTING and templates for `MONTHLY_UPDATE_REMINDER`.
+5. The map's coordinates and which tile provider production uses (§3).

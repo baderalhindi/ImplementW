@@ -69,7 +69,7 @@ public sealed record DashboardFilterOption(string Value, int ProjectCount);
 /// A master data value a portfolio dashboard's filters offer — a region, a city, a sector, a priority, a strategic portfolio or initiative —
 /// with its name; a city's parent is its region, an initiative's its portfolio.
 /// </summary>
-public sealed record DashboardPlace(Guid Id, BilingualLabel Label, Guid? ParentItemId);
+public sealed record DashboardPlace(Guid Id, BilingualLabel Label, Guid? ParentItemId, decimal? Latitude = null, decimal? Longitude = null);
 
 /// <summary>How many of the dashboard's projects are delivered in one region and city.</summary>
 public sealed record DashboardLocationCount(Guid? RegionItemId, Guid? CityItemId, int ProjectCount);

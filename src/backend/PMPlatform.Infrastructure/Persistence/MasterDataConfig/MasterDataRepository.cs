@@ -139,7 +139,7 @@ internal sealed class MasterDataRepository(PMPlatformDbContext context) : IMaste
             .Join(context.Set<MasterDataCatalogue>(), i => i.CatalogueId, c => c.Id, (i, c) => new { Item = i, CatalogueCode = c.Code })
             .Where(x => x.CatalogueCode == catalogueCode && x.Item.LifecycleState == GovernedLifecycleState.Published)
             .OrderBy(x => x.Item.SortOrder).ThenBy(x => x.Item.Id)
-            .Select(x => new MasterDataItemReference(x.Item.Id, x.CatalogueCode, x.Item.Code, x.Item.Label, x.Item.ParentItemId, x.Item.SortOrder))
+            .Select(x => new MasterDataItemReference(x.Item.Id, x.CatalogueCode, x.Item.Code, x.Item.Label, x.Item.ParentItemId, x.Item.SortOrder, x.Item.Latitude, x.Item.Longitude))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public void AddItem(MasterDataItem item) => context.Set<MasterDataItem>().Add(item);

@@ -19,6 +19,9 @@ internal sealed class MasterDataItemConfiguration : IEntityTypeConfiguration<Mas
         builder.HasGovernedLifecycle();
 
         builder.HasOne<MasterDataCatalogue>().WithMany().HasForeignKey(e => e.CatalogueId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(e => e.Latitude).HasPrecision(9, 6);
+        builder.Property(e => e.Longitude).HasPrecision(9, 6);
+        builder.HasCheck("coordinates", "(latitude IS NULL) = (longitude IS NULL) AND (latitude IS NULL OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180))");
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.ParentItemId).OnDelete(DeleteBehavior.Restrict);
 
         // TASK-026 (indexing-strategy.md I-09): a catalogue's items in one state, in display order (ADM-020 to ADM-029

@@ -71,6 +71,17 @@
     "period": "Period"
   },
   "locations": {
+    "mapLabel": "Map of the projects by place",
+    "mapDescription": "Each circle is a place, sized by its projects. Press a circle to see its details.",
+    "pressCircle": "Press a circle on the map, or a city in the list below, to see its details.",
+    "close": "Close",
+    "status": "On-plan indicator",
+    "onPlanSummary": "On track {onTrack} · late {late} · stalled {stalled}",
+    "projectsHeading": "Projects",
+    "allProjects": "All {count} projects",
+    "filter": "Show only this place on the dashboard",
+    "clearFilter": "Show every place",
+    "unplaced": "{count} projects have no place on the map.",
     "title": "Projects by location",
     "description": "Where the projects shown are delivered. Choose a region to show only its projects.",
     "projects": "{count} projects",

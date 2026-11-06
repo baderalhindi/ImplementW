@@ -6991,11 +6991,21 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_system");
 
+                    b.Property<decimal?>("Latitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("numeric(9,6)")
+                        .HasColumnName("latitude");
+
                     b.Property<string>("LifecycleState")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("lifecycle_state");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasPrecision(9, 6)
+                        .HasColumnType("numeric(9,6)")
+                        .HasColumnName("longitude");
 
                     b.Property<Guid?>("ParentItemId")
                         .HasColumnType("uuid")
@@ -7094,6 +7104,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("master_data_item", "master_data_config", t =>
                         {
+                            t.HasCheckConstraint("ck_master_data_item_coordinates", "(latitude IS NULL) = (longitude IS NULL) AND (latitude IS NULL OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180))");
+
                             t.HasCheckConstraint("ck_master_data_item_description", "(\"description_ar\" IS NULL) = (\"description_en\" IS NULL)");
 
                             t.HasCheckConstraint("ck_master_data_item_lifecycle_state", "\"lifecycle_state\" IN ('DRAFT', 'VALIDATED', 'PUBLISHED', 'RETIRED')");

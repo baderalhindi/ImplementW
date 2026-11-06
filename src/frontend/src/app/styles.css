@@ -5089,6 +5089,125 @@ path.trend__line--ACTUAL_PERCENT {
   margin-block-end: var(--space-4);
 }
 
+.locations__map-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  gap: var(--space-4);
+  margin-block-end: var(--space-4);
+}
+
+@media (max-width: 60rem) {
+  .locations__map-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.locations-map {
+  min-block-size: 30rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface, var(--color-background));
+  z-index: 0;
+}
+
+.map-bubble__anchor {
+  background: none;
+  border: 0;
+}
+
+.map-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  block-size: 100%;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: rgba(15, 118, 110, 0.82);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.map-bubble--selected {
+  background: rgba(194, 65, 12, 0.92);
+  outline: 3px solid rgba(194, 65, 12, 0.35);
+}
+
+.leaflet-marker-icon:focus-visible .map-bubble {
+  outline: 3px solid var(--color-focus, #1d4ed8);
+  outline-offset: 2px;
+}
+
+.locations__side {
+  min-inline-size: 0;
+  max-block-size: 30rem;
+  overflow-y: auto;
+}
+
+.location-details {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.location-details__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.location-details h3,
+.location-details h4,
+.location-details__region,
+.location-details__count {
+  margin: 0;
+}
+
+.location-details__region {
+  color: var(--color-text-muted);
+}
+
+.location-details__count {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.location-details .insights__counts {
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+.location-details .insights__counts > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.location-details .insights__counts dd {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.location-details__projects {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.location-details__projects li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
 .locations__regions {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));

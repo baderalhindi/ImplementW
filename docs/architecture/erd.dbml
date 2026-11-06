@@ -255,6 +255,8 @@ Table master_data_config.master_data_item {
   description_ar varchar(200) [note: 'Arabic label (ADR-012)']
   description_en varchar(200) [note: 'English label (ADR-012)']
   parent_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Hierarchy when the catalogue allows it']
+  latitude numeric(9,6) [note: 'A place on the dashboard map; null when not placed']
+  longitude numeric(9,6) [note: 'A place on the dashboard map; null when not placed']
   sort_order integer [not null, default: 0]
   is_system boolean [not null, default: false]
   lifecycle_state varchar(50) [not null, note: 'DRAFT | VALIDATED | PUBLISHED | RETIRED (Blueprint Section 12, TASK-034)']

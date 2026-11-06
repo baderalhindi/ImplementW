@@ -21,6 +21,24 @@ public static partial class RpmoListsLoader
     public const string Command = "load-rpmo-lists";
 
     private const string ListsSheet = "القوائم";
+
+    /// <summary>Where RPMO's places are on the dashboard's map: approximate town centres, which AHDA may correct. The file holds none.</summary>
+    private static readonly (string City, decimal Latitude, decimal Longitude)[] CityCoordinates =
+    [
+        ("الهفوف", 25.3647m, 49.5870m),
+        ("المبرز", 25.4077m, 49.5903m),
+        ("العيون", 25.6050m, 49.5700m),
+        ("العمران", 25.4333m, 49.7167m),
+        ("الجفر", 25.3750m, 49.7200m),
+        ("الطرف", 25.3625m, 49.7236m),
+        ("القارة", 25.4150m, 49.6700m),
+        ("الجشة", 25.3920m, 49.7050m),
+        ("المطيرفي", 25.4780m, 49.5580m),
+        ("البطالية", 25.4330m, 49.6330m),
+        ("العقير", 25.6430m, 50.2130m),
+        ("سلوى", 24.7440m, 50.7630m),
+        ("يبرين", 23.2600m, 48.9700m),
+    ];
     private const string SeedActor = "00000000-0000-4000-8000-0000000000ff";
     private const int FirstRow = 4;
     private const int LastRow = 19;
@@ -69,6 +87,17 @@ public static partial class RpmoListsLoader
         await LoadItemsAsync(batch, "PRIORITY", "PRI", Column(lists, PriorityColumn)).ConfigureAwait(false);
         await LoadItemsAsync(batch, "REGION", "AREA", Column(lists, AreaColumn)).ConfigureAwait(false);
         await LoadItemsAsync(batch, "CITY", "CITY", Column(lists, CityColumn), Pairs(lists, CityColumn, CityAreaColumn).ToDictionary(p => p.Item1, p => p.Item2!, StringComparer.Ordinal), "REGION").ConfigureAwait(false);
+
+        foreach ((string city, decimal latitude, decimal longitude) in CityCoordinates)
+        {
+            await batch.ExecuteAsync(
+                """
+                UPDATE master_data_config.master_data_item i SET latitude = @latitude, longitude = @longitude
+                FROM master_data_config.master_data_catalogue c
+                WHERE c.code = 'CITY' AND i.catalogue_id = c.id AND i.label_ar = @city
+                """,
+                ("city", city), ("latitude", latitude), ("longitude", longitude)).ConfigureAwait(false);
+        }
 
         // RPMO's words for the seeded governance profiles, so a project shows the level as its row states it.
         await batch.ExecuteAsync("""
