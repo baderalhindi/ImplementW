@@ -5141,10 +5141,13 @@ path.trend__line--ACTUAL_PERCENT {
   outline-offset: 2px;
 }
 
+/* The panel scrolls beside the map. A scrollbar that overlays the content, as macOS draws it, needs room kept for it. */
 .locations__side {
   min-inline-size: 0;
   max-block-size: 30rem;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding-inline-end: var(--space-4);
 }
 
 .location-details {
