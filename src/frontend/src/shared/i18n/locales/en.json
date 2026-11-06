@@ -18,6 +18,23 @@
     "retry": "Try again",
     "search": "Search"
   },
+  "globalSearch": {
+    "label": "Search the platform",
+    "placeholder": "Search projects, tasks, documents…",
+    "searching": "Searching…",
+    "keepTyping": "Keep typing to search records.",
+    "noResults": "Nothing found for “{text}”.",
+    "failed": "The search could not be completed. Please try again.",
+    "groups": {
+      "screens": "Screens",
+      "projects": "Projects",
+      "tasks": "Tasks",
+      "risks": "Risks",
+      "concerns": "Issues and challenges",
+      "changeRequests": "Change requests",
+      "documents": "Documents"
+    }
+  },
   "states": {
     "loading": "Loading…",
     "saving": "Saving…",

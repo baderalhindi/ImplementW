@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using PMPlatform.Application.Features.GlobalSearch;
+using PMPlatform.Application.Features.GlobalSearch.Contracts;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.DataImport;
@@ -289,6 +291,10 @@ public static class DependencyInjection
         services.AddScoped<RiskViews>();
         services.AddScoped<RiskGate>();
         services.AddScoped<IRiskService, RiskService>();
+
+        // The header search.
+        services.AddScoped<IGlobalSearchService, GlobalSearchService>();
+
         services.AddScoped<IRiskLifecycleService, RiskLifecycleService>();
         services.AddScoped<IRiskTreatmentService, RiskTreatmentService>();
         services.AddScoped<IRiskMaintenance, RiskMaintenance>();

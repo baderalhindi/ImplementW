@@ -1,7 +1,7 @@
 namespace PMPlatform.Tests.Unit.Architecture;
 
 /// <summary>
-/// The 21 modules (ADR-003 §4.3) and the code-level references ADR-003 §8 allows between them.
+/// The 21 modules (ADR-003 §4.3), GlobalSearch (global-search.md §4), and the code-level references ADR-003 §8 allows between them.
 /// A new module or edge is a revision of ADR-003 first and of this file second — never the reverse.
 /// </summary>
 /// <remarks>
@@ -12,12 +12,15 @@ namespace PMPlatform.Tests.Unit.Architecture;
 /// </remarks>
 internal static class ModuleRegistry
 {
+    /// <summary>Modules that own no tables, so no migration creates a schema for them.</summary>
+    public static readonly IReadOnlySet<string> ModulesWithoutSchema = new HashSet<string>(StringComparer.Ordinal) { "GlobalSearch" };
+
     public static readonly IReadOnlySet<string> Modules = new HashSet<string>(StringComparer.Ordinal)
     {
         "Project", "Progress", "Schedule", "ProjectTask", "Milestone", "Risk", "ManagementConcern",
         "ChangeRequest", "Suspension", "Closure", "Approval", "DocumentManagement", "ExternalParticipation",
         "FinancialKpi", "Notifications", "Dashboards", "Reports", "IdentityAccess", "MasterDataConfig",
-        "IntegrationMonitoring", "AuditActivity",
+        "IntegrationMonitoring", "AuditActivity", "GlobalSearch",
     };
 
     /// <summary>E-U1 and E-U2: every module may query IdentityAccess and MasterDataConfig.</summary>
@@ -90,6 +93,8 @@ internal static class ModuleRegistry
         ("Dashboards", "ManagementConcern"),         // 50 read projection: open issues and challenges per project (TASK-071)
         ("Dashboards", "ChangeRequest"),             // 51 read projection: change requests undecided, approved, in implementation (TASK-071)
         ("Dashboards", "Suspension"),                // 52 read projection: open suspension and resumption requests (TASK-071)
+        ("GlobalSearch", "Project"),                 // 53 query: the header search's projects, through their own list (global-search.md §4)
+        ("GlobalSearch", "DocumentManagement"),      // 54 query: the header search's documents, through their own list
     };
 
     public static bool Allows(string referrer, string referenced) =>

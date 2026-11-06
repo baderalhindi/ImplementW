@@ -17,6 +17,7 @@ import { unreadCountStore, useUnreadCount } from '@/features/notifications/unrea
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { useTheme } from '@/shared/theme/theme.ts';
 
+import { GlobalSearch } from './search/GlobalSearch.tsx';
 import { activeItem, activeMenu, isCurrent, type Menu, type MenuId, menusFor } from './menus.ts';
 import { ShellIcon } from './ShellIcon.tsx';
 
@@ -606,6 +607,7 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
             </span>
           </button>
           <Breadcrumb menu={current} pathname={pathname} />
+          <GlobalSearch menus={menus} />
           <div className="topbar__actions">
             <CreateMenu />
             <NotificationBell />
