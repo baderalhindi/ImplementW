@@ -1,6 +1,9 @@
 {
   "title": "Welcome, {name}",
   "description": "Start something new, see where the portfolio stands, and pick up what is waiting for you.",
+  "menus": {
+    "title": "Browse the platform"
+  },
   "work": {
     "title": "My work"
   },

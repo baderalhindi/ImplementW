@@ -3,7 +3,7 @@ import { screen, within } from '@testing-library/react';
 import { translate } from '@/shared/i18n/i18n.ts';
 
 // The signed-in shell's master navigation (Blueprint §20.1), as a test reads it: the main menu, a menu's own link (its
-// name may carry a count), and the open menu's screens.
+// name may carry a count), and the open menu's screens, which are the tabs over the page.
 
 const en = (key: string) => translate('en', key);
 
@@ -24,14 +24,19 @@ export function menuLink(menuKey: string): HTMLElement | null {
   return within(mainMenu()).queryByRole('link', { name: startingWith(en(menuKey)) });
 }
 
-/** The screens listed under the open menu `menuKey`; throws when that menu is not the open one. */
+/** The open menu's tabs, or null on a page that shows none. */
+export function sectionTabs(): HTMLElement | null {
+  return screen.queryByRole('navigation', { name: en('common.menu.sections') });
+}
+
+/** The screens the open menu `menuKey` lists; throws when that menu is not the open one. */
 export function openMenu(menuKey: string): HTMLElement {
-  return within(mainMenu()).getByRole('list', { name: en(menuKey) });
+  return screen.getByRole('list', { name: en(menuKey) });
 }
 
 /** The open menu `menuKey`'s list, once it is the open one. */
 export function findOpenMenu(menuKey: string): Promise<HTMLElement> {
-  return within(mainMenu()).findByRole('list', { name: en(menuKey) });
+  return screen.findByRole('list', { name: en(menuKey) });
 }
 
 /** The addresses the open menu `menuKey` lists, in order. */

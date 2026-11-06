@@ -21,6 +21,7 @@
 | D-8 | **Create follows `PROJECT_REGISTER` and `CHANGE_REQUEST_RAISE`**, item by item, and the button is gone for someone who may start neither; the register's "Create project" follows `PROJECT_REGISTER`; the import action follows `DATA_IMPORT` instead of the R01 role | Review C3: "the global '+ Create' button shows for Admin and R02, who hold neither" |
 | D-9 | **No Retry on a refused permission.** `ErrorState` takes the failure; a 403 keeps its message and drops Retry, at all 123 call sites | Review L-3 |
 | D-10 | **The "Administration hidden for this role" note is removed** (its key and style too) | Review M-9 |
+| D-11 | **The rail names the menus only.** A menu's screens are on the Home's "Browse the platform" cards and in tabs over each of those screens; a page below them (a record) shows no such tabs, and its breadcrumb leads back. Cards and tabs read the same `menusFor` result, so they offer what D-3 keeps and no more | The user's request of 6 Nov 2026: a summarized side navigation for all users, with the sub-options on the Home. This departs from Blueprint §20.1's open-menu list |
 
 ## 2. Tests
 

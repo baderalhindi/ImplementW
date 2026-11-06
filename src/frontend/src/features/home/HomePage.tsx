@@ -1,4 +1,4 @@
-import { type ReactElement } from 'react';
+import { type ReactElement, type ReactNode } from 'react';
 import { Navigate } from 'react-router';
 
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
@@ -17,9 +17,10 @@ import { PortfolioSnapshot } from './PortfolioSnapshot.tsx';
  * submitted, what is due; the 27 Oct 2026 review asked for more meaning: a welcome banner with the ways in, and for the Portfolio
  * Dashboard's audience a snapshot of the portfolio — its headline figures and where its projects are — above their work. The full
  * analysis stays the Portfolio menu's (/dashboards). Someone who administers the platform and holds no business data, R01, sees the
- * platform's health instead (M-1), under the same welcome banner with the administration's ways in.
+ * platform's health instead (M-1), under the same welcome banner with the administration's ways in. `menuOverview` is the shell's map
+ * of the screens this person can open, directly under the banner.
  */
-export function HomePage(): ReactElement {
+export function HomePage({ menuOverview }: { menuOverview: ReactNode }): ReactElement {
   const { t, language } = useI18n();
   const { session } = useSession();
   const today = new Intl.DateTimeFormat(DATE_LOCALES[language], { dateStyle: 'full' });
@@ -49,6 +50,7 @@ export function HomePage(): ReactElement {
         </p>
         {administers ? <AdministrationActions /> : <StartOrOpen user={session.user} />}
       </header>
+      {menuOverview}
       {administers ? (
         <PlatformHealth />
       ) : (

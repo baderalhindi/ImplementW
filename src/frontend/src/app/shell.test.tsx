@@ -9,10 +9,17 @@ import { mockApi, SHELL_INBOX_COUNT, SHELL_PERMISSIONS } from '@/test/mockApi.ts
 import { notificationSession, withInbox } from '@/test/notificationFixtures.ts';
 import { shippedPermissions } from '@/test/permissionFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
-import { findMainMenu, findOpenMenu, mainMenu, menuLink, openMenuTargets } from '@/test/shell.ts';
+import {
+  findMainMenu,
+  findOpenMenu,
+  mainMenu,
+  menuLink,
+  openMenuTargets,
+  sectionTabs,
+} from '@/test/shell.ts';
 
 // The master navigation of Blueprint §20.1 (the AHDA Global Navigation design): eleven menus in order, the open menu's
-// screens only, counts on Requests and Approvals and on Notifications only, and every screen offered on the permission it
+// screens as tabs over the page, counts on Requests and Approvals and on Notifications only, and every screen offered on the permission it
 // needs, so a role sees the menus its permissions open and no other (the 24 Oct 2026 review, C3).
 
 const en = (key: string, params?: Record<string, string | number>) => translate('en', key, params);
@@ -182,12 +189,13 @@ describe('the master navigation', () => {
     expect(screen.getByRole('link', { name: en('common.shell.createChangeRequest') })).toBeTruthy();
   });
 
-  test('only the open menu lists its screens, and the breadcrumb names the menu and the screen', async () => {
+  test('the rail names the menus only; the open menu’s screens are tabs over the page, and the breadcrumb names both', async () => {
     withInbox(mockApi());
     renderApp({ path: '/notifications', session: notificationSession() });
 
     await findMainMenu();
-    expect(within(mainMenu()).getAllByRole('list', { name: /.+/ })).toHaveLength(1);
+    expect(within(mainMenu()).queryAllByRole('list', { name: /.+/ })).toHaveLength(0);
+    expect(sectionTabs()).toBeTruthy();
     expect(openMenuTargets('common.menu.notifications')[0]).toBe('/notifications');
 
     const breadcrumb = screen.getByRole('navigation', { name: en('common.shell.breadcrumb') });
@@ -281,7 +289,40 @@ describe('the master navigation', () => {
     expect(api.shellInboxCountReads).toHaveLength(0);
   });
 
-  test('collapsing keeps every menu’s name for screen readers, hides the screens, and is remembered', async () => {
+  test('a page below a menu’s screens shows no section tabs: its breadcrumb leads back', async () => {
+    withInbox(mockApi());
+    renderApp({ path: '/notifications/no-such-screen', session: notificationSession() });
+
+    await findMainMenu();
+    expect(sectionTabs()).toBeNull();
+  });
+
+  test('the Home’s cards offer every screen of the rail’s menus that this person may open, and no other', async () => {
+    withInbox(withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) }));
+    renderApp({ path: '/', session: sessionFor(['R04']) });
+
+    const overview = await screen.findByRole('region', { name: en('home.menus.title') });
+    expect(sectionTabs()).toBeNull();
+    const projects = await within(overview).findByRole('list', {
+      name: en('common.menu.projects'),
+    });
+    expect(
+      within(projects)
+        .getByRole('link', { name: en('projects.nav.register') })
+        .getAttribute('href'),
+    ).toBe('/projects');
+    const cards = within(overview)
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent);
+    const menus = Array.from(mainMenu().querySelectorAll('.rail__label'))
+      .map((label) => label.textContent)
+      .filter((name) => name !== en('common.menu.home'));
+    expect(cards).toEqual(menus);
+    // The Project Manager administers nothing (the review, C3).
+    expect(within(overview).queryByText(en('identityAccess.nav.users'))).toBeNull();
+  });
+
+  test('collapsing keeps every menu’s name for screen readers and is remembered', async () => {
     withInbox(mockApi());
     renderApp({ path: '/notifications', session: notificationSession() });
     const user = userEvent.setup();
@@ -292,7 +333,6 @@ describe('the master navigation', () => {
       screen.getByRole('button', { name: en('common.menu.expand') }).getAttribute('aria-pressed'),
     ).toBe('true');
     expect(menuLink('common.menu.notifications')).toBeTruthy();
-    expect(within(mainMenu()).queryAllByRole('list', { name: /.+/ })).toHaveLength(0);
     cleanup();
 
     withInbox(mockApi());

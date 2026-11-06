@@ -372,8 +372,9 @@ function writeCollapsed(collapsed: boolean): void {
 }
 
 /**
- * The rail of the master navigation (Blueprint §20.1): the eleven menus in order, the open menu's screens under it and
- * no other's, counts on Requests and Approvals and on Notifications only. Collapsed, it keeps the icons and counts.
+ * The rail of the master navigation (Blueprint §20.1): the eleven menus in order and nothing under them, counts on Requests
+ * and Approvals and on Notifications only. Collapsed, it keeps the icons and counts. A menu's screens are on the Home's cards and
+ * in the tabs over each of those screens.
  */
 function Rail({
   menus,
@@ -436,17 +437,6 @@ function Rail({
                   <span className="rail__label">{t(menu.label)}</span>
                   {counts[menu.id]}
                 </Link>
-                {open && !collapsed && menu.items.length > 0 && (
-                  <ul className="rail__items" aria-label={t(menu.label)}>
-                    {menu.items.map((item) => (
-                      <li key={item.to}>
-                        <NavLink className="rail__item" to={item.to} end={item.end ?? false}>
-                          {t(item.label)}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </li>
             );
           })}
@@ -470,6 +460,35 @@ function Rail({
         </button>
       </div>
     </>
+  );
+}
+
+/**
+ * The open menu's screens as tabs, so a person moves between them without going back to the Home. Shown on those screens only: a
+ * record's page has its own heading and tabs, and its breadcrumb leads back.
+ */
+function SectionTabs({ menu }: { menu: Menu | undefined }): ReactElement | null {
+  const { t } = useI18n();
+  const { pathname, search } = useLocation();
+  if (
+    menu === undefined ||
+    menu.items.length < 2 ||
+    !menu.items.some((item) => isCurrent(item.to, pathname, search))
+  ) {
+    return null;
+  }
+  return (
+    <nav className="tabs section-tabs print-hide" aria-label={t('common.menu.sections')}>
+      <ul aria-label={t(menu.label)}>
+        {menu.items.map((item) => (
+          <li key={item.to}>
+            <NavLink to={item.to} end={item.end ?? false}>
+              {t(item.label)}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
@@ -626,7 +645,8 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
           </div>
         </header>
         <main id="main" className="app__main" tabIndex={-1}>
-          <Outlet />
+          <SectionTabs menu={current} />
+          <Outlet context={menus} />
         </main>
       </div>
       <StepUpDialog />

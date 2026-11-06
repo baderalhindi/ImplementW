@@ -117,6 +117,7 @@
   },
   "menu": {
     "label": "Main menu",
+    "sections": "Screens of this section",
     "home": "Home",
     "portfolio": "Portfolio",
     "portfolioDashboard": "Portfolio dashboard",
