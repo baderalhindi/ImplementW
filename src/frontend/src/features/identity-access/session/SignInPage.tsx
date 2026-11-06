@@ -7,16 +7,17 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { isAppPath } from '@/shared/navigation/appPath.ts';
-import { TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
-import { checkPassword, checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
+import { checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
+import { DirectoryPasswordHelp, NewPasswordFields } from './passwordSelfService.tsx';
+import { checkNewPassword } from './passwordUpdate.ts';
 import { SecondFactorForm } from './SecondFactorForm.tsx';
 import {
   isPasswordChangePending,
@@ -32,16 +33,6 @@ import { useSession } from './useSession.ts';
 type AccountTab = 'microsoft' | 'directory';
 
 const accountTabs: readonly AccountTab[] = ['microsoft', 'directory'];
-
-/**
- * The directory owns its accounts' passwords, so the platform neither resets nor changes one: it links to AHDA's reset page when
- * the build names it, and otherwise says where to go. Only an absolute https URL is used, so the link can never carry
- * javascript: or a relative path (TASK-077).
- */
-function passwordResetUrl(): string | null {
-  const value = import.meta.env.VITE_PASSWORD_RESET_URL ?? '';
-  return URL.canParse(value) && new URL(value).protocol === 'https:' ? new URL(value).href : null;
-}
 
 const loadSignInOptions = (signal: AbortSignal) => sessionApi.getSignInOptions(signal);
 
@@ -248,7 +239,6 @@ export function SignInPage(): ReactElement {
   const signInOptions = useApiResource(loadSignInOptions);
   const singleSignOnAvailable = signInOptions.data?.singleSignOnAvailable === true;
 
-  const resetUrl = passwordResetUrl();
   const target = redirectTarget(location.state);
   if (session !== null) {
     return <Navigate to={target} replace />;
@@ -301,16 +291,7 @@ export function SignInPage(): ReactElement {
     if (passwordChange === null) {
       return;
     }
-    const valid = save.validate({
-      newPassword: checkPassword(newPassword, username),
-      confirmPassword:
-        confirmPassword === ''
-          ? 'REQUIRED'
-          : confirmPassword === newPassword
-            ? null
-            : 'PASSWORD_MISMATCH',
-    });
-    if (!valid) {
+    if (!save.validate(checkNewPassword(newPassword, confirmPassword, username))) {
       return;
     }
     const result = await save.run(async () =>
@@ -391,12 +372,13 @@ export function SignInPage(): ReactElement {
         }
       />
       <p className="sign-in__forgot">
-        {resetUrl === null ? (
-          t('identityAccess.signIn.forgotPasswordContact')
+        {signInOptions.data?.passwordResetAvailable === true ? (
+          <Link to="/forgot-password">{t('identityAccess.signIn.forgotPassword')}</Link>
         ) : (
-          // The one bound link: a build-time https URL checked by passwordResetUrl, never data.
-          // eslint-disable-next-line no-restricted-syntax
-          <a href={resetUrl}>{t('identityAccess.signIn.forgotPassword')}</a>
+          <DirectoryPasswordHelp
+            linkLabel={t('identityAccess.signIn.forgotPassword')}
+            contact={t('identityAccess.signIn.forgotPasswordContact')}
+          />
         )}
       </p>
       <button type="submit" className="button button--primary sign-in__wide" disabled={save.saving}>
@@ -429,28 +411,12 @@ export function SignInPage(): ReactElement {
               <h2 className="sign-in__subtitle">{t('identityAccess.signIn.newPasswordTitle')}</h2>
               <p>{t('identityAccess.signIn.newPasswordInstructions')}</p>
               <FormAlert message={save.formError} />
-              <TextField
-                label={t('identityAccess.signIn.newPassword')}
-                name="newPassword"
-                type="password"
-                required
-                dir="ltr"
-                autoComplete="new-password"
-                hint={t('identityAccess.passwordRules')}
-                value={newPassword}
-                onChange={setNewPassword}
-                error={save.fieldErrors.newPassword}
-              />
-              <TextField
-                label={t('identityAccess.signIn.confirmPassword')}
-                name="confirmPassword"
-                type="password"
-                required
-                dir="ltr"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={setConfirmPassword}
-                error={save.fieldErrors.confirmPassword}
+              <NewPasswordFields
+                newPassword={newPassword}
+                confirmPassword={confirmPassword}
+                onNewPassword={setNewPassword}
+                onConfirmPassword={setConfirmPassword}
+                errors={save.fieldErrors}
               />
               <button
                 type="submit"

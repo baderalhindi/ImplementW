@@ -7,4 +7,4 @@ public sealed record PasswordChangePending(string PasswordChangeToken, DateTimeO
 public sealed record PendingPasswordChange(Guid UserId);
 
 /// <summary>What a local account's sign-in needs of its stored credential.</summary>
-public sealed record LocalCredential(Guid UserId, string Username, string PasswordHash, bool MustChangePassword, int FailedSignInCount, DateTimeOffset? LockedUntil);
+public sealed record LocalCredential(Guid UserId, string Username, string Email, string PasswordHash, bool MustChangePassword, int FailedSignInCount, DateTimeOffset? LockedUntil);

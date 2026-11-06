@@ -110,6 +110,17 @@ included. At least 12 characters mixing letters and digits, not the username, no
 This departs from Cybersecurity Guide CS-011, "no unmanaged local accounts". The client asked for it; the finding is SR-81, for AHDA to accept with its
 end date. Lockout returns the same 401 as a wrong password, so a locked user is not told why.
 
+**Changing and resetting a password yourself (added 6 Nov 2026).** Every signed-in person finds **Change password** in the account menu.
+
+| Account | Change while signed in | Forgotten password |
+| --- | --- | --- |
+| Local | `POST /sessions/current/password-change`, with the current password. Wrong guesses count towards the lockout | `POST /sessions/password-reset-requests` e-mails a link to `/reset-password`; `POST /sessions/password-reset` sets the new password. An administrator's reset stays available |
+| Directory or Microsoft | Not the platform's to change (ADR-007): the page links to `VITE_PASSWORD_RESET_URL`, or names the service desk | The same |
+
+The password rules are the ones above. The reset link works once, lasts 30 minutes (`Identity:LocalAccounts:PasswordResetLinkLifetime`) and issues no session, so the second factor still applies. At most one message goes per account in 5 minutes (`PasswordResetCooldown`). A reset request answers the same 204 in the same time whether or not the account exists.
+
+Any password change, including an administrator's reset, ends the account's sessions at their next refresh, up to 15 minutes later; the person who changed it is signed out at once. `GET /sessions/sign-in-options` offers the reset only where `EXCHANGE_SMTP_HOST` and `APP_BASE_URL` are set and local accounts are on; elsewhere the sign-in page names the service desk. The message does not go through WF-15, whose history stores every rendered body, so its text is fixed in `PasswordResetMailer` in both languages rather than a governed template. The finding is SR-83.
+
 **Roles.** `POST /roles` creates a role and a draft profile, empty or copied from another role's published one. A role carries its own allowed scopes
 and landing dashboard, which replace the R03, R05 and R06 rules in code and the R01–R08 landing. `Identity:ProfileApproval:RequiredAdministrators` is 3 by
 default and 1 on a test environment; at 1 one person prepares, verifies and publishes, and the rule that a holder may not approve their own profile
@@ -120,6 +131,6 @@ running until ended.
 
 1. May the Liaison (R05) send monthly requests? (The review's open point.)
 2. What may an entity upload as evidence? (§2)
-3. Accepting local accounts against CS-011, and until when. (SR-81)
+3. Accepting local accounts against CS-011, and until when (SR-81), and password reset by e-mail (SR-83).
 4. Publish NOTIFICATION_ROUTING and templates for `MONTHLY_UPDATE_REMINDER`.
 5. The map's coordinates and which tile provider production uses (§3).

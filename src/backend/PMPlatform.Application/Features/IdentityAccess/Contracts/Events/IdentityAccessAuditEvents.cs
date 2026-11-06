@@ -34,8 +34,11 @@ public static class IdentityAccessAuditEvents
     public const string UserActivated = "IdentityAccess.UserActivated";
     public const string UserDisabled = "IdentityAccess.UserDisabled";
 
-    /// <summary>AUTHENTICATION: a local account changed its temporary password.</summary>
+    /// <summary>AUTHENTICATION: a local account changed its password: a temporary one at sign-in, its own while signed in, or through a reset link.</summary>
     public const string PasswordChanged = "IdentityAccess.PasswordChanged";
+
+    /// <summary>AUTHENTICATION: a reset link was queued for a local account. A request naming no such account, or within the cooldown, sends nothing and records nothing.</summary>
+    public const string PasswordResetRequested = "IdentityAccess.PasswordResetRequested";
 
     /// <summary>PRIVILEGED_ACTION: an administrator issued a local account a new temporary password.</summary>
     public const string PasswordReset = "IdentityAccess.PasswordReset";

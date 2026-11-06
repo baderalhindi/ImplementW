@@ -25,6 +25,7 @@ export const describeRefusal =
       | 'identityAccess.signIn.wrongCredentials'
       | 'identityAccess.signIn.wrongCode'
       | 'identityAccess.signIn.passwordChangeExpired'
+      | 'identityAccess.passwordSelfService.linkInvalid'
       | 'identityAccess.signIn.sso.refused',
   ): ProblemDescriber =>
   (error, t) =>

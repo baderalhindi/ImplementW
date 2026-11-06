@@ -29,6 +29,7 @@ internal sealed partial class AuthenticationService(
     MultiFactorPolicy multiFactorPolicy,
     IdentityVerificationPolicy identityVerificationPolicy,
     LocalAccountPolicy localAccounts,
+    IPasswordResetMailer passwordResetMailer,
     IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<AuthenticationService> logger) : IAuthenticationService
@@ -73,20 +74,81 @@ internal sealed partial class AuthenticationService(
             return await FailAsync(attempt, AuthenticationFailureReason.TokenInvalid, userId: null).ConfigureAwait(false);
         }
 
-        if (!LocalPassword.MeetsRules(newPassword, credential.Username))
+        if (await NewPasswordIssueAsync(credential, newPassword, cancellationToken).ConfigureAwait(false) is { } issue)
         {
-            return AuthenticationResult.PasswordRejected(LocalPassword.TooWeak);
+            return AuthenticationResult.PasswordRejected(issue);
         }
 
-        IReadOnlyList<string> history = await users.ListPasswordHistoryAsync(userId, LocalPassword.RememberedPasswords, cancellationToken).ConfigureAwait(false);
-        if (LocalPassword.Verify(newPassword, credential.PasswordHash) || history.Any(h => LocalPassword.Verify(newPassword, h)))
-        {
-            return AuthenticationResult.PasswordRejected(LocalPassword.Reused);
-        }
-
-        await users.ChangePasswordAsync(userId, LocalPassword.Hash(newPassword), cancellationToken).ConfigureAwait(false);
-        await audit.RecordAsync(Entry(attempt, IdentityAccessAuditEvents.PasswordChanged, AuditOutcome.Success, userId, userId)).ConfigureAwait(false);
+        await SavePasswordAsync(attempt, userId, newPassword, cancellationToken).ConfigureAwait(false);
         return await StartLocalSessionAsync(attempt, userId, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<PasswordUpdateResult> ChangeOwnPasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken)
+    {
+        long startedAt = timeProvider.GetTimestamp();
+        if (!localAccounts.Enabled || await users.FindLocalCredentialByIdAsync(userId, cancellationToken).ConfigureAwait(false) is not { } credential)
+        {
+            return PasswordUpdateResult.NotLocal;
+        }
+
+        Attempt attempt = Attempt.SignIn(AuthenticationMethod.LocalPassword, credential.Username);
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        if (credential.LockedUntil > now || !LocalPassword.Verify(currentPassword, credential.PasswordHash))
+        {
+            if (credential.LockedUntil > now)
+            {
+                await FailAsync(attempt, AuthenticationFailureReason.AccountLocked, userId).ConfigureAwait(false);
+            }
+            else
+            {
+                await users.RecordFailedPasswordAsync(userId, localAccounts.MaxFailedAttempts, now + localAccounts.LockoutDuration, cancellationToken).ConfigureAwait(false);
+                await FailAsync(attempt, AuthenticationFailureReason.CredentialsRejected, userId).ConfigureAwait(false);
+            }
+
+            await WaitOutRejectionFloorAsync(startedAt, cancellationToken).ConfigureAwait(false);
+            return PasswordUpdateResult.Refused("currentPassword", LocalPassword.IncorrectCurrent);
+        }
+
+        if (await NewPasswordIssueAsync(credential, newPassword, cancellationToken).ConfigureAwait(false) is { } issue)
+        {
+            return PasswordUpdateResult.Refused("newPassword", issue);
+        }
+
+        await SavePasswordAsync(attempt, userId, newPassword, cancellationToken).ConfigureAwait(false);
+        return PasswordUpdateResult.Updated;
+    }
+
+    public bool IsPasswordResetAvailable => localAccounts.Enabled && passwordResetMailer.IsAvailable;
+
+    public async Task RequestPasswordResetAsync(string username, CancellationToken cancellationToken)
+    {
+        long startedAt = timeProvider.GetTimestamp();
+        await SendPasswordResetAsync(username.Trim(), cancellationToken).ConfigureAwait(false);
+        await WaitOutRejectionFloorAsync(startedAt, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<PasswordUpdateResult> CompletePasswordResetAsync(string resetToken, string newPassword, CancellationToken cancellationToken)
+    {
+        long startedAt = timeProvider.GetTimestamp();
+        Attempt attempt = Attempt.SignIn(AuthenticationMethod.LocalPassword);
+        PasswordResetGrant? grant = await tokens.ReadPasswordResetTokenAsync(resetToken).ConfigureAwait(false);
+        LocalCredential? credential = grant is null || !localAccounts.Enabled ? null : await users.FindLocalCredentialByIdAsync(grant.UserId, cancellationToken).ConfigureAwait(false);
+        if (credential is null
+            || LocalPassword.Fingerprint(credential.PasswordHash) != grant!.PasswordFingerprint
+            || await users.FindByIdAsync(credential.UserId, cancellationToken).ConfigureAwait(false) is not { MaySignIn: true })
+        {
+            await FailAsync(attempt, AuthenticationFailureReason.TokenInvalid, grant?.UserId).ConfigureAwait(false);
+            await WaitOutRejectionFloorAsync(startedAt, cancellationToken).ConfigureAwait(false);
+            return PasswordUpdateResult.Failed(AuthenticationFailure.Rejected);
+        }
+
+        if (await NewPasswordIssueAsync(credential, newPassword, cancellationToken).ConfigureAwait(false) is { } issue)
+        {
+            return PasswordUpdateResult.Refused("newPassword", issue);
+        }
+
+        await SavePasswordAsync(attempt, credential.UserId, newPassword, cancellationToken).ConfigureAwait(false);
+        return PasswordUpdateResult.Updated;
     }
 
     public bool IsSingleSignOnAvailable => singleSignOn.IsConfigured;
@@ -126,6 +188,11 @@ internal sealed partial class AuthenticationService(
         {
             LogRefreshRejected(logger, continuation.UserId);
             return await FailAsync(attempt, AuthenticationFailureReason.AccountInactive, continuation.UserId).ConfigureAwait(false);
+        }
+
+        if (BeganBeforePasswordChange(access, continuation))
+        {
+            return await FailAsync(attempt, AuthenticationFailureReason.PasswordChanged, access.UserId).ConfigureAwait(false);
         }
 
         // A role that requires MFA, assigned after this session began without it, is not handed over by a refresh.
@@ -192,7 +259,9 @@ internal sealed partial class AuthenticationService(
                 Attempt attempt = Attempt.StepUp(continuation.Authentication.Method);
                 UserAccess? access = await users.FindByIdAsync(continuation.UserId, cancellationToken).ConfigureAwait(false);
                 // As the refresh: a session that skipped a verification that now applies is not continued.
-                AuthenticationFailureReason? refusal = access is not null && RequiresIdentityVerification(access)
+                AuthenticationFailureReason? refusal = access is not null && BeganBeforePasswordChange(access, continuation)
+                    ? AuthenticationFailureReason.PasswordChanged
+                    : access is not null && RequiresIdentityVerification(access)
                     ? AuthenticationFailureReason.IdentityVerificationMissing
                     : await VerifySecondFactorAsync(access, challengeId, code, cancellationToken).ConfigureAwait(false);
                 return refusal is { } reason
@@ -286,6 +355,50 @@ internal sealed partial class AuthenticationService(
 
         return await StartLocalSessionAsync(attempt, credential.UserId, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>The rule a new password breaks, or null: <see cref="LocalPassword.TooWeak"/> or <see cref="LocalPassword.Reused"/>.</summary>
+    private async Task<string?> NewPasswordIssueAsync(LocalCredential credential, string newPassword, CancellationToken cancellationToken)
+    {
+        if (!LocalPassword.MeetsRules(newPassword, credential.Username))
+        {
+            return LocalPassword.TooWeak;
+        }
+
+        IReadOnlyList<string> history = await users.ListPasswordHistoryAsync(credential.UserId, LocalPassword.RememberedPasswords, cancellationToken).ConfigureAwait(false);
+        return LocalPassword.Verify(newPassword, credential.PasswordHash) || history.Any(h => LocalPassword.Verify(newPassword, h))
+            ? LocalPassword.Reused
+            : null;
+    }
+
+    private async Task SavePasswordAsync(Attempt attempt, Guid userId, string newPassword, CancellationToken cancellationToken)
+    {
+        await users.ChangePasswordAsync(userId, LocalPassword.Hash(newPassword), cancellationToken).ConfigureAwait(false);
+        await audit.RecordAsync(Entry(attempt, IdentityAccessAuditEvents.PasswordChanged, AuditOutcome.Success, userId, userId)).ConfigureAwait(false);
+    }
+
+    private async Task SendPasswordResetAsync(string username, CancellationToken cancellationToken)
+    {
+        if (!IsPasswordResetAvailable
+            || await users.FindLocalCredentialAsync(username, cancellationToken).ConfigureAwait(false) is not { } credential
+            || await users.FindByIdAsync(credential.UserId, cancellationToken).ConfigureAwait(false) is not { MaySignIn: true } access)
+        {
+            return;
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        if (!await users.TryClaimPasswordResetAsync(credential.UserId, now, now - localAccounts.PasswordResetCooldown, cancellationToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        await audit.RecordAsync(Entry(Attempt.SignIn(AuthenticationMethod.LocalPassword, username), IdentityAccessAuditEvents.PasswordResetRequested, AuditOutcome.Success, actorUserId: null, credential.UserId)).ConfigureAwait(false);
+        PasswordResetLink link = tokens.IssuePasswordResetToken(new PasswordResetGrant(credential.UserId, LocalPassword.Fingerprint(credential.PasswordHash)), localAccounts.PasswordResetLinkLifetime);
+        passwordResetMailer.Enqueue(new PasswordResetMail(credential.UserId, credential.Email, access.PreferredLanguage, link));
+    }
+
+    /// <summary>A password changed or reset ends the sessions begun before it. Both times are whole seconds, so a sign-in in the same second as the change continues.</summary>
+    private static bool BeganBeforePasswordChange(UserAccess access, SessionContinuation continuation) =>
+        access.PasswordChangedAt > continuation.Authentication.AuthenticatedAt;
 
     private async Task<AuthenticationResult> StartLocalSessionAsync(Attempt attempt, Guid userId, CancellationToken cancellationToken)
     {
@@ -525,16 +638,21 @@ internal sealed partial class AuthenticationService(
 
         if (result.Failure == AuthenticationFailure.Rejected)
         {
-            // A timer can fire a fraction of a millisecond before the high-resolution clock reaches the floor, so the
-            // floor is re-checked after each wait rather than trusted to one delay.
-            TimeSpan remaining;
-            while ((remaining = RejectionResponseFloor - timeProvider.GetElapsedTime(startedAt)) > TimeSpan.Zero)
-            {
-                await Task.Delay(remaining, timeProvider, cancellationToken).ConfigureAwait(false);
-            }
+            await WaitOutRejectionFloorAsync(startedAt, cancellationToken).ConfigureAwait(false);
         }
 
         return result;
+    }
+
+    private async Task WaitOutRejectionFloorAsync(long startedAt, CancellationToken cancellationToken)
+    {
+        // A timer can fire a fraction of a millisecond before the high-resolution clock reaches the floor, so the
+        // floor is re-checked after each wait rather than trusted to one delay.
+        TimeSpan remaining;
+        while ((remaining = RejectionResponseFloor - timeProvider.GetElapsedTime(startedAt)) > TimeSpan.Zero)
+        {
+            await Task.Delay(remaining, timeProvider, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <summary>Audits the attempt's success, then issues the session: a session is never handed out unaudited.</summary>

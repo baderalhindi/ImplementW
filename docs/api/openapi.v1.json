@@ -17277,6 +17277,108 @@
         }
       }
     },
+    "/api/v1/sessions/password-reset-requests": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Sends a reset link if the username names a local account. Always the same 204, in the same time: it never says whether the account exists.",
+        "operationId": "IdentityAccess_CreatePasswordResetRequest",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequestCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequestCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequestCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/password-reset": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Sets a new password from a reset link. It issues no session: the person signs in with the new password, second factor included.",
+        "operationId": "IdentityAccess_CompletePasswordReset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetCompleteRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetCompleteRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/current/password-change": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "A signed-in local account changes its own password. Every session of the account ends; the person signs in again.",
+        "operationId": "IdentityAccess_ChangeOwnPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnPasswordChangeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnPasswordChangeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnPasswordChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/sessions/sign-in-options": {
       "get": {
         "tags": [
@@ -33799,6 +33901,28 @@
         ],
         "description": "An output's classification as its content makes it (FG-02 §9.3, GEN-009): SENSITIVE when it reveals a financial amount or a classified\ncolumn, whatever the report's baseline; STANDARD otherwise. ADR-010's taxonomy, when AHDA supplies it, refines it."
       },
+      "OwnPasswordChangeRequest": {
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newPassword": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A signed-in local account's new password, proved by its current one."
+      },
       "ParticipationAudience": {
         "enum": [
           "INTERNAL",
@@ -33888,6 +34012,43 @@
           }
         },
         "description": "A local account's new password, with the token its sign-in answered."
+      },
+      "PasswordResetCompleteRequest": {
+        "required": [
+          "resetToken",
+          "newPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "resetToken": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "newPassword": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A new password, with the token from a reset link."
+      },
+      "PasswordResetRequestCreateRequest": {
+        "required": [
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Asks for a reset link for the account with this username."
       },
       "PermissionGrantRequest": {
         "required": [
@@ -44019,11 +44180,15 @@
       },
       "SignInOptionsDetail": {
         "required": [
-          "singleSignOnAvailable"
+          "singleSignOnAvailable",
+          "passwordResetAvailable"
         ],
         "type": "object",
         "properties": {
           "singleSignOnAvailable": {
+            "type": "boolean"
+          },
+          "passwordResetAvailable": {
             "type": "boolean"
           }
         },

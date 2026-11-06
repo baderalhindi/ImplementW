@@ -257,7 +257,7 @@ function initialsOf(displayName: string): string {
     .join('');
 }
 
-/** The account button: the person's initials, opening their name and Sign out. */
+/** The account button: the person's initials, opening their name, Change password and Sign out. */
 function AccountMenu({ user }: { user: SessionUser }): ReactElement {
   const { t } = useI18n();
   const { open, setOpen, containerRef, buttonRef, menuId } = usePopover();
@@ -280,6 +280,15 @@ function AccountMenu({ user }: { user: SessionUser }): ReactElement {
       </button>
       <div className="popover__menu popover__menu--account" id={menuId} hidden={!open}>
         <p className="popover__name">{user.displayName}</p>
+        <Link
+          className="popover__option"
+          to="/account/password"
+          onClick={() => {
+            setOpen(false);
+          }}
+        >
+          {t('identityAccess.passwordSelfService.changeMenu')}
+        </Link>
         <button
           type="button"
           className="popover__option"

@@ -31,6 +31,9 @@ public static class IdentityServiceCollectionExtensions
         // does not start.
         services.AddOptions<LocalAccountPolicy>().Bind(configuration.GetSection(LocalAccountPolicy.Section));
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<LocalAccountPolicy>>().Value);
+        services.AddSingleton<PasswordResetMailer>();
+        services.AddSingleton<IPasswordResetMailer>(provider => provider.GetRequiredService<PasswordResetMailer>());
+        services.AddHostedService(provider => provider.GetRequiredService<PasswordResetMailer>());
         services.AddOptions<ProfileApprovalPolicy>().Bind(configuration.GetSection(ProfileApprovalPolicy.Section));
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<ProfileApprovalPolicy>>().Value);
         services.AddOptions<MultiFactorPolicy>()

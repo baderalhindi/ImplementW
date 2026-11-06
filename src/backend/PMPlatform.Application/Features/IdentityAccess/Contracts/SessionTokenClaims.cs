@@ -43,6 +43,11 @@ public static class SessionTokenClaims
 
     public const string PasswordChangeAudience = "pmplatform-session-password-change";
 
+    public const string PasswordResetAudience = "pmplatform-password-reset";
+
+    /// <summary>On a password reset token: which password it may replace, so it stops working once that password changes.</summary>
+    public const string PasswordFingerprint = "pwf";
+
     /// <summary>RFC 8176 "mfa": a second factor has been passed.</summary>
     public const string MultiFactorMethod = "mfa";
 

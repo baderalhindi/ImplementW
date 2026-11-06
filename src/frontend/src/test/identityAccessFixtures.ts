@@ -208,6 +208,7 @@ export function sessionFor(roleCodes: string[]): Session {
       username: 'test.admin',
       displayName: 'Test Administrator',
       preferredLanguage: 'en',
+      authenticationMethod: 'DIRECTORY',
       multiFactorAuthenticated: true,
       authenticatedAt: '2026-09-27T09:00:00Z',
       roleAssignments: roleCodes.map((roleCode) => ({

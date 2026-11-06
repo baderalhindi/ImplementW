@@ -12,12 +12,15 @@ export interface SessionRoleAssignment {
   projectId: string | null;
 }
 
+export type AuthenticationMethod = 'DIRECTORY' | 'SINGLE_SIGN_ON' | 'LOCAL_PASSWORD';
+
 export interface SessionUser {
   id: string;
   userType: UserType;
   username: string;
   displayName: string;
   preferredLanguage: LanguageCode;
+  authenticationMethod: AuthenticationMethod;
   multiFactorAuthenticated: boolean;
   authenticatedAt: string;
   roleAssignments: SessionRoleAssignment[];
@@ -56,6 +59,8 @@ export type SignInResult = Session | MultiFactorPending;
 /** The sign-in methods this environment offers beyond the password. */
 export interface SignInOptions {
   singleSignOnAvailable: boolean;
+  /** False where no reset e-mail could be sent, or local accounts are off. */
+  passwordResetAvailable: boolean;
 }
 
 export interface SsoAuthorization {
@@ -92,6 +97,17 @@ export const sessionApi = {
     post<SignInResult>('/sessions/sso', { code, state, transaction }),
   changePassword: (passwordChangeToken: string, newPassword: string) =>
     post<SignInResult>('/sessions/password-change', { passwordChangeToken, newPassword }),
+  /** The one call here made as the signed-in person: the access token says whose password it is. */
+  changeOwnPassword: async (currentPassword: string, newPassword: string) => {
+    await apiRequest<undefined>('/sessions/current/password-change', {
+      method: 'POST',
+      body: { currentPassword, newPassword },
+    });
+  },
+  requestPasswordReset: (username: string) =>
+    post<undefined>('/sessions/password-reset-requests', { username }),
+  completePasswordReset: (resetToken: string, newPassword: string) =>
+    post<undefined>('/sessions/password-reset', { resetToken, newPassword }),
   beginMultiFactor: (mfaToken: string) =>
     post<MultiFactorChallenge>('/sessions/mfa-challenge', { mfaToken }),
   completeMultiFactor: (mfaToken: string, challengeId: string, code: string) =>

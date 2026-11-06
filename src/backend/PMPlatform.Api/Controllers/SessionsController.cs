@@ -8,6 +8,7 @@ using PMPlatform.Api.Middleware;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
+using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.IdentityAccess;
 
 namespace PMPlatform.Api.Controllers;
@@ -72,6 +73,61 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
             : SessionResponse(result, StatusCodes.Status201Created);
     }
 
+    /// <summary>Sends a reset link if the username names a local account. Always the same 204, in the same time: it never says whether the account exists.</summary>
+    [HttpPost("password-reset-requests")]
+    [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
+    [EndpointName("IdentityAccess_CreatePasswordResetRequest")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> RequestPasswordReset(PasswordResetRequestCreateRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Validate() is { Count: > 0 } errors)
+        {
+            return ValidationFailed(errors);
+        }
+
+        if (authentication.IsPasswordResetAvailable)
+        {
+            await authentication.RequestPasswordResetAsync(request.Username!, cancellationToken);
+            return NoContent();
+        }
+
+        return Unavailable();
+    }
+
+    /// <summary>Sets a new password from a reset link. It issues no session: the person signs in with the new password, second factor included.</summary>
+    [HttpPost("password-reset")]
+    [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
+    [EndpointName("IdentityAccess_CompletePasswordReset")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> CompletePasswordReset(PasswordResetCompleteRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return request.Validate() is { Count: > 0 } errors
+            ? ValidationFailed(errors)
+            : PasswordUpdateResponse(await authentication.CompletePasswordResetAsync(request.ResetToken!, request.NewPassword!, cancellationToken));
+    }
+
+    /// <summary>A signed-in local account changes its own password. Every session of the account ends; the person signs in again.</summary>
+    [HttpPost("current/password-change")]
+    [AllowAnyAuthenticatedUser]
+    [SensitiveWrite]
+    [EndpointName("IdentityAccess_ChangeOwnPassword")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> ChangeOwnPassword(OwnPasswordChangeRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Validate() is { Count: > 0 } errors)
+        {
+            return ValidationFailed(errors);
+        }
+
+        Guid userId = Guid.Parse(User.FindFirstValue(SessionTokenClaims.Subject)!);
+        return PasswordUpdateResponse(await authentication.ChangeOwnPasswordAsync(userId, request.CurrentPassword!, request.NewPassword!, cancellationToken));
+    }
+
     /// <summary>Which sign-in methods this environment offers, so the sign-in page offers only what can work.</summary>
     [HttpGet("sign-in-options")]
     [AllowAnonymous]
@@ -81,7 +137,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     public IActionResult GetSignInOptions()
     {
         NoStore();
-        return Ok(new SignInOptionsDetail(authentication.IsSingleSignOnAvailable));
+        return Ok(new SignInOptionsDetail(authentication.IsSingleSignOnAvailable, authentication.IsPasswordResetAvailable));
     }
 
     /// <summary>Starts an SSO sign-in. Nothing is stored server-side; the transaction travels with the client.</summary>
@@ -329,6 +385,19 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
 
         SessionDetail body = SessionDetail.From(result.Session);
         return successStatus == StatusCodes.Status201Created ? Created(CurrentSessionPath, body) : Ok(body);
+    }
+
+    private IActionResult PasswordUpdateResponse(PasswordUpdateResult result)
+    {
+        NoStore();
+        return result switch
+        {
+            { Failure: { } failure } => Failure(failure),
+            { Issue: { } issue, IssueField: { } field } => ValidationFailed([new FieldError(field, issue)]),
+            { NotLocalAccount: true } => ApiProblem.Result(
+                HttpContext, StatusCodes.Status422UnprocessableEntity, IdentityAccessErrorCodes.NotLocalAccount, "This account's password is managed by the directory."),
+            _ => NoContent(),
+        };
     }
 
     private IActionResult ChallengeResponse(MultiFactorChallengeResult result)

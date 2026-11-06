@@ -55,6 +55,7 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
         DateTimeOffset now = timeProvider.GetUtcNow();
         user.PasswordHash = passwordHash;
         user.MustChangePassword = false;
+        user.PasswordChangedAt = DateTimeOffset.FromUnixTimeSeconds(now.ToUnixTimeSeconds());
         user.FailedSignInCount = 0;
         user.LockedUntil = null;
         user.UpdatedAt = now;
@@ -63,10 +64,15 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<bool> TryClaimPasswordResetAsync(Guid userId, DateTimeOffset now, DateTimeOffset notSince, CancellationToken cancellationToken) =>
+        await context.Set<User>()
+            .Where(u => u.Id == userId && (u.PasswordResetRequestedAt == null || u.PasswordResetRequestedAt < notSince))
+            .ExecuteUpdateAsync(set => set.SetProperty(u => u.PasswordResetRequestedAt, now), cancellationToken).ConfigureAwait(false) == 1;
+
     private async Task<LocalCredential?> LocalCredentialAsync(Expression<Func<User, bool>> predicate, CancellationToken cancellationToken) =>
         await context.Set<User>().AsNoTracking().Where(predicate)
             .Where(u => u.AccountSource == AccountSource.Local && u.PasswordHash != null)
-            .Select(u => new LocalCredential(u.Id, u.Username, u.PasswordHash!, u.MustChangePassword, u.FailedSignInCount, u.LockedUntil))
+            .Select(u => new LocalCredential(u.Id, u.Username, u.Email, u.PasswordHash!, u.MustChangePassword, u.FailedSignInCount, u.LockedUntil))
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task ApplyDirectoryAttributesAsync(Guid userId, DirectoryEntry entry, CancellationToken cancellationToken)
@@ -176,7 +182,7 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
     {
         var user = await context.Set<User>().AsNoTracking()
             .Where(predicate)
-            .Select(u => new { u.Id, u.UserType, u.Status, u.AccountEndsOn, u.ExternalEntityId, u.Username, u.DisplayName, u.PreferredLanguage, u.MfaEnrolledAt, u.NafathVerifiedAt })
+            .Select(u => new { u.Id, u.UserType, u.Status, u.AccountEndsOn, u.ExternalEntityId, u.Username, u.DisplayName, u.PreferredLanguage, u.MfaEnrolledAt, u.NafathVerifiedAt, u.PasswordChangedAt })
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
@@ -212,7 +218,7 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
         UserStatus status = user.AccountEndsOn is { } endsOn && endsOn < DateOnly.FromDateTime(now.UtcDateTime) ? UserStatus.Disabled : user.Status;
         return new UserAccess(
             user.Id, user.UserType, status, entityStatus, user.Username, user.DisplayName, user.PreferredLanguage, user.MfaEnrolledAt is not null,
-            user.NafathVerifiedAt is not null, assignments);
+            user.NafathVerifiedAt is not null, assignments, user.PasswordChangedAt);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Directory {Attribute} of user {UserId} not applied: {Reason}. The stored value stands.")]

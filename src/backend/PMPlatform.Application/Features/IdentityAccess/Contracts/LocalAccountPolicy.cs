@@ -13,6 +13,11 @@ public sealed class LocalAccountPolicy
     public int MaxFailedAttempts { get; set; } = 5;
 
     public TimeSpan LockoutDuration { get; set; } = TimeSpan.FromMinutes(15);
+
+    public TimeSpan PasswordResetLinkLifetime { get; set; } = TimeSpan.FromMinutes(30);
+
+    /// <summary>At most one reset e-mail per account in this time, whoever asks and from wherever.</summary>
+    public TimeSpan PasswordResetCooldown { get; set; } = TimeSpan.FromMinutes(5);
 }
 
 /// <summary>

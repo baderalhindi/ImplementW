@@ -60,7 +60,8 @@
     "dateBeforeStart": "The end must be after the start.",
     "passwordTooWeak": "Use at least 12 characters, mixing letters and digits, and not the username.",
     "passwordReused": "This is one of your last 5 passwords. Choose a different one.",
-    "passwordMismatch": "The two passwords do not match."
+    "passwordMismatch": "The two passwords do not match.",
+    "passwordIncorrect": "The current password is wrong."
   },
   "problems": {
     "duplicateKey": "A value you entered is already used by another record. See the highlighted field.",
@@ -544,6 +545,28 @@
       "added": "Mark added",
       "declined": "Decline"
     }
+  },
+  "passwordSelfService": {
+    "changeMenu": "Change password",
+    "changeTitle": "Change password",
+    "changeDescription": "After the change, sign in again with your new password. Every other session of your account ends too.",
+    "currentPassword": "Current password",
+    "changeSubmit": "Change password",
+    "managedBody": "Your password belongs to your AHDA directory or Microsoft account, so it is changed there and not on this platform.",
+    "managedLink": "Go to AHDA's password page",
+    "managedContact": "To change or reset it, contact the AHDA IT service desk.",
+    "directoryAccount": "Do you sign in with your AHDA directory or Microsoft account?",
+    "forgotTitle": "Reset your password",
+    "forgotDescription": "Enter your username. If it belongs to an account with a password on this platform, a link to choose a new one goes to its e-mail address.",
+    "forgotSubmit": "Send the link",
+    "forgotSent": "If that username belongs to an account with a password on this platform, a link is on its way to its e-mail address. It works once, for 30 minutes. At most one message is sent every 5 minutes, so check your junk folder before asking again.",
+    "resetTitle": "Choose a new password",
+    "resetSubmit": "Set the new password",
+    "linkInvalid": "This link has expired or has already been used. Ask for a new one.",
+    "requestNewLink": "Ask for a new link",
+    "updatedTitle": "Your password has been changed",
+    "updatedBody": "Sign in with your new password. Sessions started with the old one have ended.",
+    "updatedSignIn": "Go to sign-in"
   },
   "passwordRules": "At least 12 characters, mixing letters and digits, not the username, and none of your last 5 passwords.",
   "accountSource": {

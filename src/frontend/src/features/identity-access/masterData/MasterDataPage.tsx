@@ -106,7 +106,7 @@ export function MasterDataPage(): ReactElement {
       <RequestedValues />
       {catalogues.loading && <LoadingState />}
       {chosen !== undefined && (
-        <>
+        <div className="master-data">
           {/* The list being looked at, always one: a required choice, so not a filter folded behind the Filters button. */}
           <SelectField
             label={t('identityAccess.masterData.catalogue')}
@@ -118,7 +118,7 @@ export function MasterDataPage(): ReactElement {
             }}
           />
           <CatalogueItems key={chosen.id} catalogue={chosen} parentCatalogue={parentCatalogue} />
-        </>
+        </div>
       )}
     </>
   );
