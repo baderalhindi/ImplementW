@@ -17,6 +17,9 @@ public static class LocalPassword
     /// <summary>A field error code: the password is one of the last five.</summary>
     public const string Reused = "PASSWORD_REUSED";
 
+    /// <summary>A field error code: the current password given when changing it is wrong, or the account is locked.</summary>
+    public const string IncorrectCurrent = "PASSWORD_INCORRECT";
+
     private const int Iterations = 600_000;
     private const int SaltBytes = 16;
     private const int HashBytes = 32;
@@ -54,6 +57,13 @@ public static class LocalPassword
         byte[] expected = Convert.FromBase64String(parts[3]);
         byte[] actual = Rfc2898DeriveBytes.Pbkdf2(password, Convert.FromBase64String(parts[2]), iterations, HashAlgorithmName.SHA256, expected.Length);
         return CryptographicOperations.FixedTimeEquals(expected, actual);
+    }
+
+    /// <summary>Names one stored password in a reset token. Its input is a salted hash, so the fingerprint gives no way to test guesses at the password.</summary>
+    public static string Fingerprint(string stored)
+    {
+        ArgumentNullException.ThrowIfNull(stored);
+        return Convert.ToBase64String(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(stored)));
     }
 
     /// <summary>A password that meets the rules, of letters and digits with the look-alikes left out.</summary>

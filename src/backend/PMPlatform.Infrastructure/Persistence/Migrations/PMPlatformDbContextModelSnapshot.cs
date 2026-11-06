@@ -4939,10 +4939,18 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("nafath_verified_at");
 
+                    b.Property<DateTimeOffset?>("PasswordChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_changed_at");
+
                     b.Property<string>("PasswordHash")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("password_hash");
+
+                    b.Property<DateTimeOffset?>("PasswordResetRequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_requested_at");
 
                     b.Property<string>("PreferredLanguage")
                         .IsRequired()

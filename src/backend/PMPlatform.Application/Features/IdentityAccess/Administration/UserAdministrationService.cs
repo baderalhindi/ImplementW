@@ -195,6 +195,7 @@ internal sealed partial class UserAdministrationService(
         string temporary = typedPassword ?? LocalPassword.Generate();
         user.PasswordHash = LocalPassword.Hash(temporary);
         user.MustChangePassword = true;
+        user.PasswordChangedAt = DateTimeOffset.FromUnixTimeSeconds(timeProvider.GetUtcNow().ToUnixTimeSeconds());
         user.FailedSignInCount = 0;
         user.LockedUntil = null;
         AdministrationResult<Versioned<UserDetail>> saved = await SaveAsync(actorId, user, "password reset", IdentityAccessAuditEvents.PasswordReset, [], cancellationToken).ConfigureAwait(false);

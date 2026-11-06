@@ -118,6 +118,29 @@ internal sealed class JwtSessionTokenService(IConfiguration configuration, IOpti
         return identity is not null && Guid.TryParse(identity.FindFirst(SessionTokenClaims.Subject)?.Value, out Guid userId) ? userId : null;
     }
 
+    public PasswordResetLink IssuePasswordResetToken(PasswordResetGrant grant, TimeSpan lifetime)
+    {
+        ArgumentNullException.ThrowIfNull(grant);
+        DateTimeOffset now = DateTimeOffset.FromUnixTimeSeconds(timeProvider.GetUtcNow().ToUnixTimeSeconds());
+        DateTimeOffset expiresAt = now + lifetime;
+        Dictionary<string, object> claims = new(StringComparer.Ordinal)
+        {
+            [SessionTokenClaims.Subject] = grant.UserId.ToString(),
+            [SessionTokenClaims.PasswordFingerprint] = grant.PasswordFingerprint,
+        };
+        return new PasswordResetLink(Create(SessionTokenClaims.PasswordResetAudience, claims, now, expiresAt, Credentials()), expiresAt);
+    }
+
+    public async Task<PasswordResetGrant?> ReadPasswordResetTokenAsync(string resetToken)
+    {
+        ClaimsIdentity? identity = await ValidateAsync(resetToken, SessionTokenClaims.PasswordResetAudience).ConfigureAwait(false);
+        return identity is not null
+            && Guid.TryParse(identity.FindFirst(SessionTokenClaims.Subject)?.Value, out Guid userId)
+            && identity.FindFirst(SessionTokenClaims.PasswordFingerprint)?.Value is { Length: > 0 } fingerprint
+                ? new PasswordResetGrant(userId, fingerprint)
+                : null;
+    }
+
     public IdentityVerificationPending IssueIdentityVerificationToken(PendingIdentityVerification pending)
     {
         ArgumentNullException.ThrowIfNull(pending);

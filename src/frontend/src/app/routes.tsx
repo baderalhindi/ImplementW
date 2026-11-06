@@ -22,6 +22,12 @@ import { RequirePermission } from '@/features/identity-access/session/RequirePer
 import { RequireSession } from '@/features/identity-access/session/RequireSession.tsx';
 import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
 import { SsoCallbackPage } from '@/features/identity-access/session/SsoCallbackPage.tsx';
+import { ChangePasswordPage } from '@/features/identity-access/session/ChangePasswordPage.tsx';
+import {
+  ForgotPasswordPage,
+  PasswordUpdatedPage,
+  ResetPasswordPage,
+} from '@/features/identity-access/session/PasswordResetPages.tsx';
 import { notificationRoutes } from '@/features/notifications/routes.tsx';
 import { projectRoutes } from '@/features/projects/routes.tsx';
 import { reportRoutes } from '@/features/reports/routes.tsx';
@@ -66,6 +72,17 @@ export const appRoutes: RouteObject[] = [
       },
       { path: 'sign-in', element: <SignInPage /> },
       { path: 'auth/callback', element: <SsoCallbackPage /> }, // SSO_OIDC_CALLBACK_URL
+      { path: 'forgot-password', element: <ForgotPasswordPage /> },
+      { path: 'reset-password', element: <ResetPasswordPage /> },
+      { path: 'password-updated', element: <PasswordUpdatedPage /> },
+      {
+        path: 'account/password',
+        element: (
+          <RequireSession>
+            <ChangePasswordPage />
+          </RequireSession>
+        ),
+      },
       {
         path: 'admin',
         children: [

@@ -64,6 +64,7 @@ const FIELD_MESSAGES: Record<string, TranslationKey> = {
   DATE_BEFORE_START: 'identityAccess.fieldErrors.dateBeforeStart',
   PASSWORD_TOO_WEAK: 'identityAccess.fieldErrors.passwordTooWeak',
   PASSWORD_REUSED: 'identityAccess.fieldErrors.passwordReused',
+  PASSWORD_INCORRECT: 'identityAccess.fieldErrors.passwordIncorrect',
   PASSWORD_MISMATCH: 'identityAccess.fieldErrors.passwordMismatch',
 };
 

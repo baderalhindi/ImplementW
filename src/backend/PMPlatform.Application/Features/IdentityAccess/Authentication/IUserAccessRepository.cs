@@ -25,6 +25,9 @@ public interface IUserAccessRepository
     /// <summary>Sets a password the person chose: no longer temporary, kept in the history.</summary>
     public Task ChangePasswordAsync(Guid userId, string passwordHash, CancellationToken cancellationToken);
 
+    /// <summary>Claims this account's next reset e-mail, unless one went at or after <paramref name="notSince"/>. One statement, so two requests at once send one e-mail.</summary>
+    public Task<bool> TryClaimPasswordResetAsync(Guid userId, DateTimeOffset now, DateTimeOffset notSince, CancellationToken cancellationToken);
+
     /// <summary>
     /// Copies the directory-authoritative attributes onto the user (ADR-007). A department or manager the platform
     /// cannot resolve is left as it is and reported, never guessed.

@@ -50,4 +50,7 @@ public enum AuthenticationFailureReason
     /// since the token was issued. Nafath is not called (TASK-068).
     /// </summary>
     IdentityVerificationNotRequired = 13,
+
+    /// <summary>The session began before the account's password last changed.</summary>
+    PasswordChanged = 15,
 }

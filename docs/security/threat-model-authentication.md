@@ -74,7 +74,10 @@ Sessions are stateless (`sso-directory-integration.md` D-3): an HS256 access tok
 | AUTH-T29 | S | Local accounts (the 5 Nov 2026 review, R4-6): the platform now holds passwords, so a guessed or leaked one admits its holder without the directory | 3 | 3 | Critical | 12 characters with letters and digits, not the username, none of the last five (`LocalPassword.cs`); PBKDF2-SHA256 at 600,000 iterations; locked for 15 minutes after five failures, every refusal the same 401 after the 1 s floor; a temporary password issues no session until changed; MFA applies per role as for any sign-in; `Identity:LocalAccounts:Enabled` turns them off. `LocalAccountTests`, `LocalPasswordTests` | Medium | DEPENDS | SR-81 |
 | AUTH-T30 | D | Anyone who knows a local username locks that account by failing its password five times, repeatedly | 3 | 1 | Medium | The per-address limit; an administrator's unlock; a lock lasts 15 minutes | Medium | PARTIAL | SR-82 |
 
-Counts by inherent rating: Critical 4, High 13, Medium 8, Low 1.
+| AUTH-T31 | S | Password reset by e-mail: whoever reads a local account's mailbox, or finds the link, can set its password without knowing the old one | 2 | 3 | High | The link names one account and one password hash, works once, and lasts 30 minutes (`LocalPassword.Fingerprint`, `JwtSessionTokenService.IssuePasswordResetToken`); its token has an audience of its own and rides in the URL fragment, so no server log or Referer header sees it; it is never stored (`PasswordResetMailer` bypasses WF-15's rendered-body history); no session comes of it, so MFA still applies per role; a reset ends the account's sessions at their next refresh, leaving an access token up to 15 minutes (F-3); each request and change is audited. `SelfServicePasswordTests`. Remaining: the mailbox is a single factor for roles that need no MFA, and the platform cannot see how AHDA secures it | Medium | DEPENDS | SR-83 |
+| AUTH-T32 | D | An anonymous caller floods a local account's mailbox with reset messages, or probes the reset request to learn which usernames exist | 3 | 1 | Medium | One message per account in 5 minutes, claimed in one statement, so parallel requests send one (`UserAccessRepository.TryClaimPasswordResetAsync`); the shared `SignIn` limit per address; every request answers the same 204 after the 1 s floor, and mail leaves from a queue so SMTP time cannot show (`IPasswordResetMailer`). `SelfServicePasswordTests.EveryResetRequestAnswersTheSameAndOnlyALocalAccountGetsMail`, `.RepeatedRequestsSendOneMessageWithinTheCooldown` | Low | MITIGATED | — |
+
+Counts by inherent rating: Critical 4, High 14, Medium 9, Low 1.
 
 ## 3. Spec controls against evidence
 
@@ -102,3 +105,4 @@ Counts by inherent rating: Critical 4, High 13, Medium 8, Low 1.
 | Date | Change |
 | --- | --- |
 | 2026-10-16 | First review (TASK-081) |
+| 2026-11-06 | Self-service password change and reset for local accounts: AUTH-T31, AUTH-T32; SR-83. A password change now ends the account's sessions at their next refresh, narrowing F-3 for that one case |

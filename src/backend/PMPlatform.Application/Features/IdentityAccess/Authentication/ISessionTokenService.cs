@@ -22,6 +22,12 @@ public interface ISessionTokenService
 
     public Task<Guid?> ReadPasswordChangeTokenAsync(string passwordChangeToken);
 
+    /// <summary>A token for a reset link: it admits to replacing the one password it names, and to nothing else.</summary>
+    public PasswordResetLink IssuePasswordResetToken(PasswordResetGrant grant, TimeSpan lifetime);
+
+    /// <summary>What a reset token grants, or null if it is not a valid, unexpired reset token.</summary>
+    public Task<PasswordResetGrant?> ReadPasswordResetTokenAsync(string resetToken);
+
     public IdentityVerificationPending IssueIdentityVerificationToken(PendingIdentityVerification pending);
 
     /// <summary>The sign-in a verification token belongs to, or null if the token is not a valid, unexpired verification token.</summary>

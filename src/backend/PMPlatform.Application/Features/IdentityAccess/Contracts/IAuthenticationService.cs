@@ -16,6 +16,20 @@ public interface IAuthenticationService
     /// <summary>A local account's new password in place of its temporary one; then the sign-in continues as any other.</summary>
     public Task<AuthenticationResult> CompletePasswordChangeAsync(string passwordChangeToken, string newPassword, CancellationToken cancellationToken);
 
+    /// <summary>A signed-in local account replaces its password, proving the current one. Wrong guesses count towards its lockout.</summary>
+    public Task<PasswordUpdateResult> ChangeOwnPasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>Whether this environment can e-mail a reset link, so the sign-in page can offer it.</summary>
+    public bool IsPasswordResetAvailable { get; }
+
+    /// <summary>
+    /// Sends a reset link if the username names a local account that may sign in. It takes the same time and says the same thing whether it does or not (no user enumeration).
+    /// </summary>
+    public Task RequestPasswordResetAsync(string username, CancellationToken cancellationToken);
+
+    /// <summary>Replaces the password a reset link was issued against. The person then signs in as usual, second factor included.</summary>
+    public Task<PasswordUpdateResult> CompletePasswordResetAsync(string resetToken, string newPassword, CancellationToken cancellationToken);
+
     /// <summary>Whether this environment has a complete SSO client registration, so the sign-in page can offer SSO.</summary>
     public bool IsSingleSignOnAvailable { get; }
 

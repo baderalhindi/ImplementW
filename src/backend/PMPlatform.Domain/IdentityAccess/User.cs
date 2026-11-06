@@ -61,6 +61,12 @@ public sealed class User : AuditedEntity
 
     public DateTimeOffset? LockedUntil { get; set; }
 
+    /// <summary>When the password last changed, in whole seconds as a token's <c>auth_time</c>: a session authenticated before it is not continued.</summary>
+    public DateTimeOffset? PasswordChangedAt { get; set; }
+
+    /// <summary>When a reset link was last sent, so that repeated requests cannot flood the person's mailbox.</summary>
+    public DateTimeOffset? PasswordResetRequestedAt { get; set; }
+
     /// <summary>The last day the account may be used, on any sign-in path; null when open-ended.</summary>
     public DateOnly? AccountEndsOn { get; set; }
 }
