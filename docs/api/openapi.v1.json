@@ -3652,6 +3652,27 @@
         }
       }
     },
+    "/api/v1/dashboards/project-locations": {
+      "get": {
+        "tags": [
+          "Dashboards"
+        ],
+        "summary": "Where the projects the caller may view are delivered, for a role no portfolio-wide dashboard's audience includes: only the counts and places of projects PROJECT_VIEW already reaches.",
+        "operationId": "Dashboards_GetProjectLocations",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardProjectLocations"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/dashboards/{dashboardCode}": {
       "get": {
         "tags": [
@@ -25191,6 +25212,28 @@
             "format": "int32"
           }
         }
+      },
+      "DashboardProjectLocations": {
+        "required": [
+          "locations",
+          "places"
+        ],
+        "type": "object",
+        "properties": {
+          "locations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardLocationCount"
+            }
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardPlace"
+            }
+          }
+        },
+        "description": "The projects the caller may view, counted by region and city, and the names and map positions of those places."
       },
       "DashboardView": {
         "required": [

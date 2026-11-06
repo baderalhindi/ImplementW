@@ -154,6 +154,12 @@ export interface DashboardView {
   filters?: DashboardFilter[];
 }
 
+/** Where the projects the caller may view are delivered, read without a dashboard. */
+export interface DashboardProjectLocations {
+  locations: DashboardLocationCount[];
+  places: DashboardPlace[];
+}
+
 export interface DashboardFilter {
   field: string;
   options: { value: string; projectCount: number }[];

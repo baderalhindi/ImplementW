@@ -29,10 +29,10 @@ export function ProjectLocations({
   selectedRegion?: string | undefined;
   onSelectRegion?: (regionItemId: string | undefined) => void;
   linkTo?: (regionItemId: string) => string;
-  /** The filters in force and how to set a city's, for the map and its details. */
+  /** The filters in force and, where the page can filter by a city, how to set one; for the map and its details. */
   map?: {
     filters: PortfolioFilters;
-    onFilterCity: (cityItemId: string | undefined) => void;
+    onFilterCity?: (cityItemId: string | undefined) => void;
   };
 }): ReactElement | null {
   const { t } = useI18n();
@@ -175,13 +175,17 @@ export function ProjectLocations({
                 projectCount={selected.projectCount}
                 filters={map.filters}
                 filtered={map.filters.cityItemId === selected.cityItemId}
-                onFilter={() => {
-                  map.onFilterCity(
-                    map.filters.cityItemId === selected.cityItemId
-                      ? undefined
-                      : (selected.cityItemId ?? undefined),
-                  );
-                }}
+                onFilter={
+                  map.onFilterCity === undefined
+                    ? undefined
+                    : () => {
+                        map.onFilterCity?.(
+                          map.filters.cityItemId === selected.cityItemId
+                            ? undefined
+                            : (selected.cityItemId ?? undefined),
+                        );
+                      }
+                }
                 onClose={() => {
                   setSelectedCity(null);
                 }}

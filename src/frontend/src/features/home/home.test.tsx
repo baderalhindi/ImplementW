@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
@@ -19,6 +20,7 @@ const en = (key: string, params?: Record<string, string | number>) => translate(
 function homeApi(): MockApi {
   return mockApi()
     .on('GET', /^\/dashboards$/, { body: page([]) })
+    .on('GET', /^\/dashboards\/project-locations$/, { body: { locations: [], places: [] } })
     .on('GET', /^\/approval-tasks$/, {
       body: page([inboxItem(), inboxItem({ taskId: 'second-task' })]),
     })
@@ -127,6 +129,49 @@ describe('the Home', () => {
     expect(screen.queryByRole('heading', { name: en('home.portfolio.title') })).toBeNull();
   });
 
+  test('someone with projects outside the Portfolio Dashboard audience sees them on the map, and a region opens the register', async () => {
+    const user = userEvent.setup();
+    const region = '00000000-0000-4000-8000-00000000c002';
+    const city = '00000000-0000-4000-8000-00000000c001';
+    homeApi()
+      .on('GET', /^\/dashboards\/project-locations$/, {
+        body: {
+          locations: [{ regionItemId: region, cityItemId: city, projectCount: 3 }],
+          places: [
+            { id: region, label: { ar: 'الحاضرة', en: 'Hadira' }, parentItemId: null },
+            {
+              id: city,
+              label: { ar: 'الهفوف', en: 'Hofuf' },
+              parentItemId: region,
+              latitude: 25.3647,
+              longitude: 49.587,
+            },
+          ],
+        },
+      })
+      .on('GET', /^\/portfolio-insights$/, { body: {} });
+    renderApp({ path: '/', session: sessionFor(['R04']) });
+
+    expect(
+      await screen.findByRole('region', { name: en('dashboards.locations.mapLabel') }),
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Hadira' }).getAttribute('href')).toBe(
+      `/projects?regionItemId=${region}`,
+    );
+    await user.click(screen.getByRole('button', { name: 'Hofuf' }));
+    expect(await screen.findByRole('heading', { name: 'Hofuf' })).toBeTruthy();
+    // The Home has no dashboard to narrow, so the place's details offer no filter.
+    expect(screen.queryByRole('button', { name: en('dashboards.locations.filter') })).toBeNull();
+  });
+
+  test('the System Administrator holds no projects and reads no locations', async () => {
+    const api = homeApi();
+    renderApp({ path: '/', session: sessionFor(['R01']) });
+
+    expect(await screen.findByRole('heading', { name: en('home.health.title') })).toBeTruthy();
+    expect(api.requestsTo('GET', /^\/dashboards\/project-locations$/)).toEqual([]);
+  });
+
   test("the Portfolio Dashboard's audience sees its headline figures, health in words, and its projects by location", async () => {
     withDashboards(homeApi(), {
       catalogue: catalogueFor(['R02']),
@@ -163,7 +208,7 @@ describe('the Home', () => {
             }),
             widget({
               code: 'PUBLISHED_FINANCIALS',
-              widgetType: 'KPI',
+              widgetType: 'METRIC_CARD',
               projectionCode: 'FINANCIAL_KPI.PUBLISHED_FINANCIAL_SNAPSHOT',
               data: {
                 state: null,

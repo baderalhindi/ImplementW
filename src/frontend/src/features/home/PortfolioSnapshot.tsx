@@ -10,12 +10,15 @@ import {
 import { ProjectLocations } from '@/features/dashboards/components/ProjectLocations.tsx';
 import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
 import { formatFigure, hasNoData, labelOfValue } from '@/features/dashboards/presentation.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { EmptyState } from '@/shared/ui/States.tsx';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
-/** The Portfolio Dashboard, when the person's roles open it; null otherwise (the snapshot is then not shown). */
+import { ReachedProjectLocations } from './ReachedProjectLocations.tsx';
+
+/** The Portfolio Dashboard, when the person's roles open it; null otherwise. */
 async function readPortfolio(signal: AbortSignal): Promise<DashboardView | null> {
   const catalogue = await dashboardsApi.catalogue(signal);
   return catalogue.some((entry) => entry.code === 'PORTFOLIO')
@@ -68,15 +71,20 @@ function TileRow({
 /**
  * The Home's portfolio snapshot (the 27 Oct 2026 review): the headline figures of the Portfolio Dashboard — projects, active
  * projects, health by state, open risks and the money — and where the projects are delivered, each read from the dashboard's own
- * widgets, so the Home counts exactly what the dashboard counts. A widget the person may not see gives no tile.
+ * widgets, so the Home counts exactly what the dashboard counts. A widget the person may not see gives no tile. Someone who views
+ * projects outside the dashboard's audience still sees where their own projects are.
  */
 export function PortfolioSnapshot(): ReactElement | null {
   const { t, language } = useI18n();
   const navigate = useNavigate();
   const portfolio = useApiResource(readPortfolio);
+  const viewsProjects = useCan('PROJECT_VIEW');
   const view = portfolio.data;
-  if (view === undefined || view === null) {
+  if (view === undefined) {
     return null;
+  }
+  if (view === null) {
+    return viewsProjects ? <ReachedProjectLocations /> : null;
   }
 
   if (hasNoData(view)) {

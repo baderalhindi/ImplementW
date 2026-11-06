@@ -151,6 +151,15 @@ internal sealed partial class DashboardService(
             filters.ToView());
     }
 
+    public async Task<DashboardProjectLocations> GetProjectLocationsAsync(Guid callerId, CancellationToken cancellationToken)
+    {
+        RecordScope scope = await engine.GetRecordScopeAsync(callerId, PermissionCatalogue.ProjectView, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<ProjectFacts> reached = await projects.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false);
+        return new DashboardProjectLocations(
+            PortfolioFilters.Locations(reached),
+            await PlacesAsync(PortfolioFilters.Of(reached), cancellationToken).ConfigureAwait(false));
+    }
+
     public async Task<AdministrationResult<DashboardPersonalizationDetail>> PersonalizeAsync(
         Guid callerId, DashboardCode code, DashboardPersonalizationInput input, CancellationToken cancellationToken)
     {

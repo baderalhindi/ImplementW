@@ -16,6 +16,9 @@ public interface IDashboardService
     /// <summary>The dashboard's PUBLISHED version with each widget's result. A dashboard outside the caller's audience is 404.</summary>
     public Task<AdministrationResult<DashboardView>> GetAsync(Guid callerId, DashboardCode code, DashboardContext context, CancellationToken cancellationToken);
 
+    /// <summary>Where the projects the caller may view (PROJECT_VIEW, at its scope) are delivered, whichever dashboards the caller's roles open.</summary>
+    public Task<DashboardProjectLocations> GetProjectLocationsAsync(Guid callerId, CancellationToken cancellationToken);
+
     /// <summary>Replaces the caller's choices for the optional widgets of the dashboard's PUBLISHED version (ADR-019, LAYOUT_PERSONALIZE).</summary>
     public Task<AdministrationResult<DashboardPersonalizationDetail>> PersonalizeAsync(
         Guid callerId, DashboardCode code, DashboardPersonalizationInput input, CancellationToken cancellationToken);

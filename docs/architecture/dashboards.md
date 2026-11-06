@@ -90,6 +90,7 @@ The last five are registered by TASK-071 for FG-02's reports (`reports.md` D-4);
 | --- | --- | --- | --- |
 | `Dashboards_ListDashboards` | `GET /api/v1/dashboards` | any signed-in person | the dashboards the caller's roles may open, the landing marked `isDefaultLanding` |
 | `Dashboards_GetDashboard` | `GET /api/v1/dashboards/{dashboardCode}?projectId&departmentId` | any signed-in person; each widget on its own source permission | the composition and every widget's `projection`, `unknownReason`, `data`, `coverageDetail`, `maskedFields` |
+| `Dashboards_GetProjectLocations` | `GET /api/v1/dashboards/project-locations` | `PROJECT_VIEW` | Region and city counts of the projects `PROJECT_VIEW` reaches, with their names and map positions; the Home map for roles outside the Portfolio Dashboard's audience. |
 | `Dashboards_PersonalizeDashboard` | `POST /api/v1/dashboards/{dashboardCode}/personalize` | `LAYOUT_PERSONALIZE` | sensitive write |
 | `Dashboards_ResetDashboardPersonalization` | `POST /api/v1/dashboards/{dashboardCode}/reset-personalization` | `LAYOUT_PERSONALIZE` | sensitive write |
 | `Dashboards_ListDashboardDefinitions` | `GET /api/v1/dashboard-definitions?code&lifecycleState` | `CONFIGURATION_VIEW` | paged |
