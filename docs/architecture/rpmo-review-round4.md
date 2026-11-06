@@ -6,7 +6,7 @@ named `TASK-112`, a placeholder until the workbook gives this round a task ID.
 ## 1. Filters behind a button (request 1)
 
 `shared/ui/FilterBar.tsx` is the filter component of every filtered page. A **Filters** button, closed by default at every screen size, counts the
-active filters; the panel opens below it with the same rows as before; the active filters stay as chips with **Clear all** while it is closed.
+active filters; the panel opens below it with the same rows as before; the active filters stay as chips below it while it is closed, and **Clear all** sits beside the button.
 Open or closed is remembered per person and per page in the browser (`pmplatform.filterPanel.<user>.<page>`). Filter values stay in the URL where
 they were. Esc closes the panel and returns focus to the button. On a dashboard, "Updated…", Refresh and Customize layout share the button's row.
 

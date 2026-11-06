@@ -200,21 +200,28 @@ export function FilterBar({
   return (
     <div className={`filter-bar${open ? ' filter-bar--open' : ''}`} onKeyDown={closeOnEscape}>
       <div className="filter-bar__toolbar">
-        <button
-          ref={toggle}
-          type="button"
-          className="button filter-bar__toggle"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => {
-            setPanel(!open);
-          }}
-        >
-          <FunnelIcon />
-          {allChips.length > 0
-            ? t('common.filters.toggle', { count: allChips.length })
-            : t('common.filters.button')}
-        </button>
+        <div className="filter-bar__controls">
+          <button
+            ref={toggle}
+            type="button"
+            className="button filter-bar__toggle"
+            aria-expanded={open}
+            aria-controls={panelId}
+            onClick={() => {
+              setPanel(!open);
+            }}
+          >
+            <FunnelIcon />
+            {allChips.length > 0
+              ? t('common.filters.toggle', { count: allChips.length })
+              : t('common.filters.button')}
+          </button>
+          {allChips.length > 0 && (
+            <button type="button" className="button button--quiet" onClick={onClearAll}>
+              {t('common.filters.clearAll')}
+            </button>
+          )}
+        </div>
         {actions}
       </div>
       <div
@@ -265,11 +272,6 @@ export function FilterBar({
               </button>
             </li>
           ))}
-          <li>
-            <button type="button" className="button button--quiet" onClick={onClearAll}>
-              {t('common.filters.clearAll')}
-            </button>
-          </li>
         </ul>
       )}
     </div>
