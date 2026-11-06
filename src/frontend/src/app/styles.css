@@ -1737,6 +1737,18 @@ select.field__input {
   box-shadow: var(--shadow-card);
 }
 
+/* The return from the identity provider: the account panel alone. */
+.sign-in__card.sign-in__card--single {
+  grid-template-columns: minmax(0, 1fr);
+  max-inline-size: 32rem;
+  margin-inline: auto;
+}
+
+.sign-in__card--single .sign-in__account {
+  padding-inline: 0;
+  border-inline: 0;
+}
+
 @media (min-width: 56rem) {
   .sign-in__card {
     grid-template-columns: 1fr 1fr;
@@ -1883,6 +1895,10 @@ select.field__input {
   color: var(--color-text);
   font: inherit;
   text-align: center;
+}
+
+.sign-in__provider:not(:disabled) {
+  cursor: pointer;
 }
 
 .sign-in__provider:disabled {

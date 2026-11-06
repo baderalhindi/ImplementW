@@ -45,6 +45,7 @@
 | D-9 | **`JWT_SIGNING_KEY` is a required secret; the `AD_*` and `SSO_OIDC_CLIENT_SECRET` secrets are optional.** `ApplicationSecrets.OptionalKeys` loads them when the store holds a value and leaves them unset otherwise; the method then reports "not configured". `secret-management-check.py` K-1 now checks the optional list against the sheet scope. | The sheet scopes `AD_*` to SIT/UAT/PROD, and the SSO client exists only once AHDA IT registers it. Making them required would stop DEV from starting. |
 | D-10 | **ADM-041 shows and tests; it does not edit.** `GET /api/v1/identity-integration` returns which settings are set (secrets reduced to a flag), the attribute and claim mapping, and whether transport is encrypted. `POST /api/v1/identity-integration/test` binds with the service account and reads the search base, and resolves the OIDC discovery document and checks its issuer against `SSO_OIDC_AUTHORITY`. No migration: the values live in the secret store and the configuration store (CTL-18), as the sheet routes them. | The sheet's verification methods for `AD_*` ("successful bind/test connection from ADM-041") and `SSO_OIDC_AUTHORITY` ("token issuer matches configured value"). Editing secrets from a screen would move them out of the approved store. |
 | D-11 | **Deny by default.** A fallback authorization policy requires an authenticated user on every endpoint; the sign-in endpoints, `/health` and the development OpenAPI document opt out explicitly. ADM-041 requires role R01 (`AuthorizationPolicies.SystemAdministrator`), a stop-gap TASK-030 replaces with a permission check. | A new endpoint is protected unless someone decides otherwise. Checklist item CTL-08. |
+| D-13 | **The SPA offers SSO only where the API says it can work.** `GET /api/v1/sessions/sign-in-options` answers whether the four `SSO_OIDC_*` values are complete, so turning SSO on is a settings change with no frontend rebuild, and an environment without SSO keeps the disabled "Coming soon" button. It has its own rate-limit counter (`SignInOptions`, 120 a minute): every load of the sign-in page reads it, and that must not spend the sign-in attempts' 30. | A build-time flag would be a second source of truth for what the API already knows, and a button that only fails on click would show in every environment without SSO. |
 | D-12 | **The test directory is a real LDAP server in the AHDA stack; the test identity provider runs in the test process.** `AHDA-ldap` (OpenLDAP on Alpine) holds one synthetic person per role, linked to the local users by entryUUID. The OIDC provider (`TestIdentityProvider`) serves discovery, keys, an authorization endpoint and a token endpoint over HTTP on a loopback port, and checks client secret, redirect URI, single use of the code and the PKCE verifier. | TASK-028's validation cell asks for "a test AD/SSO instance". Directory behaviour (binds, filters, referrals, DNs) is what an LDAP fake gets wrong, so it is a real server. An OIDC provider is plain HTTP, and the API validates its tokens with the same library code either way. |
 
 ## 3. API surface
@@ -52,6 +53,7 @@
 | Operation | Endpoint | Auth | Success | Failure |
 | --- | --- | --- | --- | --- |
 | `IdentityAccess_CreateSession` | `POST /api/v1/sessions` `{ username, password }` | anonymous | 201, `Location: /api/v1/sessions/current`, `SessionDetail` | 400 `VALIDATION_FAILED`; 401 `AUTHENTICATION_REQUIRED`; 503 `UNAVAILABLE` |
+| `IdentityAccess_GetSignInOptions` | `GET /api/v1/sessions/sign-in-options` | anonymous | 200 `{ singleSignOnAvailable }` | 429 |
 | `IdentityAccess_GetSsoAuthorization` | `GET /api/v1/sessions/sso-authorization` | anonymous | 200 `{ authorizationUrl, transaction }` | 503 |
 | `IdentityAccess_CreateSsoSession` | `POST /api/v1/sessions/sso` `{ code, state, transaction }` | anonymous | 201 `SessionDetail` | 400; 401; 503 |
 | `IdentityAccess_GetCurrentSession` | `GET /api/v1/sessions/current` | bearer | 200 `{ userId, sessionId, userType, authenticationMethod, roles, expiresAt }` | 401 |
@@ -83,6 +85,30 @@ Access token claims: `iss=pmplatform`, `aud=pmplatform-api`, `sub` (user id), `s
 | `Identity:Session:AccessTokenLifetime`, `RefreshTokenLifetime`, `SessionLifetime` | configuration | 15 min, 30 min, 8 h | **Provisional** (G-2, F-1) |
 
 The defaults are Active Directory's attribute names. The local stack and the tests set OpenLDAP's (`uid`, `entryUUID`, `departmentNumber`); the exact directory product is confirmed with AHDA IT (ADR-007 Impact).
+
+### 4.1 Microsoft Entra ID
+
+Entra is an OIDC provider, so it needs settings and no code. Sources: Microsoft's [ID token claims reference](https://learn.microsoft.com/en-us/entra/identity-platform/id-token-claims-reference) and a tenant's discovery document, read 2026-11-06.
+
+**AHDA IT registers an application** in the Entra admin center: single tenant, platform **Web** (not SPA: the API redeems the code with a client secret, D-4), redirect URI `https://<host>/auth/callback`, one client secret. They hand over the tenant ID, client ID and secret.
+
+**The host sets:**
+
+| Key | Value | Why |
+| --- | --- | --- |
+| `SSO_OIDC_AUTHORITY` | `https://login.microsoftonline.com/<tenant-id>/v2.0` | Must name the tenant: the issuer check needs the tenant's own issuer, which is this URL |
+| `SSO_OIDC_CLIENT_ID` | the application (client) ID | |
+| `SSO_OIDC_CLIENT_SECRET` | the client secret, in the secret store | Entra secrets expire. An expired one makes SSO answer 503 |
+| `SSO_OIDC_CALLBACK_URL` | `https://<host>/auth/callback` | Exactly as registered |
+| `Identity__Sso__SubjectClaim` | `oid` | The default `sub` is pairwise per application, so no administrator can look it up in advance. `oid` is the **Object ID** on the person's Entra profile |
+| `Identity__Sso__Scopes__0` | `profile` | Entra sends `oid` only under this scope. A configured scope is **added** to the default `openid`, so do not list `openid` again (`AnEntraSetupMatchesThePersonOnTheirObjectId`) |
+
+**An administrator then creates each person** (ADM-004) with their Object ID as **Directory identifier**. The platform does not create users at first sign-in: Microsoft accepting a person who has no platform user is a 401 (D-1, D-5).
+
+**To settle with AHDA IT:**
+
+- **LDAP alongside Entra (F-2).** `oid` is not the on-premises `objectGUID`, and `directory_subject_id` holds one value. With Entra alone, no `AD_*` is set, password sign-in for directory accounts answers 503, and department, manager and job title are not refreshed at sign-in (D-6).
+- **Entra's MFA (F-13).** The platform accepts a provider's second factor only from `amr` and `auth_time` in the ID token (`mfa-privileged-access.md` D-10). Microsoft's claims reference does not list `amr`, and its discovery document lists `auth_time` but not `amr`. Expect roles that require MFA to use the platform's own MFA provider unless a sign-in against the real tenant shows otherwise.
 
 ## 5. Layering
 
@@ -163,7 +189,8 @@ Every mutation was reverted and the suite re-run green.
 | F-9 | **Not run against AHDA's directory or identity provider.** No environment exists; provisioning waits on the ADR-001 confirmation request. The first environment's ADM-041 connection test and one sign-in per method are this task's live check | DevOps/Platform Lead + AHDA IT, at first environment | — |
 | F-10 | **Security Lead review (CTL-43) could not be requested**: the repository belongs to a personal account, so the CODEOWNERS teams do not exist. This change is authentication and SSO throughout | Maintainer: request the Security Lead's review by name | The checklist item stays unticked |
 | F-11 | **The correlation-id middleware and the problem-details helper are minimal.** api-conventions A-9 puts them behind an `ApiControllerBase` and `Application/Common/Errors`, which TASK-011 did not build. They live in `PMPlatform.Api/Correlation` and `PMPlatform.Api/Errors` until that base exists | Whoever builds `ApiControllerBase` | Two places to change when the base lands |
-| F-12 | **The SPA has no sign-in screen or `/auth/callback` route yet.** The API contract is fixed (§3); the SPA keeps the transaction in session storage between the redirect out and the callback | Frontend task for sign-in | Local sign-in is through the API only |
+| F-12 | **Closed 2026-11-06.** `SignInPage` starts SSO and `SsoCallbackPage` serves `/auth/callback`, keeping the transaction in session storage between them (D-4, D-13). Was: the SPA had a disabled Microsoft button and no callback route | — | — |
+| F-13 | **Not run against Microsoft.** The SPA, API and database ran end to end in a browser against a stand-in with Entra's pairwise `sub`, `oid` under `profile` and `client_secret_basic`. Entra's real behaviour, including whether an ID token can show its MFA (§4.1), is proved only by a sign-in in AHDA's tenant or a test tenant. SSO followed by the second factor is covered by the integration and frontend tests, not by that browser run | DevOps/Platform Lead + AHDA IT, at first environment | The first real sign-in may need a settings change |
 
 ## 10. Change log
 
@@ -172,3 +199,4 @@ Every mutation was reverted and the suite re-run green.
 | 2026-09-26 | Initial record. Directory (LDAP bind) and SSO (OIDC code + PKCE) sign-in to one stateless session model, with roles from active profile-version assignments; directory-authoritative attributes copied at sign-in; ADM-041 status and connection test; deny-by-default bearer authentication; optional secret keys; test directory `AHDA-ldap` in Compose and CI; 35 integration tests, six mutations. TASK-013 F-3 and TASK-014 F-3/F-4 closed. Twelve findings | Identity (TASK-028) |
 | 2026-09-26 | TASK-029: `amr` is an RFC 8176 array and both tokens carry `auth_time`; a person who requires MFA gets an MFA token before the session (`mfa-privileged-access.md` D-1, D-3). The 35 tests here now pass the second factor where R01 signs in. The 1 s rejection floor (D-5) re-checks after each wait: a timer could end it up to a millisecond early (`mfa-privileged-access.md` §6.2) | Security (TASK-029) |
 | 2026-10-09 | TASK-068: the OIDC flow moved, unchanged, from `OpenIdConnectProvider` into `OpenIdConnectRelyingParty`, which Nafath identity verification shares. The SSO transaction (D-4) is now an `AuthorizationTransaction` sealed by `AuthorizationTransactionProtector` under the same HKDF label (`PMPlatform SSO transaction v1`), so a sign-in under way survives the deployment; Nafath's transactions have a label of their own. ADM-041's status and connection test gain an `identityVerification` member (`nafath-identity-verification.md` D-11) | Identity (TASK-068) |
+| 2026-11-06 | SSO in the SPA: the Microsoft button works where SSO is configured, and `/auth/callback` redeems the code and continues to the second factor; `GET /sessions/sign-in-options` with its own rate-limit policy (D-13); the Microsoft Entra ID setup (§4.1). F-12 closed, F-13 added | Identity (TASK-028) |

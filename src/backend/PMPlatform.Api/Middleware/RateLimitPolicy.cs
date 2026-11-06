@@ -17,6 +17,9 @@ internal enum RateLimitPolicy
 
     /// <summary>The SPA's error reports (TASK-090). Anonymous, so counted by client address; a crashing screen reports once per error.</summary>
     ClientErrorReport,
+
+    /// <summary>Which sign-in methods this environment offers. Every load of the sign-in page reads it, so it does not spend the sign-in attempts' counter.</summary>
+    SignInOptions,
 }
 
 /// <summary>Puts an action under a <see cref="RateLimitPolicy"/>. A <c>[SensitiveWrite]</c> action is under <see cref="RateLimitPolicy.SensitiveWrite"/> without it.</summary>

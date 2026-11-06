@@ -21,6 +21,7 @@ import { type PermissionCode } from '@/features/identity-access/permissions/perm
 import { RequirePermission } from '@/features/identity-access/session/RequirePermission.tsx';
 import { RequireSession } from '@/features/identity-access/session/RequireSession.tsx';
 import { SignInPage } from '@/features/identity-access/session/SignInPage.tsx';
+import { SsoCallbackPage } from '@/features/identity-access/session/SsoCallbackPage.tsx';
 import { notificationRoutes } from '@/features/notifications/routes.tsx';
 import { projectRoutes } from '@/features/projects/routes.tsx';
 import { reportRoutes } from '@/features/reports/routes.tsx';
@@ -64,6 +65,7 @@ export const appRoutes: RouteObject[] = [
         children: dashboardRoutes,
       },
       { path: 'sign-in', element: <SignInPage /> },
+      { path: 'auth/callback', element: <SsoCallbackPage /> }, // SSO_OIDC_CALLBACK_URL
       {
         path: 'admin',
         children: [

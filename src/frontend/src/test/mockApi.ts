@@ -86,6 +86,11 @@ function isDashboardCatalogue(method: string, url: URL): boolean {
  * The shell polls `GET /my-update-requests` for the window and the bell, on every screen, as it does the unread count. With no handler for it
  * nothing is due, and it is kept out of `requests` as the other shell reads are.
  */
+/** The sign-in page asks this on every load. With no handler for it single sign-on is not offered, and it is kept out of `requests`. */
+function isSignInOptions(method: string, url: URL): boolean {
+  return method === 'GET' && url.pathname === '/api/v1/sessions/sign-in-options';
+}
+
 function isShellMyUpdates(method: string, url: URL): boolean {
   return method === 'GET' && url.pathname === '/api/v1/my-update-requests';
 }
@@ -200,6 +205,7 @@ export function mockApi(): MockApi {
   const shellPermissionReads: RecordedRequest[] = [];
   const catalogueReads: RecordedRequest[] = [];
   const shellMyUpdateReads: RecordedRequest[] = [];
+  const signInOptionsReads: RecordedRequest[] = [];
 
   const answer = async (
     method: string,
@@ -219,6 +225,7 @@ export function mockApi(): MockApi {
     const shellPermissions = isShellPermissions(method, url);
     const dashboardCatalogue = isDashboardCatalogue(method, url);
     const shellMyUpdates = isShellMyUpdates(method, url);
+    const signInOptions = isSignInOptions(method, url);
     (shellCount
       ? shellInboxCountReads
       : shellPermissions
@@ -227,7 +234,9 @@ export function mockApi(): MockApi {
           ? catalogueReads
           : shellMyUpdates
             ? shellMyUpdateReads
-            : requests
+            : signInOptions
+              ? signInOptionsReads
+              : requests
     ).push(recorded);
     const routed = shellCount ? '/approval-tasks?pageSize=1' : recorded.path;
     const find = (wanted: string, path: string) =>
@@ -243,7 +252,8 @@ export function mockApi(): MockApi {
       !shellCount &&
       !shellPermissions &&
       !dashboardCatalogue &&
-      !shellMyUpdates
+      !shellMyUpdates &&
+      !signInOptions
     ) {
       throw new Error(`No mock for ${method} ${recorded.path}`);
     }
@@ -257,7 +267,9 @@ export function mockApi(): MockApi {
               ? seededCatalogue()
               : shellMyUpdates
                 ? { body: NOTHING_DUE }
-                : { body: page([], 1) }));
+                : signInOptions
+                  ? { body: { singleSignOnAvailable: false } }
+                  : { body: page([], 1) }));
     const status = reply.status ?? 200;
     if (reply.body instanceof Blob) {
       // The bytes, not the Blob: Node's Response does not recognise jsdom's Blob.

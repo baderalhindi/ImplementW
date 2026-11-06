@@ -30,6 +30,7 @@ public sealed class IdentityApiFactory(
         ["RateLimiting:Policies:SessionRefresh:PermitLimit"] = "1000000",
         ["RateLimiting:Policies:SensitiveWrite:PermitLimit"] = "1000000",
         ["RateLimiting:Policies:ClientErrorReport:PermitLimit"] = "1000000",
+        ["RateLimiting:Policies:SignInOptions:PermitLimit"] = "1000000",
     };
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

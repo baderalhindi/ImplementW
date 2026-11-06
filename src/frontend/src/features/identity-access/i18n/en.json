@@ -427,6 +427,10 @@
       "submit": "Sign in with Microsoft",
       "hint": "Single sign-on with your Microsoft account"
     },
+    "sso": {
+      "refused": "Your Microsoft account could not sign you in here. It may not be set up in this system yet. Contact your administrator.",
+      "notCompleted": "The Microsoft sign-in was not completed. Please try again."
+    },
     "directoryTitle": "Sign in with a regular account",
     "showPassword": "Show password",
     "forgotPassword": "Forgot your password?",

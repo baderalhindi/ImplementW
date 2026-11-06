@@ -89,6 +89,8 @@ internal sealed partial class AuthenticationService(
         return await StartLocalSessionAsync(attempt, userId, cancellationToken).ConfigureAwait(false);
     }
 
+    public bool IsSingleSignOnAvailable => singleSignOn.IsConfigured;
+
     public Task<SsoAuthorizationResult> BeginSsoSignInAsync(CancellationToken cancellationToken) =>
         singleSignOn.IsConfigured
             ? singleSignOn.BeginAsync(cancellationToken)

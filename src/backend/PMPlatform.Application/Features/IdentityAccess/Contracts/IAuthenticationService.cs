@@ -16,6 +16,9 @@ public interface IAuthenticationService
     /// <summary>A local account's new password in place of its temporary one; then the sign-in continues as any other.</summary>
     public Task<AuthenticationResult> CompletePasswordChangeAsync(string passwordChangeToken, string newPassword, CancellationToken cancellationToken);
 
+    /// <summary>Whether this environment has a complete SSO client registration, so the sign-in page can offer SSO.</summary>
+    public bool IsSingleSignOnAvailable { get; }
+
     public Task<SsoAuthorizationResult> BeginSsoSignInAsync(CancellationToken cancellationToken);
 
     /// <summary>Completes an SSO sign-in with the authorization code and state the identity provider redirected with.</summary>
