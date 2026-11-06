@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
+using PMPlatform.Api.Models.DocumentManagement;
 using PMPlatform.Api.Models.Progress;
 using PMPlatform.Api.Models.Schedule;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.Schedule.Contracts;
 
@@ -15,9 +17,26 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route(Collection)]
 [Tags("Schedule")]
-public sealed class ScheduleActivitiesController(IScheduleService schedules) : AdministrationControllerBase
+public sealed class ScheduleActivitiesController(IScheduleService schedules, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/schedule-activities";
+
+    /// <summary>The workbook template for this project register: its columns, and the projects and codes this person may name.</summary>
+    [HttpGet("import-template/content")]
+    [RequirePermission(PermissionCatalogue.ScheduleEdit)]
+    [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK, "application/octet-stream")]
+    [EndpointName("Schedule_DownloadScheduleActivityImportTemplate")]
+    public Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken) => ImportTemplateAsync(imports, ImportRegisterCodes.ScheduleActivity, cancellationToken);
+
+    /// <summary>Validates the workbook in part <c>file</c>, or with <c>commit=true</c> imports it, all rows or none. Each row is decided on its own project, as the form's would be.</summary>
+    [HttpPost("imports")]
+    [RequirePermission(PermissionCatalogue.ScheduleEdit)]
+    [SensitiveWrite]
+    [DisableFormValueModelBinding]
+    [ProducesResponseType<ImportReport>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Schedule_ImportScheduleActivity")]
+    public Task<IActionResult> Import([FromQuery] bool? commit, CancellationToken cancellationToken) =>
+        ImportAsync(imports, ImportRegisterCodes.ScheduleActivity, commit == true, cancellationToken);
 
     /// <summary>The project's activities in sort order, then WBS code. <c>projectId</c> is required (R-3).</summary>
     [HttpGet]

@@ -62,8 +62,8 @@ public sealed record ImportColumn(string Key, ImportValueKind Kind, bool Require
 
     public static ImportColumn LegacyId { get; } = new(
         LegacyIdKey, ImportValueKind.Text, Required: true,
-        "The record's identifier in the legacy system. Unique in the register; a row whose legacy ID was already imported is skipped.",
-        "معرّف السجل في النظام السابق. فريد في السجل؛ يُتجاوز الصف الذي سبق استيراد معرّفه.")
+        "The record's identifier in the system or spreadsheet it comes from. Unique in the workbook; a row whose ID was already imported is skipped.",
+        "معرّف السجل في النظام أو الجدول الذي جاء منه. فريد في الملف؛ يُتجاوز الصف الذي سبق استيراد معرّفه.")
     {
         MaxLength = LegacyIdLength,
     };

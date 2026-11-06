@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json.Nodes;
+using PMPlatform.Tests.Integration.DataImport;
 using PMPlatform.Tests.Integration.Identity;
 using PMPlatform.Tests.Integration.ManagementConcern;
 using PMPlatform.Tests.Integration.Project;
@@ -64,6 +65,12 @@ public sealed class ConcernResponseContractTests(ConcernTestHost host)
         await CommandAsync("submit-resolution", sessions.InternalManager, ConcernDriver.Resolution("Temporary access agreed with the utility owner."));
         await host.DecideAsync(client, sessions, concernId, "approve");
         Assert.Equal("CLOSED", (await CommandAsync("close", sessions.InternalManager)).Text("status"));
+
+        // The workbook: its template and a report, here of a sheet missing its columns.
+        using HttpResponseMessage template = await client.TemplateAsync(ConcernDriver.Concerns, sessions.InternalManager);
+        await responses.CheckAsync("GET", $"{ConcernDriver.Concerns}/import-template/content", template);
+        using HttpResponseMessage imported = await client.UploadAsync(ConcernDriver.Concerns, sessions.InternalManager, ImportApi.Workbook(["legacy_id"]), commit: false);
+        await responses.CheckAsync("POST", $"{ConcernDriver.Concerns}/imports", imported);
 
         Assert.Equal((await OpenApiDocument.FetchAsync(client)).Operations(RiskIssueApi.ConcernTag).Select(o => o.Name).Order(), responses.Operations.Order());
         Assert.Empty(responses.Violations);

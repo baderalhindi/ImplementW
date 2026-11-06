@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Models.DocumentManagement;
 using PMPlatform.Api.Models.FinancialKpi;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.FinancialKpi.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
@@ -17,9 +19,26 @@ namespace PMPlatform.Api.Controllers;
 [Route(Collection)]
 [Tags("FinancialKpi")]
 [OmitMaskedFields]
-public sealed class KpiMeasurementsController(IKpiMeasurementService measurements) : AdministrationControllerBase
+public sealed class KpiMeasurementsController(IKpiMeasurementService measurements, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/kpi-measurements";
+
+    /// <summary>The workbook template for this project register: its columns, and the projects and codes this person may name.</summary>
+    [HttpGet("import-template/content")]
+    [RequirePermission(PermissionCatalogue.KpiRecord)]
+    [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK, "application/octet-stream")]
+    [EndpointName("FinancialKpi_DownloadKpiMeasurementImportTemplate")]
+    public Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken) => ImportTemplateAsync(imports, ImportRegisterCodes.KpiMeasurement, cancellationToken);
+
+    /// <summary>Validates the workbook in part <c>file</c>, or with <c>commit=true</c> imports it, all rows or none. Each row is decided on its own project, as the form's would be.</summary>
+    [HttpPost("imports")]
+    [RequirePermission(PermissionCatalogue.KpiRecord)]
+    [SensitiveWrite]
+    [DisableFormValueModelBinding]
+    [ProducesResponseType<ImportReport>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("FinancialKpi_ImportKpiMeasurement")]
+    public Task<IActionResult> Import([FromQuery] bool? commit, CancellationToken cancellationToken) =>
+        ImportAsync(imports, ImportRegisterCodes.KpiMeasurement, commit == true, cancellationToken);
 
     /// <summary>The assignment's measurements, latest period first.</summary>
     [HttpGet]

@@ -1,6 +1,7 @@
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -56,6 +57,12 @@ export function ProjectRisks({
           <h2 id="project-risks">{t('risks.project.title')}</h2>
           {registrar && (
             <span className="tasks__actions">
+              <ImportAction
+                collectionPath="/risks"
+                registerName={t('dataImport.registers.RISK.name')}
+                permission="RISK_MANAGE"
+                onImported={risks.reload}
+              />
               <button
                 type="button"
                 className="button button--primary"

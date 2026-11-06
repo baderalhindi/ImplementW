@@ -6,12 +6,22 @@ namespace PMPlatform.Application.Common.DataImport;
 /// One worksheet row whose every cell has the shape its column requires, typed: a register reads it without parsing. An empty cell
 /// reads as null; a required column is never null.
 /// </summary>
-public sealed class ImportRecord(int rowNumber, string legacyId, IReadOnlyDictionary<string, object> values)
+public sealed class ImportRecord(int rowNumber, string legacyId, IReadOnlyDictionary<string, object> values, Guid? projectId = null)
 {
     /// <summary>The worksheet row, 1-based, as the spreadsheet numbers it.</summary>
     public int RowNumber { get; } = rowNumber;
 
     public string LegacyId { get; } = legacyId;
+
+    /// <summary>The project <see cref="IImportRegister.ScopeAsync"/> placed the row in; null for a platform register's row.</summary>
+    public Guid? ProjectId { get; } = projectId;
+
+    /// <summary>The same row, placed in <paramref name="scope"/>.</summary>
+    public ImportRecord In(ImportRowScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        return new ImportRecord(RowNumber, LegacyId, values, scope.ProjectId);
+    }
 
     public string? Text(string key) => values.TryGetValue(key, out object? value) ? (string)value : null;
 

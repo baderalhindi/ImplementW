@@ -1,5 +1,6 @@
 import { type ReactElement, useState } from 'react';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -44,6 +45,14 @@ export function MilestoneRegisterPage(): ReactElement | null {
     <PageHeader
       title={t('milestones.register.title')}
       description={t('milestones.register.description')}
+      actions={
+        <ImportAction
+          collectionPath="/project-milestones"
+          registerName={t('dataImport.registers.PROJECT_MILESTONE.name')}
+          permission="SCHEDULE_EDIT"
+          onImported={portfolio.reload}
+        />
+      }
     />
   );
   if (portfolio.data === undefined) {

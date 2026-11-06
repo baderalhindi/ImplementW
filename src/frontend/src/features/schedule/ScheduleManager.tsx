@@ -1,5 +1,6 @@
 import { type ReactElement, useState } from 'react';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { type TranslationKey, type TranslationParams, useI18n } from '@/shared/i18n/i18n.ts';
@@ -168,6 +169,14 @@ export function ScheduleManager({
       <section className="section" aria-labelledby="schedule-activities">
         <div className="section__header">
           <h2 id="schedule-activities">{t('schedule.activities.title')}</h2>
+          {planEditable && (
+            <ImportAction
+              collectionPath="/schedule-activities"
+              registerName={t('dataImport.registers.SCHEDULE_ACTIVITY.name')}
+              permission="SCHEDULE_EDIT"
+              onImported={view.reload}
+            />
+          )}
           {planEditable && (
             <button
               type="button"

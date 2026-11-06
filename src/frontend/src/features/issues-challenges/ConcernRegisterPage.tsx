@@ -1,5 +1,6 @@
 import { type ReactElement } from 'react';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { isForbidden } from '@/features/risks/problems.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -40,7 +41,20 @@ export function ConcernRegisterPage({ concernType }: { concernType: ConcernType 
   const lookups = useConcernLookups();
   const text = PAGE_TEXT[concernType];
 
-  const header = <PageHeader title={t(text.title)} description={t(text.description)} />;
+  const header = (
+    <PageHeader
+      title={t(text.title)}
+      description={t(text.description)}
+      actions={
+        <ImportAction
+          collectionPath="/management-concerns"
+          registerName={t('dataImport.registers.MANAGEMENT_CONCERN.name')}
+          permission="CONCERN_RAISE"
+          onImported={portfolio.reload}
+        />
+      }
+    />
+  );
   if (portfolio.data === undefined) {
     return (
       <>

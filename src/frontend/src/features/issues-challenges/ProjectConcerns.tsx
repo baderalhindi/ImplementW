@@ -1,6 +1,7 @@
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { isForbidden } from '@/features/risks/problems.ts';
@@ -82,6 +83,12 @@ export function ProjectConcerns({
         <h2 id={headingId}>{t(text.title)}</h2>
         {raiser && (
           <span className="tasks__actions">
+            <ImportAction
+              collectionPath="/management-concerns"
+              registerName={t('dataImport.registers.MANAGEMENT_CONCERN.name')}
+              permission="CONCERN_RAISE"
+              onImported={concerns.reload}
+            />
             <button
               type="button"
               className="button button--primary"

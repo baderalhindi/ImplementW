@@ -1,5 +1,7 @@
 import { type ReactElement, useState } from 'react';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
+import { isClosed } from '@/features/projects/access.ts';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
@@ -127,7 +129,17 @@ export function ProjectKpis({
   return (
     <div className="progress">
       <PageNotice notice={notice} />
-      <h2>{t('financialKpi.kpis.title')}</h2>
+      <div className="section__header">
+        <h2>{t('financialKpi.kpis.title')}</h2>
+        {!isClosed(project.status) && (
+          <ImportAction
+            collectionPath="/kpi-measurements"
+            registerName={t('dataImport.registers.KPI_MEASUREMENT.name')}
+            permission="KPI_RECORD"
+            onImported={kpis.reload}
+          />
+        )}
+      </div>
       {kpis.data.length === 0 ? (
         <EmptyState title={t('financialKpi.kpis.empty')}>
           <p>{t('financialKpi.kpis.emptyBody')}</p>

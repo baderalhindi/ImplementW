@@ -20,8 +20,8 @@ public sealed class RiskIssueContractTests(RiskTestHost host)
     /// <summary>Each module's tag and the number of operations it carries, so an operation added or dropped is seen.</summary>
     public static TheoryData<string, int> Modules => new()
     {
-        { RiskIssueApi.RiskTag, 22 },
-        { RiskIssueApi.ConcernTag, 15 },
+        { RiskIssueApi.RiskTag, 24 },
+        { RiskIssueApi.ConcernTag, 17 },
     };
 
     public static TheoryData<string> Tags => [.. Modules.Select(m => (string)m[0])];

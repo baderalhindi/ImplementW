@@ -34,6 +34,8 @@ public interface IScheduleRepository
     /// <summary>The activity and its schedule's project, not tracked: what WF-04 reads (edge 9). Null when there is no such activity.</summary>
     public Task<(ScheduleActivity Activity, Guid ProjectId)?> ReadActivityAsync(Guid activityId, CancellationToken cancellationToken);
 
+    public Task<Guid?> FindActivityIdByWbsCodeAsync(Guid projectId, string wbsCode, CancellationToken cancellationToken);
+
     /// <summary>Every dependency between the schedule's activities. Not tracked.</summary>
     public Task<IReadOnlyList<ScheduleDependency>> ListDependenciesAsync(Guid projectScheduleId, CancellationToken cancellationToken);
 

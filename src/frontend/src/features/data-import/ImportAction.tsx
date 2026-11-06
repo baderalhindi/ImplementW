@@ -2,6 +2,7 @@ import { type ReactElement, useId, useState } from 'react';
 
 import { problemMessage, type Translate } from '@/features/identity-access/problems.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
+import { type PermissionCode } from '@/features/identity-access/permissions/permissionCodes.ts';
 import { ApiError } from '@/shared/api/httpClient.ts';
 import { saveFile } from '@/shared/api/saveFile.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -45,19 +46,23 @@ interface ImportActionProps {
   registerName: string;
   /** Called once an import has committed, so the page reads its list again. */
   onImported: () => void;
+  /** What offers the action: DATA_IMPORT for a platform register, the create permission for a project's (data-import.md D-12). */
+  permission?: PermissionCode;
 }
 
 /**
  * TASK-102: a register's migration import — the template, a check of the filled workbook that writes nothing, and the import
- * itself, all rows or none. Offered to the holders of DATA_IMPORT, which is R01 alone (data-import.md D-2); the API decides.
+ * itself, all rows or none. Offered to the holders of `permission`: DATA_IMPORT, which is R01 alone (data-import.md D-2), unless the
+ * register is a project's. The API decides, row by row on a project's.
  */
 export function ImportAction({
   collectionPath,
   registerName,
   onImported,
+  permission = 'DATA_IMPORT',
 }: ImportActionProps): ReactElement | null {
   const { t } = useI18n();
-  const allowed = useCan('DATA_IMPORT');
+  const allowed = useCan(permission);
   const [open, setOpen] = useState(false);
   if (!allowed) {
     return null;

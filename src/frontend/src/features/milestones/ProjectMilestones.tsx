@@ -1,5 +1,6 @@
 import { type ReactElement, useState } from 'react';
 
+import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
@@ -71,6 +72,12 @@ export function ProjectMilestones({
           <h2 id="project-milestones">{t('milestones.project.title')}</h2>
           {planner && (
             <span className="tasks__actions">
+              <ImportAction
+                collectionPath="/project-milestones"
+                registerName={t('dataImport.registers.PROJECT_MILESTONE.name')}
+                permission="SCHEDULE_EDIT"
+                onImported={data.reload}
+              />
               <button
                 type="button"
                 className="button button--primary"

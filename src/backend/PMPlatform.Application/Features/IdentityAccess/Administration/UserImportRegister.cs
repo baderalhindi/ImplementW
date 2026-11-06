@@ -49,7 +49,7 @@ internal sealed class UserImportRegister(IUserAdministrationService users, IUser
             UserStatus.Active, UserStatus.Disabled),
     ];
 
-    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(Guid actorId, CancellationToken cancellationToken) =>
         new Dictionary<string, IReadOnlyList<ImportReferenceValue>>
         {
             [EntityColumn] = [.. (await directory.ListActiveExternalEntityCodesAsync(cancellationToken).ConfigureAwait(false)).Select(e => new ImportReferenceValue(e.Code, e.Name.Ar, e.Name.En))],

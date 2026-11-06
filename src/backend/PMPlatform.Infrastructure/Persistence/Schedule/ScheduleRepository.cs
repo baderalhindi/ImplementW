@@ -71,6 +71,12 @@ internal sealed class ScheduleRepository(PMPlatformDbContext context) : ISchedul
         return row is null ? null : (row.Activity, row.ProjectId);
     }
 
+    public Task<Guid?> FindActivityIdByWbsCodeAsync(Guid projectId, string wbsCode, CancellationToken cancellationToken) =>
+        context.Set<ScheduleActivity>().AsNoTracking()
+            .Where(a => a.WbsCode == wbsCode)
+            .Join(context.Set<ProjectSchedule>().Where(s => s.ProjectId == projectId), a => a.ProjectScheduleId, s => s.Id, (a, _) => (Guid?)a.Id)
+            .SingleOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyList<ScheduleDependency>> ListDependenciesAsync(Guid projectScheduleId, CancellationToken cancellationToken) =>
         await Dependencies(projectScheduleId).ToListAsync(cancellationToken).ConfigureAwait(false);
 

@@ -8,4 +8,7 @@ public interface IScheduleActivityReader
 {
     /// <summary>Null when there is no such activity.</summary>
     public Task<ScheduleActivityFacts?> FindAsync(Guid activityId, CancellationToken cancellationToken);
+
+    /// <summary>The project's activity with this WBS code, as a workbook names it; null when it has none.</summary>
+    public Task<Guid?> FindIdByWbsCodeAsync(Guid projectId, string wbsCode, CancellationToken cancellationToken);
 }

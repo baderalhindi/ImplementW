@@ -9,6 +9,11 @@ internal sealed class ProjectFactsReader(IProjectRepository repository) : IProje
     public async Task<ProjectFacts?> FindAsync(Guid projectId, CancellationToken cancellationToken) =>
         await repository.ReadAsync(projectId, cancellationToken).ConfigureAwait(false) is { } p ? FactsOf(p) : null;
 
+    public async Task<ProjectFacts?> FindByFormalProjectIdAsync(string formalProjectId, CancellationToken cancellationToken) =>
+        await repository.FindIdByFormalProjectIdAsync(formalProjectId, cancellationToken).ConfigureAwait(false) is { } id
+            ? await FindAsync(id, cancellationToken).ConfigureAwait(false)
+            : null;
+
     public async Task<IReadOnlyList<ProjectFacts>> ListReachedAsync(RecordScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scope);

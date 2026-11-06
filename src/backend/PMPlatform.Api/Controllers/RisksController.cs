@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
+using PMPlatform.Api.Models.DocumentManagement;
 using PMPlatform.Api.Models.IdentityAccess;
 using PMPlatform.Api.Models.Risk;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.Risk.Contracts;
 using PMPlatform.Domain.Common;
@@ -18,9 +20,26 @@ namespace PMPlatform.Api.Controllers;
 /// </summary>
 [Route(Collection)]
 [Tags("Risk")]
-public sealed class RisksController(IRiskService risks, IRiskLifecycleService lifecycle) : AdministrationControllerBase
+public sealed class RisksController(IRiskService risks, IRiskLifecycleService lifecycle, IDataImportService imports) : AdministrationControllerBase
 {
     private const string Collection = "api/v1/risks";
+
+    /// <summary>The workbook template for this project register: its columns, and the projects and codes this person may name.</summary>
+    [HttpGet("import-template/content")]
+    [RequirePermission(PermissionCatalogue.RiskManage)]
+    [ProducesResponseType<FileStreamResult>(StatusCodes.Status200OK, "application/octet-stream")]
+    [EndpointName("Risk_DownloadRiskImportTemplate")]
+    public Task<IActionResult> DownloadImportTemplate(CancellationToken cancellationToken) => ImportTemplateAsync(imports, ImportRegisterCodes.Risk, cancellationToken);
+
+    /// <summary>Validates the workbook in part <c>file</c>, or with <c>commit=true</c> imports it, all rows or none. Each row is decided on its own project, as the form's would be.</summary>
+    [HttpPost("imports")]
+    [RequirePermission(PermissionCatalogue.RiskManage)]
+    [SensitiveWrite]
+    [DisableFormValueModelBinding]
+    [ProducesResponseType<ImportReport>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Risk_ImportRisk")]
+    public Task<IActionResult> Import([FromQuery] bool? commit, CancellationToken cancellationToken) =>
+        ImportAsync(imports, ImportRegisterCodes.Risk, commit == true, cancellationToken);
 
     /// <summary>
     /// The project's risks, most recently changed first, each with its current assessment and rating. <c>projectId</c> is required

@@ -50,7 +50,7 @@ internal sealed class RoleAssignmentImportRegister(
         new(EndsOnColumn, ImportValueKind.Date, Required: false, "The last day the role is held, if it ends.", "آخر يوم يُحمل فيه الدور إن كان له نهاية."),
     ];
 
-    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<ImportReferenceValue>>> ReferenceValuesAsync(Guid actorId, CancellationToken cancellationToken) =>
         new Dictionary<string, IReadOnlyList<ImportReferenceValue>>
         {
             [ProfileColumn] = [.. (await profiles.ListAssignableAsync(cancellationToken).ConfigureAwait(false)).Select(p => new ImportReferenceValue(p.Code, p.Name.Ar, p.Name.En))],
