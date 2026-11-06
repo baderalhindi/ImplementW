@@ -161,6 +161,25 @@ describe('the Home', () => {
                 series: [],
               },
             }),
+            widget({
+              code: 'PUBLISHED_FINANCIALS',
+              widgetType: 'KPI',
+              projectionCode: 'FINANCIAL_KPI.PUBLISHED_FINANCIAL_SNAPSHOT',
+              data: {
+                state: null,
+                figures: [
+                  { measure: 'APPROVED_BUDGET', value: '335750000', unit: 'SAR', isMasked: false },
+                  {
+                    measure: 'ACTUAL_EXPENDITURE_TO_DATE',
+                    value: '186331180',
+                    unit: 'SAR',
+                    isMasked: false,
+                  },
+                ],
+                distribution: [],
+                series: [],
+              },
+            }),
           ],
           locations: [{ regionItemId: 'region-east', cityItemId: null, projectCount: 8 }],
           regionOptions: ['region-east'],
@@ -181,6 +200,17 @@ describe('the Home', () => {
     expect(projects.parentElement?.textContent).toBe(`8${en('home.portfolio.projects')}`);
     expect(within(snapshot).getByText(en('progress.health.GREEN'))).toBeTruthy();
     expect(within(snapshot).getByText(en('progress.health.RED'))).toBeTruthy();
+    // The budget and the spend share their own row, apart from the counts.
+    const moneyRow = within(snapshot)
+      .getByText(en('dashboards.measures.APPROVED_BUDGET'))
+      .closest('ul');
+    expect(moneyRow?.className).toContain('home__tiles--money');
+    expect(
+      within(moneyRow as HTMLElement).getByText(
+        en('dashboards.measures.ACTUAL_EXPENDITURE_TO_DATE'),
+      ),
+    ).toBeTruthy();
+    expect(projects.closest('ul')).not.toBe(moneyRow);
     expect(
       within(snapshot).getByRole('link', { name: 'Eastern region' }).getAttribute('href'),
     ).toBe('/dashboards?dashboard=PORTFOLIO&region=region-east');

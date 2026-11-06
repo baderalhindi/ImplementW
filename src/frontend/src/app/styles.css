@@ -5199,20 +5199,52 @@ path.trend__line--ACTUAL_PERCENT {
   border-inline-start-color: var(--chart-negative);
 }
 
-/* A money figure is long: its tile takes two columns where there are two, and the figure is never broken mid-number. */
-@media (min-width: 40rem) {
-  .home__tile--wide {
-    grid-column: span 2;
+/*
+ * The Home's two rows, sized by the section's own width: the counts run six, three or two a row and the money two or one, so every
+ * tile in a row matches. The bases only decide how many fit; the tiles then grow equally, so a missing tile leaves no empty column.
+ */
+.home__portfolio {
+  container: home-portfolio / inline-size;
+}
+
+.home__tiles--counts .home__tile {
+  flex-basis: 40%;
+}
+
+.home__tiles--money .home__tile {
+  flex-basis: 100%;
+}
+
+/* The money row sits the same distance below the counts as the tiles sit from each other. */
+.home__tiles + .home__tiles {
+  margin-block-start: calc(var(--space-3) - var(--space-4));
+}
+
+@container home-portfolio (min-width: 36rem) {
+  .home__tiles--counts .home__tile {
+    flex-basis: 30%;
+  }
+
+  .home__tiles--money .home__tile {
+    flex-basis: 40%;
   }
 }
 
+@container home-portfolio (min-width: 60rem) {
+  .home__tiles--counts .home__tile {
+    flex-basis: 15%;
+  }
+}
+
+/* A figure reads left to right in Arabic too, yet sits on the same edge as its label. */
 .home__tile-value {
+  align-self: flex-start;
   font-size: clamp(1.125rem, 0.8rem + 0.8vw, 1.5rem);
   font-weight: 700;
   line-height: 1.2;
 }
 
-.home__tile--wide .home__tile-value {
+.home__tiles--money .home__tile-value {
   overflow-wrap: break-word;
 }
 
