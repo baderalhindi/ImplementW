@@ -154,7 +154,7 @@ export function DocumentBrowser({
               ]
         }
       >
-        <form className="filters" onSubmit={applySearch}>
+        <form className="filters filters--inline" onSubmit={applySearch}>
           <TextField
             label={t('documents.filters.title')}
             name="q"

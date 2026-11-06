@@ -2529,9 +2529,10 @@ select.field__input {
   gap: var(--space-4);
 }
 
-/* One filter on its own: a single bounded column rather than the filter bar's grid. */
+/* One filter on its own: a bounded box rather than the filter bar's grid, with its Search button, if any, beside it. */
 .filters--inline {
-  grid-template-columns: minmax(0, 24rem);
+  grid-template-columns: minmax(0, 24rem) auto;
+  justify-content: start;
 }
 
 .task__title {
