@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
-import { ApiError } from '@/shared/api/httpClient.ts';
+import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { isAppPath } from '@/shared/navigation/appPath.ts';
 import { TextField } from '@/shared/ui/FormFields.tsx';
@@ -17,40 +17,17 @@ import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { checkPassword, checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
-import { type ProblemDescriber, problemMessage } from '../problems.ts';
+import { SecondFactorForm } from './SecondFactorForm.tsx';
 import {
-  isMultiFactorPending,
   isPasswordChangePending,
-  type MultiFactorChallenge,
-  type MultiFactorPending,
   type PasswordChangePending,
   type Session,
-  type SignInResult,
   sessionApi,
 } from './sessionApi.ts';
 import { sessionStore } from './sessionStore.ts';
+import { describeRefusal, nextStep, type PendingSecondFactor } from './signInSteps.ts';
+import { identityProviderRedirect, ssoTransaction } from './ssoTransaction.ts';
 import { useSession } from './useSession.ts';
-
-interface PendingSecondFactor {
-  pending: MultiFactorPending;
-  challenge: MultiFactorChallenge;
-}
-
-/**
- * The API answers every failed sign-in step with the same 401 AUTHENTICATION_REQUIRED, which elsewhere means a session ended. Here no
- * session has begun, so each step says what its own failure means.
- */
-const describeRefusal =
-  (
-    key:
-      | 'identityAccess.signIn.wrongCredentials'
-      | 'identityAccess.signIn.wrongCode'
-      | 'identityAccess.signIn.passwordChangeExpired',
-  ): ProblemDescriber =>
-  (error, t) =>
-    error instanceof ApiError && error.code === 'AUTHENTICATION_REQUIRED'
-      ? t(key)
-      : problemMessage(error, t);
 
 type AccountTab = 'microsoft' | 'directory';
 
@@ -65,6 +42,8 @@ function passwordResetUrl(): string | null {
   const value = import.meta.env.VITE_PASSWORD_RESET_URL ?? '';
   return URL.canParse(value) && new URL(value).protocol === 'https:' ? new URL(value).href : null;
 }
+
+const loadSignInOptions = (signal: AbortSignal) => sessionApi.getSignInOptions(signal);
 
 function redirectTarget(state: unknown): string {
   const from = (state as { from?: unknown } | null)?.from;
@@ -232,9 +211,9 @@ function NafathPanel(): ReactElement {
 }
 
 /**
- * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Only the directory
- * account works; Nafath, Microsoft and biometric sign-in are shown disabled until their integrations exist. The
- * directory sign-in keeps its second factor (TASK-028, TASK-029); R01 always requires MFA. A local account on a temporary
+ * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Nafath and biometric
+ * sign-in are shown disabled until their integrations exist; Microsoft is offered where the API says single sign-on is
+ * configured. Every method keeps its second factor (TASK-028, TASK-029); R01 always requires MFA. A local account on a temporary
  * password sets a new one first (the 5 Nov 2026 review §6.1), then continues to its second factor or its session.
  */
 export function SignInPage(): ReactElement {
@@ -249,9 +228,7 @@ export function SignInPage(): ReactElement {
     describeRefusal(
       passwordChange !== null
         ? 'identityAccess.signIn.passwordChangeExpired'
-        : secondFactor !== null
-          ? 'identityAccess.signIn.wrongCode'
-          : 'identityAccess.signIn.wrongCredentials',
+        : 'identityAccess.signIn.wrongCredentials',
     ),
   );
   useFocusFirstError(formRef, save.fieldErrors);
@@ -264,10 +241,12 @@ export function SignInPage(): ReactElement {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [tab, setTab] = useState<AccountTab>('microsoft');
+
+  const signInOptions = useApiResource(loadSignInOptions);
+  const singleSignOnAvailable = signInOptions.data?.singleSignOnAvailable === true;
 
   const resetUrl = passwordResetUrl();
   const target = redirectTarget(location.state);
@@ -280,15 +259,15 @@ export function SignInPage(): ReactElement {
     void navigate(target, { replace: true });
   };
 
-  /** What a password-less step answered: the session, or the second factor still to come. */
-  const nextStep = async (
-    result: SignInResult,
-  ): Promise<{ session: Session } | { secondFactor: PendingSecondFactor }> => {
-    if (!isMultiFactorPending(result)) {
-      return { session: result };
+  const startSingleSignOn = async () => {
+    const result = await save.run(async () => {
+      const { authorizationUrl, transaction } = await sessionApi.beginSso();
+      ssoTransaction.save({ transaction, returnTo: target });
+      return authorizationUrl;
+    });
+    if (result.ok) {
+      identityProviderRedirect.go(result.value);
     }
-    const challenge = await sessionApi.beginMultiFactor(result.mfaToken);
-    return { secondFactor: { pending: result, challenge } };
   };
 
   const submitCredentials = async (event: SyntheticEvent) => {
@@ -354,23 +333,6 @@ export function SignInPage(): ReactElement {
     setNewPassword('');
     setConfirmPassword('');
     setPasswordChange(null);
-  };
-
-  const submitCode = async (event: SyntheticEvent) => {
-    event.preventDefault();
-    if (secondFactor === null || !save.validate({ code: code.trim() === '' ? 'REQUIRED' : null })) {
-      return;
-    }
-    const result = await save.run(() =>
-      sessionApi.completeMultiFactor(
-        secondFactor.pending.mfaToken,
-        secondFactor.challenge.challengeId,
-        code.trim(),
-      ),
-    );
-    if (result.ok && !isMultiFactorPending(result.value)) {
-      finish(result.value);
-    }
   };
 
   // The WAI-ARIA tabs pattern: arrow keys move between the tabs, which are one Tab stop.
@@ -546,7 +508,12 @@ export function SignInPage(): ReactElement {
               >
                 {tab === 'microsoft' && (
                   <>
-                    <button type="button" className="sign-in__provider" disabled>
+                    <button
+                      type="button"
+                      className="sign-in__provider"
+                      disabled={!singleSignOnAvailable || save.saving}
+                      onClick={() => void startSingleSignOn()}
+                    >
                       <MicrosoftMark />
                       <span className="sign-in__provider-text">
                         <span>{t('identityAccess.signIn.microsoft.submit')}</span>
@@ -554,9 +521,11 @@ export function SignInPage(): ReactElement {
                           {t('identityAccess.signIn.microsoft.hint')}
                         </span>
                       </span>
-                      <span className="badge sign-in__soon">
-                        {t('identityAccess.signIn.comingSoon')}
-                      </span>
+                      {!singleSignOnAvailable && !signInOptions.loading && (
+                        <span className="badge sign-in__soon">
+                          {t('identityAccess.signIn.comingSoon')}
+                        </span>
+                      )}
                     </button>
                     <p className="sign-in__divider">{t('identityAccess.signIn.or')}</p>
                   </>
@@ -566,47 +535,7 @@ export function SignInPage(): ReactElement {
               </div>
             </div>
           ) : (
-            <form
-              ref={formRef}
-              className="form sign-in__form"
-              noValidate
-              onSubmit={(event) => void submitCode(event)}
-            >
-              <FormAlert message={save.formError} />
-              <p>
-                {secondFactor.pending.enrolmentRequired
-                  ? t('identityAccess.signIn.enrolInstructions')
-                  : t('identityAccess.signIn.codeInstructions')}
-              </p>
-              {secondFactor.challenge.provisioningUri !== null && (
-                <p className="form__readonly">
-                  <span className="field__label">{t('identityAccess.signIn.provisioningUri')}</span>
-                  <code dir="ltr" className="break-all">
-                    {secondFactor.challenge.provisioningUri}
-                  </code>
-                </p>
-              )}
-              <TextField
-                label={t('identityAccess.signIn.code')}
-                name="code"
-                required
-                dir="ltr"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={code}
-                onChange={setCode}
-                error={save.fieldErrors.code}
-              />
-              <button
-                type="submit"
-                className="button button--primary sign-in__wide"
-                disabled={save.saving}
-              >
-                {save.saving
-                  ? t('identityAccess.signIn.verifying')
-                  : t('identityAccess.signIn.verify')}
-              </button>
-            </form>
+            <SecondFactorForm secondFactor={secondFactor} onSession={finish} />
           )}
         </section>
         <NafathPanel />

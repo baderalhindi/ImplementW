@@ -72,6 +72,18 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
             : SessionResponse(result, StatusCodes.Status201Created);
     }
 
+    /// <summary>Which sign-in methods this environment offers, so the sign-in page offers only what can work.</summary>
+    [HttpGet("sign-in-options")]
+    [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignInOptions)]
+    [EndpointName("IdentityAccess_GetSignInOptions")]
+    [ProducesResponseType<SignInOptionsDetail>(StatusCodes.Status200OK, "application/json")]
+    public IActionResult GetSignInOptions()
+    {
+        NoStore();
+        return Ok(new SignInOptionsDetail(authentication.IsSingleSignOnAvailable));
+    }
+
     /// <summary>Starts an SSO sign-in. Nothing is stored server-side; the transaction travels with the client.</summary>
     [HttpGet("sso-authorization")]
     [AllowAnonymous]

@@ -26,6 +26,8 @@ internal static class SsoBrowser
     }
 }
 
+internal sealed record SignInOptions(bool SingleSignOnAvailable);
+
 internal sealed record SsoAuthorization(Uri AuthorizationUrl, string Transaction);
 
 internal sealed record Callback(string Code, string State, string Transaction);
