@@ -140,9 +140,6 @@ export function HostedDashboard({
         actions={
           view.data === undefined ? undefined : (
             <p className="dashboard__meta">
-              <span>
-                {t('dashboards.refreshedAt', { date: formatDateTime(view.data.refreshedAt) })}
-              </span>
               <button type="button" className="button button--quiet" onClick={view.reload}>
                 {t('dashboards.actions.refresh')}
               </button>
@@ -157,6 +154,9 @@ export function HostedDashboard({
                   {t('dashboards.personalize.open')}
                 </button>
               )}
+              <span>
+                {t('dashboards.refreshedAt', { date: formatDateTime(view.data.refreshedAt) })}
+              </span>
             </p>
           )
         }
