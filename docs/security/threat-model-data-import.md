@@ -48,8 +48,9 @@ flowchart LR
 | DI-T11 | S | Another site makes a signed-in browser upload a workbook (multipart needs no preflight) | 2 | 2 | Medium | `CsrfProtection` refuses a safelisted body without the bearer token. `CsrfProtectionTests.ARequestIsForgeableUnlessItCarriesTheTokenOrAPreflightedBody` | Low | MITIGATED | — |
 | DI-T12 | E | A project team member bulk-writes into a project they do not reach, or adds records a form would refuse | 2 | 2 | Medium | `ProjectImportScope.PlaceAsync` decides each row on the project's anchors under the register's permission, and the module's create call authorizes again as the importer and applies its own rules. Rows arrive in their first state, past no approval. `ProjectRiskImportTests.AProjectOutOfReachReadsAsUnknownAndTheWholeWorkbookIsRefused`, `.ARowMeetsTheFormsRules`, `.AClosedProjectRefusesARowAsItRefusesTheForm`, `.SomeoneWhoCannotCreateRisksIsRefusedTheTemplateAndTheImport` | Low | MITIGATED | — |
 | DI-T13 | I | A legacy ID reveals another project's record: its existence, or its id in the report's skipped row | 1 | 3 | Medium | Keys are per project (`ImportLineage.Key`) and the row's scope is decided before the lineage is read (`DataImportService.LoadAsync`); the template lists only reachable projects (`ProjectImportScope.ReachableAsync`). `ProjectRiskImportTests.TwoProjectsMayUseTheSameLegacyIdAndOneCannotLearnOfTheOthersRecord`, `.TheTemplateNamesEveryColumnAndOnlyTheProjectsThisPersonReaches` | Low | MITIGATED | — |
+| DI-T14 | E | Any business role, read-only viewers and external users included, prepares a batch that creates ACTIVE projects around the registration review | 2 | 2 | Medium | Nothing is written until an approver holding `PROJECT_IMPORT_APPROVE` (R02 only) approves, never their own batch; each row is held to the importer's scope (`ProjectImportService`, `ProjectImportEvaluator`). `ProjectImportTests.AProjectManagerImportsOnlyProjectsTheyWouldManage`. R06 and R07 now hold one write, against the matrix's read-only roles: the user's decision of 6 Nov 2026, for AHDA to confirm | Low | MITIGATED | — |
 
-Counts by inherent rating: High 2, Medium 10, Low 1.
+Counts by inherent rating: High 2, Medium 11, Low 1.
 
 ## 3. Change log
 
@@ -57,3 +58,4 @@ Counts by inherent rating: High 2, Medium 10, Low 1.
 | --- | --- |
 | 2026-10-23 | First model (TASK-102) |
 | 2026-11-06 | A project's registers, for whoever may create the records: DI-T12, DI-T13; DI-T04's lock now also queues project teams' imports of the same register |
+| 2026-11-06 | Every business role may prepare a project import batch: DI-T14 |

@@ -61,7 +61,7 @@
 | `PROJECT_REGISTER` | PROJECT | Write | — | ALL | DEPT | OWN | — | — | — | ENTITY |
 | `PROJECT_REVIEW` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
 | `PROJECT_ACTIVATE` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
-| `PROJECT_IMPORT` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
+| `PROJECT_IMPORT` | PROJECT | Write | — | ALL | DEPT | OWN | ASSIGNED | DEPT | ALL | ENTITY |
 | `PROJECT_IMPORT_APPROVE` | PROJECT | Write | — | ALL | — | — | — | — | — | — |
 | `PROJECT_FOLLOW_UP` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
 | `PROGRESS_VIEW` | PROGRESS | Read | — | ALL | DEPT | OWN | ASSIGNED | DEPT | ALL | ENTITY |
@@ -145,6 +145,7 @@
 | R05 approvals | "V own" | Nothing | Review: R05 "must not see Approvals" |
 | R06 business audit | "—" | `AUDIT_BUSINESS_VIEW` DEPT | Review H4 lists R06 among the roles that read the business audit trail in scope |
 | R06 export | "V scoped/export*" | No `REPORT_EXPORT` | Review: "R06 (if AHDA confirms)" — F-3 |
+| Project import | R02, R03 (the 2 Nov 2026 review) | Every business role prepares a batch at its own scope; only R02 approves, and never their own | The user's decision of 6 Nov 2026, against this record's read-only R06 and R07. Awaits AHDA's confirmation (threat DI-T14). R01 stays out by `GrantPolicy` and imports projects on Data migration |
 | R07 risks | "V critical/summary + A*" | `RISK_VIEW` ALL | No criticality filter exists in the engine; Executive dashboards and reports show the critical items |
 | R08 documents | "V/C/E/D* entity" | Nothing | `external-participation.md` F-1: `DOCUMENT_VIEW` at ENTITY would let an entity browse every document of its projects, which WF-13 §10.1 forbids |
 | R08 reports | "V entity limited" | Nothing | ADR-019 (D-7) |

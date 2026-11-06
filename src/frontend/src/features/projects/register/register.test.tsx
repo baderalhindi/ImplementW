@@ -161,7 +161,13 @@ describe('SCR-025 Project Register', () => {
   });
 
   test('an empty register says there are no projects yet, not the filtered answer', async () => {
-    openRegister('/projects', sessionFor(['R06']), []);
+    // A created role that only reads: every shipped business role now holds Import.
+    withProjectLookups(mockApi())
+      .on('GET', SHELL_PERMISSIONS, {
+        body: { permissions: [{ code: 'PROJECT_VIEW', scopes: ['ALL'] }] },
+      })
+      .on('GET', /^\/projects$/, { body: { items: [], page: 1, pageSize: 25, totalCount: 0 } });
+    renderApp({ path: '/projects', session: sessionFor(['R09']) });
 
     expect(await screen.findByText(en('projects.register.empty'))).toBeTruthy();
     expect(screen.getByText(en('projects.register.emptyForRoleDescription'))).toBeTruthy();
@@ -184,11 +190,14 @@ describe('SCR-025 Project Register', () => {
     ).toBe('/projects/new');
   });
 
-  test.each(['R02', 'R03'])('%s sees Import on the register', async (role) => {
-    openRegister('/projects', sessionFor([role]));
+  test.each(['R02', 'R03', 'R04', 'R05', 'R06', 'R07', 'R08'])(
+    '%s sees Import on the register',
+    async (role) => {
+      openRegister('/projects', sessionFor([role]));
 
-    expect(await screen.findByRole('link', { name: en('projects.import.open') })).toBeTruthy();
-  });
+      expect(await screen.findByRole('link', { name: en('projects.import.open') })).toBeTruthy();
+    },
+  );
 
   test('a holder of PROJECT_IMPORT_APPROVE alone sees Import on the register', async () => {
     withProjectLookups(mockApi())
