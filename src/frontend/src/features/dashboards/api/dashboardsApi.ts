@@ -10,6 +10,7 @@ import {
   type DashboardCatalogueEntry,
   type DashboardCode,
   type DashboardPersonalizationDetail,
+  type DashboardProjectLocations,
   type DashboardView,
   type WidgetPersonalization,
 } from './types.ts';
@@ -55,6 +56,9 @@ export const dashboardsApi = {
   /** The role-aware Home's catalogue: the dashboards the caller may open, the landing marked. At most three. */
   catalogue: (signal?: AbortSignal) =>
     readAllPages<DashboardCatalogueEntry>('/dashboards', {}, signal),
+  /** Where the projects the caller may view are delivered; requires PROJECT_VIEW. */
+  projectLocations: async (signal?: AbortSignal) =>
+    (await apiRequest<DashboardProjectLocations>('/dashboards/project-locations', { signal })).data,
   /** The PUBLISHED composition and every widget's result, assembled now. */
   get: async (code: DashboardCode, context: DashboardContext, signal?: AbortSignal) =>
     (

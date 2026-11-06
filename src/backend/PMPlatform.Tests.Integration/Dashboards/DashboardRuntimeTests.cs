@@ -53,6 +53,29 @@ public sealed class DashboardRuntimeTests(DashboardTestHost host)
         });
     }
 
+    /// <summary>A role outside the Portfolio Dashboard's audience still reads where its own projects are: exactly what PROJECT_VIEW reaches, and nothing without it.</summary>
+    [Fact]
+    public async Task ProjectLocationsCountExactlyTheProjectsTheCallerMayView()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string locationsPath = $"{DashboardDriver.Dashboards}/project-locations";
+        string entityUser = (await client.SignInOrFailAsync(8)).AccessToken;
+        await host.DashboardProjectAsync();
+        await host.DashboardProjectAsync(entityId: DashboardTestHost.OtherEntityId);
+
+        using HttpResponseMessage located = await client.GetAsync(locationsPath, entityUser);
+        Assert.Equal(HttpStatusCode.OK, located.StatusCode);
+        int locatedCount = (await located.ReadObjectAsync())["locations"]!.AsArray().Sum(l => l!["projectCount"]!.GetValue<int>());
+
+        using HttpResponseMessage register = await client.GetAsync("/api/v1/projects?page=1&pageSize=1", entityUser);
+        Assert.Equal((await register.ReadObjectAsync())["totalCount"]!.GetValue<int>(), locatedCount);
+        Assert.True(locatedCount >= 1);
+
+        string administrator = (await client.SignInOrFailAsync(1)).AccessToken;
+        using HttpResponseMessage refused = await client.GetAsync(locationsPath, administrator);
+        Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+    }
+
     /// <summary>Blueprint §20.2 and ADR-019: each role lands on its dashboard, and an entity user is offered the Project Dashboard and nothing further.</summary>
     [Fact]
     public async Task EachRoleLandsOnItsDashboardAndAnEntityUserIsOfferedTheProjectDashboardOnly()

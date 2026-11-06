@@ -74,6 +74,9 @@ public sealed record DashboardPlace(Guid Id, BilingualLabel Label, Guid? ParentI
 /// <summary>How many of the dashboard's projects are delivered in one region and city.</summary>
 public sealed record DashboardLocationCount(Guid? RegionItemId, Guid? CityItemId, int ProjectCount);
 
+/// <summary>The projects the caller may view, counted by region and city, and the names and map positions of those places.</summary>
+public sealed record DashboardProjectLocations(IReadOnlyList<DashboardLocationCount> Locations, IReadOnlyList<DashboardPlace> Places);
+
 /// <summary>
 /// One widget's result (FG-01 §10.1, RUN-001–022): what it presents, from which projection and version, in which semantic state, as
 /// of when, how fresh and how complete (<see cref="Projection"/>, the R-20(c) contract). When the source cannot say —

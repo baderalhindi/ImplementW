@@ -36,7 +36,8 @@ export function LocationDetails({
   filters: PortfolioFilters;
   /** The dashboard is already filtered to this place. */
   filtered: boolean;
-  onFilter: () => void;
+  /** Filters the page to this place; a page with no such filter leaves it out, and the button with it. */
+  onFilter: (() => void) | undefined;
   onClose: () => void;
 }): ReactElement {
   const { t } = useI18n();
@@ -142,9 +143,11 @@ export function LocationDetails({
           )}
         </>
       )}
-      <button type="button" className="button" aria-pressed={filtered} onClick={onFilter}>
-        {t(filtered ? 'dashboards.locations.clearFilter' : 'dashboards.locations.filter')}
-      </button>
+      {onFilter !== undefined && (
+        <button type="button" className="button" aria-pressed={filtered} onClick={onFilter}>
+          {t(filtered ? 'dashboards.locations.clearFilter' : 'dashboards.locations.filter')}
+        </button>
+      )}
     </div>
   );
 }

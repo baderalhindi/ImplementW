@@ -34,6 +34,14 @@ public sealed class DashboardsController(IDashboardService dashboards) : Adminis
         return errors.Count > 0 ? ValidationFailed(errors) : Ok(await dashboards.ListAsync(CallerId, paging, cancellationToken));
     }
 
+    /// <summary>Where the projects the caller may view are delivered, for a role no portfolio-wide dashboard's audience includes: only the counts and places of projects PROJECT_VIEW already reaches.</summary>
+    [HttpGet("project-locations")]
+    [RequirePermission(PermissionCatalogue.ProjectView)]
+    [ProducesResponseType<DashboardProjectLocations>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Dashboards_GetProjectLocations")]
+    public async Task<IActionResult> GetProjectLocations(CancellationToken cancellationToken) =>
+        Ok(await dashboards.GetProjectLocationsAsync(CallerId, cancellationToken));
+
     /// <summary>
     /// The dashboard's PUBLISHED version and each widget's result. <c>PROJECT</c> is bound to <c>projectId</c> (DSH-009 in SCR-040, DSH-008 for
     /// an entity's own project); the others are read over every project the caller may see, optionally narrowed to one <c>departmentId</c>,
