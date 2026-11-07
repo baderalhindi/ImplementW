@@ -5979,3 +5979,38 @@ tr[data-flagged='true'] {
     font-size: 0.8rem;
   }
 }
+
+/* Review round 5, items 9 and 10: an entity's update completion, with the all-entity average as a marked line. */
+.completion {
+  margin-block-end: 1.5rem;
+}
+
+.completion__figure strong {
+  font-size: 1.75rem;
+}
+
+.completion__chart {
+  position: relative;
+  block-size: 1rem;
+  background: var(--color-border, #d9dee3);
+  border-radius: 0.5rem;
+}
+
+.completion__fill {
+  display: block;
+  block-size: 100%;
+  background: var(--color-primary, #0b6e4f);
+  border-radius: 0.5rem;
+}
+
+.completion__marker {
+  position: absolute;
+  inset-block: -0.25rem;
+  inline-size: 0.2rem;
+  background: var(--color-text, #1b1f23);
+}
+
+.completion__legend {
+  color: var(--color-text-muted);
+  margin-block: 0.5rem;
+}

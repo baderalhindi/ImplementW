@@ -624,5 +624,26 @@
       "summaryOnce": "{requests} to {entities}, once",
       "send": "Send"
     }
+  },
+  "completion": {
+    "title": "Update completion by entity",
+    "ownTitle": "Your response rate",
+    "period": "Period",
+    "periods": {
+      "ThisMonth": "This month",
+      "LastThreeMonths": "Last 3 months",
+      "ThisYear": "This year"
+    },
+    "counts": "{accepted} of {issued} requests accepted",
+    "chartLabel": "Your rate {own}. Average of all entities {average}.",
+    "average": "Average of all entities: {average}",
+    "below": "You are {points} points below the average.",
+    "ownEmpty": "No requests were issued to your entity in this period.",
+    "empty": "No requests were issued in this period.",
+    "issued": "Issued",
+    "submitted": "Submitted",
+    "accepted": "Accepted",
+    "overdue": "Overdue",
+    "percent": "Completion"
   }
 }

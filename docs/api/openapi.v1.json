@@ -4657,6 +4657,90 @@
         }
       }
     },
+    "/api/v1/entity-completion-rates": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "One row per entity the caller's view reaches, lowest first, and the average of all entities. `period` defaults to this month.",
+        "operationId": "ExternalParticipation_ListEntityCompletionRates",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CompletionPeriod"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityCompletionPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/entity-completion-rates/own": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "The caller's own entity beside the average of all entities; no other entity is named. 404 for someone who belongs to no entity.",
+        "operationId": "ExternalParticipation_GetOwnEntityCompletionRate",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CompletionPeriod"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnEntityCompletion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/evidence-references/{evidenceReferenceId}": {
       "get": {
         "tags": [
@@ -23311,6 +23395,14 @@
         },
         "description": "A completion case's own fields, as a whole (R-5): the proposed official completion date and the Project Manager's completion narrative.\nA draft may leave them out; submission requires both. Its status and the project's state change only through the commands."
       },
+      "CompletionPeriod": {
+        "enum": [
+          "THIS_MONTH",
+          "LAST_THREE_MONTHS",
+          "THIS_YEAR",
+          null
+        ]
+      },
       "ConcernAssessCommand": {
         "required": [
           "impacts"
@@ -26712,6 +26804,114 @@
           }
         },
         "description": "The permissions the caller holds now, each with the scopes it is held at, for the SPA to decide which menus, tabs and buttons to offer\n(review C3). Read from the engine on every call, so a changed grant shows without a new sign-in. This is navigation, not protection:\nevery operation is decided again by the API."
+      },
+      "EntityCompletionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "averagePercent"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntityCompletionRow"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "averagePercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "EntityCompletionRow": {
+        "required": [
+          "externalEntityId",
+          "issued",
+          "submitted",
+          "accepted",
+          "overdue",
+          "completionPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "externalEntityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "issued": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "submitted": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "accepted": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "overdue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "completionPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
       },
       "EntityTagHeaderValue": {
         "type": "object",
@@ -34327,6 +34527,52 @@
           "SENSITIVE"
         ],
         "description": "An output's classification as its content makes it (FG-02 §9.3, GEN-009): SENSITIVE when it reveals a financial amount or a classified\ncolumn, whatever the report's baseline; STANDARD otherwise. ADR-010's taxonomy, when AHDA supplies it, refines it."
+      },
+      "OwnEntityCompletion": {
+        "required": [
+          "issued",
+          "accepted",
+          "completionPercent",
+          "averagePercent"
+        ],
+        "type": "object",
+        "properties": {
+          "issued": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "accepted": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "completionPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averagePercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "A null rate: nothing was issued to the entity in the period, which is not 0%."
       },
       "OwnPasswordChangeRequest": {
         "required": [

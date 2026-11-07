@@ -35,6 +35,9 @@ internal sealed class OpenApiDocument(JsonObject root)
         KnownFinding(@"C-12: .*: X-Correlation-Id response header not declared \(R-41\)"),
         KnownFinding(@"C-12: .*: Location header not declared \(R-5\)"),
 
+        // The caller's own entity is one record, as the session's own permissions are: review round 5, item 9.
+        KnownFinding(@"C-9: GET /api/v1/entity-completion-rates/own: (collection GET without page/pageSize or cursor/pageSize \(R-28\)|200 schema is not a page envelope \(items \+ totalCount\|nextCursor\) \(R-29/R-30\))"),
+
         // R-8's binary download, GET .../content (WF-12's versions, FG-02's outputs): the checker reads it as a sub-collection of its resource.
         KnownFinding(@"C-2: /api/v1/[a-z-]+/\{[A-Za-z]+\}(/[a-z-]+/\{[A-Za-z]+\})?/content: a segment after \{id\} must be a POST-only command or a child collection \(R-4\)"),
         KnownFinding(@"C-9: GET /api/v1/[a-z-]+/\{[A-Za-z]+\}(/[a-z-]+/\{[A-Za-z]+\})?/content: (collection GET without page/pageSize or cursor/pageSize \(R-28\)|200 schema is not a page envelope .*)"),

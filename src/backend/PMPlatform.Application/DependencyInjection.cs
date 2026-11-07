@@ -396,6 +396,7 @@ public static class DependencyInjection
         services.AddScoped<IExternalUpdateRequestService, ExternalUpdateRequestService>();
         // The 2 Nov 2026 review: the entity's on-time answers to its update requests, from which the project module decides compliance.
         services.AddScoped<IProjectUpdateComplianceSource, UpdateComplianceSource>();
+        services.AddScoped<IEntityCompletionRates, EntityCompletionService>();
         services.AddScoped<IExternalContributionService, ExternalContributionService>();
         services.AddScoped<ISourceApplicationService, SourceApplicationService>();
 

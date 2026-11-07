@@ -624,5 +624,26 @@
       "summaryOnce": "{requests} إلى {entities}، مرة واحدة",
       "send": "إرسال"
     }
+  },
+  "completion": {
+    "title": "نسبة إنجاز التحديثات حسب الجهة",
+    "ownTitle": "معدل استجابتكم",
+    "period": "الفترة",
+    "periods": {
+      "ThisMonth": "هذا الشهر",
+      "LastThreeMonths": "آخر 3 أشهر",
+      "ThisYear": "هذا العام"
+    },
+    "counts": "قُبل {accepted} من {issued} طلبات",
+    "chartLabel": "معدلكم {own}. متوسط جميع الجهات {average}.",
+    "average": "متوسط جميع الجهات: {average}",
+    "below": "أنتم أقل من المتوسط بـ {points} نقطة.",
+    "ownEmpty": "لم تصدر طلبات لجهتكم في هذه الفترة.",
+    "empty": "لم تصدر طلبات في هذه الفترة.",
+    "issued": "الصادرة",
+    "submitted": "المقدَّمة",
+    "accepted": "المقبولة",
+    "overdue": "المتأخرة",
+    "percent": "نسبة الإنجاز"
   }
 }

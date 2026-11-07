@@ -14,6 +14,9 @@ public interface IExternalParticipationRepository
 {
     public Task<IExternalParticipationWork> BeginAsync(CancellationToken cancellationToken);
 
+    /// <summary>The requests issued since <paramref name="issuedFrom"/>, cancelled ones left out: what entities' completion rates are counted from. Not tracked.</summary>
+    public Task<IReadOnlyList<RequestCompletionFacts>> ListCompletionFactsAsync(DateOnly issuedFrom, CancellationToken cancellationToken);
+
     /// <summary>
     /// The issued requests of these projects that have a due date, each with when its first contribution was submitted (null while none
     /// was): what an entity's update compliance is counted from (the 2 Nov 2026 review). Not tracked.
@@ -130,4 +133,7 @@ public enum ExternalParticipationSaveOutcome
 }
 
 /// <summary>An issued request's due date and its first submission.</summary>
+/// <summary>A request issued in a period: its entity, due date and whether anything was submitted, with its latest contribution's state.</summary>
+public sealed record RequestCompletionFacts(Guid ProjectId, Guid ExternalEntityId, DateOnly? DueDate, bool HasSubmission, ExternalContributionStatus? LatestContribution);
+
 public sealed record RequestTimeliness(Guid ProjectId, DateOnly DueDate, DateTimeOffset? FirstSubmittedAt);
