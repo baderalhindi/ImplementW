@@ -475,7 +475,7 @@ describe('the report shell', () => {
     const table = await screen.findByRole('table', { name: 'Financial Performance' });
     const [, rowA, rowB] = within(table).getAllByRole('row');
     expect(
-      within(present(rowA, 'rowA')).getByText(en('reports.units.sar', { amount: '1,250,000.00' })),
+      within(present(rowA, 'rowA')).getByText(en('reports.units.sar', { amount: '1,250,000' })),
     ).toBeTruthy();
     expect(within(present(rowA, 'rowA')).getByText('Strategy Department')).toBeTruthy();
 

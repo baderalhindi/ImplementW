@@ -106,7 +106,7 @@ internal static class ReportDocumentBuilder
             ReportValueType.DateTime => (Timestamp(DateTimeOffset.Parse(value, CultureInfo.InvariantCulture)), value, null),
             ReportValueType.Count or ReportValueType.Days => (Grouped(value, "N0") + ReportText.Unit(type, language), value, value),
             ReportValueType.Percent => (value + ReportText.Unit(type, language), value, value),
-            ReportValueType.Sar => (Grouped(value, "N2") + ReportText.Unit(type, language), value, value),
+            ReportValueType.Sar => (SarText(value) + ReportText.Unit(type, language), value, value),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown value type."),
         };
         return new ReportDocumentCell(stale ? text + " *" : text, raw, number, stale, IsUnknown: false);
@@ -122,6 +122,10 @@ internal static class ReportDocumentBuilder
             $"{ReportText.In(ReportText.Coverage, language)} {section.Coverage.IncludedCount}/{section.Coverage.EligibleCount}");
         return $"{section.ProjectionCode} ({section.SourceDomain}): {state}, {fresh}{asOf}, {coverage}";
     }
+
+    /// <summary>Whole riyals read without ".00"; an amount with halalas keeps both places.</summary>
+    internal static string SarText(string value) =>
+        Grouped(value, decimal.IsInteger(decimal.Parse(value, CultureInfo.InvariantCulture)) ? "N0" : "N2");
 
     private static string Grouped(string value, string format) =>
         decimal.Parse(value, CultureInfo.InvariantCulture).ToString(format, CultureInfo.InvariantCulture);

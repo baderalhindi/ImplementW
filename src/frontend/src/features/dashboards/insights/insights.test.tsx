@@ -132,7 +132,7 @@ describe('the sections', () => {
       expect(section('headline')).not.toBeNull();
     });
     const headline = present(section('headline'));
-    expect(plain(headline.textContent)).toContain('1,500,000.00 SAR');
+    expect(plain(headline.textContent)).toContain('1,500,000 SAR');
     expect(plain(headline.textContent)).toContain('Value entered for 167 of 167');
     expect(plain(headline.textContent)).toContain('Overdue actions: 4');
   });

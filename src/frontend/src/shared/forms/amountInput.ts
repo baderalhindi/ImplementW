@@ -43,6 +43,11 @@ export function formatAmount(plain: string): string {
   return `${negative ? '-' : ''}${grouped}${decimals === undefined ? '' : `.${decimals}`}`;
 }
 
+/** A stored amount as a person reads it: "1500000.00" reads 1500000; a real fraction stays, so "1500000.50" is unchanged. */
+export function withoutZeroFraction(amount: string): string {
+  return amount.replace(/\.0*$/, '');
+}
+
 /** How many characters of the number, separators apart, lie before `caret`: what stays put when the separators move. */
 export function significantBefore(display: string, caret: number): number {
   return display.slice(0, caret).replace(/,/g, '').length;

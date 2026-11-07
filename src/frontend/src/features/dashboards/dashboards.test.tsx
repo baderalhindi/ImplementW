@@ -361,7 +361,7 @@ describe('acceptance criterion 2: every widget states its semantic state and its
       return present(term.parentElement?.querySelector('dd'), `figure ${measure}`);
     };
     expect(figure('APPROVED_BUDGET').textContent).toBe(
-      en('dashboards.units.sar', { amount: '1,250,000.00' }),
+      en('dashboards.units.sar', { amount: '1,250,000' }),
     );
     expect(
       figure('ACTUAL_EXPENDITURE_TO_DATE')

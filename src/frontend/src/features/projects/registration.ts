@@ -1,4 +1,5 @@
 import { checkText } from '@/features/identity-access/forms.ts';
+import { withoutZeroFraction } from '@/shared/forms/amountInput.ts';
 import { type Language, type TranslationKey } from '@/shared/i18n/i18n.ts';
 
 import {
@@ -189,7 +190,7 @@ export function valuesOf(project: ProjectDetail): RegistrationValues {
     externalEntityId: project.externalEntityId ?? '',
     participationMode: project.participationMode,
     governanceProfileItemId: project.governanceProfileItemId,
-    registrationBudgetSar: project.registrationBudgetSar ?? '',
+    registrationBudgetSar: withoutZeroFraction(project.registrationBudgetSar ?? ''),
     plannedStartDate: project.plannedStartDate ?? '',
     plannedEndDate: project.plannedEndDate ?? '',
     regionItemId: project.regionItemId ?? '',

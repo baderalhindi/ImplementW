@@ -2,6 +2,7 @@ import { checkText, optionalText } from '@/features/identity-access/forms.ts';
 import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
 import { type NarrativeText } from '@/features/projects/api/types.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
+import { withoutZeroFraction } from '@/shared/forms/amountInput.ts';
 import { type Language } from '@/shared/i18n/i18n.ts';
 
 import {
@@ -306,8 +307,8 @@ export function financialValuesOf(
 ): FinancialUpdateValues {
   return {
     valueStatus: update.valueStatus,
-    actual: update.actualExpenditureToDateSar ?? '',
-    forecast: update.forecastAtCompletionSar ?? '',
+    actual: withoutZeroFraction(update.actualExpenditureToDateSar ?? ''),
+    forecast: withoutZeroFraction(update.forecastAtCompletionSar ?? ''),
     sourceReference: update.sourceReference ?? '',
     asOfDate: update.asOfDate ?? today,
     narrative: update.narrative?.text ?? '',

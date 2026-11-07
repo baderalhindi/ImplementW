@@ -74,8 +74,31 @@ public sealed class ReportRendererTests
         Assert.DoesNotContain("<f>", sheet, StringComparison.Ordinal);
         Assert.Contains("rightToLeft=\"1\"", sheet, StringComparison.Ordinal);
         Assert.Contains("s=\"2\" t=\"inlineStr\"><is><t xml:space=\"preserve\">=1+1</t>", sheet, StringComparison.Ordinal);
-        Assert.Matches("<c r=\"B2\" s=\"3\"><v>1250000.00</v></c>", sheet);
+        Assert.Matches("<c r=\"B2\" s=\"7\"><v>1250000.00</v></c>", sheet);
     }
+
+    [Fact]
+    public void AnXlsxShowsWholeRiyalsWithoutDecimalsAndKeepsHalalas()
+    {
+        RenderedReport xlsx = new XlsxReportRenderer().Render(Document(Language.En,
+            [Cell("A"), Number("1250000.50"), Cell("GREEN")],
+            [Cell("B"), Number("1250000.00"), Cell("GREEN")]));
+
+        using ZipArchive zip = new(new MemoryStream(xlsx.Content));
+        string sheet = new StreamReader(zip.GetEntry("xl/worksheets/sheet1.xml")!.Open()).ReadToEnd();
+        string styles = new StreamReader(zip.GetEntry("xl/styles.xml")!.Open()).ReadToEnd();
+        Assert.Contains("<c r=\"B2\" s=\"3\"><v>1250000.50</v></c>", sheet, StringComparison.Ordinal);
+        Assert.Contains("<c r=\"B3\" s=\"7\"><v>1250000.00</v></c>", sheet, StringComparison.Ordinal);
+        Assert.Contains("<cellXfs count=\"8\">", styles, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("1250000.00", "1,250,000")]
+    [InlineData("1250000.50", "1,250,000.50")]
+    [InlineData("-999.00", "-999")]
+    [InlineData("0.00", "0")]
+    public void AReportReadsWholeRiyalsWithoutDecimals(string value, string expected) =>
+        Assert.Equal(expected, ReportDocumentBuilder.SarText(value));
 
     [Fact]
     public void APdfEmbedsItsFontAndPaginatesEveryRow()

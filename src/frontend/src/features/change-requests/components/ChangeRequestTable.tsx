@@ -11,7 +11,7 @@ import { type ChangeRequestEntry } from '../useChangeRequestData.ts';
 
 import { BandBadge, ChangeRequestStatusBadge } from './ChangeRequestBadges.tsx';
 
-/** The impacts a request states, in a line: "+12 days · SAR 60,000.00 · scope". */
+/** The impacts a request states, in a line: "+12 days · SAR 60,000 · scope". */
 function ImpactSummary({ request }: { request: ChangeRequestDetail }): ReactElement {
   const { t } = useI18n();
   const parts = [

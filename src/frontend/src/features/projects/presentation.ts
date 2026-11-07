@@ -1,3 +1,4 @@
+import { formatAmount, withoutZeroFraction } from '@/shared/forms/amountInput.ts';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
 import { type ProjectStatus } from './api/types.ts';
@@ -48,12 +49,9 @@ export function languageTag(language: string): string {
   return language.toLowerCase();
 }
 
-/** A SAR amount with grouping, Latin digits in both languages (TASK-032 D-5); the API's string is exact. */
+/** A SAR amount with grouping, Latin digits in both languages (TASK-032 D-5): 1,500,000, and 1,500,000.50 when it has a fraction. */
 export function formatSar(amount: string): string {
-  const [whole = '0', fraction = '00'] = amount.split('.');
-  const negative = whole.startsWith('-');
-  const digits = negative ? whole.slice(1) : whole;
-  return `${negative ? '-' : ''}${digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
+  return formatAmount(withoutZeroFraction(amount));
 }
 
 /** A number with at most one decimal, in Latin digits like every figure the platform shows (TASK-032 D-5). */

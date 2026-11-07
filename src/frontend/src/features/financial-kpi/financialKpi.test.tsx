@@ -133,7 +133,7 @@ describe('criterion 1 on SCR-049: an Unknown financial figure says so, never 0 a
       expect(status.className).toBe('badge badge--neutral');
       expectNoGreen(region);
       // The budget is the one figure known, with its own provenance; nothing Unknown reads as 0.
-      expect(within(region).getByText(sar('1,000,000.00'))).toBeTruthy();
+      expect(within(region).getByText(sar('1,000,000'))).toBeTruthy();
       expect(region.textContent).not.toContain(sar('0.00'));
     }
     expect(within(live).getByText(en('financialKpi.financials.live.unpublished'))).toBeTruthy();
@@ -435,8 +435,8 @@ describe('SCR-071 Financial Progress', () => {
 
     const budgets = screen.getByRole('region', { name: en('financialKpi.history.budgetsCaption') });
     expect(within(budgets).getAllByRole('row')).toHaveLength(2);
-    expect(within(budgets).getByText(sar('1,000,000.00'))).toBeTruthy();
-    expect(within(budgets).queryByText(sar('5.00'))).toBeNull();
+    expect(within(budgets).getByText(sar('1,000,000'))).toBeTruthy();
+    expect(within(budgets).queryByText(sar('5'))).toBeNull();
   });
 });
 
@@ -903,12 +903,12 @@ describe('the official and live financial views stay apart', () => {
       ),
     );
     const official = await screen.findByRole('region', { name: /Official financial position/ });
-    expect(within(official).getByText(sar('400,000.00'))).toBeTruthy();
+    expect(within(official).getByText(sar('400,000'))).toBeTruthy();
     expect(within(official).getByText(en('financialKpi.financialStatus.GREEN')).className).toBe(
       'badge badge--positive',
     );
     const live = screen.getByRole('region', { name: /Current financial position/ });
-    expect(within(live).queryByText(sar('400,000.00'))).toBeNull();
+    expect(within(live).queryByText(sar('400,000'))).toBeNull();
     expectNoGreen(live);
   });
 });

@@ -53,6 +53,15 @@ describe('approval and implementation are separate dimensions', () => {
 });
 
 describe('the form checks', () => {
+  test('an edit form opens on the cost impact without ".00"', () => {
+    expect(
+      changeRequestFormValuesOf(changeRequest({ costImpactSar: '60000.00' })).costImpactSar,
+    ).toBe('60000');
+    expect(
+      changeRequestFormValuesOf(changeRequest({ costImpactSar: '60000.50' })).costImpactSar,
+    ).toBe('60000.50');
+  });
+
   const filled = { ...emptyChangeRequestForm(), title: 'T', justification: 'J' };
 
   test('a draft needs a type, a title and a justification; impacts may be left out', () => {

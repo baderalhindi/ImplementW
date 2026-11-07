@@ -70,7 +70,7 @@ describe('cellContent', () => {
     ).toMatchObject({ kind: 'value', text: '0' });
     expect(
       cellContent(cell('1250000.00'), column('APPROVED_BUDGET'), 'en', t, formatDateTime),
-    ).toMatchObject({ kind: 'value', text: t('reports.units.sar', { amount: '1,250,000.00' }) });
+    ).toMatchObject({ kind: 'value', text: t('reports.units.sar', { amount: '1,250,000' }) });
   });
 
   test("a code reads in its source's words, a reference by the name the API sent", () => {

@@ -99,7 +99,7 @@ export function formatKpiValue(value: Decimal): string {
   return KPI_FORMAT.format(toNumber(value));
 }
 
-/** "1,250,000.00": the API's string, grouped, exact. The currency is SAR only and said once beside it (ADR-008). */
+/** "1,250,000": the API's string, grouped, exact, with no ".00". The currency is SAR only and said once beside it (ADR-008). */
 export function formatAmount(value: Decimal): string {
   return formatSar(typeof value === 'number' ? value.toFixed(2) : value);
 }

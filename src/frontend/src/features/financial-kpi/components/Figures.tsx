@@ -56,7 +56,7 @@ interface FigureProps {
   absent: TranslationKey;
 }
 
-/** A SAR amount: "SAR 1,250,000.00", or its state. No currency is ever chosen (ADR-008). */
+/** A SAR amount: "SAR 1,250,000", or its state. No currency is ever chosen (ADR-008). */
 export function AmountFigure({ state, absent }: FigureProps): ReactElement {
   const { t } = useI18n();
   return (

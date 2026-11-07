@@ -1,9 +1,28 @@
 import { describe, expect, test } from 'vitest';
 
-import { caretAfter, formatAmount, plainAmount, significantBefore } from './amountInput.ts';
+import {
+  caretAfter,
+  formatAmount,
+  plainAmount,
+  significantBefore,
+  withoutZeroFraction,
+} from './amountInput.ts';
 
 const sar = { maxDecimals: 2, allowNegative: false };
 const impact = { maxDecimals: 2, allowNegative: true };
+
+describe('a stored amount as a person reads it', () => {
+  test.each([
+    ['1500000.00', '1500000'],
+    ['1500000.50', '1500000.50'],
+    ['-999.00', '-999'],
+    ['0.00', '0'],
+    ['1500000', '1500000'],
+    ['', ''],
+  ])('%s reads %s', (stored, shown) => {
+    expect(withoutZeroFraction(stored)).toBe(shown);
+  });
+});
 
 describe('an amount as it is typed', () => {
   test.each([
