@@ -5340,12 +5340,34 @@ path.trend__line--ACTUAL_PERCENT {
   }
 }
 
+.locations-map-frame {
+  position: relative;
+  display: grid;
+  min-inline-size: 0;
+}
+
 .locations-map {
   min-block-size: 30rem;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-card);
   background: var(--color-surface, var(--color-background));
   z-index: 0;
+}
+
+/* Google's required credit: above the map, and never in the way of pressing it. */
+.locations-map__credit {
+  position: absolute;
+  inset-block-end: 1px;
+  inset-inline-end: 1px;
+  z-index: 1;
+  max-inline-size: 90%;
+  margin: 0;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-card) 0 var(--radius-card) 0;
+  background: rgba(255, 255, 255, 0.85);
+  color: #1f2937;
+  font-size: 0.75rem;
+  pointer-events: none;
 }
 
 .map-bubble__anchor {

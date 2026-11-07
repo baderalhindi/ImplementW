@@ -3,6 +3,15 @@ import 'leaflet/dist/leaflet.css';
 import type { LayerGroup, Map as LeafletMap } from 'leaflet';
 import { type ReactElement, useEffect, useRef, useState } from 'react';
 
+import { useI18n } from '@/shared/i18n/i18n.ts';
+
+import {
+  mapTileUrl,
+  openMapTilesSession,
+  readMapCopyright,
+  REFERRER_POLICY,
+} from './googleMapTiles.ts';
+
 /** One circle: a place with projects. Its area grows with the count, so a large place does not swallow its neighbours. */
 export interface MapPoint {
   id: string;
@@ -12,8 +21,6 @@ export interface MapPoint {
   projectCount: number;
 }
 
-const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const ATTRIBUTION = '© OpenStreetMap';
 const MIN_DIAMETER = 26;
 const MAX_DIAMETER = 50;
 /** Pressing a circle zooms to here at least, so its close neighbours separate. */
@@ -27,8 +34,8 @@ function diameterOf(count: number, largest: number): number {
 }
 
 /**
- * The map of the projects' places (Leaflet over OpenStreetMap tiles). Each place is a circle holding its count; pressing one, by pointer or
- * keyboard, selects it. The smaller circles sit above the larger, so a close neighbour can still be pressed. If the tiles cannot load, the circles
+ * The map of the projects' places (Leaflet over Google's roadmap tiles). Each place is a circle holding its count; pressing one, by pointer or
+ * keyboard, selects it. The smaller circles sit above the larger, so a close neighbour can still be pressed. Without a key, or if the tiles cannot load, the circles
  * still draw on a plain background. The map is drawn for pointer and keyboard users; the list beside it says the same to a screen reader.
  */
 export function LocationsMap({
@@ -42,10 +49,13 @@ export function LocationsMap({
   label: string;
   onSelect: (id: string | null) => void;
 }): ReactElement {
+  const { language } = useI18n();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<LeafletMap | null>(null);
   const markers = useRef<LayerGroup | null>(null);
   const [ready, setReady] = useState(false);
+  const [tilesShown, setTilesShown] = useState(false);
+  const [copyright, setCopyright] = useState('');
   const select = useRef(onSelect);
   useEffect(() => {
     select.current = onSelect;
@@ -59,15 +69,11 @@ export function LocationsMap({
       if (cancelled || container.current === null) {
         return;
       }
-      const created = L.map(container.current, { maxZoom: MAX_ZOOM }).setView([25.0, 49.8], 7);
-      created.attributionControl.setPrefix(false);
-      L.tileLayer(TILE_URL, {
-        attribution: ATTRIBUTION,
+      // The credit is drawn by React below: Leaflet's own control writes its text as HTML.
+      const created = L.map(container.current, {
         maxZoom: MAX_ZOOM,
-        // The site's headers require a CORS image (COEP) and send no referrer, which OpenStreetMap's tile policy asks for.
-        crossOrigin: 'anonymous',
-        referrerPolicy: 'strict-origin-when-cross-origin',
-      }).addTo(created);
+        attributionControl: false,
+      }).setView([25.0, 49.8], 7);
       created.on('click', () => {
         select.current(null);
       });
@@ -82,6 +88,54 @@ export function LocationsMap({
       markers.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const shown = map.current;
+    if (!ready || shown === null) {
+      return;
+    }
+    let cancelled = false;
+    let removeTiles = (): void => undefined;
+    void Promise.all([import('leaflet'), openMapTilesSession(language)]).then(([L, session]) => {
+      if (cancelled || session === null) {
+        return;
+      }
+      const tiles = L.tileLayer(mapTileUrl(session), {
+        maxZoom: MAX_ZOOM,
+        // The site's headers require a CORS image (COEP).
+        crossOrigin: 'anonymous',
+        referrerPolicy: REFERRER_POLICY,
+      }).addTo(shown);
+      let latestRead = 0;
+      const refreshCopyright = (): void => {
+        latestRead += 1;
+        const read = latestRead;
+        const bounds = shown.getBounds();
+        void readMapCopyright(session, {
+          zoom: shown.getZoom(),
+          north: bounds.getNorth(),
+          south: bounds.getSouth(),
+          east: bounds.getEast(),
+          west: bounds.getWest(),
+        }).then((text) => {
+          if (!cancelled && read === latestRead && text !== null) {
+            setCopyright(text);
+          }
+        });
+      };
+      shown.on('moveend', refreshCopyright);
+      refreshCopyright();
+      setTilesShown(true);
+      removeTiles = () => {
+        shown.off('moveend', refreshCopyright);
+        tiles.remove();
+      };
+    });
+    return () => {
+      cancelled = true;
+      removeTiles();
+    };
+  }, [ready, language]);
 
   useEffect(() => {
     if (!ready || map.current === null || markers.current === null) {
@@ -156,6 +210,13 @@ export function LocationsMap({
   }, [ready, placed, selectedId]);
 
   return (
-    <div ref={container} className="locations-map" dir="ltr" role="region" aria-label={label} />
+    <div className="locations-map-frame">
+      <div ref={container} className="locations-map" dir="ltr" role="region" aria-label={label} />
+      {tilesShown && (
+        <p className="locations-map__credit" dir="ltr">
+          Google Maps{copyright === '' ? '' : ` · ${copyright}`}
+        </p>
+      )}
+    </div>
   );
 }
