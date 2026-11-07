@@ -6,11 +6,12 @@ import { defineConfig } from 'vitest/config';
 // TASK-078 (CTL-12): the SPA's response headers. The deployed host serves the production build with exactly these
 // (endpoint-hardening.md §3.2); `vite preview` serves it with them too, which is what the header scan runs against. The bundle
 // loads only its own scripts, styles and fonts and calls only its own origin's /api, so the policy allows only 'self', and
-// the dashboard map's tile images from OpenStreetMap.
+// what the dashboard map needs: OpenFreeMap's host for its style, tiles, fonts and icons, which it fetches and draws from data:
+// and blob: images, and its worker from this origin.
 // The dev server sets none: Vite's hot reload needs inline scripts.
 const SPA_SECURITY_HEADERS = {
   'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; font-src 'self'; connect-src 'self'; " +
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://tiles.openfreemap.org; worker-src 'self'; " +
     "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',

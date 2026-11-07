@@ -68,7 +68,7 @@ The rate limiter runs after authentication, so it knows the user, and before aut
 
 ### 3.2 The SPA's header set
 
-The SPA's production build is served with the same nine headers, but its CSP allows its own origin: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. The bundle has no inline script or style tag (React sets `style` through the DOM, which CSP allows). The set is in `src/frontend/vite.config.ts`, applied to `vite preview`, which served the build for the scans. The deployed host must serve the same set (F-3). The dev server sets none, because Vite's hot reload injects inline scripts.
+The SPA's production build is served with the same nine headers, but its CSP allows its own origin: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://tiles.openfreemap.org; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. The bundle has no inline script or style tag (React sets `style` through the DOM, which CSP allows). The set is in `src/frontend/vite.config.ts`, applied to `vite preview`, which served the build for the scans. The deployed host must serve the same set (F-3). The dev server sets none, because Vite's hot reload injects inline scripts.
 
 ### 3.3 Configuration
 
