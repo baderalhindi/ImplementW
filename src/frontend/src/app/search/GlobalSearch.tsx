@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -69,24 +70,22 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
   const id = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const [text, setText] = useState('');
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [collapsed, setCollapsed] = useState(true);
-  const [focusRequest, setFocusRequest] = useState(0);
 
   const wanted = text.trim();
-  const reveal = (): void => {
-    setCollapsed(false);
-    setFocusRequest((current) => current + 1);
-  };
-
-  useEffect(() => {
-    if (focusRequest > 0) {
-      inputRef.current?.focus();
-    }
-  }, [focusRequest]);
+  const isCollapsed = collapsed && text === '';
+  const reveal = useCallback((): void => {
+    // The box cannot take the focus until it has stopped being hidden.
+    flushSync(() => {
+      setCollapsed(false);
+    });
+    inputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -173,7 +172,7 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
     return () => {
       document.removeEventListener('keydown', focusOnShortcut);
     };
-  }, []);
+  }, [reveal]);
 
   useEffect(() => {
     if (!open) {
@@ -195,6 +194,7 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
     setQuery('');
     setOpen(false);
     setActiveIndex(-1);
+    setCollapsed(true);
     inputRef.current?.blur();
     void navigate(option.to);
   };
@@ -205,8 +205,11 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
         event.preventDefault();
         setOpen(false);
       } else {
-        setText('');
-        setCollapsed(true);
+        flushSync(() => {
+          setText('');
+          setCollapsed(true);
+        });
+        toggleRef.current?.focus();
       }
       setActiveIndex(-1);
     } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -238,27 +241,20 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
         : t('common.globalSearch.noResults', { text: wanted });
   }
 
-  if (collapsed && text === '') {
-    return (
-      <div className="global-search global-search--collapsed" ref={containerRef}>
-        <button
-          type="button"
-          className="global-search__toggle"
-          aria-label={t('common.globalSearch.label')}
-          title={t('common.globalSearch.label')}
-          onClick={reveal}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="global-search" ref={containerRef}>
+    <div
+      className={isCollapsed ? 'global-search global-search--collapsed' : 'global-search'}
+      ref={containerRef}
+    >
+      <button
+        ref={toggleRef}
+        type="button"
+        className="global-search__toggle"
+        hidden={!isCollapsed}
+        aria-label={t('common.globalSearch.label')}
+        title={t('common.globalSearch.label')}
+        onClick={reveal}
+      />
       <svg className="global-search__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <circle cx="11" cy="11" r="7" />
         <path d="m20 20-3.5-3.5" />

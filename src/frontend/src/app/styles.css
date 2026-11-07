@@ -596,69 +596,86 @@ h3 {
   background: transparent;
 }
 
+/* Takes only what the breadcrumb leaves, so an opening search shrinks before the breadcrumb wraps. */
 .topbar__actions {
   display: flex;
+  flex: 1 1 0;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
+  min-inline-size: min-content;
 }
 
+/* Opens away from the buttons beside it, so they stay where they are. */
 .global-search {
   position: relative;
   flex: 0 1 26rem;
   min-inline-size: 12rem;
-  margin-inline-start: auto;
+  transition:
+    flex-basis 200ms ease,
+    min-inline-size 200ms ease;
 }
 
 .global-search--collapsed {
-  flex: 0 0 auto;
-  width: auto;
+  flex: 0 0 2.75rem;
+  min-inline-size: 2.75rem;
 }
 
 .global-search__toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 2.5rem;
-  block-size: 2.5rem;
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
   background: transparent;
-  border: 1px solid var(--color-border, #d9dee3);
-  border-radius: 0.5rem;
-  color: inherit;
   cursor: pointer;
 }
 
-.global-search__toggle svg {
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
+.global-search__toggle:hover {
+  background: var(--color-surface);
 }
 
 .global-search__icon {
   position: absolute;
   inset-block-start: 50%;
-  inset-inline-start: var(--space-3);
-  inline-size: 1.1rem;
-  block-size: 1.1rem;
+  inset-inline-start: 0.75rem;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
   transform: translateY(-50%);
   fill: none;
   stroke: var(--color-text-muted);
   stroke-width: 2;
   stroke-linecap: round;
   pointer-events: none;
+  transition: stroke 200ms ease;
+}
+
+.global-search--collapsed .global-search__icon {
+  stroke: var(--color-text);
 }
 
 .global-search__input {
   inline-size: 100%;
   min-block-size: 2.5rem;
   padding-block: var(--space-1);
-  padding-inline: calc(var(--space-3) + 1.6rem) var(--space-3);
+  padding-inline: calc(0.75rem + 1.75rem) var(--space-3);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius);
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  transition: opacity 200ms ease;
+}
+
+/* Not [hidden]: it has to keep its box while it fades. Visibility still takes it out of the tab order and the accessibility tree. */
+.global-search--collapsed .global-search__input {
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 200ms ease,
+    visibility 0s linear 200ms;
 }
 
 .global-search__input::placeholder {
@@ -719,23 +736,39 @@ h3 {
   color: var(--color-text-muted);
 }
 
-/* On a phone the search takes its own row under the bar's other controls. */
+@media (prefers-reduced-motion: reduce) {
+  .global-search,
+  .global-search__icon,
+  .global-search__input,
+  .global-search--collapsed .global-search__input {
+    transition: none;
+  }
+}
+
+/* Too narrow for both: the breadcrumb steps aside while the search is open, so the bar keeps its height. */
+@media (max-width: 75rem) {
+  .topbar:has(.global-search:not(.global-search--collapsed)) .breadcrumb {
+    display: none;
+  }
+}
+
+/* On a phone the open search takes its own row under the bar's other controls. */
 @media (max-width: 48rem) {
   .topbar {
     flex-wrap: wrap;
   }
 
-  .topbar__actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    min-inline-size: 0;
-    margin-inline-start: auto;
+  .topbar .topbar__drawer {
+    margin-inline-end: auto;
   }
 
-  .global-search {
+  .topbar__actions {
+    display: contents;
+  }
+
+  .global-search:not(.global-search--collapsed) {
     flex: 1 1 100%;
     order: 1;
-    margin-inline-start: 0;
   }
 }
 
