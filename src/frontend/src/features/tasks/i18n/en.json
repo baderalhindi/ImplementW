@@ -111,8 +111,6 @@
     "other": "Someone else",
     "none": "No owner",
     "find": "Find a person",
-    "userId": "The person's user ID",
-    "userIdHint": "You cannot search for people, so enter the user ID the administrator gave you, such as 3c3c3c3c-0000-4000-8000-000000000103.",
     "hint": "The owner must hold a role on this project. The server checks this when you save."
   },
   "form": {

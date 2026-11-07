@@ -302,3 +302,23 @@ export interface ExternalEntityCreateRequest {
 }
 
 export type ExternalEntityUpdateRequest = Omit<ExternalEntityCreateRequest, 'code'>;
+
+export interface PersonLookupQuery {
+  q?: string | undefined;
+  userType?: UserType | undefined;
+  externalEntityId?: string | undefined;
+  projectId?: string | undefined;
+  pageSize?: number | undefined;
+}
+
+/** A person a field may name: who they are, not how to reach them. */
+export interface PersonMatch {
+  id: string;
+  displayName: string;
+  username: string;
+  userType?: UserType;
+  departmentId?: string | null;
+  externalEntityId?: string | null;
+  roles?: { ar: string; en: string }[];
+  unit?: { ar: string; en: string } | null;
+}

@@ -4,7 +4,7 @@ import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
-import { assigneeOf, assigneeValue, useUserSearch } from '@/features/tasks/assignee.ts';
+import { assigneeOf, assigneeValue } from '@/features/tasks/assignee.ts';
 import { AssigneeField } from '@/features/tasks/components/AssigneeField.tsx';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { type ApiResponse } from '@/shared/api/httpClient.ts';
@@ -70,14 +70,13 @@ function RiskForm({
   const { t, language } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(riskProblemMessage);
-  const canSearch = useUserSearch() ?? false;
   const today = todayUtc();
   const before = editing?.data ?? null;
   const [values, setValues] = useState<RiskFormValues>(() =>
     before === null ? emptyRiskForm(today) : riskFormValuesOf(before),
   );
   const [owner, setOwner] = useState(() => assigneeValue(before?.ownerUserId ?? null));
-  const ownerChoice = assigneeOf(owner, canSearch);
+  const ownerChoice = assigneeOf(owner);
   const fields = useFieldErrors(
     {
       ...checkRiskForm(values, today),
@@ -187,8 +186,6 @@ function RiskForm({
           project={project}
           knownUserIds={knownUserIds}
           value={owner}
-          canSearch={canSearch}
-          name="ownerUserId"
           onChange={(value) => {
             setOwner(value);
             fields.clearServer();

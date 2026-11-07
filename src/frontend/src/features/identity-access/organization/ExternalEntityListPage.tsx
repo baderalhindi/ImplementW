@@ -20,10 +20,9 @@ import {
   type ExternalEntityDetail,
   type ExternalEntityStatus,
   type ExternalEntitySummary,
-  type UserSummary,
 } from '../api/types.ts';
 import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
-import { UserPicker } from '../components/UserPicker.tsx';
+import { type PickedUser, UserPicker } from '../components/UserPicker.tsx';
 import { useUserNames } from '../assignments/useUserNames.ts';
 import {
   checkText,
@@ -383,7 +382,7 @@ function ExternalEntityForm({ editing, onClose, onSaved }: ExternalEntityFormPro
 interface ExternalEntityFieldsProps {
   current: ExternalEntityDetail | null;
   etag: string | null;
-  initialSponsor: UserSummary | null;
+  initialSponsor: PickedUser | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -403,7 +402,7 @@ function ExternalEntityFields({
   const [nameAr, setNameAr] = useState(current?.name.ar ?? '');
   const [nameEn, setNameEn] = useState(current?.name.en ?? '');
   const [entityTypeItemId, setEntityTypeItemId] = useState(current?.entityTypeItemId ?? '');
-  const [sponsor, setSponsor] = useState<UserSummary | null>(initialSponsor);
+  const [sponsor, setSponsor] = useState<PickedUser | null>(initialSponsor);
 
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();

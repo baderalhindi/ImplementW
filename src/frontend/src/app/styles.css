@@ -1462,6 +1462,12 @@ select.field__input {
   padding-inline-start: var(--space-4);
 }
 
+.picker__detail {
+  display: block;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, inherit);
+}
+
 .picker__selected {
   display: flex;
   flex-wrap: wrap;

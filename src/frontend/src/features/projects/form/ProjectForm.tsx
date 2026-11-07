@@ -8,7 +8,6 @@ import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { RadioGroupField, SelectField, TextAreaField, TextField } from '@/shared/ui/FormFields.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
-import { type UserSummary } from '@/features/identity-access/api/types.ts';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
 
@@ -454,7 +453,7 @@ function FollowUpOwnerField({
       userType="INTERNAL"
       hint={t('projects.form.followUpOwnerHint')}
       error={error}
-      onChange={(user: UserSummary | null) => {
+      onChange={(user) => {
         onChange(user?.id ?? '');
         setChanging(false);
       }}

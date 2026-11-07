@@ -1,8 +1,7 @@
 import { type ReactElement, type SyntheticEvent, useState } from 'react';
 import { Link } from 'react-router';
 
-import { type UserSummary } from '@/features/identity-access/api/types.ts';
-import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
+import { type PickedUser, UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
 import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -64,7 +63,7 @@ function AssignManagerBody({
   const [choice, setChoice] = useState<ManagerChoice>(
     current !== null && current !== user.id ? 'current' : 'self',
   );
-  const [other, setOther] = useState<UserSummary | null>(null);
+  const [other, setOther] = useState<PickedUser | null>(null);
 
   const missing = missingFields(valuesOf(project), [
     ...SUBMISSION_REQUIRED_FIELDS,

@@ -146,6 +146,13 @@ async function emulatedNames(
     }
     return { body: { users } };
   }
+  if (request.path === '/person-lookups') {
+    const route = find('GET', '/users');
+    if (route === undefined) {
+      return { body: { items: [], page: 1, pageSize: 10, totalCount: 0 } };
+    }
+    return route.handler({ ...request, path: '/users' });
+  }
   if (request.path === '/organization-units') {
     const unit = (row: Record<string, unknown>, isActive: boolean) => ({
       id: row.id,

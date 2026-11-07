@@ -3,7 +3,7 @@ import { type ReactElement, type SyntheticEvent, useRef, useState } from 'react'
 import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
-import { assigneeOf, assigneeValue, useUserSearch } from '@/features/tasks/assignee.ts';
+import { assigneeOf, assigneeValue } from '@/features/tasks/assignee.ts';
 import { AssigneeField } from '@/features/tasks/components/AssigneeField.tsx';
 import { type ApiResponse } from '@/shared/api/httpClient.ts';
 import { useFieldErrors } from '@/shared/forms/useFieldErrors.ts';
@@ -17,7 +17,7 @@ import { concernFieldMessage, concernProblemMessage, isStale } from '../problems
 
 interface AssignConcernDialogProps {
   concern: ApiResponse<ConcernDetail>;
-  project: Pick<ProjectSummary, 'projectManagerUserId'>;
+  project: Pick<ProjectSummary, 'id' | 'projectManagerUserId'>;
   user: SessionUser;
   onClose: () => void;
   onDone: (concern: ConcernDetail) => void;
@@ -53,9 +53,8 @@ function AssignForm({
   const { t } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(concernProblemMessage);
-  const canSearch = useUserSearch() ?? false;
   const [assignee, setAssignee] = useState(() => assigneeValue(concern.assigneeUserId));
-  const choice = assigneeOf(assignee, canSearch);
+  const choice = assigneeOf(assignee);
   const fields = useFieldErrors(
     { assigneeUserId: choice.userId === null ? (choice.code ?? 'REQUIRED') : null },
     formRef,
@@ -88,8 +87,6 @@ function AssignForm({
         project={project}
         knownUserIds={[concern.assigneeUserId, concern.raisedByUserId]}
         value={assignee}
-        canSearch={canSearch}
-        name="assigneeUserId"
         onChange={(value) => {
           setAssignee(value);
           fields.clearServer();

@@ -70,7 +70,6 @@ function idCode(value: string, required: boolean): string | null {
 interface CheckContext {
   /** Whether the chosen type's schema names a source record; undefined when it is not known (a typed id). */
   needsTarget: boolean | undefined;
-  canSearch: boolean;
   /** Issuing as well as saving: the people and a due date not before `today` are required. */
   issuing: boolean;
   /** Today as the API dates it, `yyyy-MM-dd` (UTC). */
@@ -79,8 +78,8 @@ interface CheckContext {
 
 /** Each field's code: REQUIRED, MALFORMED, MAX_LENGTH, or NOT_ALLOWED for a due date in the past when issuing. */
 export function checkRequestForm(values: RequestFormValues, context: CheckContext): FieldCodes {
-  const responder = assigneeOf(values.responder, context.canSearch);
-  const reviewer = assigneeOf(values.reviewer, context.canSearch);
+  const responder = assigneeOf(values.responder);
+  const reviewer = assigneeOf(values.reviewer);
   const instructions = values.instructions.trim();
   return {
     externalEntityId: idCode(values.externalEntityId, true),
@@ -110,7 +109,7 @@ export function checkRequestForm(values: RequestFormValues, context: CheckContex
 /** The request's own fields as the API takes them (R-5); the source only where the schema may name one. */
 export function toRequestBody(
   values: RequestFormValues,
-  context: Pick<CheckContext, 'needsTarget' | 'canSearch'>,
+  context: Pick<CheckContext, 'needsTarget'>,
   language: 'ar' | 'en',
 ): ExternalUpdateRequestRequest {
   const target = values.targetId.trim();
@@ -118,8 +117,8 @@ export function toRequestBody(
     contributionTypeItemId: values.contributionTypeItemId.trim().toLowerCase(),
     targetId: context.needsTarget === false || target === '' ? null : target.toLowerCase(),
     instructions: { text: values.instructions.trim(), language },
-    responsibleUserId: assigneeOf(values.responder, context.canSearch).userId,
-    reviewerUserId: assigneeOf(values.reviewer, context.canSearch).userId,
+    responsibleUserId: assigneeOf(values.responder).userId,
+    reviewerUserId: assigneeOf(values.reviewer).userId,
     dueDate: values.dueDate === '' ? null : values.dueDate,
   };
 }

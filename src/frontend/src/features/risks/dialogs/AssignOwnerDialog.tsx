@@ -3,7 +3,7 @@ import { type ReactElement, type SyntheticEvent, useRef, useState } from 'react'
 import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
-import { assigneeOf, assigneeValue, useUserSearch } from '@/features/tasks/assignee.ts';
+import { assigneeOf, assigneeValue } from '@/features/tasks/assignee.ts';
 import { AssigneeField } from '@/features/tasks/components/AssigneeField.tsx';
 import { type ApiResponse } from '@/shared/api/httpClient.ts';
 import { useFieldErrors } from '@/shared/forms/useFieldErrors.ts';
@@ -52,9 +52,8 @@ function AssignForm({
   const { t, language } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(riskProblemMessage);
-  const canSearch = useUserSearch() ?? false;
   const [owner, setOwner] = useState(() => assigneeValue(risk.ownerUserId));
-  const chosen = assigneeOf(owner, canSearch);
+  const chosen = assigneeOf(owner);
   const fields = useFieldErrors({ ownerUserId: chosen.code }, formRef, riskFieldMessage);
 
   const submit = async (event: SyntheticEvent) => {
@@ -86,8 +85,6 @@ function AssignForm({
         project={project}
         knownUserIds={[...knownUserIds, risk.ownerUserId]}
         value={owner}
-        canSearch={canSearch}
-        name="ownerUserId"
         onChange={(value) => {
           setOwner(value);
           fields.clearServer();

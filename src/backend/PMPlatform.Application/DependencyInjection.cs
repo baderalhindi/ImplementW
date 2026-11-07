@@ -120,6 +120,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRoleDirectory, UserRoleDirectory>();
         services.AddScoped<IOrganizationDirectory, OrganizationDirectory>();
         services.AddScoped<IDisplayNameService, DisplayNameService>();
+        services.AddScoped<IPersonLookupService, PersonLookupService>();
         services.AddScoped<IUserLookup, UserLookup>();
         services.AddScoped<IPermissionProfileDirectory, PermissionProfileDirectory>();
         services.AddScoped<IImportRegister, DepartmentImportRegister>();

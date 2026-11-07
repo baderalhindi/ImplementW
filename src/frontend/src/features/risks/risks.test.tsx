@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { type Language, translate } from '@/shared/i18n/i18n.ts';
+import { pickPerson } from '@/test/personPicker.ts';
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
 import {
   ENTITY_USER_ID,
@@ -591,7 +592,7 @@ describe('MOD-030 to MOD-034', () => {
     const dialog = await openDialog(en('risks.actions.assignOwner'), en('risks.owner.title'));
 
     await userEvent.click(within(dialog).getByRole('radio', { name: en('tasks.owner.other') }));
-    await userEvent.type(within(dialog).getByRole('textbox', { name: /user ID/ }), OTHER_PERSON_ID);
+    await pickPerson(api, dialog, OTHER_PERSON_ID);
     await press(dialog, en('risks.owner.confirm'));
 
     expect(await within(dialog).findByText(en('risks.problems.ownerNotEligible'))).toBeTruthy();

@@ -129,9 +129,7 @@
     "self": "Me ({name})",
     "other": "Someone else",
     "later": "Name later (before issuing)",
-    "find": "Find a person",
-    "userId": "User ID",
-    "userIdHint": "Enter the person's user ID. You cannot search people; the platform checks whether they are eligible."
+    "find": "Find a person"
   },
   "entity": {
     "unknown": "Entity {id}"
@@ -321,13 +319,13 @@
     "notEditable": "Only a draft can be edited.",
     "draftNote": "A draft is not visible to the entity. Save it to finish later, or save and issue it now.",
     "entityHint": "The entity asked for the update; by default, the project's delivering entity.",
-    "entityIdHint": "You cannot list entities: enter the entity's ID.",
+    "entityIdHint": "You cannot read the entities, so ask AHDA to issue this request.",
     "entityFixed": "A request's entity does not change.",
     "typeHint": "What the entity is asked for. Its schema decides the fields they answer.",
-    "typeIdHint": "You cannot list the contribution types: enter the type's ID.",
+    "typeIdHint": "You cannot read the contribution types, so ask AHDA to issue this request.",
     "taskHint": "The task whose progress the entity reports. Only an open task without subtasks can take a percentage.",
     "sourceUnknownHint": "The record the answer applies to, if the type needs one.",
-    "taskIdHint": "You cannot list this project's tasks: enter the task's ID.",
+    "taskIdHint": "You cannot read this project's tasks, so ask AHDA to issue this request.",
     "instructionsHint": "What the entity should answer and how. The entity reads this text.",
     "dueDateHint": "Required to issue; not before today.",
     "projectManagerOption": "{name} (project manager)",

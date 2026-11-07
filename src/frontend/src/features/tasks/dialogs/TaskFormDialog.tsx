@@ -15,7 +15,7 @@ import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 
 import { tasksApi } from '../api/tasksApi.ts';
 import { type ProjectTaskDetail } from '../api/types.ts';
-import { assigneeOf, assigneeValue, useUserSearch } from '../assignee.ts';
+import { assigneeOf, assigneeValue } from '../assignee.ts';
 import { AssigneeField } from '../components/AssigneeField.tsx';
 import { isStale, taskFieldMessage, taskProblemMessage } from '../problems.ts';
 import {
@@ -101,7 +101,6 @@ function TaskForm({
   const { t, language } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(taskProblemMessage);
-  const canSearch = useUserSearch() ?? false;
   const parent = mode.kind === 'subtask' ? mode.parent : null;
   const before = editing?.data ?? null;
   const [values, setValues] = useState<TaskFormValues>(() =>
@@ -116,7 +115,7 @@ function TaskForm({
         : emptyTaskForm('', ''),
   );
   const [owner, setOwner] = useState(() => assigneeValue(before?.assigneeUserId ?? null));
-  const assignee = assigneeOf(owner, canSearch);
+  const assignee = assigneeOf(owner);
   const fields = useFieldErrors(
     { ...checkTaskForm(values), ...(before === null ? { assigneeUserId: assignee.code } : {}) },
     formRef,
@@ -266,7 +265,6 @@ function TaskForm({
           project={project}
           knownUserIds={board.tasks.map((task) => task.assigneeUserId)}
           value={owner}
-          canSearch={canSearch}
           onChange={(value) => {
             setOwner(value);
             fields.clearServer();

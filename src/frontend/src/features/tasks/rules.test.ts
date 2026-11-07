@@ -279,15 +279,12 @@ describe('the forms', () => {
     expect(checkPercent('62.5')).toBeNull();
   });
 
-  test('an owner given by user id must be one; someone else must be chosen', () => {
+  test('someone else must be chosen', () => {
     const other = { ...assigneeValue(null), choice: 'other' };
-    expect(assigneeOf(assigneeValue(null), false)).toEqual({ userId: null, code: null });
-    expect(assigneeOf(other, false).code).toBe('REQUIRED');
-    expect(assigneeOf({ ...other, typedId: 'sami' }, false).code).toBe('MALFORMED');
-    expect(assigneeOf({ ...other, typedId: ` ${OTHER_PERSON_ID.toUpperCase()} ` }, false)).toEqual({
-      userId: OTHER_PERSON_ID,
-      code: null,
-    });
-    expect(assigneeOf(other, true).code).toBe('REQUIRED');
+    expect(assigneeOf(assigneeValue(null))).toEqual({ userId: null, code: null });
+    expect(assigneeOf(other).code).toBe('REQUIRED');
+    expect(
+      assigneeOf({ ...other, found: { id: OTHER_PERSON_ID, displayName: 'Sami', username: 'sami' } }),
+    ).toEqual({ userId: OTHER_PERSON_ID, code: null });
   });
 });

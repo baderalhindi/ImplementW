@@ -1,7 +1,6 @@
 import { type ReactElement, type SyntheticEvent, useRef, useState } from 'react';
 
-import { type UserSummary } from '@/features/identity-access/api/types.ts';
-import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
+import { type PickedUser, UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
 import {
   checkText,
   optionalText,
@@ -47,7 +46,7 @@ function DelegateForm({ onClose, onDone }: Omit<DelegateDialogProps, 'open'>): R
   const { t } = useI18n();
   const save = useSaveAction(approvalProblemMessage);
   const formRef = useRef<HTMLFormElement>(null);
-  const [delegate, setDelegate] = useState<UserSummary | null>(null);
+  const [delegate, setDelegate] = useState<PickedUser | null>(null);
   const [routingKey, setRoutingKey] = useState('');
   const [validFrom, setValidFrom] = useState('');
   const [validTo, setValidTo] = useState('');

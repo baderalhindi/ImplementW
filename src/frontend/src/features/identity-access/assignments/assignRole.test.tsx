@@ -159,7 +159,7 @@ describe('MOD-081 and MOD-082 assign role', () => {
     await user.click(await within(dialog).findByRole('button', { name: /Omar Sponsor/ }));
     expect(
       api
-        .requestsTo('GET', /^\/users$/)
+        .requestsTo('GET', /^\/person-lookups$/)
         .at(-1)
         ?.query.get('userType'),
     ).toBe('INTERNAL');

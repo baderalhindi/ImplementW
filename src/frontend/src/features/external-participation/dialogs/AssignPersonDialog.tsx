@@ -2,7 +2,7 @@ import { type ReactElement, type SyntheticEvent, useRef, useState } from 'react'
 
 import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
-import { assigneeOf, assigneeValue, useUserSearch } from '@/features/tasks/assignee.ts';
+import { assigneeOf, assigneeValue } from '@/features/tasks/assignee.ts';
 import { useFieldErrors } from '@/shared/forms/useFieldErrors.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
@@ -56,12 +56,11 @@ function AssignForm({
   const { t } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(participationProblemMessage);
-  const canSearch = useUserSearch() ?? false;
   const field = role === 'responder' ? 'responsibleUserId' : 'reviewerUserId';
   const current =
     role === 'responder' ? request.responsibleUserId : (request.reviewerUserId ?? null);
   const [person, setPerson] = useState(() => assigneeValue(current));
-  const choice = assigneeOf(person, canSearch);
+  const choice = assigneeOf(person);
   const fields = useFieldErrors(
     { [field]: choice.userId === null ? (choice.code ?? 'REQUIRED') : null },
     formRef,
@@ -101,7 +100,6 @@ function AssignForm({
         userType={role === 'responder' ? 'EXTERNAL' : 'INTERNAL'}
         user={user}
         value={person}
-        canSearch={canSearch}
         allowNone={false}
         hint={t(
           role === 'responder'
