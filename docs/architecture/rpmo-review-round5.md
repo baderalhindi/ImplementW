@@ -17,7 +17,7 @@ What the platform does about *RPMO Platform — Review Round 5*, where it depart
 | 9, 10 | Completion rate | Done |
 | 11 | Map providers | Answered: `map-provider-comparison.md`. Nothing changed in the code |
 | 12 | Viewer | Starting proposal applied; list for confirmation in §7 |
-| 13 | Governance profile | Tooltip added; answer in §8 |
+| 13 | Governance profile | Tooltip added, then removed: the client asked for an answer, not a platform change. Answer in §8 |
 | 14 | Top bar | Done. Create is a role setting, off for R02 and R03 |
 | 15 | Risk matrix for readers | Done |
 | 16–18, 20 | Wording | Done. Also: the approvals inbox named requests by code and roles by a short ID |

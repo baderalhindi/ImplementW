@@ -6102,31 +6102,6 @@ tr[data-flagged='true'] {
   margin-block: 0.5rem;
 }
 
-/* An info icon beside a field, with its explanation below it. */
-.info-tip {
-  display: inline-block;
-}
-
-.info-tip__button {
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
-  border: 1px solid var(--color-border, #d9dee3);
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
-  font-weight: 600;
-  cursor: help;
-}
-
-.info-tip__text {
-  display: block;
-  margin-block-start: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border, #d9dee3);
-  border-radius: 0.5rem;
-}
-
 /* Review round 5, item 2: row selection and what acts on it. */
 .cell--select {
   inline-size: 2.5rem;

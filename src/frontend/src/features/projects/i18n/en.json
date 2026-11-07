@@ -132,9 +132,7 @@
     "legacyReferenceHint": "The project's number in RPMO's register, such as AHP-000001. A re-import matches on it.",
     "followUpOwnerHint": "The RPMO staff member who follows the project up.",
     "changeOwner": "Change",
-    "clearOwner": "Remove",
-    "governanceProfileInfoLabel": "What is the governance profile?",
-    "governanceProfileInfo": "The governance profile sets how closely AHDA controls this project: which details are required before submission and which plans need AHDA's approval. AHDA confirms it at review."
+    "clearOwner": "Remove"
   },
   "workspace": {
     "revision": "Revision {revision}",

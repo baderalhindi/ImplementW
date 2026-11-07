@@ -7,7 +7,6 @@ import { type SessionUser } from '@/features/identity-access/session/sessionApi.
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import {
   RadioGroupField,
-  InfoTip,
   SelectField,
   TextAreaField,
   AmountField,
@@ -201,10 +200,6 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           }
           onChange={setter('classificationItemId')}
           error={errorOf('classificationItemId')}
-        />
-        <InfoTip
-          label={t('projects.form.governanceProfileInfoLabel')}
-          text={t('projects.form.governanceProfileInfo')}
         />
         <SelectField
           label={t('projects.fields.governanceProfile')}
