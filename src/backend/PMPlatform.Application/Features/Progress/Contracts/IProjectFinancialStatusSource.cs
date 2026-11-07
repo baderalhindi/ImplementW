@@ -8,6 +8,6 @@ namespace PMPlatform.Application.Features.Progress.Contracts;
 /// </summary>
 public interface IProjectFinancialStatusSource
 {
-    /// <summary>The status as WF-14 rates it now; UNKNOWN when it cannot be rated.</summary>
-    public Task<HealthStatus> ReadAsync(Guid projectId, CancellationToken cancellationToken);
+    /// <summary>The status as WF-14 rates it now; UNKNOWN when it cannot rate what was reported; null when nothing was reported.</summary>
+    public Task<HealthStatus?> ReadAsync(Guid projectId, CancellationToken cancellationToken);
 }

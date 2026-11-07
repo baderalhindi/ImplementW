@@ -20,7 +20,7 @@ internal sealed class ProgressInputsReader(
         IReadOnlyList<WorkBreakdownItem> items = await workBreakdown.ListAsync(projectId, cancellationToken).ConfigureAwait(false);
         ActiveBaselinePlan? plan = await baselines.FindAsync(projectId, cancellationToken).ConfigureAwait(false);
         ScheduleHealthStatusDetail? schedule = await scheduleHealth.GetAsync(projectId, cancellationToken).ConfigureAwait(false);
-        HealthStatus financial = await financialStatus.ReadAsync(projectId, cancellationToken).ConfigureAwait(false);
+        HealthStatus? financial = await financialStatus.ReadAsync(projectId, cancellationToken).ConfigureAwait(false);
         ProjectMonthlySnapshot? project = await declared.ReadAsync(projectId, cancellationToken).ConfigureAwait(false);
         return new ProgressInputs(
             [.. items.Select(i => new WorkItemProgress(i.Id, i.ParentId, i.PlannedDurationDays, i.ActualPercentComplete ?? 0))],
