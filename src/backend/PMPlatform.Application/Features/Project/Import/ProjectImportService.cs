@@ -487,6 +487,7 @@ internal sealed class ProjectImportService(
             CityItemId = row.CityItemId,
             ActivatedAt = started ? now : null,
             ClosedAt = row.Status == ProjectLifecycleState.Closed ? now : null,
+            IsCanceled = row.IsCanceled,
             StrategicPortfolioItemId = row.StrategicPortfolioItemId,
             StrategicInitiativeItemId = row.StrategicInitiativeItemId,
             PriorityItemId = row.PriorityItemId,

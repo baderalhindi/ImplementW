@@ -28,7 +28,7 @@ namespace PMPlatform.Api.Controllers;
 [ApiController]
 [Route("api/v1/sessions")]
 [Tags("IdentityAccess")]
-public sealed class SessionsController(IAuthenticationService authentication, IdentityVerificationPolicy identityVerificationPolicy, IAuthorizationEngine engine)
+public sealed class SessionsController(IAuthenticationService authentication, IdentityVerificationPolicy identityVerificationPolicy, IAuthorizationEngine engine, IRoleDirectory roles)
     : ControllerBase
 {
     private const string CurrentSessionPath = "/api/v1/sessions/current";
@@ -126,6 +126,13 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
 
         Guid userId = Guid.Parse(User.FindFirstValue(SessionTokenClaims.Subject)!);
         return PasswordUpdateResponse(await authentication.ChangeOwnPasswordAsync(userId, request.CurrentPassword!, request.NewPassword!, cancellationToken));
+    }
+
+    /// <summary>Whether any role the person holds keeps Create in the top bar; someone with no role has nothing to create.</summary>
+    private async Task<bool> ShowsCreateInHeaderAsync(IEnumerable<EffectiveGrant> grants, CancellationToken cancellationToken)
+    {
+        HashSet<string> held = [.. grants.Select(g => g.RoleCode)];
+        return (await roles.ListRolesAsync(cancellationToken)).Any(r => held.Contains(r.Code) && r.ShowCreateInHeader);
     }
 
     /// <summary>Which sign-in methods this environment offers, so the sign-in page offers only what can work.</summary>
@@ -297,7 +304,8 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
         return Ok(new EffectivePermissionsDetail([.. grants
             .GroupBy(g => g.PermissionCode, StringComparer.Ordinal)
             .OrderBy(g => g.Key, StringComparer.Ordinal)
-            .Select(g => new EffectivePermissionDetail(g.Key, [.. g.Select(grant => grant.Scope).Distinct().Order()]))]));
+            .Select(g => new EffectivePermissionDetail(g.Key, [.. g.Select(grant => grant.Scope).Distinct().Order()]))],
+            await ShowsCreateInHeaderAsync(grants, cancellationToken)));
     }
 
     /// <summary>

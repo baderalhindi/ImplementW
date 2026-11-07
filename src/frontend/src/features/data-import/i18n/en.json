@@ -107,7 +107,7 @@
     "OUT_OF_RANGE": "Out of the accepted range.",
     "INVALID_CHARACTER": "Contains a character that is not accepted.",
     "COLUMN_MISSING": "This required column is missing from the first row.",
-    "COLUMN_UNKNOWN": "Column not recognised: use the template's column names.",
+    "COLUMN_UNKNOWN": "Column not recognized: use the template's column names.",
     "COLUMN_DUPLICATE": "This column appears twice.",
     "NO_ROWS": "The workbook has no rows under the column names.",
     "DUPLICATE_IN_FILE": "This legacy ID is already used by an earlier row.",

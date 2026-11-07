@@ -104,6 +104,7 @@ export interface RoleSummary {
   isActive: boolean;
   allowedScopes: RoleScope[] | null;
   landingDashboardCode: RoleLandingDashboard | null;
+  showCreateInHeader?: boolean;
 }
 
 /** A new role, with its draft profile: empty, or copying `sourceRoleId`'s published one. */
@@ -115,11 +116,13 @@ export interface RoleCreateRequest {
   allowedScopes: RoleScope[];
   sourceRoleId: string | null;
   landingDashboardCode: RoleLandingDashboard | null;
+  showCreateInHeader?: boolean;
 }
 
 export interface RoleSettingsRequest {
   allowedScopes: RoleScope[];
   landingDashboardCode: RoleLandingDashboard | null;
+  showCreateInHeader?: boolean;
 }
 
 export interface PermissionProfileSummary {

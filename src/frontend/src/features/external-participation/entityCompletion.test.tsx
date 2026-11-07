@@ -9,7 +9,7 @@ import { sessionFor } from '@/test/identityAccessFixtures.ts';
 import { entitySession } from '@/test/projectFixtures.ts';
 
 const en = (key: string, params?: Record<string, string | number>) =>
-  translate('en', key as never, params).replace(/[\u2068\u2069]/g, '');
+  translate('en', key, params).replace(/[\u2068\u2069]/g, '');
 
 const entityApi = () => withDashboards(mockApi(), { catalogue: catalogueFor(['R08'], true) });
 const entity = entitySession;
@@ -24,7 +24,10 @@ describe('an entity against the average (review round 5, item 9)', () => {
     expect(await screen.findByText('73%')).toBeTruthy();
     expect(screen.getByRole('img').getAttribute('aria-label')).toContain('85%');
     expect(
-      document.querySelector('.notice--warning')?.textContent?.replace(/[\u2068\u2069]/g, ''),
+      (document.querySelector('.notice--warning')?.textContent ?? '').replace(
+        /[\u2068\u2069]/g,
+        '',
+      ),
     ).toBe(en('externalParticipation.completion.below', { points: '12' }));
     expect(api.requestsTo('GET', /^\/entity-completion-rates$/)).toEqual([]);
   });

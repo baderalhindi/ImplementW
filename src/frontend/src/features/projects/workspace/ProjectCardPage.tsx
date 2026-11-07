@@ -77,7 +77,11 @@ function CardView({ project }: { project: ProjectDetail }): ReactElement {
       </p>
       <dl className="details">
         <Detail term={t('projects.fields.status')}>
-          <ProjectStatusBadge status={project.status} legacyIntakeDate={project.legacyIntakeDate} />
+          <ProjectStatusBadge
+            isCanceled={project.isCanceled}
+            status={project.status}
+            legacyIntakeDate={project.legacyIntakeDate}
+          />
         </Detail>
         <Detail term={t('projects.fields.department')}>
           {lookups.departmentName(project.departmentId)}

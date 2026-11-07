@@ -14,4 +14,5 @@ public sealed record RoleDetail(
     Guid UpdatedBy,
     bool IsActive = true,
     IReadOnlyList<string>? AllowedScopes = null,
-    string? LandingDashboardCode = null);
+    string? LandingDashboardCode = null,
+    bool ShowCreateInHeader = true);

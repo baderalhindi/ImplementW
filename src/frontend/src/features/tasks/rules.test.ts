@@ -284,7 +284,10 @@ describe('the forms', () => {
     expect(assigneeOf(assigneeValue(null))).toEqual({ userId: null, code: null });
     expect(assigneeOf(other).code).toBe('REQUIRED');
     expect(
-      assigneeOf({ ...other, found: { id: OTHER_PERSON_ID, displayName: 'Sami', username: 'sami' } }),
+      assigneeOf({
+        ...other,
+        found: { id: OTHER_PERSON_ID, displayName: 'Sami', username: 'sami' },
+      }),
     ).toEqual({ userId: OTHER_PERSON_ID, code: null });
   });
 });

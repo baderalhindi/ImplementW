@@ -112,7 +112,7 @@ internal sealed partial class RoleAdministrationService(
 
     /// <summary>A role's settings an administrator may change: its name is <see cref="RenameRoleAsync"/>'s; here its scopes, landing and activation.</summary>
     public async Task<AdministrationResult<Versioned<RoleDetail>>> UpdateSettingsAsync(
-        Guid actorId, Guid roleId, IReadOnlyList<string> allowedScopes, string? landingDashboardCode, uint expectedVersion, CancellationToken cancellationToken)
+        Guid actorId, Guid roleId, IReadOnlyList<string> allowedScopes, string? landingDashboardCode, bool? showCreateInHeader, uint expectedVersion, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(allowedScopes);
         Role? role = await roles.FindRoleForUpdateAsync(roleId, expectedVersion, cancellationToken).ConfigureAwait(false);
@@ -122,9 +122,10 @@ internal sealed partial class RoleAdministrationService(
         }
 
         audit.Stage(RoleEntry(IdentityAccessAuditEvents.RoleSettingsChanged, actorId, role,
-            [AuditAttribute.Of("allowed_scopes", string.Join(',', allowedScopes)), AuditAttribute.Of("landing_dashboard_code", landingDashboardCode)]));
+            [AuditAttribute.Of("allowed_scopes", string.Join(',', allowedScopes)), AuditAttribute.Of("landing_dashboard_code", landingDashboardCode), AuditAttribute.Of("show_create_in_header", (showCreateInHeader ?? role.ShowCreateInHeader) ? "true" : "false")]));
         role.AllowedScopes = [.. allowedScopes];
         role.LandingDashboardCode = landingDashboardCode;
+        role.ShowCreateInHeader = showCreateInHeader ?? role.ShowCreateInHeader;
         return await SaveRoleAsync(actorId, role, cancellationToken).ConfigureAwait(false);
     }
 

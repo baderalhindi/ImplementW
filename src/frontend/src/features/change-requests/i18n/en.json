@@ -148,20 +148,20 @@
     "approval": "Approval",
     "implementation": "Implementation",
     "status": "Status",
-    "appliedCount": "{applied} of {total} authorisations applied",
+    "appliedCount": "{applied} of {total} authorizations applied",
     "explain": {
       "DRAFT": "Not submitted yet: nothing is approved and nothing changes.",
       "SUBMITTED": "Submitted and waiting for AHDA to start the review. Not approved; nothing changes.",
       "UNDER_REVIEW": "Under review in the approval workflow. Not approved yet; nothing changes.",
       "RETURNED": "Returned by its review for correction. Not approved; nothing changes.",
-      "APPROVED": "Approved, not implemented. The approval issued {total} authorisation(s) and changed nothing itself: the change is made only when each one is applied in its module, during the implementation.",
-      "REJECTED": "Rejected: no authorisation was issued and nothing changes. A later proposal is a new request.",
+      "APPROVED": "Approved, not implemented. The approval issued {total} authorization(s) and changed nothing itself: the change is made only when each one is applied in its module, during the implementation.",
+      "REJECTED": "Rejected: no authorization was issued and nothing changes. A later proposal is a new request.",
       "WITHDRAWN": "Withdrawn: nothing changes. A later proposal is a new request.",
-      "IMPLEMENTATION": "Approved and being implemented: {applied} of {total} authorisation(s) applied in their modules. It is implemented only when every one is applied and AHDA marks it implemented.",
-      "IMPLEMENTED": "Approved, and implemented on {date}: every authorisation was applied in its module.",
+      "IMPLEMENTATION": "Approved and being implemented: {applied} of {total} authorization(s) applied in their modules. It is implemented only when every one is applied and AHDA marks it implemented.",
+      "IMPLEMENTED": "Approved, and implemented on {date}: every authorization was applied in its module.",
       "CLOSED": "Approved, implemented on {date}, and closed."
     },
-    "waitingForApplication": "Marking it implemented becomes available when every authorisation below has been applied in its module.",
+    "waitingForApplication": "Marking it implemented becomes available when every authorization below has been applied in its module.",
     "detailsTitle": "Details",
     "revision": "Revision",
     "requestedBy": "Raised by",
@@ -176,11 +176,11 @@
     "noReview": "No review has started yet.",
     "reviewOfRevision": "Review of revision {revision}",
     "youDecide": "You can decide this request here, with the actions above, or from your approval inbox. Approving your stage approves the request only once every stage of its route has approved.",
-    "authorizationsTitle": "Change authorisations",
-    "noAuthorizations": "None. Approval issues one authorisation for each governed commitment the change touches.",
+    "authorizationsTitle": "Change authorizations",
+    "noAuthorizations": "None. Approval issues one authorization for each governed commitment the change touches.",
     "noAuthorizationsApproved": "None: this change touches no commitment a module applies, so it is implemented when AHDA marks it implemented.",
-    "authorizationsNote": "Each authorisation permits one change, pinned to the version approved, and is applied once in its module while the request is in implementation: a rebaseline in the schedule's baselines, a new Approved Budget version in the financials.",
-    "authorizationsCaption": "The authorisations the approval issued"
+    "authorizationsNote": "Each authorization permits one change, pinned to the version approved, and is applied once in its module while the request is in implementation: a rebaseline in the schedule's baselines, a new Approved Budget version in the financials.",
+    "authorizationsCaption": "The authorizations the approval issued"
   },
   "authorization": {
     "scope": "Permits",
@@ -234,11 +234,11 @@
     },
     "startImplementation": {
       "title": "Start implementation",
-      "consequence": "From now on the request's authorisations can be applied in their modules: a rebaseline in the schedule, a new Approved Budget version in the financials. Nothing changes until each is applied there."
+      "consequence": "From now on the request's authorizations can be applied in their modules: a rebaseline in the schedule, a new Approved Budget version in the financials. Nothing changes until each is applied there."
     },
     "markImplemented": {
       "title": "Mark implemented",
-      "consequence": "Every authorisation has been applied in its module. Marking the request implemented records that the approved change is made."
+      "consequence": "Every authorization has been applied in its module. Marking the request implemented records that the approved change is made."
     },
     "close": {
       "title": "Close",
@@ -255,7 +255,7 @@
     "deleted": "The draft change request is deleted.",
     "withdrawn": "The change request is withdrawn.",
     "reviewStarted": "The review has started. The materiality classification is recorded.",
-    "implementationStarted": "The implementation has started. The authorisations can now be applied in their modules.",
+    "implementationStarted": "The implementation has started. The authorizations can now be applied in their modules.",
     "implemented": "The change request is marked implemented.",
     "closed": "The change request is closed.",
     "approve": "Your approval is recorded. The request shows Approved once every stage of its route has approved and the outcome reaches it.",
@@ -272,7 +272,7 @@
     "notEditable": "This request can no longer be changed.",
     "evaluated": "The review has started, so the classification is recorded and shown on the request.",
     "underReview": "The request is under review: withdraw it from the review instead.",
-    "authorizationPending": "An authorisation has not been applied in its module yet, so the change is not implemented.",
+    "authorizationPending": "An authorization has not been applied in its module yet, so the change is not implemented.",
     "approvalPending": "A review of this request is already in progress.",
     "configurationMissing": "AHDA has not published the materiality bands for this project's governance profile, or the approval route for change requests, so the classification cannot be computed yet. The request is saved as a draft.",
     "invalidTransition": "The request is not in a state that allows this.",

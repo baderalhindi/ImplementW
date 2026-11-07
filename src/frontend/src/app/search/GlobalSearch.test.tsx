@@ -10,7 +10,12 @@ import { renderApp } from '@/test/renderApp.tsx';
 import { type GlobalSearchHit, recordPath } from './globalSearchApi.ts';
 
 const en = (key: string, params?: Record<string, string>) => translate('en', key, params);
-const box = () => screen.findByRole('combobox', { name: en('common.globalSearch.label') });
+const box = async () => {
+  await userEvent.click(
+    await screen.findByRole('button', { name: en('common.globalSearch.label') }),
+  );
+  return screen.findByRole('combobox', { name: en('common.globalSearch.label') });
+};
 
 const PROJECT: GlobalSearchHit = {
   type: 'PROJECT',
@@ -130,7 +135,7 @@ describe('the header search', () => {
     });
   });
 
-  test('Escape closes the results, and again clears the box', async () => {
+  test('Escape closes the results, and again clears and collapses the box', async () => {
     renderSignedIn(mockApi());
     const input = await box();
 
@@ -139,7 +144,7 @@ describe('the header search', () => {
     await userEvent.keyboard('{Escape}');
     expect(input.getAttribute('aria-expanded')).toBe('false');
     await userEvent.keyboard('{Escape}');
-    expect((input as HTMLInputElement).value).toBe('');
+    expect(screen.queryByRole('combobox', { name: en('common.globalSearch.label') })).toBeNull();
   });
 
   test('Ctrl+K moves to the box from anywhere', async () => {
@@ -170,5 +175,33 @@ describe('the header search', () => {
     ['DOCUMENT', '/documents/r'],
   ])('%s opens at %s', (type, path) => {
     expect(recordPath({ ...RISK, type, id: 'r', projectId: 'p' })).toBe(path);
+  });
+
+  test('it shows as an icon, opens on a click or on "/" with the cursor in it, and closes empty', async () => {
+    renderApp({ path: '/', session: sessionFor(['R02']) });
+    const toggle = await screen.findByRole('button', { name: en('common.globalSearch.label') });
+    expect(screen.queryByRole('combobox', { name: en('common.globalSearch.label') })).toBeNull();
+
+    await userEvent.click(toggle);
+    const input = await screen.findByRole('combobox', { name: en('common.globalSearch.label') });
+    expect(document.activeElement).toBe(input);
+
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('combobox', { name: en('common.globalSearch.label') })).toBeNull();
+
+    await userEvent.keyboard('/');
+    expect(document.activeElement).toBe(
+      await screen.findByRole('combobox', { name: en('common.globalSearch.label') }),
+    );
+
+    await userEvent.tab();
+    expect(screen.queryByRole('combobox', { name: en('common.globalSearch.label') })).toBeNull();
+  });
+
+  test('it stays open while it holds text', async () => {
+    renderApp({ path: '/', session: sessionFor(['R02']) });
+    await userEvent.type(await box(), 'ab');
+    await userEvent.click(document.body);
+    expect(screen.getByRole('combobox', { name: en('common.globalSearch.label') })).toBeTruthy();
   });
 });

@@ -14,7 +14,8 @@
     "ACTIVE": "نشط",
     "SUSPENDED": "موقوف",
     "COMPLETED": "مكتمل",
-    "CLOSED": "مغلق"
+    "CLOSED": "مغلق",
+    "CANCELED": "ملغى"
   },
   "participationMode": {
     "AHDA_MANAGED": "تديره الهيئة",

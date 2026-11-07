@@ -25,4 +25,7 @@ public sealed class Role : AuditedEntity
 
     /// <summary>The dashboard its holders land on (PORTFOLIO, PROJECT, GOVERNANCE); null lands on none.</summary>
     public string? LandingDashboardCode { get; set; }
+
+    /// <summary>Whether the top bar offers Create to holders of this role. The menu offers it whatever this says, to whoever may create (review round 5, item 14).</summary>
+    public bool ShowCreateInHeader { get; set; } = true;
 }

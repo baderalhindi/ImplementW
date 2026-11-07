@@ -13,7 +13,7 @@ internal sealed class RoleAdministrationRepository(PMPlatformDbContext context) 
     public async Task<IReadOnlyList<RoleSummary>> ListRolesAsync(CancellationToken cancellationToken) =>
         await context.Set<Role>().AsNoTracking()
             .OrderBy(r => r.Code)
-            .Select(r => new RoleSummary(r.Id, r.Code, r.Name, r.IsSystem, r.IsExternalEligible, r.IsActive, r.AllowedScopes, r.LandingDashboardCode))
+            .Select(r => new RoleSummary(r.Id, r.Code, r.Name, r.IsSystem, r.IsExternalEligible, r.IsActive, r.AllowedScopes, r.LandingDashboardCode, r.ShowCreateInHeader))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task<Versioned<RoleDetail>?> FindRoleAsync(Guid roleId, CancellationToken cancellationToken)
@@ -31,7 +31,7 @@ internal sealed class RoleAdministrationRepository(PMPlatformDbContext context) 
             .ToListAsync(cancellationToken).ConfigureAwait(false);
         Role role = row.Role;
         return new Versioned<RoleDetail>(
-            new RoleDetail(role.Id, role.Code, role.Name, role.IsSystem, role.IsExternalEligible, profiles, role.UpdatedAt, role.UpdatedBy, role.IsActive, role.AllowedScopes, role.LandingDashboardCode),
+            new RoleDetail(role.Id, role.Code, role.Name, role.IsSystem, role.IsExternalEligible, profiles, role.UpdatedAt, role.UpdatedBy, role.IsActive, role.AllowedScopes, role.LandingDashboardCode, role.ShowCreateInHeader),
             row.Version);
     }
 

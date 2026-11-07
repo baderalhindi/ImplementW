@@ -4795,6 +4795,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("landing_dashboard_code");
 
+                    b.Property<bool>("ShowCreateInHeader")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("show_create_in_header");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -8909,6 +8915,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("governance_profile_overridden");
 
+                    b.Property<bool>("IsCanceled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_canceled");
+
                     b.Property<bool?>("IsStrategic")
                         .HasColumnType("boolean")
                         .HasColumnName("is_strategic");
@@ -9153,6 +9165,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("project", "project", t =>
                         {
+                            t.HasCheckConstraint("ck_project_canceled", "NOT is_canceled OR lifecycle_state = 'CLOSED'");
+
                             t.HasCheckConstraint("ck_project_current_obstacle_lang", "\"current_obstacle_lang\" IN ('ar', 'en')");
 
                             t.HasCheckConstraint("ck_project_current_obstacle_pair", "(\"current_obstacle\" IS NULL) = (\"current_obstacle_lang\" IS NULL)");

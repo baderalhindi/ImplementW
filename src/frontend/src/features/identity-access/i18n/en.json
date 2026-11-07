@@ -141,7 +141,7 @@
       "userTypeHint": "The user type cannot be changed after the user is created.",
       "externalEntityHint": "The entity the person works for. It cannot be changed after the user is created.",
       "mobileNumberHint": "International format, for example +966501234567. The user confirms the number themselves with a code.",
-      "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognise them.",
+      "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognize them.",
       "directoryAttributesNote": "The department, manager and job title of an internal user are read from the AHDA directory each time they sign in.",
       "accountSourceDirectory": "Directory account",
       "accountSourceLocal": "Local account",
@@ -262,7 +262,8 @@
       "externalEligible": "Can be held by external users",
       "state": "State",
       "allowedScopes": "Allowed scopes",
-      "landing": "Landing dashboard"
+      "landing": "Landing dashboard",
+      "showCreateInHeader": "Show Create in the top bar"
     },
     "list": {
       "title": "Roles",
@@ -321,7 +322,8 @@
       "deleteTitle": "Delete {name}",
       "deleteBody": "The role and its permission profiles are removed for good. A role someone has held cannot be deleted, only deactivated."
     },
-    "scopeSeparator": ", "
+    "scopeSeparator": ", ",
+    "showCreateHint": "For roles that create items routinely. Whoever holds the permission can still create from the menu."
   },
   "permissionMatrix": {
     "title": "Permission matrix",
@@ -373,7 +375,7 @@
   },
   "entities": {
     "title": "External entities",
-    "description": "Organisations outside AHDA whose staff may be given access to specific projects.",
+    "description": "Organizations outside AHDA whose staff may be given access to specific projects.",
     "create": "Create entity",
     "createTitle": "Create external entity",
     "editTitle": "Edit external entity",

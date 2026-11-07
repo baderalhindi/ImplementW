@@ -73,8 +73,20 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [collapsed, setCollapsed] = useState(true);
+  const [focusRequest, setFocusRequest] = useState(0);
 
   const wanted = text.trim();
+  const reveal = (): void => {
+    setCollapsed(false);
+    setFocusRequest((current) => current + 1);
+  };
+
+  useEffect(() => {
+    if (focusRequest > 0) {
+      inputRef.current?.focus();
+    }
+  }, [focusRequest]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -146,10 +158,15 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
 
   useEffect(() => {
     const focusOnShortcut = (event: globalThis.KeyboardEvent): void => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      const typing =
+        event.target instanceof HTMLElement &&
+        (event.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName));
+      if (
+        ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') ||
+        (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey)
+      ) {
         event.preventDefault();
-        inputRef.current?.focus();
-        inputRef.current?.select();
+        reveal();
       }
     };
     document.addEventListener('keydown', focusOnShortcut);
@@ -189,6 +206,7 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
         setOpen(false);
       } else {
         setText('');
+        setCollapsed(true);
       }
       setActiveIndex(-1);
     } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -220,6 +238,25 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
         : t('common.globalSearch.noResults', { text: wanted });
   }
 
+  if (collapsed && text === '') {
+    return (
+      <div className="global-search global-search--collapsed" ref={containerRef}>
+        <button
+          type="button"
+          className="global-search__toggle"
+          aria-label={t('common.globalSearch.label')}
+          title={t('common.globalSearch.label')}
+          onClick={reveal}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="global-search" ref={containerRef}>
       <svg className="global-search__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -232,6 +269,11 @@ export function GlobalSearch({ menus }: { menus: Menu[] }): ReactElement {
         type="search"
         role="combobox"
         name="global-search"
+        onBlur={() => {
+          if (text === '') {
+            setCollapsed(true);
+          }
+        }}
         autoComplete="off"
         maxLength={MAXIMUM_TEXT_LENGTH}
         placeholder={t('common.globalSearch.placeholder')}

@@ -8,6 +8,7 @@ import {
   isForRoles,
   LABEL_REFERENCE,
 } from '@/content/help/help.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { type TranslationKey } from '@/shared/i18n/resources.ts';
@@ -40,11 +41,15 @@ function HelpText({ text }: { text: string }): ReactElement {
 function useGuideArticles(): { forYou: GuideArticleMeta[]; others: GuideArticleMeta[] } {
   const { session } = useSession();
   const roleCodes = session?.user.roleAssignments.map((assignment) => assignment.roleCode) ?? [];
-  const forYou = GUIDE_ARTICLES.filter((article) => isForRoles(article, roleCodes));
+  const { can, loaded } = usePermissions();
+  const offered = GUIDE_ARTICLES.filter(
+    (article) => article.permission === undefined || !loaded || can(article.permission),
+  );
+  const forYou = offered.filter((article) => isForRoles(article, roleCodes));
   const others =
     session?.user.userType === 'EXTERNAL'
       ? []
-      : GUIDE_ARTICLES.filter((article) => !isForRoles(article, roleCodes));
+      : offered.filter((article) => !isForRoles(article, roleCodes));
   return { forYou, others };
 }
 

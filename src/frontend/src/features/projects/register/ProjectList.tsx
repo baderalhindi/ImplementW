@@ -240,6 +240,7 @@ function ProjectTable({
               <ProjectStatusBadge
                 status={project.status}
                 legacyIntakeDate={project.legacyIntakeDate}
+                isCanceled={project.isCanceled}
               />{' '}
               <ImportedLabel batchId={project.projectImportBatchId} />
             </td>

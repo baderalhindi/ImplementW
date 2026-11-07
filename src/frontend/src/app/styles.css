@@ -609,6 +609,32 @@ h3 {
   margin-inline-start: auto;
 }
 
+.global-search--collapsed {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.global-search__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  background: transparent;
+  border: 1px solid var(--color-border, #d9dee3);
+  border-radius: 0.5rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.global-search__toggle svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
 .global-search__icon {
   position: absolute;
   inset-block-start: 50%;

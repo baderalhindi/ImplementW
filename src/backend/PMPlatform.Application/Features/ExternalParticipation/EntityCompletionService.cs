@@ -19,7 +19,8 @@ internal sealed class EntityCompletionService(
         ArgumentNullException.ThrowIfNull(page);
         IReadOnlyList<RequestCompletionFacts> all = await ReadAsync(period, cancellationToken).ConfigureAwait(false);
         HashSet<Guid> reached = [.. (await projects.ListReachedAsync(await access.ViewScopeAsync(callerId, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false)).Select(p => p.Id)];
-        List<EntityCompletionRow> rows = EntityCompletionRule.Rows([.. all.Where(r => reached.Contains(r.ProjectId))], Today());
+        Guid? ownEntity = (await engine.GetPrincipalAsync(callerId, cancellationToken).ConfigureAwait(false))?.ExternalEntityId;
+        List<EntityCompletionRow> rows = EntityCompletionRule.Rows([.. all.Where(r => reached.Contains(r.ProjectId) && (ownEntity is null || r.ExternalEntityId == ownEntity))], Today());
         return new EntityCompletionPage([.. rows.Skip(page.Skip).Take(page.PageSize)], page.Page, page.PageSize, rows.Count, EntityCompletionRule.Average(all, Today()));
     }
 

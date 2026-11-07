@@ -9,15 +9,15 @@
   "family": {
     "EXECUTIVE": {
       "label": "Executive Reports",
-      "description": "Formal management reporting across your authorised scope, with coverage and freshness. No composite executive score is invented."
+      "description": "Formal management reporting across your authorized scope, with coverage and freshness. No composite executive score is invented."
     },
     "PORTFOLIO": {
       "label": "Portfolio Reports",
       "description": "The projects in your portfolio scope, with the safeguards that keep unlike figures apart."
     },
     "DEPARTMENT": {
-      "label": "Sector Reports",
-      "description": "Reports over the projects of the sectors you may see."
+      "label": "Department Reports",
+      "description": "Reports over the projects of the departments you may see."
     },
     "PROJECT": {
       "label": "Project Reports",
@@ -165,7 +165,7 @@
     "RUNNING": "Generating",
     "COMPLETED": "Ready",
     "FAILED": "Failed",
-    "CANCELLED": "Cancelled",
+    "CANCELLED": "Canceled",
     "EXPIRED": "Expired"
   },
   "sensitivity": {
@@ -276,7 +276,7 @@
     "expiresAt": "Available until",
     "you": "{name} (you)",
     "cancel": "Cancel",
-    "cancelled": "The export of {name} was cancelled."
+    "cancelled": "The export of {name} was canceled."
   },
   "notFound": {
     "title": "Report not found",
@@ -297,7 +297,7 @@
     "savedViewNotAllowed": "This view cannot be saved: the report does not allow it, a role cannot receive it, or your role cannot save views.",
     "savedViewIncompatible": "This saved view no longer fits the report or the report rules in force.",
     "duplicateRequest": "This export was already requested with different choices. Start it again.",
-    "jobNotCancellable": "The export has already started or ended and can no longer be cancelled.",
+    "jobNotCancellable": "The export has already started or ended and can no longer be canceled.",
     "outputNotAvailable": "The file is not ready, or the export did not complete.",
     "outputExpired": "The file has expired. Export the report again.",
     "downloadDenied": "You may no longer see some of what this file holds, so it cannot be downloaded."

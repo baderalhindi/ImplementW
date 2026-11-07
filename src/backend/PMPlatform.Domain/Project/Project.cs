@@ -37,6 +37,9 @@ public sealed class Project : AuditedEntity
     /// <summary>Who last submitted the registration: the requester of its approval run, so they alone may not decide it (WF-11).</summary>
     public Guid? SubmittedByUserId { get; set; }
 
+    /// <summary>On a CLOSED project: it ended by being canceled, not by finishing. The lifecycle has one end state; this says which end it was (review round 5, item 19).</summary>
+    public bool IsCanceled { get; set; }
+
     public ProjectLifecycleState LifecycleState { get; set; }
 
     /// <summary>A RETURNED request creates revision + 1 and a new approval instance (TASK-035).</summary>

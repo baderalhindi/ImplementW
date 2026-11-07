@@ -26801,6 +26801,10 @@
             "items": {
               "$ref": "#/components/schemas/EffectivePermissionDetail"
             }
+          },
+          "showCreateInHeader": {
+            "type": "boolean",
+            "default": true
           }
         },
         "description": "The permissions the caller holds now, each with the scopes it is held at, for the SPA to decide which menus, tabs and buttons to offer\n(review C3). Read from the engine on every call, so a changed grant shows without a new sign-in. This is navigation, not protection:\nevery operation is decided again by the API."
@@ -37149,6 +37153,10 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "isCanceled": {
+            "type": "boolean",
+            "default": false
           }
         },
         "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart. DateTimeOffset? ProjectDetail.ClosedAt is when WF-10's\nclosure took effect (TASK-063); a closed project's completion date, or its having been terminated without one, is its closure cases'."
@@ -39330,6 +39338,10 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "isCanceled": {
+            "type": "boolean",
+            "default": false
           }
         },
         "description": "A row of SCR-025 Project Register, with RPMO's calculated columns (R3-3)."
@@ -43717,6 +43729,10 @@
               "null",
               "string"
             ]
+          },
+          "showCreateInHeader": {
+            "type": "boolean",
+            "default": true
           }
         },
         "description": "ADM-007 Role Detail, with the permission profiles rooted at the role (ADR-018)."
@@ -43740,6 +43756,12 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "showCreateInHeader": {
+            "type": [
+              "null",
+              "boolean"
             ]
           }
         },
@@ -43789,6 +43811,10 @@
               "null",
               "string"
             ]
+          },
+          "showCreateInHeader": {
+            "type": "boolean",
+            "default": true
           }
         },
         "description": "A row of ADM-006 Roles."

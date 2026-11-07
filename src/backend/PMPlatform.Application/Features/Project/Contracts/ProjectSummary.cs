@@ -27,4 +27,5 @@ public sealed record ProjectSummary(
     decimal? DeclaredActualPercent,
     NarrativeText? CurrentObstacle,
     ProjectIndicators Indicators,
-    Guid? EntityContactUserId = null);
+    Guid? EntityContactUserId = null,
+    bool IsCanceled = false);

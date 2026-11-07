@@ -38,7 +38,7 @@
     "IN_PROGRESS": "In progress",
     "BLOCKED": "Blocked",
     "COMPLETED": "Completed",
-    "CANCELLED": "Cancelled"
+    "CANCELLED": "Canceled"
   },
   "filter": {
     "label": "Show",
@@ -78,7 +78,7 @@
     },
     "overdue": {
       "title": "Nothing is overdue",
-      "body": "A task is overdue when its planned finish has passed and it is neither completed nor cancelled. Your tasks and those of the projects you manage are checked."
+      "body": "A task is overdue when its planned finish has passed and it is neither completed nor canceled. Your tasks and those of the projects you manage are checked."
     },
     "updates": {
       "title": "No task needs an update",
@@ -93,7 +93,7 @@
     },
     "filtered": {
       "title": "No task matches this choice",
-      "body": "Open tasks are those not started, in progress or blocked. Choose \"All tasks\" to see completed and cancelled tasks too."
+      "body": "Open tasks are those not started, in progress or blocked. Choose \"All tasks\" to see completed and canceled tasks too."
     }
   },
   "fields": {
@@ -197,7 +197,7 @@
     "confirm": "Save progress"
   },
   "cancel": {
-    "body": "A cancelled task cannot be started, changed or reopened again.",
+    "body": "A canceled task cannot be started, changed or reopened again.",
     "confirm": "Yes, cancel the task",
     "keep": "Keep task"
   },
@@ -225,7 +225,7 @@
     "unblocked": "Task unblocked.",
     "completed": "Task completed.",
     "reopened": "Task reopened.",
-    "cancelled": "Task cancelled.",
+    "cancelled": "Task canceled.",
     "progressReported": "Progress saved.",
     "dependencyAdded": "Dependency added.",
     "dependencyRemoved": "Dependency removed.",
@@ -234,7 +234,7 @@
   "fieldErrors": {
     "assigneeNotEligible": "This person holds no role on this project, so they cannot own its tasks. Choose someone who works on the project.",
     "userIdMalformed": "Enter a user ID in the form 3c3c3c3c-0000-4000-8000-000000000103.",
-    "scheduleActivityInvalid": "Choose an activity of this project's schedule that has no sub-activities and is not cancelled.",
+    "scheduleActivityInvalid": "Choose an activity of this project's schedule that has no sub-activities and is not canceled.",
     "priorityInvalid": "Choose a priority from the list.",
     "finishBeforeStart": "The planned finish cannot be before the planned start.",
     "percentOutOfRange": "Enter a percentage from 0 to 100.",
@@ -244,16 +244,16 @@
   },
   "problems": {
     "projectNotEligible": "This project is not in a state that allows this: tasks are planned once the project is approved and worked on while it is active.",
-    "notEditable": "This task is cancelled and cannot be changed.",
+    "notEditable": "This task is canceled and cannot be changed.",
     "hierarchyInvalid": "A subtask can only be added under an open task that is not itself a subtask and has no dependencies.",
     "scheduleActivityInvalid": "The schedule activity is not one this task can carry out.",
     "assigneeNotEligible": "The server did not accept this owner: they hold no role on this project. Nothing was changed.",
     "priorityInvalid": "The priority is no longer offered. Choose another.",
     "dependencyUnmet": "A task it depends on has not reached the point this needs yet. See its dependencies.",
     "subtasksOpen": "Its subtasks must be completed first, or its parent is completed.",
-    "inUse": "It cannot be cancelled while it has open subtasks or dependencies.",
+    "inUse": "It cannot be canceled while it has open subtasks or dependencies.",
     "progressNotEnterable": "Progress can only be entered on a task without subtasks while it is in progress or blocked.",
-    "dependencyInvalid": "A dependency joins two different tasks without subtasks, of the same project, that are not cancelled.",
+    "dependencyInvalid": "A dependency joins two different tasks without subtasks, of the same project, that are not canceled.",
     "dependencyCircular": "This would create a circular dependency.",
     "dependencyExists": "These two tasks are already linked.",
     "invalidTransition": "The task is no longer in a state that allows this. A blocked task is unblocked before it is completed.",

@@ -47,4 +47,5 @@ public sealed record ProjectDetail(
     ProjectIndicators Indicators,
     string? TitleEn = null,
     bool? IsStrategic = null,
-    Guid? EntityContactUserId = null);
+    Guid? EntityContactUserId = null,
+    bool IsCanceled = false);

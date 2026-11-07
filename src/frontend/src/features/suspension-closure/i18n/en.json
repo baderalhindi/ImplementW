@@ -31,7 +31,7 @@
   },
   "state": {
     "title": "Approval and effect",
-    "approval": "Approval (WF-11)",
+    "approval": "Approval",
     "activation": "Effect on the project",
     "status": "Status",
     "project": "Project lifecycle"
@@ -106,7 +106,7 @@
     "obligationSaved": "Obligation saved.",
     "obligationStarted": "Obligation started.",
     "obligationSatisfied": "Obligation satisfied.",
-    "obligationCancelled": "Obligation cancelled.",
+    "obligationCancelled": "Obligation canceled.",
     "obligationWaived": "Obligation waived."
   },
   "review": {
@@ -474,7 +474,7 @@
       "IN_PROGRESS": "In progress",
       "SATISFIED": "Satisfied",
       "WAIVED": "Waived",
-      "CANCELLED": "Cancelled"
+      "CANCELLED": "Canceled"
     },
     "command": {
       "start": {

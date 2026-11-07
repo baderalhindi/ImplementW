@@ -1,4 +1,4 @@
-import { type ReactElement, type SyntheticEvent, useCallback, useState } from 'react';
+import { type ReactElement, type SyntheticEvent, useState } from 'react';
 
 import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { fieldMessage } from '@/features/identity-access/problems.ts';
@@ -54,8 +54,7 @@ function AddKpiBody({
   onDone,
 }: AddKpiDialogProps): ReactElement {
   const { t, language } = useI18n();
-  const load = useCallback(readChoices, []);
-  const choices = useApiResource(load);
+  const choices = useApiResource(readChoices);
   const save = useSaveAction(financialKpiProblemMessage);
   const [definitionId, setDefinitionId] = useState('');
   const [frequencyId, setFrequencyId] = useState('');

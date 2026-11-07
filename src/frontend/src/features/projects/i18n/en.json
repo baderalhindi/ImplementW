@@ -14,7 +14,8 @@
     "ACTIVE": "Active",
     "SUSPENDED": "Suspended",
     "COMPLETED": "Completed",
-    "CLOSED": "Closed"
+    "CLOSED": "Closed",
+    "CANCELED": "Canceled"
   },
   "participationMode": {
     "AHDA_MANAGED": "Managed by AHDA",

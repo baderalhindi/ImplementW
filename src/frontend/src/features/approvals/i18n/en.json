@@ -29,7 +29,7 @@
     "RETURNED": "Returned",
     "DELEGATED": "Delegated",
     "ESCALATED": "Escalated",
-    "CANCELLED": "Cancelled",
+    "CANCELLED": "Canceled",
     "EXPIRED": "Expired"
   },
   "delegationStatus": {

@@ -19,7 +19,7 @@
     "IN_PROGRESS": "Response in progress",
     "RESPONDED": "Response with AHDA",
     "CLOSED": "Closed",
-    "CANCELLED": "Cancelled"
+    "CANCELLED": "Canceled"
   },
   "contributionStatus": {
     "DRAFT": "Draft",
@@ -87,7 +87,7 @@
   },
   "failure": {
     "SOURCE_RECORD_NOT_FOUND": "the source record no longer exists.",
-    "SOURCE_RECORD_TERMINAL": "the source record is closed (for example, the task was cancelled).",
+    "SOURCE_RECORD_TERMINAL": "the source record is closed (for example, the task was canceled).",
     "SOURCE_RECORD_STATE_INVALID": "the task does not take a percentage in its current state (only an in-progress or blocked task without subtasks does).",
     "PROJECT_STATE_NOT_PERMITTED": "the project is not active."
   },
@@ -105,7 +105,7 @@
     "issuedAt": "Issued",
     "issuedBy": "Issued by",
     "closedAt": "Closed",
-    "cancelledAt": "Cancelled",
+    "cancelledAt": "Canceled",
     "configuration": "Participation configuration version",
     "schema": "Response schema",
     "createdBy": "Drafted by",
@@ -224,7 +224,7 @@
     "withAhda": "Your entity's response is with AHDA for review.",
     "notOpen": "This request is not open for a response now.",
     "otherResponder": "Another user of your entity answers this request.",
-    "cancelled": "AHDA cancelled this request.",
+    "cancelled": "AHDA canceled this request.",
     "closed": "This request is closed.",
     "numberHint": "A number, with up to 4 decimal places.",
     "rangeHint": "A number from {min} to {max}, with up to 4 decimal places."
@@ -306,7 +306,7 @@
     "dueCount": "{count} due today",
     "responders": "Responders named",
     "drafts": "AHDA drafts",
-    "closedCancelled": "Closed / cancelled",
+    "closedCancelled": "Closed / canceled",
     "emptyTitle": "No update requests"
   },
   "form": {
@@ -415,7 +415,7 @@
   "done": {
     "saved": "Draft saved. The entity cannot see it until it is issued.",
     "issued": "Request issued. The entity's responder can answer it now.",
-    "cancelled": "Request cancelled.",
+    "cancelled": "Request canceled.",
     "responderChanged": "Responder changed.",
     "reviewerChanged": "Reviewer changed.",
     "draftSaved": "Draft saved.",
@@ -461,7 +461,7 @@
     "dueDateInvalid": "The due date cannot be before today.",
     "requestNotEditable": "Only a draft can be edited or deleted.",
     "requestNotOpen": "This request is not open for a response now.",
-    "requestResponded": "The response is with its reviewer; decide it instead of cancelling.",
+    "requestResponded": "The response is with its reviewer; decide it instead of canceling.",
     "contributionNotEditable": "A submitted response cannot be changed.",
     "alreadySubmitted": "This response was already submitted.",
     "alreadyDecided": "This response was already decided.",
@@ -476,7 +476,7 @@
     "keyReused": "This attempt was already used for another response. Close the dialog and try again.",
     "configurationMissing": "AHDA has not configured external participation yet (no participation rule is published).",
     "invalidTransition": "The request or response is no longer in a state that allows this.",
-    "terminalState": "The request is closed or cancelled.",
+    "terminalState": "The request is closed or canceled.",
     "permissionDenied": "You do not have permission to do this.",
     "batchInvalid": "Some of these projects cannot be sent to. Each is marked below.",
     "projectHasNoEntity": "This project has no external entity to answer it."

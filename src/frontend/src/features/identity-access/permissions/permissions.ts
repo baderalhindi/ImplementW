@@ -12,9 +12,15 @@ export interface Permissions {
   loaded: boolean;
   /** Whether any of `codes` is held, at any scope; with no code, true. */
   can: (...codes: readonly PermissionCode[]) => boolean;
+  /** Whether a role the person holds keeps Create in the top bar. The menu offers Create regardless. */
+  showCreateInHeader: boolean;
 }
 
-export const NO_PERMISSIONS: Permissions = { loaded: false, can: (...codes) => codes.length === 0 };
+export const NO_PERMISSIONS: Permissions = {
+  loaded: false,
+  can: (...codes) => codes.length === 0,
+  showCreateInHeader: false,
+};
 
 export function permissionsOf(effective: EffectivePermissions | null | undefined): Permissions {
   if (effective === null || effective === undefined) {
@@ -24,6 +30,7 @@ export function permissionsOf(effective: EffectivePermissions | null | undefined
   return {
     loaded: true,
     can: (...codes) => codes.length === 0 || codes.some((code) => held.has(code)),
+    showCreateInHeader: effective.showCreateInHeader !== false,
   };
 }
 

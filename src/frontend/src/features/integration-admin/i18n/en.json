@@ -61,7 +61,7 @@
     "SECURITY": "Security refusal"
   },
   "runType": {
-    "DIRECTORY_SYNC": "Directory synchronisation",
+    "DIRECTORY_SYNC": "Directory synchronization",
     "RECONCILIATION": "Reconciliation"
   },
   "runStatus": {
@@ -274,7 +274,7 @@
     "dismissed": "The alert was dismissed."
   },
   "syncRuns": {
-    "title": "Synchronisation and reconciliation runs",
+    "title": "Synchronization and reconciliation runs",
     "empty": "No run yet.",
     "openAttempts": "Open its attempts"
   },

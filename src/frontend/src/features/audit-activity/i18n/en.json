@@ -107,7 +107,7 @@
   },
   "trail": {
     "title": "Audit trail",
-    "description": "Formal, immutable audit evidence, searched on the server within the categories, scope and classification you are authorised for.",
+    "description": "Formal, immutable audit evidence, searched on the server within the categories, scope and classification you are authorized for.",
     "held": "You may read: {categories}.",
     "empty": "No audit events match these filters."
   },

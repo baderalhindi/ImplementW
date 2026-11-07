@@ -36,6 +36,8 @@ export interface Page<T> {
 
 /** A row of SCR-025 / SCR-026. */
 export interface ProjectSummary {
+  /** On a CLOSED project: it ended by being canceled. */
+  isCanceled?: boolean;
   id: string;
   /** Null until AHDA approves the registration (ADR-013). */
   formalProjectId: string | null;

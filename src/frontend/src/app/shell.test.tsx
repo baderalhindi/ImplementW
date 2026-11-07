@@ -209,6 +209,26 @@ describe('the master navigation', () => {
     ).toBe('page');
   });
 
+  test('a role whose setting is off has no Create in the top bar, and keeps it in the menu (review round 5, item 14)', async () => {
+    const api = mockApi();
+    api.on('GET', SHELL_PERMISSIONS, {
+      body: {
+        permissions: [
+          { code: 'PROJECT_REGISTER', scopes: ['ALL'] },
+          { code: 'PROJECT_VIEW', scopes: ['ALL'] },
+        ],
+        showCreateInHeader: false,
+      },
+    });
+    renderApp({ path: '/projects', session: sessionFor(['R02']) });
+
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByRole('button', { name: en('common.shell.create') })).toBeNull();
+    expect(
+      (await screen.findAllByRole('link', { name: en('projects.nav.create') })).length,
+    ).toBeGreaterThan(0);
+  });
+
   test('a Portfolio Manager’s Portfolio menu leads to the Portfolio Dashboard, the portfolio reports and the KPI register', async () => {
     withDashboards(mockApi(), { catalogue: catalogueFor(['R02']) });
     renderApp({ path: '/dashboards?dashboard=PORTFOLIO', session: sessionFor(['R02']) });
