@@ -164,7 +164,7 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
     await expectText(page.getByRole('main'), 'A draft baseline candidate was created');
     await baselineRow(page, 2).getByRole('button', { name: 'Submit' }).click();
     const dialog = page.getByRole('dialog', { name: 'Submit baseline' });
-    await dialog.getByLabel(/^Change authorisation ID/).fill(authorizationId);
+    await dialog.getByLabel(/^Approved change/).selectOption(authorizationId);
     await dialog.getByRole('button', { name: 'Submit baseline' }).click();
     await expectText(page.getByRole('main'), 'The baseline was submitted to AHDA for review.');
     await expect(baselineRow(page, 2)).toContainText('With AHDA for review');

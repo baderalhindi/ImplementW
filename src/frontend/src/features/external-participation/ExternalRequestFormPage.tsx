@@ -436,6 +436,7 @@ function RequestForm({ project, projectId, existing }: RequestFormProps): ReactE
         <PersonField
           label={t('externalParticipation.fields.responder')}
           name="responsibleUserId"
+          externalEntityId={values.externalEntityId === '' ? null : values.externalEntityId}
           userType="EXTERNAL"
           user={session.user}
           value={values.responder}

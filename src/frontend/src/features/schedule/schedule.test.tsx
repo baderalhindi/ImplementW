@@ -698,19 +698,33 @@ describe('SCR-061 Baseline View, MOD-017 Submit Baseline and MOD-018 Approve Bas
       { baselines: [candidate(), baseline()] },
       { path: BASELINES_PATH },
     );
-    api.on('POST', /\/submit$/, { body: candidate({ status: 'ACTIVE' }) });
+    api
+      .on('POST', /\/submit$/, { body: candidate({ status: 'ACTIVE' }) })
+      .on('GET', /^\/change-authorizations$/, {
+        body: {
+          items: [
+            {
+              id: CHANGE_AUTHORIZATION_ID,
+              changeRequestId: 'cr-1',
+              issuedAt: '2026-10-01T08:00:00Z',
+            },
+          ],
+        },
+      })
+      .on('GET', /^\/change-requests\/cr-1$/, {
+        body: { title: { text: 'Longer earthworks', language: 'EN' } },
+      });
 
     const dialog = await openDialog(en('schedule.actions.submitBaseline'), 'schedule.submit.title');
     const field = labelled(dialog, 'schedule.submit.changeAuthorization');
-    await userEvent.type(field, 'CR-12');
     await userEvent.click(
       within(dialog).getByRole('button', { name: en('schedule.submit.confirm') }),
     );
     expect(field.getAttribute('aria-invalid')).toBe('true');
     expect(api.requestsTo('POST', /\/submit$/)).toHaveLength(0);
 
-    await userEvent.clear(field);
-    await userEvent.type(field, CHANGE_AUTHORIZATION_ID);
+    await within(dialog).findByRole('option', { name: /Longer earthworks/ });
+    await userEvent.selectOptions(field, CHANGE_AUTHORIZATION_ID);
     await userEvent.click(
       within(dialog).getByRole('button', { name: en('schedule.submit.confirm') }),
     );

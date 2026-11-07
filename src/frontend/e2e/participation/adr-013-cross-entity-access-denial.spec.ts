@@ -108,7 +108,7 @@ test('ADR-013 denied cross-entity access: entity B reaches nothing of entity Aâ€
     const page = outsider.page;
     await page.goto('/projects');
     await page.getByRole('searchbox', { name: 'Title or Formal Project ID' }).fill(title);
-    await page.getByRole('button', { name: 'Search' }).click();
+    await page.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page.getByRole('main')).not.toContainText(title);
     await expect(page.locator(`a[href="/projects/${projectId}"]`)).toHaveCount(0);
     const listed = await outsider.api.get<Page<Identified>>(

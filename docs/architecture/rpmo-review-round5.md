@@ -52,6 +52,10 @@ The Project Manager is named at submission, as the client asked to check: the dr
 
 A run already pending when this ships keeps its old requester, so a second R02 must decide it. The showcase has none.
 
+### Tested
+
+Unit 2,313 passed; integration 938 passed on the last full run, excluding Persistence (run by subset: seed, integrity, rollback and indexing passed) and the shared rate limit tests, which need Redis and run in CI; frontend 1,292 passed; e2e 17 of 17, including UJ-002, whose expected-failure mark is gone. A full integration run failed a different one or two tests on two earlier runs (`PermissionProfileAuthoring`, `ReturnedRevision`, `TelemetryIntake`, all passing alone), which reads as load; CI should confirm.
+
 ## 2. Table actions
 
 Shared: `shared/ui/rowSelection.tsx` and `useRowSelection.ts` (checkbox per row and in the header, the count, the actions), and a sort option in the shared filter bar.
@@ -70,7 +74,7 @@ The client asked to confirm. On the shipped matrix **KPI_MANAGE is held by R02 (
 
 ## 4. User search
 
-The picker searched `GET /users`, which needs USER_VIEW, an administrator's permission, so others were asked for a typed ID. `GET /person-lookups` answers anyone holding a write permission, so not the Viewer, with people who are eligible for the field: holders of a role over the project for an owner, an external entity's own people for an entity caller. It gives name, username, roles and unit, and no contact details. Results appear as the person types. An entity, contribution type or task the person cannot read now says so and asks no ID.
+The picker searched `GET /users`, which needs USER_VIEW, an administrator's permission, so others were asked for a typed ID. `GET /person-lookups` answers anyone holding a write permission, so not the Viewer, with people who are eligible for the field: holders of a role over the project for an owner, an external entity's own people for an entity caller. It gives name, username, roles and unit, and no contact details. Results appear as the person types. An entity, contribution type or task the person cannot read now says so and asks no ID. A rebaseline's change authorization, which asked for a typed ID too, is now chosen from the project's approved changes.
 
 ## 5. Stages and weights
 

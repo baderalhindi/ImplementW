@@ -201,9 +201,10 @@
     "plannedFinish": "Planned finish",
     "replaces": "Replaces",
     "consequence": "If the project's governance profile requires approval, the baseline goes to AHDA for review and the plan is frozen until it is decided. If not, it becomes the active baseline at once. Either way, the active baseline is replaced only when the new one becomes active.",
-    "changeAuthorization": "Change authorization ID",
-    "changeAuthorizationHint": "A new baseline after an approved one implements an approved change request. Enter the ID of its change authorization.",
-    "confirm": "Submit baseline"
+    "changeAuthorization": "Approved change",
+    "changeAuthorizationHint": "A new baseline after an approved one implements an approved change request. Choose which.",
+    "confirm": "Submit baseline",
+    "authorizationOption": "{title}, approved {date}"
   },
   "approve": {
     "title": "Decide on baseline",

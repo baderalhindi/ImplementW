@@ -5,7 +5,7 @@
 | Task | TASK-085 — Implement Cross-Domain End-to-End Test Suite (P15 - Testing & QA, P0) |
 | Depends on | The contract and integration suites of the Project Lifecycle (`project-lifecycle-contract-tests.md`), Execution (`execution-domain-contract-tests.md`), Risk/Issue (`risk-issue-contract-tests.md`) and Governance (`governance-contract-tests.md`) domains; TASK-084's strategy (`test-strategy.md` §7) |
 | Record date | 2026-10-17 |
-| Status | **BUILT. UJ-002's expected-failure mark was removed when review round 5 connected WF-02's inputs (F-1, §9).** SIT does not exist, so the suite runs nightly against the e2e stack that stands in for it until `vars.E2E_SIT_BASE_URL` is set (§3, F-1 below) |
+| Status | **BUILT. 17 of 17 journeys pass (7 Nov 2026). UJ-002's expected-failure mark was removed when review round 5 connected WF-02's inputs (F-1, §9).** SIT does not exist, so the suite runs nightly against the e2e stack that stands in for it until `vars.E2E_SIT_BASE_URL` is set (§3, F-1 below) |
 | Branch | `test/task-085-cross-domain-e2e-suite` |
 | Directory | `src/frontend/e2e` |
 | Deliverables | the Playwright suite — the 15 Step 18 journeys (`journeys/uj-nnn-*.spec.ts`) and ADR-013's participation journeys (`participation/`); its full-stack environment (`stack/`); CI scheduling and the UAT gate (`.github/workflows/e2e-journeys.yml`, the `e2e-sit` job of `ci-cd-pipeline.yml`) |
