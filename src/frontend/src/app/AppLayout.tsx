@@ -635,8 +635,8 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
             </span>
           </button>
           <Breadcrumb menu={current} pathname={pathname} />
-          <GlobalSearch menus={menus} />
           <div className="topbar__actions">
+            <GlobalSearch menus={menus} />
             <CreateMenu />
             <NotificationBell />
             <ThemeSwitch />
