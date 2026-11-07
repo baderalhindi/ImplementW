@@ -16,6 +16,7 @@ public sealed record ProgressSubmissionDetail(
     ProgressSubmissionStatus Status,
     decimal ActualPercent,
     decimal ActualPercentCalculated,
+    ProgressActualSource ActualSource,
     decimal? ActualPercentOverride,
     NarrativeText? OverrideReason,
     bool IsOverridden,

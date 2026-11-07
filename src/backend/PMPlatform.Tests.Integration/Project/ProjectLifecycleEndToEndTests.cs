@@ -182,11 +182,11 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
     }
 
     /// <summary>
-    /// WF-11 holds the review: neither the AHDA reviewer who started it (the requester, who may not decide their own
-    /// request) nor the entity user whose project it is may decide it. The project stays UNDER_REVIEW with no identifier.
+    /// WF-11 holds the review: neither a reviewer the route does not name nor the entity user who submitted the project (the
+    /// requester, who may not decide their own request) may decide it. The project stays UNDER_REVIEW with no identifier.
     /// </summary>
     [Theory]
-    [InlineData(2, 2)]
+    [InlineData(3, 3)]
     [InlineData(3, 8)]
     public async Task OnlyTheRoutedApproverDecidesTheReview(int startedBy, int decidedBy)
     {
@@ -209,6 +209,31 @@ public sealed class ProjectLifecycleEndToEndTests(ProjectTestHost host)
         string denial = Assert.Single(await host.Database.EventsAsync(correlationId));
         Assert.StartsWith("AUTHORIZATION_DENIAL|", denial, StringComparison.Ordinal);
         Assert.Contains($"|DENIED|{ProjectDriver.Person(decidedBy)}|", denial, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Review round 5, item 1: the requester of the review run is whoever submitted the registration. The reviewer who starts the review
+    /// finds it in their inbox and decides it; the person who submitted does not, however they hold the authority.
+    /// </summary>
+    [Fact]
+    public async Task TheReviewerWhoStartsAReviewDecidesItAndTheSubmitterDoesNot()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Sessions sessions = await client.SignInAsync();
+
+        Guid byEntity = AdministrationApi.IdOf(await client.CreateOrFailAsync(sessions.Entity, host.Registration()));
+        await client.CommandOrFailAsync(sessions.Entity, byEntity, "submit", new { projectManagerUserId = ProjectDriver.Person(8) });
+        await client.CommandOrFailAsync(sessions.Approver, byEntity, "start-review");
+        Assert.Equal(ProjectDriver.Person(8), Assert.Single(await host.RunsAsync(byEntity)).RequestedByUserId);
+        await DecideAsync(client, sessions.Approver, byEntity, "approve");
+        Assert.Equal("APPROVED_PLANNED", (await GetAsync(client, sessions.Approver, byEntity)).Status());
+
+        Guid byApprover = AdministrationApi.IdOf(await client.CreateOrFailAsync(sessions.Approver, host.Registration()));
+        await client.CommandOrFailAsync(sessions.Approver, byApprover, "submit", new { projectManagerUserId = ProjectDriver.Person(8) });
+        await client.CommandOrFailAsync(sessions.Reviewer, byApprover, "start-review");
+        (_, Guid taskId) = await PendingTaskAsync(client, sessions.Approver, ("Project", "Project", byApprover));
+        using HttpResponseMessage own = await client.PostAsync($"{ApprovalTasks}/{taskId}/approve", sessions.Approver);
+        Assert.Equal(HttpStatusCode.Forbidden, own.StatusCode);
     }
 
     /// <summary>A project in <paramref name="state"/>: DRAFT, SUBMITTED, or APPROVED_PLANNED (reviewed by local.r03, approved by local.r02 through the API).</summary>

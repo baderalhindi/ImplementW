@@ -8395,6 +8395,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("actual_percent_override");
 
+                    b.Property<string>("ActualSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("WORK_BREAKDOWN")
+                        .HasColumnName("actual_source");
+
                     b.Property<Guid?>("BaselineId")
                         .HasColumnType("uuid")
                         .HasColumnName("baseline_id");
@@ -8529,6 +8537,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("progress_submission", "progress", t =>
                         {
+                            t.HasCheckConstraint("ck_progress_submission_actual_source", "\"actual_source\" IN ('WORK_BREAKDOWN', 'DECLARED', 'NOT_AVAILABLE')");
+
                             t.HasCheckConstraint("ck_progress_submission_narrative_lang", "\"narrative_lang\" IN ('ar', 'en')");
 
                             t.HasCheckConstraint("ck_progress_submission_narrative_pair", "(\"narrative\" IS NULL) = (\"narrative_lang\" IS NULL)");
@@ -8991,6 +9001,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("strategic_portfolio_item_id");
 
+                    b.Property<Guid?>("SubmittedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submitted_by_user_id");
+
                     b.Property<string>("TitleEn")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
@@ -9119,6 +9133,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("StrategicPortfolioItemId")
                         .HasDatabaseName("ix_project_strategic_portfolio_item_id");
 
+                    b.HasIndex("SubmittedByUserId")
+                        .HasDatabaseName("ix_project_submitted_by_user_id");
+
                     b.HasIndex("UpdatedAt", "Id")
                         .HasDatabaseName("ix_project_updated_at_id");
 
@@ -9142,7 +9159,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_project_declared_percent_range", "(declared_planned_percent IS NULL OR declared_planned_percent BETWEEN 0 AND 100) AND (declared_actual_percent IS NULL OR declared_actual_percent BETWEEN 0 AND 100) AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100) AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
 
-                            t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL', 'ENTITY_UPDATE')");
+                            t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL', 'ENTITY_UPDATE', 'PROGRESS_UPDATE')");
 
                             t.HasCheckConstraint("ck_project_description_lang", "\"description_lang\" IN ('ar', 'en')");
 
@@ -14464,6 +14481,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("StrategicPortfolioItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_project_master_data_item_strategic_portfolio_item_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_user_submitted_by_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Project.ProjectFollowUpNote", b =>

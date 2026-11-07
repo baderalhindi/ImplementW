@@ -21,6 +21,9 @@ public interface IProjectMonthlyUpdates
     /// <summary>Stages the accepted values on the project, source ENTITY_UPDATE, in the caller's unit of work. False when the project cannot take them: gone or closed.</summary>
     public Task<bool> StageAsync(Guid projectId, ProjectMonthlyUpdateValues values, Guid actorId, CancellationToken cancellationToken);
 
+    /// <summary>Stages a published progress figure as the project's declared actual, source PROGRESS_UPDATE, in the caller's unit of work.</summary>
+    public Task StagePublishedProgressAsync(Guid projectId, decimal actualPercent, Guid actorId, CancellationToken cancellationToken);
+
     /// <summary>Records who answers the project's update requests by default, in the caller's unit of work.</summary>
     public Task StageEntityContactAsync(Guid projectId, Guid contactUserId, Guid actorId, CancellationToken cancellationToken);
 }

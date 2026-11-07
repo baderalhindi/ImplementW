@@ -26005,6 +26005,7 @@
           "IMPORT",
           "MANUAL",
           "ENTITY_UPDATE",
+          "PROGRESS_UPDATE",
           null
         ]
       },
@@ -35935,6 +35936,14 @@
           }
         }
       },
+      "ProgressActualSource": {
+        "enum": [
+          "WORK_BREAKDOWN",
+          "DECLARED",
+          "NOT_AVAILABLE"
+        ],
+        "description": "Where a submission's calculated figure comes from. A project with no work breakdown reports its declared figure until it has one."
+      },
       "ProgressOverrideRequest": {
         "required": [
           "actualPercent",
@@ -35992,6 +36001,7 @@
           "status",
           "actualPercent",
           "actualPercentCalculated",
+          "actualSource",
           "actualPercentOverride",
           "overrideReason",
           "isOverridden",
@@ -36049,6 +36059,9 @@
               "string"
             ],
             "format": "double"
+          },
+          "actualSource": {
+            "$ref": "#/components/schemas/ProgressActualSource"
           },
           "actualPercentOverride": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",

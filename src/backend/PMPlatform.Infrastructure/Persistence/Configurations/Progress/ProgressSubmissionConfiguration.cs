@@ -16,6 +16,7 @@ internal sealed class ProgressSubmissionConfiguration : IEntityTypeConfiguration
         builder.HasRowVersion();
         builder.Property(e => e.RevisionNo).HasDatabaseDefault(1);
         builder.Property(e => e.ActualPercentCalculated).HasPrecision(18, 4);
+        builder.Property(e => e.ActualSource).HasDefaultValue(ProgressActualSource.WorkBreakdown);
         builder.Property(e => e.ActualPercentOverride).HasPrecision(18, 4);
         builder.Property(e => e.PlannedPercent).HasPrecision(18, 4);
         builder.HasNarrative(e => e.OverrideReason, "override_reason");

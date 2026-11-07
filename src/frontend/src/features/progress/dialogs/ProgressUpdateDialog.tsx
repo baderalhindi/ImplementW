@@ -35,6 +35,12 @@ const TITLES: Record<ProgressUpdateMode, TranslationKey> = {
   submit: 'progress.update.submitTitle',
 };
 
+const SOURCE_NOTES: Record<ProgressSubmissionDetail['actualSource'], TranslationKey> = {
+  WORK_BREAKDOWN: 'progress.update.derived',
+  DECLARED: 'progress.update.declared',
+  NOT_AVAILABLE: 'progress.update.noFigure',
+};
+
 interface ProgressUpdateDialogProps {
   open: boolean;
   mode: ProgressUpdateMode;
@@ -98,6 +104,7 @@ function ProgressUpdateBody({
 
   const codes = checkProgressUpdate(values);
   const overriding = values.figureSource === 'override';
+  const noFigure = submission.actualSource === 'NOT_AVAILABLE';
 
   useEffect(() => {
     if (focusRequest > 0) {
@@ -175,33 +182,37 @@ function ProgressUpdateBody({
         <FigureDetails
           figures={{
             plannedPercent: submission.plannedPercent,
-            actualPercent: submission.actualPercentCalculated,
+            actualPercent: noFigure ? null : submission.actualPercentCalculated,
             isOverridden: false,
             isOpeningPosition: submission.projectIntakeId !== null,
           }}
           intakeDate={intakeDate}
         />
       </dl>
-      <p className="form__note">{t('progress.update.derived')}</p>
-      <RadioGroupField
-        label={t('progress.update.figureSource')}
-        name="figureSource"
-        required
-        value={values.figureSource}
-        options={[
-          { value: 'calculated', label: t('progress.update.useCalculated') },
-          { value: 'override', label: t('progress.update.useOverride') },
-        ]}
-        onChange={(value) => {
-          set('figureSource')(
-            value === 'override' ? 'override' : ('calculated' satisfies FigureSource),
-          );
-        }}
-      />
+      <p className="form__note">{t(SOURCE_NOTES[submission.actualSource])}</p>
+      {!noFigure && (
+        <RadioGroupField
+          label={t('progress.update.figureSource')}
+          name="figureSource"
+          required
+          value={values.figureSource}
+          options={[
+            { value: 'calculated', label: t('progress.update.useCalculated') },
+            { value: 'override', label: t('progress.update.useOverride') },
+          ]}
+          onChange={(value) => {
+            set('figureSource')(
+              value === 'override' ? 'override' : ('calculated' satisfies FigureSource),
+            );
+          }}
+        />
+      )}
       {overriding && (
         <>
           <TextField
-            label={t('progress.update.overridePercent')}
+            label={t(
+              noFigure ? 'progress.update.enteredPercent' : 'progress.update.overridePercent',
+            )}
             name="overridePercent"
             required
             value={values.overridePercent}
@@ -212,7 +223,7 @@ function ProgressUpdateBody({
             error={errorOf(OVERRIDE_PERCENT_FIELD)}
           />
           <TextAreaField
-            label={t('progress.update.overrideReason')}
+            label={t(noFigure ? 'progress.update.enteredReason' : 'progress.update.overrideReason')}
             name="overrideReason"
             required
             rows={3}

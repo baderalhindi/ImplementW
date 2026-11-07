@@ -121,7 +121,7 @@ export interface ProjectFollowUp {
   declaredPlannedSpendPercent: number | null;
   declaredActualSpendPercent: number | null;
   declaredAsOf: string | null;
-  declaredSource: 'IMPORT' | 'MANUAL' | 'ENTITY_UPDATE' | null;
+  declaredSource: 'IMPORT' | 'MANUAL' | 'ENTITY_UPDATE' | 'PROGRESS_UPDATE' | null;
   entityUpdateCompliant: boolean | null;
 }
 

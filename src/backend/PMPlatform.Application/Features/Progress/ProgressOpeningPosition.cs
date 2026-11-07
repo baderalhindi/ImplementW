@@ -53,6 +53,7 @@ internal sealed class ProgressOpeningPosition(IProgressRepository repository, IP
             RevisionNo = 1,
             Status = ProgressSubmissionStatus.Submitted,
             ActualPercentCalculated = position.OpeningPercentComplete,
+            ActualSource = ProgressActualSource.Declared,
             ProjectIntakeId = position.ProjectIntakeId,
             SubmittedByUserId = by,
             SubmittedAt = now,

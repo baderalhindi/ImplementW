@@ -22,6 +22,9 @@ public sealed class ProgressSubmission : AuditedEntity
     /// <summary>The duration-weighted roll-up, recalculated at submission; for the opening position, the intake's figure.</summary>
     public decimal ActualPercentCalculated { get; set; }
 
+    /// <summary>Where <see cref="ActualPercentCalculated"/> comes from.</summary>
+    public ProgressActualSource ActualSource { get; set; } = ProgressActualSource.WorkBreakdown;
+
     /// <summary>The project-level override; null when the calculated value stands.</summary>
     public decimal? ActualPercentOverride { get; set; }
 

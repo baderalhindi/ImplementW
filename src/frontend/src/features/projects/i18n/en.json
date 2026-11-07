@@ -296,7 +296,8 @@
     "source": {
       "IMPORT": "import",
       "MANUAL": "entered here",
-      "ENTITY_UPDATE": "The entity's update"
+      "ENTITY_UPDATE": "The entity's update",
+      "PROGRESS_UPDATE": "a published progress update"
     },
     "compliance": "Entity keeps to its updates",
     "yes": "Yes",

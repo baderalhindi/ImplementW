@@ -21,6 +21,8 @@ internal sealed class ProgressService(
     ProgressAccess access,
     ProgressPolicy policy,
     IProgressInputs inputs,
+    ReportingPeriods periods,
+    IProjectMonthlyUpdates declared,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProgressService
 {
@@ -70,7 +72,7 @@ internal sealed class ProgressService(
 
         DateTimeOffset now = timeProvider.GetUtcNow();
         DateOnly today = ReportingCalendar.Today(now);
-        IReadOnlyList<ReportingCycle> cycles = await GenerateDueCyclesAsync(callerId, project, now, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<ReportingCycle> cycles = await periods.StageDueAsync(callerId, project, now, cancellationToken).ConfigureAwait(false);
 
         // One period at a time, earliest first: publication follows the periods' order, so the latest snapshot is the latest period.
         ReportingCycle? cycle = cycles.Where(c => c.Status == ReportingCycleStatus.Open && c.PeriodStart <= today).MinBy(c => c.PeriodStart);
@@ -86,10 +88,7 @@ internal sealed class ProgressService(
         }
 
         ProgressInputs read = await inputs.ReadAsync(project.Id, cancellationToken).ConfigureAwait(false);
-        if (ProgressRollup.Actual(read.WorkBreakdown) is not { } actual)
-        {
-            return AdministrationError.Rule(ProgressErrorCodes.RollupUnavailable);
-        }
+        (decimal? actual, ProgressActualSource source) = read.Actual();
 
         // ADR-017: the last published period's narrative and override are carried forward, so confirming them is the default action.
         ProgressSubmission? previous = await repository.FindLatestPublishedSubmissionAsync(project.Id, cancellationToken).ConfigureAwait(false);
@@ -100,7 +99,8 @@ internal sealed class ProgressService(
             ReportingCycleId = cycle.Id,
             RevisionNo = revisions.Count == 0 ? 1 : revisions.Max(r => r.RevisionNo) + 1,
             Status = ProgressSubmissionStatus.Draft,
-            ActualPercentCalculated = actual,
+            ActualPercentCalculated = actual ?? 0,
+            ActualSource = source,
             ActualPercentOverride = previous?.ActualPercentOverride,
             OverrideReason = previous?.OverrideReason,
             Narrative = previous?.Narrative,
@@ -109,7 +109,7 @@ internal sealed class ProgressService(
             UpdatedAt = now,
             UpdatedBy = callerId,
         };
-        Plan(submission, read.Baseline, cycle, today);
+        Plan(submission, read, cycle, today);
         repository.Add(submission);
         audit.Stage(ProgressAudit.Started(callerId, project, submission));
         return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) switch
@@ -177,15 +177,17 @@ internal sealed class ProgressService(
         // The figures are fixed at submission (ERD). The opening position keeps the figure entered once at intake (ADR-014).
         if (submission.ProjectIntakeId is null)
         {
-            if (ProgressRollup.Actual(read.WorkBreakdown) is not { } actual)
+            (decimal? actual, ProgressActualSource source) = read.Actual();
+            if (actual is null && !submission.IsOverridden)
             {
-                return AdministrationError.Rule(ProgressErrorCodes.RollupUnavailable);
+                return AdministrationError.Rule(ProgressErrorCodes.RollupUnavailable, new FieldIssue("override", FieldIssue.Required));
             }
 
             ReportingCycle cycle = await repository.FindCycleAsync(submission.ReportingCycleId, cancellationToken).ConfigureAwait(false)
                                    ?? throw new InvalidOperationException($"Submission {submission.Id} has no reporting cycle.");
-            submission.ActualPercentCalculated = actual;
-            Plan(submission, read.Baseline, cycle, ReportingCalendar.Today(now));
+            submission.ActualPercentCalculated = actual ?? 0;
+            submission.ActualSource = source;
+            Plan(submission, read, cycle, ReportingCalendar.Today(now));
         }
 
         submission.Status = ProgressSubmissionStatus.Submitted;
@@ -251,6 +253,7 @@ internal sealed class ProgressService(
             RevisionNo = submission.RevisionNo + 1,
             Status = ProgressSubmissionStatus.Draft,
             ActualPercentCalculated = submission.ActualPercentCalculated,
+            ActualSource = submission.ActualSource,
             ActualPercentOverride = submission.ActualPercentOverride,
             OverrideReason = submission.OverrideReason,
             PlannedPercent = submission.PlannedPercent,
@@ -320,6 +323,13 @@ internal sealed class ProgressService(
         cycle.UpdatedAt = now;
         cycle.UpdatedBy = callerId;
         audit.Stage(ProgressAudit.Published(callerId, project, submission, snapshot));
+
+        // A project with no work breakdown has only its declared figure on the register and the dashboards, so the published one replaces it.
+        if (submission.ActualSource != ProgressActualSource.WorkBreakdown)
+        {
+            await declared.StagePublishedProgressAsync(project.Id, submission.EffectiveActualPercent, callerId, cancellationToken).ConfigureAwait(false);
+        }
+
         await RecomputeCurrentHealthAsync(callerId, project, read, rule, now, cancellationToken).ConfigureAwait(false);
         return await SaveAsync(submission, cancellationToken).ConfigureAwait(false);
     }
@@ -348,55 +358,12 @@ internal sealed class ProgressService(
     }
 
     /// <summary>
-    /// The periods due up to today, generated from the governance profile's cadence and staged with this unit of work; with
-    /// those already generated, earliest first. The cadence is resolved only when a period is due.
-    /// </summary>
-    private async Task<IReadOnlyList<ReportingCycle>> GenerateDueCyclesAsync(Guid callerId, ProjectFacts project, DateTimeOffset now, CancellationToken cancellationToken)
-    {
-        List<ReportingCycle> cycles = [.. await repository.ListCyclesAsync(project.Id, cancellationToken).ConfigureAwait(false)];
-        if (ReportingCalendar.FirstPeriodStart(project) is not { } first)
-        {
-            return cycles;
-        }
-
-        DateOnly today = ReportingCalendar.Today(now);
-        DateOnly next = ReportingCalendar.NextPeriodStart(first, cycles.Count == 0 ? null : cycles.Max(c => c.PeriodEnd));
-        if (next > today)
-        {
-            return cycles;
-        }
-
-        int cadenceDays = await policy.UpdateCadenceDaysAsync(project.GovernanceProfileItemId, now, cancellationToken).ConfigureAwait(false);
-        foreach ((DateOnly start, DateOnly end) in ReportingCalendar.PeriodsBegunBy(next, cadenceDays, today))
-        {
-            ReportingCycle cycle = new()
-            {
-                Id = Guid.CreateVersion7(now),
-                ProjectId = project.Id,
-                PeriodStart = start,
-                PeriodEnd = end,
-                DueDate = end,
-                Status = ReportingCycleStatus.Open,
-                CreatedAt = now,
-                CreatedBy = callerId,
-                UpdatedAt = now,
-                UpdatedBy = callerId,
-            };
-            repository.Add(cycle);
-            audit.Stage(ProgressAudit.CycleCreated(callerId, project, cycle));
-            cycles.Add(cycle);
-        }
-
-        return cycles;
-    }
-
-    /// <summary>
     /// Rewrites the CURRENT/LIVE health from the derived figures as they stand now — never from an unpublished override —
     /// staged with this unit of work (ICD-03, M-12).
     /// </summary>
     private async Task RecomputeCurrentHealthAsync(Guid callerId, ProjectFacts project, ProgressInputs read, HealthRule rule, DateTimeOffset now, CancellationToken cancellationToken)
     {
-        decimal? actual = ProgressRollup.Actual(read.WorkBreakdown);
+        decimal? actual = read.Actual().Percent;
         decimal? planned = ProgressRollup.Planned(read.Baseline, ReportingCalendar.Today(now));
         ProjectHealthStatus? health = await repository.FindHealthStatusAsync(project.Id, track: true, cancellationToken).ConfigureAwait(false);
         HealthStatus? before = health?.OverallHealth;
@@ -417,10 +384,10 @@ internal sealed class ProgressService(
     }
 
     /// <summary>Planned progress at the period's end, or today while the period runs (ADR-009: from the baseline, never entered).</summary>
-    private static void Plan(ProgressSubmission submission, BaselinePlan? baseline, ReportingCycle cycle, DateOnly today)
+    private static void Plan(ProgressSubmission submission, ProgressInputs read, ReportingCycle cycle, DateOnly today)
     {
-        submission.PlannedPercent = ProgressRollup.Planned(baseline, today < cycle.PeriodEnd ? today : cycle.PeriodEnd);
-        submission.BaselineId = submission.PlannedPercent is null ? null : baseline!.BaselineId;
+        submission.PlannedPercent = ProgressRollup.Planned(read.Baseline, today < cycle.PeriodEnd ? today : cycle.PeriodEnd);
+        submission.BaselineId = submission.PlannedPercent is null ? null : read.Baseline!.BaselineId;
     }
 
     /// <summary>Whether the caller may view the project's progress: a collection of a project they may not see is empty.</summary>

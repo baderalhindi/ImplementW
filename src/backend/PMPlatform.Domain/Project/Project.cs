@@ -34,6 +34,9 @@ public sealed class Project : AuditedEntity
     /// <summary>The R04 holder, employer-neutral (ADR-013); absent while DRAFT.</summary>
     public Guid? ProjectManagerUserId { get; set; }
 
+    /// <summary>Who last submitted the registration: the requester of its approval run, so they alone may not decide it (WF-11).</summary>
+    public Guid? SubmittedByUserId { get; set; }
+
     public ProjectLifecycleState LifecycleState { get; set; }
 
     /// <summary>A RETURNED request creates revision + 1 and a new approval instance (TASK-035).</summary>

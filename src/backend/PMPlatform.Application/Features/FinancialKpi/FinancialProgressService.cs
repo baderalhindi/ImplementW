@@ -21,7 +21,7 @@ namespace PMPlatform.Application.Features.FinancialKpi;
 internal sealed class FinancialProgressService(
     IFinancialKpiRepository repository,
     IProjectFactsReader projects,
-    IReportingCycleReader cycles,
+    IReportingPeriodSource periods,
     FinancialKpiAccess access,
     FinancialPolicy policy,
     IAuditTrail audit,
@@ -61,7 +61,7 @@ internal sealed class FinancialProgressService(
         DateOnly today = ValueRules.Today(now);
         IReadOnlyList<FinancialProgressUpdate> updates = await repository.ListUpdatesAsync(project!.Id, cancellationToken).ConfigureAwait(false);
         HashSet<Guid> published = [.. updates.Where(u => u.Status == FinancialUpdateStatus.Published).Select(u => u.ReportingCycleId)];
-        ReportingCycleSummary? cycle = (await cycles.ListAsync(project.Id, cancellationToken).ConfigureAwait(false))
+        ReportingCycleSummary? cycle = (await periods.StageDueAsync(callerId, project, cancellationToken).ConfigureAwait(false))
             .Where(c => c.PeriodStart <= today && !published.Contains(c.Id))
             .MinBy(c => c.PeriodStart);
         if (cycle is null)

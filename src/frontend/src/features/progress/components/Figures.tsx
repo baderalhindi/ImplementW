@@ -47,7 +47,11 @@ export function ActualValue({ figures }: { figures: FigureValues }): ReactElemen
       : null;
   return (
     <span className="figure-group">
-      <PercentValue value={figures.actualPercent} />
+      {figures.actualPercent === null ? (
+        <span className="figure figure--none">{t('progress.figures.notReported')}</span>
+      ) : (
+        <PercentValue value={figures.actualPercent} />
+      )}
       {figures.isOverridden && <OverriddenBadge />}
       {calculated !== null && (
         <span className="details__aside">

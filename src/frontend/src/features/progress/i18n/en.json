@@ -36,7 +36,8 @@
     "calculated": "Calculated {value}",
     "noPlan": "No plan",
     "noVariance": "No variance without a plan",
-    "points": "{value} pp"
+    "points": "{value} pp",
+    "notReported": "Not reported yet"
   },
   "intake": {
     "marker": "Legacy intake {date}",
@@ -52,7 +53,7 @@
     "title": "Progress update in progress",
     "none": "No progress update is in progress.",
     "notActive": "Progress is reported once the project is active.",
-    "startHint": "Start the update for the earliest period that has begun. The figures are calculated from the work breakdown and the baseline.",
+    "startHint": "Start the update for the earliest period that has begun. The figures come from the work breakdown and the baseline or, until the project has them, from the figure declared on it.",
     "returned": "AHDA returned the previous revision of this period:",
     "next": {
       "DRAFT": "The Project Manager prepares this update and submits it to AHDA.",
@@ -96,7 +97,11 @@
     "overrideReasonHint": "Required. AHDA's reviewer sees it.",
     "narrative": "Narrative",
     "confirmSubmit": "Submit to AHDA",
-    "confirmSave": "Save draft"
+    "confirmSave": "Save draft",
+    "declared": "This project has no work breakdown yet, so this is the last figure declared on it. Confirm it, or enter a new one with the reason.",
+    "noFigure": "This project has no work breakdown and no declared figure yet. Enter its progress and say where the figure comes from.",
+    "enteredPercent": "Actual progress (%)",
+    "enteredReason": "Where the figure comes from"
   },
   "review": {
     "title": "Review progress update",
@@ -125,7 +130,7 @@
   },
   "problems": {
     "projectNotActive": "Progress is reported on an active project only.",
-    "rollupUnavailable": "Progress cannot be calculated: the project has no work breakdown with planned durations yet.",
+    "rollupUnavailable": "Enter a progress figure: the project has no work breakdown or declared figure yet.",
     "nothingToReport": "There is nothing to report: every period that has begun is already published.",
     "submissionExists": "An update for this period is already in progress. It is shown below.",
     "notEditable": "Only a draft can be changed.",

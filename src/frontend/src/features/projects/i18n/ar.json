@@ -296,7 +296,8 @@
     "source": {
       "IMPORT": "الاستيراد",
       "MANUAL": "أُدخلت هنا",
-      "ENTITY_UPDATE": "تحديث الجهة"
+      "ENTITY_UPDATE": "تحديث الجهة",
+      "PROGRESS_UPDATE": "تحديث تقدم منشور"
     },
     "compliance": "الجهة ملتزمة بالتحديث الدوري",
     "yes": "نعم",

@@ -95,6 +95,8 @@ internal static class ModuleRegistry
         ("Dashboards", "Suspension"),                // 52 read projection: open suspension and resumption requests (TASK-071)
         ("GlobalSearch", "Project"),                 // 53 query: the header search's projects, through their own list (global-search.md §4)
         ("GlobalSearch", "DocumentManagement"),      // 54 query: the header search's documents, through their own list
+        ("Progress", "ProjectTask"),                 // 55 query: the work breakdown WF-02 rolls up (ADR-009; review round 5)
+        ("Progress", "Schedule"),                    // 56 query: the active baseline's plan and Schedule Health (ADR-009; review round 5)
     };
 
     public static bool Allows(string referrer, string referenced) =>

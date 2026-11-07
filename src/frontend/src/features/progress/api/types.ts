@@ -37,6 +37,8 @@ export interface ProgressSubmissionDetail {
   status: ProgressSubmissionStatus;
   actualPercent: Decimal;
   actualPercentCalculated: Decimal;
+  /** Where the calculated figure comes from; NOT_AVAILABLE means there is none and the person submitting enters one. */
+  actualSource: 'WORK_BREAKDOWN' | 'DECLARED' | 'NOT_AVAILABLE';
   actualPercentOverride: Decimal | null;
   overrideReason: NarrativeText | null;
   isOverridden: boolean;

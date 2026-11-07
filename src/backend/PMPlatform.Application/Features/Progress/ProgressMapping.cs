@@ -6,7 +6,7 @@ namespace PMPlatform.Application.Features.Progress;
 internal static class ProgressMapping
 {
     public static ProgressSubmissionDetail ToDetail(ProgressSubmission s) => new(
-        s.Id, s.ProjectId, s.ReportingCycleId, s.RevisionNo, s.Status, s.EffectiveActualPercent, s.ActualPercentCalculated, s.ActualPercentOverride,
+        s.Id, s.ProjectId, s.ReportingCycleId, s.RevisionNo, s.Status, s.EffectiveActualPercent, s.ActualPercentCalculated, s.ActualSource, s.ActualPercentOverride,
         s.OverrideReason, s.IsOverridden, s.PlannedPercent, s.BaselineId, s.Narrative, s.ProjectIntakeId, s.SubmittedByUserId, s.SubmittedAt,
         s.ReviewedByUserId, s.ReviewedAt, s.ReturnReason, s.CreatedAt, s.CreatedBy, s.UpdatedAt, s.UpdatedBy);
 
