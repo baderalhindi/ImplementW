@@ -360,6 +360,53 @@ describe('MOD-023 Update Financial Progress', () => {
   });
 });
 
+describe('Add KPI (review round 5, item 4)', () => {
+  test('a holder of KPI_MANAGE adds a KPI and sends its target for approval', async () => {
+    const seen: string[] = [];
+    open(KPIS, entityManagerSession(), (api) =>
+      withKpis(withFinancials(api), { assignments: [] })
+        .on('POST', /^\/kpi-assignments$/, () => {
+          seen.push('assignment');
+          return { status: 201, body: { id: 'a1' } };
+        })
+        .on('POST', /^\/kpi-target-versions$/, () => {
+          seen.push('target');
+          return { status: 201, body: { id: 't1' } };
+        })
+        .on('POST', /^\/kpi-target-versions\/t1\/submit$/, () => {
+          seen.push('submit');
+          return { body: {} };
+        }),
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: en('financialKpi.addKpi.action') }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: en('financialKpi.addKpi.title') });
+    await within(dialog).findByRole('combobox', { name: /^KPI/ });
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: en('financialKpi.addKpi.confirm') }),
+    );
+    expect(seen).toEqual([]);
+
+    const [kpi, frequency] = within(dialog).getAllByRole<HTMLSelectElement>('combobox');
+    await userEvent.selectOptions(kpi ?? dialog, kpi?.options[1]?.value ?? '');
+    await userEvent.selectOptions(frequency ?? dialog, frequency?.options[1]?.value ?? '');
+    await userEvent.type(within(dialog).getByRole('textbox', { name: /^Target/ }), '1250');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: en('financialKpi.addKpi.confirm') }),
+    );
+
+    await screen.findByText(en('financialKpi.addKpi.done'));
+    expect(seen).toEqual(['assignment', 'target', 'submit']);
+  });
+
+  test('no Add KPI without KPI_MANAGE', async () => {
+    open(KPIS, entitySession());
+    await screen.findByRole('heading', { name: en('financialKpi.kpis.title') });
+    expect(screen.queryByRole('button', { name: en('financialKpi.addKpi.action') })).toBeNull();
+  });
+});
+
 describe('SCR-071 Financial Progress', () => {
   test('each published period, revision and budget version with its state and provenance; open commitments hidden', async () => {
     open(`${FINANCIALS}/history`, entitySession(), (api) =>

@@ -143,6 +143,33 @@ describe('step 1: choosing projects', () => {
     expect(router.state.location.search).toContain('status=ACTIVE');
   });
 
+  test('select all eligible ignores the filters, keeps what was chosen, and leaves out what cannot be requested', async () => {
+    const api = wizardApi([
+      project('a1'),
+      project('s1', { status: 'SUSPENDED' }),
+      project('n1', { externalEntityId: null }),
+      project('d1', { status: 'DRAFT' }),
+    ]);
+    renderApp({
+      path: '/external-requests/batches/new?status=DRAFT',
+      session: reviewerSession(),
+    });
+
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: en('externalParticipation.batch.step1.selectAllEligible'),
+      }),
+    );
+
+    await waitFor(() => {
+      expect(counter()).toContain('Selected: 2 projects');
+    });
+    const read = api
+      .requestsTo('GET', /^\/projects$/)
+      .find((request) => request.query.get('pageSize') === '200');
+    expect(read?.query.get('status')).toBeNull();
+  });
+
   test('select all with no status filter leaves out what cannot be requested, and says how many', async () => {
     wizardApi([project('a1'), project('d1', { status: 'DRAFT' })]);
     renderApp({ path: '/external-requests/batches/new', session: reviewerSession() });

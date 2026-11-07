@@ -598,7 +598,8 @@
       "selectAll": "Select all matching the filter",
       "clear": "Clear selection",
       "excluded": "{count} matching projects were left out: they cannot be requested.",
-      "choose": "Choose"
+      "choose": "Choose",
+      "selectAllEligible": "Select all eligible projects"
     },
     "step2": {
       "title": "Set the request",

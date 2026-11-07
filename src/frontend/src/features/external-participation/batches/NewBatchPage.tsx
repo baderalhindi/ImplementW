@@ -307,9 +307,12 @@ function ChooseProjects({
     onChange(next);
   };
 
-  /** Everything matching the filter across all pages, not just the page showing. */
-  const selectAll = async () => {
-    const result = await save.run(() => projectsApi.listAll(query));
+  /**
+   * Adds to what is chosen, across all pages: everything matching the filter or, with no query, every eligible project in the register
+   * whatever the filters say (review round 5, item 3).
+   */
+  const selectAll = async (scope: typeof query | Record<string, never>) => {
+    const result = await save.run(() => projectsApi.listAll(scope));
     if (result.ok) {
       const next = new Map(selected);
       const eligible = result.value.filter((project) => ineligibilityOf(project) === null);
@@ -343,7 +346,15 @@ function ChooseProjects({
           type="button"
           className="button"
           disabled={save.saving}
-          onClick={() => void selectAll()}
+          onClick={() => void selectAll({})}
+        >
+          {t('externalParticipation.batch.step1.selectAllEligible')}
+        </button>
+        <button
+          type="button"
+          className="button"
+          disabled={save.saving}
+          onClick={() => void selectAll(query)}
         >
           {save.saving
             ? t('common.states.saving')
