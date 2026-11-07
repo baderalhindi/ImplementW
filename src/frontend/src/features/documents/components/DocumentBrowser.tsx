@@ -1,4 +1,4 @@
-import { type ReactElement, type SyntheticEvent, useCallback, useState } from 'react';
+import { type ReactElement, useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { pageFrom, PAGE_SIZE } from '@/shared/api/paging.ts';
@@ -9,6 +9,7 @@ import { TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useSearchText } from '@/shared/ui/useSearchText.ts';
 
 import { documentsApi } from '../api/documentsApi.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
@@ -56,13 +57,12 @@ export function DocumentBrowser({
       ),
     [projectId, status, q, page],
   );
-  const documents = useApiResource(load);
+  const documents = useApiResource(load, { keepPreviousResult: true });
   const lookups = useDocumentLookups();
-  const [text, setText] = useState(q);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
-  const setFilter = (name: string, value: string) => {
+  const setFilter = (name: string, value: string, replace = false) => {
     const updated = new URLSearchParams(params);
     updated.delete('page');
     if (value === '') {
@@ -70,20 +70,18 @@ export function DocumentBrowser({
     } else {
       updated.set(name, value);
     }
-    setParams(updated);
+    setParams(updated, { replace });
   };
 
-  const applySearch = (event: SyntheticEvent) => {
-    event.preventDefault();
-    setFilter('q', text.trim());
-  };
+  const [text, setText] = useSearchText(q, (value) => {
+    setFilter('q', value, true);
+  });
 
   const clearFilters = () => {
     const updated = new URLSearchParams(params);
     updated.delete('page');
     updated.delete('q');
     updated.delete('status');
-    setText('');
     setParams(updated);
   };
 
@@ -150,14 +148,18 @@ export function DocumentBrowser({
                     value: q,
                   }),
                   onRemove: () => {
-                    setText('');
                     setFilter('q', '');
                   },
                 },
               ]
         }
       >
-        <form className="filters filters--inline" onSubmit={applySearch}>
+        <form
+          className="filters filters--inline"
+          onSubmit={(event) => {
+            event.preventDefault();
+          }}
+        >
           <TextField
             label={t('documents.filters.title')}
             name="q"
@@ -166,15 +168,12 @@ export function DocumentBrowser({
             onChange={setText}
             dir="auto"
           />
-          <div className="filters__actions">
-            <button type="submit" className="button">
-              {t('common.filters.apply')}
-            </button>
-          </div>
         </form>
       </FilterBar>
 
-      {documents.loading && <LoadingState label={t('documents.list.loading')} />}
+      {documents.loading && documents.data === undefined && (
+        <LoadingState label={t('documents.list.loading')} />
+      )}
       {documents.error !== null && (
         <ErrorState
           error={documents.error}

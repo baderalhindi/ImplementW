@@ -295,7 +295,7 @@ function ChooseProjects({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [q, status, departmentId, externalEntityId, itemKey, page],
   );
-  const projects = useApiResource(load);
+  const projects = useApiResource(load, { keepPreviousResult: true });
 
   const toggle = (project: ProjectSummary, on: boolean) => {
     const next = new Map(selected);
@@ -326,7 +326,6 @@ function ChooseProjects({
     <section>
       <h2>{t('externalParticipation.batch.step1.title')}</h2>
       <ProjectFilters
-        key={q}
         q={q}
         values={{ status, departmentId, externalEntityId, ...itemFilters }}
         organizationFilters
@@ -334,7 +333,7 @@ function ChooseProjects({
         lookups={lookups}
         basePath={NEW_UPDATE_BATCH_PATH}
         onSearch={(text) => {
-          setFilter('q', text);
+          setFilter('q', text, { replace: true });
         }}
         onFilter={setFilters}
       />
@@ -378,7 +377,7 @@ function ChooseProjects({
           {t('externalParticipation.batch.step1.excluded', { count: excluded })}
         </p>
       )}
-      {projects.loading && <LoadingState />}
+      {projects.loading && projects.data === undefined && <LoadingState />}
       {projects.error !== null && (
         <ErrorState
           error={projects.error}

@@ -37,8 +37,7 @@
   },
   "states": {
     "loading": "Loading…",
-    "saving": "Saving…",
-    "searching": "Searching…"
+    "saving": "Saving…"
   },
   "values": {
     "yes": "Yes",

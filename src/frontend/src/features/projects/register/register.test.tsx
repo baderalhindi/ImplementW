@@ -131,15 +131,34 @@ describe('SCR-025 Project Register', () => {
       screen.getByLabelText(en('dashboards.filter.departmentId')),
       DEPARTMENT_ID,
     );
-    await user.type(screen.getByLabelText(en('projects.filters.q')), 'park');
-    await user.click(screen.getByRole('button', { name: en('common.actions.search') }));
+    const box = screen.getByLabelText(en('projects.filters.q'));
+    await user.type(box, 'park');
 
+    await waitFor(() => {
+      expect(
+        api
+          .requestsTo('GET', /^\/projects$/)
+          .at(-1)
+          ?.query.get('q'),
+      ).toBe('park');
+    });
     await screen.findByRole('link', { name: 'City park' });
+    expect(screen.queryByRole('link', { name: 'Coastal road' })).toBeNull();
     const last = api.requestsTo('GET', /^\/projects$/).at(-1);
     expect(last?.query.get('status')).toBe('ACTIVE');
     expect(last?.query.get('departmentId')).toBe(DEPARTMENT_ID);
-    expect(last?.query.get('q')).toBe('park');
-    expect(screen.queryByRole('link', { name: 'Coastal road' })).toBeNull();
+    expect(document.activeElement).toBe(box);
+
+    await user.clear(box);
+    await waitFor(() => {
+      expect(
+        api
+          .requestsTo('GET', /^\/projects$/)
+          .at(-1)
+          ?.query.has('q'),
+      ).toBe(false);
+    });
+    expect(document.activeElement).toBe(box);
   });
 
   test('pages through the API’s pages', async () => {

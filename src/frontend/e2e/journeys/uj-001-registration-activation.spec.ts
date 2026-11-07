@@ -58,7 +58,6 @@ test('UJ-001 registration and activation follow Project-master governance', asyn
     await dialog
       .getByRole('searchbox', { name: 'Search by name, username or email' })
       .fill('e2e.pm');
-    await dialog.getByRole('button', { name: 'Search', exact: true }).click();
     await dialog.getByRole('button', { name: 'E2E Project Manager (e2e.pm)' }).click();
     await dialog.getByRole('button', { name: 'Submit for review' }).click();
     await expect(page.locator('.workspace__status')).toContainText('Submitted');

@@ -183,7 +183,7 @@ export function ReportsCenterPage(): ReactElement {
             type="search"
             value={query}
             onChange={(value) => {
-              setFilter('q', value);
+              setFilter('q', value, { replace: true });
             }}
           />
         </form>

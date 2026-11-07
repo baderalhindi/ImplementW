@@ -543,7 +543,6 @@ describe('criterion 2: MOD-014 Assign Task', () => {
       await within(dialog).findByLabelText(en('identityAccess.userPicker.searchLabel')),
       'sami',
     );
-    await press(dialog, en('common.actions.search'));
     await userEvent.click(await within(dialog).findByRole('button', { name: /Sami Unrelated/ }));
     await press(dialog, en('tasks.assign.confirm'));
 

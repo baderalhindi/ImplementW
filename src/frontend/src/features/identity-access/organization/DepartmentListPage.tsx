@@ -1,8 +1,8 @@
 import { type SyntheticEvent, type ReactElement, useCallback, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
+import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
@@ -10,6 +10,7 @@ import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
+import { useSearchText } from '@/shared/ui/useSearchText.ts';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
@@ -34,7 +35,7 @@ type Editing = { mode: 'create' } | { mode: 'edit'; departmentId: string };
 /** ADM-012 Departments: create, edit, activate and deactivate. A department is never deleted (RETAIN). */
 export function DepartmentListPage(): ReactElement {
   const { t, language } = useI18n();
-  const [params, setParams] = useSearchParams();
+  const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const { lookups } = useOrganizationLookups(language);
@@ -43,35 +44,17 @@ export function DepartmentListPage(): ReactElement {
   const q = params.get('q') ?? undefined;
   const activeParam = params.get('isActive');
   const isActive = activeParam === 'true' ? true : activeParam === 'false' ? false : undefined;
-  const page = Math.max(1, Number(params.get('page') ?? '1') || 1);
 
   const load = useCallback(
     (signal: AbortSignal) =>
       departmentsApi.list({ q, isActive, page, pageSize: PAGE_SIZE }, signal),
     [q, isActive, page],
   );
-  const departments = useApiResource(load);
+  const departments = useApiResource(load, { keepPreviousResult: true });
 
-  const [draftQ, setDraftQ] = useState(q ?? '');
-  const [draftActive, setDraftActive] = useState(activeParam ?? '');
-  const applyFilters = (event: SyntheticEvent) => {
-    event.preventDefault();
-    const next = new URLSearchParams();
-    if (draftQ.trim() !== '') {
-      next.set('q', draftQ.trim());
-    }
-    if (draftActive !== '') {
-      next.set('isActive', draftActive);
-    }
-    setParams(next);
-  };
-
-  const removeFilter = (name: 'q' | 'isActive') => {
-    const next = new URLSearchParams(params);
-    next.delete('page');
-    next.delete(name);
-    setParams(next);
-  };
+  const [searchText, setSearchText] = useSearchText(q ?? '', (text) => {
+    setFilter('q', text, { replace: true });
+  });
 
   const toggle = (department: DepartmentSummary) => {
     const name = labelOf(department.name, language);
@@ -121,9 +104,7 @@ export function DepartmentListPage(): ReactElement {
 
       <FilterBar
         onClearAll={() => {
-          setDraftQ('');
-          setDraftActive('');
-          setParams(new URLSearchParams());
+          setFilters({ q: '', isActive: '' });
         }}
         chips={[
           ...(q === undefined
@@ -136,8 +117,7 @@ export function DepartmentListPage(): ReactElement {
                     value: q,
                   }),
                   onRemove: () => {
-                    setDraftQ('');
-                    removeFilter('q');
+                    setFilter('q', '');
                   },
                 },
               ]),
@@ -155,41 +135,42 @@ export function DepartmentListPage(): ReactElement {
                     ),
                   }),
                   onRemove: () => {
-                    setDraftActive('');
-                    removeFilter('isActive');
+                    setFilter('isActive', '');
                   },
                 },
               ]),
         ]}
       >
-        <form className="filters" onSubmit={applyFilters}>
+        <form
+          className="filters"
+          onSubmit={(event) => {
+            event.preventDefault();
+          }}
+        >
           <TextField
             label={t('identityAccess.departments.search')}
             name="q"
             type="search"
-            value={draftQ}
-            onChange={setDraftQ}
+            value={searchText}
+            onChange={setSearchText}
           />
           <SelectField
             label={t('identityAccess.departments.status')}
             name="isActive"
-            value={draftActive}
+            value={activeParam ?? ''}
             placeholder={t('common.filters.any')}
             options={[
               { value: 'true', label: t('identityAccess.departments.active') },
               { value: 'false', label: t('identityAccess.departments.inactive') },
             ]}
-            onChange={setDraftActive}
+            onChange={(value) => {
+              setFilter('isActive', value);
+            }}
           />
-          <div className="filters__actions">
-            <button type="submit" className="button button--primary">
-              {t('common.filters.apply')}
-            </button>
-          </div>
         </form>
       </FilterBar>
 
-      {departments.loading && <LoadingState />}
+      {departments.loading && departments.data === undefined && <LoadingState />}
       {departments.error !== null && (
         <ErrorState
           error={departments.error}
@@ -309,11 +290,7 @@ export function DepartmentListPage(): ReactElement {
               page={departments.data.page}
               pageSize={departments.data.pageSize}
               totalCount={departments.data.totalCount}
-              onPageChange={(next) => {
-                const updated = new URLSearchParams(params);
-                updated.set('page', String(next));
-                setParams(updated);
-              }}
+              onPageChange={goToPage}
             />
           </>
         ))}

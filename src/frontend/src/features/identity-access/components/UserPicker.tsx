@@ -1,13 +1,13 @@
-import { type ReactElement, useCallback, useEffect, useId, useState } from 'react';
+import { type ReactElement, useEffect, useId, useState } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { SEARCH_TYPING_PAUSE_MS } from '@/shared/ui/useSearchText.ts';
 
 import { personLookupsApi } from '../api/identityAccessApi.ts';
 import { type PersonMatch, type UserSummary, type UserType } from '../api/types.ts';
 import { problemMessage } from '../problems.ts';
 
 const RESULT_LIMIT = 10;
-const TYPING_PAUSE_MS = 250;
 
 /** What a form keeps of the person chosen. */
 export type PickedUser = Pick<UserSummary, 'id' | 'displayName' | 'username'> &
@@ -47,52 +47,48 @@ export function UserPicker({
   const id = useId();
   const [text, setText] = useState('');
   const [results, setResults] = useState<PersonMatch[] | null>(null);
-  const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const search = useCallback(
-    async (query: string, signal?: AbortSignal) => {
-      setSearching(true);
+  const wanted = text.trim();
+  useEffect(() => {
+    if (wanted === '') {
+      return undefined;
+    }
+    const controller = new AbortController();
+    const search = async () => {
       setSearchError(null);
       try {
         const page = await personLookupsApi.list(
           {
-            q: query.trim() === '' ? undefined : query.trim(),
+            q: wanted,
             userType,
             externalEntityId: externalEntityId ?? undefined,
             projectId: projectId ?? undefined,
             pageSize: RESULT_LIMIT,
           },
-          signal,
+          controller.signal,
         );
-        if (signal?.aborted !== true) {
+        if (!controller.signal.aborted) {
           setResults(page.items);
         }
       } catch (caught) {
-        if (signal?.aborted !== true) {
+        if (!controller.signal.aborted) {
           setResults(null);
           setSearchError(problemMessage(caught, t));
         }
-      } finally {
-        if (signal?.aborted !== true) {
-          setSearching(false);
-        }
       }
-    },
-    [externalEntityId, projectId, t, userType],
-  );
-
-  useEffect(() => {
-    if (text.trim() === '') {
-      return undefined;
-    }
-    const controller = new AbortController();
-    const timer = setTimeout(() => void search(text, controller.signal), TYPING_PAUSE_MS);
+    };
+    const timer = setTimeout(() => void search(), SEARCH_TYPING_PAUSE_MS);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [search, text]);
+  }, [externalEntityId, projectId, t, userType, wanted]);
+
+  const clearSearch = () => {
+    setResults(null);
+    setSearchError(null);
+  };
 
   const describedBy = [
     hint === undefined ? null : `${id}-hint`,
@@ -126,22 +122,16 @@ export function UserPicker({
               value={text}
               onChange={(event) => {
                 setText(event.target.value);
+                if (event.target.value.trim() === '') {
+                  clearSearch();
+                }
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
                   event.preventDefault();
-                  void search(text);
                 }
               }}
             />
-            <button
-              type="button"
-              className="button"
-              disabled={searching}
-              onClick={() => void search(text)}
-            >
-              {searching ? t('common.states.searching') : t('common.actions.search')}
-            </button>
           </div>
           {searchError !== null && (
             <p className="field__error" role="alert">
@@ -183,7 +173,8 @@ export function UserPicker({
             type="button"
             className="button"
             onClick={() => {
-              setResults(null);
+              setText('');
+              clearSearch();
               onChange(null);
             }}
           >

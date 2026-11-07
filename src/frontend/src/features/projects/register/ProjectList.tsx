@@ -88,7 +88,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [q, status, departmentId, externalEntityId, projectManagerUserId, itemKey, sort, page],
   );
-  const projects = useApiResource(load);
+  const projects = useApiResource(load, { keepPreviousResult: true });
   const managerName = usePersonNames(
     (projects.data?.items ?? []).map((project) => project.projectManagerUserId),
   );
@@ -101,7 +101,6 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
   return (
     <>
       <ProjectFilters
-        key={q}
         q={q}
         values={{ status, departmentId, externalEntityId, sort, ...itemFilters }}
         organizationFilters={!mine}
@@ -109,13 +108,15 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
         lookups={lookups}
         basePath={basePath}
         onSearch={(text) => {
-          setFilter('q', text);
+          setFilter('q', text, { replace: true });
         }}
         onFilter={setFilters}
       />
       <p className="list-order">{t('projects.list.order')}</p>
 
-      {projects.loading && <LoadingState label={t('projects.list.loading')} />}
+      {projects.loading && projects.data === undefined && (
+        <LoadingState label={t('projects.list.loading')} />
+      )}
       {/* A role without PROJECT_VIEW sees no project at all: the same answer as a scope that reaches none. */}
       {isForbidden(projects.error) && (
         <ProjectListEmpty filtered={false} forbidden mine={mine} basePath={basePath} />

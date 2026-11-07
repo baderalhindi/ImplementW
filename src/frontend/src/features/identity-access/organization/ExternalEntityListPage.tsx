@@ -1,8 +1,8 @@
 import { type SyntheticEvent, type ReactElement, useCallback, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
+import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
@@ -10,6 +10,7 @@ import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useSearchText } from '@/shared/ui/useSearchText.ts';
 
 import {
   externalEntitiesApi,
@@ -53,42 +54,24 @@ type Editing = { mode: 'create' } | { mode: 'edit'; entityId: string };
  */
 export function ExternalEntityListPage(): ReactElement {
   const { t, language } = useI18n();
-  const [params, setParams] = useSearchParams();
+  const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
   const q = params.get('q') ?? undefined;
   const status = STATUSES.find((s) => s === params.get('status'));
-  const page = Math.max(1, Number(params.get('page') ?? '1') || 1);
 
   const load = useCallback(
     (signal: AbortSignal) =>
       externalEntitiesApi.list({ q, status, page, pageSize: PAGE_SIZE }, signal),
     [q, status, page],
   );
-  const entities = useApiResource(load);
+  const entities = useApiResource(load, { keepPreviousResult: true });
   const sponsorNames = useUserNames(entities.data?.items.map((e) => e.sponsorUserId) ?? []);
 
-  const [draftQ, setDraftQ] = useState(q ?? '');
-  const [draftStatus, setDraftStatus] = useState<string>(status ?? '');
-  const applyFilters = (event: SyntheticEvent) => {
-    event.preventDefault();
-    const next = new URLSearchParams();
-    if (draftQ.trim() !== '') {
-      next.set('q', draftQ.trim());
-    }
-    if (draftStatus !== '') {
-      next.set('status', draftStatus);
-    }
-    setParams(next);
-  };
-
-  const removeFilter = (name: 'q' | 'status') => {
-    const next = new URLSearchParams(params);
-    next.delete('page');
-    next.delete(name);
-    setParams(next);
-  };
+  const [searchText, setSearchText] = useSearchText(q ?? '', (text) => {
+    setFilter('q', text, { replace: true });
+  });
 
   const confirm = (entity: ExternalEntitySummary, transition: ExternalEntityTransition) => {
     const name = labelOf(entity.name, language);
@@ -128,9 +111,7 @@ export function ExternalEntityListPage(): ReactElement {
 
       <FilterBar
         onClearAll={() => {
-          setDraftQ('');
-          setDraftStatus('');
-          setParams(new URLSearchParams());
+          setFilters({ q: '', status: '' });
         }}
         chips={[
           ...(q === undefined
@@ -143,8 +124,7 @@ export function ExternalEntityListPage(): ReactElement {
                     value: q,
                   }),
                   onRemove: () => {
-                    setDraftQ('');
-                    removeFilter('q');
+                    setFilter('q', '');
                   },
                 },
               ]),
@@ -158,41 +138,42 @@ export function ExternalEntityListPage(): ReactElement {
                     value: t(`identityAccess.entityStatus.${status}`),
                   }),
                   onRemove: () => {
-                    setDraftStatus('');
-                    removeFilter('status');
+                    setFilter('status', '');
                   },
                 },
               ]),
         ]}
       >
-        <form className="filters" onSubmit={applyFilters}>
+        <form
+          className="filters"
+          onSubmit={(event) => {
+            event.preventDefault();
+          }}
+        >
           <TextField
             label={t('identityAccess.entities.search')}
             name="q"
             type="search"
-            value={draftQ}
-            onChange={setDraftQ}
+            value={searchText}
+            onChange={setSearchText}
           />
           <SelectField
             label={t('identityAccess.entities.status')}
             name="status"
-            value={draftStatus}
+            value={status ?? ''}
             placeholder={t('common.filters.any')}
             options={STATUSES.map((value) => ({
               value,
               label: t(`identityAccess.entityStatus.${value}`),
             }))}
-            onChange={setDraftStatus}
+            onChange={(value) => {
+              setFilter('status', value);
+            }}
           />
-          <div className="filters__actions">
-            <button type="submit" className="button button--primary">
-              {t('common.filters.apply')}
-            </button>
-          </div>
         </form>
       </FilterBar>
 
-      {entities.loading && <LoadingState />}
+      {entities.loading && entities.data === undefined && <LoadingState />}
       {entities.error !== null && (
         <ErrorState
           error={entities.error}
@@ -279,11 +260,7 @@ export function ExternalEntityListPage(): ReactElement {
               page={entities.data.page}
               pageSize={entities.data.pageSize}
               totalCount={entities.data.totalCount}
-              onPageChange={(next) => {
-                const updated = new URLSearchParams(params);
-                updated.set('page', String(next));
-                setParams(updated);
-              }}
+              onPageChange={goToPage}
             />
           </>
         ))}
