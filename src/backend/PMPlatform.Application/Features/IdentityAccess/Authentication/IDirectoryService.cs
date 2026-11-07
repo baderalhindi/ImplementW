@@ -13,6 +13,12 @@ public interface IDirectoryService
     /// <summary>Reads the person's directory-authoritative attributes by subject, e.g. after an SSO sign-in.</summary>
     public Task<DirectoryResult> FindBySubjectAsync(string subjectId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Binds as the person with <paramref name="currentPassword"/> and changes their own password under that bind, so the service account needs no write
+    /// right and the directory's own password policy applies.
+    /// </summary>
+    public Task<DirectoryPasswordChange> ChangePasswordAsync(string subjectId, string currentPassword, string newPassword, CancellationToken cancellationToken);
+
     public DirectoryIntegrationStatus Describe();
 
     /// <summary>Binds as the service account and reads the search base.</summary>

@@ -5,7 +5,7 @@
       "forgot-password": {
         "question": "I have forgotten my password. How do I reset it?",
         "answer": [
-          "The platform does not reset passwords. Contact the AHDA IT service desk: your password is the one you use for your AHDA account."
+          "If you know your password, sign in and choose Change password in the account menu: you change it yourself, whichever account you sign in with on this page. If you have forgotten an AHDA directory password, contact the AHDA IT service desk: the platform cannot reset it without the current one."
         ]
       },
       "session-ended": {

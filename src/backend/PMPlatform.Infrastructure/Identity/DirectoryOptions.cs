@@ -33,6 +33,9 @@ internal sealed class DirectoryOptions
     /// </summary>
     public bool AllowUnencryptedConnection { get; set; }
 
+    /// <summary>How a person's own password change is written. The default is Active Directory's, like the attribute names above.</summary>
+    public DirectoryPasswordProtocol PasswordChangeProtocol { get; set; } = DirectoryPasswordProtocol.ActiveDirectory;
+
     /// <summary>Bounds each connection attempt and each operation, so an unreachable directory fails fast.</summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 

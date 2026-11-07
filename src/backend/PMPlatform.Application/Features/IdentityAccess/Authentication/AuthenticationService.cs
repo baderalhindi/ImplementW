@@ -88,7 +88,7 @@ internal sealed partial class AuthenticationService(
         long startedAt = timeProvider.GetTimestamp();
         if (!localAccounts.Enabled || await users.FindLocalCredentialByIdAsync(userId, cancellationToken).ConfigureAwait(false) is not { } credential)
         {
-            return PasswordUpdateResult.NotLocal;
+            return await ChangeDirectoryPasswordAsync(userId, currentPassword, newPassword, startedAt, cancellationToken).ConfigureAwait(false);
         }
 
         Attempt attempt = Attempt.SignIn(AuthenticationMethod.LocalPassword, credential.Username);
@@ -354,6 +354,49 @@ internal sealed partial class AuthenticationService(
         }
 
         return await StartLocalSessionAsync(attempt, credential.UserId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A directory account changes its password in the directory, under a bind as the person: nobody else is involved. The platform's rules are the floor and
+    /// the directory's policy applies on top, including its history and lockout. The new password is passed on and never stored here.
+    /// </summary>
+    private async Task<PasswordUpdateResult> ChangeDirectoryPasswordAsync(Guid userId, string currentPassword, string newPassword, long startedAt, CancellationToken cancellationToken)
+    {
+        if (!directory.IsConfigured || await users.FindDirectoryAccountAsync(userId, cancellationToken).ConfigureAwait(false) is not { } account)
+        {
+            return PasswordUpdateResult.NotLocal;
+        }
+
+        if (!LocalPassword.MeetsRules(newPassword, account.Username))
+        {
+            return PasswordUpdateResult.Refused("newPassword", LocalPassword.TooWeak);
+        }
+
+        if (string.Equals(newPassword, currentPassword, StringComparison.Ordinal))
+        {
+            return PasswordUpdateResult.Refused("newPassword", LocalPassword.Reused);
+        }
+
+        Attempt attempt = Attempt.SignIn(AuthenticationMethod.Directory, account.Username);
+        switch (await directory.ChangePasswordAsync(account.SubjectId, currentPassword, newPassword, cancellationToken).ConfigureAwait(false))
+        {
+            case DirectoryPasswordChange.Changed:
+                await users.RecordDirectoryPasswordChangedAsync(userId, cancellationToken).ConfigureAwait(false);
+                await audit.RecordAsync(Entry(attempt, IdentityAccessAuditEvents.PasswordChanged, AuditOutcome.Success, userId, userId)).ConfigureAwait(false);
+                return PasswordUpdateResult.Updated;
+            case DirectoryPasswordChange.CurrentPasswordRejected:
+                await FailAsync(attempt, AuthenticationFailureReason.CredentialsRejected, userId).ConfigureAwait(false);
+                await WaitOutRejectionFloorAsync(startedAt, cancellationToken).ConfigureAwait(false);
+                return PasswordUpdateResult.Refused("currentPassword", LocalPassword.IncorrectCurrent);
+            case DirectoryPasswordChange.NewPasswordRejected:
+                return PasswordUpdateResult.Refused("newPassword", LocalPassword.RejectedByDirectory);
+            case DirectoryPasswordChange.Unavailable:
+                await FailAsync(attempt, AuthenticationFailureReason.ProviderUnavailable, userId).ConfigureAwait(false);
+                return PasswordUpdateResult.Failed(AuthenticationFailure.ProviderUnavailable);
+            case DirectoryPasswordChange.NotPermitted:
+            default:
+                return PasswordUpdateResult.NotLocal;
+        }
     }
 
     /// <summary>The rule a new password breaks, or null: <see cref="LocalPassword.TooWeak"/> or <see cref="LocalPassword.Reused"/>.</summary>

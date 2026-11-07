@@ -115,7 +115,8 @@ end date. Lockout returns the same 401 as a wrong password, so a locked user is 
 | Account | Change while signed in | Forgotten password |
 | --- | --- | --- |
 | Local | `POST /sessions/current/password-change`, with the current password. Wrong guesses count towards the lockout | `POST /sessions/password-reset-requests` e-mails a link to `/reset-password`; `POST /sessions/password-reset` sets the new password. An administrator's reset stays available |
-| Directory or Microsoft | Not the platform's to change (ADR-007): the page links to `VITE_PASSWORD_RESET_URL`, or names the service desk | The same |
+| Directory (changed 7 Nov 2026) | The same endpoint, with the current password: the API binds to the directory as the person and writes the change under that bind, so no administrator or service-account write right is involved. The platform's rules are the floor; the directory's policy, history and lockout apply on top (`PASSWORD_REJECTED_BY_DIRECTORY`). The password changes for everything that uses the directory, which the page says | Not built: the page names `VITE_PASSWORD_RESET_URL` or the service desk. A reset without the current password would need the service account to hold a reset right, and would let a mailbox set a corporate password |
+| Microsoft | Microsoft's: the page links to `VITE_PASSWORD_RESET_URL`, or names the service desk | The same |
 
 The password rules are the ones above. The reset link works once, lasts 30 minutes (`Identity:LocalAccounts:PasswordResetLinkLifetime`) and issues no session, so the second factor still applies. At most one message goes per account in 5 minutes (`PasswordResetCooldown`). A reset request answers the same 204 in the same time whether or not the account exists.
 

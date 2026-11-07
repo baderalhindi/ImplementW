@@ -62,7 +62,8 @@
     "passwordTooWeak": "Use at least 12 characters, mixing letters and digits, and not the username.",
     "passwordReused": "This is one of your last 5 passwords. Choose a different one.",
     "passwordMismatch": "The two passwords do not match.",
-    "passwordIncorrect": "The current password is wrong."
+    "passwordIncorrect": "The current password is wrong.",
+    "passwordRejectedByDirectory": "The AHDA directory refused this password. Choose a longer or less common one that you have not used before."
   },
   "problems": {
     "duplicateKey": "A value you entered is already used by another record. See the highlighted field.",
@@ -556,7 +557,8 @@
     "changeDescription": "After the change, sign in again with your new password. Every other session of your account ends too.",
     "currentPassword": "Current password",
     "changeSubmit": "Change password",
-    "managedBody": "Your password belongs to your AHDA directory or Microsoft account, so it is changed there and not on this platform.",
+    "changeDescriptionDirectory": "This changes your AHDA directory password, everywhere you use it. After the change, sign in again with your new password. Every other session of your account ends too.",
+    "managedBody": "You sign in with your Microsoft account, so your password is changed at Microsoft and not on this platform.",
     "managedLink": "Go to AHDA's password page",
     "managedContact": "To change or reset it, contact the AHDA IT service desk.",
     "directoryAccount": "Do you sign in with your AHDA directory or Microsoft account?",

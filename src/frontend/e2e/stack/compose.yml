@@ -154,6 +154,7 @@ services:
       Identity__Directory__SubjectAttribute: entryUUID
       Identity__Directory__DepartmentAttribute: departmentNumber
       Identity__Directory__AllowUnencryptedConnection: 'true'
+      Identity__Directory__PasswordChangeProtocol: PasswordModify
       MFA_PROVIDER_ENDPOINT: http://e2e-standins:5397
       MFA_PROVIDER_API_KEY: e2e-mfa-key # local default; never a real credential
       Identity__Mfa__Provider__RequireHttps: 'false'

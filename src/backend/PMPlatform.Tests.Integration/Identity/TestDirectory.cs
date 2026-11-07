@@ -23,6 +23,14 @@ internal static class TestDirectory
     /// <summary>In the directory, with no platform user.</summary>
     public static readonly string UnregisteredSubject = Subject(99);
 
+    /// <summary>In the directory, with no platform user: the one person a test changes the password of.</summary>
+    public const string PasswordChangeUsername = "local.password-change";
+
+    /// <summary>Meets the password rules, so the test can put it back through the API.</summary>
+    public const string PasswordChangeStartingPassword = "Local4Directory9Password";
+
+    public static readonly string PasswordChangeSubject = Subject(98);
+
     /// <summary>The attribute names of an OpenLDAP inetOrgPerson, as the compose stack configures them.</summary>
     public static IReadOnlyDictionary<string, string?> Settings => new Dictionary<string, string?>
     {
@@ -33,6 +41,7 @@ internal static class TestDirectory
         ["Identity:Directory:SubjectAttribute"] = "entryUUID",
         ["Identity:Directory:DepartmentAttribute"] = "departmentNumber",
         ["Identity:Directory:AllowUnencryptedConnection"] = "true",
+        ["Identity:Directory:PasswordChangeProtocol"] = "PasswordModify",
         ["Identity:Directory:Timeout"] = "00:00:05",
     };
 }

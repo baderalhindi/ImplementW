@@ -16,7 +16,7 @@ public sealed record PasswordChangeRequest(string? PasswordChangeToken, string? 
     }
 }
 
-/// <summary>A signed-in local account's new password, proved by its current one.</summary>
+/// <summary>A signed-in account's new password, proved by its current one.</summary>
 public sealed record OwnPasswordChangeRequest(string? CurrentPassword, string? NewPassword)
 {
     private const int MaxPasswordLength = 200;

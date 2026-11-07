@@ -20,6 +20,9 @@ public static class LocalPassword
     /// <summary>A field error code: the current password given when changing it is wrong, or the account is locked.</summary>
     public const string IncorrectCurrent = "PASSWORD_INCORRECT";
 
+    /// <summary>The directory's own password policy refused a directory account's new password.</summary>
+    public const string RejectedByDirectory = "PASSWORD_REJECTED_BY_DIRECTORY";
+
     private const int Iterations = 600_000;
     private const int SaltBytes = 16;
     private const int HashBytes = 32;

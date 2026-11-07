@@ -4,8 +4,8 @@
 # identity_access.user.directory_subject_id (synthetic kind 0012). title, departmentNumber and manager are the three
 # directory-authoritative attributes of ADR-007; DEPT-LOCAL is the local department's directory_reference.
 #
-# Every userPassword below is a LOCAL DEFAULT, never a real credential: "local-directory-password" for people and
-# "local-service-password" for the service account. The integration tests sign in with them.
+# Every userPassword below is a LOCAL DEFAULT, never a real credential: "local-directory-password" for people (except the
+# password-change person at the end) and "local-service-password" for the service account. The integration tests sign in with them.
 
 dn: dc=pmplatform,dc=local
 objectClass: dcObject
@@ -138,3 +138,13 @@ sn: Unregistered
 mail: local.unregistered@pmplatform.local
 entryUUID: 00000000-0012-4000-8000-000000000099
 userPassword: local-directory-password
+
+# Only for the test that changes its own password, so no other test's sign-in depends on it.
+dn: uid=local.password-change,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.password-change
+cn: Local Password Change
+sn: Change
+mail: local.password-change@pmplatform.local
+entryUUID: 00000000-0012-4000-8000-000000000098
+userPassword: Local4Directory9Password
