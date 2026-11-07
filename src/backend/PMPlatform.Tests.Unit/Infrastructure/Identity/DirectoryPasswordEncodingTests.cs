@@ -14,6 +14,14 @@ public sealed class DirectoryPasswordEncodingTests
     {
         byte[] expected = [0x30, 0x0A, 0x81, 0x03, .. Encoding.ASCII.GetBytes("old"), 0x82, 0x03, .. Encoding.ASCII.GetBytes("new")];
 
-        Assert.Equal(expected, DirectoryPasswordEncoding.PasswordModifyRequest("old", "new"));
+        Assert.Equal(expected, DirectoryPasswordEncoding.PasswordModifyRequest(null, "old", "new"));
+    }
+
+    [Fact]
+    public void APasswordModifyResetNamesThePersonAndCarriesNoCurrentPassword()
+    {
+        byte[] expected = [0x30, 0x08, 0x80, 0x01, .. Encoding.ASCII.GetBytes("u"), 0x82, 0x03, .. Encoding.ASCII.GetBytes("new")];
+
+        Assert.Equal(expected, DirectoryPasswordEncoding.PasswordModifyRequest("u", null, "new"));
     }
 }

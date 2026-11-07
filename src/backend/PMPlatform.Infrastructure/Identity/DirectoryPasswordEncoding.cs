@@ -23,16 +23,28 @@ internal static class DirectoryPasswordEncoding
     /// <summary>The password in double quotes, in UTF-16LE, as Active Directory's <c>unicodePwd</c> requires.</summary>
     public static byte[] ActiveDirectoryValue(string password) => Encoding.Unicode.GetBytes($"\"{password}\"");
 
-    /// <summary>RFC 3062 <c>PasswdModifyRequestValue</c> with no <c>userIdentity</c>: the change applies to whoever is bound.</summary>
-    public static byte[] PasswordModifyRequest(string currentPassword, string newPassword)
+    /// <summary>
+    /// RFC 3062 <c>PasswdModifyRequestValue</c>. With no <paramref name="userIdentity"/> the change applies to whoever is bound, proved by
+    /// <paramref name="currentPassword"/>; with one, the bound service account sets that person's password.
+    /// </summary>
+    public static byte[] PasswordModifyRequest(string? userIdentity, string? currentPassword, string newPassword)
     {
         AsnWriter writer = new(AsnEncodingRules.BER);
         using (writer.PushSequence())
         {
-            writer.WriteOctetString(Encoding.UTF8.GetBytes(currentPassword), new Asn1Tag(TagClass.ContextSpecific, 1));
-            writer.WriteOctetString(Encoding.UTF8.GetBytes(newPassword), new Asn1Tag(TagClass.ContextSpecific, 2));
+            WriteOptional(writer, userIdentity, 0);
+            WriteOptional(writer, currentPassword, 1);
+            WriteOptional(writer, newPassword, 2);
         }
 
         return writer.Encode();
+    }
+
+    private static void WriteOptional(AsnWriter writer, string? value, int tag)
+    {
+        if (value is not null)
+        {
+            writer.WriteOctetString(Encoding.UTF8.GetBytes(value), new Asn1Tag(TagClass.ContextSpecific, tag));
+        }
     }
 }

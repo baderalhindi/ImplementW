@@ -15,6 +15,8 @@ public interface IUserAccessRepository
     /// <summary>The user, if their password lives in the directory.</summary>
     public Task<DirectoryAccount?> FindDirectoryAccountAsync(Guid userId, CancellationToken cancellationToken);
 
+    public Task<DirectoryAccount?> FindDirectoryAccountAsync(string username, CancellationToken cancellationToken);
+
     /// <summary>A directory password has changed: stamps the time, which ends the account's sessions at their next refresh.</summary>
     public Task RecordDirectoryPasswordChangedAsync(Guid userId, CancellationToken cancellationToken);
 

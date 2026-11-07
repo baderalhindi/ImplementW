@@ -18,4 +18,8 @@ public enum DirectoryPasswordChange
 }
 
 /// <summary>A platform user whose password lives in the directory.</summary>
-public sealed record DirectoryAccount(string Username, string SubjectId);
+public sealed record DirectoryAccount(Guid UserId, string Username, string SubjectId, DateTimeOffset? PasswordChangedAt)
+{
+    /// <summary>Names this account's last platform change in a reset token, so the link stops working once it has been used.</summary>
+    public string ResetFingerprint => Authentication.LocalPassword.Fingerprint($"directory:{SubjectId}:{PasswordChangedAt?.ToUnixTimeSeconds() ?? 0}");
+}

@@ -148,3 +148,22 @@ sn: Change
 mail: local.password-change@pmplatform.local
 entryUUID: 00000000-0012-4000-8000-000000000098
 userPassword: Local4Directory9Password
+
+# Only for the test that resets a forgotten password.
+dn: uid=local.password-reset,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.password-reset
+cn: Local Password Reset
+sn: Reset
+mail: local.password-reset@pmplatform.local
+entryUUID: 00000000-0012-4000-8000-000000000097
+userPassword: Local4Directory9Password
+
+# No mail attribute: a reset link has nowhere to go.
+dn: uid=local.no-mail,ou=People,dc=pmplatform,dc=local
+objectClass: inetOrgPerson
+uid: local.no-mail
+cn: Local No Mail
+sn: Mail
+entryUUID: 00000000-0012-4000-8000-000000000096
+userPassword: Local4Directory9Password

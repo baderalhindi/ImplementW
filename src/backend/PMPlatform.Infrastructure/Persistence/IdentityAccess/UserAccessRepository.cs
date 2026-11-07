@@ -29,10 +29,16 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
     public Task<LocalCredential?> FindLocalCredentialByIdAsync(Guid userId, CancellationToken cancellationToken) =>
         LocalCredentialAsync(u => u.Id == userId, cancellationToken);
 
-    public async Task<DirectoryAccount?> FindDirectoryAccountAsync(Guid userId, CancellationToken cancellationToken) =>
-        await context.Set<User>().AsNoTracking()
-            .Where(u => u.Id == userId && u.AccountSource == AccountSource.Directory && u.DirectorySubjectId != null)
-            .Select(u => new DirectoryAccount(u.Username, u.DirectorySubjectId!))
+    public Task<DirectoryAccount?> FindDirectoryAccountAsync(Guid userId, CancellationToken cancellationToken) =>
+        DirectoryAccountAsync(u => u.Id == userId, cancellationToken);
+
+    public Task<DirectoryAccount?> FindDirectoryAccountAsync(string username, CancellationToken cancellationToken) =>
+        DirectoryAccountAsync(u => u.Username == username, cancellationToken);
+
+    private async Task<DirectoryAccount?> DirectoryAccountAsync(Expression<Func<User, bool>> predicate, CancellationToken cancellationToken) =>
+        await context.Set<User>().AsNoTracking().Where(predicate)
+            .Where(u => u.AccountSource == AccountSource.Directory && u.DirectorySubjectId != null)
+            .Select(u => new DirectoryAccount(u.Id, u.Username, u.DirectorySubjectId!, u.PasswordChangedAt))
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
     public async Task RecordDirectoryPasswordChangedAsync(Guid userId, CancellationToken cancellationToken)

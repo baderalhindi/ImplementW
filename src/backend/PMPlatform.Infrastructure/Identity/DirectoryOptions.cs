@@ -24,6 +24,9 @@ internal sealed class DirectoryOptions
     /// <summary>Its value is matched against <c>Department.DirectoryReference</c>.</summary>
     public string DepartmentAttribute { get; set; } = "department";
 
+    /// <summary>Where a forgotten password's link goes.</summary>
+    public string MailAttribute { get; set; } = "mail";
+
     /// <summary>A distinguished name; the manager's subject is read from it.</summary>
     public string ManagerAttribute { get; set; } = "manager";
 
@@ -32,6 +35,12 @@ internal sealed class DirectoryOptions
     /// set only for the local test directory (infra/docker).
     /// </summary>
     public bool AllowUnencryptedConnection { get; set; }
+
+    /// <summary>
+    /// Lets a person reset a forgotten directory password by e-mail. Off by default: it needs the service account to hold a reset right on those
+    /// people, and makes a mailbox enough to set a directory password (SR-85).
+    /// </summary>
+    public bool AllowPasswordReset { get; set; }
 
     /// <summary>How a person's own password change is written. The default is Active Directory's, like the attribute names above.</summary>
     public DirectoryPasswordProtocol PasswordChangeProtocol { get; set; } = DirectoryPasswordProtocol.ActiveDirectory;

@@ -31,6 +31,18 @@ internal static class TestDirectory
 
     public static readonly string PasswordChangeSubject = Subject(98);
 
+    /// <summary>The one person a test resets the password of; their directory address is below.</summary>
+    public const string PasswordResetUsername = "local.password-reset";
+
+    public const string PasswordResetMail = "local.password-reset@pmplatform.local";
+
+    public static readonly string PasswordResetSubject = Subject(97);
+
+    /// <summary>In the directory with no mail attribute.</summary>
+    public const string NoMailUsername = "local.no-mail";
+
+    public static readonly string NoMailSubject = Subject(96);
+
     /// <summary>The attribute names of an OpenLDAP inetOrgPerson, as the compose stack configures them.</summary>
     public static IReadOnlyDictionary<string, string?> Settings => new Dictionary<string, string?>
     {

@@ -26,6 +26,8 @@ internal sealed partial class LdapDirectoryService(
 
     public bool IsConfigured => Connection() is not null;
 
+    public bool IsPasswordResetEnabled => Options.AllowPasswordReset && IsConfigured;
+
     public async Task<DirectoryResult> AuthenticateAsync(string username, string password, CancellationToken cancellationToken)
     {
         DirectoryConnection? connection = Connection();
@@ -98,11 +100,62 @@ internal sealed partial class LdapDirectoryService(
     public async Task<DirectoryPasswordChange> ChangePasswordAsync(string subjectId, string currentPassword, string newPassword, CancellationToken cancellationToken)
     {
         // An empty current password is an unauthenticated bind, which would prove nothing (RFC 4513 §5.1.2).
-        if (string.IsNullOrEmpty(currentPassword))
+        return string.IsNullOrEmpty(currentPassword)
+            ? DirectoryPasswordChange.CurrentPasswordRejected
+            : await WritePasswordAsync("password change", subjectId, async (ldap, dn) =>
         {
-            return DirectoryPasswordChange.CurrentPasswordRejected;
-        }
+            try
+            {
+                await ldap.BindAsync(dn, currentPassword, cancellationToken).ConfigureAwait(false);
+            }
+            catch (LdapException exception) when (exception.ResultCode == LdapException.InvalidCredentials)
+            {
+                return DirectoryPasswordChange.CurrentPasswordRejected;
+            }
 
+            // Bound as the person, so the directory treats this as their own change, not an administrator's reset.
+            if (Options.PasswordChangeProtocol == DirectoryPasswordProtocol.PasswordModify)
+            {
+                await SendPasswordModifyAsync(ldap, DirectoryPasswordEncoding.PasswordModifyRequest(null, currentPassword, newPassword), cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await ldap.ModifyAsync(
+                    dn,
+                    [
+                        new LdapModification(LdapModification.Delete, ActiveDirectoryPassword(currentPassword)),
+                        new LdapModification(LdapModification.Add, ActiveDirectoryPassword(newPassword)),
+                    ],
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            return DirectoryPasswordChange.Changed;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<DirectoryPasswordChange> ResetPasswordAsync(string subjectId, string newPassword, CancellationToken cancellationToken)
+    {
+        return !IsPasswordResetEnabled
+            ? DirectoryPasswordChange.NotPermitted
+            : await WritePasswordAsync("password reset", subjectId, async (ldap, dn) =>
+        {
+            if (Options.PasswordChangeProtocol == DirectoryPasswordProtocol.PasswordModify)
+            {
+                await SendPasswordModifyAsync(ldap, DirectoryPasswordEncoding.PasswordModifyRequest(dn, null, newPassword), cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await ldap.ModifyAsync(dn, [new LdapModification(LdapModification.Replace, ActiveDirectoryPassword(newPassword))], cancellationToken).ConfigureAwait(false);
+            }
+
+            return DirectoryPasswordChange.Changed;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Finds the person with the service account, runs <paramref name="write"/> on that connection, and turns the directory's answer into an outcome.</summary>
+    private async Task<DirectoryPasswordChange> WritePasswordAsync(
+        string operation, string subjectId, Func<LdapConnection, string, Task<DirectoryPasswordChange>> write, CancellationToken cancellationToken)
+    {
         if (Connection() is not { } connection || SubjectFilter(subjectId) is not { } filter)
         {
             return DirectoryPasswordChange.NotPermitted;
@@ -112,22 +165,7 @@ internal sealed partial class LdapDirectoryService(
         {
             using LdapConnection ldap = await OpenAsync(connection, cancellationToken).ConfigureAwait(false);
             (string Dn, DirectoryEntry Entry)? found = await FindAsync(ldap, connection, filter, cancellationToken).ConfigureAwait(false);
-            if (found is null)
-            {
-                return DirectoryPasswordChange.NotPermitted;
-            }
-
-            try
-            {
-                await ldap.BindAsync(found.Value.Dn, currentPassword, cancellationToken).ConfigureAwait(false);
-            }
-            catch (LdapException exception) when (exception.ResultCode == LdapException.InvalidCredentials)
-            {
-                return DirectoryPasswordChange.CurrentPasswordRejected;
-            }
-
-            await WriteOwnPasswordAsync(ldap, found.Value.Dn, currentPassword, newPassword, cancellationToken).ConfigureAwait(false);
-            return DirectoryPasswordChange.Changed;
+            return found is null ? DirectoryPasswordChange.NotPermitted : await write(ldap, found.Value.Dn).ConfigureAwait(false);
         }
         catch (LdapException exception) when (exception.ResultCode == LdapException.ConstraintViolation)
         {
@@ -135,35 +173,21 @@ internal sealed partial class LdapDirectoryService(
         }
         catch (LdapException exception) when (exception.ResultCode is LdapException.InsufficientAccessRights or LdapException.UnwillingToPerform)
         {
-            LogPasswordChangeRefused(logger, Describe(exception));
+            LogPasswordWriteRefused(logger, operation, Describe(exception));
             return DirectoryPasswordChange.NotPermitted;
         }
         catch (Exception exception) when (IsUnavailable(exception))
         {
-            LogUnavailable(logger, "password change", Describe(exception));
+            LogUnavailable(logger, operation, Describe(exception));
             return DirectoryPasswordChange.Unavailable;
         }
     }
 
-    /// <summary>The connection is bound as the person, so the directory treats this as their own change, not an administrator's reset.</summary>
-    private async Task WriteOwnPasswordAsync(LdapConnection ldap, string dn, string currentPassword, string newPassword, CancellationToken cancellationToken)
-    {
-        if (Options.PasswordChangeProtocol == DirectoryPasswordProtocol.PasswordModify)
-        {
-            await ldap.ExtendedOperationAsync(
-                new LdapExtendedOperation(DirectoryPasswordEncoding.PasswordModifyOid, DirectoryPasswordEncoding.PasswordModifyRequest(currentPassword, newPassword)),
-                cancellationToken).ConfigureAwait(false);
-            return;
-        }
+    private static async Task SendPasswordModifyAsync(LdapConnection ldap, byte[] request, CancellationToken cancellationToken) =>
+        await ldap.ExtendedOperationAsync(new LdapExtendedOperation(DirectoryPasswordEncoding.PasswordModifyOid, request), cancellationToken).ConfigureAwait(false);
 
-        await ldap.ModifyAsync(
-            dn,
-            [
-                new LdapModification(LdapModification.Delete, new LdapAttribute(DirectoryPasswordEncoding.ActiveDirectoryAttribute, DirectoryPasswordEncoding.ActiveDirectoryValue(currentPassword))),
-                new LdapModification(LdapModification.Add, new LdapAttribute(DirectoryPasswordEncoding.ActiveDirectoryAttribute, DirectoryPasswordEncoding.ActiveDirectoryValue(newPassword))),
-            ],
-            cancellationToken).ConfigureAwait(false);
-    }
+    private static LdapAttribute ActiveDirectoryPassword(string password) =>
+        new(DirectoryPasswordEncoding.ActiveDirectoryAttribute, DirectoryPasswordEncoding.ActiveDirectoryValue(password));
 
     public DirectoryIntegrationStatus Describe() => new(
         IsConfigured,
@@ -254,7 +278,7 @@ internal sealed partial class LdapDirectoryService(
     private async Task<(string Dn, DirectoryEntry Entry)?> FindAsync(
         LdapConnection ldap, DirectoryConnection connection, string filter, CancellationToken cancellationToken)
     {
-        string[] attributes = [Options.SubjectAttribute, Options.JobTitleAttribute, Options.DepartmentAttribute, Options.ManagerAttribute];
+        string[] attributes = [Options.SubjectAttribute, Options.JobTitleAttribute, Options.DepartmentAttribute, Options.ManagerAttribute, Options.MailAttribute];
         List<LdapEntry> entries = await SearchAsync(ldap, connection.SearchBase, LdapConnection.ScopeSub, filter, attributes, cancellationToken).ConfigureAwait(false);
         if (entries.Count != 1)
         {
@@ -282,7 +306,8 @@ internal sealed partial class LdapDirectoryService(
             subject,
             StringValue(entry, Options.JobTitleAttribute),
             StringValue(entry, Options.DepartmentAttribute),
-            managerSubject));
+            managerSubject,
+            StringValue(entry, Options.MailAttribute)));
     }
 
     private async Task<string?> ReadSubjectAsync(LdapConnection ldap, string dn, CancellationToken cancellationToken)
@@ -361,8 +386,8 @@ internal sealed partial class LdapDirectoryService(
     [LoggerMessage(Level = LogLevel.Error, Message = "Directory unavailable during {Operation}: {Reason}.")]
     private static partial void LogUnavailable(ILogger logger, string operation, string reason);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "The directory refused a person's change of their own password: {Reason}.")]
-    private static partial void LogPasswordChangeRefused(ILogger logger, string reason);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The directory refused a {Operation}: {Reason}.")]
+    private static partial void LogPasswordWriteRefused(ILogger logger, string operation, string reason);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The directory rejected the service account bind (AD_BIND_DN / AD_BIND_PASSWORD).")]
     private static partial void LogServiceBindRejected(ILogger logger);
