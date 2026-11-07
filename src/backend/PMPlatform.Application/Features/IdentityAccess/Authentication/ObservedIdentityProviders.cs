@@ -8,11 +8,27 @@ internal sealed class ObservedDirectoryService(IDirectoryService inner, Identity
 {
     public bool IsConfigured => inner.IsConfigured;
 
+    public bool IsPasswordResetEnabled => inner.IsPasswordResetEnabled;
+
     public Task<DirectoryResult> AuthenticateAsync(string username, string password, CancellationToken cancellationToken) =>
         telemetry.ObserveAsync(IntegrationCodes.Directory, "AUTHENTICATE", () => inner.AuthenticateAsync(username, password, cancellationToken), r => InvocationObservation.Of(r.Failure));
 
     public Task<DirectoryResult> FindBySubjectAsync(string subjectId, CancellationToken cancellationToken) =>
         telemetry.ObserveAsync(IntegrationCodes.Directory, "READ_PERSON", () => inner.FindBySubjectAsync(subjectId, cancellationToken), r => InvocationObservation.Of(r.Failure));
+
+    public Task<DirectoryPasswordChange> ChangePasswordAsync(string subjectId, string currentPassword, string newPassword, CancellationToken cancellationToken) =>
+        telemetry.ObserveAsync(
+            IntegrationCodes.Directory,
+            "CHANGE_PASSWORD",
+            () => inner.ChangePasswordAsync(subjectId, currentPassword, newPassword, cancellationToken),
+            r => InvocationObservation.Of(r == DirectoryPasswordChange.Unavailable ? AuthenticationFailure.ProviderUnavailable : null));
+
+    public Task<DirectoryPasswordChange> ResetPasswordAsync(string subjectId, string newPassword, CancellationToken cancellationToken) =>
+        telemetry.ObserveAsync(
+            IntegrationCodes.Directory,
+            "RESET_PASSWORD",
+            () => inner.ResetPasswordAsync(subjectId, newPassword, cancellationToken),
+            r => InvocationObservation.Of(r == DirectoryPasswordChange.Unavailable ? AuthenticationFailure.ProviderUnavailable : null));
 
     public DirectoryIntegrationStatus Describe() => inner.Describe();
 

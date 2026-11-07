@@ -74,9 +74,10 @@ public sealed partial class SelfServicePasswordTests(IdentityTestHost host) : IA
         client.PostAsJsonAsync($"{Sessions}/current/refresh", new { refreshToken });
 
     /// <summary>The token in the newest reset e-mail to this account, waiting for the queue to send it.</summary>
-    private async Task<string> ResetTokenSentToAsync(string username, int expectedCount = 1)
+    private Task<string> ResetTokenSentToAsync(string username, int expectedCount = 1) => ResetTokenSentToAddressAsync($"{username}@test.local", expectedCount);
+
+    private async Task<string> ResetTokenSentToAddressAsync(string address, int expectedCount = 1)
     {
-        string address = $"{username}@test.local";
         for (int attempt = 0; attempt < 100 && _smtp.To(address).Count < expectedCount; attempt++)
         {
             await Task.Delay(50);
@@ -155,16 +156,89 @@ public sealed partial class SelfServicePasswordTests(IdentityTestHost host) : IA
         Assert.Equal(HttpStatusCode.Unauthorized, (await SignInAsync(client, username, First)).StatusCode);
     }
 
+    /// <summary>Against the real test directory: the person changes the password themselves, and the directory then honours only the new one.</summary>
     [Fact]
-    public async Task ADirectoryAccountIsToldItsPasswordIsNotThePlatforms()
+    public async Task ADirectoryAccountChangesItsOwnPasswordInTheDirectory()
     {
         using HttpClient client = _api.CreateClient();
-        string access = (await client.SignInOrFailAsync(2)).AccessToken;
+        string admin = (await client.SignInOrFailAsync(1)).AccessToken;
+        string username = TestDirectory.PasswordChangeUsername;
+        string start = TestDirectory.PasswordChangeStartingPassword;
+        await CreateDirectoryUserAsync(client, admin, username, TestDirectory.PasswordChangeSubject);
 
-        HttpResponseMessage response = await ChangeAsync(client, access, "local-directory-password", Second);
+        (string access, string refresh) = await SessionOfAsync(client, username, start);
+        await Task.Delay(TimeSpan.FromSeconds(1.1));
 
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        Assert.Contains("IDENTITY_ACCESS_NOT_LOCAL_ACCOUNT", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        await AssertRefusedAsync(await ChangeAsync(client, access, "not-the-password-1", Second), "PASSWORD_INCORRECT");
+        await AssertRefusedAsync(await ChangeAsync(client, access, start, "short1"), "PASSWORD_TOO_WEAK");
+        await AssertRefusedAsync(await ChangeAsync(client, access, start, start), "PASSWORD_REUSED");
+        Assert.Equal(HttpStatusCode.Created, (await SignInAsync(client, username, start)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await ChangeAsync(client, access, start, Second)).StatusCode);
+        try
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, (await SignInAsync(client, username, start)).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await RefreshAsync(client, refresh)).StatusCode);
+        }
+        finally
+        {
+            // The directory outlives the test: put the password back for the next run.
+            await Task.Delay(TimeSpan.FromSeconds(1.1));
+            (string again, string freshRefresh) = await SessionOfAsync(client, username, Second);
+            Assert.Equal(HttpStatusCode.OK, (await RefreshAsync(client, freshRefresh)).StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, (await ChangeAsync(client, again, Second, start)).StatusCode);
+        }
+
+        Assert.Equal(HttpStatusCode.Created, (await SignInAsync(client, username, start)).StatusCode);
+    }
+
+    /// <summary>Against the real test directory, on the environment switch: the link goes to the directory's address and sets the password once.</summary>
+    [Fact]
+    public async Task ADirectoryAccountResetsAForgottenPasswordByALinkToItsDirectoryAddress()
+    {
+        await using IdentityApiFactory api = host.CreateApi(new Dictionary<string, string?>(_smtp.Settings) { ["APP_BASE_URL"] = AppBaseUrl, ["Identity:Directory:AllowPasswordReset"] = "true" });
+        using HttpClient client = api.CreateClient();
+        string admin = (await client.SignInOrFailAsync(1)).AccessToken;
+        string username = TestDirectory.PasswordResetUsername;
+        string start = TestDirectory.PasswordChangeStartingPassword;
+        await CreateDirectoryUserAsync(client, admin, username, TestDirectory.PasswordResetSubject);
+        await CreateDirectoryUserAsync(client, admin, TestDirectory.NoMailUsername, TestDirectory.NoMailSubject);
+        (_, string refresh) = await SessionOfAsync(client, username, start);
+        await Task.Delay(TimeSpan.FromSeconds(1.1));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await RequestResetAsync(client, TestDirectory.NoMailUsername)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await RequestResetAsync(client, username)).StatusCode);
+        string token = await ResetTokenSentToAddressAsync(TestDirectory.PasswordResetMail);
+        Assert.Empty(_smtp.To($"{username}@test.local"));
+        Assert.Single(_smtp.Received);
+
+        await AssertRefusedAsync(await CompleteResetAsync(client, token, "short1"), "PASSWORD_TOO_WEAK");
+        Assert.Equal(HttpStatusCode.NoContent, (await CompleteResetAsync(client, token, Second)).StatusCode);
+        try
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, (await CompleteResetAsync(client, token, Third)).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await SignInAsync(client, username, start)).StatusCode);
+            Assert.Equal(HttpStatusCode.Unauthorized, (await RefreshAsync(client, refresh)).StatusCode);
+        }
+        finally
+        {
+            // The directory outlives the test: put the password back for the next run.
+            (string again, _) = await SessionOfAsync(client, username, Second);
+            Assert.Equal(HttpStatusCode.NoContent, (await ChangeAsync(client, again, Second, start)).StatusCode);
+        }
+    }
+
+    private static async Task CreateDirectoryUserAsync(HttpClient client, string admin, string username, string subject) =>
+        Assert.Equal(HttpStatusCode.Created, (await client.SendAsync(
+            HttpMethod.Post,
+            Users,
+            admin,
+            new { userType = "INTERNAL", username, displayName = "Directory account", email = $"{username}@test.local", directorySubjectId = subject })).StatusCode);
+
+    private static async Task AssertRefusedAsync(HttpResponseMessage response, string code)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains(code, await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
     [Fact]

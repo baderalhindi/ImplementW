@@ -84,6 +84,8 @@ The picker searched `GET /users`, which needs USER_VIEW, an administrator's perm
 
 ## 6. Password change
 
+**Changed after this review (7 Nov 2026):** directory accounts now change their own password on the same page, so the service-desk text below no longer applies to them, and can reset a forgotten one by e-mail where the environment turns that on. See `rpmo-review-round4.md` §6 and `sso-directory-integration.md` D-14, D-15.
+
 Built in round 4 and unchanged. On a clone, a LOCAL account changed its password from the account menu: the old password was refused, the new one worked, `IdentityAccess.PasswordChanged` was audited. **The client saw the service desk text because `local.r01` to `local.r08` are directory accounts**, for which that text is correct. `local.r02b` is a local account. Other sessions end at their next refresh, up to 15 minutes later, not at once. A link for directory accounts needs AHDA's address in `VITE_PASSWORD_RESET_URL`.
 
 ## 7. Viewer (R06): current list

@@ -14,10 +14,10 @@ The Release Checklist's "Security Review & Threat Modeling Signed Off" needs eve
 
 | | Count |
 | --- | --- |
-| Findings | 83 |
-| High or Critical | 39 |
+| Findings | 85 |
+| High or Critical | 40 |
 | — closed by merged PRs (`Mitigated`) | 27 |
-| — **open** | **12**: SR-10, SR-13, SR-26, SR-38, SR-41, SR-53, SR-74, SR-75, SR-78, SR-80, SR-81, SR-83 |
+| — **open** | **13**: SR-10, SR-13, SR-26, SR-38, SR-41, SR-53, SR-74, SR-75, SR-78, SR-80, SR-81, SR-83, SR-85 |
 | Risk acceptances signed by AHDA | 0 of 3 requested (`risk-acceptances.md`) |
 
 **The gate is not green.** Each open High needs one of the following:
@@ -34,6 +34,7 @@ The Release Checklist's "Security Review & Threat Modeling Signed Off" needs eve
 | SR-78 Workbook XML from an upload | The PR that merges TASK-102's import (controls and tests already on `dev`) | Backend lead |
 | SR-81 Local accounts depart from CS-011 | AHDA accepts the departure, and when local accounts are turned off | AHDA Cybersecurity; PMO |
 | SR-83 Password reset by e-mail | AHDA accepts the mailbox as the way back into a local account, or requires an administrator's reset instead | AHDA Cybersecurity; PMO |
+| SR-85 Directory password reset by e-mail | AHDA accepts the mailbox as enough to set a directory password and scopes the service account's reset right, or leaves `Identity:Directory:AllowPasswordReset` off | AHDA Cybersecurity; PMO |
 | SR-80 The import's authority outlives the cutover | AHDA accepts it for the cutover window, and `DATA_IMPORT` is withdrawn from R01 afterwards | AHDA Cybersecurity; PMO |
 
 **Recommended before UAT, though Medium:** SR-27. REV-IAM-002 is marked Closed in FG-03, CTL-43 asks this review to verify it, and it does not hold: an R01 can sign in as any business user (RBAC-T07). The fix is small: make `directory_subject_id` directory-authoritative once set, as the job title already is, and put `IdentityAccess_UpdateUser` on the step-up list.
@@ -127,6 +128,8 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | SR-81 | AUTH-T29 | Critical | Local accounts depart from CS-011 (no unmanaged local accounts): the client asked for them in the 5 Nov 2026 review until Microsoft sign-in or Nafath is live | AHDA Cybersecurity; PMO | Open | Controls built and tested; AHDA accepts the departure and when `Identity:LocalAccounts:Enabled` is turned off |
 | SR-82 | AUTH-T30 | Medium | A known local username can be locked on purpose | Backend lead | Open | Accept for the local-account period, or add a per-account limit by address |
 | SR-83 | AUTH-T31 | High | A local account's forgotten password is reset by a link sent to its mailbox, so for a role with no MFA the mailbox alone admits its reader | AHDA Cybersecurity; PMO | Open | Controls built and tested; AHDA accepts it. An environment with no mail relay offers no reset, and an administrator's reset stays available |
+| SR-84 | AUTH-T33 | Medium | The platform writes a person's own password to AHDA's directory, by request, so a platform session plus the password can change it for every system on the directory | AHDA Cybersecurity; PMO | Open | Controls built; `PasswordModify` tested against OpenLDAP. AHDA agrees to the write, tests the `ActiveDirectory` protocol on its directory, and can turn it away by refusing self-change there |
+| SR-85 | AUTH-T34 | High | A mailbox alone can set a directory password, for every system on the directory, and the service account must hold a reset right for it | AHDA Cybersecurity; PMO | Open | Controls built, off by default; `PasswordModify` tested against OpenLDAP. AHDA accepts it, scopes the reset right, tests the `ActiveDirectory` write, and sets `Identity:Directory:AllowPasswordReset`; otherwise it stays off |
 
 ## 3. Not threats: process and record items
 
@@ -146,5 +149,7 @@ Rating is the highest inherent rating among the finding's threats. Evidence for 
 | 2026-10-25 | Appendix A applied to the shipped profiles (`shipped-permission-matrix.md`); P-2's Appendix A half closed. No finding's status changes |
 | 2026-11-05 | The 5 Nov 2026 review: local accounts (AUTH-T29, AUTH-T30); SR-81, SR-82. One more open High |
 | 2026-11-06 | Self-service password change and reset (AUTH-T31, AUTH-T32); SR-83. One more open High |
+| 2026-11-07 | Directory accounts change their own password from the platform (AUTH-T33); SR-84 |
+| 2026-11-07 | Directory accounts reset a forgotten password by e-mail, off by default (AUTH-T34); SR-85. One more open High |
 | 2026-11-06 | A project's registers in the import (DI-T12, DI-T13), both mitigated; no new finding |
 | 2026-11-06 | Every business role may prepare a project import batch (DI-T14), mitigated by R02's approval; no new finding |

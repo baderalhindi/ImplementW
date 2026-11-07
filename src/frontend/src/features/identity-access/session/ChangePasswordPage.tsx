@@ -12,7 +12,7 @@ import { checkNewPassword, PASSWORD_UPDATED } from './passwordUpdate.ts';
 import { sessionApi } from './sessionApi.ts';
 import { useSession } from './useSession.ts';
 
-function LocalPasswordForm({ username }: { username: string }): ReactElement {
+function ChangePasswordForm({ username }: { username: string }): ReactElement {
   const { t } = useI18n();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
@@ -68,8 +68,8 @@ function LocalPasswordForm({ username }: { username: string }): ReactElement {
 }
 
 /**
- * Every person reaches this page from the account menu. A local account changes its password here; a directory or Microsoft account's
- * password is not the platform's to change (ADR-007), so the page says where it is changed.
+ * Every person reaches this page from the account menu. A local or directory account changes its password here, proved by the current one;
+ * a Microsoft account's password is Microsoft's, so the page says where it is changed.
  */
 export function ChangePasswordPage(): ReactElement | null {
   const { t } = useI18n();
@@ -77,19 +77,22 @@ export function ChangePasswordPage(): ReactElement | null {
   if (session === null) {
     return null;
   }
-  const local = session.user.authenticationMethod === 'LOCAL_PASSWORD';
+  const method = session.user.authenticationMethod;
+  const changesHere = method === 'LOCAL_PASSWORD' || method === 'DIRECTORY';
+  const descriptionKey =
+    method === 'DIRECTORY'
+      ? 'identityAccess.passwordSelfService.changeDescriptionDirectory'
+      : changesHere
+        ? 'identityAccess.passwordSelfService.changeDescription'
+        : 'identityAccess.passwordSelfService.managedBody';
   return (
     <>
       <PageHeader
         title={t('identityAccess.passwordSelfService.changeTitle')}
-        description={
-          local
-            ? t('identityAccess.passwordSelfService.changeDescription')
-            : t('identityAccess.passwordSelfService.managedBody')
-        }
+        description={t(descriptionKey)}
       />
-      {local ? (
-        <LocalPasswordForm username={session.user.username} />
+      {changesHere ? (
+        <ChangePasswordForm username={session.user.username} />
       ) : (
         <p>
           <DirectoryPasswordHelp

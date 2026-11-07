@@ -7,11 +7,23 @@ public interface IDirectoryService
 {
     public bool IsConfigured { get; }
 
+    /// <summary>Whether this environment lets a person reset a forgotten directory password, which needs the service account to hold a reset right.</summary>
+    public bool IsPasswordResetEnabled { get; }
+
     /// <summary>Finds the person by username with the service account, then binds as them with <paramref name="password"/>.</summary>
     public Task<DirectoryResult> AuthenticateAsync(string username, string password, CancellationToken cancellationToken);
 
     /// <summary>Reads the person's directory-authoritative attributes by subject, e.g. after an SSO sign-in.</summary>
     public Task<DirectoryResult> FindBySubjectAsync(string subjectId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Binds as the person with <paramref name="currentPassword"/> and changes their own password under that bind, so the service account needs no write
+    /// right and the directory's own password policy applies.
+    /// </summary>
+    public Task<DirectoryPasswordChange> ChangePasswordAsync(string subjectId, string currentPassword, string newPassword, CancellationToken cancellationToken);
+
+    /// <summary>Sets the person's password with the service account, for a reset link that has already proved their mailbox. Directories skip their history check here.</summary>
+    public Task<DirectoryPasswordChange> ResetPasswordAsync(string subjectId, string newPassword, CancellationToken cancellationToken);
 
     public DirectoryIntegrationStatus Describe();
 

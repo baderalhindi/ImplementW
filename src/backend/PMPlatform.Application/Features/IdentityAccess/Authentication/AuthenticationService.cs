@@ -88,7 +88,7 @@ internal sealed partial class AuthenticationService(
         long startedAt = timeProvider.GetTimestamp();
         if (!localAccounts.Enabled || await users.FindLocalCredentialByIdAsync(userId, cancellationToken).ConfigureAwait(false) is not { } credential)
         {
-            return PasswordUpdateResult.NotLocal;
+            return await ChangeDirectoryPasswordAsync(userId, currentPassword, newPassword, startedAt, cancellationToken).ConfigureAwait(false);
         }
 
         Attempt attempt = Attempt.SignIn(AuthenticationMethod.LocalPassword, credential.Username);
@@ -118,7 +118,7 @@ internal sealed partial class AuthenticationService(
         return PasswordUpdateResult.Updated;
     }
 
-    public bool IsPasswordResetAvailable => localAccounts.Enabled && passwordResetMailer.IsAvailable;
+    public bool IsPasswordResetAvailable => passwordResetMailer.IsAvailable && (localAccounts.Enabled || directory.IsPasswordResetEnabled);
 
     public async Task RequestPasswordResetAsync(string username, CancellationToken cancellationToken)
     {
@@ -132,6 +132,15 @@ internal sealed partial class AuthenticationService(
         long startedAt = timeProvider.GetTimestamp();
         Attempt attempt = Attempt.SignIn(AuthenticationMethod.LocalPassword);
         PasswordResetGrant? grant = await tokens.ReadPasswordResetTokenAsync(resetToken).ConfigureAwait(false);
+        if (grant is not null
+            && directory.IsPasswordResetEnabled
+            && await users.FindDirectoryAccountAsync(grant.UserId, cancellationToken).ConfigureAwait(false) is { } account
+            && account.ResetFingerprint == grant.PasswordFingerprint
+            && await users.FindByIdAsync(account.UserId, cancellationToken).ConfigureAwait(false) is { MaySignIn: true })
+        {
+            return await ResetDirectoryPasswordAsync(account, newPassword, startedAt, cancellationToken).ConfigureAwait(false);
+        }
+
         LocalCredential? credential = grant is null || !localAccounts.Enabled ? null : await users.FindLocalCredentialByIdAsync(grant.UserId, cancellationToken).ConfigureAwait(false);
         if (credential is null
             || LocalPassword.Fingerprint(credential.PasswordHash) != grant!.PasswordFingerprint
@@ -356,6 +365,67 @@ internal sealed partial class AuthenticationService(
         return await StartLocalSessionAsync(attempt, credential.UserId, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// A directory account changes its password in the directory, under a bind as the person: nobody else is involved. The platform's rules are the floor and
+    /// the directory's policy applies on top, including its history and lockout. The new password is passed on and never stored here.
+    /// </summary>
+    private async Task<PasswordUpdateResult> ChangeDirectoryPasswordAsync(Guid userId, string currentPassword, string newPassword, long startedAt, CancellationToken cancellationToken)
+    {
+        if (!directory.IsConfigured || await users.FindDirectoryAccountAsync(userId, cancellationToken).ConfigureAwait(false) is not { } account)
+        {
+            return PasswordUpdateResult.NotLocal;
+        }
+
+        if (!LocalPassword.MeetsRules(newPassword, account.Username))
+        {
+            return PasswordUpdateResult.Refused("newPassword", LocalPassword.TooWeak);
+        }
+
+        if (string.Equals(newPassword, currentPassword, StringComparison.Ordinal))
+        {
+            return PasswordUpdateResult.Refused("newPassword", LocalPassword.Reused);
+        }
+
+        DirectoryPasswordChange outcome = await directory.ChangePasswordAsync(account.SubjectId, currentPassword, newPassword, cancellationToken).ConfigureAwait(false);
+        return await ConcludeDirectoryWriteAsync(account, outcome, startedAt, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>A valid reset link has proved the mailbox. The rules are the floor, and the directory's policy applies on top; a directory skips its history check on a reset.</summary>
+    private async Task<PasswordUpdateResult> ResetDirectoryPasswordAsync(DirectoryAccount account, string newPassword, long startedAt, CancellationToken cancellationToken)
+    {
+        if (!LocalPassword.MeetsRules(newPassword, account.Username))
+        {
+            return PasswordUpdateResult.Refused("newPassword", LocalPassword.TooWeak);
+        }
+
+        DirectoryPasswordChange outcome = await directory.ResetPasswordAsync(account.SubjectId, newPassword, cancellationToken).ConfigureAwait(false);
+        return await ConcludeDirectoryWriteAsync(account, outcome, startedAt, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<PasswordUpdateResult> ConcludeDirectoryWriteAsync(DirectoryAccount account, DirectoryPasswordChange outcome, long startedAt, CancellationToken cancellationToken)
+    {
+        Attempt attempt = Attempt.SignIn(AuthenticationMethod.Directory, account.Username);
+        switch (outcome)
+        {
+            case DirectoryPasswordChange.Changed:
+                await users.RecordDirectoryPasswordChangedAsync(account.UserId, cancellationToken).ConfigureAwait(false);
+                await audit.RecordAsync(Entry(attempt, IdentityAccessAuditEvents.PasswordChanged, AuditOutcome.Success, account.UserId, account.UserId)).ConfigureAwait(false);
+                return PasswordUpdateResult.Updated;
+            case DirectoryPasswordChange.CurrentPasswordRejected:
+                await FailAsync(attempt, AuthenticationFailureReason.CredentialsRejected, account.UserId).ConfigureAwait(false);
+                await WaitOutRejectionFloorAsync(startedAt, cancellationToken).ConfigureAwait(false);
+                return PasswordUpdateResult.Refused("currentPassword", LocalPassword.IncorrectCurrent);
+            case DirectoryPasswordChange.NewPasswordRejected:
+                return PasswordUpdateResult.Refused("newPassword", LocalPassword.RejectedByDirectory);
+            case DirectoryPasswordChange.Unavailable:
+                await FailAsync(attempt, AuthenticationFailureReason.ProviderUnavailable, account.UserId).ConfigureAwait(false);
+                return PasswordUpdateResult.Failed(AuthenticationFailure.ProviderUnavailable);
+            case DirectoryPasswordChange.NotPermitted:
+            default:
+                return PasswordUpdateResult.NotLocal;
+        }
+    }
+
     /// <summary>The rule a new password breaks, or null: <see cref="LocalPassword.TooWeak"/> or <see cref="LocalPassword.Reused"/>.</summary>
     private async Task<string?> NewPasswordIssueAsync(LocalCredential credential, string newPassword, CancellationToken cancellationToken)
     {
@@ -378,23 +448,45 @@ internal sealed partial class AuthenticationService(
 
     private async Task SendPasswordResetAsync(string username, CancellationToken cancellationToken)
     {
-        if (!IsPasswordResetAvailable
-            || await users.FindLocalCredentialAsync(username, cancellationToken).ConfigureAwait(false) is not { } credential
-            || await users.FindByIdAsync(credential.UserId, cancellationToken).ConfigureAwait(false) is not { MaySignIn: true } access)
+        if (!passwordResetMailer.IsAvailable
+            || await PasswordResetTargetAsync(username, cancellationToken).ConfigureAwait(false) is not { } target
+            || await users.FindByIdAsync(target.UserId, cancellationToken).ConfigureAwait(false) is not { MaySignIn: true } access)
         {
             return;
         }
 
         DateTimeOffset now = timeProvider.GetUtcNow();
-        if (!await users.TryClaimPasswordResetAsync(credential.UserId, now, now - localAccounts.PasswordResetCooldown, cancellationToken).ConfigureAwait(false))
+        if (!await users.TryClaimPasswordResetAsync(target.UserId, now, now - localAccounts.PasswordResetCooldown, cancellationToken).ConfigureAwait(false))
         {
             return;
         }
 
-        await audit.RecordAsync(Entry(Attempt.SignIn(AuthenticationMethod.LocalPassword, username), IdentityAccessAuditEvents.PasswordResetRequested, AuditOutcome.Success, actorUserId: null, credential.UserId)).ConfigureAwait(false);
-        PasswordResetLink link = tokens.IssuePasswordResetToken(new PasswordResetGrant(credential.UserId, LocalPassword.Fingerprint(credential.PasswordHash)), localAccounts.PasswordResetLinkLifetime);
-        passwordResetMailer.Enqueue(new PasswordResetMail(credential.UserId, credential.Email, access.PreferredLanguage, link));
+        await audit.RecordAsync(Entry(Attempt.SignIn(target.Method, username), IdentityAccessAuditEvents.PasswordResetRequested, AuditOutcome.Success, actorUserId: null, target.UserId)).ConfigureAwait(false);
+        PasswordResetLink link = tokens.IssuePasswordResetToken(new PasswordResetGrant(target.UserId, target.Fingerprint), localAccounts.PasswordResetLinkLifetime);
+        passwordResetMailer.Enqueue(new PasswordResetMail(target.UserId, target.Email, access.PreferredLanguage, link));
     }
+
+    /// <summary>
+    /// Who a reset link for this username would go to. A directory account's link goes to the address the directory holds, so editing the platform's copy
+    /// cannot redirect it; with no address there, or the directory out of reach, no link goes.
+    /// </summary>
+    private async Task<PasswordResetTarget?> PasswordResetTargetAsync(string username, CancellationToken cancellationToken)
+    {
+        if (localAccounts.Enabled && await users.FindLocalCredentialAsync(username, cancellationToken).ConfigureAwait(false) is { } credential)
+        {
+            return new PasswordResetTarget(credential.UserId, credential.Email, LocalPassword.Fingerprint(credential.PasswordHash), AuthenticationMethod.LocalPassword);
+        }
+
+        if (directory.IsPasswordResetEnabled && await users.FindDirectoryAccountAsync(username, cancellationToken).ConfigureAwait(false) is { } account)
+        {
+            DirectoryResult found = await directory.FindBySubjectAsync(account.SubjectId, cancellationToken).ConfigureAwait(false);
+            return found.Entry?.Email is { } email ? new PasswordResetTarget(account.UserId, email, account.ResetFingerprint, AuthenticationMethod.Directory) : null;
+        }
+
+        return null;
+    }
+
+    private sealed record PasswordResetTarget(Guid UserId, string Email, string Fingerprint, AuthenticationMethod Method);
 
     /// <summary>A password changed or reset ends the sessions begun before it. Both times are whole seconds, so a sign-in in the same second as the change continues.</summary>
     private static bool BeganBeforePasswordChange(UserAccess access, SessionContinuation continuation) =>

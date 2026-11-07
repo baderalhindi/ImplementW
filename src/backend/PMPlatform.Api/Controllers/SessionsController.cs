@@ -110,7 +110,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
             : PasswordUpdateResponse(await authentication.CompletePasswordResetAsync(request.ResetToken!, request.NewPassword!, cancellationToken));
     }
 
-    /// <summary>A signed-in local account changes its own password. Every session of the account ends; the person signs in again.</summary>
+    /// <summary>A signed-in local or directory account changes its own password, proved by its current one. Every session of the account ends; the person signs in again.</summary>
     [HttpPost("current/password-change")]
     [AllowAnyAuthenticatedUser]
     [SensitiveWrite]
@@ -403,7 +403,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
             { Failure: { } failure } => Failure(failure),
             { Issue: { } issue, IssueField: { } field } => ValidationFailed([new FieldError(field, issue)]),
             { NotLocalAccount: true } => ApiProblem.Result(
-                HttpContext, StatusCodes.Status422UnprocessableEntity, IdentityAccessErrorCodes.NotLocalAccount, "This account's password is managed by the directory."),
+                HttpContext, StatusCodes.Status422UnprocessableEntity, IdentityAccessErrorCodes.NotLocalAccount, "This account's password cannot be changed on this platform."),
             _ => NoContent(),
         };
     }
