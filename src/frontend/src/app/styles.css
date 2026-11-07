@@ -5412,6 +5412,12 @@ path.trend__line--ACTUAL_PERCENT {
   }
 }
 
+.locations-map-frame {
+  position: relative;
+  display: grid;
+  min-inline-size: 0;
+}
+
 .locations-map {
   min-block-size: 30rem;
   border: 1px solid var(--color-border-subtle);
@@ -5420,17 +5426,39 @@ path.trend__line--ACTUAL_PERCENT {
   z-index: 0;
 }
 
-.map-bubble__anchor {
-  background: none;
-  border: 0;
+/* The map's required credit, above the map. */
+.locations-map__credit {
+  position: absolute;
+  inset-block-end: 1px;
+  inset-inline-end: 1px;
+  z-index: 1;
+  max-inline-size: 90%;
+  margin: 0;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-card) 0 var(--radius-card) 0;
+  background: rgba(255, 255, 255, 0.85);
+  color: #1f2937;
+  font-size: 0.75rem;
+}
+
+.locations-map__credit a {
+  color: inherit;
+}
+
+.locations-map__unavailable {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline: var(--space-4);
+  z-index: 1;
+  margin: 0;
+  text-align: center;
 }
 
 .map-bubble {
   display: flex;
   align-items: center;
   justify-content: center;
-  inline-size: 100%;
-  block-size: 100%;
+  padding: 0;
   border: 2px solid #fff;
   border-radius: 50%;
   background: rgba(15, 118, 110, 0.82);
@@ -5446,7 +5474,7 @@ path.trend__line--ACTUAL_PERCENT {
   outline: 3px solid rgba(194, 65, 12, 0.35);
 }
 
-.leaflet-marker-icon:focus-visible .map-bubble {
+.map-bubble:focus-visible {
   outline: 3px solid var(--color-focus, #1d4ed8);
   outline-offset: 2px;
 }
