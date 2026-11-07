@@ -190,7 +190,14 @@ describe('SCR-025 Project Register', () => {
     ).toBe('/projects/new');
   });
 
-  test.each(['R02', 'R03', 'R04', 'R05', 'R06', 'R07', 'R08'])(
+  test('the Viewer (R06) reads the register and is offered no Import', async () => {
+    openRegister('/projects', sessionFor(['R06']));
+
+    expect(await screen.findByRole('heading', { level: 1 })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: en('projects.import.open') })).toBeNull();
+  });
+
+  test.each(['R02', 'R03', 'R04', 'R05', 'R07', 'R08'])(
     '%s sees Import on the register',
     async (role) => {
       openRegister('/projects', sessionFor([role]));

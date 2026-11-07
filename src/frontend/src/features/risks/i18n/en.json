@@ -114,7 +114,7 @@
     "count": "Risks: {count}",
     "version": "Risk matrix version {version}, in force from {date}.",
     "legend": "Ratings, least to most severe:",
-    "forbidden": "You cannot read the risk matrix, so it cannot be shown. Reading it needs the configuration view permission.",
+    "forbidden": "You cannot read the risk matrix, so it cannot be shown. Reading it needs the permission to view risks.",
     "missing": "No risk matrix is published yet, so risks cannot be placed on it or assessed."
   },
   "fields": {

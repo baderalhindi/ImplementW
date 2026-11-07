@@ -64,7 +64,7 @@ export const projectsApi = {
 };
 
 export const governanceProfileApi = {
-  /** The GOVERNANCE_PROFILE version in force (ADR-015). Needs CONFIGURATION_VIEW; 422 when none is published. */
+  /** The GOVERNANCE_PROFILE version in force (ADR-015). Needs PROJECT_VIEW or CONFIGURATION_VIEW; 422 when none is published. */
   resolve: (signal?: AbortSignal) =>
     data(
       apiRequest<GovernanceProfileResolution>('/configuration-resolutions/GOVERNANCE_PROFILE', {

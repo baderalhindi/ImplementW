@@ -25,7 +25,8 @@ public sealed class MasterDataEndpointTests(MasterDataConfigTestHost host)
 
         Assert.Equal(30, declarations.Count);
         Assert.All(declarations, d => Assert.Equal(
-            d.Key.Contains("Import", StringComparison.Ordinal) ? "permission:DATA_IMPORT" // TASK-102's migration import
+            d.Key == "MasterDataConfig_GetConfigurationResolution" ? "session" // decided in the action: RISK_VIEW for the risk matrix (review round 5)
+            : d.Key.Contains("Import", StringComparison.Ordinal) ? "permission:DATA_IMPORT" // TASK-102's migration import
             : d.Key.Contains("Configuration", StringComparison.Ordinal)
                 ? d.Key.StartsWith("MasterDataConfig_List", StringComparison.Ordinal) || d.Key.StartsWith("MasterDataConfig_Get", StringComparison.Ordinal)
 
@@ -35,6 +36,17 @@ public sealed class MasterDataEndpointTests(MasterDataConfigTestHost host)
                     ? "permission:MASTER_DATA_VIEW"
                     : "permission:MASTER_DATA_MANAGE",
             d.Value));
+    }
+
+    /// <summary>Review round 5, item 15: whoever reads risks reads the matrix that rates them, and no other configuration for that.</summary>
+    [Fact]
+    public async Task AReaderOfRisksReadsTheRiskMatrixButNoOtherConfiguration()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string viewer = (await client.SignInOrFailAsync(MasterDataConfigTestHost.Viewer)).AccessToken;
+
+        Assert.NotEqual(HttpStatusCode.Forbidden, await StatusAsync(client.GetAsync(ConfigurationApi.Resolution("RISK_MATRIX"), viewer)));
+        Assert.Equal(HttpStatusCode.Forbidden, await StatusAsync(client.GetAsync(ConfigurationApi.Resolution("WORKFLOW_POLICY"), viewer)));
     }
 
     /// <summary>
@@ -57,7 +69,7 @@ public sealed class MasterDataEndpointTests(MasterDataConfigTestHost host)
         [
             await StatusAsync(client.PostAsync(ConfigurationApi.Items, viewer, new { catalogueId = Guid.NewGuid(), code = "X", label = new { ar = "س", en = "X" } })),
             await StatusAsync(client.GetAsync(ConfigurationApi.Versions, viewer)),
-            await StatusAsync(client.GetAsync(ConfigurationApi.Resolution("RISK_MATRIX"), viewer)),
+            await StatusAsync(client.GetAsync(ConfigurationApi.Resolution("WORKFLOW_POLICY"), viewer)),
         ];
 
         Assert.All(reads, status => Assert.Equal(HttpStatusCode.OK, status));

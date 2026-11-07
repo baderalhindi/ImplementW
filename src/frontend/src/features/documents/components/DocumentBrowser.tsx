@@ -11,6 +11,8 @@ import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { documentsApi } from '../api/documentsApi.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
+
 import { UploadDocumentDialog } from '../dialogs/UploadDocumentDialog.tsx';
 import { DOCUMENT_STATUSES } from '../presentation.ts';
 import { documentProblemMessage } from '../problems.ts';
@@ -92,7 +94,8 @@ export function DocumentBrowser({
   };
 
   const filtered = q !== '' || status !== undefined;
-  const uploadButton = canUpload && (
+  const mayUpload = useCan('DOCUMENT_UPLOAD');
+  const uploadButton = canUpload && mayUpload && (
     <button
       type="button"
       className="button button--primary"
