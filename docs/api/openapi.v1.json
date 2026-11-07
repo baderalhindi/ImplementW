@@ -17845,7 +17845,7 @@
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "A signed-in local account changes its own password. Every session of the account ends; the person signs in again.",
+        "summary": "A signed-in local or directory account changes its own password, proved by its current one. Every session of the account ends; the person signs in again.",
         "operationId": "IdentityAccess_ChangeOwnPassword",
         "requestBody": {
           "content": {
@@ -34630,7 +34630,7 @@
             ]
           }
         },
-        "description": "A signed-in local account's new password, proved by its current one."
+        "description": "A signed-in account's new password, proved by its current one."
       },
       "ParticipationAudience": {
         "enum": [
