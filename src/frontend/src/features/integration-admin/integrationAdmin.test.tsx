@@ -366,10 +366,13 @@ describe('TASK-092: ADM-047 is the operational dashboard of every registered int
     expect(
       table.querySelector('tr[data-queue="SMS"] [data-field="deadLetters"]')?.textContent,
     ).toBe('2');
-    // The lists below are read again with it, so an alert raised meanwhile is listed beside the counts.
-    expect(api.requestsTo('GET', /^\/operational-alerts$/).length).toBeGreaterThanOrEqual(2);
-    expect(api.requestsTo('GET', /^\/integration-invocations$/).length).toBeGreaterThanOrEqual(2);
-    expect(api.requestsTo('GET', /^\/sync-runs$/).length).toBeGreaterThanOrEqual(2);
+    // The lists below are read again too, so an alert raised meanwhile is listed beside the counts. Each list runs its
+    // own timer, started when it mounted after the catalogue, so its read can follow the catalogue's.
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/operational-alerts$/).length).toBeGreaterThanOrEqual(2);
+      expect(api.requestsTo('GET', /^\/integration-invocations$/).length).toBeGreaterThanOrEqual(2);
+      expect(api.requestsTo('GET', /^\/sync-runs$/).length).toBeGreaterThanOrEqual(2);
+    });
   });
 
   test('a queue backlog alert is named as such', async () => {
