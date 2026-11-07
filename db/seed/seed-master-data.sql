@@ -647,7 +647,8 @@ FROM (VALUES
     ('FIELD_CLASSIFICATION', 'تصنيف الحقول',               'Field classification'),
     ('REPORT_RULES',         'قواعد التقارير',             'Report rules'),
     ('DASHBOARD_RULES',      'قواعد لوحات المعلومات',      'Dashboard rules'),
-    ('WORKFLOW_POLICY',      'سياسة سير العمل',            'Workflow policy')
+    ('WORKFLOW_POLICY',      'سياسة سير العمل',            'Workflow policy'),
+    ('PROJECT_STAGE',        'مراحل المشروع',              'Project stages')
 ) AS v (code, name_ar, name_en)
 ON CONFLICT (code) DO NOTHING;
 

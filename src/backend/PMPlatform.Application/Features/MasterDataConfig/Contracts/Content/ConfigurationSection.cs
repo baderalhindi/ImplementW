@@ -17,4 +17,5 @@ public enum ConfigurationSection
     EvidenceRequirements = 12,
     FieldClassifications = 13,
     ReportFields = 14,
+    ProjectStages = 15,
 }

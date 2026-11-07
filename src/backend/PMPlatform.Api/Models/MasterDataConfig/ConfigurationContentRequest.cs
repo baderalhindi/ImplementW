@@ -25,7 +25,8 @@ public sealed record ConfigurationContentRequest(
     IReadOnlyList<ParticipationRuleRequest?>? ParticipationRules,
     IReadOnlyList<EvidenceRequirementRequest?>? EvidenceRequirements,
     IReadOnlyList<FieldClassificationRequest?>? FieldClassifications,
-    IReadOnlyList<ReportFieldRequest?>? ReportFields)
+    IReadOnlyList<ReportFieldRequest?>? ReportFields,
+    IReadOnlyList<ProjectStageRequest?>? ProjectStages = null)
 {
     internal List<FieldError> Validate(out ConfigurationContent? content)
     {
@@ -97,6 +98,12 @@ public sealed record ConfigurationContentRequest(
                 reader.Text(r.FieldCode, $"{p}.fieldCode"),
                 reader.Id(r.DataClassificationItemId, $"{p}.dataClassificationItemId"),
                 reader.Required(r.MaskingRule, $"{p}.maskingRule"))),
+            ProjectStages = reader.Section(ProjectStages, "projectStages", (s, p) => new ProjectStageEntry(
+                reader.Text(s.Code, $"{p}.code"),
+                reader.Label(s.Name, $"{p}.name"),
+                reader.Required(s.SortOrder, $"{p}.sortOrder"),
+                reader.Required(s.WeightPercent, $"{p}.weightPercent"),
+                reader.Required(s.IsActive, $"{p}.isActive"))),
             ReportFields = reader.Section(ReportFields, "reportFields", (f, p) => new ReportFieldEntry(
                 reader.Text(f.SourceEntityCode, $"{p}.sourceEntityCode"),
                 reader.Text(f.FieldCode, $"{p}.fieldCode"),
@@ -226,6 +233,9 @@ public sealed record ParticipationRuleRequest(ParticipationMode? ParticipationMo
 public sealed record EvidenceRequirementRequest(Guid? MilestoneCategoryItemId, Guid? EvidenceTypeItemId, bool? IsMandatory);
 
 public sealed record FieldClassificationRequest(string? EntityCode, string? FieldCode, Guid? DataClassificationItemId, MaskingRule? MaskingRule);
+
+/// <summary>A project stage of a PROJECT_STAGE version (review round 5, item 7).</summary>
+public sealed record ProjectStageRequest(string? Code, BilingualLabelRequest? Name, short? SortOrder, decimal? WeightPercent, bool? IsActive);
 
 public sealed record ReportFieldRequest(
     string? SourceEntityCode, string? FieldCode, BilingualLabelRequest? Label, bool? IsFilterable, bool? IsSortable, Guid? DataClassificationItemId);

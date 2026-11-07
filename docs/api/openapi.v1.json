@@ -24165,6 +24165,13 @@
               "$ref": "#/components/schemas/ReportFieldEntry"
             },
             "description": "REPORT_RULES: the SCR-138 allowlist (ADR-019)."
+          },
+          "projectStages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStageEntry"
+            },
+            "description": "PROJECT_STAGE: the stages and their weights (review round 5, item 7)."
           }
         },
         "description": "The typed rows of one configuration version (ERD §5.3), as one document. A family carries only its own sections\n(ConfigurationSections); every other section is empty. IReadOnlyList&lt;ConfigurationValueEntry&gt; ConfigurationContent.Values is open to every family."
@@ -24312,6 +24319,15 @@
             ],
             "items": {
               "$ref": "#/components/schemas/ReportFieldRequest"
+            }
+          },
+          "projectStages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProjectStageRequest"
             }
           }
         },
@@ -39157,6 +39173,97 @@
           }
         },
         "description": "A project's schedule: one item once initialized (R-29)."
+      },
+      "ProjectStageEntry": {
+        "required": [
+          "code",
+          "name",
+          "sortOrder",
+          "weightPercent",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "description": "A project stage in a PROJECT_STAGE version: active stages carry the weights, which total 100."
+      },
+      "ProjectStageRequest": {
+        "required": [
+          "code",
+          "name",
+          "sortOrder",
+          "weightPercent",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isActive": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "A project stage of a PROJECT_STAGE version (review round 5, item 7)."
       },
       "ProjectSubmitCommand": {
         "required": [

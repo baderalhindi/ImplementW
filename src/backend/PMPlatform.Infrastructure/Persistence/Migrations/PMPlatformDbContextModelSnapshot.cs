@@ -7491,6 +7491,82 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ProjectStageDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("ConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("configuration_version_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<decimal>("WeightPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("weight_percent");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Name", "PMPlatform.Domain.MasterDataConfig.ProjectStageDefinition.Name#BilingualLabel", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_en");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_stage_definition");
+
+                    b.HasIndex("ConfigurationVersionId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_stage_definition_configuration_version_id_code");
+
+                    b.ToTable("project_stage_definition", "master_data_config", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_stage_definition_weight_percent", "weight_percent BETWEEN 0 AND 100");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ReportAllowlistEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -14153,6 +14229,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_probability_level_definition_configuration_version_configur");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ProjectStageDefinition", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_stage_definition_configuration_version_configuratio");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ReportAllowlistEntry", b =>

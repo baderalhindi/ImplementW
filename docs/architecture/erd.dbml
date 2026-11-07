@@ -426,6 +426,24 @@ Table master_data_config.probability_level_definition {
   Note: 'One of five probability levels (PTBC-017). Delete policy: CASCADE.'
 }
 
+Table master_data_config.project_stage_definition {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]
+  code varchar(50) [not null]
+  name_ar varchar(200) [not null, note: 'Arabic label (ADR-012)']
+  name_en varchar(200) [not null, note: 'English label (ADR-012)']
+  sort_order smallint [not null]
+  weight_percent numeric(5,2) [not null, note: 'Active stages total 100 (review round 5)']
+  is_active boolean [not null, note: 'A stage once published is deactivated, never removed']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY rows']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (configuration_version_id, code) [unique]
+  }
+}
+
 Table master_data_config.risk_rating_definition {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   configuration_version_id uuid [not null, ref: > master_data_config.configuration_version.id]

@@ -18,6 +18,9 @@ internal static partial class ConfigurationContentRules
 {
     private const int CodeLength = 50;
     private const int LongCodeLength = 100;
+
+    /// <summary>The issue of a stage set whose active weights do not total 100.</summary>
+    public const string WeightsNotTotal = "WEIGHTS_MUST_TOTAL_100";
     private const int ValueLength = 500;
     private const decimal MaxAmountSar = 9_999_999_999_999_999.99m;
     private const decimal MaxMeasure = 99_999_999_999_999.9999m;
@@ -50,6 +53,7 @@ internal static partial class ConfigurationContentRules
         CheckEvidence(content.EvidenceRequirements, references, issues);
         CheckFieldClassifications(content.FieldClassifications, references, issues);
         CheckReportFields(content.ReportFields, references, issues);
+        CheckProjectStages(content.ProjectStages, issues);
         return issues;
     }
 
@@ -72,6 +76,14 @@ internal static partial class ConfigurationContentRules
 
         switch (familyCode)
         {
+            case ConfigurationFamilyCodes.ProjectStage:
+                // Weights total 100 across the active stages, whatever is deactivated (review round 5, item 7).
+                if (!content.ProjectStages.Any(s => s.IsActive) || content.ProjectStages.Where(s => s.IsActive).Sum(s => s.WeightPercent) != 100m)
+                {
+                    issues.Add(new FieldIssue("projectStages", WeightsNotTotal));
+                }
+
+                break;
             case ConfigurationFamilyCodes.RiskMatrix:
                 RequireLevels("probabilityLevels", content.ProbabilityLevels.Select(l => l.Level), issues);
                 foreach (Guid dimension in references.PublishedItemsOf(MasterDataCatalogueCodes.ImpactDimension))
@@ -150,6 +162,7 @@ internal static partial class ConfigurationContentRules
         ConfigurationSection.EvidenceRequirements => "evidenceRequirements",
         ConfigurationSection.FieldClassifications => "fieldClassifications",
         ConfigurationSection.ReportFields => "reportFields",
+        ConfigurationSection.ProjectStages => "projectStages",
         _ => throw new ArgumentOutOfRangeException(nameof(section), section, "Unknown section."),
     };
 
@@ -363,6 +376,27 @@ internal static partial class ConfigurationContentRules
             Code(rule.FieldCode, $"{path}.fieldCode", LongCodeLength, issues);
             Unique(seen, (rule.EntityCode, rule.FieldCode), $"{path}.fieldCode", issues);
             Item(rule.DataClassificationItemId, MasterDataCatalogueCodes.DataClassification, $"{path}.dataClassificationItemId", references, issues);
+        }
+    }
+
+    private static void CheckProjectStages(IReadOnlyList<ProjectStageEntry> stages, List<FieldIssue> issues)
+    {
+        HashSet<string> codes = new(StringComparer.Ordinal);
+        for (int i = 0; i < stages.Count; i++)
+        {
+            ProjectStageEntry stage = stages[i];
+            string path = $"projectStages[{i}]";
+            Code(stage.Code, $"{path}.code", LongCodeLength, issues);
+            Unique(codes, stage.Code, $"{path}.code", issues);
+            if (stage.WeightPercent is < 0 or > 100 || decimal.Round(stage.WeightPercent, 2) != stage.WeightPercent)
+            {
+                issues.Add(new FieldIssue($"{path}.weightPercent", FieldIssue.NotAllowed));
+            }
+
+            if (!stage.IsActive && stage.WeightPercent != 0)
+            {
+                issues.Add(new FieldIssue($"{path}.weightPercent", FieldIssue.NotAllowed));
+            }
         }
     }
 

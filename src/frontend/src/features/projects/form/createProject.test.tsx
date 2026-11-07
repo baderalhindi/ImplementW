@@ -84,6 +84,15 @@ describe('SCR-033 Create Project', () => {
     expect(createButton()).toHaveProperty('disabled', false);
   });
 
+  test('the governance profile explains itself (review round 5, item 13)', async () => {
+    const user = userEvent.setup();
+    openCreate();
+    await user.click(
+      await screen.findByRole('button', { name: en('projects.form.governanceProfileInfoLabel') }),
+    );
+    expect(screen.getByRole('tooltip').textContent).toBe(en('projects.form.governanceProfileInfo'));
+  });
+
   test('values of the wrong shape are flagged as typed and keep saving disabled', async () => {
     const user = userEvent.setup();
     openCreate();

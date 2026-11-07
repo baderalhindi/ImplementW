@@ -1,4 +1,4 @@
-import { type ReactElement, useId, useLayoutEffect, useRef } from 'react';
+import { type ReactElement, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import {
   caretAfter,
@@ -39,6 +39,34 @@ function FieldLabel({
       {label}
       {required && <span className="field__required">{` (${t('common.form.required')})`}</span>}
     </label>
+  );
+}
+
+/** An info icon beside a field's label: pressing or focusing it shows a short explanation of what the field is for. */
+export function InfoTip({ label, text }: { label: string; text: string }): ReactElement {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="info-tip">
+      <button
+        type="button"
+        className="info-tip__button"
+        aria-label={label}
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => {
+          setOpen((current) => !current);
+        }}
+        onBlur={() => {
+          setOpen(false);
+        }}
+      >
+        i
+      </button>
+      <span id={id} role="tooltip" className="info-tip__text" hidden={!open}>
+        {text}
+      </span>
+    </span>
   );
 }
 

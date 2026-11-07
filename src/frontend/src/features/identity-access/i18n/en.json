@@ -8,7 +8,8 @@
     "organization": "Organization structure",
     "departments": "Departments",
     "entities": "External entities",
-    "masterData": "Master data"
+    "masterData": "Master data",
+    "projectStages": "Project stages"
   },
   "codeHint": "Capital letters, digits, hyphens and underscores, for example FIN-OPS. The code cannot be changed later.",
   "stepUpNote": "You may be asked for a verification code from your authenticator app before this is applied.",
@@ -575,5 +576,30 @@
     "DIRECTORY": "Directory",
     "LOCAL": "Local"
   },
-  "temporaryPasswordRules": "At least 12 characters, mixing letters and digits, and not the username."
+  "temporaryPasswordRules": "At least 12 characters, mixing letters and digits, and not the username.",
+  "projectStages": {
+    "title": "Project stages",
+    "description": "The stages of a project and their weights. Saving makes a new version with its effective date, so earlier figures keep the weights they were calculated with. A stage is deactivated, never deleted.",
+    "order": "Order",
+    "nameAr": "Arabic name",
+    "nameEn": "English name",
+    "weight": "Weight (%)",
+    "active": "Active",
+    "activeFor": "{name} is active",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "total": "Active stages total {total}%. They must total 100%.",
+    "mustTotal": "The active stages total {total}%. They must total 100%.",
+    "namesRequired": "Give every stage an Arabic and an English name.",
+    "add": "Add stage",
+    "effective": "Effective from",
+    "effectiveHint": "Leave empty to take effect now. It cannot be in the past.",
+    "summary": "What changed",
+    "save": "Save as a new version",
+    "published": "The new version is saved.",
+    "needsAnother": "Saved. This environment needs another administrator to validate or publish it.",
+    "history": "Versions",
+    "version": "Version",
+    "state": "State"
+  }
 }

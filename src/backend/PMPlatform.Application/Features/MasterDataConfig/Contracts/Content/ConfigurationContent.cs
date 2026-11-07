@@ -46,4 +46,7 @@ public sealed record ConfigurationContent
 
     /// <summary>REPORT_RULES: the SCR-138 allowlist (ADR-019).</summary>
     public IReadOnlyList<ReportFieldEntry> ReportFields { get; init; } = [];
+
+    /// <summary>PROJECT_STAGE: the stages and their weights (review round 5, item 7).</summary>
+    public IReadOnlyList<ProjectStageEntry> ProjectStages { get; init; } = [];
 }
