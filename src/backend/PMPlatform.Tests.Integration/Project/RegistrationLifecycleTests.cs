@@ -41,7 +41,7 @@ public sealed class RegistrationLifecycleTests(ProjectTestHost host)
         Assert.Equal("UNDER_REVIEW", underReview.Status());
         ApprovalInstanceDetail run = Assert.Single(await host.RunsAsync(projectId));
         Assert.Equal(
-            ("Project", "Project", 1, "PROJECT_REGISTRATION", ProjectDriver.Person(3), ApprovalInstanceStatus.Pending),
+            ("Project", "Project", 1, "PROJECT_REGISTRATION", ProjectDriver.Person(8), ApprovalInstanceStatus.Pending),
             (run.Subject.Module, run.Subject.Type, run.Subject.RevisionNo, run.RoutingKey, run.RequestedByUserId, run.Status));
 
         await host.DecideAndDeliverAsync(projectId, ApprovalTaskDecision.Approve);
@@ -136,23 +136,26 @@ public sealed class RegistrationLifecycleTests(ProjectTestHost host)
     {
         using HttpClient client = host.Api.CreateClient();
         Sessions sessions = await client.SignInAsync();
-        Guid projectId = await host.UnderReviewAsync(client, sessions);
-
         if (decision == ApprovalOutcomeDecision.Rejected)
         {
-            await host.DecideAndDeliverAsync(projectId, ApprovalTaskDecision.Reject, "Out of programme scope");
-        }
-        else
-        {
-            // The run's requester is the reviewer who started it.
-            ApprovalInstanceDetail run = Assert.Single(await host.RunsAsync(projectId));
-            using HttpResponseMessage withdrawn = await client.PostAsync($"/api/v1/approval-instances/{run.Id}/withdraw", sessions.Reviewer);
-            Assert.Equal(HttpStatusCode.OK, withdrawn.StatusCode);
-            Assert.True(await host.DeliverAsync(run.Id));
+            Guid rejected = await host.UnderReviewAsync(client, sessions);
+            await host.DecideAndDeliverAsync(rejected, ApprovalTaskDecision.Reject, "Out of programme scope");
+            JsonObject project = await GetAsync(client, sessions.Entity, rejected);
+            Assert.Equal(("RETURNED", null), (project.Status(), project.FormalProjectId()));
+            return;
         }
 
-        JsonObject project = await GetAsync(client, sessions.Entity, projectId);
-        Assert.Equal(("RETURNED", null), (project.Status(), project.FormalProjectId()));
+        // The run's requester is the person who submitted the registration, here someone at AHDA who may read approvals.
+        Guid withdrawnId = AdministrationApi.IdOf(await client.CreateOrFailAsync(sessions.Approver, host.Registration()));
+        await client.CommandOrFailAsync(sessions.Approver, withdrawnId, "submit", new { projectManagerUserId = ProjectDriver.Person(8) });
+        await client.CommandOrFailAsync(sessions.Reviewer, withdrawnId, "start-review");
+        ApprovalInstanceDetail run = Assert.Single(await host.RunsAsync(withdrawnId));
+        using HttpResponseMessage withdrawn = await client.PostAsync($"/api/v1/approval-instances/{run.Id}/withdraw", sessions.Approver);
+        Assert.Equal(HttpStatusCode.OK, withdrawn.StatusCode);
+        Assert.True(await host.DeliverAsync(run.Id));
+
+        JsonObject after = await GetAsync(client, sessions.Approver, withdrawnId);
+        Assert.Equal(("RETURNED", null), (after.Status(), after.FormalProjectId()));
     }
 
     /// <summary>

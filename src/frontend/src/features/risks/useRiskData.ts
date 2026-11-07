@@ -64,7 +64,7 @@ export function useRiskPortfolio(): ApiResource<RiskPortfolio> {
   return useApiResource(readPortfolio, { keepWhileReloading: true });
 }
 
-/** The matrix in force, or why it cannot be drawn: not readable (CONFIGURATION_VIEW) or none published. */
+/** The matrix in force, or why it cannot be drawn: not readable (RISK_VIEW) or none published. */
 export type MatrixState =
   { kind: 'ready'; matrix: RiskMatrix } | { kind: 'forbidden' } | { kind: 'missing' };
 

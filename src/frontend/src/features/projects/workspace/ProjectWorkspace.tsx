@@ -180,7 +180,11 @@ export function ProjectWorkspace(): ReactElement | null {
         }
       />
       <p className="workspace__status">
-        <ProjectStatusBadge status={detail.status} legacyIntakeDate={detail.legacyIntakeDate} />
+        <ProjectStatusBadge
+          isCanceled={detail.isCanceled}
+          status={detail.status}
+          legacyIntakeDate={detail.legacyIntakeDate}
+        />
         <span className="details__aside">
           {t('projects.workspace.revision', { revision: detail.revisionNo })}
         </span>

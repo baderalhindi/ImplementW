@@ -4,13 +4,20 @@ import { describe, expect, test } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
 import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixtures.ts';
-import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
+import { type MockApi, mockApi, problem, SHELL_PERMISSIONS } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
 
 import { type GlobalSearchHit, recordPath } from './globalSearchApi.ts';
 
 const en = (key: string, params?: Record<string, string>) => translate('en', key, params);
-const box = () => screen.findByRole('combobox', { name: en('common.globalSearch.label') });
+/** The icon shows exactly while the box is closed. The stylesheet hides the box, and tests run without it. */
+const toggle = () => screen.queryByRole('button', { name: en('common.globalSearch.label') });
+const box = async () => {
+  await userEvent.click(
+    await screen.findByRole('button', { name: en('common.globalSearch.label') }),
+  );
+  return screen.findByRole('combobox', { name: en('common.globalSearch.label') });
+};
 
 const PROJECT: GlobalSearchHit = {
   type: 'PROJECT',
@@ -130,7 +137,7 @@ describe('the header search', () => {
     });
   });
 
-  test('Escape closes the results, and again clears the box', async () => {
+  test('Escape closes the results, and again clears and collapses the box', async () => {
     renderSignedIn(mockApi());
     const input = await box();
 
@@ -139,7 +146,7 @@ describe('the header search', () => {
     await userEvent.keyboard('{Escape}');
     expect(input.getAttribute('aria-expanded')).toBe('false');
     await userEvent.keyboard('{Escape}');
-    expect((input as HTMLInputElement).value).toBe('');
+    expect(toggle()).not.toBeNull();
   });
 
   test('Ctrl+K moves to the box from anywhere', async () => {
@@ -170,5 +177,65 @@ describe('the header search', () => {
     ['DOCUMENT', '/documents/r'],
   ])('%s opens at %s', (type, path) => {
     expect(recordPath({ ...RISK, type, id: 'r', projectId: 'p' })).toBe(path);
+  });
+
+  test('it shows as an icon, opens on a click or on "/" with the cursor in it, and closes empty', async () => {
+    renderApp({ path: '/', session: sessionFor(['R02']) });
+    const icon = await screen.findByRole('button', { name: en('common.globalSearch.label') });
+
+    await userEvent.click(icon);
+    const input = screen.getByRole('combobox', { name: en('common.globalSearch.label') });
+    expect(toggle()).toBeNull();
+    expect(document.activeElement).toBe(input);
+
+    await userEvent.keyboard('{Escape}');
+    expect(toggle()).not.toBeNull();
+
+    await userEvent.keyboard('/');
+    expect(document.activeElement).toBe(input);
+    expect(toggle()).toBeNull();
+
+    await userEvent.tab();
+    expect(toggle()).not.toBeNull();
+  });
+
+  test('the icon sits immediately before Create, in the top bar actions', async () => {
+    mockApi().on('GET', SHELL_PERMISSIONS, {
+      body: {
+        permissions: [{ code: 'PROJECT_REGISTER', scopes: ['ALL'] }],
+        showCreateInHeader: true,
+      },
+    });
+    renderApp({ path: '/notifications', session: sessionFor(['R02']) });
+    await screen.findByRole('button', { name: en('common.shell.create') });
+
+    const search = toggle()?.closest('.global-search');
+    expect(search?.parentElement?.className).toBe('topbar__actions');
+    expect(search?.nextElementSibling?.textContent).toContain(en('common.shell.create'));
+  });
+
+  test('Escape on the empty box returns the focus to the icon', async () => {
+    renderSignedIn(mockApi());
+    await box();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(document.activeElement).toBe(toggle());
+  });
+
+  test('choosing a record closes the box back to the icon', async () => {
+    renderSignedIn(mockApi());
+
+    await userEvent.type(await box(), 'corn');
+    await userEvent.click(await screen.findByRole('option', { name: /Corniche road.*PRJ-7/ }));
+
+    await screen.findByRole('button', { name: en('common.globalSearch.label') });
+  });
+
+  test('it stays open while it holds text', async () => {
+    renderApp({ path: '/', session: sessionFor(['R02']) });
+    await userEvent.type(await box(), 'ab');
+    await userEvent.click(document.body);
+    expect(toggle()).toBeNull();
   });
 });

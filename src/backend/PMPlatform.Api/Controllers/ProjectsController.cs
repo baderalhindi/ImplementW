@@ -41,7 +41,8 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
         [FromQuery] string? q, [FromQuery] int? page, [FromQuery] int? pageSize, CancellationToken cancellationToken,
         [FromQuery] Guid? classificationItemId = null, [FromQuery] Guid? strategicPortfolioItemId = null, [FromQuery] Guid? strategicInitiativeItemId = null,
         [FromQuery] Guid? priorityItemId = null, [FromQuery] Guid? regionItemId = null, [FromQuery] Guid? cityItemId = null,
-        [FromQuery] int? period = null)
+        [FromQuery] int? period = null,
+        [FromQuery] string? sort = null)
     {
         List<FieldError> errors = [];
         RequestValidation.Optional(q, "q", QueryTextLength, errors);
@@ -61,6 +62,7 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
             RegionItemId = regionItemId,
             CityItemId = cityItemId,
             PeriodYear = period,
+            Sort = QueryParameters.ProjectSortOf(sort, errors),
         };
         return errors.Count > 0 ? ValidationFailed(errors) : Ok(await projects.ListAsync(CallerId, query, cancellationToken));
     }

@@ -40,7 +40,7 @@ public sealed class RolesController(IRoleAdministrationService roles) : Administ
         ArgumentNullException.ThrowIfNull(request);
         return !TryReadIfMatch(required: true, out uint? version, out IActionResult? problem) ? problem!
             : request.Validate() is { Count: > 0 } errors ? ValidationFailed(errors)
-            : Respond(await roles.UpdateSettingsAsync(CallerId, roleId, request.AllowedScopes!, request.LandingDashboardCode, version!.Value, cancellationToken));
+            : Respond(await roles.UpdateSettingsAsync(CallerId, roleId, request.AllowedScopes!, request.LandingDashboardCode, request.ShowCreateInHeader, version!.Value, cancellationToken));
     }
 
     /// <summary>Retires a created role: offered for no new assignment. Requires <c>If-Match</c>.</summary>

@@ -1,12 +1,16 @@
-import { type SyntheticEvent, type ReactElement, useCallback, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { type ReactElement, useCallback } from 'react';
+import { Link } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
+import { useListParams } from '@/shared/api/useListParams.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
+import { useSearchText } from '@/shared/ui/useSearchText.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
@@ -56,38 +60,19 @@ interface UserFiltersProps {
   lookups: OrganizationLookups | undefined;
 }
 
-/** Keyed on the URL, so Clear filters or Back resets the inputs to what the list is showing. */
+/** The drop-downs apply as they are chosen and the search as it is typed, all in the URL, so Clear filters or Back resets them too. */
 function UserFilters({ query, filtered, lookups }: UserFiltersProps): ReactElement {
   const { t, language } = useI18n();
-  const [params, setParams] = useSearchParams();
-  const [draft, setDraft] = useState({
-    q: query.q ?? '',
-    status: query.status ?? '',
-    userType: query.userType ?? '',
-    departmentId: query.departmentId ?? '',
-    externalEntityId: query.externalEntityId ?? '',
-    sort: query.sort,
+  const { setFilter, setFilters } = useListParams();
+  const [text, setText] = useSearchText(query.q ?? '', (value) => {
+    setFilter('q', value, { replace: true });
   });
-
-  const applyFilters = (event: SyntheticEvent) => {
-    event.preventDefault();
-    const next = new URLSearchParams();
-    for (const [name, value] of Object.entries(draft)) {
-      if (value.trim() !== '' && !(name === 'sort' && value === 'displayName:asc')) {
-        next.set(name, value.trim());
-      }
-    }
-    setParams(next);
-  };
 
   const chip = (name: string, label: TranslationKey, value: string) => ({
     name,
     text: t('common.filters.inline', { label: t(label), value }),
     onRemove: () => {
-      const next = new URLSearchParams(params);
-      next.delete('page');
-      next.delete(name);
-      setParams(next);
+      setFilter(name, '');
     },
   });
   const nameOf = (
@@ -102,7 +87,7 @@ function UserFilters({ query, filtered, lookups }: UserFiltersProps): ReactEleme
   return (
     <FilterBar
       onClearAll={() => {
-        setParams(new URLSearchParams());
+        setFilters({ q: '', status: '', userType: '', departmentId: '', externalEntityId: '' });
       }}
       chips={[
         ...(q === undefined ? [] : [chip('q', 'identityAccess.users.list.search', q)]),
@@ -144,90 +129,90 @@ function UserFilters({ query, filtered, lookups }: UserFiltersProps): ReactEleme
             ]),
       ]}
     >
-      <form className="filters" onSubmit={applyFilters}>
+      <form
+        className="filters"
+        onSubmit={(event) => {
+          event.preventDefault();
+        }}
+      >
         <TextField
           label={t('identityAccess.users.list.search')}
           name="q"
           type="search"
-          value={draft.q}
-          onChange={(value) => {
-            setDraft({ ...draft, q: value });
-          }}
+          value={text}
+          onChange={setText}
         />
         <SelectField
           label={t('identityAccess.users.fields.status')}
           name="status"
-          value={draft.status}
+          value={query.status ?? ''}
           placeholder={t('common.filters.any')}
           options={USER_STATUSES.map((value) => ({
             value,
             label: t(`identityAccess.userStatus.${value}`),
           }))}
           onChange={(value) => {
-            setDraft({ ...draft, status: oneOf(value, USER_STATUSES) ?? '' });
+            setFilter('status', value);
           }}
         />
         <SelectField
           label={t('identityAccess.users.fields.userType')}
           name="userType"
-          value={draft.userType}
+          value={query.userType ?? ''}
           placeholder={t('common.filters.any')}
           options={USER_TYPES.map((value) => ({
             value,
             label: t(`identityAccess.userType.${value}`),
           }))}
           onChange={(value) => {
-            setDraft({ ...draft, userType: oneOf(value, USER_TYPES) ?? '' });
+            setFilter('userType', value);
           }}
         />
         <SelectField
           label={t('identityAccess.users.fields.department')}
           name="departmentId"
-          value={draft.departmentId}
+          value={query.departmentId ?? ''}
           placeholder={t('common.filters.any')}
           options={(lookups?.departments ?? []).map((d) => ({
             value: d.id,
             label: labelOf(d.name, language),
           }))}
           onChange={(value) => {
-            setDraft({ ...draft, departmentId: value });
+            setFilter('departmentId', value);
           }}
         />
         <SelectField
           label={t('identityAccess.users.fields.externalEntity')}
           name="externalEntityId"
-          value={draft.externalEntityId}
+          value={query.externalEntityId ?? ''}
           placeholder={t('common.filters.any')}
           options={(lookups?.entities ?? []).map((e) => ({
             value: e.id,
             label: labelOf(e.name, language),
           }))}
           onChange={(value) => {
-            setDraft({ ...draft, externalEntityId: value });
+            setFilter('externalEntityId', value);
           }}
         />
         <SelectField
           label={t('common.filters.sort')}
           name="sort"
-          value={draft.sort}
+          value={query.sort}
           options={USER_SORTS.map((value) => ({
             value,
             label: t(SORT_LABELS[value]),
           }))}
           onChange={(value) => {
-            setDraft({ ...draft, sort: oneOf(value, USER_SORTS) ?? 'displayName:asc' });
+            setFilter('sort', value === 'displayName:asc' ? '' : value);
           }}
         />
-        <div className="filters__actions">
-          <button type="submit" className="button button--primary">
-            {t('common.filters.apply')}
-          </button>
-          {filtered && (
+        {filtered && (
+          <div className="filters__actions">
             <Link className="button" to="/admin/users">
               {t('common.filters.clear')}
             </Link>
-          )}
-        </div>
+          </div>
+        )}
       </form>
     </FilterBar>
   );
@@ -235,8 +220,9 @@ function UserFilters({ query, filtered, lookups }: UserFiltersProps): ReactEleme
 
 /** ADM-002 User List. Filters live in the URL, so a filtered list can be bookmarked and Back restores it. */
 export function UserListPage(): ReactElement {
+  const selection = useRowSelection();
   const { t, language } = useI18n();
-  const [params, setParams] = useSearchParams();
+  const { params, goToPage } = useListParams();
   const query = queryFrom(params);
   const { lookups } = useOrganizationLookups(language);
 
@@ -249,13 +235,7 @@ export function UserListPage(): ReactElement {
       ),
     [q, status, userType, departmentId, externalEntityId, sort, page],
   );
-  const users = useApiResource(load);
-
-  const goToPage = (next: number) => {
-    const updated = new URLSearchParams(params);
-    updated.set('page', String(next));
-    setParams(updated);
-  };
+  const users = useApiResource(load, { keepPreviousResult: true });
 
   const filtered = [q, status, userType, departmentId, externalEntityId].some(
     (v) => v !== undefined,
@@ -280,9 +260,9 @@ export function UserListPage(): ReactElement {
         }
       />
 
-      <UserFilters key={params.toString()} query={query} filtered={filtered} lookups={lookups} />
+      <UserFilters query={query} filtered={filtered} lookups={lookups} />
 
-      {users.loading && <LoadingState />}
+      {users.loading && users.data === undefined && <LoadingState />}
       {users.error !== null && (
         <ErrorState
           error={users.error}
@@ -301,9 +281,16 @@ export function UserListPage(): ReactElement {
           />
         ) : (
           <>
+            <SelectionBar selection={selection}>
+              <span className="cell__aside">{t('identityAccess.users.list.noDelete')}</span>
+            </SelectionBar>
             <TableContainer caption={t('identityAccess.users.list.caption')}>
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={users.data.items.map((user) => user.id)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('identityAccess.users.fields.displayName')}</th>
                   <th scope="col">{t('identityAccess.users.fields.username')}</th>
                   <th scope="col">{t('identityAccess.users.fields.email')}</th>
@@ -316,6 +303,7 @@ export function UserListPage(): ReactElement {
               <tbody>
                 {users.data.items.map((user) => (
                   <tr key={user.id}>
+                    <SelectRowCell id={user.id} name={user.displayName} selection={selection} />
                     <td>
                       <Link to={`/admin/users/${user.id}`}>{user.displayName}</Link>
                     </td>

@@ -7,6 +7,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { SelectField, type SelectOption } from '@/shared/ui/FormFields.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
+import { useSearchText } from '@/shared/ui/useSearchText.ts';
 
 import { documentsApi } from '../api/documentsApi.ts';
 import { type DocumentSummary } from '../api/types.ts';
@@ -66,7 +67,6 @@ function AttachForm({
   const { t } = useI18n();
   const id = useId();
   const save = useSaveAction(describe);
-  const [text, setText] = useState('');
   const [query, setQuery] = useState('');
   const [chosen, setChosen] = useState<DocumentSummary | null>(null);
   const [evidenceTypeItemId, setEvidenceTypeItemId] = useState('');
@@ -84,12 +84,11 @@ function AttachForm({
       ),
     [projectId, query],
   );
-  const candidates = useApiResource(load);
-
-  const search = () => {
+  const candidates = useApiResource(load, { keepPreviousResult: true });
+  const [text, setText] = useSearchText(query, (value) => {
     setChosen(null);
-    setQuery(text.trim());
-  };
+    setQuery(value);
+  });
 
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
@@ -128,15 +127,13 @@ function AttachForm({
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               event.preventDefault();
-              search();
             }
           }}
         />
-        <button type="button" className="button" onClick={search}>
-          {t('common.actions.search')}
-        </button>
       </div>
-      {candidates.loading && <LoadingState label={t('documents.attach.loading')} />}
+      {candidates.loading && candidates.data === undefined && (
+        <LoadingState label={t('documents.attach.loading')} />
+      )}
       {candidates.error !== null && (
         <ErrorState
           error={candidates.error}

@@ -203,14 +203,16 @@ describe('SCR-106: the materiality classification is shown before submission (ac
     ).toBeNull();
   });
 
-  test('a zero or malformed impact is flagged as it is typed', async () => {
+  test('a zero impact is flagged as it is typed, and an amount is grouped', async () => {
     open(NEW_PATH);
     const user = userEvent.setup();
     await user.type(await screen.findByRole('textbox', { name: /^Schedule impact/ }), '0');
-    await user.type(screen.getByRole('textbox', { name: /^Cost impact/ }), '12.345');
+    const cost = screen.getByRole<HTMLInputElement>('textbox', { name: /^Cost impact/ });
+    await user.type(cost, '-1250000.345');
 
     expect(screen.getByText(en('changeRequests.fieldErrors.daysOutOfRange'))).toBeTruthy();
-    expect(screen.getByText(en('changeRequests.fieldErrors.costMalformed'))).toBeTruthy();
+    // Grouped as typed, with a minus and no more than two places (review round 5, item 6).
+    expect(cost.value).toBe('-1,250,000.34');
   });
 
   test('a Project Manager who cannot read the project still raises and classifies it; the API decides', async () => {
@@ -490,7 +492,7 @@ describe('SCR-107 reuses the WF-11 approval modals', () => {
     });
     renderApp({ path: '/approvals/inbox', session: sessionAs(APPROVER_ID) });
 
-    const link = await screen.findByRole('link', { name: 'ChangeRequest · ChangeRequest' });
+    const link = await screen.findByRole('link', { name: 'Change request' });
     expect(link.getAttribute('href')).toBe(PAVING_PATH);
   });
 });

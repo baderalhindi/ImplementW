@@ -105,8 +105,17 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
         }
 
         int total = await rows.CountAsync(cancellationToken).ConfigureAwait(false);
-        List<ProjectEntity> items = await rows
-            .OrderByDescending(p => p.UpdatedAt).ThenByDescending(p => p.Id)
+        IOrderedQueryable<ProjectEntity> ordered = query.Sort switch
+        {
+            ProjectSort.UpdatedAscending => rows.OrderBy(p => p.UpdatedAt),
+            ProjectSort.TitleAscending => rows.OrderBy(p => p.Title.Text),
+            ProjectSort.TitleDescending => rows.OrderByDescending(p => p.Title.Text),
+            ProjectSort.FormalIdAscending => rows.OrderBy(p => p.FormalProjectId),
+            ProjectSort.FormalIdDescending => rows.OrderByDescending(p => p.FormalProjectId),
+            ProjectSort.UpdatedDescending => rows.OrderByDescending(p => p.UpdatedAt),
+            _ => throw new ArgumentOutOfRangeException(nameof(query), query.Sort, "Unknown sort."),
+        };
+        List<ProjectEntity> items = await ordered.ThenByDescending(p => p.Id)
             .Skip(query.Page.Skip).Take(query.Page.PageSize)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest';
 
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { type Language, translate } from '@/shared/i18n/i18n.ts';
+import { pickPerson } from '@/test/personPicker.ts';
 import { concernProject, managerSession } from '@/test/concernFixtures.ts';
 import {
   ATTEMPT_2_ID,
@@ -909,10 +910,7 @@ describe('SCR-160 and SCR-161: AHDA’s register and request form', () => {
     await user.click(
       within(responder).getByRole('radio', { name: en('externalParticipation.people.other') }),
     );
-    await user.type(
-      within(responder).getByRole('textbox', { name: /^User ID/ }),
-      '1A1A1A1A-0000-4000-8000-000000000101',
-    );
+    await pickPerson(api, responder, '1a1a1a1a-0000-4000-8000-000000000101');
     await user.click(
       screen.getByRole('button', { name: en('externalParticipation.actions.saveAndIssue') }),
     );

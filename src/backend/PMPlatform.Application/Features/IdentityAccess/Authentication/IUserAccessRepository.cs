@@ -12,6 +12,14 @@ public interface IUserAccessRepository
     /// <summary>A local account's credential by its username; null for a directory account or no account.</summary>
     public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken);
 
+    /// <summary>The user, if their password lives in the directory.</summary>
+    public Task<DirectoryAccount?> FindDirectoryAccountAsync(Guid userId, CancellationToken cancellationToken);
+
+    public Task<DirectoryAccount?> FindDirectoryAccountAsync(string username, CancellationToken cancellationToken);
+
+    /// <summary>A directory password has changed: stamps the time, which ends the account's sessions at their next refresh.</summary>
+    public Task RecordDirectoryPasswordChangedAsync(Guid userId, CancellationToken cancellationToken);
+
     public Task<LocalCredential?> FindLocalCredentialByIdAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>Counts a wrong password; the attempt that reaches <paramref name="maxAttempts"/> locks the account until <paramref name="lockedUntil"/> and starts the count again.</summary>

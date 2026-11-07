@@ -21,6 +21,7 @@ public static class ConfigurationSections
         [ConfigurationFamilyCodes.ReportRules] = [ConfigurationSection.ReportFields],
         [ConfigurationFamilyCodes.DashboardRules] = [],
         [ConfigurationFamilyCodes.WorkflowPolicy] = [],
+        [ConfigurationFamilyCodes.ProjectStage] = [ConfigurationSection.ProjectStages],
     };
 
     public static IReadOnlyCollection<string> FamilyCodes => TypedSections.Keys;
@@ -51,6 +52,7 @@ public static class ConfigurationSections
             [ConfigurationSection.EvidenceRequirements] = content.EvidenceRequirements.Count,
             [ConfigurationSection.FieldClassifications] = content.FieldClassifications.Count,
             [ConfigurationSection.ReportFields] = content.ReportFields.Count,
+            [ConfigurationSection.ProjectStages] = content.ProjectStages.Count,
         };
     }
 }

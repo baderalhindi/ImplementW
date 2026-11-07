@@ -120,11 +120,11 @@ describe('MOD-043 Delegate', () => {
     const { api, user, dialog } = await openDialog();
     api.on('POST', /^\/approval-delegations$/, { status: 201, body: given });
 
-    await user.click(within(dialog).getByRole('button', { name: en('common.actions.search') }));
+    await user.type(within(dialog).getByRole('searchbox'), internalUser.displayName);
     await waitFor(() => {
-      expect(api.requestsTo('GET', /^\/users$/)).toHaveLength(1);
+      expect(api.requestsTo('GET', /^\/person-lookups$/)).toHaveLength(1);
     });
-    expect(api.requestsTo('GET', /^\/users$/)[0]?.query.get('userType')).toBe('INTERNAL');
+    expect(api.requestsTo('GET', /^\/person-lookups$/)[0]?.query.get('userType')).toBe('INTERNAL');
     const results = await within(dialog).findByRole('list');
     expect(within(results).queryByText(new RegExp(externalUser.displayName))).toBeNull();
     await user.click(
@@ -155,7 +155,7 @@ describe('MOD-043 Delegate', () => {
     const { api, user, dialog } = await openDialog();
     api.on('POST', /^\/approval-delegations$/, problem(422, 'APPROVAL_DELEGATE_INVALID'));
 
-    await user.click(within(dialog).getByRole('button', { name: en('common.actions.search') }));
+    await user.type(within(dialog).getByRole('searchbox'), internalUser.displayName);
     const results = await within(dialog).findByRole('list');
     await user.click(
       within(results).getByRole('button', { name: new RegExp(internalUser.displayName) }),

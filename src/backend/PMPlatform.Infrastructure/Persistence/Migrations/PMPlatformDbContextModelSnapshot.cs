@@ -4795,6 +4795,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("landing_dashboard_code");
 
+                    b.Property<bool>("ShowCreateInHeader")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("show_create_in_header");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -7485,6 +7491,82 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ProjectStageDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("ConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("configuration_version_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<decimal>("WeightPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("weight_percent");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Name", "PMPlatform.Domain.MasterDataConfig.ProjectStageDefinition.Name#BilingualLabel", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Ar")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_ar");
+
+                            b1.Property<string>("En")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("name_en");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_stage_definition");
+
+                    b.HasIndex("ConfigurationVersionId", "Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_stage_definition_configuration_version_id_code");
+
+                    b.ToTable("project_stage_definition", "master_data_config", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_stage_definition_weight_percent", "weight_percent BETWEEN 0 AND 100");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ReportAllowlistEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8395,6 +8477,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("actual_percent_override");
 
+                    b.Property<string>("ActualSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("WORK_BREAKDOWN")
+                        .HasColumnName("actual_source");
+
                     b.Property<Guid?>("BaselineId")
                         .HasColumnType("uuid")
                         .HasColumnName("baseline_id");
@@ -8529,6 +8619,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("progress_submission", "progress", t =>
                         {
+                            t.HasCheckConstraint("ck_progress_submission_actual_source", "\"actual_source\" IN ('WORK_BREAKDOWN', 'DECLARED', 'NOT_AVAILABLE')");
+
                             t.HasCheckConstraint("ck_progress_submission_narrative_lang", "\"narrative_lang\" IN ('ar', 'en')");
 
                             t.HasCheckConstraint("ck_progress_submission_narrative_pair", "(\"narrative\" IS NULL) = (\"narrative_lang\" IS NULL)");
@@ -8899,6 +8991,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("governance_profile_overridden");
 
+                    b.Property<bool>("IsCanceled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_canceled");
+
                     b.Property<bool?>("IsStrategic")
                         .HasColumnType("boolean")
                         .HasColumnName("is_strategic");
@@ -8990,6 +9088,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("StrategicPortfolioItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("strategic_portfolio_item_id");
+
+                    b.Property<Guid?>("SubmittedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submitted_by_user_id");
 
                     b.Property<string>("TitleEn")
                         .HasMaxLength(2000)
@@ -9119,6 +9221,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("StrategicPortfolioItemId")
                         .HasDatabaseName("ix_project_strategic_portfolio_item_id");
 
+                    b.HasIndex("SubmittedByUserId")
+                        .HasDatabaseName("ix_project_submitted_by_user_id");
+
                     b.HasIndex("UpdatedAt", "Id")
                         .HasDatabaseName("ix_project_updated_at_id");
 
@@ -9136,13 +9241,15 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("project", "project", t =>
                         {
+                            t.HasCheckConstraint("ck_project_canceled", "NOT is_canceled OR lifecycle_state = 'CLOSED'");
+
                             t.HasCheckConstraint("ck_project_current_obstacle_lang", "\"current_obstacle_lang\" IN ('ar', 'en')");
 
                             t.HasCheckConstraint("ck_project_current_obstacle_pair", "(\"current_obstacle\" IS NULL) = (\"current_obstacle_lang\" IS NULL)");
 
                             t.HasCheckConstraint("ck_project_declared_percent_range", "(declared_planned_percent IS NULL OR declared_planned_percent BETWEEN 0 AND 100) AND (declared_actual_percent IS NULL OR declared_actual_percent BETWEEN 0 AND 100) AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100) AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
 
-                            t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL', 'ENTITY_UPDATE')");
+                            t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL', 'ENTITY_UPDATE', 'PROGRESS_UPDATE')");
 
                             t.HasCheckConstraint("ck_project_description_lang", "\"description_lang\" IN ('ar', 'en')");
 
@@ -14124,6 +14231,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_probability_level_definition_configuration_version_configur");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ProjectStageDefinition", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("ConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_stage_definition_configuration_version_configuratio");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.MasterDataConfig.ReportAllowlistEntry", b =>
                 {
                     b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
@@ -14464,6 +14581,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("StrategicPortfolioItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_project_master_data_item_strategic_portfolio_item_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_user_submitted_by_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.Project.ProjectFollowUpNote", b =>

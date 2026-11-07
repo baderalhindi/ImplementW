@@ -152,14 +152,14 @@ function ThemeSwitch(): ReactElement {
  */
 function CreateMenu(): ReactElement | null {
   const { t } = useI18n();
-  const { can } = usePermissions();
+  const { can, showCreateInHeader } = usePermissions();
   const { open, setOpen, containerRef, buttonRef, menuId } = usePopover();
   const close = (): void => {
     setOpen(false);
   };
   const project = can('PROJECT_REGISTER');
   const changeRequest = can('CHANGE_REQUEST_RAISE');
-  if (!project && !changeRequest) {
+  if (!showCreateInHeader || (!project && !changeRequest)) {
     return null;
   }
 
@@ -635,8 +635,8 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
             </span>
           </button>
           <Breadcrumb menu={current} pathname={pathname} />
-          <GlobalSearch menus={menus} />
           <div className="topbar__actions">
+            <GlobalSearch menus={menus} />
             <CreateMenu />
             <NotificationBell />
             <ThemeSwitch />

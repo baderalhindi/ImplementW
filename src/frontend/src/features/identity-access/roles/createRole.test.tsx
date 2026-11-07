@@ -177,6 +177,7 @@ describe("a role's settings and retirement", () => {
     expect(request?.body).toEqual({
       allowedScopes: ['DEPARTMENT', 'PROJECT'],
       landingDashboardCode: 'PORTFOLIO',
+      showCreateInHeader: true,
     });
     expect(request?.headers.get('If-Match')).toBe('"4"');
   });

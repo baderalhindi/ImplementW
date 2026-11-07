@@ -8,7 +8,8 @@
     "organization": "Organization structure",
     "departments": "Departments",
     "entities": "External entities",
-    "masterData": "Master data"
+    "masterData": "Master data",
+    "projectStages": "Project stages"
   },
   "codeHint": "Capital letters, digits, hyphens and underscores, for example FIN-OPS. The code cannot be changed later.",
   "stepUpNote": "You may be asked for a verification code from your authenticator app before this is applied.",
@@ -61,7 +62,8 @@
     "passwordTooWeak": "Use at least 12 characters, mixing letters and digits, and not the username.",
     "passwordReused": "This is one of your last 5 passwords. Choose a different one.",
     "passwordMismatch": "The two passwords do not match.",
-    "passwordIncorrect": "The current password is wrong."
+    "passwordIncorrect": "The current password is wrong.",
+    "passwordRejectedByDirectory": "The AHDA directory refused this password. Choose a longer or less common one that you have not used before."
   },
   "problems": {
     "duplicateKey": "A value you entered is already used by another record. See the highlighted field.",
@@ -129,7 +131,8 @@
         "displayNameDesc": "Name (Z to A)",
         "usernameAsc": "Username (A to Z)",
         "usernameDesc": "Username (Z to A)"
-      }
+      },
+      "noDelete": "A user is disabled from their page, never deleted: the audit trail names them."
     },
     "create": {
       "title": "Create user"
@@ -141,7 +144,7 @@
       "userTypeHint": "The user type cannot be changed after the user is created.",
       "externalEntityHint": "The entity the person works for. It cannot be changed after the user is created.",
       "mobileNumberHint": "International format, for example +966501234567. The user confirms the number themselves with a code.",
-      "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognise them.",
+      "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognize them.",
       "directoryAttributesNote": "The department, manager and job title of an internal user are read from the AHDA directory each time they sign in.",
       "accountSourceDirectory": "Directory account",
       "accountSourceLocal": "Local account",
@@ -262,7 +265,8 @@
       "externalEligible": "Can be held by external users",
       "state": "State",
       "allowedScopes": "Allowed scopes",
-      "landing": "Landing dashboard"
+      "landing": "Landing dashboard",
+      "showCreateInHeader": "Show Create in the top bar"
     },
     "list": {
       "title": "Roles",
@@ -321,7 +325,8 @@
       "deleteTitle": "Delete {name}",
       "deleteBody": "The role and its permission profiles are removed for good. A role someone has held cannot be deleted, only deactivated."
     },
-    "scopeSeparator": ", "
+    "scopeSeparator": ", ",
+    "showCreateHint": "For roles that create items routinely. Whoever holds the permission can still create from the menu."
   },
   "permissionMatrix": {
     "title": "Permission matrix",
@@ -373,7 +378,7 @@
   },
   "entities": {
     "title": "External entities",
-    "description": "Organisations outside AHDA whose staff may be given access to specific projects.",
+    "description": "Organizations outside AHDA whose staff may be given access to specific projects.",
     "create": "Create entity",
     "createTitle": "Create external entity",
     "editTitle": "Edit external entity",
@@ -552,14 +557,15 @@
     "changeDescription": "After the change, sign in again with your new password. Every other session of your account ends too.",
     "currentPassword": "Current password",
     "changeSubmit": "Change password",
-    "managedBody": "Your password belongs to your AHDA directory or Microsoft account, so it is changed there and not on this platform.",
+    "changeDescriptionDirectory": "This changes your AHDA directory password, everywhere you use it. After the change, sign in again with your new password. Every other session of your account ends too.",
+    "managedBody": "You sign in with your Microsoft account, so your password is changed at Microsoft and not on this platform.",
     "managedLink": "Go to AHDA's password page",
     "managedContact": "To change or reset it, contact the AHDA IT service desk.",
-    "directoryAccount": "Do you sign in with your AHDA directory or Microsoft account?",
+    "directoryAccount": "No message after a few minutes, or do you sign in with a Microsoft account?",
     "forgotTitle": "Reset your password",
-    "forgotDescription": "Enter your username. If it belongs to an account with a password on this platform, a link to choose a new one goes to its e-mail address.",
+    "forgotDescription": "Enter your username. If a password can be reset for that account, a link to choose a new one goes to its e-mail address.",
     "forgotSubmit": "Send the link",
-    "forgotSent": "If that username belongs to an account with a password on this platform, a link is on its way to its e-mail address. It works once, for 30 minutes. At most one message is sent every 5 minutes, so check your junk folder before asking again.",
+    "forgotSent": "If a password can be reset for that account, a link is on its way to its e-mail address. It works once, for 30 minutes. At most one message is sent every 5 minutes, so check your junk folder before asking again.",
     "resetTitle": "Choose a new password",
     "resetSubmit": "Set the new password",
     "linkInvalid": "This link has expired or has already been used. Ask for a new one.",
@@ -573,5 +579,30 @@
     "DIRECTORY": "Directory",
     "LOCAL": "Local"
   },
-  "temporaryPasswordRules": "At least 12 characters, mixing letters and digits, and not the username."
+  "temporaryPasswordRules": "At least 12 characters, mixing letters and digits, and not the username.",
+  "projectStages": {
+    "title": "Project stages",
+    "description": "The stages of a project and their weights. Saving makes a new version with its effective date, so earlier figures keep the weights they were calculated with. A stage is deactivated, never deleted.",
+    "order": "Order",
+    "nameAr": "Arabic name",
+    "nameEn": "English name",
+    "weight": "Weight (%)",
+    "active": "Active",
+    "activeFor": "{name} is active",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "total": "Active stages total {total}%. They must total 100%.",
+    "mustTotal": "The active stages total {total}%. They must total 100%.",
+    "namesRequired": "Give every stage an Arabic and an English name.",
+    "add": "Add stage",
+    "effective": "Effective from",
+    "effectiveHint": "Leave empty to take effect now. It cannot be in the past.",
+    "summary": "What changed",
+    "save": "Save as a new version",
+    "published": "The new version is saved.",
+    "needsAnother": "Saved. This environment needs another administrator to validate or publish it.",
+    "history": "Versions",
+    "version": "Version",
+    "state": "State"
+  }
 }

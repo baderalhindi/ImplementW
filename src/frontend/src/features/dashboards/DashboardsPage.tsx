@@ -1,6 +1,10 @@
 import { type ReactElement } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router';
 
+import {
+  EntityCompletionPanel,
+  OwnEntityCompletionCard,
+} from '@/features/external-participation/EntityCompletion.tsx';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -173,16 +177,22 @@ export function DashboardsPage(): ReactElement {
         }
       />
       {others.length > 1 && <DashboardSwitch entries={others} current={entry} />}
+      {session.user.userType === 'EXTERNAL' && <OwnEntityCompletionCard />}
       {entry.contextKind === 'PROJECT' ? (
         <ProjectLanding />
       ) : (
-        <HostedDashboard
-          key={entry.code}
-          entry={entry}
-          filters={filters}
-          onFilterChange={setFilter}
-          onClearFilters={clearFilters}
-        />
+        <>
+          {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && (
+            <EntityCompletionPanel />
+          )}
+          <HostedDashboard
+            key={entry.code}
+            entry={entry}
+            filters={filters}
+            onFilterChange={setFilter}
+            onClearFilters={clearFilters}
+          />
+        </>
       )}
     </>
   );

@@ -5,7 +5,6 @@ import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type AssigneeValue, NONE, OTHER } from '@/features/tasks/assignee.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { TextField } from '@/shared/ui/FormFields.tsx';
 
 interface PersonFieldProps {
   label: string;
@@ -16,8 +15,8 @@ interface PersonFieldProps {
   user: SessionUser;
   value: AssigneeValue;
   onChange: (value: AssigneeValue) => void;
-  /** Whether the person may search people (USER_VIEW, R01 only today); otherwise someone is named by user id. */
-  canSearch: boolean;
+  /** Only people of this entity: a responder. */
+  externalEntityId?: string | null;
   /** People to offer by name besides the person themself and whoever is named now. */
   suggestions?: { id: string; label: string }[];
   /** A draft may leave the person unnamed until it is issued. */
@@ -28,7 +27,7 @@ interface PersonFieldProps {
 
 /**
  * The responder or the reviewer of a request (SCR-161, MOD-112). Offered by name: the person themself for a reviewer,
- * and whoever is named now; anyone else is found or given by user id. Whether they are eligible is the API's
+ * and whoever is named now; anyone else is found by name. Whether they are eligible is the API's
  * decision, shown on this field.
  */
 export function PersonField({
@@ -38,7 +37,7 @@ export function PersonField({
   user,
   value,
   onChange,
-  canSearch,
+  externalEntityId,
   suggestions = [],
   allowNone,
   hint,
@@ -90,30 +89,18 @@ export function PersonField({
           </label>
         ))}
       </div>
-      {value.choice === OTHER &&
-        (canSearch ? (
-          <UserPicker
-            label={t('externalParticipation.people.find')}
-            value={value.found}
-            {...(userType === 'ANY' ? {} : { userType })}
-            onChange={(found) => {
-              onChange({ ...value, found });
-            }}
-            required
-          />
-        ) : (
-          <TextField
-            label={t('externalParticipation.people.userId')}
-            name={name}
-            value={value.typedId}
-            dir="ltr"
-            required
-            hint={t('externalParticipation.people.userIdHint')}
-            onChange={(typedId) => {
-              onChange({ ...value, typedId });
-            }}
-          />
-        ))}
+      {value.choice === OTHER && (
+        <UserPicker
+          label={t('externalParticipation.people.find')}
+          value={value.found}
+          {...(externalEntityId == null ? {} : { externalEntityId })}
+          {...(userType === 'ANY' ? {} : { userType })}
+          onChange={(found) => {
+            onChange({ ...value, found });
+          }}
+          required
+        />
+      )}
       <p id={hintId} className="field__hint">
         {hint}
       </p>

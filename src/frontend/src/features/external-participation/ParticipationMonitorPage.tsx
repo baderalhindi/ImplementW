@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
@@ -21,7 +21,9 @@ import { useEntityNames, useRequestList } from './useExternalParticipationData.t
  */
 export function ParticipationMonitorPage(): ReactElement {
   const { t, formatDateTime } = useI18n();
-  const requests = useRequestList({});
+  const [params] = useSearchParams();
+  const externalEntityId = params.get('externalEntityId') ?? undefined;
+  const requests = useRequestList({ externalEntityId });
   const entityName = useEntityNames();
 
   return (

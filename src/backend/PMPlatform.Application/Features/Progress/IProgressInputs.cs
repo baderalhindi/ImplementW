@@ -4,10 +4,8 @@ namespace PMPlatform.Application.Features.Progress;
 
 /// <summary>
 /// Where WF-02 reads the facts it derives progress and health from, each owned by another module: task-level actual
-/// progress (WF-04), the active baseline (WF-03), Schedule Health (WF-03) and the financial status (WF-14). ADR-003 §8.2
-/// has no edge from Progress to any of them yet, and none of them is built, so the only implementation is
-/// <see cref="NoProgressInputs"/>; each source is connected when its module and its §8.2 edge exist
-/// (progress-update.md F-1).
+/// progress (WF-04), the active baseline (WF-03), Schedule Health (WF-03), the financial status (WF-14) and, for a project
+/// with no schedule to calculate from, the figures declared on it (WF-01). See <see cref="ProgressInputsReader"/>.
 /// </summary>
 internal interface IProgressInputs
 {
@@ -16,9 +14,19 @@ internal interface IProgressInputs
 
 /// <summary>The inputs as read now. An empty work breakdown, or a null, is a source with nothing to give.</summary>
 internal sealed record ProgressInputs(
-    IReadOnlyList<WorkItemProgress> WorkBreakdown, BaselinePlan? Baseline, HealthStatus? ScheduleHealth, HealthStatus? FinancialStatus)
+    IReadOnlyList<WorkItemProgress> WorkBreakdown,
+    BaselinePlan? Baseline,
+    HealthStatus? ScheduleHealth,
+    HealthStatus? FinancialStatus,
+    decimal? DeclaredActualPercent = null)
 {
     public static ProgressInputs None { get; } = new([], null, null, null);
+
+    /// <summary>The actual figure and where it comes from: the work breakdown when it gives one, else the declared figure, else nothing yet.</summary>
+    public (decimal? Percent, ProgressActualSource Source) Actual() =>
+        ProgressRollup.Actual(WorkBreakdown) is { } rolledUp ? (rolledUp, ProgressActualSource.WorkBreakdown)
+        : DeclaredActualPercent is { } declared ? (declared, ProgressActualSource.Declared)
+        : (null, ProgressActualSource.NotAvailable);
 }
 
 /// <summary>
@@ -32,8 +40,3 @@ internal sealed record BaselinePlan(Guid BaselineId, IReadOnlyList<BaselineActiv
 
 internal sealed record BaselineActivity(Guid Id, DateOnly PlannedStart, DateOnly PlannedFinish);
 
-/// <summary>Until WF-03, WF-04 and WF-14 are connected (progress-update.md F-1): nothing to derive from.</summary>
-internal sealed class NoProgressInputs : IProgressInputs
-{
-    public Task<ProgressInputs> ReadAsync(Guid projectId, CancellationToken cancellationToken) => Task.FromResult(ProgressInputs.None);
-}

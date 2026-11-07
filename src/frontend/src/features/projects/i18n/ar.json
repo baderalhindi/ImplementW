@@ -14,7 +14,8 @@
     "ACTIVE": "نشط",
     "SUSPENDED": "موقوف",
     "COMPLETED": "مكتمل",
-    "CLOSED": "مغلق"
+    "CLOSED": "مغلق",
+    "CANCELED": "ملغى"
   },
   "participationMode": {
     "AHDA_MANAGED": "تديره الهيئة",
@@ -118,7 +119,7 @@
     "participationHint": "من ينفّذ المشروع. المشروع الذي تديره جهة خارجية يحدد جهته.",
     "departmentHint": "إدارة الهيئة المالكة للمشروع، وتحدد من يتابعه.",
     "ownEntity": "جهتك",
-    "budgetHint": "مبلغ مثل 1500000 أو 1500000.50.",
+    "budgetHint": "مبلغ مثل 1,500,000 أو 1,500,000.50.",
     "latitudeHint": "درجات عشرية، من ‎-90 إلى 90.",
     "longitudeHint": "درجات عشرية، من ‎-180 إلى 180.",
     "unreadable": {
@@ -131,7 +132,9 @@
     "legacyReferenceHint": "رقم المشروع في سجل متابعة المشاريع الإقليمية، مثل AHP-000001. تُطابَق عليه إعادة الاستيراد.",
     "followUpOwnerHint": "موظف الإدارة الذي يتابع المشروع.",
     "changeOwner": "تغيير",
-    "clearOwner": "إزالة"
+    "clearOwner": "إزالة",
+    "governanceProfileInfoLabel": "ما ملف الحوكمة؟",
+    "governanceProfileInfo": "يحدد ملف الحوكمة مستوى ضبط الهيئة لهذا المشروع: البيانات المطلوبة قبل التقديم، والخطط التي تحتاج إلى اعتماد الهيئة. تؤكده الهيئة عند المراجعة."
   },
   "workspace": {
     "revision": "المراجعة {revision}",
@@ -296,7 +299,8 @@
     "source": {
       "IMPORT": "الاستيراد",
       "MANUAL": "أُدخلت هنا",
-      "ENTITY_UPDATE": "تحديث الجهة"
+      "ENTITY_UPDATE": "تحديث الجهة",
+      "PROGRESS_UPDATE": "تحديث تقدم منشور"
     },
     "compliance": "الجهة ملتزمة بالتحديث الدوري",
     "yes": "نعم",
@@ -471,5 +475,19 @@
     "open": "بطاقة المشروع للطباعة",
     "title": "بطاقة المشروع",
     "back": "العودة إلى المشروع"
+  },
+  "sort": {
+    "UpdatedDescending": "الأحدث تعديلًا أولًا",
+    "UpdatedAscending": "الأقدم تعديلًا أولًا",
+    "TitleAscending": "العنوان تصاعديًا",
+    "TitleDescending": "العنوان تنازليًا",
+    "FormalIdAscending": "رقم المشروع، الأصغر أولًا",
+    "FormalIdDescending": "رقم المشروع، الأكبر أولًا"
+  },
+  "bulk": {
+    "delete": "حذف {count} مسودات",
+    "deleteTitle": "حذف {count} مسودات مشاريع؟",
+    "deleteBody": "ستُحذف هذه المسودات: {names}. لا يمكن التراجع عن ذلك.",
+    "onlyDrafts": "تُحذف المسودات فقط. أما المشروع المقدَّم فيُسحب أو يُغلق."
   }
 }

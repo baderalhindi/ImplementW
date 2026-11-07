@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
@@ -91,7 +91,14 @@ describe('SCR-120 Document Library', () => {
       screen.getByRole('searchbox', { name: en('documents.filters.title') }),
       'CLEAN',
     );
-    await user.click(screen.getByRole('button', { name: en('common.filters.apply') }));
+    await waitFor(() => {
+      expect(
+        api
+          .requestsTo('GET', /^\/documents$/)
+          .at(-1)
+          ?.query.get('q'),
+      ).toBe('CLEAN');
+    });
     await screen.findByText('Document CLEAN');
     await user.selectOptions(
       screen.getByRole('combobox', { name: en('documents.fields.status') }),

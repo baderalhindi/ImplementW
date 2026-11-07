@@ -34,6 +34,24 @@ internal sealed class ExternalParticipationRepository(PMPlatformDbContext contex
             .ToListAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<RequestCompletionFacts>> ListCompletionFactsAsync(DateOnly issuedFrom, CancellationToken cancellationToken)
+    {
+        DateTimeOffset from = new(issuedFrom, TimeOnly.MinValue, TimeSpan.Zero);
+        return await context.Set<ExternalUpdateRequest>().AsNoTracking()
+            .Where(r => r.IssuedAt >= from && r.Status != ExternalUpdateRequestStatus.Draft && r.Status != ExternalUpdateRequestStatus.Cancelled)
+            .Select(r => new RequestCompletionFacts(
+                r.ProjectId,
+                r.ExternalEntityId,
+                r.DueDate,
+                context.Set<ExternalContribution>().Any(c => c.ExternalUpdateRequestId == r.Id && c.SubmittedAt != null),
+                context.Set<ExternalContribution>()
+                    .Where(c => c.ExternalUpdateRequestId == r.Id)
+                    .OrderByDescending(c => c.RevisionNo)
+                    .Select(c => (ExternalContributionStatus?)c.Status)
+                    .FirstOrDefault()))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<IExternalParticipationWork> BeginAsync(CancellationToken cancellationToken) =>
         context.Database.CurrentTransaction is null
             ? new ExternalParticipationWork(await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false))

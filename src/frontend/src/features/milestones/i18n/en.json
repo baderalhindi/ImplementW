@@ -23,7 +23,7 @@
   "status": {
     "PLANNED": "Planned",
     "ACHIEVED": "Achieved",
-    "CANCELLED": "Cancelled"
+    "CANCELLED": "Canceled"
   },
   "revisionStatus": {
     "DRAFT": "Draft",
@@ -73,7 +73,7 @@
     "inReview": "Under review",
     "returned": "Returned",
     "achieved": "Achieved",
-    "cancelled": "Cancelled"
+    "cancelled": "Canceled"
   },
   "empty": {
     "project": {
@@ -141,7 +141,7 @@
     "deleteConfirm": "Yes, delete the draft",
     "keep": "Keep the draft",
     "why": {
-      "cancelled": "This milestone is cancelled, so its achievement cannot be claimed.",
+      "cancelled": "This milestone is canceled, so its achievement cannot be claimed.",
       "notManager": "Only the project's Project Manager claims its milestones' achievements.",
       "projectNotActive": "Achievements are claimed while the project is active."
     }
@@ -159,7 +159,7 @@
     "title": "Evidence",
     "pending": {
       "title": "Evidence is optional pending policy",
-      "body": "No evidence policy has been published yet (PTBC-006), so no evidence is mandatory and the server accepts this claim without any. The reviewer sees whatever you attach."
+      "body": "No evidence policy has been published yet, so no evidence is mandatory and the server accepts this claim without any. The reviewer sees whatever you attach."
     },
     "notRequired": {
       "title": "No evidence is required",
@@ -198,14 +198,14 @@
     "keepEditing": "Keep editing"
   },
   "cancel": {
-    "body": "Cancel this milestone? A cancelled milestone stays in the schedule's history and can no longer be claimed or changed.",
+    "body": "Cancel this milestone? A canceled milestone stays in the schedule's history and can no longer be claimed or changed.",
     "confirm": "Yes, cancel the milestone",
     "keep": "Keep the milestone"
   },
   "done": {
     "created": "The milestone was added.",
     "updated": "The milestone was saved.",
-    "cancelled": "The milestone was cancelled.",
+    "cancelled": "The milestone was canceled.",
     "claimOpened": "The claim was saved as a draft. Attach its evidence, then submit it.",
     "claimSaved": "The claim was saved.",
     "submitted": "The claim was submitted for review.",
@@ -216,14 +216,14 @@
   },
   "problems": {
     "projectNotActive": "Achievements are claimed while the project is active. Nothing was changed.",
-    "notClaimable": "This milestone is cancelled or no longer available, so it cannot be claimed.",
+    "notClaimable": "This milestone is canceled or no longer available, so it cannot be claimed.",
     "claimedDateInvalid": "The date achieved cannot be after today.",
     "achievementOpen": "This milestone already has a claim in draft or under review.",
     "achievementNotEditable": "Only a draft claim can be changed.",
     "evidenceRequired": "The server refused the submission: the evidence the policy requires is not all attached and clean. The evidence was read again.",
     "scheduleProjectNotEligible": "Milestones are planned while the project is approved or active.",
     "scheduleNotInitialized": "The project's schedule has not been started yet. Start it in the Schedule tab first.",
-    "scheduleNotEditable": "This milestone cannot be changed: it is achieved or cancelled, or a baseline is with AHDA for approval.",
+    "scheduleNotEditable": "This milestone cannot be changed: it is achieved or canceled, or a baseline is with AHDA for approval.",
     "categoryInvalid": "Choose a published milestone category.",
     "activityInvalid": "Choose a live activity of this project's schedule.",
     "linkEnded": "This document was detached from the claim earlier and cannot be attached to it again. Upload it as a new document.",

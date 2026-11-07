@@ -104,6 +104,7 @@ export interface RoleSummary {
   isActive: boolean;
   allowedScopes: RoleScope[] | null;
   landingDashboardCode: RoleLandingDashboard | null;
+  showCreateInHeader?: boolean;
 }
 
 /** A new role, with its draft profile: empty, or copying `sourceRoleId`'s published one. */
@@ -115,11 +116,13 @@ export interface RoleCreateRequest {
   allowedScopes: RoleScope[];
   sourceRoleId: string | null;
   landingDashboardCode: RoleLandingDashboard | null;
+  showCreateInHeader?: boolean;
 }
 
 export interface RoleSettingsRequest {
   allowedScopes: RoleScope[];
   landingDashboardCode: RoleLandingDashboard | null;
+  showCreateInHeader?: boolean;
 }
 
 export interface PermissionProfileSummary {
@@ -302,3 +305,23 @@ export interface ExternalEntityCreateRequest {
 }
 
 export type ExternalEntityUpdateRequest = Omit<ExternalEntityCreateRequest, 'code'>;
+
+export interface PersonLookupQuery {
+  q?: string | undefined;
+  userType?: UserType | undefined;
+  externalEntityId?: string | undefined;
+  projectId?: string | undefined;
+  pageSize?: number | undefined;
+}
+
+/** A person a field may name: who they are, not how to reach them. */
+export interface PersonMatch {
+  id: string;
+  displayName: string;
+  username: string;
+  userType?: UserType;
+  departmentId?: string | null;
+  externalEntityId?: string | null;
+  roles?: { ar: string; en: string }[];
+  unit?: { ar: string; en: string } | null;
+}

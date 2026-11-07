@@ -155,7 +155,7 @@
     "noFigure": "No figure is sent. The period will show \"{state}\", never 0.",
     "actual": "Actual expenditure to date (SAR)",
     "forecast": "Forecast at completion (SAR)",
-    "amountHint": "Digits only, up to two decimal places, for example 1250000.00.",
+    "amountHint": "Up to two decimal places, for example 1,250,000.00.",
     "forecastHint": "Optional. Leave it empty if there is no forecast; it will show \"No forecast given\", never 0.",
     "actualIntegrated": "Actual expenditure comes from an integrated source and cannot be entered by hand. Record why there is no figure instead.",
     "forecastIntegrated": "The forecast comes from an integrated source and cannot be entered by hand.",
@@ -205,7 +205,7 @@
     "caption": "The project's KPIs and where each stands this period",
     "forbidden": "You do not have access to KPIs.",
     "empty": "No KPIs are assigned to this project",
-    "emptyBody": "AHDA assigns KPIs and approves their targets. Once one is assigned, its values are recorded here.",
+    "emptyBody": "The Project Manager or AHDA adds a project's KPIs; AHDA approves their targets. Once one is added, its values are recorded here.",
     "kpi": "KPI",
     "project": "Project",
     "target": "Target in force",
@@ -363,5 +363,17 @@
     "amountMalformed": "Enter an amount in SAR: digits only, up to two decimal places.",
     "kpiValueMalformed": "Enter a number.",
     "kpiValueOutOfRange": "Enter a number with up to four decimal places."
+  },
+  "addKpi": {
+    "action": "Add KPI",
+    "title": "Add KPI",
+    "intro": "Choose a KPI from AHDA's catalogue and set its target. The target goes to AHDA for approval; values can be recorded once it is approved.",
+    "kpi": "KPI",
+    "frequency": "How often it is measured",
+    "target": "Target",
+    "targetHint": "In the KPI's unit. Up to four decimal places.",
+    "chosen": "Unit: {unit}. {direction}.",
+    "confirm": "Add KPI and send the target for approval",
+    "done": "The KPI was added and its target sent to AHDA for approval."
   }
 }

@@ -75,7 +75,7 @@
     "PLANNED": "Planned",
     "IN_PROGRESS": "In progress",
     "COMPLETED": "Completed",
-    "CANCELLED": "Cancelled"
+    "CANCELLED": "Canceled"
   },
   "activity": {
     "createTitle": "Add activity",
@@ -151,7 +151,7 @@
     "moveLabel": "Move {activity}",
     "moving": "New dates {start} to {finish}. Release, or press Enter, to save.",
     "unchanged": "Nothing was changed.",
-    "cancelled": "Move cancelled.",
+    "cancelled": "Move canceled.",
     "forecastRange": "Current Forecast {start} to {finish}",
     "baselineRange": "Approved Baseline {start} to {finish}"
   },
@@ -201,9 +201,10 @@
     "plannedFinish": "Planned finish",
     "replaces": "Replaces",
     "consequence": "If the project's governance profile requires approval, the baseline goes to AHDA for review and the plan is frozen until it is decided. If not, it becomes the active baseline at once. Either way, the active baseline is replaced only when the new one becomes active.",
-    "changeAuthorization": "Change authorisation ID",
-    "changeAuthorizationHint": "A new baseline after an approved one implements an approved change request. Enter the ID of its change authorisation.",
-    "confirm": "Submit baseline"
+    "changeAuthorization": "Approved change",
+    "changeAuthorizationHint": "A new baseline after an approved one implements an approved change request. Choose which.",
+    "confirm": "Submit baseline",
+    "authorizationOption": "{title}, approved {date}"
   },
   "approve": {
     "title": "Decide on baseline",
@@ -247,7 +248,7 @@
     "initialized": "The schedule was set up.",
     "activityCreated": "The activity was added and the plan calculated again.",
     "activityUpdated": "The activity was saved and the plan calculated again.",
-    "activityCancelled": "The activity was cancelled.",
+    "activityCancelled": "The activity was canceled.",
     "reforecast": "The forecast was saved.",
     "dependencyAdded": "The dependency was added and the plan calculated again.",
     "dependencyRemoved": "The dependency was removed and the plan calculated again.",
@@ -273,12 +274,12 @@
     "projectNotEligible": "The schedule can be changed only while the project is approved or active.",
     "notInitialized": "This project has no schedule yet.",
     "exists": "The schedule was already set up. It has been read again.",
-    "notEditable": "The plan cannot be changed while a baseline candidate is under review, or the activity is cancelled.",
+    "notEditable": "The plan cannot be changed while a baseline candidate is under review, or the activity is canceled.",
     "wbsCodeExists": "Another activity already has this WBS code.",
     "hierarchyInvalid": "That parent is not allowed: it must be a live activity of this schedule that no dependency links.",
     "hierarchyCircular": "That parent is not allowed: an activity cannot be placed under itself or one of its own sub-activities.",
     "activityInUse": "The activity still has sub-activities or dependencies. Remove them first.",
-    "forecastInvalid": "A forecast can be set only on an activity without sub-activities that is not cancelled.",
+    "forecastInvalid": "A forecast can be set only on an activity without sub-activities that is not canceled.",
     "dependencyInvalid": "A dependency must link two different activities of this schedule that have no sub-activities.",
     "dependencyCircular": "This dependency would create a circular dependency with one added meanwhile. The schedule has been read again.",
     "dependencyExists": "These two activities are already linked.",
@@ -286,7 +287,7 @@
     "candidateExists": "A baseline candidate is already on its way. It has been read again.",
     "baselineEmpty": "The schedule has no activity to baseline. Add activities first.",
     "baselineNotEditable": "Only a draft baseline can be deleted.",
-    "changeAuthorizationRequired": "A new baseline after an approved one needs the ID of an approved change authorisation for this project.",
+    "changeAuthorizationRequired": "A new baseline after an approved one needs the ID of an approved change authorization for this project.",
     "singleActiveBaseline": "Another baseline became active at the same moment. The schedule has been read again.",
     "configurationMissing": "Baseline approval is not configured for this project's governance profile yet. Ask the AHDA PMO.",
     "invalidTransition": "The baseline is no longer in a state that allows this. It has been read again.",

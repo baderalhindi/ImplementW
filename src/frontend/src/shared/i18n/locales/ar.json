@@ -37,8 +37,7 @@
   },
   "states": {
     "loading": "جارٍ التحميل…",
-    "saving": "جارٍ الحفظ…",
-    "searching": "جارٍ البحث…"
+    "saving": "جارٍ الحفظ…"
   },
   "values": {
     "yes": "نعم",
@@ -50,7 +49,11 @@
     "unknownUser": "المستخدم {id}"
   },
   "table": {
-    "actions": "الإجراءات"
+    "actions": "الإجراءات",
+    "selectAll": "تحديد كل الصفوف المعروضة",
+    "selectRow": "تحديد {name}",
+    "selected": "تم تحديد {count}",
+    "clearSelection": "إلغاء التحديد"
   },
   "filters": {
     "label": "عوامل التصفية",

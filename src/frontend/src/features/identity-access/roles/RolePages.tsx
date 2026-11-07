@@ -407,6 +407,7 @@ function RoleSettingsForm({
   const save = useSaveAction();
   const [scopes, setScopes] = useState<RoleScope[]>(role.allowedScopes ?? []);
   const [landing, setLanding] = useState(role.landingDashboardCode);
+  const [showCreate, setShowCreate] = useState(role.showCreateInHeader !== false);
 
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
@@ -416,7 +417,7 @@ function RoleSettingsForm({
     const result = await save.run(() =>
       rolesApi.updateSettings(
         role.id,
-        { allowedScopes: scopes, landingDashboardCode: landing },
+        { allowedScopes: scopes, landingDashboardCode: landing, showCreateInHeader: showCreate },
         etag,
       ),
     );
@@ -436,6 +437,18 @@ function RoleSettingsForm({
         scopesError={save.fieldErrors.allowedScopes}
         landingError={save.fieldErrors.landingDashboardCode}
       />
+      <label className="field__option">
+        <input
+          type="checkbox"
+          name="showCreateInHeader"
+          checked={showCreate}
+          onChange={(event) => {
+            setShowCreate(event.target.checked);
+          }}
+        />
+        <span>{t('identityAccess.roles.fields.showCreateInHeader')}</span>
+      </label>
+      <p className="field__hint">{t('identityAccess.roles.showCreateHint')}</p>
       <div className="form__actions">
         <button type="submit" className="button button--primary" disabled={save.saving}>
           {save.saving ? t('common.states.saving') : t('common.actions.save')}
@@ -593,6 +606,12 @@ export function RoleDetailPage(): ReactElement {
         <div className="details__row">
           <dt>{t('identityAccess.roles.fields.landing')}</dt>
           <dd>{t(landingLabelKey(detail.landingDashboardCode))}</dd>
+        </div>
+        <div className="details__row">
+          <dt>{t('identityAccess.roles.fields.showCreateInHeader')}</dt>
+          <dd>
+            {t(detail.showCreateInHeader === false ? 'common.values.no' : 'common.values.yes')}
+          </dd>
         </div>
         <div className="details__row">
           <dt>{t('identityAccess.users.fields.updatedAt')}</dt>

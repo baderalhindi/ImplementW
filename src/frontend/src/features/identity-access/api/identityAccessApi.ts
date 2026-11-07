@@ -33,6 +33,8 @@ import {
   type UserQuery,
   type UserSummary,
   type UserUpdateRequest,
+  type PersonLookupQuery,
+  type PersonMatch,
 } from './types.ts';
 
 /** R-29's largest page: what a lookup or a tree reads per request. */
@@ -65,6 +67,12 @@ function command<T>(path: string, etag?: string | null): Promise<ApiResponse<T>>
 }
 
 // ADM-002 to ADM-005, MOD-080
+/** The people a field may name (review round 5, item 5): for anyone who may write something, unlike GET /users. */
+export const personLookupsApi = {
+  list: (query: PersonLookupQuery, signal?: AbortSignal) =>
+    data(apiRequest<Page<PersonMatch>>('/person-lookups', { query: { ...query }, signal })),
+};
+
 export const usersApi = {
   list: (query: UserQuery, signal?: AbortSignal) =>
     data(apiRequest<Page<UserSummary>>('/users', { query: { ...query }, signal })),

@@ -13,14 +13,20 @@ import { statusTone } from '../presentation.ts';
 export function ProjectStatusBadge({
   status,
   legacyIntakeDate,
+  isCanceled = false,
 }: {
   status: ProjectStatus;
   legacyIntakeDate: string | null;
+  /** A CLOSED project that ended by being canceled. */
+  isCanceled?: boolean | undefined;
 }): ReactElement {
   const { t } = useI18n();
   return (
     <span className="badge-group">
-      <StatusBadge label={t(`projects.status.${status}`)} tone={statusTone(status)} />
+      <StatusBadge
+        label={isCanceled ? t('projects.status.CANCELED') : t(`projects.status.${status}`)}
+        tone={statusTone(status)}
+      />
       {legacyIntakeDate !== null && (
         <StatusBadge label={t('projects.legacyIntake')} tone="warning" />
       )}

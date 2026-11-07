@@ -14,7 +14,8 @@
     "ACTIVE": "Active",
     "SUSPENDED": "Suspended",
     "COMPLETED": "Completed",
-    "CLOSED": "Closed"
+    "CLOSED": "Closed",
+    "CANCELED": "Canceled"
   },
   "participationMode": {
     "AHDA_MANAGED": "Managed by AHDA",
@@ -118,7 +119,7 @@
     "participationHint": "Who delivers the project. An entity-managed project names its entity.",
     "departmentHint": "The AHDA department that owns the project. It sets who follows the project up.",
     "ownEntity": "Your entity",
-    "budgetHint": "An amount such as 1500000 or 1500000.50.",
+    "budgetHint": "An amount such as 1,500,000 or 1,500,000.50.",
     "latitudeHint": "Decimal degrees, from -90 to 90.",
     "longitudeHint": "Decimal degrees, from -180 to 180.",
     "unreadable": {
@@ -131,7 +132,9 @@
     "legacyReferenceHint": "The project's number in RPMO's register, such as AHP-000001. A re-import matches on it.",
     "followUpOwnerHint": "The RPMO staff member who follows the project up.",
     "changeOwner": "Change",
-    "clearOwner": "Remove"
+    "clearOwner": "Remove",
+    "governanceProfileInfoLabel": "What is the governance profile?",
+    "governanceProfileInfo": "The governance profile sets how closely AHDA controls this project: which details are required before submission and which plans need AHDA's approval. AHDA confirms it at review."
   },
   "workspace": {
     "revision": "Revision {revision}",
@@ -296,7 +299,8 @@
     "source": {
       "IMPORT": "import",
       "MANUAL": "entered here",
-      "ENTITY_UPDATE": "The entity's update"
+      "ENTITY_UPDATE": "The entity's update",
+      "PROGRESS_UPDATE": "a published progress update"
     },
     "compliance": "Entity keeps to its updates",
     "yes": "Yes",
@@ -471,5 +475,19 @@
     "open": "Project card for printing",
     "title": "Project card",
     "back": "Back to the project"
+  },
+  "sort": {
+    "UpdatedDescending": "Recently changed first",
+    "UpdatedAscending": "Least recently changed first",
+    "TitleAscending": "Title, A to Z",
+    "TitleDescending": "Title, Z to A",
+    "FormalIdAscending": "Project ID, lowest first",
+    "FormalIdDescending": "Project ID, highest first"
+  },
+  "bulk": {
+    "delete": "Delete {count} drafts",
+    "deleteTitle": "Delete {count} draft projects?",
+    "deleteBody": "These drafts will be deleted: {names}. This cannot be undone.",
+    "onlyDrafts": "Only drafts can be deleted. A submitted project is withdrawn or closed."
   }
 }

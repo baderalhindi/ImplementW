@@ -179,6 +179,9 @@ internal sealed class ConfigurationRepository(PMPlatformDbContext context) : ICo
             FieldClassifications = await Rows<FieldClassificationRule>(versionId)
                 .Select(r => new FieldClassificationEntry(r.EntityCode, r.FieldCode, r.DataClassificationItemId, r.MaskingRule))
                 .ToListAsync(cancellationToken).ConfigureAwait(false),
+            ProjectStages = await Rows<ProjectStageDefinition>(versionId)
+                .Select(s => new ProjectStageEntry(s.Code, s.Name, s.SortOrder, s.WeightPercent, s.IsActive))
+                .ToListAsync(cancellationToken).ConfigureAwait(false),
             ReportFields = await Rows<ReportAllowlistEntry>(versionId)
                 .Select(f => new ReportFieldEntry(f.SourceEntityCode, f.FieldCode, f.Label, f.IsFilterable, f.IsSortable, f.DataClassificationItemId))
                 .ToListAsync(cancellationToken).ConfigureAwait(false),
@@ -196,6 +199,7 @@ internal sealed class ConfigurationRepository(PMPlatformDbContext context) : ICo
         ArgumentNullException.ThrowIfNull(content);
 
         await RemoveAsync<ConfigurationValue>(versionId, cancellationToken).ConfigureAwait(false);
+        await RemoveAsync<ProjectStageDefinition>(versionId, cancellationToken).ConfigureAwait(false);
         await RemoveAsync<GovernanceProfileSetting>(versionId, cancellationToken).ConfigureAwait(false);
         await RemoveAsync<MaterialityBand>(versionId, cancellationToken).ConfigureAwait(false);
         await RemoveAsync<ProbabilityLevelDefinition>(versionId, cancellationToken).ConfigureAwait(false);
@@ -384,6 +388,19 @@ internal sealed class ConfigurationRepository(PMPlatformDbContext context) : ICo
                 FieldCode = rule.FieldCode,
                 DataClassificationItemId = rule.DataClassificationItemId,
                 MaskingRule = rule.MaskingRule,
+            }));
+        }
+
+        foreach (ProjectStageEntry stage in content.ProjectStages)
+        {
+            Add(rows.Stamp(new ProjectStageDefinition
+            {
+                ConfigurationVersionId = versionId,
+                Code = stage.Code,
+                Name = stage.Name,
+                SortOrder = stage.SortOrder,
+                WeightPercent = stage.WeightPercent,
+                IsActive = stage.IsActive,
             }));
         }
 

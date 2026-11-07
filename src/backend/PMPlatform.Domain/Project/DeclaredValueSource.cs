@@ -6,4 +6,5 @@ public enum DeclaredValueSource
     Import = 1,
     Manual = 2,
     EntityUpdate = 3,
+    ProgressUpdate = 4,
 }

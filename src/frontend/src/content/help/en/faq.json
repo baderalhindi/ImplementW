@@ -5,7 +5,7 @@
       "forgot-password": {
         "question": "I have forgotten my password. How do I reset it?",
         "answer": [
-          "The platform does not reset passwords. Contact the AHDA IT service desk: your password is the one you use for your AHDA account."
+          "If you know your password, sign in and choose Change password in the account menu: you change it yourself, whichever account you sign in with on this page. If you have forgotten it, choose Forgot your password? on the sign-in page, where it is offered, and a link goes to your e-mail address. If none arrives, or you sign in with Microsoft, contact the AHDA IT service desk."
         ]
       },
       "session-ended": {

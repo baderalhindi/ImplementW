@@ -13,7 +13,7 @@ import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
-import { RadioGroupField, TextAreaField, TextField } from '@/shared/ui/FormFields.tsx';
+import { RadioGroupField, TextAreaField, AmountField, TextField } from '@/shared/ui/FormFields.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 
 import { financialKpiApi } from '../api/financialKpiApi.ts';
@@ -248,16 +248,16 @@ function KpiValueForm({
         onChange={set('valueStatus')}
       />
       {values.valueStatus === 'MEASURED' ? (
-        <TextField
+        <AmountField
           label={t('financialKpi.kpiValue.value', { unit: unitLabel })}
           name="measuredValue"
           required
           value={values.value}
           onChange={set('value')}
-          inputMode="decimal"
-          dir="ltr"
           hint={t('financialKpi.kpiValue.valueHint')}
           error={errorOf('measuredValue')}
+          maxDecimals={4}
+          allowNegative
         />
       ) : (
         values.valueStatus !== '' && (

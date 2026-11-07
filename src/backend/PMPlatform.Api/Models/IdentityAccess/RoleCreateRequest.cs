@@ -40,7 +40,7 @@ public sealed partial record RoleCreateRequest(
 }
 
 /// <summary>A role's allowed scopes and landing dashboard.</summary>
-public sealed record RoleSettingsRequest(IReadOnlyList<string>? AllowedScopes, string? LandingDashboardCode = null)
+public sealed record RoleSettingsRequest(IReadOnlyList<string>? AllowedScopes, string? LandingDashboardCode = null, bool? ShowCreateInHeader = null)
 {
     internal List<FieldError> Validate()
     {

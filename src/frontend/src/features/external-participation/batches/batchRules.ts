@@ -35,9 +35,8 @@ export interface RowIssue {
 export function responderOf(
   project: Pick<ProjectSummary, 'entityContactUserId'>,
   chosen: AssigneeValue | undefined,
-  canSearch: boolean,
 ): string | null {
-  const named = chosen === undefined ? null : assigneeOf(chosen, canSearch).userId;
+  const named = chosen === undefined ? null : assigneeOf(chosen).userId;
   return named ?? project.entityContactUserId ?? null;
 }
 
@@ -46,20 +45,18 @@ export function isFlagged(
   project: Pick<ProjectSummary, 'entityContactUserId'>,
   chosen: AssigneeValue | undefined,
   issue: RowIssue | undefined,
-  canSearch: boolean,
 ): boolean {
-  return issue !== undefined || responderOf(project, chosen, canSearch) === null;
+  return issue !== undefined || responderOf(project, chosen) === null;
 }
 
 /** The items to send, in the order the 422's `items[i]` then refers to. */
 export function batchItemsOf(
   projects: readonly ProjectSummary[],
   responders: Readonly<Record<string, AssigneeValue>>,
-  canSearch: boolean,
 ): UpdateRequestBatchItem[] {
   return projects.map((project) => {
     const chosen = responders[project.id];
-    const named = chosen === undefined ? null : assigneeOf(chosen, canSearch).userId;
+    const named = chosen === undefined ? null : assigneeOf(chosen).userId;
     return named === null
       ? { projectId: project.id }
       : { projectId: project.id, responsibleUserId: named };

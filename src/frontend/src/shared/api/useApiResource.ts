@@ -22,15 +22,20 @@ export interface ApiResourceOptions {
    * unmounted by a refresh. `loading` still says a run is under way; a new `load` (another filter) never shows the old.
    */
   keepWhileReloading?: boolean;
+  /**
+   * Keeps the last result on screen while a new `load` runs too, so a list searched as it is typed does not blank on each pause. `loading`
+   * still says a run is under way, and a failed run shows no rows.
+   */
+  keepPreviousResult?: boolean;
 }
 
 /**
  * Runs `load` whenever it changes (pass a useCallback) or `reload` is called, aborting the previous run. `loading`
- * is true until the current run settles, so a screen never shows a previous filter's rows as the current result.
+ * is true until the current run settles; unless it opts in with `keepPreviousResult`, a screen never shows a previous filter's rows.
  */
 export function useApiResource<T>(
   load: ResourceLoader<T>,
-  { keepWhileReloading = false }: ApiResourceOptions = {},
+  { keepWhileReloading = false, keepPreviousResult = false }: ApiResourceOptions = {},
 ): ApiResource<T> {
   const [version, setVersion] = useState(0);
   const [settled, setSettled] = useState<Settled<T> | null>(null);
@@ -58,7 +63,9 @@ export function useApiResource<T>(
 
   const current = settled?.load === load && settled.version === version ? settled : null;
   // A loader may resolve to null (no record yet), which is a result, not a missing one.
-  const shown = current ?? (keepWhileReloading && settled?.load === load ? settled : null);
+  const shown =
+    current ??
+    (keepPreviousResult || (keepWhileReloading && settled?.load === load) ? settled : null);
   return {
     data: shown?.data,
     error: current?.error ?? null,

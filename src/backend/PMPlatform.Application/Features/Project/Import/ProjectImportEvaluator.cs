@@ -47,7 +47,8 @@ internal sealed record ResolvedRow(
     string? ActionOwner,
     DateOnly? ActionDue,
     bool? EntityCompliant,
-    NarrativeText? Note);
+    NarrativeText? Note,
+    bool IsCanceled = false);
 
 /// <summary>What a workbook would do, and the rows an approval applies (those with no error).</summary>
 internal sealed record ProjectImportEvaluation(ProjectImportPreview Preview, IReadOnlyList<ResolvedRow> Rows);
@@ -279,7 +280,8 @@ internal static class ProjectImportEvaluator
                 priority, budget!.Value, funding, start!.Value, end!.Value, region!.Value, city!.Value,
                 planned, actual, plannedSpend, actualSpend,
                 obstacle is null ? null : new NarrativeText(obstacle, Language.Ar), nextAction is null ? null : new NarrativeText(nextAction, Language.Ar),
-                actionOwner, actionDue, compliant, notes is null ? null : new NarrativeText(notes, Language.Ar));
+                actionOwner, actionDue, compliant, notes is null ? null : new NarrativeText(notes, Language.Ar),
+                status == ProjectLifecycleState.Closed && CanceledWords.Contains(Text(ProjectImportLayout.Status) ?? string.Empty));
             if (resolved is not null && _existing is not null && _action == ProjectImportRowAction.Update)
             {
                 Compare(resolved, _existing);
@@ -429,6 +431,9 @@ internal static class ProjectImportEvaluator
 
             return id;
         }
+
+        /// <summary>The file's words for a project that ended by being canceled: it closes, and says so (review round 5, item 19).</summary>
+        private static readonly HashSet<string> CanceledWords = new(["ملغى", "ملغي", "ملغاة", "ملغية", "Canceled", "Cancelled"], StringComparer.OrdinalIgnoreCase);
 
         private ProjectLifecycleState? Status()
         {

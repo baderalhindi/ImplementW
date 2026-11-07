@@ -84,16 +84,24 @@ describe('SCR-033 Create Project', () => {
     expect(createButton()).toHaveProperty('disabled', false);
   });
 
+  test('the governance profile explains itself (review round 5, item 13)', async () => {
+    const user = userEvent.setup();
+    openCreate();
+    await user.click(
+      await screen.findByRole('button', { name: en('projects.form.governanceProfileInfoLabel') }),
+    );
+    expect(screen.getByRole('tooltip').textContent).toBe(en('projects.form.governanceProfileInfo'));
+  });
+
   test('values of the wrong shape are flagged as typed and keep saving disabled', async () => {
     const user = userEvent.setup();
     openCreate();
     await fillRequired(user);
 
-    await user.type(screen.getByLabelText(/Registration budget/), '1,500,000');
-    expect(screen.getByLabelText(/Registration budget/).getAttribute('aria-invalid')).toBe('true');
-    expect(createButton()).toHaveProperty('disabled', true);
-    await user.clear(screen.getByLabelText(/Registration budget/));
     await user.type(screen.getByLabelText(/Registration budget/), '1500000.5');
+    expect(screen.getByLabelText<HTMLInputElement>(/Registration budget/).value).toBe(
+      '1,500,000.5',
+    );
     expect(screen.getByLabelText(/Registration budget/).getAttribute('aria-invalid')).toBeNull();
 
     await user.type(screen.getByLabelText(/Planned start date/), '2026-12-01');

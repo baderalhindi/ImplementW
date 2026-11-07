@@ -20,7 +20,7 @@ public interface IRoleAdministrationService
     public Task<AdministrationResult<Versioned<RoleDetail>>> CreateRoleAsync(Guid actorId, RoleCreateDraft draft, CancellationToken cancellationToken);
 
     public Task<AdministrationResult<Versioned<RoleDetail>>> UpdateSettingsAsync(
-        Guid actorId, Guid roleId, IReadOnlyList<string> allowedScopes, string? landingDashboardCode, uint expectedVersion, CancellationToken cancellationToken);
+        Guid actorId, Guid roleId, IReadOnlyList<string> allowedScopes, string? landingDashboardCode, bool? showCreateInHeader, uint expectedVersion, CancellationToken cancellationToken);
 
     public Task<AdministrationResult<Versioned<RoleDetail>>> SetActiveAsync(Guid actorId, Guid roleId, bool active, uint expectedVersion, CancellationToken cancellationToken);
 

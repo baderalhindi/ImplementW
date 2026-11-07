@@ -2932,7 +2932,7 @@
         "tags": [
           "MasterDataConfig"
         ],
-        "summary": "The version effective at `asOf` (now when absent) with its content. None, or more than one, is 422\n`CONFIGURATION_MISSING`: resolution fails closed.",
+        "summary": "The version effective at `asOf` (now when absent) with its content. None, or more than one, is 422\n`CONFIGURATION_MISSING`: resolution fails closed. Needs CONFIGURATION_VIEW, or the permission to read what the family governs: a\nrisk's rating cannot be read without the matrix, nor a project's level without the profiles (review round 5, items 12 and 15).",
         "operationId": "MasterDataConfig_GetConfigurationResolution",
         "parameters": [
           {
@@ -4650,6 +4650,90 @@
                   "items": {
                     "$ref": "#/components/schemas/BusinessLinkDetail"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/entity-completion-rates": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "One row per entity the caller's view reaches, lowest first, and the average of all entities. `period` defaults to this month.",
+        "operationId": "ExternalParticipation_ListEntityCompletionRates",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CompletionPeriod"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityCompletionPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/entity-completion-rates/own": {
+      "get": {
+        "tags": [
+          "ExternalParticipation"
+        ],
+        "summary": "The caller's own entity beside the average of all entities; no other entity is named. 404 for someone who belongs to no entity.",
+        "operationId": "ExternalParticipation_GetOwnEntityCompletionRate",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CompletionPeriod"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnEntityCompletion"
                 }
               }
             }
@@ -11298,6 +11382,83 @@
         }
       }
     },
+    "/api/v1/person-lookups": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Active people matching `q`. Filters: `userType`; `externalEntityId`; `projectId`, whose anchors they must hold a role over.\n403 to someone with no write permission.",
+        "operationId": "IdentityAccess_ListPersonLookups",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UserType"
+            }
+          },
+          {
+            "name": "externalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonMatchPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/portfolio-insights": {
       "get": {
         "tags": [
@@ -13636,6 +13797,13 @@
                 "string"
               ],
               "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -17677,7 +17845,7 @@
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "A signed-in local account changes its own password. Every session of the account ends; the person signs in again.",
+        "summary": "A signed-in local or directory account changes its own password, proved by its current one. Every session of the account ends; the person signs in again.",
         "operationId": "IdentityAccess_ChangeOwnPassword",
         "requestBody": {
           "content": {
@@ -23234,6 +23402,14 @@
         },
         "description": "A completion case's own fields, as a whole (R-5): the proposed official completion date and the Project Manager's completion narrative.\nA draft may leave them out; submission requires both. Its status and the project's state change only through the commands."
       },
+      "CompletionPeriod": {
+        "enum": [
+          "THIS_MONTH",
+          "LAST_THREE_MONTHS",
+          "THIS_YEAR",
+          null
+        ]
+      },
       "ConcernAssessCommand": {
         "required": [
           "impacts"
@@ -23996,6 +24172,13 @@
               "$ref": "#/components/schemas/ReportFieldEntry"
             },
             "description": "REPORT_RULES: the SCR-138 allowlist (ADR-019)."
+          },
+          "projectStages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStageEntry"
+            },
+            "description": "PROJECT_STAGE: the stages and their weights (review round 5, item 7)."
           }
         },
         "description": "The typed rows of one configuration version (ERD §5.3), as one document. A family carries only its own sections\n(ConfigurationSections); every other section is empty. IReadOnlyList&lt;ConfigurationValueEntry&gt; ConfigurationContent.Values is open to every family."
@@ -24143,6 +24326,15 @@
             ],
             "items": {
               "$ref": "#/components/schemas/ReportFieldRequest"
+            }
+          },
+          "projectStages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProjectStageRequest"
             }
           }
         },
@@ -26005,6 +26197,7 @@
           "IMPORT",
           "MANUAL",
           "ENTITY_UPDATE",
+          "PROGRESS_UPDATE",
           null
         ]
       },
@@ -26631,9 +26824,121 @@
             "items": {
               "$ref": "#/components/schemas/EffectivePermissionDetail"
             }
+          },
+          "showCreateInHeader": {
+            "type": "boolean",
+            "default": true
           }
         },
         "description": "The permissions the caller holds now, each with the scopes it is held at, for the SPA to decide which menus, tabs and buttons to offer\n(review C3). Read from the engine on every call, so a changed grant shows without a new sign-in. This is navigation, not protection:\nevery operation is decided again by the API."
+      },
+      "EntityCompletionPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "averagePercent"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntityCompletionRow"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "averagePercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "EntityCompletionRow": {
+        "required": [
+          "externalEntityId",
+          "issued",
+          "submitted",
+          "accepted",
+          "overdue",
+          "completionPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "externalEntityId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "issued": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "submitted": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "accepted": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "overdue": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "completionPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
       },
       "EntityTagHeaderValue": {
         "type": "object",
@@ -34239,6 +34544,15 @@
             "items": {
               "$ref": "#/components/schemas/OrganizationUnit"
             }
+          },
+          "roles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RoleName"
+            }
           }
         },
         "description": "The departments and external entities the caller may be told of, by code."
@@ -34249,6 +34563,52 @@
           "SENSITIVE"
         ],
         "description": "An output's classification as its content makes it (FG-02 §9.3, GEN-009): SENSITIVE when it reveals a financial amount or a classified\ncolumn, whatever the report's baseline; STANDARD otherwise. ADR-010's taxonomy, when AHDA supplies it, refines it."
+      },
+      "OwnEntityCompletion": {
+        "required": [
+          "issued",
+          "accepted",
+          "completionPercent",
+          "averagePercent"
+        ],
+        "type": "object",
+        "properties": {
+          "issued": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "accepted": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "completionPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averagePercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "A null rate: nothing was issued to the entity in the period, which is not 0%."
       },
       "OwnPasswordChangeRequest": {
         "required": [
@@ -34270,7 +34630,7 @@
             ]
           }
         },
-        "description": "A signed-in local account's new password, proved by its current one."
+        "description": "A signed-in account's new password, proved by its current one."
       },
       "ParticipationAudience": {
         "enum": [
@@ -34783,6 +35143,105 @@
           }
         },
         "description": "An entry of the protected permission catalogue. Guid? PermissionSummary.DataClassificationItemId is its clearance (ADR-010)."
+      },
+      "PersonMatch": {
+        "required": [
+          "id",
+          "displayName",
+          "username",
+          "userType",
+          "departmentId",
+          "externalEntityId",
+          "roles",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "userType": {
+            "$ref": "#/components/schemas/UserType"
+          },
+          "departmentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "externalEntityId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BilingualLabel"
+            }
+          },
+          "unit": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          }
+        }
+      },
+      "PersonMatchPage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonMatch"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
       },
       "PersonName": {
         "required": [
@@ -35935,6 +36394,14 @@
           }
         }
       },
+      "ProgressActualSource": {
+        "enum": [
+          "WORK_BREAKDOWN",
+          "DECLARED",
+          "NOT_AVAILABLE"
+        ],
+        "description": "Where a submission's calculated figure comes from. A project with no work breakdown reports its declared figure until it has one."
+      },
       "ProgressOverrideRequest": {
         "required": [
           "actualPercent",
@@ -35992,6 +36459,7 @@
           "status",
           "actualPercent",
           "actualPercentCalculated",
+          "actualSource",
           "actualPercentOverride",
           "overrideReason",
           "isOverridden",
@@ -36049,6 +36517,9 @@
               "string"
             ],
             "format": "double"
+          },
+          "actualSource": {
+            "$ref": "#/components/schemas/ProgressActualSource"
           },
           "actualPercentOverride": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
@@ -36714,6 +37185,10 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "isCanceled": {
+            "type": "boolean",
+            "default": false
           }
         },
         "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart. DateTimeOffset? ProjectDetail.ClosedAt is when WF-10's\nclosure took effect (TASK-063); a closed project's completion date, or its having been terminated without one, is its closure cases'."
@@ -38715,6 +39190,97 @@
         },
         "description": "A project's schedule: one item once initialized (R-29)."
       },
+      "ProjectStageEntry": {
+        "required": [
+          "code",
+          "name",
+          "sortOrder",
+          "weightPercent",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "description": "A project stage in a PROJECT_STAGE version: active stages carry the weights, which total 100."
+      },
+      "ProjectStageRequest": {
+        "required": [
+          "code",
+          "name",
+          "sortOrder",
+          "weightPercent",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabelRequest"
+              }
+            ]
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isActive": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "A project stage of a PROJECT_STAGE version (review round 5, item 7)."
+      },
       "ProjectSubmitCommand": {
         "required": [
           "projectManagerUserId"
@@ -38895,6 +39461,10 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "isCanceled": {
+            "type": "boolean",
+            "default": false
           }
         },
         "description": "A row of SCR-025 Project Register, with RPMO's calculated columns (R3-3)."
@@ -43282,9 +43852,34 @@
               "null",
               "string"
             ]
+          },
+          "showCreateInHeader": {
+            "type": "boolean",
+            "default": true
           }
         },
         "description": "ADM-007 Role Detail, with the permission profiles rooted at the role (ADR-018)."
+      },
+      "RoleName": {
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          }
+        },
+        "description": "A role's name, for AHDA's people (review round 5): an approver is told which role a task waits on without ROLE_VIEW."
       },
       "RoleSettingsRequest": {
         "required": [
@@ -43305,6 +43900,12 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "showCreateInHeader": {
+            "type": [
+              "null",
+              "boolean"
             ]
           }
         },
@@ -43354,6 +43955,10 @@
               "null",
               "string"
             ]
+          },
+          "showCreateInHeader": {
+            "type": "boolean",
+            "default": true
           }
         },
         "description": "A row of ADM-006 Roles."

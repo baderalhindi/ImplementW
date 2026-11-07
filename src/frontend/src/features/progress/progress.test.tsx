@@ -197,6 +197,38 @@ describe('starting an update (TASK-044 D-5, ADR-017)', () => {
     expect(within(dialog).getByText('40%')).toBeTruthy();
   });
 
+  test('with no figure at all the dialog asks for one and offers no calculated figure to confirm', async () => {
+    const blank = submission({
+      actualSource: 'NOT_AVAILABLE',
+      actualPercentCalculated: 0,
+      actualPercent: 0,
+    });
+    const submissions: ProgressSubmissionDetail[] = [];
+    const api = open(entityManagerSession(), { submissions });
+    api
+      .on('POST', /^\/progress-submissions$/, () => {
+        submissions.push(blank);
+        return { status: 201, body: blank, headers: { ETag: SUBMISSION_ETAG } };
+      })
+      .on('GET', new RegExp(`^/progress-submissions/${SUBMISSION_ID}$`), {
+        body: blank,
+        headers: { ETag: SUBMISSION_ETAG },
+      });
+
+    const dialog = await openDialog('progress.actions.start', 'progress.update.submitTitle');
+
+    expect(within(dialog).getByText(en('progress.update.noFigure'))).toBeTruthy();
+    expect(within(dialog).getByText(en('progress.figures.notReported'))).toBeTruthy();
+    expect(
+      within(dialog).queryByRole('radio', { name: en('progress.update.useCalculated') }),
+    ).toBeNull();
+    expect(
+      within(dialog).getByRole('textbox', {
+        name: (name) => name.startsWith(en('progress.update.enteredPercent')),
+      }),
+    ).toBeTruthy();
+  });
+
   test('an update already in progress (a retried start, F-17) is shown, not reported as a failure', async () => {
     const api = open(entityManagerSession());
     api.on('POST', /^\/progress-submissions$/, problem(409, 'PROGRESS_SUBMISSION_EXISTS'));
@@ -209,12 +241,12 @@ describe('starting an update (TASK-044 D-5, ADR-017)', () => {
 
   test('a start the API refuses says why beside the button', async () => {
     const api = open(entityManagerSession());
-    api.on('POST', /^\/progress-submissions$/, problem(422, 'PROGRESS_ROLLUP_UNAVAILABLE'));
+    api.on('POST', /^\/progress-submissions$/, problem(422, 'PROGRESS_PROJECT_NOT_ACTIVE'));
 
     await pressButton('progress.actions.start');
 
     expect((await screen.findByRole('alert')).textContent).toBe(
-      en('progress.problems.rollupUnavailable'),
+      en('progress.problems.projectNotActive'),
     );
   });
 

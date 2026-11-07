@@ -1,4 +1,5 @@
 import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
+import { type PermissionCode } from '@/features/identity-access/permissions/permissionCodes.ts';
 import { type Language } from '@/shared/i18n/i18n.ts';
 
 import faqAr from './ar/faq.json';
@@ -71,6 +72,8 @@ export interface GuideArticleMeta {
   id: string;
   /** The roles the article is written for; `ALL` is every signed-in person. */
   audience: readonly RoleCode[] | 'ALL';
+  /** Offered only to whoever holds this permission: the guide never teaches what the reader cannot do (review round 5, item 17). */
+  permission?: PermissionCode;
   /** Screens the article walks through: a path and the translation key of its menu label. */
   related: readonly { to: string; label: string }[];
 }
@@ -131,6 +134,7 @@ export const GUIDE_ARTICLES: readonly GuideArticleMeta[] = [
   {
     // PROJECT_REGISTER is shipped to R04 and, within its own entity, R08 (seed-master-data.sql).
     id: 'register-a-project',
+    permission: 'PROJECT_REGISTER',
     audience: ['R04', 'R08'],
     related: [
       { to: '/projects/new', label: 'projects.nav.create' },
@@ -139,12 +143,14 @@ export const GUIDE_ARTICLES: readonly GuideArticleMeta[] = [
   },
   {
     id: 'submit-a-progress-update',
+    permission: 'PROGRESS_SUBMIT',
     audience: ['R04'],
     related: [{ to: '/projects/mine', label: 'projects.nav.mine' }],
   },
   {
     // Approval follows approval authority and delegation, not a role grant (WF-11), so any internal role may hold it.
     id: 'decide-an-approval',
+    permission: 'APPROVAL_DECIDE',
     audience: ['R01', 'R02', 'R03', 'R04', 'R05', 'R06', 'R07'],
     related: [
       { to: '/approvals/inbox', label: 'approvals.nav.inbox' },

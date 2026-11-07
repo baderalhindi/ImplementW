@@ -30,10 +30,6 @@ const page25 = 'page=1&pageSize=25';
 test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero or Green', async ({
   actor,
 }) => {
-  // Expected to fail until WF-02 can derive progress (docs/testing/e2e-suite.md F-1, progress-update.md F-1): every progress
-  // update is refused 422 PROGRESS_ROLLUP_UNAVAILABLE, so the journey stops at its update. Playwright reports it as an
-  // expected failure and turns the run red if it ever passes, which is the signal to remove this line.
-  test.fail(true, 'WF-02 has no progress inputs (progress-update.md F-1)');
   const department = await actor('departmentManager');
   const reviewer = await actor('portfolioManager');
   const manager = await actor('projectManager');
@@ -151,19 +147,12 @@ test('UJ-002 WF-02 owns Overall Project Health; missing inputs never become zero
     expect((await submissions()).items).toEqual([]);
   });
 
-  // From here the journey needs WF-02 to derive the update from the inputs above. progress-update.md F-1: Progress has no
-  // ADR-003 §8.2 edge to WF-03, WF-04 or WF-14 yet, so NoProgressInputs answers every start 422 PROGRESS_ROLLUP_UNAVAILABLE
-  // and the screen says the project "has no work breakdown with planned durations yet" — though it has one, with 40% reported.
+  // From here WF-02 derives the update from the inputs above (ADR-003 §8.2 edges 55 and 56).
   await test.step('the Project Manager starts the progress update; WF-02 derives it from the reported work', async () => {
     const page = manager.page;
     await page.goto(`/projects/${project.id}/progress`);
     await page.getByRole('button', { name: 'Start progress update' }).click();
     const dialog = page.getByRole('dialog', { name: 'Submit progress update' });
-    const refusal = page.getByText(
-      'Progress cannot be calculated: the project has no work breakdown with planned durations yet.',
-    );
-    await expect(dialog.or(refusal)).toBeVisible();
-    await expect(refusal).toHaveCount(0);
     await expect(dialog).toBeVisible();
     await expectText(dialog, 'Actual');
     await expect(dialog.getByRole('radio', { name: 'Use the calculated figure' })).toBeChecked();

@@ -13,18 +13,63 @@ namespace PMPlatform.Tests.Integration.Progress;
 [Collection(ProgressSuite.Name)]
 public sealed class DerivationTests(ProgressTestHost host)
 {
+    /// <summary>Review round 5, item 1: a project with no breakdown (all of RPMO's imports) must still report. Its first figure is entered, with a reason.</summary>
+    [Fact]
+    public async Task AProjectWithNoFigureAtAllCannotSubmitUntilOneIsEntered()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        ProgressSessions sessions = await client.SignInAsync();
+        Guid projectId = await host.ProjectAsync();
+
+        JsonObject draft = await client.StartOrFailAsync(sessions.ProjectManager, projectId);
+        Guid id = AdministrationApi.IdOf(draft);
+        Assert.Equal("NOT_AVAILABLE", draft["actualSource"]!.GetValue<string>());
+
+        using (HttpResponseMessage refused = await client.CommandAsync(sessions.ProjectManager, id, "submit"))
+        {
+            Assert.Equal((HttpStatusCode.UnprocessableEntity, "PROGRESS_ROLLUP_UNAVAILABLE"), await refused.RefusalAsync());
+        }
+
+        using (HttpResponseMessage edited = await client.EditAsync(sessions.ProjectManager, id, new
+        {
+            narrative = (object?)null,
+            @override = new { actualPercent = 25m, reason = new { text = "Measured on site", language = "en" } },
+        }))
+        {
+            Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        }
+
+        JsonObject submitted = await client.CommandOrFailAsync(sessions.ProjectManager, id, "submit");
+        Assert.Equal(("SUBMITTED", 25m, "NOT_AVAILABLE"), (submitted.Status(), submitted.Percent("actualPercent"), submitted["actualSource"]!.GetValue<string>()));
+    }
+
+    /// <summary>Review round 5, item 1: with no breakdown the declared figure stands, and publishing replaces it, so the register and dashboards show what was published.</summary>
+    [Fact]
+    public async Task ADeclaredFigureIsReportedAndThePublishedOneReplacesIt()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        ProgressSessions sessions = await client.SignInAsync();
+        Guid projectId = await host.ProjectAsync();
+        host.Inputs.SetDeclared(projectId, 40);
+
+        Guid id = AdministrationApi.IdOf(await client.StartOrFailAsync(sessions.ProjectManager, projectId));
+        JsonObject submitted = await client.CommandOrFailAsync(sessions.ProjectManager, id, "submit");
+        Assert.Equal((40m, "DECLARED", false), (submitted.Percent("actualPercent"), submitted["actualSource"]!.GetValue<string>(), submitted["isOverridden"]!.GetValue<bool>()));
+
+        await client.CommandOrFailAsync(sessions.Reviewer, id, "start-review");
+        await client.CommandOrFailAsync(sessions.Reviewer, id, "publish");
+
+        Assert.Equal(
+            "40.0000|PROGRESS_UPDATE",
+            Assert.Single(await host.Database.QueryAsync($"SELECT declared_actual_percent || '|' || declared_source FROM project.project WHERE id = '{projectId}'")));
+    }
+
     [Fact]
     public async Task ProgressIsDerivedFromTheWorkBreakdownAndNeverTypedIn()
     {
         using HttpClient client = host.Api.CreateClient();
         ProgressSessions sessions = await client.SignInAsync();
         Guid projectId = await host.ProjectAsync();
-
-        // No work breakdown to derive from: there is no figure, and none is taken from a person instead.
-        using (HttpResponseMessage underived = await client.StartAsync(sessions.ProjectManager, projectId))
-        {
-            Assert.Equal((HttpStatusCode.UnprocessableEntity, "PROGRESS_ROLLUP_UNAVAILABLE"), await underived.RefusalAsync());
-        }
 
         host.Inputs.Set(projectId, actualPercent: 30, baselineStart: ProgressDriver.Today.AddDays(-49));
         JsonObject draft = await client.StartOrFailAsync(sessions.ProjectManager, projectId);

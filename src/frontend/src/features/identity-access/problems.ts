@@ -65,6 +65,7 @@ const FIELD_MESSAGES: Record<string, TranslationKey> = {
   PASSWORD_TOO_WEAK: 'identityAccess.fieldErrors.passwordTooWeak',
   PASSWORD_REUSED: 'identityAccess.fieldErrors.passwordReused',
   PASSWORD_INCORRECT: 'identityAccess.fieldErrors.passwordIncorrect',
+  PASSWORD_REJECTED_BY_DIRECTORY: 'identityAccess.fieldErrors.passwordRejectedByDirectory',
   PASSWORD_MISMATCH: 'identityAccess.fieldErrors.passwordMismatch',
 };
 

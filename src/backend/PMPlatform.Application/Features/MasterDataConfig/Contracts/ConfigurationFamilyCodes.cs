@@ -1,6 +1,6 @@
 namespace PMPlatform.Application.Features.MasterDataConfig.Contracts;
 
-/// <summary>The twelve configuration families db/seed creates (ERD <c>configuration_family</c>).</summary>
+/// <summary>The configuration families db/seed creates (ERD <c>configuration_family</c>).</summary>
 public static class ConfigurationFamilyCodes
 {
     public const string GovernanceProfile = "GOVERNANCE_PROFILE";
@@ -15,4 +15,5 @@ public static class ConfigurationFamilyCodes
     public const string ReportRules = "REPORT_RULES";
     public const string DashboardRules = "DASHBOARD_RULES";
     public const string WorkflowPolicy = "WORKFLOW_POLICY";
+    public const string ProjectStage = "PROJECT_STAGE";
 }

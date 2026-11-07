@@ -120,6 +120,24 @@ export const financialKpiApi = {
       })
     ).data,
   /** The KPI catalogue, to name a KPI and its direction (MASTER_DATA_VIEW, R01 only today). */
+  createAssignment: async (request: {
+    projectId: string;
+    kpiDefinitionId: string;
+    ownerUserId: string | null;
+    measurementFrequencyItemId: string;
+  }) =>
+    (await apiRequest<{ id: string }>('/kpi-assignments', { method: 'POST', body: request })).data,
+  createTargetVersion: async (request: {
+    kpiAssignmentId: string;
+    targetValue: number;
+    greenThreshold: number | null;
+    amberThreshold: number | null;
+    effectiveFrom: string | null;
+  }) =>
+    (await apiRequest<{ id: string }>('/kpi-target-versions', { method: 'POST', body: request }))
+      .data,
+  submitTargetVersion: (id: string) =>
+    apiRequest<unknown>(`/kpi-target-versions/${id}/submit`, { method: 'POST' }),
   definitions: (signal?: AbortSignal) =>
     readAllPages<KpiDefinitionSummary>('/kpi-definitions', {}, signal),
 };

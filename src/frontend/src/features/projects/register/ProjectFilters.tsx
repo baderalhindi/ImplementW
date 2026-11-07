@@ -1,9 +1,10 @@
-import { type ReactElement, type SyntheticEvent, useState } from 'react';
+import { type ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar, type FilterBarField } from '@/shared/ui/FilterBar.tsx';
 import { TextField } from '@/shared/ui/FormFields.tsx';
+import { useSearchText } from '@/shared/ui/useSearchText.ts';
 
 import { PROJECT_STATUSES } from '../presentation.ts';
 import { type ProjectCatalogueCode, type ProjectLookups } from '../useProjectLookups.ts';
@@ -22,8 +23,8 @@ interface ProjectFiltersProps {
 
 /**
  * The register's search and the one filter bar the dashboards use (the 2 Nov 2026 review, R3-1): sector, entity, department, region and
- * city in its first row, status, priority, strategic portfolio and initiative under More filters. A filter applies as it is chosen. Keyed on
- * the search text, so Back resets the search box to what the list is showing.
+ * city in its first row, status, priority, strategic portfolio and initiative under More filters. A filter applies as it is chosen, the search
+ * as it is typed.
  */
 export function ProjectFilters({
   q,
@@ -37,12 +38,7 @@ export function ProjectFilters({
 }: ProjectFiltersProps): ReactElement {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [text, setText] = useState(q);
-
-  const applySearch = (event: SyntheticEvent) => {
-    event.preventDefault();
-    onSearch(text.trim());
-  };
+  const [text, setText] = useSearchText(q, onSearch);
 
   // A department or entity filter needs their names; without them it is not offered (F-1).
   const organizationReadable = lookups.organizationError === null;
@@ -143,7 +139,9 @@ export function ProjectFilters({
         className="filters filters--inline"
         role="search"
         aria-label={t('common.actions.search')}
-        onSubmit={applySearch}
+        onSubmit={(event) => {
+          event.preventDefault();
+        }}
       >
         <TextField
           label={t('projects.filters.q')}
@@ -153,14 +151,23 @@ export function ProjectFilters({
           value={text}
           onChange={setText}
         />
-        <div className="filters__actions">
-          <button type="submit" className="button">
-            {t('common.actions.search')}
-          </button>
-        </div>
       </form>
       <FilterBar
-        fields={fields}
+        fields={[
+          ...fields,
+          {
+            name: 'sort',
+            label: t('common.filters.sort'),
+            all: t('projects.sort.UpdatedDescending'),
+            options: [
+              { value: 'updatedAt:asc', label: t('projects.sort.UpdatedAscending') },
+              { value: 'title:asc', label: t('projects.sort.TitleAscending') },
+              { value: 'title:desc', label: t('projects.sort.TitleDescending') },
+              { value: 'formalProjectId:asc', label: t('projects.sort.FormalIdAscending') },
+              { value: 'formalProjectId:desc', label: t('projects.sort.FormalIdDescending') },
+            ],
+          },
+        ]}
         values={values}
         onChange={(name, value) => {
           // A city lies in a region, an initiative in a portfolio: another parent drops the child chosen under the last one.

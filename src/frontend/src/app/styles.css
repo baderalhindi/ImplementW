@@ -596,43 +596,86 @@ h3 {
   background: transparent;
 }
 
+/* Takes only what the breadcrumb leaves, so an opening search shrinks before the breadcrumb wraps. */
 .topbar__actions {
   display: flex;
+  flex: 1 1 0;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
+  min-inline-size: min-content;
 }
 
+/* Opens away from the buttons beside it, so they stay where they are. */
 .global-search {
   position: relative;
   flex: 0 1 26rem;
   min-inline-size: 12rem;
-  margin-inline-start: auto;
+  transition:
+    flex-basis 200ms ease,
+    min-inline-size 200ms ease;
+}
+
+.global-search--collapsed {
+  flex: 0 0 2.75rem;
+  min-inline-size: 2.75rem;
+}
+
+.global-search__toggle {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+}
+
+.global-search__toggle:hover {
+  background: var(--color-surface);
 }
 
 .global-search__icon {
   position: absolute;
   inset-block-start: 50%;
-  inset-inline-start: var(--space-3);
-  inline-size: 1.1rem;
-  block-size: 1.1rem;
+  inset-inline-start: 0.75rem;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
   transform: translateY(-50%);
   fill: none;
   stroke: var(--color-text-muted);
   stroke-width: 2;
   stroke-linecap: round;
   pointer-events: none;
+  transition: stroke 200ms ease;
+}
+
+.global-search--collapsed .global-search__icon {
+  stroke: var(--color-text);
 }
 
 .global-search__input {
   inline-size: 100%;
   min-block-size: 2.5rem;
   padding-block: var(--space-1);
-  padding-inline: calc(var(--space-3) + 1.6rem) var(--space-3);
+  padding-inline: calc(0.75rem + 1.75rem) var(--space-3);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius);
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  transition: opacity 200ms ease;
+}
+
+/* Not [hidden]: it has to keep its box while it fades. Visibility still takes it out of the tab order and the accessibility tree. */
+.global-search--collapsed .global-search__input {
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 200ms ease,
+    visibility 0s linear 200ms;
 }
 
 .global-search__input::placeholder {
@@ -693,23 +736,39 @@ h3 {
   color: var(--color-text-muted);
 }
 
-/* On a phone the search takes its own row under the bar's other controls. */
+@media (prefers-reduced-motion: reduce) {
+  .global-search,
+  .global-search__icon,
+  .global-search__input,
+  .global-search--collapsed .global-search__input {
+    transition: none;
+  }
+}
+
+/* Too narrow for both: the breadcrumb steps aside while the search is open, so the bar keeps its height. */
+@media (max-width: 75rem) {
+  .topbar:has(.global-search:not(.global-search--collapsed)) .breadcrumb {
+    display: none;
+  }
+}
+
+/* On a phone the open search takes its own row under the bar's other controls. */
 @media (max-width: 48rem) {
   .topbar {
     flex-wrap: wrap;
   }
 
-  .topbar__actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    min-inline-size: 0;
-    margin-inline-start: auto;
+  .topbar .topbar__drawer {
+    margin-inline-end: auto;
   }
 
-  .global-search {
+  .topbar__actions {
+    display: contents;
+  }
+
+  .global-search:not(.global-search--collapsed) {
     flex: 1 1 100%;
     order: 1;
-    margin-inline-start: 0;
   }
 }
 
@@ -1016,6 +1075,13 @@ h3 {
 
 .section {
   margin-block-start: var(--space-6);
+}
+
+.section__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+  align-items: center;
 }
 
 .section__header {
@@ -1460,6 +1526,12 @@ select.field__input {
 .picker__results {
   margin: 0;
   padding-inline-start: var(--space-4);
+}
+
+.picker__detail {
+  display: block;
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, inherit);
 }
 
 .picker__selected {
@@ -5340,6 +5412,12 @@ path.trend__line--ACTUAL_PERCENT {
   }
 }
 
+.locations-map-frame {
+  position: relative;
+  display: grid;
+  min-inline-size: 0;
+}
+
 .locations-map {
   min-block-size: 30rem;
   border: 1px solid var(--color-border-subtle);
@@ -5348,17 +5426,39 @@ path.trend__line--ACTUAL_PERCENT {
   z-index: 0;
 }
 
-.map-bubble__anchor {
-  background: none;
-  border: 0;
+/* The map's required credit, above the map. */
+.locations-map__credit {
+  position: absolute;
+  inset-block-end: 1px;
+  inset-inline-end: 1px;
+  z-index: 1;
+  max-inline-size: 90%;
+  margin: 0;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-card) 0 var(--radius-card) 0;
+  background: rgba(255, 255, 255, 0.85);
+  color: #1f2937;
+  font-size: 0.75rem;
+}
+
+.locations-map__credit a {
+  color: inherit;
+}
+
+.locations-map__unavailable {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline: var(--space-4);
+  z-index: 1;
+  margin: 0;
+  text-align: center;
 }
 
 .map-bubble {
   display: flex;
   align-items: center;
   justify-content: center;
-  inline-size: 100%;
-  block-size: 100%;
+  padding: 0;
   border: 2px solid #fff;
   border-radius: 50%;
   background: rgba(15, 118, 110, 0.82);
@@ -5374,7 +5474,7 @@ path.trend__line--ACTUAL_PERCENT {
   outline: 3px solid rgba(194, 65, 12, 0.35);
 }
 
-.leaflet-marker-icon:focus-visible .map-bubble {
+.map-bubble:focus-visible {
   outline: 3px solid var(--color-focus, #1d4ed8);
   outline-offset: 2px;
 }
@@ -5965,4 +6065,82 @@ tr[data-flagged='true'] {
   .print-card .table {
     font-size: 0.8rem;
   }
+}
+
+/* Review round 5, items 9 and 10: an entity's update completion, with the all-entity average as a marked line. */
+.completion {
+  margin-block-end: 1.5rem;
+}
+
+.completion__figure strong {
+  font-size: 1.75rem;
+}
+
+.completion__chart {
+  position: relative;
+  block-size: 1rem;
+  background: var(--color-border, #d9dee3);
+  border-radius: 0.5rem;
+}
+
+.completion__fill {
+  display: block;
+  block-size: 100%;
+  background: var(--color-primary, #0b6e4f);
+  border-radius: 0.5rem;
+}
+
+.completion__marker {
+  position: absolute;
+  inset-block: -0.25rem;
+  inline-size: 0.2rem;
+  background: var(--color-text, #1b1f23);
+}
+
+.completion__legend {
+  color: var(--color-text-muted);
+  margin-block: 0.5rem;
+}
+
+/* An info icon beside a field, with its explanation below it. */
+.info-tip {
+  display: inline-block;
+}
+
+.info-tip__button {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: 1px solid var(--color-border, #d9dee3);
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+  cursor: help;
+}
+
+.info-tip__text {
+  display: block;
+  margin-block-start: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border, #d9dee3);
+  border-radius: 0.5rem;
+}
+
+/* Review round 5, item 2: row selection and what acts on it. */
+.cell--select {
+  inline-size: 2.5rem;
+  text-align: center;
+}
+
+.selection-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block-end: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border, #d9dee3);
+  border-radius: 0.5rem;
+  background: var(--color-primary-tint);
 }

@@ -43,6 +43,7 @@ export function submission(
     status: 'DRAFT',
     actualPercent: 40,
     actualPercentCalculated: 40,
+    actualSource: 'WORK_BREAKDOWN',
     actualPercentOverride: null,
     overrideReason: null,
     isOverridden: false,

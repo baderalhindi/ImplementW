@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import { type MockApi, mockApi, page, problem } from '@/test/mockApi.ts';
+import { pickPerson } from '@/test/personPicker.ts';
 import { BATCH_ID, batchDetail, REQUEST_A } from '@/test/monthlyUpdateFixtures.ts';
 import {
   ENTITY_ID,
@@ -142,6 +143,33 @@ describe('step 1: choosing projects', () => {
     expect(router.state.location.search).toContain('status=ACTIVE');
   });
 
+  test('select all eligible ignores the filters, keeps what was chosen, and leaves out what cannot be requested', async () => {
+    const api = wizardApi([
+      project('a1'),
+      project('s1', { status: 'SUSPENDED' }),
+      project('n1', { externalEntityId: null }),
+      project('d1', { status: 'DRAFT' }),
+    ]);
+    renderApp({
+      path: '/external-requests/batches/new?status=DRAFT',
+      session: reviewerSession(),
+    });
+
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: en('externalParticipation.batch.step1.selectAllEligible'),
+      }),
+    );
+
+    await waitFor(() => {
+      expect(counter()).toContain('Selected: 2 projects');
+    });
+    const read = api
+      .requestsTo('GET', /^\/projects$/)
+      .find((request) => request.query.get('pageSize') === '200');
+    expect(read?.query.get('status')).toBeNull();
+  });
+
   test('select all with no status filter leaves out what cannot be requested, and says how many', async () => {
     wizardApi([project('a1'), project('d1', { status: 'DRAFT' })]);
     renderApp({ path: '/external-requests/batches/new', session: reviewerSession() });
@@ -166,7 +194,7 @@ describe('steps 2 and 3', () => {
 
   test('a project without a contact is flagged and blocks Next until given one; the helper covers its entity', async () => {
     const CHOSEN = '11111111-0000-4000-8000-000000000abc';
-    wizardApi([
+    const api = wizardApi([
       project('c1', { entityContactUserId: null }),
       project('c2', { entityContactUserId: null }),
       project('c3'),
@@ -182,8 +210,7 @@ describe('steps 2 and 3', () => {
     expect(document.querySelectorAll('tr[data-flagged="true"]')).toHaveLength(2);
     expect(describeViolations(await accessibilityViolations())).toBe('');
 
-    const [firstId] = screen.getAllByRole('textbox', { name: /user id/i });
-    await userEvent.type(firstId ?? document.body, CHOSEN);
+    await pickPerson(api, document.body, CHOSEN);
     await userEvent.click(screen.getByRole('button', { name: /Apply to the/ }));
     expect(document.querySelectorAll('tr[data-flagged="true"]')).toHaveLength(0);
     expect(next().hasAttribute('disabled')).toBe(false);
@@ -203,7 +230,7 @@ describe('steps 2 and 3', () => {
     });
     await toStep2();
     await fillRequest();
-    await userEvent.type(screen.getByRole('textbox', { name: /user id/i }), CHOSEN);
+    await pickPerson(api, document.body, CHOSEN);
     await userEvent.click(
       screen.getByRole('checkbox', { name: en('externalParticipation.batch.step2.repeat') }),
     );

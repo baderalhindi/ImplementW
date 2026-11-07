@@ -4,6 +4,7 @@ import { type TranslationKey } from '@/shared/i18n/i18n.ts';
 
 import { RoleAssignmentPage } from './assignments/RoleAssignmentPage.tsx';
 import { MasterDataPage } from './masterData/MasterDataPage.tsx';
+import { ProjectStagesPage } from './projectStages/ProjectStagesPage.tsx';
 import { DepartmentListPage } from './organization/DepartmentListPage.tsx';
 import { ExternalEntityListPage } from './organization/ExternalEntityListPage.tsx';
 import { OrganizationStructurePage } from './organization/OrganizationStructurePage.tsx';
@@ -35,6 +36,7 @@ export const identityAccessRoutes: RouteObject[] = [
   { path: 'organization', element: <OrganizationStructurePage /> }, // ADM-011
   { path: 'organization/departments', element: <DepartmentListPage /> }, // ADM-012
   { path: 'organization/entities', element: <ExternalEntityListPage /> }, // ADM-013
+  { path: 'project-stages', element: <ProjectStagesPage /> }, // review round 5, item 7
   { path: 'master-data', element: <MasterDataPage /> }, // ADM-020–029 (the 2 Nov 2026 review)
   { path: 'master-data/requests', element: <MasterDataPage /> }, // the requested values, from their notification
 ];
@@ -81,5 +83,10 @@ export const identityAccessNavigation: NavigationItem[] = [
     to: '/admin/master-data',
     label: 'identityAccess.nav.masterData',
     permissions: ['MASTER_DATA_MANAGE'],
+  },
+  {
+    to: '/admin/project-stages',
+    label: 'identityAccess.nav.projectStages',
+    permissions: ['CONFIGURATION_MANAGE'],
   },
 ];

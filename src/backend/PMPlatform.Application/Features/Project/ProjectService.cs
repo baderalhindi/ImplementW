@@ -222,6 +222,7 @@ internal sealed class ProjectService(
 
         project.LifecycleState = ProjectLifecycleState.Submitted;
         project.ProjectManagerUserId = submission.ProjectManagerUserId;
+        project.SubmittedByUserId = callerId;
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Submitted(callerId, project, from, fromRevisionNo, fromManagerId));
         return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
@@ -249,6 +250,7 @@ internal sealed class ProjectService(
         Guid? fromManagerId = project.ProjectManagerUserId;
         project.LifecycleState = ProjectLifecycleState.Draft;
         project.ProjectManagerUserId = null;
+        project.SubmittedByUserId = null;
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Withdrawn(callerId, project, fromManagerId));
         return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
@@ -272,12 +274,13 @@ internal sealed class ProjectService(
             return TransitionRefused(project);
         }
 
-        // The run is staged, not saved: it commits with UNDER_REVIEW in the save below, or not at all (M-11).
+        // The run is staged, not saved: it commits with UNDER_REVIEW in the save below, or not at all (M-11). The requester is
+        // whoever submitted the registration, not the reviewer starting it, or the reviewer could not decide their own review.
         AdministrationResult<ApprovalInstanceDetail> run = await approvals.StartAsync(
             new ApprovalStart(
                 new ApprovalSubject(ProjectApprovalRouting.SubjectModule, ProjectApprovalRouting.SubjectType, project.Id, project.RevisionNo),
                 ProjectApprovalRouting.RegistrationRoutingKey,
-                callerId,
+                project.SubmittedByUserId ?? callerId,
                 project.Id,
                 project.DepartmentId,
                 project.GovernanceProfileItemId,

@@ -80,9 +80,22 @@ describe('SCR-011 User Guide', () => {
     const others = await screen.findByRole('region', { name: en('common.help.guide.others') });
     expect(
       within(others).getByRole('link', {
-        name: helpContent.en.guide['register-a-project']?.title ?? '',
+        name: helpContent.en.guide['administrator-home']?.title ?? '',
       }),
     ).toBeTruthy();
+  });
+
+  test('a topic is not offered to someone who cannot do it (review round 5, item 17)', async () => {
+    mockApi();
+    renderApp({ path: '/help/guide', session: sessionFor(['R06']) });
+
+    await screen.findByRole('region', { name: en('common.help.guide.forYou') });
+    expect(
+      screen.queryByRole('link', { name: helpContent.en.guide['decide-an-approval']?.title ?? '' }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('link', { name: helpContent.en.guide['register-a-project']?.title ?? '' }),
+    ).toBeNull();
   });
 
   test.each<Language>(['en', 'ar'])(

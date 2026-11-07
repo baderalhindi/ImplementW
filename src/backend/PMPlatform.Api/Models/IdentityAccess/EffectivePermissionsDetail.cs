@@ -7,7 +7,7 @@ namespace PMPlatform.Api.Models.IdentityAccess;
 /// (review C3). Read from the engine on every call, so a changed grant shows without a new sign-in. This is navigation, not protection:
 /// every operation is decided again by the API.
 /// </summary>
-public sealed record EffectivePermissionsDetail(IReadOnlyList<EffectivePermissionDetail> Permissions);
+public sealed record EffectivePermissionsDetail(IReadOnlyList<EffectivePermissionDetail> Permissions, bool ShowCreateInHeader = true);
 
 /// <summary>One held permission and the scopes of the grants holding it, in their declared order.</summary>
 public sealed record EffectivePermissionDetail(string Code, IReadOnlyList<DataScope> Scopes);

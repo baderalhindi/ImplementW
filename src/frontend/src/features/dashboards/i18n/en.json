@@ -72,6 +72,7 @@
   },
   "locations": {
     "mapLabel": "Map of the projects by place",
+    "mapUnavailable": "This browser cannot show the map. The list has the same places.",
     "mapDescription": "Each circle is a place, sized by its projects. Press a circle, or a city in the list, to see its details.",
     "close": "Close",
     "status": "On-plan indicator",

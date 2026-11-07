@@ -276,7 +276,6 @@ describe('SCR-161 and SCR-167 (requestForm.ts, rules.ts)', () => {
     };
     const draft = checkRequestForm(values, {
       needsTarget: false,
-      canSearch: false,
       issuing: false,
       today,
     });
@@ -284,7 +283,7 @@ describe('SCR-161 and SCR-167 (requestForm.ts, rules.ts)', () => {
 
     const issue = checkRequestForm(
       { ...values, dueDate: '2026-10-08' },
-      { needsTarget: false, canSearch: false, issuing: true, today },
+      { needsTarget: false, issuing: true, today },
     );
     expect(issue).toMatchObject({
       dueDate: 'NOT_ALLOWED',
@@ -293,16 +292,17 @@ describe('SCR-161 and SCR-167 (requestForm.ts, rules.ts)', () => {
     });
   });
 
-  test('a task-progress type needs its task; a typed person id must be a UUID', () => {
+  test('a task-progress type needs its task; someone else must be chosen', () => {
     const values = {
       ...emptyRequestForm('6f6f6f6f-0000-4000-8000-000000000107', null),
       contributionTypeItemId: 'd1300000-0000-4000-8000-000000000501',
       instructions: 'Report it.',
-      responder: { ...assigneeValue(null), choice: OTHER, typedId: 'not-an-id' },
+      responder: { ...assigneeValue(null), choice: OTHER },
     };
-    expect(
-      checkRequestForm(values, { needsTarget: true, canSearch: false, issuing: false, today }),
-    ).toMatchObject({ targetId: 'REQUIRED', responsibleUserId: 'MALFORMED' });
+    expect(checkRequestForm(values, { needsTarget: true, issuing: false, today })).toMatchObject({
+      targetId: 'REQUIRED',
+      responsibleUserId: 'REQUIRED',
+    });
     expect(schemaNeedsTarget('TASK_PROGRESS')).toBe(true);
     expect(schemaNeedsTarget('PROJECT_INFORMATION')).toBe(false);
     expect(schemaNeedsTarget('ANYTHING_ELSE')).toBeUndefined();
@@ -316,7 +316,7 @@ describe('SCR-161 and SCR-167 (requestForm.ts, rules.ts)', () => {
         targetId: 'b1300000-0000-4000-8000-000000000401',
         instructions: ' Where is the survey? ',
       },
-      { needsTarget: false, canSearch: false },
+      { needsTarget: false },
       'en',
     );
     expect(body).toEqual({

@@ -29,7 +29,7 @@
     "RETURNED": "Returned",
     "DELEGATED": "Delegated",
     "ESCALATED": "Escalated",
-    "CANCELLED": "Cancelled",
+    "CANCELLED": "Canceled",
     "EXPIRED": "Expired"
   },
   "delegationStatus": {
@@ -170,5 +170,18 @@
     "escalationNotAllowed": "This task cannot be escalated: it is not overdue, not in the current stage, or already an escalation.",
     "delegateInvalid": "Choose an active internal user other than yourself.",
     "delegationPeriodInvalid": "The period must not start in the past, and must end after it starts."
+  },
+  "routing": {
+    "PROJECT_REGISTRATION": "Project registration",
+    "SCHEDULE_BASELINE": "Schedule baseline",
+    "MILESTONE_ACHIEVEMENT": "Milestone achievement",
+    "CHANGE_REQUEST": "Change request",
+    "COMMITMENT": "Financial commitment",
+    "KPI_TARGET": "KPI target",
+    "MANAGEMENT_CONCERN_RESOLUTION": "Issue resolution",
+    "SUSPENSION": "Suspension",
+    "RESUMPTION": "Resumption",
+    "COMPLETION": "Completion",
+    "CLOSURE": "Closure"
   }
 }

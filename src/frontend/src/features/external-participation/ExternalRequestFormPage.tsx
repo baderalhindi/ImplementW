@@ -15,7 +15,6 @@ import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { isInternal } from '@/features/projects/access.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
-import { useUserSearch } from '@/features/tasks/assignee.ts';
 import { tasksApi } from '@/features/tasks/api/tasksApi.ts';
 import { isLiveLeaf, todayUtc } from '@/features/tasks/taskRules.ts';
 import { ApiError, type ApiResponse } from '@/shared/api/httpClient.ts';
@@ -176,7 +175,7 @@ interface RequestFormProps {
  * SCR-161 Create External Update Request (WF-13 §12.3): one project, one entity, one typed purpose from a published
  * contribution type, the source record its schema names, instructions, a due date, the entity's responder and AHDA's
  * reviewer. Saved as a DRAFT the entity cannot see, or saved and issued at once. A list the person may not read
- * (contribution types, entities, people, the project's tasks) is offered as an id instead; the API decides.
+ * (contribution types, the project's tasks) says so; no field asks for an id.
  */
 function RequestForm({ project, projectId, existing }: RequestFormProps): ReactElement | null {
   const { t, language } = useI18n();
@@ -184,7 +183,6 @@ function RequestForm({ project, projectId, existing }: RequestFormProps): ReactE
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(participationProblemMessage);
-  const canSearch = useUserSearch() ?? false;
   const types = useApiResource(readContributionTypes);
   const entities = useApiResource(readActiveEntities);
   const tasks = useProjectTasks(projectId);
@@ -225,7 +223,7 @@ function RequestForm({ project, projectId, existing }: RequestFormProps): ReactE
       : types.data === null && values.contributionTypeItemId !== ''
         ? undefined
         : false;
-  const context = { needsTarget, canSearch, issuing: attempt === 'issue', today: todayUtc() };
+  const context = { needsTarget, issuing: attempt === 'issue', today: todayUtc() };
   const codes = checkRequestForm(values, context);
 
   const errorOf = (field: (typeof REQUEST_FORM_FIELDS)[number]): string | undefined => {
@@ -438,10 +436,10 @@ function RequestForm({ project, projectId, existing }: RequestFormProps): ReactE
         <PersonField
           label={t('externalParticipation.fields.responder')}
           name="responsibleUserId"
+          externalEntityId={values.externalEntityId === '' ? null : values.externalEntityId}
           userType="EXTERNAL"
           user={session.user}
           value={values.responder}
-          canSearch={canSearch}
           allowNone
           hint={t('externalParticipation.form.responderHint')}
           error={errorOf('responsibleUserId')}
@@ -455,7 +453,6 @@ function RequestForm({ project, projectId, existing }: RequestFormProps): ReactE
           userType="INTERNAL"
           user={session.user}
           value={values.reviewer}
-          canSearch={canSearch}
           allowNone
           hint={t('externalParticipation.form.reviewerHint')}
           error={errorOf('reviewerUserId')}
@@ -516,16 +513,7 @@ function ReferenceField({
     );
   }
   return options === null ? (
-    <TextField
-      label={label}
-      name={name}
-      value={value}
-      dir="ltr"
-      required={required}
-      hint={`${hint} ${idHint}`}
-      error={error}
-      onChange={onChange}
-    />
+    <ReadOnlyField label={label} name={name} value="" hint={idHint} />
   ) : (
     <SelectField
       label={label}

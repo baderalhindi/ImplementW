@@ -60,6 +60,9 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.HasOne<MasterDataItem>().WithMany().HasForeignKey(e => e.PriorityItemId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.FollowUpOwnerUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.EntityContactUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(e => e.SubmittedByUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(e => e.IsCanceled).HasDatabaseDefault(false);
+        builder.HasCheck("canceled", "NOT is_canceled OR lifecycle_state = 'CLOSED'");
         builder.HasOne<ProjectImportBatch>().WithMany().HasForeignKey(e => e.ProjectImportBatchId).OnDelete(DeleteBehavior.Restrict);
 
         // TASK-026 (indexing-strategy.md I-01 to I-05): SCR-025/SCR-026 sort by updated_at desc, id desc under each

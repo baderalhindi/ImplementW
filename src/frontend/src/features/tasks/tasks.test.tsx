@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { type Language, translate } from '@/shared/i18n/i18n.ts';
+import { pickPerson } from '@/test/personPicker.ts';
 import { type MockApi, mockApi, problem } from '@/test/mockApi.ts';
 import {
   ENTITY_USER_ID,
@@ -487,7 +488,7 @@ describe('MOD-012 Task Detail', () => {
 });
 
 describe('criterion 2: MOD-014 Assign Task', () => {
-  test('someone without a role on the project, given by user id: the API’s refusal is shown on the owner field and nothing changes', async () => {
+  test('someone without a role on the project: the API’s refusal is shown on the owner field and nothing changes', async () => {
     const api = open(TASKS_PATH);
     api.on(
       'PUT',
@@ -502,8 +503,7 @@ describe('criterion 2: MOD-014 Assign Task', () => {
     const dialog = await screen.findByRole('dialog', { name: en('tasks.assign.title') });
     const other = within(dialog).getByLabelText(en('tasks.owner.other'));
     await userEvent.click(other);
-    // Without USER_VIEW (R04 today) the person is given by user id.
-    await userEvent.type(within(dialog).getByLabelText(/^The person's user ID/), UNRELATED_USER_ID);
+    await pickPerson(api, dialog, UNRELATED_USER_ID);
     await press(dialog, en('tasks.assign.confirm'));
 
     expect(await within(dialog).findByRole('alert')).toHaveProperty(
@@ -543,7 +543,6 @@ describe('criterion 2: MOD-014 Assign Task', () => {
       await within(dialog).findByLabelText(en('identityAccess.userPicker.searchLabel')),
       'sami',
     );
-    await press(dialog, en('common.actions.search'));
     await userEvent.click(await within(dialog).findByRole('button', { name: /Sami Unrelated/ }));
     await press(dialog, en('tasks.assign.confirm'));
 

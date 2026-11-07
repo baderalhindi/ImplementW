@@ -159,6 +159,10 @@ function isView(value: DashboardView | MockReply): value is DashboardView {
 /** GET /dashboards and GET /dashboards/{code}, answering every dashboard by default. */
 export function withDashboards(api: MockApi, state: DashboardState = {}): MockApi {
   return api
+    .on('GET', /^\/entity-completion-rates$/, { body: { ...page([]), averagePercent: null } })
+    .on('GET', /^\/entity-completion-rates\/own$/, {
+      body: { issued: 0, accepted: 0, completionPercent: null, averagePercent: null },
+    })
     .on('GET', /^\/dashboards$/, { body: page(state.catalogue ?? catalogueFor(['R02'])) })
     .on('GET', /^\/dashboards\/(PORTFOLIO|PROJECT|GOVERNANCE)$/, (request) => {
       const code = request.path.split('/').at(-1) as DashboardCode;

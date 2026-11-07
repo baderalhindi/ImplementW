@@ -16,7 +16,7 @@
     "PLANNED": "Planned",
     "IN_PROGRESS": "In progress",
     "COMPLETED": "Completed",
-    "CANCELLED": "Cancelled"
+    "CANCELLED": "Canceled"
   },
   "acceptanceStatus": {
     "ACTIVE": "Active",
@@ -114,7 +114,7 @@
     "count": "Risks: {count}",
     "version": "Risk matrix version {version}, in force from {date}.",
     "legend": "Ratings, least to most severe:",
-    "forbidden": "You cannot read the risk matrix, so it cannot be shown. Reading it needs the configuration view permission.",
+    "forbidden": "You cannot read the risk matrix, so it cannot be shown. Reading it needs the permission to view risks.",
     "missing": "No risk matrix is published yet, so risks cannot be placed on it or assessed."
   },
   "fields": {
@@ -229,10 +229,10 @@
     },
     "cancel": {
       "title": "Cancel action",
-      "consequence": "The action is cancelled. A cancelled action cannot be changed.",
+      "consequence": "The action is canceled. A canceled action cannot be changed.",
       "confirm": "Cancel action",
       "named": "Cancel {action}",
-      "done": "The action was cancelled."
+      "done": "The action was canceled."
     }
   },
   "actions": {
@@ -302,7 +302,7 @@
     "acceptanceActive": "The risk has an active acceptance. Revoke it first.",
     "acceptanceNotActive": "The risk has no active acceptance.",
     "acceptanceExpiryInvalid": "The acceptance must end after today.",
-    "actionNotEditable": "A completed or cancelled action cannot be changed.",
+    "actionNotEditable": "A completed or canceled action cannot be changed.",
     "configurationMissing": "No risk matrix is published, so the risk cannot be assessed.",
     "invalidTransition": "The risk's state no longer allows this.",
     "permissionDenied": "You do not have permission to do this."

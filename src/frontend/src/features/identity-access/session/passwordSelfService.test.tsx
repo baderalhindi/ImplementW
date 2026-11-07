@@ -102,9 +102,60 @@ describe('changing a password while signed in', () => {
     expect(api.requestsTo('POST', /password-change/)).toHaveLength(0);
   });
 
-  test('a directory or Microsoft account is told where its password changes, with no form', async () => {
-    mockApi();
+  test('a directory account changes its own password here and is told it changes everywhere', async () => {
+    const api = mockApi().on('POST', /^\/sessions\/current\/password-change$/, { status: 204 });
+    const user = userEvent.setup();
     renderApp({ path: '/account/password', session: sessionFor(['R02']) });
+
+    expect(
+      await screen.findByText(en('identityAccess.passwordSelfService.changeDescriptionDirectory')),
+    ).toBeTruthy();
+    await user.type(await screen.findByLabelText(/^Current password/), 'the-old-password-1');
+    await fillNewPassword(user);
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.passwordSelfService.changeSubmit') }),
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        name: en('identityAccess.passwordSelfService.updatedTitle'),
+      }),
+    ).toBeTruthy();
+    expect(api.requestsTo('POST', /^\/sessions\/current\/password-change$/)).toHaveLength(1);
+  });
+
+  test("the directory's refusal of a new password is shown on the field", async () => {
+    mockApi().on(
+      'POST',
+      /^\/sessions\/current\/password-change$/,
+      problem(400, 'VALIDATION_FAILED', [
+        { field: 'newPassword', code: 'PASSWORD_REJECTED_BY_DIRECTORY' },
+      ]),
+    );
+    const user = userEvent.setup();
+    renderApp({ path: '/account/password', session: sessionFor(['R02']) });
+
+    await user.type(await screen.findByLabelText(/^Current password/), 'the-old-password-1');
+    await fillNewPassword(user);
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.passwordSelfService.changeSubmit') }),
+    );
+
+    expect(
+      await screen.findByText(en('identityAccess.fieldErrors.passwordRejectedByDirectory')),
+    ).toBeTruthy();
+  });
+
+  test('a Microsoft account is told where its password changes, with no form', async () => {
+    mockApi();
+    const session = sessionFor(['R02']);
+    renderApp({
+      path: '/account/password',
+      session: {
+        ...session,
+        user: { ...session.user, authenticationMethod: 'SINGLE_SIGN_ON' as const },
+      },
+    });
 
     expect(
       await screen.findByText(en('identityAccess.passwordSelfService.managedBody')),

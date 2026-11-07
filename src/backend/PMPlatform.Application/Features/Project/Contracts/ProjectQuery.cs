@@ -26,4 +26,18 @@ public sealed record ProjectQuery(
 
     /// <summary>A year: the projects whose planned period touches it (the review's Period filter).</summary>
     public int? PeriodYear { get; init; }
+
+    /// <summary>The register's order; recently changed first by default (indexing-strategy P-2).</summary>
+    public ProjectSort Sort { get; init; } = ProjectSort.UpdatedDescending;
+}
+
+/// <summary>The register's sort options (review round 5, item 2).</summary>
+public enum ProjectSort
+{
+    UpdatedDescending = 1,
+    UpdatedAscending = 2,
+    TitleAscending = 3,
+    TitleDescending = 4,
+    FormalIdAscending = 5,
+    FormalIdDescending = 6,
 }

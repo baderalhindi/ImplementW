@@ -44,7 +44,7 @@ public sealed class CoreSchemaTests(MigratedDatabase database, ITestOutputHelper
             WHERE x.contype = 'f' AND n.nspname IN ({CoreSchemaList})
             """)).Order(StringComparer.Ordinal)];
 
-        Assert.Equal(40, erd.Count(line => line.StartsWith("column|", StringComparison.Ordinal) && line.Contains(".id|", StringComparison.Ordinal)));
+        Assert.Equal(41, erd.Count(line => line.StartsWith("column|", StringComparison.Ordinal) && line.Contains(".id|", StringComparison.Ordinal)));
         Assert.Equal(erd, schema);
     }
 
@@ -86,7 +86,7 @@ public sealed class CoreSchemaTests(MigratedDatabase database, ITestOutputHelper
         IReadOnlyList<string> tables = await database.QueryAsync(
             $"SELECT c.relname::text FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'r' AND n.nspname IN ({CoreSchemaList})");
 
-        Assert.Equal(40, tables.Count);
+        Assert.Equal(41, tables.Count);
         Assert.Empty(missing);
     }
 

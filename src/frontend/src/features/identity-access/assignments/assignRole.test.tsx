@@ -155,11 +155,10 @@ describe('MOD-081 and MOD-082 assign role', () => {
     expect(api.requestsTo('POST', /^\/access-relationships$/)).toHaveLength(0);
 
     await user.type(within(dialog).getByRole('searchbox', { name: /Search by name/ }), 'Omar');
-    await user.click(within(dialog).getByRole('button', { name: en('common.actions.search') }));
     await user.click(await within(dialog).findByRole('button', { name: /Omar Sponsor/ }));
     expect(
       api
-        .requestsTo('GET', /^\/users$/)
+        .requestsTo('GET', /^\/person-lookups$/)
         .at(-1)
         ?.query.get('userType'),
     ).toBe('INTERNAL');
@@ -223,7 +222,6 @@ describe('MOD-081 and MOD-082 assign role', () => {
     expect(violations, describeViolations(violations)).toEqual([]);
 
     await user.type(within(dialog).getByRole('searchbox', { name: /Search by name/ }), 'Sara');
-    await user.click(within(dialog).getByRole('button', { name: en('common.actions.search') }));
     await user.click(await within(dialog).findByRole('button', { name: /Sara Internal/ }));
     await user.selectOptions(
       within(dialog).getByRole('combobox', { name: /Role and permission profile/ }),

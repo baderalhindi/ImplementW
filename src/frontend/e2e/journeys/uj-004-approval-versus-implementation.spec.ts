@@ -109,7 +109,7 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
     const state = page.getByRole('region', { name: 'Approval and implementation' });
     await expectText(definition(state, 'Approval'), 'Approved');
     await expectText(definition(state, 'Implementation'), 'Not started');
-    await expectText(state, '0 of 1 authorisations applied');
+    await expectText(state, '0 of 1 authorizations applied');
     await expectText(authorizationRow(page), 'Issued, not applied');
     // WF-03 holds the baseline it had: approval changed nothing in the source.
     expect(await baselineStates(approver.api, project.id)).toEqual(['1 ACTIVE']);
@@ -157,14 +157,14 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
     { ifMatch: workVersion },
   );
 
-  await test.step('the requester submits the rebaseline that applies the authorisation; WF-03 sends it for approval', async () => {
+  await test.step('the requester submits the rebaseline that applies the authorization; WF-03 sends it for approval', async () => {
     const page = requester.page;
     await page.goto(baselinesPath);
     await page.getByRole('button', { name: 'Create baseline candidate' }).click();
     await expectText(page.getByRole('main'), 'A draft baseline candidate was created');
     await baselineRow(page, 2).getByRole('button', { name: 'Submit' }).click();
     const dialog = page.getByRole('dialog', { name: 'Submit baseline' });
-    await dialog.getByLabel(/^Change authorisation ID/).fill(authorizationId);
+    await dialog.getByLabel(/^Approved change/).selectOption(authorizationId);
     await dialog.getByRole('button', { name: 'Submit baseline' }).click();
     await expectText(page.getByRole('main'), 'The baseline was submitted to AHDA for review.');
     await expect(baselineRow(page, 2)).toContainText('With AHDA for review');
@@ -182,7 +182,7 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
   let runId = '';
   // QA's failure fixture is cleared whatever happens, so no fault outlives the journey.
   try {
-    await test.step('a controlled failure: the application of the authorisation will fail (QA fixture uj-004-failed-apply)', async () => {
+    await test.step('a controlled failure: the application of the authorization will fail (QA fixture uj-004-failed-apply)', async () => {
       expect(
         await runFixture('uj-004-failed-apply', {
           step: 'inject',
@@ -239,13 +239,13 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
       const state = page.getByRole('region', { name: 'Approval and implementation' });
       await expectText(definition(state, 'Approval'), 'Approved');
       await expectText(definition(state, 'Implementation'), 'In progress');
-      await expectText(state, '0 of 1 authorisations applied');
+      await expectText(state, '0 of 1 authorizations applied');
       await expectText(authorizationRow(page), 'Issued, not applied');
       await expect(authorizationRow(page)).not.toContainText('Applied');
       await expect(page.getByRole('button', { name: 'Mark implemented' })).toHaveCount(0);
       await expectText(
         page.getByRole('main'),
-        'Marking it implemented becomes available when every authorisation below has been applied in its module.',
+        'Marking it implemented becomes available when every authorization below has been applied in its module.',
       );
       const early = await requester.api.send(
         'POST',
@@ -257,7 +257,7 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
       expect(await baselineStates(approver.api, project.id)).toEqual(['1 ACTIVE', '2 SUBMITTED']);
     });
 
-    await test.step('recovery: the fault is cleared and the retried application applies the authorisation once', async () => {
+    await test.step('recovery: the fault is cleared and the retried application applies the authorization once', async () => {
       expect(
         await runFixture('uj-004-failed-apply', {
           step: 'clear',
@@ -302,7 +302,7 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
     const page = requester.page;
     await page.goto(requestPath);
     const state = page.getByRole('region', { name: 'Approval and implementation' });
-    await expectText(state, '1 of 1 authorisations applied');
+    await expectText(state, '1 of 1 authorizations applied');
     await expect(authorizationRow(page).getByRole('cell').nth(2)).toHaveText('Applied');
     await page.goto(baselinesPath);
     await expect(baselineRow(page, 2)).toContainText('Active');
@@ -331,7 +331,7 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
     expect((await changeRequest(approver.api, requestId)).status).toBe('IMPLEMENTED');
   });
 
-  await test.step('replayed: the consumed authorisation applies to no other rebaseline, and marking again is refused', async () => {
+  await test.step('replayed: the consumed authorization applies to no other rebaseline, and marking again is refused', async () => {
     const before = await baselineStates(approver.api, project.id);
     const again = await requester.api.send(
       'POST',
@@ -370,7 +370,7 @@ test('UJ-004 approval stays distinct from implementation, and a failed applicati
 
 function authorizationRow(page: Page) {
   return page
-    .getByRole('table', { name: 'The authorisations the approval issued' })
+    .getByRole('table', { name: 'The authorizations the approval issued' })
     .getByRole('row')
     .filter({ hasText: 'Rebaseline' });
 }

@@ -278,6 +278,13 @@ erDiagram
         uuid configuration_version_id FK
         smallint level
     }
+    ProjectStageDefinition {
+        uuid id PK
+        uuid configuration_version_id FK
+        varchar code
+        numeric weight_percent
+        boolean is_active
+    }
     RiskRatingDefinition {
         uuid id PK
         uuid configuration_version_id FK
@@ -366,6 +373,7 @@ erDiagram
     ConfigurationVersion ||--o{ RiskRatingDefinition : "configuration_version_id"
     ConfigurationVersion ||--o{ RiskMatrixCell : "configuration_version_id"
     RiskRatingDefinition ||--o{ RiskMatrixCell : "risk_rating_definition_id"
+    ConfigurationVersion ||--o{ ProjectStageDefinition : "configuration_version_id"
     ConfigurationVersion ||--o{ ApprovalAuthorityRule : "configuration_version_id"
     MasterDataItem |o--o{ ApprovalAuthorityRule : "governance_profile_item_id"
     ConfigurationVersion ||--o{ NotificationEventFamily : "configuration_version_id"
@@ -397,6 +405,7 @@ erDiagram
 | **MaterialityBand** | `master_data_config.materiality_band` | Three-band change routing thresholds per governance profile (TASK-106, ADR-016). Values outstanding (OQ-013). | — | CASCADE | — |
 | **ImpactLevelDefinition** | `master_data_config.impact_level_definition` | One of five levels of one impact dimension (ADR-011). Dimensions are IMPACT_DIMENSION master data items; level descriptions and boundaries outstanding (OQ-006). | — | CASCADE | — |
 | **ProbabilityLevelDefinition** | `master_data_config.probability_level_definition` | One of five probability levels (PTBC-017). | — | CASCADE | — |
+| **ProjectStageDefinition** | `master_data_config.project_stage_definition` | A project stage and its weight inside a PROJECT_STAGE version (review round 5). | — | CASCADE | referenceable |
 | **RiskRatingDefinition** | `master_data_config.risk_rating_definition` | A rating label (e.g. Low/Medium/High/Critical) inside a matrix version. | — | CASCADE | referenceable |
 | **RiskMatrixCell** | `master_data_config.risk_matrix_cell` | 5×5 probability × overall-impact cell → rating (ADR-011; mapping outstanding, OQ-006). | — | CASCADE | — |
 | **ApprovalAuthorityRule** | `master_data_config.approval_authority_rule` | Approval authority matrix row: who approves which subject at which band/value (OQ-005; shape only). | — | CASCADE | — |

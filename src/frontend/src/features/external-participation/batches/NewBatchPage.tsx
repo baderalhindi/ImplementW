@@ -14,13 +14,7 @@ import { languageTag } from '@/features/projects/presentation.ts';
 import { ProjectFilters } from '@/features/projects/register/ProjectFilters.tsx';
 import { useProjectFilterValues } from '@/features/projects/register/projectFilterValues.ts';
 import { type ProjectLookups, useProjectLookups } from '@/features/projects/useProjectLookups.ts';
-import {
-  type AssigneeValue,
-  assigneeOf,
-  assigneeValue,
-  OTHER,
-  useUserSearch,
-} from '@/features/tasks/assignee.ts';
+import { type AssigneeValue, assigneeOf, assigneeValue, OTHER } from '@/features/tasks/assignee.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -74,14 +68,14 @@ const STEPS = [
 ] as const;
 
 /** The form's own codes for step 2; the API checks all of it again. */
-function requestCodes(values: RequestValues, canSearch: boolean): Record<string, string | null> {
+function requestCodes(values: RequestValues): Record<string, string | null> {
   return {
     dueDate:
       values.dueDate === '' ? 'REQUIRED' : values.dueDate < todayUtc() ? 'NOT_ALLOWED' : null,
     instructions: values.instructions.trim() === '' ? 'REQUIRED' : null,
     reviewerUserId:
-      assigneeOf(values.reviewer, canSearch).code ??
-      (assigneeOf(values.reviewer, canSearch).userId === null ? 'REQUIRED' : null),
+      assigneeOf(values.reviewer).code ??
+      (assigneeOf(values.reviewer).userId === null ? 'REQUIRED' : null),
   };
 }
 
@@ -104,7 +98,6 @@ export function NewBatchPage(): ReactElement | null {
   const { session } = useSession();
   const navigate = useNavigate();
   const lookups = useProjectLookups();
-  const canSearch = useUserSearch() ?? false;
   const save = useSaveAction(participationProblemMessage);
   const [step, setStep] = useState<Step>(1);
   const [selected, setSelected] = useState<ReadonlyMap<string, ProjectSummary>>(new Map());
@@ -120,9 +113,9 @@ export function NewBatchPage(): ReactElement | null {
   const request = values ?? initialValues(session.user);
   const projects = [...selected.values()];
   const flagged = projects.filter((project) =>
-    isFlagged(project, responders[project.id], rowIssues[project.id], canSearch),
+    isFlagged(project, responders[project.id], rowIssues[project.id]),
   );
-  const codes = requestCodes(request, canSearch);
+  const codes = requestCodes(request);
   const ready = Object.values(codes).every((code) => code === null);
 
   const set = (changes: Partial<RequestValues>) => {
@@ -132,7 +125,7 @@ export function NewBatchPage(): ReactElement | null {
 
   const send = async (event: SyntheticEvent) => {
     event.preventDefault();
-    const items = batchItemsOf(projects, responders, canSearch);
+    const items = batchItemsOf(projects, responders);
     const result = await save.run(() =>
       updateRequestBatchesApi.send({
         items,
@@ -141,7 +134,7 @@ export function NewBatchPage(): ReactElement | null {
         repeatDay: request.repeatMonthly ? Number(request.repeatDay) : null,
         instructions: request.instructions.trim(),
         instructionsLanguage: language,
-        reviewerUserId: assigneeOf(request.reviewer, canSearch).userId ?? '',
+        reviewerUserId: assigneeOf(request.reviewer).userId ?? '',
       }),
     );
     if (result.ok) {
@@ -188,7 +181,6 @@ export function NewBatchPage(): ReactElement | null {
         <SetRequest
           user={session.user}
           lookups={lookups}
-          canSearch={canSearch}
           projects={projects}
           values={request}
           attempted={attempted}
@@ -233,7 +225,7 @@ export function NewBatchPage(): ReactElement | null {
         <ReviewAndSend
           projects={projects}
           values={request}
-          reviewerId={assigneeOf(request.reviewer, canSearch).userId}
+          reviewerId={assigneeOf(request.reviewer).userId}
           blocked={flagged.length > 0}
           saving={save.saving}
           refusal={save.formError}
@@ -303,7 +295,7 @@ function ChooseProjects({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [q, status, departmentId, externalEntityId, itemKey, page],
   );
-  const projects = useApiResource(load);
+  const projects = useApiResource(load, { keepPreviousResult: true });
 
   const toggle = (project: ProjectSummary, on: boolean) => {
     const next = new Map(selected);
@@ -315,9 +307,12 @@ function ChooseProjects({
     onChange(next);
   };
 
-  /** Everything matching the filter across all pages, not just the page showing. */
-  const selectAll = async () => {
-    const result = await save.run(() => projectsApi.listAll(query));
+  /**
+   * Adds to what is chosen, across all pages: everything matching the filter or, with no query, every eligible project in the register
+   * whatever the filters say (review round 5, item 3).
+   */
+  const selectAll = async (scope: typeof query | Record<string, never>) => {
+    const result = await save.run(() => projectsApi.listAll(scope));
     if (result.ok) {
       const next = new Map(selected);
       const eligible = result.value.filter((project) => ineligibilityOf(project) === null);
@@ -331,7 +326,6 @@ function ChooseProjects({
     <section>
       <h2>{t('externalParticipation.batch.step1.title')}</h2>
       <ProjectFilters
-        key={q}
         q={q}
         values={{ status, departmentId, externalEntityId, ...itemFilters }}
         organizationFilters
@@ -339,7 +333,7 @@ function ChooseProjects({
         lookups={lookups}
         basePath={NEW_UPDATE_BATCH_PATH}
         onSearch={(text) => {
-          setFilter('q', text);
+          setFilter('q', text, { replace: true });
         }}
         onFilter={setFilters}
       />
@@ -351,7 +345,15 @@ function ChooseProjects({
           type="button"
           className="button"
           disabled={save.saving}
-          onClick={() => void selectAll()}
+          onClick={() => void selectAll({})}
+        >
+          {t('externalParticipation.batch.step1.selectAllEligible')}
+        </button>
+        <button
+          type="button"
+          className="button"
+          disabled={save.saving}
+          onClick={() => void selectAll(query)}
         >
           {save.saving
             ? t('common.states.saving')
@@ -375,7 +377,7 @@ function ChooseProjects({
           {t('externalParticipation.batch.step1.excluded', { count: excluded })}
         </p>
       )}
-      {projects.loading && <LoadingState />}
+      {projects.loading && projects.data === undefined && <LoadingState />}
       {projects.error !== null && (
         <ErrorState
           error={projects.error}
@@ -458,7 +460,6 @@ function ChooseProjects({
 function SetRequest({
   user,
   lookups,
-  canSearch,
   projects,
   values,
   attempted,
@@ -476,7 +477,6 @@ function SetRequest({
 }: {
   user: SessionUser;
   lookups: ProjectLookups;
-  canSearch: boolean;
   projects: ProjectSummary[];
   values: RequestValues;
   attempted: boolean;
@@ -587,7 +587,6 @@ function SetRequest({
           userType="INTERNAL"
           user={user}
           value={values.reviewer}
-          canSearch={canSearch}
           allowNone={false}
           hint={t('externalParticipation.batch.step2.reviewerHint')}
           error={errorOf('reviewerUserId')}
@@ -619,7 +618,7 @@ function SetRequest({
           {projects.map((project) => {
             const issue = rowIssues[project.id];
             const chosen = responders[project.id];
-            const named = chosen === undefined ? null : assigneeOf(chosen, canSearch).userId;
+            const named = chosen === undefined ? null : assigneeOf(chosen).userId;
             const needsPicker =
               (project.entityContactUserId ?? null) === null ||
               issue?.field === 'responsibleUserId' ||
@@ -628,9 +627,9 @@ function SetRequest({
               (other) =>
                 other.id !== project.id &&
                 other.externalEntityId === project.externalEntityId &&
-                isFlagged(other, responders[other.id], rowIssues[other.id], canSearch),
+                isFlagged(other, responders[other.id], rowIssues[other.id]),
             );
-            const flagged = isFlagged(project, chosen, issue, canSearch);
+            const flagged = isFlagged(project, chosen, issue);
             return (
               <tr key={project.id} data-flagged={flagged ? 'true' : undefined}>
                 <td>
@@ -656,8 +655,7 @@ function SetRequest({
                         name="responsibleUserId"
                         userType="ANY"
                         user={user}
-                        value={chosen ?? { choice: OTHER, found: null, typedId: '' }}
-                        canSearch={canSearch}
+                        value={chosen ?? { choice: OTHER, found: null }}
                         suggestions={[
                           ...(entityPeople[project.externalEntityId ?? ''] ?? []).map((person) => ({
                             id: person.userId,

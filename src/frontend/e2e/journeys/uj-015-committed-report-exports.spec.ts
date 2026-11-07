@@ -105,7 +105,7 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
     ]);
   });
 
-  await test.step('the consumer runs the Project Report on an authorised project, keeping six columns: the amounts read Restricted', async () => {
+  await test.step('the consumer runs the Project Report on an authorized project, keeping six columns: the amounts read Restricted', async () => {
     await page.goto('/reports/project/PROJECT_REPORT');
     const project = reportParameter(page, 'Project');
     await expect(project.locator(`option[value="${theirs.id}"]`)).toHaveCount(0);
@@ -170,7 +170,7 @@ test('UJ-015 PDF, XLSX and CSV exports keep scope, filters and context, and leav
   });
 
   const csv =
-    await test.step('CSV: the authorised row, the restricted fields as RESTRICTED, never the amounts', async () => {
+    await test.step('CSV: the authorized row, the restricted fields as RESTRICTED, never the amounts', async () => {
       const file = await exportThroughTheDialog(page, 'CSV');
       expect(file.name).toMatch(/\.csv$/);
       const rows = csvRows(file.bytes);

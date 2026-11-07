@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
@@ -6,7 +6,7 @@ import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
-import { type MockApi, mockApi, problem, SHELL_PERMISSIONS } from '@/test/mockApi.ts';
+import { type MockApi, mockApi, problem, SHELL_PERMISSIONS, page } from '@/test/mockApi.ts';
 import {
   DEPARTMENT_ID,
   entitySession,
@@ -131,15 +131,34 @@ describe('SCR-025 Project Register', () => {
       screen.getByLabelText(en('dashboards.filter.departmentId')),
       DEPARTMENT_ID,
     );
-    await user.type(screen.getByLabelText(en('projects.filters.q')), 'park');
-    await user.click(screen.getByRole('button', { name: en('common.actions.search') }));
+    const box = screen.getByLabelText(en('projects.filters.q'));
+    await user.type(box, 'park');
 
+    await waitFor(() => {
+      expect(
+        api
+          .requestsTo('GET', /^\/projects$/)
+          .at(-1)
+          ?.query.get('q'),
+      ).toBe('park');
+    });
     await screen.findByRole('link', { name: 'City park' });
+    expect(screen.queryByRole('link', { name: 'Coastal road' })).toBeNull();
     const last = api.requestsTo('GET', /^\/projects$/).at(-1);
     expect(last?.query.get('status')).toBe('ACTIVE');
     expect(last?.query.get('departmentId')).toBe(DEPARTMENT_ID);
-    expect(last?.query.get('q')).toBe('park');
-    expect(screen.queryByRole('link', { name: 'Coastal road' })).toBeNull();
+    expect(document.activeElement).toBe(box);
+
+    await user.clear(box);
+    await waitFor(() => {
+      expect(
+        api
+          .requestsTo('GET', /^\/projects$/)
+          .at(-1)
+          ?.query.has('q'),
+      ).toBe(false);
+    });
+    expect(document.activeElement).toBe(box);
   });
 
   test('pages through the API’s pages', async () => {
@@ -190,7 +209,69 @@ describe('SCR-025 Project Register', () => {
     ).toBe('/projects/new');
   });
 
-  test.each(['R02', 'R03', 'R04', 'R05', 'R06', 'R07', 'R08'])(
+  test('a row is selected with a count; only a draft can be deleted, after a confirmation naming it (review round 5, item 2)', async () => {
+    const user = userEvent.setup();
+    const draft = projectSummary({
+      id: 'p-draft',
+      status: 'DRAFT',
+      title: { text: 'Draft works', language: 'EN' },
+    });
+    const active = projectSummary({
+      id: 'p-active',
+      status: 'ACTIVE',
+      title: { text: 'Live works', language: 'EN' },
+    });
+    const api = withProjectLookups(mockApi())
+      .on('GET', /^\/projects$/, { body: page([draft, active]) })
+      .on('DELETE', /^\/projects\/p-draft$/, { status: 204 });
+    renderApp({ path: '/projects', session: sessionFor(['R04']) });
+
+    await user.click(
+      await screen.findByRole('checkbox', {
+        name: en('common.table.selectRow', { name: 'Live works' }),
+      }),
+    );
+    expect(screen.getByText(en('common.table.selected', { count: 1 }))).toBeTruthy();
+    expect(screen.getByText(en('projects.bulk.onlyDrafts'))).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: en('projects.bulk.delete', { count: 1 }) }),
+    ).toBeNull();
+
+    await user.click(screen.getByRole('checkbox', { name: en('common.table.selectAll') }));
+    await user.click(
+      screen.getByRole('button', { name: en('projects.bulk.delete', { count: 1 }) }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(en('projects.bulk.deleteBody', { names: 'Draft works' })),
+    ).toBeTruthy();
+    await user.click(
+      within(dialog).getByRole('button', { name: en('projects.bulk.delete', { count: 1 }) }),
+    );
+
+    await waitFor(() => {
+      expect(api.requestsTo('DELETE', /^\/projects\//).map((request) => request.path)).toEqual([
+        '/projects/p-draft',
+      ]);
+    });
+  });
+
+  test('the sort option goes to the API (review round 5, item 2)', async () => {
+    const api = withProjectLookups(mockApi()).on('GET', /^\/projects$/, { body: page([]) });
+    renderApp({ path: '/projects?sort=title:asc', session: sessionFor(['R04']) });
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/projects$/)[0]?.query.get('sort')).toBe('title:asc');
+    });
+  });
+
+  test('the Viewer (R06) reads the register and is offered no Import', async () => {
+    openRegister('/projects', sessionFor(['R06']));
+
+    expect(await screen.findByRole('heading', { level: 1 })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: en('projects.import.open') })).toBeNull();
+  });
+
+  test.each(['R02', 'R03', 'R04', 'R05', 'R07', 'R08'])(
     '%s sees Import on the register',
     async (role) => {
       openRegister('/projects', sessionFor([role]));

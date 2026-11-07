@@ -1,10 +1,12 @@
-import { type ReactElement, type SyntheticEvent, useRef, useState } from 'react';
+import { type ReactElement, type SyntheticEvent, useCallback, useRef, useState } from 'react';
 
 import { checkText, UUID_PATTERN, useSaveAction } from '@/features/identity-access/forms.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
+import { apiRequest } from '@/shared/api/httpClient.ts';
+import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
-import { TextField } from '@/shared/ui/FormFields.tsx';
+import { SelectField } from '@/shared/ui/FormFields.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { needsChangeAuthorization } from '../access.ts';
@@ -43,6 +45,30 @@ export function SubmitBaselineDialog(props: SubmitBaselineDialogProps): ReactEle
   );
 }
 
+/** The project's issued rebaseline authorizations, each named by the change request it came from (review round 5, item 5: no field asks for an ID). */
+async function readIssuedRebaselines(projectId: string, signal: AbortSignal) {
+  const { items } = (
+    await apiRequest<{ items: { id: string; changeRequestId: string; issuedAt: string }[] }>(
+      '/change-authorizations',
+      {
+        query: { projectId, authorizationScope: 'REBASELINE', status: 'ISSUED', pageSize: 100 },
+        signal,
+      },
+    )
+  ).data;
+  return Promise.all(
+    items.map(async (item) => ({
+      id: item.id,
+      issuedAt: item.issuedAt,
+      title: (
+        await apiRequest<{ title: { text: string } }>(`/change-requests/${item.changeRequestId}`, {
+          signal,
+        })
+      ).data.title.text,
+    })),
+  );
+}
+
 function SubmitBaselineForm({
   baseline,
   active,
@@ -51,11 +77,18 @@ function SubmitBaselineForm({
   onDone,
   onStale,
 }: SubmitBaselineDialogProps & { baseline: ProjectBaselineDetail }): ReactElement {
-  const { t } = useI18n();
+  const { t, formatDateTime } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(scheduleProblemMessage);
   const [authorization, setAuthorization] = useState('');
   const rebaseline = needsChangeAuthorization(active);
+  const projectId = baseline.projectId;
+  const loadAuthorizations = useCallback(
+    (signal: AbortSignal) =>
+      rebaseline ? readIssuedRebaselines(projectId, signal) : Promise.resolve([]),
+    [projectId, rebaseline],
+  );
+  const authorizations = useApiResource(loadAuthorizations);
   const fields = useFieldErrors(
     {
       changeAuthorizationId: rebaseline
@@ -105,12 +138,19 @@ function SubmitBaselineForm({
       <p className="form__note">{t('schedule.submit.consequence')}</p>
       <FormAlert message={fields.summary ?? save.formError} />
       {rebaseline && (
-        <TextField
+        <SelectField
           label={t('schedule.submit.changeAuthorization')}
           name="changeAuthorizationId"
           required
-          dir="ltr"
           value={authorization}
+          placeholder={t('common.form.choose')}
+          options={(authorizations.data ?? []).map((option) => ({
+            value: option.id,
+            label: t('schedule.submit.authorizationOption', {
+              title: option.title,
+              date: formatDateTime(option.issuedAt),
+            }),
+          }))}
           hint={t('schedule.submit.changeAuthorizationHint')}
           onChange={(value) => {
             setAuthorization(value);

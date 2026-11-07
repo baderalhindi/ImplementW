@@ -18,7 +18,7 @@ public sealed record PasswordUpdateResult
 
     public static PasswordUpdateResult Updated { get; } = new(null, null, null, notLocalAccount: false);
 
-    /// <summary>The account's password belongs to the directory or the identity provider, so the platform cannot change it (ADR-007).</summary>
+    /// <summary>The account's password can't be changed from here: it belongs to the identity provider, or the directory refuses this person's change.</summary>
     public static PasswordUpdateResult NotLocal { get; } = new(null, null, null, notLocalAccount: true);
 
     public AuthenticationFailure? Failure { get; }

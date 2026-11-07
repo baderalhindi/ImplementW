@@ -12,7 +12,7 @@ import {
   type PermissionProfileDetail,
   type UserSummary,
 } from '../api/types.ts';
-import { UserPicker } from '../components/UserPicker.tsx';
+import { type PickedUser, UserPicker } from '../components/UserPicker.tsx';
 import { UUID_PATTERN, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { labelOf, useOrganizationLookups } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
@@ -68,7 +68,7 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
   const { lookups } = useOrganizationLookups(language);
 
   const [step, setStep] = useState<Step>('role');
-  const [user, setUser] = useState<UserSummary | null>(fixedUser ?? null);
+  const [user, setUser] = useState<PickedUser | null>(fixedUser ?? null);
   const [profileId, setProfileId] = useState('');
   const [versionId, setVersionId] = useState('');
   const [startsAt, setStartsAt] = useState('');
@@ -76,7 +76,7 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
   const [departmentId, setDepartmentId] = useState('');
   const [externalEntityId, setExternalEntityId] = useState('');
   const [projectId, setProjectId] = useState('');
-  const [sponsor, setSponsor] = useState<UserSummary | null>(null);
+  const [sponsor, setSponsor] = useState<PickedUser | null>(null);
 
   const loadCatalogue = useCallback(async (signal: AbortSignal) => {
     const [roles, profiles] = await Promise.all([
@@ -112,7 +112,7 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
     setVersionId('');
   };
 
-  const chooseUser = (next: UserSummary | null) => {
+  const chooseUser = (next: PickedUser | null) => {
     setUser(next);
     setProfileId('');
     setVersionId('');
@@ -313,7 +313,7 @@ function AssignRoleForm({ fixedUser, onClose, onAssigned }: AssignRoleFormProps)
       {external ? (
         <p className="form__readonly">
           <span className="field__label">{t('identityAccess.users.fields.externalEntity')}</span>
-          {lookups?.entityName(user.externalEntityId) ?? '—'}
+          {lookups?.entityName(user.externalEntityId ?? null) ?? '—'}
         </p>
       ) : (
         <>

@@ -5,21 +5,17 @@ import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { TextField } from '@/shared/ui/FormFields.tsx';
 
 import { type AssigneeValue, NONE, OTHER } from '../assignee.ts';
 
 interface AssigneeFieldProps {
   user: SessionUser;
-  project: Pick<ProjectSummary, 'projectManagerUserId'>;
+  project: Pick<ProjectSummary, 'id' | 'projectManagerUserId'>;
   /** The project's current owners and the task's own: people already known to work on it. */
   knownUserIds: (string | null)[];
   value: AssigneeValue;
   onChange: (value: AssigneeValue) => void;
-  canSearch: boolean;
   error?: string | undefined;
-  /** The API's field the owner is sent as, so its refusal lands here: a task's `assigneeUserId`, a risk's `ownerUserId`. */
-  name?: string;
 }
 
 /**
@@ -34,9 +30,7 @@ export function AssigneeField({
   knownUserIds,
   value,
   onChange,
-  canSearch,
   error,
-  name = 'assigneeUserId',
 }: AssigneeFieldProps): ReactElement {
   const { t } = useI18n();
   const id = useId();
@@ -87,29 +81,17 @@ export function AssigneeField({
           </label>
         ))}
       </div>
-      {value.choice === OTHER &&
-        (canSearch ? (
-          <UserPicker
-            label={t('tasks.owner.find')}
-            value={value.found}
-            onChange={(found) => {
-              onChange({ ...value, found });
-            }}
-            required
-          />
-        ) : (
-          <TextField
-            label={t('tasks.owner.userId')}
-            name={name}
-            value={value.typedId}
-            dir="ltr"
-            required
-            hint={t('tasks.owner.userIdHint')}
-            onChange={(typedId) => {
-              onChange({ ...value, typedId });
-            }}
-          />
-        ))}
+      {value.choice === OTHER && (
+        <UserPicker
+          label={t('tasks.owner.find')}
+          value={value.found}
+          projectId={project.id}
+          onChange={(found) => {
+            onChange({ ...value, found });
+          }}
+          required
+        />
+      )}
       <p id={hintId} className="field__hint">
         {t('tasks.owner.hint')}
       </p>

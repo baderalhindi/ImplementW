@@ -618,7 +618,7 @@ public sealed class PermissionCatalogue
         [
             PortfolioSummaryView, PortfolioStatusView,
             ProjectView, ProgressView, ScheduleView, TaskView, MilestoneView, RiskView, ConcernView, ChangeRequestView, SuspensionView, CloseoutView,
-            FinancialView, KpiView, DocumentView, AuditBusinessView,
+            FinancialView, KpiView, DocumentView,
         ]),
 
         // R07 Executive: the whole portfolio, read and decide; no operational editing.
@@ -648,7 +648,6 @@ public sealed class PermissionCatalogue
         // Project import: every business role prepares a batch at its own scope; only R02 approves one (data-import threat DI-T14).
         new("R04", ProjectImport, DataScope.Own),
         new("R05", ProjectImport, DataScope.Assigned),
-        new("R06", ProjectImport, DataScope.Dept),
         new("R07", ProjectImport, DataScope.All),
         new("R08", ProjectImport, DataScope.Entity),
     ];

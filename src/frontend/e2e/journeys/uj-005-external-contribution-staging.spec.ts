@@ -1,5 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 
+import { credentialOf } from '../support/environment.ts';
 import { expect, expectText, test, unique, utcDate } from '../support/journey.ts';
 import { type ProjectTask, startedTask } from '../support/participation.ts';
 import { activeProject } from '../support/projects.ts';
@@ -69,7 +70,10 @@ test('UJ-005 an accepted external contribution is staged, and only an explicit a
     await page.getByLabel('Response due').fill(utcDate(14));
     const responder = page.getByRole('group', { name: 'Responder (entity user)' });
     await responder.getByRole('radio', { name: 'Someone else' }).check();
-    await responder.getByLabel('User ID').fill(contributor.api.userId);
+    await responder.getByRole('searchbox').fill(credentialOf(contributor.api.persona).username);
+    await responder
+      .getByRole('button', { name: new RegExp(credentialOf(contributor.api.persona).username) })
+      .click();
     await page.getByRole('button', { name: 'Save and issue' }).click();
     await expectText(page.getByRole('main'), 'Request issued.');
   });

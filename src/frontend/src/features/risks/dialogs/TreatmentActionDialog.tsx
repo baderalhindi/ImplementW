@@ -4,7 +4,7 @@ import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
-import { assigneeOf, assigneeValue, useUserSearch } from '@/features/tasks/assignee.ts';
+import { assigneeOf, assigneeValue } from '@/features/tasks/assignee.ts';
 import { AssigneeField } from '@/features/tasks/components/AssigneeField.tsx';
 import { type ApiResponse } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -94,7 +94,6 @@ function ActionForm({
   const { t, language } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(riskProblemMessage);
-  const canSearch = useUserSearch() ?? false;
   const before = editing?.data ?? null;
   const [values, setValues] = useState<ActionFormValues>(() =>
     before === null ? EMPTY_ACTION_FORM : actionFormValuesOf(before),
@@ -102,7 +101,7 @@ function ActionForm({
   const [owner, setOwner] = useState(() =>
     assigneeValue(before === null ? risk.ownerUserId : before.ownerUserId),
   );
-  const chosen = assigneeOf(owner, canSearch);
+  const chosen = assigneeOf(owner);
   const fields = useFieldErrors(
     { ...checkActionForm(values), ownerUserId: chosen.code },
     formRef,
@@ -180,8 +179,6 @@ function ActionForm({
         project={project}
         knownUserIds={[...knownUserIds, risk.ownerUserId, before?.ownerUserId ?? null]}
         value={owner}
-        canSearch={canSearch}
-        name="ownerUserId"
         onChange={(value) => {
           setOwner(value);
           fields.clearServer();

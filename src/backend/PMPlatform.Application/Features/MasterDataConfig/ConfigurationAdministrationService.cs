@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Governance;
+using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Content;
@@ -21,6 +22,7 @@ internal sealed partial class ConfigurationAdministrationService(
     ConfigurationReferenceReader referenceReader,
     IAuditTrail audit,
     TimeProvider timeProvider,
+    ProfileApprovalPolicy approval,
     ILogger<ConfigurationAdministrationService> logger) : IConfigurationAdministrationService
 {
     public async Task<IReadOnlyList<ConfigurationFamilySummary>> ListFamiliesAsync(CancellationToken cancellationToken)
@@ -154,7 +156,8 @@ internal sealed partial class ConfigurationAdministrationService(
             return AdministrationError.NotFound;
         }
 
-        if (GovernedRefusal.Of(GovernedLifecycle.CheckValidate(version, actorId)) is { } refused)
+        int requiredPeople = await RequiredPeopleAsync(version, cancellationToken).ConfigureAwait(false);
+        if (GovernedRefusal.Of(GovernedLifecycle.CheckValidate(version, actorId, requiredPeople)) is { } refused)
         {
             return refused;
         }
@@ -164,7 +167,7 @@ internal sealed partial class ConfigurationAdministrationService(
             return contentRefused;
         }
 
-        GovernedLifecycle.Validate(version, actorId, timeProvider.GetUtcNow());
+        GovernedLifecycle.Validate(version, actorId, timeProvider.GetUtcNow(), requiredPeople);
         return await SaveAsync(actorId, version, "validated", MasterDataConfigAuditEvents.VersionValidated,
             [AuditAttribute.Change("lifecycle_state", GovernedLifecycleState.Draft, version.LifecycleState)], cancellationToken).ConfigureAwait(false);
     }
@@ -178,7 +181,8 @@ internal sealed partial class ConfigurationAdministrationService(
             return AdministrationError.NotFound;
         }
 
-        if (GovernedRefusal.Of(GovernedLifecycle.CheckPublish(version, actorId)) is { } refused)
+        int requiredPeople = await RequiredPeopleAsync(version, cancellationToken).ConfigureAwait(false);
+        if (GovernedRefusal.Of(GovernedLifecycle.CheckPublish(version, actorId, requiredPeople)) is { } refused)
         {
             return refused;
         }
@@ -198,7 +202,7 @@ internal sealed partial class ConfigurationAdministrationService(
             return AdministrationError.Rule(MasterDataConfigErrorCodes.EffectiveFromInvalid, new FieldIssue("effectiveFrom", FieldIssue.NotAllowed));
         }
 
-        GovernedLifecycle.Publish(version, actorId, now);
+        GovernedLifecycle.Publish(version, actorId, now, requiredPeople);
         version.EffectiveFrom = from;
         return await SaveAsync(actorId, version, "published", MasterDataConfigAuditEvents.VersionPublished,
             [
@@ -256,6 +260,29 @@ internal sealed partial class ConfigurationAdministrationService(
     /// The content is checked again at each step: an item it references may have been retired since it was written. It is
     /// read in canonical order, so each issue's path names the entry a reader of the content sees at that index.
     /// </summary>
+    /// <summary>
+    /// Three people for every family, as ERD D-12 has it, except the stages: the review asks that the Admin edit them, and this environment says how many
+    /// administrators it has, as it does for permission profiles (review round 5, item 7).
+    /// </summary>
+    private async Task<int> RequiredPeopleAsync(ConfigurationVersion version, CancellationToken cancellationToken) =>
+        await FamilyCodeOfAsync(version, cancellationToken).ConfigureAwait(false) == ConfigurationFamilyCodes.ProjectStage ? approval.RequiredAdministrators : 3;
+
+    /// <summary>A stage once published stays in every later version: it is deactivated, never removed, so a past figure can still name it.</summary>
+    private async Task<AdministrationError?> StagesKeptAsync(ConfigurationVersion version, ConfigurationContent content, CancellationToken cancellationToken)
+    {
+        ILookup<Guid, PublishedVersionWindow> published = await WindowsAsync([version.ConfigurationFamilyId], cancellationToken).ConfigureAwait(false);
+        foreach (PublishedVersionWindow window in published[version.ConfigurationFamilyId].Where(w => w.VersionId != version.Id))
+        {
+            ConfigurationContent earlier = await configuration.ReadContentAsync(window.VersionId, cancellationToken).ConfigureAwait(false);
+            if (earlier.ProjectStages.FirstOrDefault(s => content.ProjectStages.All(kept => kept.Code != s.Code)) is { } removed)
+            {
+                return AdministrationError.Rule(MasterDataConfigErrorCodes.ContentInvalid, new FieldIssue($"content.projectStages.{removed.Code}", FieldIssue.NotAllowed));
+            }
+        }
+
+        return null;
+    }
+
     private async Task<AdministrationError?> CheckContentAsync(ConfigurationVersion version, CancellationToken cancellationToken)
     {
         string familyCode = await FamilyCodeOfAsync(version, cancellationToken).ConfigureAwait(false);
@@ -265,6 +292,7 @@ internal sealed partial class ConfigurationAdministrationService(
                 ? AdministrationError.Rule(MasterDataConfigErrorCodes.ContentInvalid, InContent(invalid))
             : ConfigurationContentRules.CheckComplete(familyCode, content, references) is { Count: > 0 } incomplete
                 ? AdministrationError.Rule(MasterDataConfigErrorCodes.ContentIncomplete, InContent(incomplete))
+            : familyCode == ConfigurationFamilyCodes.ProjectStage ? await StagesKeptAsync(version, content, cancellationToken).ConfigureAwait(false)
             : null;
     }
 

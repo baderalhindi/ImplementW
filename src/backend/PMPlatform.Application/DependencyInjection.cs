@@ -120,6 +120,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRoleDirectory, UserRoleDirectory>();
         services.AddScoped<IOrganizationDirectory, OrganizationDirectory>();
         services.AddScoped<IDisplayNameService, DisplayNameService>();
+        services.AddScoped<IPersonLookupService, PersonLookupService>();
         services.AddScoped<IUserLookup, UserLookup>();
         services.AddScoped<IPermissionProfileDirectory, PermissionProfileDirectory>();
         services.AddScoped<IImportRegister, DepartmentImportRegister>();
@@ -202,12 +203,13 @@ public static class DependencyInjection
         services.AddScoped<IProjectFactsReader, ProjectFactsReader>();
         services.AddScoped<ProjectImportScope>();
 
-        // TASK-044: WF-02 progress reporting and Overall Project Health (ICD-03). The repository is Infrastructure's. The
-        // inputs other modules own have no source until WF-03, WF-04 and WF-14 and their ADR-003 edges exist
-        // (progress-update.md F-1), so NoProgressInputs stands in; a host may register its own first.
+        // TASK-044: WF-02 progress reporting and Overall Project Health (ICD-03). The repository is Infrastructure's. A host may
+        // register its own inputs first.
         services.AddScoped<ProgressAccess>();
         services.AddScoped<ProgressPolicy>();
-        services.TryAddScoped<IProgressInputs, NoProgressInputs>();
+        services.TryAddScoped<IProgressInputs, ProgressInputsReader>();
+        services.AddScoped<ReportingPeriods>();
+        services.AddScoped<IReportingPeriodSource, ReportingPeriodSource>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ProgressOpeningPosition>();
         services.AddScoped<IProjectIntakeHandler, ProgressIntakeHandler>();
@@ -234,6 +236,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectIntakeHandler, ScheduleIntakeHandler>();
         services.AddScoped<IScheduleHealthReader, ScheduleHealthReader>();
         services.AddScoped<IScheduleActivityReader, ScheduleActivityReader>();
+        services.AddScoped<IActiveBaselinePlanReader, ActiveBaselinePlanReader>();
         services.AddScoped<IScheduleCloseoutReader, ScheduleCloseoutReader>();
 
         // TASK-050: WF-03's side of the shared milestone (ICD-04) — the milestones of the schedule, and the contract WF-05 reads
@@ -255,6 +258,7 @@ public static class DependencyInjection
         services.AddScoped<ITaskDependencyService, TaskDependencyService>();
         services.AddScoped<IProjectTaskCloseoutReader, ProjectTaskCloseoutReader>();
         services.AddScoped<ITaskProgressContributions, TaskProgressContributions>();
+        services.AddScoped<IProjectWorkBreakdownReader, ProjectWorkBreakdownReader>();
 
         // TASK-050: WF-05 achievement claims and their revisions. The repository is Infrastructure's; the milestone is WF-03's,
         // read through Schedule's reader (edge 10); acceptance comes from WF-11 through the outcome handler (edges 25, 28).
@@ -278,6 +282,7 @@ public static class DependencyInjection
         services.AddScoped<IFinancialSourceModeService, FinancialSourceModeService>();
         services.AddScoped<IFinancialCommitmentService, FinancialCommitmentService>();
         services.AddScoped<IFinancialProgressService, FinancialProgressService>();
+        services.AddScoped<IProjectFinancialStatusSource, ProjectFinancialStatusSource>();
         services.AddScoped<IKpiAssignmentService, KpiAssignmentService>();
         services.AddScoped<IKpiTargetVersionService, KpiTargetVersionService>();
         services.AddScoped<IKpiMeasurementService, KpiMeasurementService>();
@@ -391,6 +396,7 @@ public static class DependencyInjection
         services.AddScoped<IExternalUpdateRequestService, ExternalUpdateRequestService>();
         // The 2 Nov 2026 review: the entity's on-time answers to its update requests, from which the project module decides compliance.
         services.AddScoped<IProjectUpdateComplianceSource, UpdateComplianceSource>();
+        services.AddScoped<IEntityCompletionRates, EntityCompletionService>();
         services.AddScoped<IExternalContributionService, ExternalContributionService>();
         services.AddScoped<ISourceApplicationService, SourceApplicationService>();
 

@@ -12,6 +12,7 @@ export interface EffectivePermission {
 
 export interface EffectivePermissions {
   permissions: EffectivePermission[];
+  showCreateInHeader?: boolean;
 }
 
 export const permissionsApi = {

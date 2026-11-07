@@ -147,7 +147,7 @@ export async function activeBaseline(
 export interface ProjectCrew {
   /** Creates and submits the draft: the department manager for an AHDA project, the entity's own PM for an entity one. */
   creator: PlatformApi;
-  /** Starts AHDA's review (PROJECT_REVIEW); never the approver, since a requester cannot decide their own run. */
+  /** Starts AHDA's review (PROJECT_REVIEW). The run's requester is the submitter, so the reviewer may also decide it. */
   reviewer: PlatformApi;
   /** Decides the review and the baseline and activates (E2E-R02). */
   approver: PlatformApi;

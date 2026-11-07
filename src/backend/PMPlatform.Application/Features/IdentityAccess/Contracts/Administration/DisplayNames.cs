@@ -20,7 +20,10 @@ public sealed record UserName(Guid Id, string DisplayName, Guid? ExternalEntityI
 public sealed record OrganizationUnit(Guid Id, string Code, BilingualLabel Name, bool IsActive);
 
 /// <summary>The departments and external entities the caller may be told of, by code.</summary>
-public sealed record OrganizationUnits(IReadOnlyList<OrganizationUnit> Departments, IReadOnlyList<OrganizationUnit> ExternalEntities);
+public sealed record OrganizationUnits(IReadOnlyList<OrganizationUnit> Departments, IReadOnlyList<OrganizationUnit> ExternalEntities, IReadOnlyList<RoleName>? Roles = null);
+
+/// <summary>A role's name, for AHDA's people (review round 5): an approver is told which role a task waits on without ROLE_VIEW.</summary>
+public sealed record RoleName(Guid Id, string Code, BilingualLabel Name);
 
 /// <summary>
 /// Names only, for every signed-in user (review H1): no record, attribute or state of a person, and of a department or entity its code, name

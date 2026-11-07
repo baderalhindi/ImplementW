@@ -1,58 +1,93 @@
-import { type ReactElement, useId, useState } from 'react';
+import { type ReactElement, useEffect, useId, useState } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { SEARCH_TYPING_PAUSE_MS } from '@/shared/ui/useSearchText.ts';
 
-import { usersApi } from '../api/identityAccessApi.ts';
-import { type UserSummary, type UserType } from '../api/types.ts';
+import { personLookupsApi } from '../api/identityAccessApi.ts';
+import { type PersonMatch, type UserSummary, type UserType } from '../api/types.ts';
 import { problemMessage } from '../problems.ts';
 
 const RESULT_LIMIT = 10;
 
+/** What a form keeps of the person chosen. */
+export type PickedUser = Pick<UserSummary, 'id' | 'displayName' | 'username'> &
+  Partial<Pick<UserSummary, 'userType' | 'externalEntityId' | 'departmentId'>>;
+
 interface UserPickerProps {
   label: string;
-  value: UserSummary | null;
-  onChange: (user: UserSummary | null) => void;
+  value: PickedUser | null;
+  onChange: (user: PickedUser | null) => void;
   /** Restricts the search, e.g. a sponsor must be an active internal user (ADR-013). */
   userType?: UserType;
+  /** Only people of this entity: a monthly batch's responder. */
+  externalEntityId?: string | null;
+  /** Only people holding a role over this project: a task's or a risk's owner. */
+  projectId?: string | null;
   error?: string | undefined;
   hint?: string;
   required?: boolean;
 }
 
-/** Finds an active user by name, username or email (ADM-002's `q`) and selects one. */
+/**
+ * Finds an active person by name, username or email as it is typed (GET /person-lookups) and selects one. Only those the field may name are
+ * offered, with their role and unit so that two people of one name can be told apart.
+ */
 export function UserPicker({
   label,
   value,
   onChange,
   userType,
+  externalEntityId,
+  projectId,
   error,
   hint,
   required = false,
 }: UserPickerProps): ReactElement {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const id = useId();
   const [text, setText] = useState('');
-  const [results, setResults] = useState<UserSummary[] | null>(null);
-  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<PersonMatch[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const search = async () => {
-    setSearching(true);
-    setSearchError(null);
-    try {
-      const page = await usersApi.list({
-        q: text.trim() === '' ? undefined : text.trim(),
-        status: 'ACTIVE',
-        userType,
-        pageSize: RESULT_LIMIT,
-      });
-      setResults(page.items);
-    } catch (caught) {
-      setResults(null);
-      setSearchError(problemMessage(caught, t));
-    } finally {
-      setSearching(false);
+  const wanted = text.trim();
+  useEffect(() => {
+    if (wanted === '') {
+      return undefined;
     }
+    const controller = new AbortController();
+    const search = async () => {
+      setSearchError(null);
+      try {
+        const page = await personLookupsApi.list(
+          {
+            q: wanted,
+            userType,
+            externalEntityId: externalEntityId ?? undefined,
+            projectId: projectId ?? undefined,
+            pageSize: RESULT_LIMIT,
+          },
+          controller.signal,
+        );
+        if (!controller.signal.aborted) {
+          setResults(page.items);
+        }
+      } catch (caught) {
+        if (!controller.signal.aborted) {
+          setResults(null);
+          setSearchError(problemMessage(caught, t));
+        }
+      }
+    };
+    const timer = setTimeout(() => void search(), SEARCH_TYPING_PAUSE_MS);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [externalEntityId, projectId, t, userType, wanted]);
+
+  const clearSearch = () => {
+    setResults(null);
+    setSearchError(null);
   };
 
   const describedBy = [
@@ -82,25 +117,21 @@ export function UserPicker({
               id={`${id}-q`}
               className="field__input"
               type="search"
+              autoComplete="off"
+              placeholder={t('identityAccess.userPicker.searchLabel')}
               value={text}
               onChange={(event) => {
                 setText(event.target.value);
+                if (event.target.value.trim() === '') {
+                  clearSearch();
+                }
               }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
                   event.preventDefault();
-                  void search();
                 }
               }}
             />
-            <button
-              type="button"
-              className="button"
-              disabled={searching}
-              onClick={() => void search()}
-            >
-              {searching ? t('common.states.searching') : t('common.actions.search')}
-            </button>
           </div>
           {searchError !== null && (
             <p className="field__error" role="alert">
@@ -125,6 +156,9 @@ export function UserPicker({
                     >
                       {user.displayName} <span dir="ltr">({user.username})</span>
                     </button>
+                    {describe(user, language) !== '' && (
+                      <span className="picker__detail">{describe(user, language)}</span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -139,7 +173,8 @@ export function UserPicker({
             type="button"
             className="button"
             onClick={() => {
-              setResults(null);
+              setText('');
+              clearSearch();
               onChange(null);
             }}
           >
@@ -159,4 +194,11 @@ export function UserPicker({
       )}
     </fieldset>
   );
+}
+
+/** The person's roles and unit, in the reader's language. */
+function describe(person: PersonMatch, language: 'ar' | 'en'): string {
+  const name = (label: { ar: string; en: string }) => (language === 'ar' ? label.ar : label.en);
+  const parts = [...(person.roles ?? []).map(name), ...(person.unit ? [name(person.unit)] : [])];
+  return parts.join(' · ');
 }

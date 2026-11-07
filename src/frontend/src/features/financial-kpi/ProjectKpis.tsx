@@ -1,6 +1,7 @@
 import { type ReactElement, useState } from 'react';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { isClosed } from '@/features/projects/access.ts';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
@@ -12,6 +13,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { canPublishKpi, canRecordKpi } from './access.ts';
 import { KpiTable } from './components/KpiTable.tsx';
+import { AddKpiDialog } from './dialogs/AddKpiDialog.tsx';
 import { KpiValueDialog } from './dialogs/KpiValueDialog.tsx';
 import { PublishMeasurementDialog } from './dialogs/PublishMeasurementDialog.tsx';
 import { activeTarget, latestInStatus } from './financialKpiRules.ts';
@@ -19,6 +21,7 @@ import { financialKpiProblemMessage, isForbidden } from './problems.ts';
 import { type KpiEntry, useKpiLookups, useProjectKpis } from './useKpiData.ts';
 
 type OpenDialog =
+  | { kind: 'add' }
   | { kind: 'value'; entry: KpiEntry; measurementId: string | null }
   | { kind: 'publish'; entry: KpiEntry; measurementId: string }
   | null;
@@ -39,6 +42,7 @@ export function ProjectKpis({
   const today = todayUtc();
   const kpis = useProjectKpis(project.id);
   const lookups = useKpiLookups();
+  const mayAdd = useCan('KPI_MANAGE');
   const personName = usePersonNames(
     (kpis.data ?? []).flatMap((entry) => [
       entry.assignment.ownerUserId,
@@ -132,12 +136,25 @@ export function ProjectKpis({
       <div className="section__header">
         <h2>{t('financialKpi.kpis.title')}</h2>
         {!isClosed(project.status) && (
-          <ImportAction
-            collectionPath="/kpi-measurements"
-            registerName={t('dataImport.registers.KPI_MEASUREMENT.name')}
-            permission="KPI_RECORD"
-            onImported={kpis.reload}
-          />
+          <span className="section__actions">
+            {mayAdd && (
+              <button
+                type="button"
+                className="button button--primary"
+                onClick={() => {
+                  setDialog({ kind: 'add' });
+                }}
+              >
+                {t('financialKpi.addKpi.action')}
+              </button>
+            )}
+            <ImportAction
+              collectionPath="/kpi-measurements"
+              registerName={t('dataImport.registers.KPI_MEASUREMENT.name')}
+              permission="KPI_RECORD"
+              onImported={kpis.reload}
+            />
+          </span>
         )}
       </div>
       {kpis.data.length === 0 ? (
@@ -156,6 +173,17 @@ export function ProjectKpis({
         />
       )}
 
+      {dialog?.kind === 'add' && (
+        <AddKpiDialog
+          open
+          projectId={project.id}
+          ownerUserId={project.projectManagerUserId}
+          assignedDefinitionIds={kpis.data.map((entry) => entry.assignment.kpiDefinitionId)}
+          itemLabel={lookups.itemLabel}
+          onClose={close}
+          onDone={done}
+        />
+      )}
       {dialog?.kind === 'value' && (
         <KpiValueDialog
           open

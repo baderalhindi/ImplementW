@@ -4,7 +4,7 @@ import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { TEXT_LENGTH } from '@/features/projects/registration.ts';
-import { assigneeOf, assigneeValue, useUserSearch } from '@/features/tasks/assignee.ts';
+import { assigneeOf, assigneeValue } from '@/features/tasks/assignee.ts';
 import { AssigneeField } from '@/features/tasks/components/AssigneeField.tsx';
 import { type FieldCodes, serverCodesOf } from '@/shared/forms/useFieldErrors.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -48,7 +48,7 @@ export function ObligationDialog({
   onStale,
 }: {
   user: SessionUser;
-  project: Pick<ProjectDetail, 'projectManagerUserId'>;
+  project: Pick<ProjectDetail, 'id' | 'projectManagerUserId'>;
   /** The project's obligation owners: people offered by name. */
   knownUserIds: (string | null)[];
   /** The case a new obligation is recorded against; ignored when editing. */
@@ -63,9 +63,8 @@ export function ObligationDialog({
   const [values, setValues] = useState<ObligationFormValues>(
     existing === null ? emptyObligationForm() : obligationFormValuesOf(existing.obligation),
   );
-  const canSearch = useUserSearch() ?? false;
   const [owner, setOwner] = useState(() => assigneeValue(existing?.obligation.ownerUserId ?? null));
-  const chosen = assigneeOf(owner, canSearch);
+  const chosen = assigneeOf(owner);
   const [tried, setTried] = useState(false);
   const [serverCodes, setServerCodes] = useState<Partial<Record<string, string | null>>>({});
   const codes: FieldCodes = { ...checkObligation(values), ownerUserId: chosen.code };
@@ -151,8 +150,6 @@ export function ObligationDialog({
           project={project}
           knownUserIds={knownUserIds}
           value={owner}
-          canSearch={canSearch}
-          name="ownerUserId"
           onChange={(value) => {
             setOwner(value);
             setServerCodes({});

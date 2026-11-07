@@ -67,7 +67,10 @@ export function hasErrors(codes: ProgressUpdateCodes): boolean {
 export function valuesOf(submission: ProgressSubmissionDetail): ProgressUpdateValues {
   return {
     narrative: submission.narrative?.text ?? '',
-    figureSource: submission.isOverridden ? 'override' : 'calculated',
+    figureSource:
+      submission.isOverridden || submission.actualSource === 'NOT_AVAILABLE'
+        ? 'override'
+        : 'calculated',
     overridePercent:
       submission.actualPercentOverride === null ? '' : String(submission.actualPercentOverride),
     overrideReason: submission.overrideReason?.text ?? '',

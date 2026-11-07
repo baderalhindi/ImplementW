@@ -23,6 +23,10 @@ internal sealed class FakeProgressInputs : IProgressInputs
             schedule,
             financial);
 
+    /// <summary>No work breakdown: only the figure declared on the project.</summary>
+    public void SetDeclared(Guid projectId, decimal declaredActualPercent) =>
+        _inputs[projectId] = ProgressInputs.None with { DeclaredActualPercent = declaredActualPercent };
+
     public void Clear(Guid projectId) => _inputs.TryRemove(projectId, out _);
 
     public static readonly Guid BaselineId = new("00000000-0440-4000-8000-0000000000b1");

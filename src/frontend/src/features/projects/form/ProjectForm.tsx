@@ -5,10 +5,16 @@ import { useFocusFirstError, useSaveAction } from '@/features/identity-access/fo
 import { fieldMessage } from '@/features/identity-access/problems.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
-import { RadioGroupField, SelectField, TextAreaField, TextField } from '@/shared/ui/FormFields.tsx';
+import {
+  RadioGroupField,
+  InfoTip,
+  SelectField,
+  TextAreaField,
+  AmountField,
+  TextField,
+} from '@/shared/ui/FormFields.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
-import { type UserSummary } from '@/features/identity-access/api/types.ts';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
 
@@ -196,6 +202,10 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           onChange={setter('classificationItemId')}
           error={errorOf('classificationItemId')}
         />
+        <InfoTip
+          label={t('projects.form.governanceProfileInfoLabel')}
+          text={t('projects.form.governanceProfileInfo')}
+        />
         <SelectField
           label={t('projects.fields.governanceProfile')}
           name="governanceProfileItemId"
@@ -332,11 +342,9 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
 
       <fieldset className="form__section">
         <legend>{t('projects.form.sections.budgetSchedule')}</legend>
-        <TextField
+        <AmountField
           label={t('projects.fields.registrationBudget')}
           name="registrationBudgetSar"
-          dir="ltr"
-          inputMode="decimal"
           value={values.registrationBudgetSar}
           hint={`${t('projects.form.budgetHint')} ${t('projects.form.neededToSubmit')}`}
           onChange={setter('registrationBudgetSar')}
@@ -454,7 +462,7 @@ function FollowUpOwnerField({
       userType="INTERNAL"
       hint={t('projects.form.followUpOwnerHint')}
       error={error}
-      onChange={(user: UserSummary | null) => {
+      onChange={(user) => {
         onChange(user?.id ?? '');
         setChanging(false);
       }}

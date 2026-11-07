@@ -1,5 +1,5 @@
-import { rolesApi } from '@/features/identity-access/api/identityAccessApi.ts';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { namesApi } from '@/features/identity-access/names/namesApi.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
@@ -13,7 +13,7 @@ const SHORT_ID_LENGTH = 8;
 /** Module-level, so useApiResource reads the roles once per mount. An approver without ROLE_VIEW gets none. */
 async function readRoleNames(signal: AbortSignal) {
   try {
-    return await rolesApi.list(signal);
+    return (await namesApi.units(signal)).roles ?? [];
   } catch {
     return [];
   }

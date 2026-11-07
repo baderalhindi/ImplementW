@@ -95,9 +95,9 @@ ON CONFLICT (id) DO NOTHING;
 -- 2. Roles R01–R08. Codes are canonical (ERD F-080). The labels are PROVISIONAL (record F-1): Blueprint Appendix A
 -- is not in the repository, so they follow the role dashboards DSH-001–008. R04 and R08 may be held by an external
 -- entity's people (ADR-013).
--- allowed_scopes and landing_dashboard_code (R4-6) are the role's own settings: set here for a new role, and an administrator's change stands.
-INSERT INTO identity_access.role AS r (id, code, name_ar, name_en, is_system, is_external_eligible, allowed_scopes, landing_dashboard_code, created_at, created_by, updated_at, updated_by)
-SELECT v.id::uuid, v.code, v.name_ar, v.name_en, true, v.is_external_eligible, v.allowed_scopes::text[], v.landing,
+-- allowed_scopes, landing_dashboard_code (R4-6) and show_create_in_header (review round 5) are the role's own settings: set here for a new role, and an administrator's change stands.
+INSERT INTO identity_access.role AS r (id, code, name_ar, name_en, is_system, is_external_eligible, allowed_scopes, landing_dashboard_code, show_create_in_header, created_at, created_by, updated_at, updated_by)
+SELECT v.id::uuid, v.code, v.name_ar, v.name_en, true, v.is_external_eligible, v.allowed_scopes::text[], v.landing, v.code NOT IN ('R02', 'R03'),
        now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
 FROM (VALUES
     ('00000000-0000-4000-8000-000000000001', 'R01', 'مدير النظام',      'System Administrator', false, '{ALL,DEPARTMENT,PROJECT}', 'GOVERNANCE'),
@@ -466,7 +466,6 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R05', 'AUDIT_BUSINESS_VIEW',           'ASSIGNED'),
     ('R06', 'MASTER_DATA_VIEW',              'ALL'),
     ('R06', 'PROJECT_VIEW',                  'DEPT'),
-    ('R06', 'PROJECT_IMPORT',                'DEPT'),
     ('R06', 'PROGRESS_VIEW',                 'DEPT'),
     ('R06', 'SCHEDULE_VIEW',                 'DEPT'),
     ('R06', 'TASK_VIEW',                     'DEPT'),
@@ -479,7 +478,6 @@ INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R06', 'FINANCIAL_VIEW',                'DEPT'),
     ('R06', 'KPI_VIEW',                      'DEPT'),
     ('R06', 'DOCUMENT_VIEW',                 'DEPT'),
-    ('R06', 'AUDIT_BUSINESS_VIEW',           'DEPT'),
     ('R07', 'MASTER_DATA_VIEW',              'ALL'),
     ('R07', 'CONFIGURATION_VIEW',            'ALL'),
     ('R07', 'LAYOUT_PERSONALIZE',            'OWN'),
@@ -649,7 +647,8 @@ FROM (VALUES
     ('FIELD_CLASSIFICATION', 'تصنيف الحقول',               'Field classification'),
     ('REPORT_RULES',         'قواعد التقارير',             'Report rules'),
     ('DASHBOARD_RULES',      'قواعد لوحات المعلومات',      'Dashboard rules'),
-    ('WORKFLOW_POLICY',      'سياسة سير العمل',            'Workflow policy')
+    ('WORKFLOW_POLICY',      'سياسة سير العمل',            'Workflow policy'),
+    ('PROJECT_STAGE',        'مراحل المشروع',              'Project stages')
 ) AS v (code, name_ar, name_en)
 ON CONFLICT (code) DO NOTHING;
 

@@ -43,6 +43,7 @@ internal static class ContentOrder
             FieldClassifications =
                 [.. content.FieldClassifications.OrderBy(r => r.EntityCode, StringComparer.Ordinal).ThenBy(r => r.FieldCode, StringComparer.Ordinal)],
             ReportFields = [.. content.ReportFields.OrderBy(f => f.SourceEntityCode, StringComparer.Ordinal).ThenBy(f => f.FieldCode, StringComparer.Ordinal)],
+            ProjectStages = [.. content.ProjectStages.OrderBy(s => s.SortOrder).ThenBy(s => s.Code, StringComparer.Ordinal)],
         };
     }
 }
