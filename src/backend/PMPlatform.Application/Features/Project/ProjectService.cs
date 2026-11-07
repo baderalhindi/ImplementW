@@ -146,24 +146,37 @@ internal sealed class ProjectService(
             return AdministrationError.NotFound;
         }
 
-        if (await access.CheckAsync(callerId, PermissionCatalogue.ProjectRegister, project, cancellationToken).ConfigureAwait(false) is { } refused)
+        // Client review, item 4: any state, and everything stays in the database.
+        if (await access.HoldsAsync(callerId, PermissionCatalogue.ProjectDelete, project, cancellationToken).ConfigureAwait(false))
         {
-            return refused;
+            DateTimeOffset now = timeProvider.GetUtcNow();
+            project.DeletedAt = now;
+            project.DeletedBy = callerId;
+            project.UpdatedAt = now;
+            project.UpdatedBy = callerId;
         }
-
-        if (project.LifecycleState != ProjectLifecycleState.Draft)
+        else
         {
-            return NotEditable(project);
-        }
+            if (await access.CheckAsync(callerId, PermissionCatalogue.ProjectRegister, project, cancellationToken).ConfigureAwait(false) is { } refused)
+            {
+                return refused;
+            }
 
-        // HARD_DRAFT (ERD §5.4): by its owner, the person who created the draft.
-        if (project.CreatedBy != callerId)
-        {
-            return AdministrationError.Forbidden;
+            if (project.LifecycleState != ProjectLifecycleState.Draft)
+            {
+                return NotEditable(project);
+            }
+
+            // HARD_DRAFT (ERD §5.4): by its owner, the person who created the draft.
+            if (project.CreatedBy != callerId)
+            {
+                return AdministrationError.Forbidden;
+            }
+
+            repository.Remove(project);
         }
 
         audit.Stage(ProjectAudit.Deleted(callerId, project));
-        repository.Remove(project);
         return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) switch
         {
             ProjectSaveOutcome.Saved => null,

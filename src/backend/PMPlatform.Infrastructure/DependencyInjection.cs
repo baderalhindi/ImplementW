@@ -120,6 +120,7 @@ public static class DependencyInjection
 
         // TASK-031: FG-03 administration. The mobile verifier is a placeholder until the SMS provider (TASK-103) replaces it.
         services.AddScoped<IUserAdministrationRepository, UserAdministrationRepository>();
+        services.AddScoped<IUserPermissionOverrideRepository, UserPermissionOverrideRepository>();
         services.AddScoped<IAccessRelationshipRepository, AccessRelationshipRepository>();
         services.AddScoped<IRoleAdministrationRepository, RoleAdministrationRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();

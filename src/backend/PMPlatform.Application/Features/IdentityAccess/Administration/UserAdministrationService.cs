@@ -20,6 +20,7 @@ namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 internal sealed partial class UserAdministrationService(
     IUserAdministrationRepository users,
     IExternalEntityRepository entities,
+    AccessRelationshipService assignments,
     AdministrationAccess access,
     LocalAccountPolicy localAccounts,
     IAuditTrail audit,
@@ -282,6 +283,38 @@ internal sealed partial class UserAdministrationService(
         return await SaveAsync(actorId, user, "disabled", IdentityAccessAuditEvents.UserDisabled,
                 [AuditAttribute.Change(IdentityAccessAuditAttributes.Status, UserStatus.Active, UserStatus.Disabled)], cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationError?> DeleteAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        User? user = await users.FindForUpdateAsync(userId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (await CheckWritableAsync(actorId, user, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        // As for disabling: an administrator who deleted themselves would lock the platform's administration out with them.
+        if (user!.Id == actorId)
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.SelfAdministration);
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        UserStatus from = user.Status;
+        user.Status = UserStatus.Deleted;
+        user.DisabledAt ??= now;
+        user.UpdatedAt = now;
+        user.UpdatedBy = actorId;
+        await assignments.EndAllOfUserAsync(actorId, user.Id, AccessEndReason.UserDeleted, now, cancellationToken).ConfigureAwait(false);
+        audit.Stage(Entry(actorId, user, IdentityAccessAuditEvents.UserDeleted,
+            [AuditAttribute.Change(IdentityAccessAuditAttributes.Status, from, UserStatus.Deleted)]));
+        if ((await users.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
+        {
+            return saveError;
+        }
+
+        LogUserChanged(logger, actorId, "deleted", user.Id);
+        return null;
     }
 
     /// <summary>Found, within the caller's USER_MANAGE scope, and a person: a SERVICE principal is not administered here.</summary>

@@ -7,4 +7,5 @@ public enum AccessEndReason
     Migrated = 3,
     Manual = 4,
     Expired = 5,
+    UserDeleted = 6,
 }

@@ -26,6 +26,7 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
     private static readonly Dictionary<string, string> NotOfAProject = new(StringComparer.Ordinal)
     {
         ["POST /api/v1/projects"] = "registers a new project",
+        ["DELETE /api/v1/projects/{projectId}"] = "client review, item 4: a holder of PROJECT_DELETE deletes in any state; it changes nothing the project's records say",
         ["POST /api/v1/kpi-measurements/imports"] = "a workbook names no one project: each row goes through the create that refuses a closed project",
         ["POST /api/v1/management-concerns/imports"] = "a workbook names no one project: each row goes through the create that refuses a closed project",
         ["POST /api/v1/project-milestones/imports"] = "a workbook names no one project: each row goes through the create that refuses a closed project",

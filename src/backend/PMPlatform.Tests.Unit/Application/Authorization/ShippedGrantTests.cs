@@ -486,6 +486,7 @@ public sealed class ShippedGrantTests
         [PermissionCatalogue.ProjectActivate] = "R02:ALL R03:DEPT",
         [PermissionCatalogue.ProjectImport] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R07:ALL R08:ENTITY",
         [PermissionCatalogue.ProjectImportApprove] = "R02:ALL",
+        [PermissionCatalogue.ProjectDelete] = "R02:ALL",
         [PermissionCatalogue.ProjectFollowUp] = "R02:ALL R03:DEPT",
         [PermissionCatalogue.ProgressView] = "R02:ALL R03:DEPT R04:OWN R05:ASSIGNED R06:DEPT R07:ALL R08:ENTITY",
         [PermissionCatalogue.ProgressSubmit] = "R04:OWN",

@@ -1,5 +1,9 @@
+using System.Reflection;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore;
 using PMPlatform.Domain.Common;
+
+using ProjectEntity = PMPlatform.Domain.Project.Project;
 
 namespace PMPlatform.Infrastructure.Persistence;
 
@@ -14,6 +18,10 @@ public sealed class PMPlatformDbContext(DbContextOptions<PMPlatformDbContext> op
     public const string MigrationsHistorySchema = "common";
 
     public const string MigrationsHistoryTable = "__EFMigrationsHistory";
+
+    private const string AuditSchema = "audit_activity";
+    private const string ProjectAnchor = "ProjectId";
+    private const string ProjectScope = "ScopeProjectId";
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -41,5 +49,43 @@ public sealed class PMPlatformDbContext(DbContextOptions<PMPlatformDbContext> op
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PMPlatformDbContext).Assembly);
+        HideDeletedProjects(modelBuilder);
     }
+
+    /// <summary>
+    /// Client review, item 4: a deleted project and every record anchored on it leave all reads, in one place, so no register, dashboard,
+    /// report, search or background job can miss it. The audit schema stays whole: it is the record of what happened, deletion included.
+    /// </summary>
+    private void HideDeletedProjects(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProjectEntity>().HasQueryFilter(p => p.DeletedAt == null);
+
+        foreach (IMutableEntityType entity in modelBuilder.Model.GetEntityTypes()
+                     .Where(e => e.BaseType is null && !e.IsOwned() && e.GetSchema() != AuditSchema).ToList())
+        {
+            string? filter = entity.FindProperty(ProjectAnchor) is { } anchor
+                ? anchor.IsNullable ? nameof(HideOptionallyAnchored) : nameof(HideAnchored)
+                : entity.FindProperty(ProjectScope) is not null ? nameof(HideScoped) : null;
+            if (filter is not null)
+            {
+                typeof(PMPlatformDbContext).GetMethod(filter, BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .MakeGenericMethod(entity.ClrType)
+                    .Invoke(this, [modelBuilder]);
+            }
+        }
+    }
+
+    private void HideAnchored<T>(ModelBuilder modelBuilder)
+        where T : class =>
+        modelBuilder.Entity<T>().HasQueryFilter(e => Set<ProjectEntity>().Any(p => p.Id == EF.Property<Guid>(e, ProjectAnchor)));
+
+    private void HideOptionallyAnchored<T>(ModelBuilder modelBuilder)
+        where T : class =>
+        modelBuilder.Entity<T>().HasQueryFilter(e => EF.Property<Guid?>(e, ProjectAnchor) == null
+                                                     || Set<ProjectEntity>().Any(p => p.Id == EF.Property<Guid?>(e, ProjectAnchor)));
+
+    private void HideScoped<T>(ModelBuilder modelBuilder)
+        where T : class =>
+        modelBuilder.Entity<T>().HasQueryFilter(e => EF.Property<Guid?>(e, ProjectScope) == null
+                                                     || Set<ProjectEntity>().Any(p => p.Id == EF.Property<Guid?>(e, ProjectScope)));
 }

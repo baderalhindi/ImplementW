@@ -42,6 +42,14 @@ public sealed class Project : AuditedEntity
 
     public ProjectLifecycleState LifecycleState { get; set; }
 
+    /// <summary>
+    /// Set when a holder of PROJECT_DELETE deleted the project (client review, item 4): it and every record anchored on it leave
+    /// the platform's reads, and all of it stays in the database. Only a direct database change brings it back.
+    /// </summary>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Guid? DeletedBy { get; set; }
+
     /// <summary>A RETURNED request creates revision + 1 and a new approval instance (TASK-035).</summary>
     public int RevisionNo { get; set; } = 1;
 

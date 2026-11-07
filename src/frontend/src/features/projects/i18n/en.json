@@ -201,7 +201,10 @@
   "delete": {
     "title": "Delete draft",
     "body": "Delete the draft “{title}”? It is removed permanently and cannot be recovered.",
-    "confirm": "Delete draft"
+    "confirm": "Delete draft",
+    "anyTitle": "Delete project",
+    "anyBody": "Delete the project “{title}”? It and its records leave every list, dashboard and report. Their data stays on file, and bringing it back needs a technical request.",
+    "anyConfirm": "Delete project"
   },
   "submit": {
     "title": "Submit for review",
@@ -234,7 +237,7 @@
     "created": "The draft was created.",
     "updated": "The registration was saved.",
     "locationUpdated": "The location was saved.",
-    "deleted": "The draft was deleted.",
+    "deleted": "The project was deleted.",
     "submitted": "The project was submitted for review.",
     "withdrawn": "The submission was withdrawn; the project is a draft again.",
     "reviewStarted": "AHDA's review has started.",
@@ -486,6 +489,11 @@
     "delete": "Delete {count} drafts",
     "deleteTitle": "Delete {count} draft projects?",
     "deleteBody": "These drafts will be deleted: {names}. This cannot be undone.",
-    "onlyDrafts": "Only drafts can be deleted. A submitted project is withdrawn or closed."
+    "onlyDrafts": "Only drafts can be deleted. A submitted project is withdrawn or closed.",
+    "any": {
+      "delete": "Delete selected ({count})",
+      "deleteTitle": "Delete the selected projects?",
+      "deleteBody": "These projects and their records will leave every list, dashboard and report: {names}. Their data stays on file, and bringing it back needs a technical request."
+    }
   }
 }

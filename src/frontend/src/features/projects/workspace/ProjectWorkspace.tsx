@@ -166,14 +166,19 @@ export function ProjectWorkspace(): ReactElement | null {
                 {t('projects.actions.changeStatus')}
               </ActionButton>
             )}
-            {access.creator && detail.status === 'DRAFT' && (
+            {(access.permissions.can('PROJECT_DELETE') ||
+              (access.creator && detail.status === 'DRAFT')) && (
               <ActionButton
                 danger
                 onClick={() => {
                   setDialog('delete');
                 }}
               >
-                {t('projects.actions.delete')}
+                {t(
+                  access.permissions.can('PROJECT_DELETE')
+                    ? 'projects.delete.anyConfirm'
+                    : 'projects.actions.delete',
+                )}
               </ActionButton>
             )}
           </>
@@ -215,6 +220,7 @@ export function ProjectWorkspace(): ReactElement | null {
       <DeleteDraftDialog
         open={dialog === 'delete'}
         project={detail}
+        anyState={access.permissions.can('PROJECT_DELETE')}
         etag={etag}
         onClose={() => {
           setDialog(null);

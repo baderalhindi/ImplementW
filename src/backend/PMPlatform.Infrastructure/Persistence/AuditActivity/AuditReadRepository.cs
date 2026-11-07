@@ -57,7 +57,7 @@ internal sealed class AuditReadRepository(PMPlatformDbContext context) : IAuditR
         IQueryable<ActivityRow> rows =
             from a in context.Set<BusinessActivityEntry>().AsNoTracking()
             join e in context.Set<AuditEvent>() on a.AuditEventId equals e.Id
-            join p in context.Set<ProjectEntity>() on a.ProjectId equals p.Id into projects
+            join p in context.Set<ProjectEntity>().IgnoreQueryFilters() on a.ProjectId equals p.Id into projects
             from p in projects.DefaultIfEmpty()
             join u in context.Set<User>() on a.ActorUserId equals u.Id into actors
             from u in actors.DefaultIfEmpty()
@@ -126,7 +126,7 @@ internal sealed class AuditReadRepository(PMPlatformDbContext context) : IAuditR
 
     private IQueryable<EventRow> EventRows() =>
         from e in context.Set<AuditEvent>().AsNoTracking()
-        join p in context.Set<ProjectEntity>() on e.ScopeProjectId equals p.Id into projects
+        join p in context.Set<ProjectEntity>().IgnoreQueryFilters() on e.ScopeProjectId equals p.Id into projects
         from p in projects.DefaultIfEmpty()
         join u in context.Set<User>() on e.ActorUserId equals u.Id into actors
         from u in actors.DefaultIfEmpty()

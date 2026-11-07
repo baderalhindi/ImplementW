@@ -30,6 +30,9 @@ public static class IdentityAccessErrorCodes
     /// <summary>422: an administrator may not disable themselves or change their own assignments.</summary>
     public const string SelfAdministration = "IDENTITY_ACCESS_SELF_ADMINISTRATION";
 
+    /// <summary>422: a permission is granted through a role the user holds, and they hold none.</summary>
+    public const string UserHasNoRole = "IDENTITY_ACCESS_USER_HAS_NO_ROLE";
+
     public const string LocalAccountsDisabled = "IDENTITY_ACCESS_LOCAL_ACCOUNTS_DISABLED";
 
     public const string NotLocalAccount = "IDENTITY_ACCESS_NOT_LOCAL_ACCOUNT";

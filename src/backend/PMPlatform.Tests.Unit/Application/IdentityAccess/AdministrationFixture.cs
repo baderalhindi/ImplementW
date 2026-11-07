@@ -113,7 +113,7 @@ internal sealed class AdministrationFixture
     };
 
     public UserAdministrationService UserService() =>
-        new(Users, Entities, Access(), new LocalAccountPolicy(), Audit, Clock, NullLogger<UserAdministrationService>.Instance);
+        new(Users, Entities, AssignmentService(), Access(), new LocalAccountPolicy(), Audit, Clock, NullLogger<UserAdministrationService>.Instance);
 
     public AccessRelationshipService AssignmentService() =>
         new(Assignments, Users, Departments, Entities, Access(), Audit, Clock, NullLogger<AccessRelationshipService>.Instance);

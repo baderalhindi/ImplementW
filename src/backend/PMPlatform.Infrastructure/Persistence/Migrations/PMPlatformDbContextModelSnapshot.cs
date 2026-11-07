@@ -4277,7 +4277,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("access_relationship", "identity_access", t =>
                         {
-                            t.HasCheckConstraint("ck_access_relationship_end_reason", "\"end_reason\" IN ('PROJECT_CLOSED', 'ROLE_CHANGE', 'MIGRATED', 'MANUAL', 'EXPIRED')");
+                            t.HasCheckConstraint("ck_access_relationship_end_reason", "\"end_reason\" IN ('PROJECT_CLOSED', 'ROLE_CHANGE', 'MIGRATED', 'MANUAL', 'EXPIRED', 'USER_DELETED')");
 
                             t.HasCheckConstraint("ck_access_relationship_status", "\"status\" IN ('ACTIVE', 'ENDED')");
                         });
@@ -5036,7 +5036,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_user_preferred_language", "\"preferred_language\" IN ('ar', 'en')");
 
-                            t.HasCheckConstraint("ck_user_status", "\"status\" IN ('ACTIVE', 'DISABLED')");
+                            t.HasCheckConstraint("ck_user_status", "\"status\" IN ('ACTIVE', 'DISABLED', 'DELETED')");
 
                             t.HasCheckConstraint("ck_user_user_type", "\"user_type\" IN ('INTERNAL', 'EXTERNAL', 'SERVICE')");
                         });
@@ -5082,6 +5082,85 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_user_password_history_user_id_created_at");
 
                     b.ToTable("user_password_history", "identity_access");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPermissionOverride", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DataScope")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("data_scope");
+
+                    b.Property<string>("Effect")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("effect");
+
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("permission_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Reason", "PMPlatform.Domain.IdentityAccess.UserPermissionOverride.Reason#NarrativeText", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_permission_override");
+
+                    b.HasIndex("PermissionId")
+                        .HasDatabaseName("ix_user_permission_override_permission_id");
+
+                    b.HasIndex("UserId", "PermissionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_permission_override_user_id_permission_id");
+
+                    b.ToTable("user_permission_override", "identity_access", t =>
+                        {
+                            t.HasCheckConstraint("ck_user_permission_override_data_scope", "\"data_scope\" IN ('ALL', 'DEPT', 'OWN', 'ASSIGNED', 'ENTITY', 'READ_ONLY')");
+
+                            t.HasCheckConstraint("ck_user_permission_override_effect", "\"effect\" IN ('GRANT', 'REMOVE')");
+
+                            t.HasCheckConstraint("ck_user_permission_override_reason_lang", "\"reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_user_permission_override_scope", "(effect = 'GRANT') = (data_scope IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>
@@ -8951,6 +9030,14 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("declared_source");
 
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
                     b.Property<Guid>("DepartmentId")
                         .HasColumnType("uuid")
                         .HasColumnName("department_id");
@@ -9204,7 +9291,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("LegacyReference")
                         .IsUnique()
                         .HasDatabaseName("ix_project_legacy_reference")
-                        .HasFilter("legacy_reference IS NOT NULL");
+                        .HasFilter("legacy_reference IS NOT NULL AND deleted_at IS NULL");
 
                     b.HasIndex("PriorityItemId")
                         .HasDatabaseName("ix_project_priority_item_id");
@@ -13750,6 +13837,23 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_user_password_history_user_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPermissionOverride", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.Permission", null)
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_permission_override_permission_permission_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_permission_override_user_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IntegrationMonitoring.IntegrationDefinition", b =>

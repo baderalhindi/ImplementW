@@ -89,7 +89,8 @@
     "passwordInvalid": "The password does not meet the rules. See the highlighted field.",
     "roleInUse": "People have held this role, so it cannot be deleted. Deactivate it instead.",
     "roleInactive": "This role is deactivated and cannot be assigned.",
-    "roleSystem": "A built-in role cannot be deactivated or deleted."
+    "roleSystem": "A built-in role cannot be deactivated or deleted.",
+    "userHasNoRole": "This user holds no role. Assign a role first, then adjust its permissions."
   },
   "userPicker": {
     "searchLabel": "Search by name, username or email",
@@ -131,8 +132,7 @@
         "displayNameDesc": "Name (Z to A)",
         "usernameAsc": "Username (A to Z)",
         "usernameDesc": "Username (Z to A)"
-      },
-      "noDelete": "A user is disabled from their page, never deleted: the audit trail names them."
+      }
     },
     "create": {
       "title": "Create user"
@@ -195,6 +195,41 @@
       "endsOn": "Last usable day",
       "endsOnHint": "Leave empty for no end date.",
       "noEndDate": "No end date"
+    },
+    "delete": {
+      "title": "Delete user",
+      "body": "Delete {name}? They can no longer sign in and leave every list. Their name stays on past records. This cannot be undone here.",
+      "confirm": "Delete user"
+    },
+    "bulk": {
+      "disable": "Disable selected ({count})",
+      "disableTitle": "Disable the selected users?",
+      "disableBody": "These users can no longer sign in until they are activated again; their data and history stay: {names}.",
+      "delete": "Delete selected ({count})",
+      "deleteTitle": "Delete the selected users?",
+      "deleteBody": "These users can no longer sign in and leave every list; their names stay on past records. This cannot be undone here: {names}."
+    },
+    "permissions": {
+      "title": "Custom permissions",
+      "description": "The user starts from their roles. Here you can grant or remove single permissions for this user only. A change applies at once and is recorded in the audit trail.",
+      "adjust": "Adjust a permission",
+      "adjustFor": "Adjust a permission for {name}",
+      "saved": "The permission was changed.",
+      "none": "No permission has been adjusted for this user.",
+      "caption": "Permissions adjusted for {name}",
+      "permission": "Permission",
+      "fromRole": "From their roles",
+      "notFromRole": "Not given by a role",
+      "adjustment": "Adjustment",
+      "reason": "Reason",
+      "scope": "Scope of the grant",
+      "granted": "Granted ({scope})",
+      "removed": "Removed",
+      "changeOf": "Change {permission}",
+      "held": "All permissions this user holds ({count})",
+      "choiceGrant": "Grant this permission",
+      "choiceRemove": "Remove this permission",
+      "choiceRole": "Back to what the roles give"
     }
   },
   "userStatusDialog": {

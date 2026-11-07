@@ -149,6 +149,26 @@ export interface PermissionSummary {
   dataClassificationItemId: string | null;
 }
 
+export type PermissionOverrideEffect = 'GRANT' | 'REMOVE';
+
+/** One permission for one user: what their roles give, what was adjusted for them, and whether they hold it now. */
+export interface UserPermissionEntry {
+  permissionCode: string;
+  name: BilingualLabel;
+  permissionGroup: string;
+  isPrivileged: boolean;
+  fromRoles: { roleCode: string; dataScope: DataScope }[];
+  overrideEffect: PermissionOverrideEffect | null;
+  overrideScope: DataScope | null;
+  overrideReason: { text: string; language: string } | null;
+  isHeld: boolean;
+}
+
+export interface UserPermissions {
+  userId: string;
+  items: UserPermissionEntry[];
+}
+
 export interface PermissionProfileGrant {
   permissionId: string;
   permissionCode: string;

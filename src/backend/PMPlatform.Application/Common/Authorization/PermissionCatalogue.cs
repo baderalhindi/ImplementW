@@ -86,6 +86,12 @@ public sealed class PermissionCatalogue
     public const string ProjectActivate = "PROJECT_ACTIVATE";
 
     /// <summary>
+    /// Client review, item 4: delete a project in any state, within the grant's scope. The project and its records leave the platform's
+    /// reads and stay in the database. PROJECT_REGISTER alone deletes only one's own DRAFT.
+    /// </summary>
+    public const string ProjectDelete = "PROJECT_DELETE";
+
+    /// <summary>
     /// The 2 Nov 2026 review (R3-4): prepare a project import batch from RPMO's workbook — validate it, map its names, choose each row's
     /// action and submit the batch for approval — for the projects of the grant's scope; a row outside it is refused.
     /// </summary>
@@ -444,6 +450,7 @@ public sealed class PermissionCatalogue
             new(ProjectActivate, "PROJECT", AccessMode.Write),
             new(ProjectImport, "PROJECT", AccessMode.Write),
             new(ProjectImportApprove, "PROJECT", AccessMode.Write),
+            new(ProjectDelete, "PROJECT", AccessMode.Write),
             new(ProjectFollowUp, "PROJECT", AccessMode.Write),
             new(ProgressView, "PROGRESS", AccessMode.Read),
             new(ProgressSubmit, "PROGRESS", AccessMode.Write),
@@ -583,6 +590,7 @@ public sealed class PermissionCatalogue
         new("R02", ReportCompose, DataScope.Own),
         .. Role("R02", DataScope.All, ManagerPermissions),
         new("R02", ProjectImportApprove, DataScope.All),
+        new("R02", ProjectDelete, DataScope.All),
 
         // R03 Department Manager: the same authority over its own department.
         new("R03", MasterDataView, DataScope.All),

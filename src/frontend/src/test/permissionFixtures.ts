@@ -54,6 +54,7 @@ export const SHIPPED_MATRIX: Record<string, Partial<Record<PermissionCode, DataS
     PROJECT_ACTIVATE: 'ALL',
     PROJECT_IMPORT: 'ALL',
     PROJECT_IMPORT_APPROVE: 'ALL',
+    PROJECT_DELETE: 'ALL',
     PROJECT_FOLLOW_UP: 'ALL',
     PROGRESS_VIEW: 'ALL',
     PROGRESS_REVIEW: 'ALL',

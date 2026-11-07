@@ -121,8 +121,8 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
     }
 
     /// <summary>
-    /// HARD_DRAFT: a DRAFT, by the person who created it. R-40: a project that is not there — deleted already, or never the
-    /// caller's to see — is 204 as well.
+    /// A holder of PROJECT_DELETE deletes a project in any state, keeping its data (client review, item 4). Otherwise HARD_DRAFT: a DRAFT,
+    /// by the person who created it. R-40: a project that is not there — deleted already, or never the caller's to see — is 204 as well.
     /// </summary>
     [HttpDelete("{projectId:guid}")]
     [RequirePermission(PermissionCatalogue.ProjectRegister)]

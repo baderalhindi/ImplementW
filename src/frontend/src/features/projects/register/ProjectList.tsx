@@ -66,6 +66,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
   const sort = params.get('sort') ?? undefined;
   const selection = useRowSelection();
   const mayEdit = useCan('PROJECT_REGISTER');
+  const mayDeleteAny = useCan('PROJECT_DELETE');
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
   const load = useCallback(
@@ -93,10 +94,11 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
     (projects.data?.items ?? []).map((project) => project.projectManagerUserId),
   );
   const filtered = FILTERS.some((name) => (params.get(name) ?? '') !== '');
-  // A submitted project is withdrawn or closed, never deleted: only a DRAFT is offered, and the API checks it is the caller's.
-  const drafts = (projects.data?.items ?? []).filter(
-    (project) => project.status === 'DRAFT' && selection.selected.has(project.id),
+  // A holder of PROJECT_DELETE deletes in any state (client review, item 4). Otherwise only a DRAFT is offered, and the API checks it is the caller's.
+  const deletable = (projects.data?.items ?? []).filter(
+    (project) => selection.selected.has(project.id) && (mayDeleteAny || project.status === 'DRAFT'),
   );
+  const bulkText = mayDeleteAny ? 'projects.bulk.any' : 'projects.bulk';
 
   return (
     <>
@@ -134,31 +136,31 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
         ) : (
           <>
             <SelectionBar selection={selection}>
-              {mayEdit && drafts.length > 0 && (
+              {(mayEdit || mayDeleteAny) && deletable.length > 0 && (
                 <button
                   type="button"
                   className="button"
                   onClick={() => {
                     setConfirmation({
-                      title: t('projects.bulk.deleteTitle', { count: drafts.length }),
-                      body: t('projects.bulk.deleteBody', {
-                        names: drafts.map((draft) => draft.title.text).join('، '),
+                      title: t(`${bulkText}.deleteTitle`, { count: deletable.length }),
+                      body: t(`${bulkText}.deleteBody`, {
+                        names: deletable.map((project) => project.title.text).join('، '),
                       }),
-                      confirmLabel: t('projects.bulk.delete', { count: drafts.length }),
+                      confirmLabel: t(`${bulkText}.delete`, { count: deletable.length }),
                       destructive: true,
                       action: async () => {
-                        for (const draft of drafts) {
-                          await projectsApi.remove(draft.id, null);
+                        for (const project of deletable) {
+                          await projectsApi.remove(project.id, null);
                         }
                         selection.clear();
                       },
                     });
                   }}
                 >
-                  {t('projects.bulk.delete', { count: drafts.length })}
+                  {t(`${bulkText}.delete`, { count: deletable.length })}
                 </button>
               )}
-              {drafts.length !== selection.selected.size && (
+              {!mayDeleteAny && deletable.length !== selection.selected.size && (
                 <span className="cell__aside">{t('projects.bulk.onlyDrafts')}</span>
               )}
             </SelectionBar>

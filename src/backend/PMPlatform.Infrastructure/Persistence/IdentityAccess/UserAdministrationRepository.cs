@@ -13,7 +13,7 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        IQueryable<User> users = context.Set<User>().AsNoTracking();
+        IQueryable<User> users = context.Set<User>().AsNoTracking().Where(u => u.Status != UserStatus.Deleted);
         if (query.Statuses.Count > 0)
         {
             users = users.Where(u => query.Statuses.Contains(u.Status));
@@ -63,7 +63,7 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
     public async Task<Versioned<UserDetail>?> FindDetailAsync(Guid userId, CancellationToken cancellationToken)
     {
         var row = await context.Set<User>().AsNoTracking()
-            .Where(u => u.Id == userId)
+            .Where(u => u.Id == userId && u.Status != UserStatus.Deleted)
             .Select(u => new { User = u, Version = EF.Property<uint>(u, EntityTypeBuilderExtensions.RowVersion) })
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (row is null)
@@ -83,7 +83,7 @@ internal sealed class UserAdministrationRepository(PMPlatformDbContext context) 
 
     public async Task<User?> FindForUpdateAsync(Guid userId, uint? expectedVersion, CancellationToken cancellationToken)
     {
-        User? user = await context.Set<User>().SingleOrDefaultAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false);
+        User? user = await context.Set<User>().SingleOrDefaultAsync(u => u.Id == userId && u.Status != UserStatus.Deleted, cancellationToken).ConfigureAwait(false);
         if (user is not null)
         {
             AdministrationPersistence.ExpectVersion(context, user, expectedVersion);

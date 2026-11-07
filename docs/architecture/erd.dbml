@@ -214,6 +214,24 @@ Table identity_access.permission_profile_grant {
   Note: 'One permission with its data scope inside a profile version (Appendix A scopes). Delete policy: CASCADE.'
 }
 
+Table identity_access.user_permission_override {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  permission_id uuid [not null, ref: > identity_access.permission.id]
+  effect varchar(50) [not null, note: 'GRANT | REMOVE']
+  data_scope varchar(50) [note: 'Set exactly on a GRANT: ALL | DEPT | OWN | ASSIGNED | ENTITY | READ_ONLY']
+  reason text [not null, note: 'Narrative, stored as entered (ADR-012)']
+  reason_lang char(2) [not null, note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (user_id, permission_id) [unique]
+  }
+  Note: 'One permission granted or removed for one user on top of their roles (client review, item 5). Delete policy: HARD, audited.'
+}
+
 Table identity_access.access_relationship {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   user_id uuid [not null, ref: > identity_access.user.id]
@@ -659,6 +677,8 @@ Table project.project {
   is_strategic boolean [note: 'RPMO strategic flag; null is not known (R4-4)']
   entity_contact_user_id uuid [ref: > identity_access.user.id, note: 'Who answers the project update requests by default (R4-2)']
   submitted_by_user_id uuid [ref: > identity_access.user.id, note: 'Who last submitted the registration: the requester of its WF-11 run (review round 5)']
+  deleted_at timestamptz [note: 'Set when a holder of PROJECT_DELETE deleted it (client review, item 4); it and its records leave every read and stay in the database']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   is_canceled boolean [not null, default: false, note: 'On a CLOSED project: it ended by being canceled (review round 5)']
   seed_source varchar(20) [note: 'DEMO marks demonstration data, which the reset command removes (R4-5)']
   description text [note: 'Narrative, stored as entered (ADR-012)']

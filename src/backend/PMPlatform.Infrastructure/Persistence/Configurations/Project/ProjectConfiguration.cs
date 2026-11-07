@@ -29,7 +29,8 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
         builder.Property(e => e.SeedSource).HasMaxLength(20);
         builder.HasCheck("seed_source", "seed_source IS NULL OR seed_source = 'DEMO'");
         builder.Property(e => e.LegacyReference).HasMaxLength(100);
-        builder.HasIndex(e => e.LegacyReference).IsUnique().HasFilter("legacy_reference IS NOT NULL");
+        // A deleted project lets go of its register number, so importing that row again makes a new project.
+        builder.HasIndex(e => e.LegacyReference).IsUnique().HasFilter("legacy_reference IS NOT NULL AND deleted_at IS NULL");
         builder.HasNarrative(e => e.CurrentObstacle, "current_obstacle");
         builder.HasNarrative(e => e.NextAction, "next_action");
         builder.Property(e => e.NextActionOwner).HasMaxLength(200);

@@ -205,13 +205,14 @@ erDiagram
 | --- | --- | --- | --- | --- | --- |
 | **Department** | `identity_access.department` | AHDA organisation structure node (ADM-011/012). Directory is authoritative for membership (ADR-007). | — | RETAIN | referenceable |
 | **ExternalEntity** | `identity_access.external_entity` | An organisation delivering a regional project: government entity, public authority or private company (ADR-013, ADM-013). | `status` → ACTIVE · SUSPENDED · RETIRED | RETAIN | referenceable |
-| **User** | `identity_access.user` | Platform user. Deactivation never rewrites historical attribution (Appendix A.1, TASK-031). | `status` → ACTIVE · DISABLED | RETAIN | referenceable |
+| **User** | `identity_access.user` | Platform user. Deactivation never rewrites historical attribution (Appendix A.1, TASK-031). | `status` → ACTIVE · DISABLED · DELETED (client review, item 5: leaves administration for good; the row stays) | RETAIN | referenceable |
 | **UserPasswordHistory** | `identity_access.user_password_history` | The hashes a local account has used, so none of the last five comes back (5 Nov 2026 review, R4-6). | — | RETAIN | — |
 | **Role** | `identity_access.role` | Canonical role R01–R08: shipped, undeletable, referenced by routing, landing dashboards and notification matrices. | — | RETAIN | referenceable |
 | **Permission** | `identity_access.permission` | Protected permission catalogue (Appendix A). A profile may only select from it (TASK-110). | — | RETAIN | referenceable |
 | **PermissionProfile** | `identity_access.permission_profile` | A named composition of catalogue permissions rooted at a canonical role. R01–R08 defaults are profiles with is_shipped_default (ADR-018, TASK-110). | — | RETAIN | referenceable |
 | **PermissionProfileVersion** | `identity_access.permission_profile_version` | Immutable-once-published version of a profile; assignments bind to a version (ADR-018). | `lifecycle_state` → DRAFT · VALIDATED · PUBLISHED · RETIRED | RETAIN | referenceable |
 | **PermissionProfileGrant** | `identity_access.permission_profile_grant` | One permission with its data scope inside a profile version (Appendix A scopes). | — | CASCADE | — |
+| **UserPermissionOverride** | `identity_access.user_permission_override` | One permission granted or removed for one user on top of their roles (client review, item 5). Going back to the roles removes the row; the audit trail keeps the history. | `effect` → GRANT · REMOVE | HARD (audited) | — |
 | **AccessRelationship** | `identity_access.access_relationship` | Binds a user to a profile version with its scope anchors; per-project external grants carry a sponsor and end on closure or role change (TASK-025, TASK-031, ADR-013). | `status` → ACTIVE · ENDED | RETAIN | — |
 
 ### 5.3 MasterDataConfig — FG-04

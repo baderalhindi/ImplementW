@@ -280,6 +280,42 @@ describe('SCR-025 Project Register', () => {
     },
   );
 
+  test('a holder of PROJECT_DELETE deletes a project in any state (client review, item 4)', async () => {
+    const user = userEvent.setup();
+    const active = projectSummary({
+      id: 'p-active',
+      status: 'ACTIVE',
+      title: { text: 'Live works', language: 'EN' },
+    });
+    const api = withProjectLookups(mockApi())
+      .on('GET', /^\/projects$/, { body: page([active]) })
+      .on('DELETE', /^\/projects\/p-active$/, { status: 204 });
+    renderApp({ path: '/projects', session: sessionFor(['R02']) });
+
+    await user.click(
+      await screen.findByRole('checkbox', {
+        name: en('common.table.selectRow', { name: 'Live works' }),
+      }),
+    );
+    expect(screen.queryByText(en('projects.bulk.onlyDrafts'))).toBeNull();
+    await user.click(
+      screen.getByRole('button', { name: en('projects.bulk.any.delete', { count: 1 }) }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(en('projects.bulk.any.deleteBody', { names: 'Live works' })),
+    ).toBeTruthy();
+    await user.click(
+      within(dialog).getByRole('button', { name: en('projects.bulk.any.delete', { count: 1 }) }),
+    );
+
+    await waitFor(() => {
+      expect(api.requestsTo('DELETE', /^\/projects\//).map((request) => request.path)).toEqual([
+        '/projects/p-active',
+      ]);
+    });
+  });
+
   test('a holder of PROJECT_IMPORT_APPROVE alone sees Import on the register', async () => {
     withProjectLookups(mockApi())
       .on('GET', SHELL_PERMISSIONS, {

@@ -17,6 +17,10 @@ internal sealed class ProjectAccess(IAuthorizationEngine engine, IAuditTrail aud
     public async Task<AdministrationError?> CheckAsync(Guid callerId, string permissionCode, ProjectEntity project, CancellationToken cancellationToken) =>
         Refusal(await engine.AuthorizeAsync(callerId, new AuthorizationRequest(permissionCode, SubjectOf(project)), cancellationToken).ConfigureAwait(false));
 
+    /// <summary>Whether the caller holds the permission on this project. A question, not a refusal: nothing is audited.</summary>
+    public async Task<bool> HoldsAsync(Guid callerId, string permissionCode, ProjectEntity project, CancellationToken cancellationToken) =>
+        (await engine.EvaluateAsync(callerId, new AuthorizationRequest(permissionCode, SubjectOf(project)), cancellationToken).ConfigureAwait(false)).IsAllowed;
+
     /// <summary>
     /// For a project that does not exist yet, or anchors it is about to take: there is nothing to hide, so any refusal is
     /// Forbidden, whatever the engine's R-47 answer.

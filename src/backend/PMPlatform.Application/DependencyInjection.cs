@@ -107,6 +107,7 @@ public static class DependencyInjection
         // TASK-031: FG-03 administration, ADM-002–013. The repositories and the mobile verifier are Infrastructure's.
         services.AddScoped<AdministrationAccess>();
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();
+        services.AddScoped<IUserPermissionOverrideService, UserPermissionOverrideService>();
         services.AddScoped<IMobileNumberVerificationService, MobileNumberVerificationService>();
         services.AddScoped<IUserContactDirectory, UserContactDirectory>();
         services.AddScoped<AccessRelationshipService>();

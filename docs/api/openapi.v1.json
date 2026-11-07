@@ -13996,7 +13996,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "HARD_DRAFT: a DRAFT, by the person who created it. R-40: a project that is not there — deleted already, or never the\ncaller's to see — is 204 as well.",
+        "summary": "A holder of PROJECT_DELETE deletes a project in any state, keeping its data (client review, item 4). Otherwise HARD_DRAFT: a DRAFT,\nby the person who created it. R-40: a project that is not there — deleted already, or never the caller's to see — is 204 as well.",
         "operationId": "Project_DeleteProject",
         "parameters": [
           {
@@ -19836,6 +19836,183 @@
         }
       }
     },
+    "/api/v1/users/{userId}/delete": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Client review, item 5: takes the user out of the platform for good; their history stays. A command, as the row is kept. R-40: a user who is not there is 204 as well.",
+        "operationId": "IdentityAccess_DeleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/permissions": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "What the user's roles give them and what has been adjusted for them, permission by permission (client review, item 5).",
+        "operationId": "IdentityAccess_ListUserPermissions",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPermissions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/permissions/{permissionCode}": {
+      "put": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Grants or removes one permission for this user, on top of their roles. Applies at once; the reason is required and audited.",
+        "operationId": "IdentityAccess_SetUserPermissionOverride",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "permissionCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPermissions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/permissions/{permissionCode}/clear": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Puts one permission back to what the user's roles give. The reason is required and audited.",
+        "operationId": "IdentityAccess_ClearUserPermissionOverride",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "permissionCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideClearRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideClearRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPermissionOverrideClearRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPermissions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/{userId}/disable": {
       "post": {
         "tags": [
@@ -19940,6 +20117,7 @@
           "MIGRATED",
           "MANUAL",
           "EXPIRED",
+          "USER_DELETED",
           null
         ]
       },
@@ -34810,6 +34988,13 @@
         },
         "description": "ADM-008 (TASK-110): a DRAFT's whole grid and its change summary. A permission left out is not held."
       },
+      "PermissionOverrideEffect": {
+        "enum": [
+          "GRANT",
+          "REMOVE",
+          null
+        ]
+      },
       "PermissionProfileCreateRequest": {
         "required": [
           "code",
@@ -46850,12 +47035,168 @@
         },
         "description": "A temporary password the administrator typed; left out, the platform generates one."
       },
+      "UserPermissionEntry": {
+        "required": [
+          "permissionCode",
+          "name",
+          "permissionGroup",
+          "isPrivileged",
+          "fromRoles",
+          "overrideEffect",
+          "overrideScope",
+          "overrideReason",
+          "isHeld"
+        ],
+        "type": "object",
+        "properties": {
+          "permissionCode": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "permissionGroup": {
+            "type": "string"
+          },
+          "isPrivileged": {
+            "type": "boolean"
+          },
+          "fromRoles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserRoleGrant"
+            }
+          },
+          "overrideEffect": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PermissionOverrideEffect"
+              }
+            ]
+          },
+          "overrideScope": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataScope"
+              }
+            ]
+          },
+          "overrideReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          },
+          "isHeld": {
+            "type": "boolean"
+          }
+        },
+        "description": "One permission of the catalogue for one user: what their roles give, what was adjusted, and whether they hold it now."
+      },
+      "UserPermissionOverrideClearRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "Puts a permission back to what the user's roles give. `reason` is required."
+      },
+      "UserPermissionOverrideRequest": {
+        "required": [
+          "effect",
+          "dataScope",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "effect": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dataScope": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "Grants a permission at `dataScope`, or removes it (`GRANT`, `REMOVE`), for one user. `reason` is required."
+      },
+      "UserPermissions": {
+        "required": [
+          "userId",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserPermissionEntry"
+            }
+          }
+        }
+      },
+      "UserRoleGrant": {
+        "required": [
+          "roleCode",
+          "dataScope"
+        ],
+        "type": "object",
+        "properties": {
+          "roleCode": {
+            "type": "string"
+          },
+          "dataScope": {
+            "$ref": "#/components/schemas/DataScope"
+          }
+        },
+        "description": "A permission as one of the user's roles gives it."
+      },
       "UserStatus": {
         "enum": [
           "ACTIVE",
-          "DISABLED"
+          "DISABLED",
+          "DELETED"
         ],
-        "description": "TASK-031: activate and disable; disabling never rewrites historical attribution."
+        "description": "TASK-031: activate and disable; disabling never rewrites historical attribution. Deleted (client review, item 5) has the same\neffect on access and also takes the user out of administration; the row stays, so history keeps naming them, and it has no way back."
       },
       "UserSummary": {
         "required": [

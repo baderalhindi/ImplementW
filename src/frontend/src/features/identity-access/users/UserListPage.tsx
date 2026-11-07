@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback } from 'react';
+import { type ReactElement, useCallback, useState } from 'react';
 import { Link } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -15,7 +15,15 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
 import { usersApi } from '../api/identityAccessApi.ts';
-import { type UserQuery, type UserSort, type UserStatus, type UserType } from '../api/types.ts';
+import { ConfirmDialog, type Confirmation } from '../components/ConfirmDialog.tsx';
+import { useCan } from '../permissions/permissions.ts';
+import {
+  type UserQuery,
+  type UserSort,
+  type UserStatus,
+  type UserSummary,
+  type UserType,
+} from '../api/types.ts';
 import { labelOf, type OrganizationLookups, useOrganizationLookups } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
 
@@ -222,6 +230,8 @@ function UserFilters({ query, filtered, lookups }: UserFiltersProps): ReactEleme
 export function UserListPage(): ReactElement {
   const selection = useRowSelection();
   const { t, language } = useI18n();
+  const mayManage = useCan('USER_MANAGE');
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const { params, goToPage } = useListParams();
   const query = queryFrom(params);
   const { lookups } = useOrganizationLookups(language);
@@ -282,7 +292,15 @@ export function UserListPage(): ReactElement {
         ) : (
           <>
             <SelectionBar selection={selection}>
-              <span className="cell__aside">{t('identityAccess.users.list.noDelete')}</span>
+              {mayManage && (
+                <UserBulkActions
+                  users={users.data.items.filter(
+                    (user) => selection.selected.has(user.id) && user.userType !== 'SERVICE',
+                  )}
+                  onConfirm={setConfirmation}
+                  onDone={selection.clear}
+                />
+              )}
             </SelectionBar>
             <TableContainer caption={t('identityAccess.users.list.caption')}>
               <thead>
@@ -342,6 +360,79 @@ export function UserListPage(): ReactElement {
             />
           </>
         ))}
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
+          users.reload();
+        }}
+      />
+    </>
+  );
+}
+
+/** Disable or delete the chosen users, confirmed by name. The API refuses one's own account and says why. */
+function UserBulkActions({
+  users,
+  onConfirm,
+  onDone,
+}: {
+  users: UserSummary[];
+  onConfirm: (confirmation: Confirmation) => void;
+  onDone: () => void;
+}): ReactElement | null {
+  const { t } = useI18n();
+  const active = users.filter((user) => user.status === 'ACTIVE');
+  const names = (chosen: UserSummary[]) => chosen.map((user) => user.displayName).join('، ');
+  return (
+    <>
+      {active.length > 0 && (
+        <button
+          type="button"
+          className="button"
+          onClick={() => {
+            onConfirm({
+              title: t('identityAccess.users.bulk.disableTitle', { count: active.length }),
+              body: t('identityAccess.users.bulk.disableBody', { names: names(active) }),
+              confirmLabel: t('identityAccess.users.bulk.disable', { count: active.length }),
+              destructive: true,
+              action: async () => {
+                for (const user of active) {
+                  await usersApi.disable(user.id, null);
+                }
+                onDone();
+              },
+            });
+          }}
+        >
+          {t('identityAccess.users.bulk.disable', { count: active.length })}
+        </button>
+      )}
+      {users.length > 0 && (
+        <button
+          type="button"
+          className="button button--danger"
+          onClick={() => {
+            onConfirm({
+              title: t('identityAccess.users.bulk.deleteTitle', { count: users.length }),
+              body: t('identityAccess.users.bulk.deleteBody', { names: names(users) }),
+              confirmLabel: t('identityAccess.users.bulk.delete', { count: users.length }),
+              destructive: true,
+              action: async () => {
+                for (const user of users) {
+                  await usersApi.remove(user.id, null);
+                }
+                onDone();
+              },
+            });
+          }}
+        >
+          {t('identityAccess.users.bulk.delete', { count: users.length })}
+        </button>
+      )}
     </>
   );
 }

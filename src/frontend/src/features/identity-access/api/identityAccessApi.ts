@@ -6,6 +6,7 @@ import {
   type AccessRelationshipQuery,
   type AccessRelationshipSummary,
   type BilingualLabel,
+  type DataScope,
   type DepartmentCreateRequest,
   type DepartmentDetail,
   type DepartmentQuery,
@@ -18,6 +19,7 @@ import {
   type ExternalEntityUpdateRequest,
   type Page,
   type PermissionGrantSetRequest,
+  type PermissionOverrideEffect,
   type PermissionProfileCreateRequest,
   type PermissionProfileDetail,
   type PermissionProfileMigration,
@@ -30,6 +32,7 @@ import {
   type RoleSummary,
   type UserCreateRequest,
   type UserDetail,
+  type UserPermissions,
   type UserQuery,
   type UserSummary,
   type UserUpdateRequest,
@@ -83,6 +86,27 @@ export const usersApi = {
     apiRequest<UserDetail>(`/users/${id}`, { method: 'PUT', body: request, ifMatch: etag }),
   activate: (id: string, etag: string | null) => command<UserDetail>(`/users/${id}/activate`, etag),
   disable: (id: string, etag: string | null) => command<UserDetail>(`/users/${id}/disable`, etag),
+  remove: (id: string, etag: string | null) => command<undefined>(`/users/${id}/delete`, etag),
+  permissions: (id: string, signal?: AbortSignal) =>
+    data(apiRequest<UserPermissions>(`/users/${id}/permissions`, { signal })),
+  setPermission: (
+    id: string,
+    code: string,
+    request: {
+      effect: PermissionOverrideEffect;
+      dataScope: DataScope | null;
+      reason: { text: string; language: string };
+    },
+  ) =>
+    apiRequest<UserPermissions>(`/users/${id}/permissions/${code}`, {
+      method: 'PUT',
+      body: request,
+    }),
+  clearPermission: (id: string, code: string, reason: { text: string; language: string }) =>
+    apiRequest<UserPermissions>(`/users/${id}/permissions/${code}/clear`, {
+      method: 'POST',
+      body: { reason },
+    }),
   resetPassword: (id: string, password: string | null, etag: string | null) =>
     apiRequest<UserDetail>(`/users/${id}/reset-password`, {
       method: 'POST',

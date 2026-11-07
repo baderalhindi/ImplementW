@@ -33,6 +33,9 @@ public static class IdentityAccessAuditEvents
     public const string UserUpdated = "IdentityAccess.UserUpdated";
     public const string UserActivated = "IdentityAccess.UserActivated";
     public const string UserDisabled = "IdentityAccess.UserDisabled";
+    public const string UserDeleted = "IdentityAccess.UserDeleted";
+    public const string UserPermissionOverrideSet = "IdentityAccess.UserPermissionOverrideSet";
+    public const string UserPermissionOverrideCleared = "IdentityAccess.UserPermissionOverrideCleared";
 
     /// <summary>AUTHENTICATION: a local account changed its password: a temporary one at sign-in, its own while signed in, or through a reset link.</summary>
     public const string PasswordChanged = "IdentityAccess.PasswordChanged";

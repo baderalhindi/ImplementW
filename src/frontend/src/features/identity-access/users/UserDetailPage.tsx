@@ -1,5 +1,5 @@
 import { type ReactElement, type ReactNode, useCallback, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -18,6 +18,7 @@ import { useCan } from '../permissions/permissions.ts';
 import { problemMessage } from '../problems.ts';
 import { TemporaryPasswordNotice } from './TemporaryPasswordNotice.tsx';
 import { ResetPasswordDialog, SetEndDateDialog } from './UserAccountDialogs.tsx';
+import { UserPermissionsSection } from './UserPermissionsSection.tsx';
 import { UserStatusDialog } from './UserStatusDialog.tsx';
 
 type Notice =
@@ -59,6 +60,8 @@ export function UserDetailPage(): ReactElement {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [endDateDialogOpen, setEndDateDialogOpen] = useState(false);
   const [unlock, setUnlock] = useState<Confirmation | null>(null);
+  const [deletion, setDeletion] = useState<Confirmation | null>(null);
+  const navigate = useNavigate();
   // In memory only, and gone with the screen: the API returns a temporary password once.
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
   const mayManage = useCan('USER_MANAGE');
@@ -115,6 +118,23 @@ export function UserDetailPage(): ReactElement {
                   ? t('identityAccess.userStatusDialog.disable')
                   : t('identityAccess.userStatusDialog.activate')}
               </button>
+              {mayManage && (
+                <button
+                  type="button"
+                  className="button button--danger"
+                  onClick={() => {
+                    setDeletion({
+                      title: t('identityAccess.users.delete.title'),
+                      body: t('identityAccess.users.delete.body', { name: detail.displayName }),
+                      confirmLabel: t('identityAccess.users.delete.confirm'),
+                      destructive: true,
+                      action: () => usersApi.remove(detail.id, etag),
+                    });
+                  }}
+                >
+                  {t('identityAccess.users.delete.confirm')}
+                </button>
+              )}
               {managesLocal && (
                 <button
                   type="button"
@@ -221,6 +241,19 @@ export function UserDetailPage(): ReactElement {
           ))}
       </section>
 
+      {administrable && (
+        <UserPermissionsSection userId={detail.id} displayName={detail.displayName} />
+      )}
+
+      <ConfirmDialog
+        confirmation={deletion}
+        onClose={() => {
+          setDeletion(null);
+        }}
+        onDone={() => {
+          void navigate('/admin/users');
+        }}
+      />
       <UserStatusDialog
         open={statusDialogOpen}
         user={detail}
