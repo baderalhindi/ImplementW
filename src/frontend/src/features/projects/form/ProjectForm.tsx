@@ -5,7 +5,13 @@ import { useFocusFirstError, useSaveAction } from '@/features/identity-access/fo
 import { fieldMessage } from '@/features/identity-access/problems.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
-import { RadioGroupField, SelectField, TextAreaField, TextField } from '@/shared/ui/FormFields.tsx';
+import {
+  RadioGroupField,
+  SelectField,
+  TextAreaField,
+  AmountField,
+  TextField,
+} from '@/shared/ui/FormFields.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
@@ -331,11 +337,9 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
 
       <fieldset className="form__section">
         <legend>{t('projects.form.sections.budgetSchedule')}</legend>
-        <TextField
+        <AmountField
           label={t('projects.fields.registrationBudget')}
           name="registrationBudgetSar"
-          dir="ltr"
-          inputMode="decimal"
           value={values.registrationBudgetSar}
           hint={`${t('projects.form.budgetHint')} ${t('projects.form.neededToSubmit')}`}
           onChange={setter('registrationBudgetSar')}

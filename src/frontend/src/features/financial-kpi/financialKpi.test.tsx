@@ -269,7 +269,7 @@ describe('MOD-023 Update Financial Progress', () => {
     expect(submit?.headers.get('If-Match')).toBe(SAVED_ETAG);
   });
 
-  test('measured figures are SAR with two places; a grouped amount and a future as-of date are refused before sending', async () => {
+  test('measured figures are SAR with two places; an amount is grouped as typed, a future as-of date is refused before sending', async () => {
     const api = open(FINANCIALS, entityManagerSession());
     answerSave(api);
     const dialog = await openDialog();
@@ -285,7 +285,7 @@ describe('MOD-023 Update Financial Progress', () => {
     await userEvent.click(
       within(dialog).getByRole('button', { name: en('financialKpi.update.saveDraft') }),
     );
-    expect(within(dialog).getByText(en('financialKpi.fieldErrors.amountMalformed'))).toBeTruthy();
+    expect((actual as HTMLInputElement).value).toBe('1,250');
     expect(within(dialog).getByText(en('financialKpi.fieldErrors.asOfInFuture'))).toBeTruthy();
     expect(api.requestsTo('PUT', /financial-progress-updates/)).toEqual([]);
 

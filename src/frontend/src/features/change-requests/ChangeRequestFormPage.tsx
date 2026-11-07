@@ -14,6 +14,7 @@ import {
   ReadOnlyField,
   SelectField,
   TextAreaField,
+  AmountField,
   TextField,
 } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
@@ -396,11 +397,9 @@ function ChangeRequestForm({ project, projectId, existing }: ChangeRequestFormPr
         <fieldset className="form__section">
           <legend>{t('changeRequests.form.sections.impacts')}</legend>
           <p className="form__note">{t('changeRequests.form.impactsNote')}</p>
-          <TextField
+          <AmountField
             label={t('changeRequests.fields.costImpactSar')}
             name="costImpactSar"
-            dir="ltr"
-            inputMode="decimal"
             required={requiredImpact === 'costImpactSar'}
             hint={t('changeRequests.form.costHint')}
             value={values.costImpactSar}
@@ -408,6 +407,7 @@ function ChangeRequestForm({ project, projectId, existing }: ChangeRequestFormPr
               set('costImpactSar', value);
             }}
             error={errorOf('costImpactSar')}
+            allowNegative
           />
           <TextField
             label={t('changeRequests.fields.scheduleImpactDays')}

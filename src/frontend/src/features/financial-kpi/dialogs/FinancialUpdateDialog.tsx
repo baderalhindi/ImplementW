@@ -5,7 +5,7 @@ import { TEXT_LENGTH } from '@/features/projects/registration.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
-import { RadioGroupField, TextAreaField, TextField } from '@/shared/ui/FormFields.tsx';
+import { RadioGroupField, TextAreaField, AmountField, TextField } from '@/shared/ui/FormFields.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { financialKpiApi } from '../api/financialKpiApi.ts';
@@ -159,27 +159,23 @@ function FinancialUpdateBody({
       />
       {measured ? (
         <>
-          <TextField
+          <AmountField
             label={t('financialKpi.update.actual')}
             name="actual"
             required
             value={values.actual}
             onChange={set('actual')}
-            inputMode="decimal"
-            dir="ltr"
             hint={t('financialKpi.update.amountHint')}
             error={errorOf('actualExpenditureToDateSar')}
           />
           {integrated.forecast ? (
             <p className="form__note">{t('financialKpi.update.forecastIntegrated')}</p>
           ) : (
-            <TextField
+            <AmountField
               label={t('financialKpi.update.forecast')}
               name="forecast"
               value={values.forecast}
               onChange={set('forecast')}
-              inputMode="decimal"
-              dir="ltr"
               hint={t('financialKpi.update.forecastHint')}
               error={errorOf('forecastAtCompletionSar')}
             />

@@ -118,7 +118,7 @@
     "participationHint": "Who delivers the project. An entity-managed project names its entity.",
     "departmentHint": "The AHDA department that owns the project. It sets who follows the project up.",
     "ownEntity": "Your entity",
-    "budgetHint": "An amount such as 1500000 or 1500000.50.",
+    "budgetHint": "An amount such as 1,500,000 or 1,500,000.50.",
     "latitudeHint": "Decimal degrees, from -90 to 90.",
     "longitudeHint": "Decimal degrees, from -180 to 180.",
     "unreadable": {

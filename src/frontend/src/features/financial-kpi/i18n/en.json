@@ -155,7 +155,7 @@
     "noFigure": "No figure is sent. The period will show \"{state}\", never 0.",
     "actual": "Actual expenditure to date (SAR)",
     "forecast": "Forecast at completion (SAR)",
-    "amountHint": "Digits only, up to two decimal places, for example 1250000.00.",
+    "amountHint": "Up to two decimal places, for example 1,250,000.00.",
     "forecastHint": "Optional. Leave it empty if there is no forecast; it will show \"No forecast given\", never 0.",
     "actualIntegrated": "Actual expenditure comes from an integrated source and cannot be entered by hand. Record why there is no figure instead.",
     "forecastIntegrated": "The forecast comes from an integrated source and cannot be entered by hand.",

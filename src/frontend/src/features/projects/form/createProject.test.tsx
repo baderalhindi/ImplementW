@@ -89,11 +89,10 @@ describe('SCR-033 Create Project', () => {
     openCreate();
     await fillRequired(user);
 
-    await user.type(screen.getByLabelText(/Registration budget/), '1,500,000');
-    expect(screen.getByLabelText(/Registration budget/).getAttribute('aria-invalid')).toBe('true');
-    expect(createButton()).toHaveProperty('disabled', true);
-    await user.clear(screen.getByLabelText(/Registration budget/));
     await user.type(screen.getByLabelText(/Registration budget/), '1500000.5');
+    expect(screen.getByLabelText<HTMLInputElement>(/Registration budget/).value).toBe(
+      '1,500,000.5',
+    );
     expect(screen.getByLabelText(/Registration budget/).getAttribute('aria-invalid')).toBeNull();
 
     await user.type(screen.getByLabelText(/Planned start date/), '2026-12-01');

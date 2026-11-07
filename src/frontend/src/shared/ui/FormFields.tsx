@@ -1,5 +1,11 @@
-import { type ReactElement, useId } from 'react';
+import { type ReactElement, useId, useLayoutEffect, useRef } from 'react';
 
+import {
+  caretAfter,
+  formatAmount,
+  plainAmount,
+  significantBefore,
+} from '@/shared/forms/amountInput.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
 interface FieldBaseProps {
@@ -107,6 +113,76 @@ export function TextField({
         autoComplete={autoComplete}
         dir={dir}
         inputMode={inputMode}
+        aria-invalid={error === undefined ? undefined : true}
+        aria-describedby={describedBy(hintId, errorId, hint, error)}
+      />
+      <FieldMessages hintId={hintId} errorId={errorId} hint={hint} error={error} />
+    </div>
+  );
+}
+
+interface AmountFieldProps extends FieldBaseProps {
+  /** The plain number, as the form keeps and sends it. */
+  value: string;
+  onChange: (value: string) => void;
+  /** Places kept after the point: two for SAR, more for a measure. */
+  maxDecimals?: number;
+  allowNegative?: boolean;
+}
+
+/**
+ * A number field that shows thousands separators as it is typed and hands the form the plain number (review round 5, item 6). Pasted values are
+ * read with or without separators, and the caret stays after the digit it was after.
+ */
+export function AmountField({
+  label,
+  name,
+  value,
+  onChange,
+  error,
+  hint,
+  required = false,
+  disabled = false,
+  maxDecimals = 2,
+  allowNegative = false,
+}: AmountFieldProps): ReactElement {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  const input = useRef<HTMLInputElement>(null);
+  const significant = useRef<number | null>(null);
+  const display = formatAmount(value);
+
+  useLayoutEffect(() => {
+    if (significant.current !== null && input.current !== null) {
+      const caret = caretAfter(input.current.value, significant.current);
+      input.current.setSelectionRange(caret, caret);
+      significant.current = null;
+    }
+  }, [display]);
+
+  return (
+    <div className="field">
+      <FieldLabel htmlFor={id} label={label} required={required} />
+      <input
+        ref={input}
+        id={id}
+        name={name}
+        className="field__input"
+        type="text"
+        value={display}
+        onChange={(event) => {
+          const rules = { maxDecimals, allowNegative };
+          significant.current = significantBefore(
+            event.target.value,
+            event.target.selectionStart ?? event.target.value.length,
+          );
+          onChange(plainAmount(event.target.value, rules));
+        }}
+        required={required}
+        disabled={disabled}
+        dir="ltr"
+        inputMode="decimal"
         aria-invalid={error === undefined ? undefined : true}
         aria-describedby={describedBy(hintId, errorId, hint, error)}
       />
