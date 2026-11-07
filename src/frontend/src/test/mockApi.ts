@@ -168,6 +168,7 @@ async function emulatedNames(
         externalEntities: items(await read('/external-entities')).map((row) =>
           unit(row, row.status === 'ACTIVE'),
         ),
+        roles: await read('/roles'),
       },
     };
   }

@@ -160,7 +160,21 @@ export function ProjectFilters({
         </div>
       </form>
       <FilterBar
-        fields={fields}
+        fields={[
+          ...fields,
+          {
+            name: 'sort',
+            label: t('common.filters.sort'),
+            all: t('projects.sort.UpdatedDescending'),
+            options: [
+              { value: 'updatedAt:asc', label: t('projects.sort.UpdatedAscending') },
+              { value: 'title:asc', label: t('projects.sort.TitleAscending') },
+              { value: 'title:desc', label: t('projects.sort.TitleDescending') },
+              { value: 'formalProjectId:asc', label: t('projects.sort.FormalIdAscending') },
+              { value: 'formalProjectId:desc', label: t('projects.sort.FormalIdDescending') },
+            ],
+          },
+        ]}
         values={values}
         onChange={(name, value) => {
           // A city lies in a region, an initiative in a portfolio: another parent drops the child chosen under the last one.

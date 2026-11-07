@@ -13798,6 +13798,13 @@
               ],
               "format": "int32"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -34537,6 +34544,15 @@
             "items": {
               "$ref": "#/components/schemas/OrganizationUnit"
             }
+          },
+          "roles": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RoleName"
+            }
           }
         },
         "description": "The departments and external entities the caller may be told of, by code."
@@ -43843,6 +43859,27 @@
           }
         },
         "description": "ADM-007 Role Detail, with the permission profiles rooted at the role (ADR-018)."
+      },
+      "RoleName": {
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          }
+        },
+        "description": "A role's name, for AHDA's people (review round 5): an approver is told which role a task waits on without ROLE_VIEW."
       },
       "RoleSettingsRequest": {
         "required": [

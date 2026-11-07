@@ -50,7 +50,11 @@
     "unknownUser": "User {id}"
   },
   "table": {
-    "actions": "Actions"
+    "actions": "Actions",
+    "selectAll": "Select all rows shown",
+    "selectRow": "Select {name}",
+    "selected": "{count} selected",
+    "clearSelection": "Clear selection"
   },
   "filters": {
     "label": "Filters",

@@ -1,7 +1,11 @@
-import { type ReactElement, useCallback } from 'react';
+import { type ReactElement, useCallback, useState } from 'react';
 import { Link } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import {
+  type Confirmation,
+  ConfirmDialog,
+} from '@/features/identity-access/components/ConfirmDialog.tsx';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { PAGE_SIZE } from '@/shared/api/paging.ts';
@@ -9,6 +13,8 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { isInternal } from '../access.ts';
@@ -57,6 +63,10 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
   const { q, status, departmentId, externalEntityId, itemFilters, itemKey } =
     useProjectFilterValues(mine);
   const projectManagerUserId = mine ? user.id : undefined;
+  const sort = params.get('sort') ?? undefined;
+  const selection = useRowSelection();
+  const mayEdit = useCan('PROJECT_REGISTER');
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
   const load = useCallback(
     (signal: AbortSignal) =>
@@ -68,6 +78,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
           externalEntityId,
           projectManagerUserId,
           ...itemFilters,
+          sort,
           page,
           pageSize: PAGE_SIZE,
         },
@@ -75,20 +86,24 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
       ),
     // itemKey stands for itemFilters, rebuilt on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [q, status, departmentId, externalEntityId, projectManagerUserId, itemKey, page],
+    [q, status, departmentId, externalEntityId, projectManagerUserId, itemKey, sort, page],
   );
   const projects = useApiResource(load);
   const managerName = usePersonNames(
     (projects.data?.items ?? []).map((project) => project.projectManagerUserId),
   );
   const filtered = FILTERS.some((name) => (params.get(name) ?? '') !== '');
+  // A submitted project is withdrawn or closed, never deleted: only a DRAFT is offered, and the API checks it is the caller's.
+  const drafts = (projects.data?.items ?? []).filter(
+    (project) => project.status === 'DRAFT' && selection.selected.has(project.id),
+  );
 
   return (
     <>
       <ProjectFilters
         key={q}
         q={q}
-        values={{ status, departmentId, externalEntityId, ...itemFilters }}
+        values={{ status, departmentId, externalEntityId, sort, ...itemFilters }}
         organizationFilters={!mine}
         entityFilter={!mine && isInternal(user)}
         lookups={lookups}
@@ -117,7 +132,38 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
           <ProjectListEmpty filtered={filtered} forbidden={false} mine={mine} basePath={basePath} />
         ) : (
           <>
+            <SelectionBar selection={selection}>
+              {mayEdit && drafts.length > 0 && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => {
+                    setConfirmation({
+                      title: t('projects.bulk.deleteTitle', { count: drafts.length }),
+                      body: t('projects.bulk.deleteBody', {
+                        names: drafts.map((draft) => draft.title.text).join('، '),
+                      }),
+                      confirmLabel: t('projects.bulk.delete', { count: drafts.length }),
+                      destructive: true,
+                      action: async () => {
+                        for (const draft of drafts) {
+                          await projectsApi.remove(draft.id, null);
+                        }
+                        selection.clear();
+                      },
+                    });
+                  }}
+                >
+                  {t('projects.bulk.delete', { count: drafts.length })}
+                </button>
+              )}
+              {drafts.length !== selection.selected.size && (
+                <span className="cell__aside">{t('projects.bulk.onlyDrafts')}</span>
+              )}
+            </SelectionBar>
             <ProjectTable
+              selection={selection}
+              mayEdit={mayEdit}
               caption={mine ? t('projects.mine.title') : t('projects.register.title')}
               projects={projects.data.items}
               lookups={lookups}
@@ -131,6 +177,16 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
             />
           </>
         ))}
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
+          projects.reload();
+        }}
+      />
     </>
   );
 }
@@ -190,6 +246,8 @@ function ProjectListEmpty({
 }
 
 function ProjectTable({
+  selection,
+  mayEdit,
   caption,
   projects,
   lookups,
@@ -199,12 +257,15 @@ function ProjectTable({
   projects: ProjectSummary[];
   lookups: ProjectLookups;
   managerName: (id: string | null) => string;
+  selection: RowSelection;
+  mayEdit: boolean;
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
   return (
     <TableContainer caption={caption}>
       <thead>
         <tr>
+          <SelectAllHeader ids={projects.map((project) => project.id)} selection={selection} />
           <th scope="col">{t('projects.fields.title')}</th>
           <th scope="col">{t('projects.fields.formalProjectId')}</th>
           <th scope="col">{t('projects.fields.status')}</th>
@@ -214,11 +275,15 @@ function ProjectTable({
           <th scope="col">{t('projects.fields.participation')}</th>
           <th scope="col">{t('projects.fields.projectManager')}</th>
           <th scope="col">{t('projects.fields.updatedAt')}</th>
+          <th scope="col">
+            <span className="visually-hidden">{t('common.table.actions')}</span>
+          </th>
         </tr>
       </thead>
       <tbody>
         {projects.map((project) => (
           <tr key={project.id}>
+            <SelectRowCell id={project.id} name={project.title.text} selection={selection} />
             <td>
               <Link
                 to={`/projects/${project.id}`}
@@ -263,6 +328,14 @@ function ProjectTable({
                 : managerName(project.projectManagerUserId)}
             </td>
             <td>{formatDateTime(project.updatedAt)}</td>
+            <td className="cell--actions">
+              {mayEdit && (project.status === 'DRAFT' || project.status === 'RETURNED') && (
+                <Link className="button" to={`/projects/${project.id}/edit`}>
+                  {t('common.actions.edit')}{' '}
+                  <span className="visually-hidden">{project.title.text}</span>
+                </Link>
+              )}
+            </td>
           </tr>
         ))}
       </tbody>

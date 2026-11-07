@@ -442,6 +442,7 @@ Table master_data_config.project_stage_definition {
   indexes {
     (configuration_version_id, code) [unique]
   }
+  Note: 'A project stage and its weight inside a PROJECT_STAGE version. Delete policy: CASCADE.'
 }
 
 Table master_data_config.risk_rating_definition {

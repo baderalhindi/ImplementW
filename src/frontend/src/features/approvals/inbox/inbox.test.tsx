@@ -64,7 +64,7 @@ describe('SCR-100 Approval Inbox', () => {
 
     const table = await screen.findByRole('table', { name: en('approvals.inbox.caption') });
     expect(within(table).getAllByRole('row')).toHaveLength(3);
-    expect(within(table).getAllByText('ChangeRequest · CHANGE_REQUEST')).toHaveLength(2);
+    expect(within(table).getAllByText('Change request')).toHaveLength(2);
     expect(await within(table).findAllByText('Faisal Requester')).toHaveLength(2);
     expect(await within(table).findAllByText('Portfolio Manager (R02)')).toHaveLength(2);
 

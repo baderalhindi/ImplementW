@@ -7,6 +7,8 @@ import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
@@ -235,6 +237,7 @@ function UserFilters({ query, filtered, lookups }: UserFiltersProps): ReactEleme
 
 /** ADM-002 User List. Filters live in the URL, so a filtered list can be bookmarked and Back restores it. */
 export function UserListPage(): ReactElement {
+  const selection = useRowSelection();
   const { t, language } = useI18n();
   const [params, setParams] = useSearchParams();
   const query = queryFrom(params);
@@ -301,9 +304,16 @@ export function UserListPage(): ReactElement {
           />
         ) : (
           <>
+            <SelectionBar selection={selection}>
+              <span className="cell__aside">{t('identityAccess.users.list.noDelete')}</span>
+            </SelectionBar>
             <TableContainer caption={t('identityAccess.users.list.caption')}>
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={users.data.items.map((user) => user.id)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('identityAccess.users.fields.displayName')}</th>
                   <th scope="col">{t('identityAccess.users.fields.username')}</th>
                   <th scope="col">{t('identityAccess.users.fields.email')}</th>
@@ -316,6 +326,7 @@ export function UserListPage(): ReactElement {
               <tbody>
                 {users.data.items.map((user) => (
                   <tr key={user.id}>
+                    <SelectRowCell id={user.id} name={user.displayName} selection={selection} />
                     <td>
                       <Link to={`/admin/users/${user.id}`}>{user.displayName}</Link>
                     </td>

@@ -492,7 +492,7 @@ describe('SCR-107 reuses the WF-11 approval modals', () => {
     });
     renderApp({ path: '/approvals/inbox', session: sessionAs(APPROVER_ID) });
 
-    const link = await screen.findByRole('link', { name: 'ChangeRequest · ChangeRequest' });
+    const link = await screen.findByRole('link', { name: 'Change request' });
     expect(link.getAttribute('href')).toBe(PAVING_PATH);
   });
 });

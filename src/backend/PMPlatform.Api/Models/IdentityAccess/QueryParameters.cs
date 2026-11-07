@@ -1,6 +1,7 @@
 using System.Text.Json;
 using PMPlatform.Api.Errors;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.Project.Contracts;
 
 namespace PMPlatform.Api.Models.IdentityAccess;
 
@@ -54,6 +55,30 @@ internal static class QueryParameters
     }
 
     /// <summary>R-32 for ADM-002: <c>displayName</c> (the default) or <c>username</c>, <c>:asc</c> or <c>:desc</c>.</summary>
+    /// <summary>The project register's order, as R-32 writes it (review round 5, item 2); recently changed first when absent.</summary>
+    public static ProjectSort ProjectSortOf(string? value, List<FieldError> errors)
+    {
+        ArgumentNullException.ThrowIfNull(errors);
+        switch (value)
+        {
+            case null or "" or "updatedAt:desc":
+                return ProjectSort.UpdatedDescending;
+            case "updatedAt:asc":
+                return ProjectSort.UpdatedAscending;
+            case "title:asc":
+                return ProjectSort.TitleAscending;
+            case "title:desc":
+                return ProjectSort.TitleDescending;
+            case "formalProjectId:asc":
+                return ProjectSort.FormalIdAscending;
+            case "formalProjectId:desc":
+                return ProjectSort.FormalIdDescending;
+            default:
+                errors.Add(new FieldError("sort", FieldError.EnumValue));
+                return ProjectSort.UpdatedDescending;
+        }
+    }
+
     public static UserSort UserSortOf(string? value, List<FieldError> errors)
     {
         switch (value)

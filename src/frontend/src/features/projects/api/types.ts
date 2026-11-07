@@ -218,6 +218,7 @@ export interface ProjectRequest {
 }
 
 export interface ProjectQuery {
+  sort?: string | undefined;
   /** A set, comma-separated (R-31). */
   status?: string | undefined;
   departmentId?: string | undefined;

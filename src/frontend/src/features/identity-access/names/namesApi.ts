@@ -20,6 +20,8 @@ export interface OrganizationUnit {
 export interface OrganizationUnits {
   departments: OrganizationUnit[];
   externalEntities: OrganizationUnit[];
+  /** Every role's name, for AHDA's people: an approver is told which role a task waits on without ROLE_VIEW. */
+  roles?: { id: string; code: string; name: { ar: string; en: string } }[];
 }
 
 /** The API's limit on ids per call. */

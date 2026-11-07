@@ -170,5 +170,18 @@
     "escalationNotAllowed": "لا يمكن تصعيد هذه المهمة: فهي غير متأخرة، أو ليست في المرحلة الحالية، أو هي نفسها ناتجة عن تصعيد.",
     "delegateInvalid": "اختر مستخدمًا داخليًا نشطًا غيرك.",
     "delegationPeriodInvalid": "يجب ألا تبدأ المدة في الماضي، وأن تنتهي بعد بدايتها."
+  },
+  "routing": {
+    "PROJECT_REGISTRATION": "تسجيل مشروع",
+    "SCHEDULE_BASELINE": "خط أساس الجدول",
+    "MILESTONE_ACHIEVEMENT": "إنجاز معلم",
+    "CHANGE_REQUEST": "طلب تغيير",
+    "COMMITMENT": "التزام مالي",
+    "KPI_TARGET": "مستهدف مؤشر",
+    "MANAGEMENT_CONCERN_RESOLUTION": "حل مسألة",
+    "SUSPENSION": "تعليق",
+    "RESUMPTION": "استئناف",
+    "COMPLETION": "إكمال",
+    "CLOSURE": "إغلاق"
   }
 }

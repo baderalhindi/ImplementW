@@ -130,7 +130,8 @@
         "displayNameDesc": "Name (Z to A)",
         "usernameAsc": "Username (A to Z)",
         "usernameDesc": "Username (Z to A)"
-      }
+      },
+      "noDelete": "A user is disabled from their page, never deleted: the audit trail names them."
     },
     "create": {
       "title": "Create user"

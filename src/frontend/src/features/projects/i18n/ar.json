@@ -475,5 +475,19 @@
     "open": "بطاقة المشروع للطباعة",
     "title": "بطاقة المشروع",
     "back": "العودة إلى المشروع"
+  },
+  "sort": {
+    "UpdatedDescending": "الأحدث تعديلًا أولًا",
+    "UpdatedAscending": "الأقدم تعديلًا أولًا",
+    "TitleAscending": "العنوان تصاعديًا",
+    "TitleDescending": "العنوان تنازليًا",
+    "FormalIdAscending": "رقم المشروع، الأصغر أولًا",
+    "FormalIdDescending": "رقم المشروع، الأكبر أولًا"
+  },
+  "bulk": {
+    "delete": "حذف {count} مسودات",
+    "deleteTitle": "حذف {count} مسودات مشاريع؟",
+    "deleteBody": "ستُحذف هذه المسودات: {names}. لا يمكن التراجع عن ذلك.",
+    "onlyDrafts": "تُحذف المسودات فقط. أما المشروع المقدَّم فيُسحب أو يُغلق."
   }
 }

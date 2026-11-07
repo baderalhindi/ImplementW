@@ -475,5 +475,19 @@
     "open": "Project card for printing",
     "title": "Project card",
     "back": "Back to the project"
+  },
+  "sort": {
+    "UpdatedDescending": "Recently changed first",
+    "UpdatedAscending": "Least recently changed first",
+    "TitleAscending": "Title, A to Z",
+    "TitleDescending": "Title, Z to A",
+    "FormalIdAscending": "Project ID, lowest first",
+    "FormalIdDescending": "Project ID, highest first"
+  },
+  "bulk": {
+    "delete": "Delete {count} drafts",
+    "deleteTitle": "Delete {count} draft projects?",
+    "deleteBody": "These drafts will be deleted: {names}. This cannot be undone.",
+    "onlyDrafts": "Only drafts can be deleted. A submitted project is withdrawn or closed."
   }
 }

@@ -12,7 +12,7 @@ namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 /// caller is told nothing.
 /// </summary>
 internal sealed class DisplayNameService(
-    IAuthorizationEngine engine, IUserAdministrationRepository users, IDepartmentRepository departments, IExternalEntityRepository entities)
+    IAuthorizationEngine engine, IUserAdministrationRepository users, IDepartmentRepository departments, IExternalEntityRepository entities, IRoleDirectory roles)
     : IDisplayNameService
 {
     public async Task<DisplayNames> ListAsync(Guid callerId, DisplayNameQuery query, CancellationToken cancellationToken)
@@ -40,7 +40,10 @@ internal sealed class DisplayNameService(
 
         IReadOnlyList<OrganizationUnit> allEntities = await entities.ListUnitsAsync(cancellationToken).ConfigureAwait(false);
         return caller.UserType == UserType.Internal
-            ? new OrganizationUnits(await departments.ListUnitsAsync(cancellationToken).ConfigureAwait(false), allEntities)
+            ? new OrganizationUnits(
+                await departments.ListUnitsAsync(cancellationToken).ConfigureAwait(false),
+                allEntities,
+                [.. (await roles.ListRolesAsync(cancellationToken).ConfigureAwait(false)).Select(r => new RoleName(r.Id, r.Code, r.Name))])
             : new OrganizationUnits([], [.. allEntities.Where(e => e.Id == caller.ExternalEntityId)]);
     }
 

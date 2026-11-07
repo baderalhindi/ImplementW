@@ -26,6 +26,24 @@ function subjectPath(subject: ApprovalSubject): string | null {
   }
 }
 
+const ROUTING_KEYS = [
+  'PROJECT_REGISTRATION',
+  'SCHEDULE_BASELINE',
+  'MILESTONE_ACHIEVEMENT',
+  'CHANGE_REQUEST',
+  'COMMITMENT',
+  'KPI_TARGET',
+  'MANAGEMENT_CONCERN_RESOLUTION',
+  'SUSPENSION',
+  'RESUMPTION',
+  'COMPLETION',
+  'CLOSURE',
+] as const;
+
+function isRoutingKey(key: string): key is (typeof ROUTING_KEYS)[number] {
+  return (ROUTING_KEYS as readonly string[]).includes(key);
+}
+
 /**
  * What a request is about, as its source module names it: module, record type and revision, with the routing key that
  * chose its approvers. Approval holds no title for the record (M-8); a change request, suspension request or closeout
@@ -40,15 +58,13 @@ export function SubjectSummary({
 }): ReactElement {
   const { t } = useI18n();
   const path = subjectPath(subject);
-  const name = `${subject.module} · ${subject.type}`;
+  // A kind of request the catalogue below does not name yet still reads, as its code rather than as nothing.
+  const name = isRoutingKey(routingKey) ? t(`approvals.routing.${routingKey}`) : routingKey;
   return (
     <span className="subject">
-      <span className="subject__name" dir="ltr">
-        {path === null ? name : <Link to={path}>{name}</Link>}
-      </span>
+      <span className="subject__name">{path === null ? name : <Link to={path}>{name}</Link>}</span>
       <span className="subject__meta">
-        {t('approvals.subject.revision', { revision: subject.revisionNo })} ·{' '}
-        <span dir="ltr">{routingKey}</span>
+        {t('approvals.subject.revision', { revision: subject.revisionNo })}
       </span>
     </span>
   );

@@ -8,6 +8,8 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
@@ -36,6 +38,7 @@ export function DepartmentListPage(): ReactElement {
   const [editing, setEditing] = useState<Editing | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const { lookups } = useOrganizationLookups(language);
+  const selection = useRowSelection();
 
   const q = params.get('q') ?? undefined;
   const activeParam = params.get('isActive');
@@ -205,9 +208,39 @@ export function DepartmentListPage(): ReactElement {
           />
         ) : (
           <>
+            <SelectionBar selection={selection}>
+              <button
+                type="button"
+                className="button"
+                onClick={() => {
+                  const chosen =
+                    departments.data?.items.filter(
+                      (department) => department.isActive && selection.selected.has(department.id),
+                    ) ?? [];
+                  setConfirmation({
+                    title: t('identityAccess.departments.deactivateTitle'),
+                    body: chosen.map((department) => labelOf(department.name, language)).join('، '),
+                    confirmLabel: t('identityAccess.departments.deactivate'),
+                    destructive: true,
+                    action: async () => {
+                      for (const department of chosen) {
+                        await departmentsApi.deactivate(department.id);
+                      }
+                      selection.clear();
+                    },
+                  });
+                }}
+              >
+                {t('identityAccess.departments.deactivate')}
+              </button>
+            </SelectionBar>
             <TableContainer caption={t('identityAccess.departments.title')}>
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={departments.data.items.map((department) => department.id)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('identityAccess.departments.code')}</th>
                   <th scope="col">{t('identityAccess.departments.name')}</th>
                   <th scope="col">{t('identityAccess.departments.parent')}</th>
@@ -220,6 +253,11 @@ export function DepartmentListPage(): ReactElement {
               <tbody>
                 {departments.data.items.map((department) => (
                   <tr key={department.id}>
+                    <SelectRowCell
+                      id={department.id}
+                      name={labelOf(department.name, language)}
+                      selection={selection}
+                    />
                     <td dir="ltr" className="cell--ltr">
                       {department.code}
                     </td>
