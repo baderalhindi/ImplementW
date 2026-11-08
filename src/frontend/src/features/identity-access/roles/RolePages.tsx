@@ -17,6 +17,7 @@ import {
   type RoleSummary,
 } from '../api/types.ts';
 import { ConfirmDialog, type Confirmation } from '../components/ConfirmDialog.tsx';
+import { useRowActions } from '../components/RowActions.tsx';
 import {
   checkText,
   ROLE_CODE_LENGTH,
@@ -142,6 +143,17 @@ export function RoleListPage(): ReactElement {
   const mayManage = useCan('ROLE_MANAGE');
   const load = useCallback((signal: AbortSignal) => rolesApi.list(signal), []);
   const roles = useApiResource(load);
+  // The eight built-in roles are edited but never deleted: approvals, the matrix and every assignment name them.
+  const rowActions = useRowActions<RoleSummary>({
+    permission: 'ROLE_MANAGE',
+    name: (role) => labelOf(role.name, language),
+    editTo: (role) => `/admin/roles/${role.id}/edit`,
+    deletable: (role) => !role.isSystem,
+    remove: (role) => rolesApi.delete(role.id, null),
+    onDeleted: () => {
+      roles.reload();
+    },
+  });
 
   return (
     <>
@@ -182,6 +194,7 @@ export function RoleListPage(): ReactElement {
                 <th scope="col">{t('identityAccess.roles.fields.state')}</th>
                 <th scope="col">{t('identityAccess.roles.fields.allowedScopes')}</th>
                 <th scope="col">{t('identityAccess.roles.fields.landing')}</th>
+                {rowActions !== undefined && <th scope="col">{t('common.table.actions')}</th>}
               </tr>
             </thead>
             <tbody>
@@ -201,11 +214,15 @@ export function RoleListPage(): ReactElement {
                     <ScopesText scopes={role.allowedScopes} />
                   </td>
                   <td>{t(landingLabelKey(role.landingDashboardCode))}</td>
+                  {rowActions !== undefined && (
+                    <td className="cell--actions">{rowActions.render(role)}</td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </TableContainer>
         ))}
+      {rowActions?.dialog}
     </>
   );
 }

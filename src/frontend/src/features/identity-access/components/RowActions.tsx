@@ -25,6 +25,8 @@ interface RowActionsOptions<E> {
   onDeleted: () => void;
   /** False for a row that takes no change, such as one of a CLOSED project: it gets no buttons. */
   changeable?: (entry: E) => boolean;
+  /** False for a row that is edited but never deleted, such as a built-in role. */
+  deletable?: (entry: E) => boolean;
 }
 
 /**
@@ -39,6 +41,7 @@ export function useRowActions<E>({
   remove,
   onDeleted,
   changeable,
+  deletable,
 }: RowActionsOptions<E>): RowActionsColumn<E> | undefined {
   const { t } = useI18n();
   const allowed = useCan(permission);
@@ -68,21 +71,23 @@ export function useRowActions<E>({
             </Link>
           )
         )}
-        <button
-          type="button"
-          className="button button--danger"
-          onClick={() => {
-            setConfirmation({
-              title: t('common.rowActions.deleteTitle'),
-              body: t('common.rowActions.deleteBody', { name: label }),
-              confirmLabel: t('common.rowActions.delete'),
-              destructive: true,
-              action: () => remove(entry),
-            });
-          }}
-        >
-          {t('common.rowActions.delete')} <span className="visually-hidden">{label}</span>
-        </button>
+        {(deletable === undefined || deletable(entry)) && (
+          <button
+            type="button"
+            className="button button--danger"
+            onClick={() => {
+              setConfirmation({
+                title: t('common.rowActions.deleteTitle'),
+                body: t('common.rowActions.deleteBody', { name: label }),
+                confirmLabel: t('common.rowActions.delete'),
+                destructive: true,
+                action: () => remove(entry),
+              });
+            }}
+          >
+            {t('common.rowActions.delete')} <span className="visually-hidden">{label}</span>
+          </button>
+        )}
       </span>
     );
   };
