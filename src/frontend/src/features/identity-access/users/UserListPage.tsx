@@ -341,7 +341,7 @@ export function UserListPage(): ReactElement {
                     <td dir="ltr" className="cell--ltr">
                       {user.username}
                     </td>
-                    <td dir="ltr" className="cell--ltr">
+                    <td dir="ltr" className="cell--ltr cell--break">
                       {user.email}
                     </td>
                     <td>{t(`identityAccess.userType.${user.userType}`)}</td>
@@ -362,13 +362,13 @@ export function UserListPage(): ReactElement {
                       />
                     </td>
                     {mayManage && (
-                      <td className="cell--actions cell--actions-wrap">
+                      <td className="cell--actions">
                         {user.userType === 'SERVICE' ? (
                           <span className="cell__aside">
                             {t('identityAccess.users.list.serviceAccount')}
                           </span>
                         ) : (
-                          <div className="actions-group">
+                          <div className="row-actions">
                             <Link className="button" to={`/admin/users/${user.id}/edit`}>
                               {t('common.actions.edit')}{' '}
                               <span className="visually-hidden">{user.displayName}</span>

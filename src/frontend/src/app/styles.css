@@ -1634,6 +1634,28 @@ select.field__input {
   margin-inline-start: var(--space-2);
 }
 
+/* A long unbroken value, an e-mail address, breaks at any point rather than widening its column. */
+.cell--break {
+  overflow-wrap: anywhere;
+  min-inline-size: 10rem;
+}
+
+/* A row's own Edit and Delete: side by side and compact, so the column stays narrow. Still 36px high, above the 24px target size. */
+.row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+}
+
+.row-actions .button {
+  min-block-size: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+}
+
+.cell--actions .row-actions .button + .button {
+  margin-inline-start: 0;
+}
+
 /* Several peer actions (approve, reject, return) stack when the row is narrow instead of scrolling out of view. */
 .cell--actions-wrap {
   white-space: normal;
