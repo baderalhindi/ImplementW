@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useState } from 'react';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -19,6 +20,7 @@ import { PublishMeasurementDialog } from './dialogs/PublishMeasurementDialog.tsx
 import { activeTarget, latestInStatus } from './financialKpiRules.ts';
 import { financialKpiProblemMessage, isForbidden } from './problems.ts';
 import { type KpiEntry, useKpiLookups, useProjectKpis } from './useKpiData.ts';
+import { financialKpiApi } from './api/financialKpiApi.ts';
 
 type OpenDialog =
   | { kind: 'add' }
@@ -51,6 +53,13 @@ export function ProjectKpis({
   );
   const [notice, setNotice] = useState<Notice | null>(null);
   const [dialog, setDialog] = useState<OpenDialog>(null);
+  const kpiRows = useRowActions<KpiEntry>({
+    permission: 'KPI_MANAGE',
+    changeable: () => !isClosed(project.status),
+    name: (entry) => lookups.kpiName(entry.assignment.kpiDefinitionId),
+    remove: (entry) => financialKpiApi.removeAssignment(entry.assignment.id),
+    onDeleted: kpis.reload,
+  });
 
   const done = (message: TranslationKey) => {
     setDialog(null);
@@ -90,6 +99,7 @@ export function ProjectKpis({
     const canStart = recorder && draft === null && activeTarget(entry.targets) !== null;
     return (
       <span className="figure-group">
+        {kpiRows?.render(entry)}
         {canStart && (
           <button
             type="button"
@@ -173,6 +183,7 @@ export function ProjectKpis({
         />
       )}
 
+      {kpiRows?.dialog}
       {dialog?.kind === 'add' && (
         <AddKpiDialog
           open

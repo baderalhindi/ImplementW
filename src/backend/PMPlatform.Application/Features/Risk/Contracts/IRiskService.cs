@@ -29,4 +29,7 @@ public interface IRiskService
     public Task<AdministrationResult<RiskAssessmentDetail>> GetAssessmentAsync(Guid callerId, Guid assessmentId, CancellationToken cancellationToken);
 
     public Task<RiskAcceptancePage> ListAcceptancesAsync(Guid callerId, Guid riskId, PageRequest page, CancellationToken cancellationToken);
+
+    /// <summary>Client review, item 8: hides the risk, with its assessments, acceptances and actions, and what belongs to it, keeping all of it in the database. Null on success.</summary>
+    public Task<AdministrationError?> DeleteRiskAsync(Guid callerId, Guid riskId, uint? expectedVersion, CancellationToken cancellationToken);
 }

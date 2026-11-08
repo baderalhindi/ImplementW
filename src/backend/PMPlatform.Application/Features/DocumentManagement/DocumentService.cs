@@ -392,4 +392,22 @@ internal sealed class DocumentService(
         row.UpdatedAt = timeProvider.GetUtcNow();
         row.UpdatedBy = by;
     }
+
+    public async Task<AdministrationError?> DeleteAsync(Guid callerId, Guid documentId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        Document? document = await repository.FindDocumentAsync(documentId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (document is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (await access.CheckAsync(callerId, PermissionCatalogue.DocumentManage, document, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        // Its links go with it, so it no longer counts as evidence for a milestone or a commitment.
+        audit.Stage(RecordDeletion.Stamp(document, "DocumentManagement", callerId, document.ProjectId, timeProvider.GetUtcNow()));
+        return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) == DocumentSaveOutcome.Saved ? null : AdministrationError.PreconditionFailed;
+    }
 }

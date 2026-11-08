@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
@@ -20,6 +21,7 @@ import { documentProblemMessage } from '../problems.ts';
 import { useDocumentLookups } from '../useDocumentLookups.ts';
 
 import { DocumentTable } from './DocumentTable.tsx';
+import { type DocumentSummary } from '../api/types.ts';
 
 interface DocumentBrowserProps {
   title: string;
@@ -58,6 +60,13 @@ export function DocumentBrowser({
     [projectId, status, q, page],
   );
   const documents = useApiResource(load, { keepPreviousResult: true });
+  const rowActions = useRowActions<DocumentSummary>({
+    permission: 'DOCUMENT_MANAGE',
+    name: (document) => document.title.text,
+    editTo: (document) => `/documents/${document.id}?edit=1`,
+    remove: (document) => documentsApi.remove(document.id),
+    onDeleted: documents.reload,
+  });
   const lookups = useDocumentLookups();
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -189,6 +198,7 @@ export function DocumentBrowser({
         ) : (
           <>
             <DocumentTable
+              actions={rowActions}
               caption={title}
               documents={documents.data.items}
               lookups={lookups}

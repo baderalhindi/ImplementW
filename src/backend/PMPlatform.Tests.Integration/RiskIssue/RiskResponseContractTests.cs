@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json.Nodes;
 using PMPlatform.Tests.Integration.DataImport;
 using PMPlatform.Tests.Integration.Identity;
@@ -76,6 +77,15 @@ public sealed class RiskResponseContractTests(RiskTestHost host)
         await responses.CheckAsync("GET", $"{RiskDriver.Risks}/import-template/content", template);
         using HttpResponseMessage imported = await client.UploadAsync(RiskDriver.Risks, sessions.EntityManager, ImportApi.Workbook(["legacy_id"]), commit: false);
         await responses.CheckAsync("POST", $"{RiskDriver.Risks}/imports", imported);
+
+        // Client review, item 8: the risk is deleted, and is gone from its reads.
+        using HttpResponseMessage deleted = await client.SendAsync(HttpMethod.Delete, path, sessions.EntityManager);
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        await responses.CheckAsync("DELETE", risk, deleted);
+        using (HttpResponseMessage gone = await client.GetAsync(path, sessions.EntityManager))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, gone.StatusCode);
+        }
 
         Assert.Equal((await OpenApiDocument.FetchAsync(client)).Operations(RiskIssueApi.RiskTag).Select(o => o.Name).Order(), responses.Operations.Order());
         Assert.Empty(responses.Violations);

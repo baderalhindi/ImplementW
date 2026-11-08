@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement } from 'react';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -11,6 +12,9 @@ import { type ConcernType } from './api/types.ts';
 import { ConcernRegisterView } from './components/ConcernRegisterView.tsx';
 import { concernProblemMessage } from './problems.ts';
 import { useConcernLookups, useConcernPortfolio } from './useConcernData.ts';
+import { type ConcernEntry } from './concernRules.ts';
+import { concernsApi } from './api/concernsApi.ts';
+import { concernPath } from './paths.ts';
 
 const PAGE_TEXT = {
   ISSUE: {
@@ -38,6 +42,14 @@ export function ConcernRegisterPage({ concernType }: { concernType: ConcernType 
   const { t } = useI18n();
   const { session } = useSession();
   const portfolio = useConcernPortfolio(concernType);
+  const rowActions = useRowActions<ConcernEntry>({
+    permission: 'CONCERN_MANAGE',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ concern }) => concern.title.text,
+    editTo: ({ concern, project: owner }) => `${concernPath(owner.id, concern.id)}?edit=1`,
+    remove: ({ concern }) => concernsApi.remove(concern.id),
+    onDeleted: portfolio.reload,
+  });
   const lookups = useConcernLookups();
   const text = PAGE_TEXT[concernType];
 
@@ -83,6 +95,7 @@ export function ConcernRegisterPage({ concernType }: { concernType: ConcernType 
         </EmptyState>
       ) : (
         <ConcernRegisterView
+          actions={rowActions}
           entries={portfolio.data}
           lookups={lookups}
           userId={session?.user.id ?? ''}

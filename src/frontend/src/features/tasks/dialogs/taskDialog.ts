@@ -6,7 +6,7 @@ import { type TaskDependencyDetail } from '../api/types.ts';
  */
 export type TaskDialog =
   | { kind: 'create' } // MOD-010
-  | { kind: 'edit'; taskId: string } // MOD-011
+  | { kind: 'edit'; taskId: string; fromRow?: true } // MOD-011; from a register's row it closes back to the list
   | { kind: 'detail'; taskId: string } // MOD-012
   | { kind: 'subtask'; parentId: string } // MOD-013
   | { kind: 'assign'; taskId: string } // MOD-014
@@ -22,6 +22,7 @@ export function returnTo(dialog: TaskDialog): string | null {
     case 'subtask':
       return dialog.parentId;
     case 'edit':
+      return dialog.fromRow === true ? null : dialog.taskId;
     case 'assign':
     case 'dependency':
     case 'removeDependency':

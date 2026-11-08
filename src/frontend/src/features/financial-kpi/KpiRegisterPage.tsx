@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useState } from 'react';
 
 import { todayUtc } from '@/features/tasks/taskRules.ts';
@@ -23,7 +24,9 @@ import {
   type KpiRegisterEntry,
   useKpiLookups,
   useKpiPortfolio,
+  type KpiEntry,
 } from './useKpiData.ts';
+import { financialKpiApi } from './api/financialKpiApi.ts';
 
 const FILTERS = ['all', 'noData', 'red', 'amber', 'green'] as const;
 type Filter = (typeof FILTERS)[number];
@@ -75,6 +78,15 @@ export function KpiRegisterPage(): ReactElement {
   const { t } = useI18n();
   const today = todayUtc();
   const portfolio = useKpiPortfolio();
+  const kpiRows = useRowActions<KpiEntry>({
+    permission: 'KPI_MANAGE',
+    changeable: (entry) =>
+      portfolio.data?.entries.find((row) => row.assignment.id === entry.assignment.id)?.project
+        .status !== 'CLOSED',
+    name: (entry) => lookups.kpiName(entry.assignment.kpiDefinitionId),
+    remove: (entry) => financialKpiApi.removeAssignment(entry.assignment.id),
+    onDeleted: portfolio.reload,
+  });
   const lookups = useKpiLookups();
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
@@ -169,13 +181,17 @@ export function KpiRegisterPage(): ReactElement {
                 <p>{t('financialKpi.register.filteredEmptyBody')}</p>
               </EmptyState>
             ) : (
-              <KpiTable
-                caption={t('financialKpi.register.caption')}
-                rows={shown.map((entry) => ({ entry, project: entry.project }))}
-                today={today}
-                lookups={lookups}
-                showTarget={false}
-              />
+              <>
+                <KpiTable
+                  caption={t('financialKpi.register.caption')}
+                  rows={shown.map((entry) => ({ entry, project: entry.project }))}
+                  today={today}
+                  lookups={lookups}
+                  showTarget={false}
+                  actions={kpiRows?.render}
+                />
+                {kpiRows?.dialog}
+              </>
             )}
           </section>
         </div>

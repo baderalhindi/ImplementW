@@ -72,6 +72,17 @@ public sealed class ConcernResponseContractTests(ConcernTestHost host)
         using HttpResponseMessage imported = await client.UploadAsync(ConcernDriver.Concerns, sessions.InternalManager, ImportApi.Workbook(["legacy_id"]), commit: false);
         await responses.CheckAsync("POST", $"{ConcernDriver.Concerns}/imports", imported);
 
+        // Client review, item 8: another issue, raised and deleted, is gone from its reads.
+        using HttpResponseMessage spare = await client.PostAsync(ConcernDriver.Concerns, sessions.InternalManager, ConcernDriver.ConcernBody(projectId, ConcernDriver.Impacts(dimensions, 2)));
+        string sparePath = $"{ConcernDriver.Concerns}/{AdministrationApi.IdOf((await spare.ReadObjectAsync())!)}";
+        using HttpResponseMessage deleted = await client.SendAsync(HttpMethod.Delete, sparePath, sessions.InternalManager);
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        await responses.CheckAsync("DELETE", concern, deleted);
+        using (HttpResponseMessage gone = await client.GetAsync(sparePath, sessions.InternalManager))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, gone.StatusCode);
+        }
+
         Assert.Equal((await OpenApiDocument.FetchAsync(client)).Operations(RiskIssueApi.ConcernTag).Select(o => o.Name).Order(), responses.Operations.Order());
         Assert.Empty(responses.Violations);
 

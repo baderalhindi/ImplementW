@@ -8,7 +8,7 @@ namespace PMPlatform.Domain.Risk;
 /// into an issue is recorded on the issue (<c>management_concern.originating_risk_id</c>, edge 15); this row keeps only when it
 /// happened. Delete policy: RETAIN — a risk that no longer applies is closed.
 /// </summary>
-public sealed class Risk : AuditedEntity
+public sealed class Risk : AuditedEntity, IDeletable
 {
     public Guid ProjectId { get; set; }
 
@@ -40,4 +40,9 @@ public sealed class Risk : AuditedEntity
 
     /// <summary>How many times the risk was reopened after closure, each by the holder of the reopen permission.</summary>
     public int ReopenedCount { get; set; }
+
+    /// <inheritdoc cref="IDeletable"/>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Guid? DeletedBy { get; set; }
 }

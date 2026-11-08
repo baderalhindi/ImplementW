@@ -63,6 +63,8 @@ export const tasksApi = {
   createDependency: (request: TaskDependencyRequest) =>
     apiRequest<TaskDependencyDetail>('/task-dependencies', { method: 'POST', body: request }),
   /** 204, also when it is already gone (R-40). A dependency is never edited, only removed and added again. */
+  /** Client review, item 8: the task and its subtasks leave the lists; 204, also when already gone. */
+  remove: (id: string) => apiRequest<undefined>(`/project-tasks/${id}`, { method: 'DELETE' }),
   deleteDependency: (id: string) =>
     apiRequest<undefined>(`/task-dependencies/${id}`, { method: 'DELETE' }),
 };

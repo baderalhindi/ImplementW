@@ -21,6 +21,7 @@ import { type RiskLookups } from '../useRiskData.ts';
 
 import { RiskSummaryCards } from './RiskSummaryCards.tsx';
 import { RiskTable } from './RiskTable.tsx';
+import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 
 const DEFAULT_VIEW: RegisterView = 'open';
 
@@ -30,6 +31,7 @@ interface RiskRegisterViewProps {
   lookups: RiskLookups;
   showProject: boolean;
   caption: string;
+  actions?: RowActionsColumn<RiskEntry> | undefined;
 }
 
 /**
@@ -38,6 +40,7 @@ interface RiskRegisterViewProps {
  * offers the ratings the risks carry.
  */
 export function RiskRegisterView({
+  actions,
   entries,
   matrix,
   lookups,
@@ -99,6 +102,7 @@ export function RiskRegisterView({
         <EmptyState title={t('risks.empty.filtered')} />
       ) : (
         <RiskTable
+          actions={actions}
           caption={caption}
           entries={shown}
           today={today}

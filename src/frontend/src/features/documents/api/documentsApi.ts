@@ -51,6 +51,8 @@ function fileForm(file: File): FormData {
 export type UploadProgress = (fraction: number) => void;
 
 export const documentsApi = {
+  /** Client review, item 8: it and what belongs to it leave the lists; 204, also when already gone. */
+  remove: (id: string) => apiRequest<undefined>(`/documents/${id}`, { method: 'DELETE' }),
   /** SCR-120, SCR-121 (`projectId`), SCR-122: only documents the caller may read, most recently changed first. */
   list: (query: DocumentQuery, signal?: AbortSignal) =>
     data(apiRequest<Page<DocumentSummary>>('/documents', { query: { ...query }, signal })),

@@ -6,7 +6,7 @@ namespace PMPlatform.Domain.Project;
 /// The project master aggregate (Blueprint Sections 5 and 9; ICD-02) and the root of the core-domain graph.
 /// Delete policy: HARD_DRAFT — deletable only while DRAFT, by its owner, with an audit event.
 /// </summary>
-public sealed class Project : AuditedEntity
+public sealed class Project : AuditedEntity, IDeletable
 {
     /// <summary>
     /// The one authoritative identifier, unique, issued when AHDA approves the project. An entity may create a draft

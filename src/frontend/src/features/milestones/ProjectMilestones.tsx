@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useState } from 'react';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -12,9 +13,11 @@ import { canPlanMilestones } from './access.ts';
 import { MilestoneTable } from './components/MilestoneTable.tsx';
 import { type MilestoneDialog } from './dialogs/milestoneDialog.ts';
 import { MilestoneDialogs } from './dialogs/MilestoneDialogs.tsx';
-import { revisionsOf } from './milestoneRules.ts';
+import { revisionsOf, type MilestoneEntry } from './milestoneRules.ts';
 import { isForbidden, milestoneProblemMessage } from './problems.ts';
 import { useMilestoneLookups, useProjectMilestones } from './useMilestoneData.ts';
+import { useSearchParams } from 'react-router';
+import { milestonesApi } from './api/milestonesApi.ts';
 
 /**
  * SCR-046 Project Milestones: the project's milestones, earliest forecast first, each with its category, its forecast
@@ -33,7 +36,22 @@ export function ProjectMilestones({
   const data = useProjectMilestones(project.id);
   const lookups = useMilestoneLookups();
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [dialog, setDialog] = useState<MilestoneDialog | null>(null);
+  const [params] = useSearchParams();
+  // A register elsewhere sends Edit here with the milestone's id: its edit form opens on arrival.
+  const [dialog, setDialog] = useState<MilestoneDialog | null>(() => {
+    const editing = params.get('edit');
+    return editing === null ? null : { kind: 'edit', milestoneId: editing, fromRow: true };
+  });
+  const rowActions = useRowActions<MilestoneEntry>({
+    permission: 'SCHEDULE_EDIT',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ milestone }) => milestone.title.text,
+    onEdit: ({ milestone }) => {
+      setDialog({ kind: 'edit', fromRow: true, milestoneId: milestone.id });
+    },
+    remove: ({ milestone }) => milestonesApi.remove(milestone.id),
+    onDeleted: data.reload,
+  });
 
   if (data.data === undefined) {
     if (data.loading) {
@@ -109,6 +127,7 @@ export function ProjectMilestones({
           </EmptyState>
         ) : (
           <MilestoneTable
+            actions={rowActions}
             caption={t('milestones.project.caption')}
             entries={entries}
             today={todayUtc()}

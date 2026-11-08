@@ -4426,6 +4426,29 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "DocumentManagement"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "DocumentManagement_DeleteDocument",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
       }
     },
     "/api/v1/documents/{documentId}/archive": {
@@ -7606,6 +7629,29 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "FinancialKpi"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "FinancialKpi_DeleteKpiAssignment",
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
       }
     },
     "/api/v1/kpi-assignments/{assignmentId}/suspend": {
@@ -8858,6 +8904,29 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ManagementConcern"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "ManagementConcern_DeleteConcern",
+        "parameters": [
+          {
+            "name": "concernId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -13566,6 +13635,29 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Schedule"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "Schedule_DeleteMilestone",
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
       }
     },
     "/api/v1/project-milestones/{milestoneId}/cancel": {
@@ -14463,6 +14555,29 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ProjectTask"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "ProjectTask_DeleteTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -16073,6 +16188,29 @@
                 }
               }
             }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Risk"
+        ],
+        "summary": "Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.",
+        "operationId": "Risk_DeleteRisk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }

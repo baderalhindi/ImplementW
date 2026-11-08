@@ -209,4 +209,20 @@ public sealed class RisksController(IRiskService risks, IRiskLifecycleService li
         TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
             ? Respond(await command(version, cancellationToken))
             : problem!;
+
+    /// <summary>Client review, item 8: hides the record and what belongs to it; the database and the audit trail keep them. R-40: one not there is 204 as well.</summary>
+    [HttpDelete("{riskId:guid}")]
+    [RequirePermission(PermissionCatalogue.RiskManage)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [EndpointName("Risk_DeleteRisk")]
+    public async Task<IActionResult> Delete(Guid riskId, CancellationToken cancellationToken)
+    {
+        if (!TryReadIfMatch(required: false, out uint? version, out IActionResult? problem))
+        {
+            return problem!;
+        }
+
+        AdministrationError? error = await risks.DeleteRiskAsync(CallerId, riskId, version, cancellationToken);
+        return error is null || error.Kind == AdministrationErrorKind.NotFound ? NoContent() : Failure(error);
+    }
 }

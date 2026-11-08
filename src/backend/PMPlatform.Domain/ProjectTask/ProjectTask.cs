@@ -9,7 +9,7 @@ namespace PMPlatform.Domain.ProjectTask;
 /// on read and never stored. <see cref="PlannedDurationDays"/> is the roll-up weight. Named ProjectTask, not Task, so it does
 /// not shadow <c>System.Threading.Tasks.Task</c> (solution architecture §4.4b). Delete policy: RETAIN — a mistake is cancelled.
 /// </summary>
-public sealed class ProjectTask : AuditedEntity
+public sealed class ProjectTask : AuditedEntity, IDeletable
 {
     public Guid ProjectId { get; set; }
 
@@ -51,4 +51,9 @@ public sealed class ProjectTask : AuditedEntity
 
     /// <summary>How many times the task was reopened after completion, each by the holder of the reopen permission.</summary>
     public int ReopenedCount { get; set; }
+
+    /// <inheritdoc cref="IDeletable"/>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Guid? DeletedBy { get; set; }
 }

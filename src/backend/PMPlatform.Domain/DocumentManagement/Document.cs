@@ -7,7 +7,7 @@ namespace PMPlatform.Domain.DocumentManagement;
 /// the row is never deleted, and its project never changes, because the project anchors who may reach it (ADR-013).
 /// Delete policy: RETAIN.
 /// </summary>
-public sealed class Document : AuditedEntity
+public sealed class Document : AuditedEntity, IDeletable
 {
     public required NarrativeText Title { get; set; }
 
@@ -25,4 +25,9 @@ public sealed class Document : AuditedEntity
     public Guid OwnerUserId { get; set; }
 
     public DocumentStatus Status { get; set; }
+
+    /// <inheritdoc cref="IDeletable"/>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Guid? DeletedBy { get; set; }
 }

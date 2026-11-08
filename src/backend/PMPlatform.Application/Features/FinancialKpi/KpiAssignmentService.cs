@@ -232,4 +232,23 @@ internal sealed class KpiAssignmentService(
     }
 
     private sealed record Loaded(ProjectFacts? Project, KpiAssignment? Assignment, AdministrationError? Error);
+
+    public async Task<AdministrationError?> DeleteAsync(Guid callerId, Guid assignmentId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.KpiManage, assignmentId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (loaded.Error is { } refused)
+        {
+            return refused;
+        }
+
+        // A target awaiting its approval would be left with nothing to decide.
+        if ((await repository.ListTargetsAsync(assignmentId, cancellationToken).ConfigureAwait(false))
+            .Any(t => t.Status is ApprovedVersionStatus.Submitted or ApprovedVersionStatus.UnderReview))
+        {
+            return AdministrationError.Conflict(RecordDeletion.ApprovalPending);
+        }
+
+        audit.Stage(RecordDeletion.Stamp(loaded.Assignment!, "FinancialKpi", callerId, loaded.Project!.Id, timeProvider.GetUtcNow()));
+        return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) == FinancialKpiSaveOutcome.Saved ? null : AdministrationError.PreconditionFailed;
+    }
 }

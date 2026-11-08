@@ -103,7 +103,8 @@
     "unavailable": "The service is unavailable at the moment. Try again later.",
     "rateLimited": "You have made too many requests in a short time. Wait a minute, then try again.",
     "unexpected": "Something went wrong. Try again.",
-    "unexpectedWithReference": "Something went wrong. Try again. If it happens again, quote reference {reference}."
+    "unexpectedWithReference": "Something went wrong. Try again. If it happens again, quote reference {reference}.",
+    "approvalPending": "This record is in an approval that has not finished. Wait for the decision, or have it returned, then delete it."
   },
   "forbidden": {
     "title": "Access denied",
@@ -169,5 +170,10 @@
       "title": "Knowledge base",
       "description": "The terms the platform’s screens use, and what each one means."
     }
+  },
+  "rowActions": {
+    "delete": "Delete",
+    "deleteTitle": "Delete this record?",
+    "deleteBody": "Delete “{name}”? It and what belongs to it leave every list. Its data and history stay on file."
   }
 }

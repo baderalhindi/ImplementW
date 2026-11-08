@@ -217,4 +217,35 @@ internal sealed class ProjectTaskService(
                 ? AdministrationError.Rule(ProjectTaskErrorCodes.HierarchyInvalid, new FieldIssue("parentTaskId", FieldIssue.NotAllowed))
                 : null;
     }
+
+    public async Task<AdministrationError?> DeleteTaskAsync(Guid callerId, Guid taskId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        Loaded loaded = await gate.LoadTaskAsync(callerId, PermissionCatalogue.TaskManage, taskId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (loaded.Error is { } refused)
+        {
+            return refused;
+        }
+
+        ProjectFacts project = loaded.Project!;
+        if (ProjectTaskReferences.PlanningRefused(project) is { } notEligible)
+        {
+            return notEligible;
+        }
+
+        await using IProjectTaskWork work = await repository.BeginAsync(cancellationToken).ConfigureAwait(false);
+        TaskBoard board = await gate.OpenAsync(project, cancellationToken).ConfigureAwait(false);
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        List<ProjectTaskEntity> deleted = [.. board.Tasks.Where(t => t.Id == taskId || t.ParentTaskId == taskId)];
+        foreach (ProjectTaskEntity task in deleted)
+        {
+            audit.Stage(RecordDeletion.Stamp(task, "ProjectTask", callerId, project.Id, now));
+        }
+
+        // The board rolls the activities up again without them, so activity progress does not count a deleted task.
+        board.Tasks.RemoveAll(deleted.Contains);
+        board.Dependencies.RemoveAll(d => deleted.Exists(t => t.Id == d.PredecessorTaskId || t.Id == d.SuccessorTaskId));
+        return await gate.SaveAsync(work, board, callerId, now, cancellationToken).ConfigureAwait(false) == ProjectTaskSaveOutcome.Saved
+            ? null
+            : AdministrationError.PreconditionFailed;
+    }
 }

@@ -1,4 +1,5 @@
 import { type ReactElement, type ReactNode } from 'react';
+import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 import { Link } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
@@ -24,6 +25,8 @@ interface TaskTableProps {
   /** A line under the task's title (SCR-066's reasons). */
   aside?: ((entry: TaskEntry) => ReactNode) | undefined;
   onOpen: (entry: TaskEntry) => void;
+  /** Client review, item 8: the row's Edit and Delete, for a role that may manage it. */
+  actions?: RowActionsColumn<TaskEntry> | undefined;
 }
 
 /**
@@ -31,6 +34,7 @@ interface TaskTableProps {
  * overdue row carries the icon and the words, and a thick edge, as well as the colour (acceptance criterion 1).
  */
 export function TaskTable({
+  actions,
   caption,
   entries,
   today,
@@ -44,87 +48,96 @@ export function TaskTable({
   const personName = usePersonNames(entries.map((entry) => entry.task.assigneeUserId));
 
   return (
-    <TableContainer caption={caption}>
-      <thead>
-        <tr>
-          <th scope="col">{t('tasks.table.task')}</th>
-          {showProject && <th scope="col">{t('tasks.table.project')}</th>}
-          <th scope="col">{t('tasks.table.status')}</th>
-          <th scope="col">{t('tasks.table.owner')}</th>
-          <th scope="col">{t('tasks.table.planned')}</th>
-          <th scope="col">{t('tasks.table.progress')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map((entry) => {
-          const { task, project } = entry;
-          const overdue = overdueDays(task, today);
-          const parent = task.parentTaskId === null ? undefined : parents.get(task.parentTaskId);
-          const rowClass =
-            overdue !== null
-              ? 'row--overdue'
-              : task.status === 'CANCELLED'
-                ? 'row--muted'
-                : undefined;
-          return (
-            <tr key={task.id} className={rowClass} data-overdue={overdue !== null || undefined}>
-              <td
-                style={
-                  nested && task.parentTaskId !== null ? { paddingInlineStart: '2rem' } : undefined
-                }
-              >
-                <button
-                  type="button"
-                  className="button button--link task__title"
-                  dir="auto"
-                  onClick={() => {
-                    onOpen(entry);
-                  }}
+    <>
+      <TableContainer caption={caption}>
+        <thead>
+          <tr>
+            <th scope="col">{t('tasks.table.task')}</th>
+            {showProject && <th scope="col">{t('tasks.table.project')}</th>}
+            <th scope="col">{t('tasks.table.status')}</th>
+            <th scope="col">{t('tasks.table.owner')}</th>
+            <th scope="col">{t('tasks.table.planned')}</th>
+            <th scope="col">{t('tasks.table.progress')}</th>
+            {actions !== undefined && <th scope="col">{t('common.table.actions')}</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => {
+            const { task, project } = entry;
+            const overdue = overdueDays(task, today);
+            const parent = task.parentTaskId === null ? undefined : parents.get(task.parentTaskId);
+            const rowClass =
+              overdue !== null
+                ? 'row--overdue'
+                : task.status === 'CANCELLED'
+                  ? 'row--muted'
+                  : undefined;
+            return (
+              <tr key={task.id} className={rowClass} data-overdue={overdue !== null || undefined}>
+                <td
+                  style={
+                    nested && task.parentTaskId !== null
+                      ? { paddingInlineStart: '2rem' }
+                      : undefined
+                  }
                 >
-                  {task.title.text}
-                </button>
-                {!nested && parent !== undefined && (
-                  <span className="cell__aside" dir="auto">
-                    {t('tasks.table.subtaskOf', { parent: parent.title.text })}
-                  </span>
-                )}
-                {task.subtaskCount > 0 && (
-                  <span className="cell__aside">
-                    {task.subtaskCount === 1
-                      ? t('tasks.table.subtasksOne')
-                      : t('tasks.table.subtasks', { count: task.subtaskCount })}
-                  </span>
-                )}
-                {overdue !== null && <OverdueFlag days={overdue} />}
-                {aside?.(entry)}
-              </td>
-              {showProject && (
-                <td>
-                  <Link to={`/projects/${project.id}/tasks`} dir="auto">
-                    {project.title.text}
-                  </Link>
+                  <button
+                    type="button"
+                    className="button button--link task__title"
+                    dir="auto"
+                    onClick={() => {
+                      onOpen(entry);
+                    }}
+                  >
+                    {task.title.text}
+                  </button>
+                  {!nested && parent !== undefined && (
+                    <span className="cell__aside" dir="auto">
+                      {t('tasks.table.subtaskOf', { parent: parent.title.text })}
+                    </span>
+                  )}
+                  {task.subtaskCount > 0 && (
+                    <span className="cell__aside">
+                      {task.subtaskCount === 1
+                        ? t('tasks.table.subtasksOne')
+                        : t('tasks.table.subtasks', { count: task.subtaskCount })}
+                    </span>
+                  )}
+                  {overdue !== null && <OverdueFlag days={overdue} />}
+                  {aside?.(entry)}
                 </td>
-              )}
-              <td>
-                <TaskStatusBadge task={task} />
-              </td>
-              <td>
-                {task.assigneeUserId === null ? (
-                  <span className="figure figure--none">{t('tasks.owner.none')}</span>
-                ) : (
-                  personName(task.assigneeUserId)
+                {showProject && (
+                  <td>
+                    <Link to={`/projects/${project.id}/tasks`} dir="auto">
+                      {project.title.text}
+                    </Link>
+                  </td>
                 )}
-              </td>
-              <td>
-                <DateRange start={task.plannedStartDate} finish={task.plannedFinishDate} />
-              </td>
-              <td>
-                <PercentFigure task={task} />
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </TableContainer>
+                <td>
+                  <TaskStatusBadge task={task} />
+                </td>
+                <td>
+                  {task.assigneeUserId === null ? (
+                    <span className="figure figure--none">{t('tasks.owner.none')}</span>
+                  ) : (
+                    personName(task.assigneeUserId)
+                  )}
+                </td>
+                <td>
+                  <DateRange start={task.plannedStartDate} finish={task.plannedFinishDate} />
+                </td>
+                <td>
+                  <PercentFigure task={task} />
+                </td>
+                {actions !== undefined && (
+                  <td className="cell--actions">{actions.render(entry)}</td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </TableContainer>
+      {actions?.dialog}
+    </>
   );
 }

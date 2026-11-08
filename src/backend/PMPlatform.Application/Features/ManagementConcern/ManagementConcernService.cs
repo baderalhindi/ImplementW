@@ -94,4 +94,24 @@ internal sealed class ManagementConcernService(
         concern.Status == Domain.ManagementConcern.ConcernStatus.Closed ? AdministrationError.Conflict(ConcernErrorCodes.Closed)
         : ConcernWorkflow.IsEditable(concern.Status) ? null
         : AdministrationError.Conflict(ConcernErrorCodes.NotEditable);
+
+    public async Task<AdministrationError?> DeleteAsync(Guid callerId, Guid concernId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        LoadedConcern loaded = await gate.LoadInternalAsync(callerId, PermissionCatalogue.ConcernManage, concernId, expectedVersion, cancellationToken)
+            .ConfigureAwait(false);
+        if (loaded.Error is { } refused)
+        {
+            return refused;
+        }
+
+        // A resolution awaiting validation is an approval run that would be left with nothing to decide.
+        if (loaded.Concern!.Status == Domain.ManagementConcern.ConcernStatus.PendingValidation)
+        {
+            return AdministrationError.Conflict(RecordDeletion.ApprovalPending);
+        }
+
+        await using IConcernWork work = await repository.BeginAsync(cancellationToken).ConfigureAwait(false);
+        audit.Stage(RecordDeletion.Stamp(loaded.Concern, "ManagementConcern", callerId, loaded.Project!.Id, timeProvider.GetUtcNow()));
+        return await gate.SaveAsync(work, cancellationToken).ConfigureAwait(false) == ConcernSaveOutcome.Saved ? null : AdministrationError.PreconditionFailed;
+    }
 }

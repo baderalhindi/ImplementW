@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -12,6 +13,8 @@ import { RiskRegisterView } from './components/RiskRegisterView.tsx';
 import { RiskFormDialog } from './dialogs/RiskFormDialog.tsx';
 import { isForbidden, riskProblemMessage } from './problems.ts';
 import { matrixOf, useProjectRisks, useRiskLookups, useRiskMatrix } from './useRiskData.ts';
+import { type RiskEntry } from './riskRules.ts';
+import { risksApi } from './api/risksApi.ts';
 
 /**
  * SCR-080 Risk Register for one project, inside its workspace: the summary cards, the filters and the project's risks,
@@ -28,6 +31,14 @@ export function ProjectRisks({
   const { t } = useI18n();
   const navigate = useNavigate();
   const risks = useProjectRisks(project.id);
+  const rowActions = useRowActions<RiskEntry>({
+    permission: 'RISK_MANAGE',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ risk }) => risk.title.text,
+    editTo: ({ risk, project: owner }) => `/projects/${owner.id}/risks/${risk.id}?edit=1`,
+    remove: ({ risk }) => risksApi.remove(risk.id),
+    onDeleted: risks.reload,
+  });
   const matrixState = useRiskMatrix();
   const lookups = useRiskLookups();
   const [creating, setCreating] = useState(false);
@@ -83,6 +94,7 @@ export function ProjectRisks({
           </EmptyState>
         ) : (
           <RiskRegisterView
+            actions={rowActions}
             entries={entries}
             matrix={matrixOf(matrixState)}
             lookups={lookups}

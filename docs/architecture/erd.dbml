@@ -1111,6 +1111,8 @@ Table schedule.project_milestone {
   forecast_date date [not null, note: 'Current Forecast']
   status varchar(50) [not null, note: 'PLANNED | ACHIEVED | CANCELLED — ACHIEVED is set by WF-03 on the WF-05 acceptance event']
   sort_order integer [not null, default: 0]
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -1170,6 +1172,8 @@ Table project_task.project_task {
   blocked_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
   completed_at timestamptz
   reopened_count integer [not null, default: 0, note: 'Reopen requires the specific permission (TASK-048)']
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -1253,6 +1257,8 @@ Table risk.risk {
   closed_at timestamptz
   closed_by_user_id uuid [ref: > identity_access.user.id]
   reopened_count integer [not null, default: 0, note: 'Reopen requires the specific permission; captured in Audit']
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -1359,6 +1365,8 @@ Table management_concern.management_concern {
   resolution_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
   resolved_at timestamptz
   closed_at timestamptz
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -1427,6 +1435,8 @@ Table change_request.change_request {
   requested_governance_profile_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'For GOVERNANCE_PROFILE changes (TASK-105)']
   implemented_at timestamptz
   closed_at timestamptz
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -1664,6 +1674,8 @@ Table document_management.document {
   project_id uuid [ref: > project.project.id, note: 'Null for the general library (SCR-120)']
   owner_user_id uuid [not null, ref: > identity_access.user.id]
   status varchar(50) [not null, note: 'ACTIVE | ARCHIVED']
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -1955,6 +1967,8 @@ Table financial_kpi.kpi_assignment {
   measurement_frequency_item_id uuid [not null, ref: > master_data_config.master_data_item.id]
   status varchar(50) [not null, note: 'ACTIVE | SUSPENDED | RETIRED']
   assigned_at timestamptz [not null]
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 8): it and what belongs to it leave every read; the row and the audit trail stay']
+  deleted_by uuid [note: 'User.id by convention, no FK constraint (D-2)']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']

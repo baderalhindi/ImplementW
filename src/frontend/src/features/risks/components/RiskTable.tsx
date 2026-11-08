@@ -1,4 +1,5 @@
 import { type ReactElement } from 'react';
+import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 import { Link } from 'react-router';
 
 import { useSession } from '@/features/identity-access/session/useSession.ts';
@@ -28,6 +29,8 @@ interface RiskTableProps {
   matrix: RiskMatrix | null;
   categoryLabel: (id: string) => string;
   personName: (id: string | null) => string;
+  /** Client review, item 8: the row's Edit and Delete, for a role that may manage it. */
+  actions?: RowActionsColumn<RiskEntry> | undefined;
 }
 
 /** A due review is said in words and with the warning icon, as well as by the row's thick edge. */
@@ -115,6 +118,7 @@ function CorrectiveActions({
  * (WF-06 §8: no false Low values).
  */
 export function RiskTable({
+  actions,
   caption,
   entries,
   today,
@@ -126,114 +130,123 @@ export function RiskTable({
   const { t } = useI18n();
   const { session } = useSession();
   return (
-    <TableContainer caption={caption}>
-      <thead>
-        <tr>
-          <th scope="col">{t('risks.table.risk')}</th>
-          {showProject && <th scope="col">{t('risks.table.project')}</th>}
-          <th scope="col">{t('risks.table.category')}</th>
-          <th scope="col">{t('risks.table.owner')}</th>
-          <th scope="col">{t('risks.table.status')}</th>
-          <th scope="col">{t('risks.table.probability')}</th>
-          <th scope="col">{t('risks.table.impact')}</th>
-          <th scope="col">{t('risks.table.rating')}</th>
-          <th scope="col">{t('risks.table.correctiveAction')}</th>
-          <th scope="col">{t('risks.table.nextReview')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map(({ risk, project }) => {
-          const due = isReviewDue(risk, today);
-          const assessment = risk.currentAssessment;
-          const detailPath = `/projects/${project.id}/risks/${risk.id}`;
-          const mayAdd = session !== null && canManageRisk(session.user, project, risk);
-          return (
-            <tr
-              key={risk.id}
-              className={due ? 'row--overdue' : risk.status === 'CLOSED' ? 'row--muted' : undefined}
-            >
-              <td>
-                <Link to={detailPath} lang={languageTag(risk.title.language)} dir="auto">
-                  {risk.title.text}
-                </Link>
-                {risk.materialisedAt !== null && (
-                  <span className="cell__aside">{t('risks.table.materialised')}</span>
-                )}
-              </td>
-              {showProject && (
+    <>
+      <TableContainer caption={caption}>
+        <thead>
+          <tr>
+            <th scope="col">{t('risks.table.risk')}</th>
+            {showProject && <th scope="col">{t('risks.table.project')}</th>}
+            <th scope="col">{t('risks.table.category')}</th>
+            <th scope="col">{t('risks.table.owner')}</th>
+            <th scope="col">{t('risks.table.status')}</th>
+            <th scope="col">{t('risks.table.probability')}</th>
+            <th scope="col">{t('risks.table.impact')}</th>
+            <th scope="col">{t('risks.table.rating')}</th>
+            <th scope="col">{t('risks.table.correctiveAction')}</th>
+            <th scope="col">{t('risks.table.nextReview')}</th>
+            {actions !== undefined && <th scope="col">{t('common.table.actions')}</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map(({ risk, project }) => {
+            const due = isReviewDue(risk, today);
+            const assessment = risk.currentAssessment;
+            const detailPath = `/projects/${project.id}/risks/${risk.id}`;
+            const mayAdd = session !== null && canManageRisk(session.user, project, risk);
+            return (
+              <tr
+                key={risk.id}
+                className={
+                  due ? 'row--overdue' : risk.status === 'CLOSED' ? 'row--muted' : undefined
+                }
+              >
                 <td>
-                  <Link
-                    to={`/projects/${project.id}/risks`}
-                    lang={languageTag(project.title.language)}
-                    dir="auto"
-                  >
-                    {project.title.text}
+                  <Link to={detailPath} lang={languageTag(risk.title.language)} dir="auto">
+                    {risk.title.text}
                   </Link>
+                  {risk.materialisedAt !== null && (
+                    <span className="cell__aside">{t('risks.table.materialised')}</span>
+                  )}
                 </td>
-              )}
-              <td>{categoryLabel(risk.riskCategoryItemId)}</td>
-              <td>
-                {risk.ownerUserId === null
-                  ? t('risks.table.noOwner')
-                  : personName(risk.ownerUserId)}
-              </td>
-              <td>
-                <RiskStatusBadge status={risk.status} />
-                {risk.acceptedUntil !== null && (
-                  <span className="cell__aside">
-                    {t('risks.table.acceptedUntil', { date: risk.acceptedUntil })}
-                  </span>
+                {showProject && (
+                  <td>
+                    <Link
+                      to={`/projects/${project.id}/risks`}
+                      lang={languageTag(project.title.language)}
+                      dir="auto"
+                    >
+                      {project.title.text}
+                    </Link>
+                  </td>
                 )}
-              </td>
-              <td>
-                {assessment === null ? (
-                  <span className="figure figure--none">—</span>
-                ) : (
-                  <LevelCell
-                    level={assessment.probabilityLevel}
-                    label={probabilityLabel(matrix, assessment.probabilityLevel)}
+                <td>{categoryLabel(risk.riskCategoryItemId)}</td>
+                <td>
+                  {risk.ownerUserId === null
+                    ? t('risks.table.noOwner')
+                    : personName(risk.ownerUserId)}
+                </td>
+                <td>
+                  <RiskStatusBadge status={risk.status} />
+                  {risk.acceptedUntil !== null && (
+                    <span className="cell__aside">
+                      {t('risks.table.acceptedUntil', { date: risk.acceptedUntil })}
+                    </span>
+                  )}
+                </td>
+                <td>
+                  {assessment === null ? (
+                    <span className="figure figure--none">—</span>
+                  ) : (
+                    <LevelCell
+                      level={assessment.probabilityLevel}
+                      label={probabilityLabel(matrix, assessment.probabilityLevel)}
+                    />
+                  )}
+                </td>
+                <td>
+                  {assessment === null ? (
+                    <span className="figure figure--none">—</span>
+                  ) : (
+                    <LevelCell
+                      level={assessment.overallImpactLevel}
+                      label={impactLabel(matrix, assessment.overallImpactLevel)}
+                    />
+                  )}
+                </td>
+                <td>
+                  {assessment === null ? (
+                    <UnratedBadge />
+                  ) : (
+                    <RatingBadge
+                      code={assessment.rating.code}
+                      label={assessment.rating.label}
+                      matrix={matrix}
+                    />
+                  )}
+                </td>
+                <td>
+                  <CorrectiveActions
+                    actions={risk.openTreatmentActions}
+                    addTo={mayAdd ? `${detailPath}?${ADD_ACTION_PARAM}=1` : null}
                   />
+                </td>
+                <td>
+                  {risk.nextReviewDate === null ? (
+                    <span className="figure figure--none">{t('risks.table.noReview')}</span>
+                  ) : (
+                    <span dir="ltr">{risk.nextReviewDate}</span>
+                  )}
+                  {due && <ReviewDueFlag />}
+                </td>
+                {actions !== undefined && (
+                  <td className="cell--actions">{actions.render({ risk, project })}</td>
                 )}
-              </td>
-              <td>
-                {assessment === null ? (
-                  <span className="figure figure--none">—</span>
-                ) : (
-                  <LevelCell
-                    level={assessment.overallImpactLevel}
-                    label={impactLabel(matrix, assessment.overallImpactLevel)}
-                  />
-                )}
-              </td>
-              <td>
-                {assessment === null ? (
-                  <UnratedBadge />
-                ) : (
-                  <RatingBadge
-                    code={assessment.rating.code}
-                    label={assessment.rating.label}
-                    matrix={matrix}
-                  />
-                )}
-              </td>
-              <td>
-                <CorrectiveActions
-                  actions={risk.openTreatmentActions}
-                  addTo={mayAdd ? `${detailPath}?${ADD_ACTION_PARAM}=1` : null}
-                />
-              </td>
-              <td>
-                {risk.nextReviewDate === null ? (
-                  <span className="figure figure--none">{t('risks.table.noReview')}</span>
-                ) : (
-                  <span dir="ltr">{risk.nextReviewDate}</span>
-                )}
-                {due && <ReviewDueFlag />}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </TableContainer>
+              </tr>
+            );
+          })}
+        </tbody>
+      </TableContainer>
+      {actions?.dialog}
+    </>
   );
 }

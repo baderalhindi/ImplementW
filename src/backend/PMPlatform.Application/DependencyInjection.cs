@@ -268,6 +268,7 @@ public static class DependencyInjection
         services.AddScoped<IMilestoneAchievementService, MilestoneAchievementService>();
         services.AddScoped<IApprovalOutcomeHandler, MilestoneAchievementOutcomeHandler>();
         services.AddScoped<IMilestoneCloseoutReader, MilestoneCloseoutReader>();
+        services.AddScoped<IMilestoneClaimsInProgress, MilestoneClaimsInProgress>();
 
         // TASK-052: WF-14's two subdomains. Financial Progress — source modes, Approved Budget versions (WF-11, edge 26; documents,
         // edge 38), periodic updates aligned to WF-02's periods (edge 13) and their published snapshots; KPI Performance — assignments,

@@ -21,6 +21,7 @@ import {
 import { type ConcernLookups } from '../useConcernData.ts';
 
 import { ConcernTable } from './ConcernTable.tsx';
+import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 
 const DEFAULT_VIEW: RegisterView = 'open';
 
@@ -35,6 +36,7 @@ interface ConcernRegisterViewProps {
   userId: string;
   showProject: boolean;
   caption: string;
+  actions?: RowActionsColumn<ConcernEntry> | undefined;
 }
 
 /**
@@ -43,6 +45,7 @@ interface ConcernRegisterViewProps {
  * "Not assessed".
  */
 export function ConcernRegisterView({
+  actions,
   entries,
   lookups,
   userId,
@@ -142,6 +145,7 @@ export function ConcernRegisterView({
         <EmptyState title={t('issuesChallenges.empty.filtered')} />
       ) : (
         <ConcernTable
+          actions={actions}
           caption={caption}
           entries={shown}
           today={today}

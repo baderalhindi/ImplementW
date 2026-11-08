@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement } from 'react';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -8,6 +9,8 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { RiskRegisterView } from './components/RiskRegisterView.tsx';
 import { isForbidden, riskProblemMessage } from './problems.ts';
 import { matrixOf, useRiskLookups, useRiskMatrix, useRiskPortfolio } from './useRiskData.ts';
+import { type RiskEntry } from './riskRules.ts';
+import { risksApi } from './api/risksApi.ts';
 
 /**
  * SCR-080 Risk Register across the projects the person may see: the same summary, filters and table as a project's
@@ -17,6 +20,14 @@ import { matrixOf, useRiskLookups, useRiskMatrix, useRiskPortfolio } from './use
 export function RiskRegisterPage(): ReactElement {
   const { t } = useI18n();
   const portfolio = useRiskPortfolio();
+  const rowActions = useRowActions<RiskEntry>({
+    permission: 'RISK_MANAGE',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ risk }) => risk.title.text,
+    editTo: ({ risk, project: owner }) => `/projects/${owner.id}/risks/${risk.id}?edit=1`,
+    remove: ({ risk }) => risksApi.remove(risk.id),
+    onDeleted: portfolio.reload,
+  });
   const matrixState = useRiskMatrix();
   const lookups = useRiskLookups();
 
@@ -63,6 +74,7 @@ export function RiskRegisterPage(): ReactElement {
         </EmptyState>
       ) : (
         <RiskRegisterView
+          actions={rowActions}
           entries={entries}
           matrix={matrixOf(matrixState)}
           lookups={lookups}

@@ -1,5 +1,5 @@
 import { type ReactElement, useState } from 'react';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useSearchParams } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
@@ -61,7 +61,11 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
   const [notice, setNotice] = useState<Notice | null>(
     arrivalKey === undefined ? null : { tone: 'success', message: t(arrivalKey) },
   );
-  const [dialog, setDialog] = useState<ConcernDialog | null>(null);
+  const [params] = useSearchParams();
+  // A register's Edit lands here with ?edit=1: the edit form opens on arrival.
+  const [dialog, setDialog] = useState<ConcernDialog | null>(() =>
+    params.get('edit') === '1' ? { kind: 'edit' } : null,
+  );
   const data = record.data;
   const personName = usePersonNames([
     data?.concern.data.assigneeUserId ?? null,

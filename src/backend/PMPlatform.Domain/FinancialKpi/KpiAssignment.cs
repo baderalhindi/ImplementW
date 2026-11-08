@@ -3,7 +3,7 @@ using PMPlatform.Domain.Common;
 namespace PMPlatform.Domain.FinancialKpi;
 
 /// <summary>A catalogue KPI assigned to a project, at most once (TASK-052). Delete policy: RETAIN.</summary>
-public sealed class KpiAssignment : AuditedEntity
+public sealed class KpiAssignment : AuditedEntity, IDeletable
 {
     public Guid ProjectId { get; set; }
 
@@ -17,4 +17,9 @@ public sealed class KpiAssignment : AuditedEntity
     public KpiAssignmentStatus Status { get; set; }
 
     public DateTimeOffset AssignedAt { get; set; }
+
+    /// <inheritdoc cref="IDeletable"/>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Guid? DeletedBy { get; set; }
 }

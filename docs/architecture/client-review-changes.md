@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | Source | The client's numbered change list, received in parts from 7 Nov 2026 |
-| Status | **In progress**: items 1, 2, 4, 5, 6 and 7 built; item 3 not received |
-| Migrations | `TASK-112_DeleteProjectsAndUsersUserPermissions`, `TASK-112_UserNationalIdAndDeletedDepartments` |
+| Status | **In progress**: items 1, 2 and 4–8 built; item 3 not received; item 8 covers the project registers, not yet the admin lists |
+| Migrations | `TASK-112_DeleteProjectsAndUsersUserPermissions`, `TASK-112_UserNationalIdAndDeletedDepartments`, `TASK-112_DeleteRegisterRecords` |
 
 ## 1. Done
 
@@ -15,6 +15,7 @@
 | 4 | R02 deletes a project in any state (§2). |
 | 5 | Delete and disable users from the list and the user's page; per-user permissions (§3). |
 | 6 | Delete a department (§5). |
+| 8 | Edit and Delete in the rows of the project registers, for every role that manages them; the Viewer (R06) and the Executive (R07) see neither (§7). |
 | 7 | National ID or Iqama number on the user, masked, with Nafath bound to it; a Microsoft sign-in only with the profile's e-mail (§6). |
 
 ## 2. Deleting a project (item 4, decided by the client)
@@ -88,7 +89,73 @@ The screen shows it only when asked and hides it again. `PUT /users/{id}/nationa
 - Sign-in through Nafath, and its biometric approval: they need AHDA's Nafath production contract.
 - A job that re-seals every number under a new key.
 
-## 7. Not done
+## 7. Edit and Delete in the registers (item 8, decided by the client)
+
+The client asked that every role but the Viewer has Edit and Delete in the tables. The client decided three things:
+
+- R07 (Executive) stays read-only.
+- A delete works as for projects: the record is hidden and kept.
+- The project registers come first.
+
+**Registers covered:** tasks, milestones, risks, issues and challenges, KPIs, change requests and documents. Each is covered in its project tab and in its cross-project register.
+
+**Who sees the actions.** The `useRowActions` helper adds an Actions column only for a holder of the register's manage permission:
+
+| Register | Permission |
+| --- | --- |
+| Tasks | `TASK_MANAGE` |
+| Milestones | `SCHEDULE_EDIT` |
+| Risks | `RISK_MANAGE` |
+| Issues and challenges | `CONCERN_MANAGE` |
+| Change requests | `CHANGE_REQUEST_RAISE` |
+| Documents | `DOCUMENT_MANAGE` |
+| KPIs | `KPI_MANAGE` |
+
+Rows of a CLOSED project have no buttons.
+
+**Edit** opens the record's existing form:
+
+- Tasks and milestones: in the row's dialog. The cross-project registers send `?edit=<id>` to the project tab.
+- Risks, issues and documents: the record's page opens its edit form when given `?edit=1`.
+- Change requests: the edit page, for a DRAFT or RETURNED request only.
+- KPIs: no edit form exists, so a KPI row has Delete only.
+
+**Delete**, one rule everywhere (`RecordDeletion.Stamp`, `IDeletable`):
+
+- The API sets `deleted_at` and `deleted_by` and audits `<Module>.<Type>Deleted`.
+- Three named EF query filters take the record out of every read:
+  - `Deleted` on the record;
+  - `DeletedProject` on everything anchored on a deleted project;
+  - `DeletedParent:<column>` on every entity with a foreign key to a deletable record, read from the model.
+- A task's subtasks are stamped with it, and its dependencies leave with it.
+- The children hidden with their parent:
+  - risk: assessments, acceptances and actions;
+  - issue: escalations and impacts;
+  - KPI: targets and measurements;
+  - change request: materiality evaluations and authorizations;
+  - document: versions and links, so a deleted document stops counting as evidence;
+  - milestone: achievement claims and baseline milestones.
+- An issue raised from a risk is deletable itself, so it stays when the risk is deleted.
+- Each module's history guard (a database trigger) lets exactly that stamp through, whatever the record's state. A deleted row changes no more.
+
+**Refused (409 `RECORD_APPROVAL_PENDING`)** while an approval run would be left with nothing to decide:
+
+- a change request UNDER_REVIEW;
+- an issue PENDING_VALIDATION;
+- a milestone with a SUBMITTED achievement claim, asked of the Milestone module through `IMilestoneClaimsInProgress`;
+- a KPI with a target SUBMITTED or UNDER_REVIEW.
+
+The approval's outcome handlers would otherwise fail on a missing record, and the run would block project closure.
+
+**Known effects:**
+
+- A deleted milestone also leaves the baselines that froze it.
+- A notification already sent about a deleted record links to a page that answers "not found".
+- Change requests now keep a deleted draft as a hidden row, where they used to remove it.
+
+**Not done:** the admin and other lists, such as roles, import batches, external requests and the follow-up list.
+
+## 8. Not done
 
 - Item 3 has not been received.
 - The showcase is not deployed: it needs migrate and seed.

@@ -8,7 +8,7 @@ namespace PMPlatform.Domain.Schedule;
 /// status. WF-05 owns the achievement: its evidence and the accepted Actual Achievement Date live in
 /// <c>milestone.milestone_achievement</c>, never here. Delete policy: RETAIN — a mistake is cancelled, never deleted.
 /// </summary>
-public sealed class ProjectMilestone : AuditedEntity
+public sealed class ProjectMilestone : AuditedEntity, IDeletable
 {
     public Guid ProjectId { get; set; }
 
@@ -28,4 +28,9 @@ public sealed class ProjectMilestone : AuditedEntity
     public ProjectMilestoneStatus Status { get; set; }
 
     public int SortOrder { get; set; }
+
+    /// <inheritdoc cref="IDeletable"/>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Guid? DeletedBy { get; set; }
 }

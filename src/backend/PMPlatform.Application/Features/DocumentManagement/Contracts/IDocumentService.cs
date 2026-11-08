@@ -44,4 +44,7 @@ public interface IDocumentService
 
     /// <summary>The evidence path: the pinned version's content, only if it is CLEAN (R-8).</summary>
     public Task<AdministrationResult<DocumentContent>> OpenEvidenceContentAsync(Guid callerId, Guid evidenceReferenceId, CancellationToken cancellationToken);
+
+    /// <summary>Client review, item 8: hides the document, with its versions and links, and what belongs to it, keeping all of it in the database. Null on success.</summary>
+    public Task<AdministrationError?> DeleteAsync(Guid callerId, Guid documentId, uint? expectedVersion, CancellationToken cancellationToken);
 }

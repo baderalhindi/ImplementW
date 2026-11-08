@@ -71,7 +71,10 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
   // The register's "Add corrective action" lands here with the parameter: the dialog opens once the risk is read, for whoever
   // may add one.
   const [addRequested, setAddRequested] = useState(() => params.has(ADD_ACTION_PARAM));
-  const [chosenDialog, setChosenDialog] = useState<RiskDialog | null>(null);
+  // A register's Edit lands here with ?edit=1: the edit form opens on arrival.
+  const [chosenDialog, setChosenDialog] = useState<RiskDialog | null>(() =>
+    params.get('edit') === '1' ? { kind: 'edit' } : null,
+  );
   const data = record.data;
   const personName = usePersonNames([
     data?.risk.data.ownerUserId ?? null,

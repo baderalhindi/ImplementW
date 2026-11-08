@@ -8,7 +8,7 @@ namespace PMPlatform.Domain.ChangeRequest;
 /// <see cref="ChangeAuthorization"/>s and changes nothing else: each is applied by the module that owns its target. Delete policy:
 /// HARD_DRAFT — a request never submitted may be deleted; one submitted is withdrawn, rejected or closed, never removed.
 /// </summary>
-public sealed class ChangeRequest : AuditedEntity
+public sealed class ChangeRequest : AuditedEntity, IDeletable
 {
     public Guid ProjectId { get; set; }
 
@@ -46,4 +46,9 @@ public sealed class ChangeRequest : AuditedEntity
     public DateTimeOffset? ImplementedAt { get; set; }
 
     public DateTimeOffset? ClosedAt { get; set; }
+
+    /// <inheritdoc cref="IDeletable"/>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Guid? DeletedBy { get; set; }
 }

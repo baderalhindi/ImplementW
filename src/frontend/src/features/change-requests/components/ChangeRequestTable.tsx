@@ -1,4 +1,5 @@
 import { type ReactElement } from 'react';
+import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 import { Link } from 'react-router';
 
 import { formatSar, languageTag } from '@/features/projects/presentation.ts';
@@ -32,6 +33,8 @@ interface ChangeRequestTableProps {
   /** Across projects, each row names its project. */
   showProject: boolean;
   caption: string;
+  /** Client review, item 8: the row's Edit and Delete, for a role that may manage it. */
+  actions?: RowActionsColumn<ChangeRequestEntry> | undefined;
 }
 
 /**
@@ -39,67 +42,75 @@ interface ChangeRequestTableProps {
  * their own words and styles — the materiality band recorded at review, the impacts it states and when it last changed.
  */
 export function ChangeRequestTable({
+  actions,
   entries,
   showProject,
   caption,
 }: ChangeRequestTableProps): ReactElement {
   const { t, formatDateTime } = useI18n();
   return (
-    <TableContainer caption={caption}>
-      <thead>
-        <tr>
-          <th scope="col">{t('changeRequests.table.title')}</th>
-          {showProject && <th scope="col">{t('changeRequests.table.project')}</th>}
-          <th scope="col">{t('changeRequests.table.type')}</th>
-          <th scope="col">{t('changeRequests.table.status')}</th>
-          <th scope="col">{t('changeRequests.table.materiality')}</th>
-          <th scope="col">{t('changeRequests.table.impacts')}</th>
-          <th scope="col">{t('changeRequests.table.updated')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map(({ request, project }) => (
-          <tr key={request.id}>
-            <td>
-              <Link
-                className="cell__link"
-                to={changeRequestPath(request.id)}
-                lang={languageTag(request.title.language)}
-                dir="auto"
-              >
-                {request.title.text}
-              </Link>
-              <span className="cell__aside">
-                {t('changeRequests.table.revision', { revision: request.revisionNo })}
-              </span>
-            </td>
-            {showProject && (
+    <>
+      <TableContainer caption={caption}>
+        <thead>
+          <tr>
+            <th scope="col">{t('changeRequests.table.title')}</th>
+            {showProject && <th scope="col">{t('changeRequests.table.project')}</th>}
+            <th scope="col">{t('changeRequests.table.type')}</th>
+            <th scope="col">{t('changeRequests.table.status')}</th>
+            <th scope="col">{t('changeRequests.table.materiality')}</th>
+            <th scope="col">{t('changeRequests.table.impacts')}</th>
+            <th scope="col">{t('changeRequests.table.updated')}</th>
+            {actions !== undefined && <th scope="col">{t('common.table.actions')}</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map(({ request, project }) => (
+            <tr key={request.id}>
               <td>
-                <span lang={languageTag(project.title.language)} dir="auto">
-                  {project.title.text}
+                <Link
+                  className="cell__link"
+                  to={changeRequestPath(request.id)}
+                  lang={languageTag(request.title.language)}
+                  dir="auto"
+                >
+                  {request.title.text}
+                </Link>
+                <span className="cell__aside">
+                  {t('changeRequests.table.revision', { revision: request.revisionNo })}
                 </span>
               </td>
-            )}
-            <td>{t(`changeRequests.changeType.${request.changeType}`)}</td>
-            <td>
-              <ChangeRequestStatusBadge status={request.status} />
-            </td>
-            <td>
-              {request.materiality === null ? (
-                <span className="cell__aside">{t('changeRequests.table.notRecorded')}</span>
-              ) : (
-                <BandBadge bandNo={request.materiality.resultingBandNo} />
+              {showProject && (
+                <td>
+                  <span lang={languageTag(project.title.language)} dir="auto">
+                    {project.title.text}
+                  </span>
+                </td>
               )}
-            </td>
-            <td>
-              <span dir="auto">
-                <ImpactSummary request={request} />
-              </span>
-            </td>
-            <td>{formatDateTime(request.updatedAt)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </TableContainer>
+              <td>{t(`changeRequests.changeType.${request.changeType}`)}</td>
+              <td>
+                <ChangeRequestStatusBadge status={request.status} />
+              </td>
+              <td>
+                {request.materiality === null ? (
+                  <span className="cell__aside">{t('changeRequests.table.notRecorded')}</span>
+                ) : (
+                  <BandBadge bandNo={request.materiality.resultingBandNo} />
+                )}
+              </td>
+              <td>
+                <span dir="auto">
+                  <ImpactSummary request={request} />
+                </span>
+              </td>
+              <td>{formatDateTime(request.updatedAt)}</td>
+              {actions !== undefined && (
+                <td className="cell--actions">{actions.render({ request, project })}</td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </TableContainer>
+      {actions?.dialog}
+    </>
   );
 }

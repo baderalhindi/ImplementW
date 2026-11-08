@@ -39,6 +39,9 @@ function measurementCommand(id: string, name: string, etag: string | null) {
 }
 
 export const financialKpiApi = {
+  /** Client review, item 8: it and what belongs to it leave the lists; 204, also when already gone. */
+  removeAssignment: (id: string) =>
+    apiRequest<undefined>(`/kpi-assignments/${id}`, { method: 'DELETE' }),
   /** Every financial field's source mode, MANUAL where none is set (D-8). */
   sourceModes: (projectId: string, signal?: AbortSignal) =>
     readAllPages<FinancialSourceModeDetail>('/financial-source-modes', { projectId }, signal),

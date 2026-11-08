@@ -7,7 +7,7 @@ namespace PMPlatform.Domain.ManagementConcern;
 /// the configuration version whose rule computed it; its priority is chosen by people. The two never set each other. An issue
 /// raised from a risk names it in <see cref="OriginatingRiskId"/> (edge 15). Delete policy: RETAIN — a concern is closed, never removed.
 /// </summary>
-public sealed class ManagementConcern : AuditedEntity
+public sealed class ManagementConcern : AuditedEntity, IDeletable
 {
     public Guid ProjectId { get; set; }
 
@@ -59,4 +59,9 @@ public sealed class ManagementConcern : AuditedEntity
     public DateTimeOffset? ResolvedAt { get; set; }
 
     public DateTimeOffset? ClosedAt { get; set; }
+
+    /// <inheritdoc cref="IDeletable"/>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    public Guid? DeletedBy { get; set; }
 }

@@ -44,7 +44,7 @@ export function KpiTable({
   /** The target version in force, on screens that read the targets. */
   showTarget: boolean;
   personName?: (id: string | null) => string;
-  actions?: (entry: KpiEntry) => ReactNode;
+  actions?: ((entry: KpiEntry) => ReactNode) | undefined;
 }): ReactElement {
   const { t } = useI18n();
   const showProject = rows.some((row) => row.project !== undefined);

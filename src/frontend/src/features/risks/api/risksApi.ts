@@ -28,6 +28,8 @@ export type RiskCommand = 'start-treatment' | 'monitor' | 'revoke-acceptance' | 
 export type RiskActionCommand = 'start' | 'complete' | 'cancel';
 
 export const risksApi = {
+  /** Client review, item 8: it and what belongs to it leave the lists; 204, also when already gone. */
+  remove: (id: string) => apiRequest<undefined>(`/risks/${id}`, { method: 'DELETE' }),
   /** A project's risks, most recently changed first (the API's fixed order). */
   risks: (projectId: string, signal?: AbortSignal) =>
     readAllPages<RiskDetail>('/risks', { projectId }, signal),

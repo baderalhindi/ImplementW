@@ -1,3 +1,4 @@
+import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -15,6 +16,8 @@ import { ConcernFormDialog } from './dialogs/ConcernFormDialog.tsx';
 import { concernPath } from './paths.ts';
 import { concernProblemMessage } from './problems.ts';
 import { useConcernLookups, useProjectConcerns } from './useConcernData.ts';
+import { type ConcernEntry } from './concernRules.ts';
+import { concernsApi } from './api/concernsApi.ts';
 
 /** The words of each register: SCR-083 lists issues, SCR-085 challenges. */
 const REGISTER_TEXT = {
@@ -54,6 +57,14 @@ export function ProjectConcerns({
   const { t } = useI18n();
   const navigate = useNavigate();
   const concerns = useProjectConcerns(project.id, concernType);
+  const rowActions = useRowActions<ConcernEntry>({
+    permission: 'CONCERN_MANAGE',
+    changeable: ({ project: owner }) => owner.status !== 'CLOSED',
+    name: ({ concern }) => concern.title.text,
+    editTo: ({ concern, project: owner }) => `${concernPath(owner.id, concern.id)}?edit=1`,
+    remove: ({ concern }) => concernsApi.remove(concern.id),
+    onDeleted: concerns.reload,
+  });
   const lookups = useConcernLookups();
   const [creating, setCreating] = useState(false);
   const text = REGISTER_TEXT[concernType];
@@ -107,6 +118,7 @@ export function ProjectConcerns({
         </EmptyState>
       ) : (
         <ConcernRegisterView
+          actions={rowActions}
           entries={entries}
           lookups={lookups}
           userId={user.id}

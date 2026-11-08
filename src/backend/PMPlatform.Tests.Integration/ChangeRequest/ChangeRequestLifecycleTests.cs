@@ -121,11 +121,15 @@ public sealed class ChangeRequestLifecycleTests(ChangeRequestTestHost host)
         Guid draft = await client.RaiseAsync(sessions.EntityManager, ChangeRequestDriver.RequestBody(projectId, "SCHEDULE", scheduleImpactDays: 5));
         using (HttpResponseMessage deleted = await client.SendAsync(HttpMethod.Delete, $"{ChangeRequestDriver.Requests}/{draft}", sessions.EntityManager))
         using (HttpResponseMessage gone = await client.GetAsync($"{ChangeRequestDriver.Requests}/{draft}", sessions.EntityManager))
-        using (HttpResponseMessage kept = await client.SendAsync(HttpMethod.Delete, $"{ChangeRequestDriver.Requests}/{submitted}", sessions.EntityManager))
+        using (HttpResponseMessage finished = await client.SendAsync(HttpMethod.Delete, $"{ChangeRequestDriver.Requests}/{submitted}", sessions.EntityManager))
+        using (HttpResponseMessage hidden = await client.GetAsync($"{ChangeRequestDriver.Requests}/{submitted}", sessions.EntityManager))
         {
+            // Client review, item 8: a finished request is deleted too; it leaves the reads and its row and history stay.
             Assert.Equal((HttpStatusCode.NoContent, HttpStatusCode.NotFound), (deleted.StatusCode, gone.StatusCode));
-            Assert.Equal((HttpStatusCode.Conflict, "CHANGE_REQUEST_NOT_EDITABLE"), await kept.RefusalAsync());
+            Assert.Equal((HttpStatusCode.NoContent, HttpStatusCode.NotFound), (finished.StatusCode, hidden.StatusCode));
         }
+
+        Assert.Equal(["1"], await host.Database.QueryAsync($"SELECT count(*)::text FROM change_request.change_request WHERE id = '{submitted}' AND deleted_at IS NOT NULL"));
 
         Assert.Equal(["ChangeRequest.ChangeRequestCreated", "ChangeRequest.ChangeRequestDeleted"], await host.AuditEventsAsync("ChangeRequest", draft));
     }
