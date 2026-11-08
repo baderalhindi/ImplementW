@@ -9,6 +9,9 @@ public interface IUserAccessRepository
 
     public Task<UserAccess?> FindByIdAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>The fingerprint of the National ID or Iqama number recorded for the user, if any (client review, item 7).</summary>
+    public Task<string?> FindNationalIdFingerprintAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>A local account's credential by its username; null for a directory account or no account.</summary>
     public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken);
 

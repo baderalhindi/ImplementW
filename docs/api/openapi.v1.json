@@ -4178,6 +4178,31 @@
         }
       }
     },
+    "/api/v1/departments/{departmentId}/delete": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Client review, item 6: out of administration and pickers for good; records keep its name. 409 while anything depends on it.",
+        "operationId": "IdentityAccess_DeleteDepartment",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
     "/api/v1/display-names": {
       "get": {
         "tags": [
@@ -19861,6 +19886,88 @@
         }
       }
     },
+    "/api/v1/users/{userId}/national-id": {
+      "put": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Client review, item 7: records, replaces or removes (null) the user's National ID or Iqama number. The response shows it masked.",
+        "operationId": "IdentityAccess_SetUserNationalId",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserNationalIdRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserNationalIdRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserNationalIdRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetail"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The full number, for a holder of USER_NATIONAL_ID_VIEW; every reveal is audited and the response is never cached.",
+        "operationId": "IdentityAccess_RevealUserNationalId",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NationalIdDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/{userId}/permissions": {
       "get": {
         "tags": [
@@ -33377,6 +33484,18 @@
           }
         },
         "description": "Free text in the language it was entered in (ERD D-7; R-18)."
+      },
+      "NationalIdDetail": {
+        "required": [
+          "nationalId"
+        ],
+        "type": "object",
+        "properties": {
+          "nationalId": {
+            "type": "string"
+          }
+        },
+        "description": "A user's full National ID or Iqama number, for a holder of USER_NATIONAL_ID_VIEW; the reveal is audited."
       },
       "NotificationChannel": {
         "enum": [
@@ -46936,6 +47055,12 @@
             ],
             "format": "date"
           },
+          "nationalIdMasked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "temporaryPassword": {
             "type": [
               "null",
@@ -46980,6 +47105,18 @@
           }
         },
         "description": "The code the user received on their mobile number, for the challenge it was sent under (ADR-004)."
+      },
+      "UserNationalIdRequest": {
+        "type": "object",
+        "properties": {
+          "nationalId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A user's National ID (starts with 1) or Iqama number (starts with 2), ten digits with a valid check digit; null removes it."
       },
       "UserPage": {
         "required": [

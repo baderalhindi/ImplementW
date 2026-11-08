@@ -3,6 +3,8 @@ using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.Common;
 using PMPlatform.Domain.IdentityAccess;
+using PMPlatform.Domain.Project;
+using ProjectEntity = PMPlatform.Domain.Project.Project;
 
 namespace PMPlatform.Infrastructure.Persistence.IdentityAccess;
 
@@ -13,7 +15,7 @@ internal sealed class DepartmentRepository(PMPlatformDbContext context) : IDepar
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        IQueryable<Department> departments = context.Set<Department>().AsNoTracking();
+        IQueryable<Department> departments = context.Set<Department>().AsNoTracking().Where(d => d.DeletedAt == null);
         if (query.IsActive is { } isActive)
         {
             departments = departments.Where(d => d.IsActive == isActive);
@@ -44,7 +46,7 @@ internal sealed class DepartmentRepository(PMPlatformDbContext context) : IDepar
     public async Task<Versioned<DepartmentDetail>?> FindDetailAsync(Guid departmentId, CancellationToken cancellationToken)
     {
         var row = await context.Set<Department>().AsNoTracking()
-            .Where(d => d.Id == departmentId)
+            .Where(d => d.Id == departmentId && d.DeletedAt == null)
             .Select(d => new { Department = d, Version = EF.Property<uint>(d, EntityTypeBuilderExtensions.RowVersion) })
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (row is null)
@@ -62,7 +64,7 @@ internal sealed class DepartmentRepository(PMPlatformDbContext context) : IDepar
 
     public async Task<Department?> FindForUpdateAsync(Guid departmentId, uint? expectedVersion, CancellationToken cancellationToken)
     {
-        Department? department = await context.Set<Department>().SingleOrDefaultAsync(d => d.Id == departmentId, cancellationToken).ConfigureAwait(false);
+        Department? department = await context.Set<Department>().SingleOrDefaultAsync(d => d.Id == departmentId && d.DeletedAt == null, cancellationToken).ConfigureAwait(false);
         if (department is not null)
         {
             AdministrationPersistence.ExpectVersion(context, department, expectedVersion);
@@ -87,7 +89,7 @@ internal sealed class DepartmentRepository(PMPlatformDbContext context) : IDepar
             : await context.Set<Department>().AsNoTracking().Where(e => ids.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.Name, cancellationToken).ConfigureAwait(false);
 
     public async Task<IReadOnlyList<OrganizationUnit>> ListUnitsAsync(CancellationToken cancellationToken) =>
-        await context.Set<Department>().AsNoTracking().OrderBy(e => e.Code)
+        await context.Set<Department>().AsNoTracking().Where(e => e.DeletedAt == null).OrderBy(e => e.Code)
             .Select(e => new OrganizationUnit(e.Id, e.Code, e.Name, e.IsActive)).ToListAsync(cancellationToken).ConfigureAwait(false);
 
     public Task<Guid?> FindIdByCodeAsync(string code, CancellationToken cancellationToken) =>
@@ -96,6 +98,14 @@ internal sealed class DepartmentRepository(PMPlatformDbContext context) : IDepar
     public async Task<IReadOnlyList<OrganizationCode>> ListActiveCodesAsync(CancellationToken cancellationToken) =>
         await context.Set<Department>().AsNoTracking().Where(e => e.IsActive).OrderBy(e => e.Code)
             .Select(e => new OrganizationCode(e.Code, e.Name)).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<DepartmentUses> CountUsesAsync(Guid departmentId, CancellationToken cancellationToken) => new(
+        await context.Set<User>().CountAsync(u => u.DepartmentId == departmentId && u.Status != UserStatus.Deleted, cancellationToken).ConfigureAwait(false),
+        await context.Set<Department>().CountAsync(d => d.ParentDepartmentId == departmentId && d.DeletedAt == null, cancellationToken).ConfigureAwait(false),
+        await context.Set<ProjectEntity>().CountAsync(p => p.DepartmentId == departmentId && p.LifecycleState != ProjectLifecycleState.Closed, cancellationToken)
+            .ConfigureAwait(false),
+        await context.Set<AccessRelationship>().CountAsync(a => a.DepartmentId == departmentId && a.Status == AccessRelationshipStatus.Active, cancellationToken)
+            .ConfigureAwait(false));
 
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken) => AdministrationPersistence.SaveAsync(context, cancellationToken);
 }

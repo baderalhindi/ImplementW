@@ -18,6 +18,7 @@ import { useCan } from '../permissions/permissions.ts';
 import { problemMessage } from '../problems.ts';
 import { TemporaryPasswordNotice } from './TemporaryPasswordNotice.tsx';
 import { ResetPasswordDialog, SetEndDateDialog } from './UserAccountDialogs.tsx';
+import { NationalIdSection } from './NationalIdSection.tsx';
 import { UserPermissionsSection } from './UserPermissionsSection.tsx';
 import { UserStatusDialog } from './UserStatusDialog.tsx';
 
@@ -197,6 +198,17 @@ export function UserDetailPage(): ReactElement {
       )}
 
       <UserSummaryDetails user={detail} lookups={lookups} />
+
+      {administrable && (
+        <NationalIdSection
+          user={detail}
+          etag={etag}
+          onChanged={() => {
+            setNotice('updated');
+            user.reload();
+          }}
+        />
+      )}
 
       <section className="section" aria-labelledby="assignments-heading">
         <div className="section__header">

@@ -22,6 +22,12 @@ internal sealed class NafathOptions
     /// </summary>
     public IReadOnlyList<string> Scopes { get; set; } = ["openid"];
 
+    /// <summary>
+    /// The ID token claim that carries the person's National ID or Iqama number (client review, item 7). <c>sub</c> until AHDA IT confirms
+    /// the claim with Nafath when the client is registered; a verification whose token lacks it is refused.
+    /// </summary>
+    public string NationalIdClaim { get; set; } = "sub";
+
     /// <summary>Discovery and keys only over HTTPS. Cleared only by the tests' in-process Nafath.</summary>
     public bool RequireHttpsMetadata { get; set; } = true;
 

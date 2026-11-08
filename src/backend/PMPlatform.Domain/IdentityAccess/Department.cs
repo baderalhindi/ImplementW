@@ -15,4 +15,7 @@ public sealed class Department : AuditedEntity
     public string? DirectoryReference { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    /// <summary>Set when an administrator deleted it (client review, item 6): it leaves administration and pickers; records keep its name.</summary>
+    public DateTimeOffset? DeletedAt { get; set; }
 }

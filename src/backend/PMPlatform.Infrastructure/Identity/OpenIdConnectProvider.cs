@@ -33,7 +33,7 @@ internal sealed class OpenIdConnectProvider : ISingleSignOnProvider
         _options = options.Value;
         _relyingParty = new OpenIdConnectRelyingParty(
             new RelyingPartySettings(
-                HttpClientName, "Identity provider", SingleSignOnClient.AuthorityKey, _options.Scopes, _options.RequireHttpsMetadata, _options.TransactionLifetime),
+                HttpClientName, "Identity provider", SingleSignOnClient.AuthorityKey, [.. _options.Scopes.Union(SingleSignOnOptions.EmailScopes, StringComparer.Ordinal)], _options.RequireHttpsMetadata, _options.TransactionLifetime),
             httpClients,
             new AuthorizationTransactionProtector(configuration, AuthorizationTransactionProtector.SingleSignOnLabel),
             timeProvider,
@@ -79,7 +79,9 @@ internal sealed class OpenIdConnectProvider : ISingleSignOnProvider
         DateTimeOffset? authenticatedAt = long.TryParse(idToken.Identity.FindFirst("auth_time")?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out long seconds)
             ? DateTimeOffset.FromUnixTimeSeconds(seconds)
             : null;
-        return SingleSignOnResult.Authenticated(subjectId, methods, authenticatedAt);
+        string? email = _options.EmailClaims.Select(name => idToken.Claims.TryGetValue(name, out object? value) ? value as string : null)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        return SingleSignOnResult.Authenticated(subjectId, methods, authenticatedAt, email);
     }
 
     public SingleSignOnIntegrationStatus Describe() => new(

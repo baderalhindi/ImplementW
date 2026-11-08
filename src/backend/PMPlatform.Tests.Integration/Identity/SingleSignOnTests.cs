@@ -17,6 +17,7 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
         host.IdentityProvider.NextSubject = TestDirectory.Subject(1);
         host.IdentityProvider.NonceOverride = null;
         host.IdentityProvider.ExtraClaims = new Dictionary<string, object>();
+        host.IdentityProvider.WithoutEmail = false;
     }
 
     [Fact]
@@ -66,7 +67,7 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
         Dictionary<string, Microsoft.Extensions.Primitives.StringValues> query = QueryHelpers.ParseQuery(authorization.AuthorizationUrl.Query);
         Assert.Equal("S256", query["code_challenge_method"]);
         Assert.Equal(43, query["code_challenge"].ToString().Length);
-        Assert.Equal("openid", query["scope"]);
+        Assert.Equal("openid profile email", query["scope"]);
         Assert.Equal(TestIdentityProvider.CallbackUrl, query["redirect_uri"]);
         Assert.False(query.ContainsKey("code_verifier"));
         Assert.DoesNotContain(authorization.Transaction, authorization.AuthorizationUrl.AbsoluteUri, StringComparison.Ordinal);
@@ -95,7 +96,8 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
     public async Task AnEntraSetupMatchesThePersonOnTheirObjectId()
     {
         host.IdentityProvider.NextSubject = "the-pairwise-sub-entra-issues-per-application";
-        host.IdentityProvider.ExtraClaims = new Dictionary<string, object> { ["oid"] = TestDirectory.Subject(2) };
+        host.IdentityProvider.ExtraClaims = new Dictionary<string, object> { ["oid"] = TestDirectory.Subject(2), ["preferred_username"] = "R02@identity.test" };
+        host.IdentityProvider.WithoutEmail = true;
         await using IdentityApiFactory entra = host.CreateApi(new Dictionary<string, string?>
         {
             ["Identity:Sso:SubjectClaim"] = "oid",
@@ -104,7 +106,7 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
         using HttpClient client = entra.CreateClient();
         using HttpResponseMessage started = await client.GetAsync(SessionApi.SsoAuthorization);
         SsoAuthorization authorization = await started.ReadAsync<SsoAuthorization>();
-        Assert.Equal("openid profile", QueryHelpers.ParseQuery(authorization.AuthorizationUrl.Query)["scope"]);
+        Assert.Equal("openid profile email", QueryHelpers.ParseQuery(authorization.AuthorizationUrl.Query)["scope"]);
 
         Callback callback = await AuthorizeAsync(client, "the-pairwise-sub-entra-issues-per-application");
         using HttpResponseMessage response = await client.PostAsJsonAsync(SessionApi.SsoSessions, callback);
@@ -112,6 +114,35 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Session session = await response.ReadAsync<Session>();
         Assert.Equal(Guid.Parse(IdentityDatabase.UserId(2)), session.User.Id);
+        host.IdentityProvider.WithoutEmail = false;
+    }
+
+    /// <summary>Client review, item 7: Microsoft's account e-mail must be the profile's; another, or none, is no sign-in.</summary>
+    [Theory]
+    [InlineData("someone.else@identity.test")]
+    [InlineData(null)]
+    public async Task AMicrosoftAccountWhoseEmailIsNotTheProfilesIsRejected(string? email)
+    {
+        Dictionary<string, object> claims = [];
+        if (email is not null)
+        {
+            claims["email"] = email;
+        }
+
+        host.IdentityProvider.ExtraClaims = claims;
+        host.IdentityProvider.WithoutEmail = email is null;
+        try
+        {
+            using HttpClient client = host.Api.CreateClient();
+            Callback callback = await AuthorizeAsync(client, TestDirectory.Subject(2));
+            using HttpResponseMessage response = await client.PostAsJsonAsync(SessionApi.SsoSessions, callback);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        finally
+        {
+            host.IdentityProvider.ExtraClaims = new Dictionary<string, object>(StringComparer.Ordinal);
+            host.IdentityProvider.WithoutEmail = false;
+        }
     }
 
     [Fact]

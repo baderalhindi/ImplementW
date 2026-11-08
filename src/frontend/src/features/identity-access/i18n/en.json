@@ -90,7 +90,8 @@
     "roleInUse": "People have held this role, so it cannot be deleted. Deactivate it instead.",
     "roleInactive": "This role is deactivated and cannot be assigned.",
     "roleSystem": "A built-in role cannot be deactivated or deleted.",
-    "userHasNoRole": "This user holds no role. Assign a role first, then adjust its permissions."
+    "userHasNoRole": "This user holds no role. Assign a role first, then adjust its permissions.",
+    "departmentInUse": "This department still has users, sub-departments, open projects or role assignments. Move or end them first, then delete it."
   },
   "userPicker": {
     "searchLabel": "Search by name, username or email",
@@ -230,6 +231,18 @@
       "choiceGrant": "Grant this permission",
       "choiceRemove": "Remove this permission",
       "choiceRole": "Back to what the roles give"
+    },
+    "nationalId": {
+      "title": "National ID / Iqama",
+      "none": "Not recorded",
+      "add": "Add",
+      "change": "Change",
+      "show": "Show the full number",
+      "hide": "Hide",
+      "remove": "Remove the number",
+      "field": "National ID or Iqama number",
+      "hint": "10 digits: a National ID starts with 1, an Iqama number with 2. Nafath verification checks it.",
+      "dialogTitle": "National ID / Iqama of {name}"
     }
   },
   "userStatusDialog": {
@@ -409,7 +422,11 @@
     "activateTitle": "Activate department",
     "deactivateTitle": "Deactivate department",
     "activateBody": "{name} will be available again for new assignments.",
-    "deactivateBody": "{name} will no longer be offered for new assignments. Existing records keep it."
+    "deactivateBody": "{name} will no longer be offered for new assignments. Existing records keep it.",
+    "delete": "Delete",
+    "deleteSelected": "Delete selected ({count})",
+    "deleteTitle": "Delete the selected departments?",
+    "deleteBody": "These departments leave every list and picker; records that name them keep the name. A department still in use is refused: {names}."
   },
   "entities": {
     "title": "External entities",

@@ -13,6 +13,7 @@ export const SHIPPED_MATRIX: Record<string, Partial<Record<PermissionCode, DataS
     IDENTITY_INTEGRATION_MANAGE: 'ALL',
     USER_VIEW: 'ALL',
     USER_MANAGE: 'ALL',
+    USER_NATIONAL_ID_VIEW: 'ALL',
     ROLE_VIEW: 'ALL',
     ROLE_MANAGE: 'ALL',
     ROLE_ASSIGN: 'ALL',

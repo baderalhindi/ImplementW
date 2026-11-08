@@ -18,6 +18,9 @@ public sealed class PermissionCatalogue
     /// <summary>ADM-002/003 User List and Detail (TASK-031).</summary>
     public const string UserView = "USER_VIEW";
 
+    /// <summary>Client review, item 7: read a user's full National ID or Iqama number; every reveal is audited. Everyone else sees it masked.</summary>
+    public const string UserNationalIdView = "USER_NATIONAL_ID_VIEW";
+
     /// <summary>ADM-004/005 Create and Edit User; activate and disable (MOD-080) (TASK-031).</summary>
     public const string UserManage = "USER_MANAGE";
 
@@ -429,6 +432,7 @@ public sealed class PermissionCatalogue
         [
             new(IdentityIntegrationManage, "IDENTITY_ACCESS", AccessMode.Write),
             new(UserView, "IDENTITY_ACCESS", AccessMode.Read),
+            new(UserNationalIdView, "IDENTITY_ACCESS", AccessMode.Read),
             new(UserManage, "IDENTITY_ACCESS", AccessMode.Write),
             new(RoleView, "IDENTITY_ACCESS", AccessMode.Read),
             new(RoleManage, "IDENTITY_ACCESS", AccessMode.Write),
@@ -560,6 +564,7 @@ public sealed class PermissionCatalogue
         // R01 System Administrator: administration, configuration, operations; no business data, no approval (Appendix A.1).
         new("R01", IdentityIntegrationManage, DataScope.All),
         new("R01", UserView, DataScope.All),
+        new("R01", UserNationalIdView, DataScope.All),
         new("R01", UserManage, DataScope.All),
         new("R01", RoleView, DataScope.All),
         new("R01", RoleManage, DataScope.All),

@@ -30,6 +30,9 @@ public static class IdentityAccessErrorCodes
     /// <summary>422: an administrator may not disable themselves or change their own assignments.</summary>
     public const string SelfAdministration = "IDENTITY_ACCESS_SELF_ADMINISTRATION";
 
+    /// <summary>409: users, sub-departments, open projects or assignments still depend on the department; each is a field issue IN_USE.</summary>
+    public const string DepartmentInUse = "IDENTITY_ACCESS_DEPARTMENT_IN_USE";
+
     /// <summary>422: a permission is granted through a role the user holds, and they hold none.</summary>
     public const string UserHasNoRole = "IDENTITY_ACCESS_USER_HAS_NO_ROLE";
 

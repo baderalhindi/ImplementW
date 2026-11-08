@@ -55,7 +55,7 @@ public sealed class SecretStoreTests
             }
         }
 
-        Assert.Equal(69, checkedIds);
+        Assert.Equal(73, checkedIds);
     }
 
     [Fact]

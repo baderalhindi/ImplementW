@@ -26,6 +26,27 @@ public sealed class NafathVerificationTests(IdentityTestHost host) : IAsyncLifet
 
     public Task DisposeAsync() => ResetAsync();
 
+    /// <summary>SR-53, client review item 7: Nafath verifying someone is not enough; it must be the person whose number AHDA recorded.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ANafathVerificationOfAnotherPersonOrOfAnAccountWithNoRecordedNumberIsRefused(bool recorded)
+    {
+        await host.Database.ExecuteAsync($"""
+            UPDATE identity_access."user" SET national_id_fingerprint = {(recorded ? "'a-fingerprint-of-someone-else'" : "NULL")} WHERE id = '{ExternalUser}'
+            """);
+        await using IdentityApiFactory api = host.CreateApi(TestNafath.Settings(host.Nafath));
+        using HttpClient client = api.CreateClient();
+        using HttpResponseMessage signIn = await client.SignInAsync("local.r08", TestDirectory.PersonPassword);
+        string verificationToken = (await signIn.ReadAsync<IdentityVerificationPending>()).IdentityVerificationToken;
+        NafathCallback callback = await TestNafath.VerifyInBrowserAsync(client, verificationToken);
+
+        using HttpResponseMessage refused = await TestNafath.CompleteAsync(client, verificationToken, callback);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
+        Assert.Empty(await host.Database.QueryAsync($"SELECT id::text FROM identity_access.\"user\" WHERE id = '{ExternalUser}' AND nafath_verified_at IS NOT NULL"));
+    }
+
     [Fact]
     public async Task AnExternalUserGetsNoSessionUntilNafathVerifiesThemAndSignsInWithoutNafathAfterwards()
     {

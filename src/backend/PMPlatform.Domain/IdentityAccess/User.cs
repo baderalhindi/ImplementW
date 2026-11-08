@@ -48,6 +48,18 @@ public sealed class User : AuditedEntity
 
     public DateTimeOffset? NafathVerifiedAt { get; set; }
 
+    /// <summary>
+    /// The National ID or Iqama number (client review, item 7), sealed with AES-256-GCM under <c>PERSONAL_DATA_KEY</c>; only a holder of
+    /// USER_NATIONAL_ID_VIEW reads it back. Null when none is recorded.
+    /// </summary>
+    public string? NationalIdSealed { get; set; }
+
+    /// <summary>A keyed hash of the number: unique across users, and what a Nafath verification is compared with (SR-53).</summary>
+    public string? NationalIdFingerprint { get; set; }
+
+    /// <summary>The last four digits, for the masked display.</summary>
+    public string? NationalIdLastDigits { get; set; }
+
     // The 5 Nov 2026 review (R4-6): a local account signs in with a password the platform holds, never the plain text.
     public AccountSource AccountSource { get; set; } = AccountSource.Directory;
 

@@ -170,6 +170,29 @@ public sealed class UsersController(IUserAdministrationService users, IUserPermi
         return error is null || error.Kind == AdministrationErrorKind.NotFound ? NoContent() : Failure(error);
     }
 
+    /// <summary>Client review, item 7: records, replaces or removes (null) the user's National ID or Iqama number. The response shows it masked.</summary>
+    [HttpPut("{userId:guid}/national-id")]
+    [RequirePermission(PermissionCatalogue.UserManage)]
+    [SensitiveWrite]
+    [ProducesResponseType<UserDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_SetUserNationalId")]
+    public async Task<IActionResult> SetNationalId(Guid userId, UserNationalIdRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return !TryReadIfMatch(required: false, out uint? version, out IActionResult? problem) ? problem!
+            : request.Validate(out string? nationalId) is { Count: > 0 } errors ? ValidationFailed(errors)
+            : Respond(await users.SetNationalIdAsync(CallerId, userId, nationalId, version, cancellationToken));
+    }
+
+    /// <summary>The full number, for a holder of USER_NATIONAL_ID_VIEW; every reveal is audited and the response is never cached.</summary>
+    [HttpGet("{userId:guid}/national-id")]
+    [RequirePermission(PermissionCatalogue.UserNationalIdView)]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [ProducesResponseType<NationalIdDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_RevealUserNationalId")]
+    public async Task<IActionResult> RevealNationalId(Guid userId, CancellationToken cancellationToken) =>
+        Respond(await users.RevealNationalIdAsync(CallerId, userId, cancellationToken));
+
     /// <summary>What the user's roles give them and what has been adjusted for them, permission by permission (client review, item 5).</summary>
     [HttpGet("{userId:guid}/permissions")]
     [RequirePermission(PermissionCatalogue.RoleView)]

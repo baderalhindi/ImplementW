@@ -32,5 +32,8 @@ public interface IDepartmentRepository
     /// <summary>The active department codes and names, by code.</summary>
     public Task<IReadOnlyList<OrganizationCode>> ListActiveCodesAsync(CancellationToken cancellationToken);
 
+    /// <summary>What still depends on the department: users not deleted, sub-departments, projects not closed, assignments in force.</summary>
+    public Task<DepartmentUses> CountUsesAsync(Guid departmentId, CancellationToken cancellationToken);
+
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken);
 }

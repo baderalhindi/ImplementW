@@ -4304,6 +4304,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
                     b.Property<string>("DirectoryReference")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -4945,6 +4949,21 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("nafath_verified_at");
 
+                    b.Property<string>("NationalIdFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("national_id_fingerprint");
+
+                    b.Property<string>("NationalIdLastDigits")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("national_id_last_digits");
+
+                    b.Property<string>("NationalIdSealed")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("national_id_sealed");
+
                     b.Property<DateTimeOffset?>("PasswordChangedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("password_changed_at");
@@ -5016,6 +5035,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ManagerUserId")
                         .HasDatabaseName("ix_user_manager_user_id");
+
+                    b.HasIndex("NationalIdFingerprint")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_national_id_fingerprint")
+                        .HasFilter("national_id_fingerprint IS NOT NULL");
 
                     b.HasIndex("Username")
                         .IsUnique()

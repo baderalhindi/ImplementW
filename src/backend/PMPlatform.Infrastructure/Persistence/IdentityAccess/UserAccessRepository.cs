@@ -202,11 +202,14 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
                    manager == null ? null : manager.DirectorySubjectId))
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
+    public Task<string?> FindNationalIdFingerprintAsync(Guid userId, CancellationToken cancellationToken) =>
+        context.Set<User>().AsNoTracking().Where(u => u.Id == userId).Select(u => u.NationalIdFingerprint).SingleOrDefaultAsync(cancellationToken);
+
     private async Task<UserAccess?> FindAsync(Expression<Func<User, bool>> predicate, CancellationToken cancellationToken)
     {
         var user = await context.Set<User>().AsNoTracking()
             .Where(predicate)
-            .Select(u => new { u.Id, u.UserType, u.Status, u.AccountEndsOn, u.ExternalEntityId, u.Username, u.DisplayName, u.PreferredLanguage, u.MfaEnrolledAt, u.NafathVerifiedAt, u.PasswordChangedAt })
+            .Select(u => new { u.Id, u.UserType, u.Status, u.AccountEndsOn, u.ExternalEntityId, u.Username, u.DisplayName, u.Email, u.PreferredLanguage, u.MfaEnrolledAt, u.NafathVerifiedAt, u.PasswordChangedAt })
             .SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
@@ -242,7 +245,7 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
         UserStatus status = user.AccountEndsOn is { } endsOn && endsOn < DateOnly.FromDateTime(now.UtcDateTime) ? UserStatus.Disabled : user.Status;
         return new UserAccess(
             user.Id, user.UserType, status, entityStatus, user.Username, user.DisplayName, user.PreferredLanguage, user.MfaEnrolledAt is not null,
-            user.NafathVerifiedAt is not null, assignments, user.PasswordChangedAt);
+            user.NafathVerifiedAt is not null, assignments, user.PasswordChangedAt, user.Email);
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Directory {Attribute} of user {UserId} not applied: {Reason}. The stored value stands.")]

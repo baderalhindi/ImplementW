@@ -20,7 +20,8 @@ public sealed record UserAccess(
     bool MultiFactorEnrolled,
     bool IdentityVerified,
     IReadOnlyList<SessionRoleAssignment> RoleAssignments,
-    DateTimeOffset? PasswordChangedAt = null)
+    DateTimeOffset? PasswordChangedAt = null,
+    string? Email = null)
 {
     /// <summary>
     /// A person may hold a session only while their account is active and, if external, while their entity is (ADR-013).

@@ -87,6 +87,13 @@ export const usersApi = {
   activate: (id: string, etag: string | null) => command<UserDetail>(`/users/${id}/activate`, etag),
   disable: (id: string, etag: string | null) => command<UserDetail>(`/users/${id}/disable`, etag),
   remove: (id: string, etag: string | null) => command<undefined>(`/users/${id}/delete`, etag),
+  setNationalId: (id: string, nationalId: string | null, etag: string | null) =>
+    apiRequest<UserDetail>(`/users/${id}/national-id`, {
+      method: 'PUT',
+      body: { nationalId },
+      ifMatch: etag,
+    }),
+  revealNationalId: (id: string) => apiRequest<{ nationalId: string }>(`/users/${id}/national-id`),
   permissions: (id: string, signal?: AbortSignal) =>
     data(apiRequest<UserPermissions>(`/users/${id}/permissions`, { signal })),
   setPermission: (
@@ -222,6 +229,7 @@ export const departmentsApi = {
     }),
   activate: (id: string) => command<DepartmentDetail>(`/departments/${id}/activate`),
   deactivate: (id: string) => command<DepartmentDetail>(`/departments/${id}/deactivate`),
+  remove: (id: string) => command<undefined>(`/departments/${id}/delete`),
 };
 
 export type ExternalEntityTransition = 'suspend' | 'activate' | 'retire';

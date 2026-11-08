@@ -159,6 +159,7 @@ FROM (VALUES
     ('IDENTITY_INTEGRATION_MANAGE', 'إدارة تكامل الهوية', 'Manage identity integration', 'IDENTITY_ACCESS', true),
     ('USER_VIEW',                   'عرض المستخدمين',     'View users',                  'IDENTITY_ACCESS', false),
     ('USER_MANAGE',                 'إدارة المستخدمين',    'Manage users',                'IDENTITY_ACCESS', true),
+    ('USER_NATIONAL_ID_VIEW',       'عرض رقم الهوية الوطنية أو الإقامة', 'View National ID or Iqama numbers', 'IDENTITY_ACCESS', true),
     ('ROLE_VIEW',                   'عرض الأدوار والصلاحيات', 'View roles and permissions', 'IDENTITY_ACCESS', false),
     ('ROLE_MANAGE',                 'إدارة الأدوار',       'Manage roles',                'IDENTITY_ACCESS', true),
     ('ROLE_ASSIGN',                 'إسناد الأدوار',       'Assign roles',                'IDENTITY_ACCESS', true),
@@ -269,6 +270,7 @@ CREATE TEMPORARY TABLE shipped_grant (role_code text NOT NULL, permission_code t
 INSERT INTO shipped_grant (role_code, permission_code, data_scope) VALUES
     ('R01', 'IDENTITY_INTEGRATION_MANAGE',   'ALL'),
     ('R01', 'USER_VIEW',                     'ALL'),
+    ('R01', 'USER_NATIONAL_ID_VIEW',         'ALL'),
     ('R01', 'USER_MANAGE',                   'ALL'),
     ('R01', 'ROLE_VIEW',                     'ALL'),
     ('R01', 'ROLE_MANAGE',                   'ALL'),

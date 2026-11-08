@@ -56,6 +56,12 @@ public static class ApplicationSecrets
     /// <summary>TASK-078: the Redis-compatible store that holds the rate-limit counters every API instance shares.</summary>
     public const string RateLimitStoreConnectionString = "RATE_LIMIT_STORE_CONNECTION_STRING";
 
+    /// <summary>
+    /// Client review, item 7: seals National ID and Iqama numbers and keys their fingerprints. At least 32 characters. Changing it makes stored
+    /// numbers unreadable and their fingerprints unmatched, so it is rotated only by re-sealing every number.
+    /// </summary>
+    public const string PersonalDataKey = "PERSONAL_DATA_KEY";
+
     /// <summary>The configuration keys loaded from the secret store and required at start-up, in the order they are read.</summary>
     public static readonly IReadOnlyList<string> Keys = [DatabaseConnectionString, JwtSigningKey];
 
@@ -70,11 +76,12 @@ public static class ApplicationSecrets
     /// SIT/UAT/PROD; without it, a relay that needs no authentication is used as it is, and without a relay no e-mail is sent.
     /// The Nafath client is scoped to SIT/UAT/PROD; without it, an external user who must be verified is told verification
     /// is unavailable and gets no session, never one without the verification (TASK-068). The rate-limit store is scoped to
-    /// SIT/UAT/PROD; without it, each API instance keeps its own counters (TASK-078).
+    /// SIT/UAT/PROD; without it, each API instance keeps its own counters (TASK-078). Without the personal data key, no National ID is stored
+    /// and a Nafath verification, which compares against one, is refused (client review, item 7).
     /// </summary>
     public static readonly IReadOnlyList<string> OptionalKeys =
     [
         DirectoryUrl, DirectoryBindDn, DirectoryBindPassword, SsoClientSecret, MultiFactorProviderApiKey, SiemApiToken, DocumentStorageConnectionString,
-        ExchangeSmtpUser, ExchangeSmtpPassword, NafathClientId, NafathClientSecret, RateLimitStoreConnectionString,
+        ExchangeSmtpUser, ExchangeSmtpPassword, NafathClientId, NafathClientSecret, RateLimitStoreConnectionString, PersonalDataKey,
     ];
 }

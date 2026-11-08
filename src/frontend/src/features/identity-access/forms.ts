@@ -39,6 +39,23 @@ export function checkPassword(password: string, username: string): string | null
   return meetsRules ? null : 'PASSWORD_TOO_WEAK';
 }
 
+/** A National ID (starts with 1) or Iqama number (starts with 2): ten digits, the last a Luhn check digit, as the API checks it. */
+export function checkNationalId(value: string): string | null {
+  const id = value.trim();
+  if (id === '') {
+    return 'REQUIRED';
+  }
+  if (!/^[12][0-9]{9}$/.test(id)) {
+    return 'MALFORMED';
+  }
+  let sum = 0;
+  for (let index = 0; index < id.length; index += 1) {
+    const digit = Number(id.charAt(index)) * (index % 2 === 0 ? 2 : 1);
+    sum += digit > 9 ? digit - 9 : digit;
+  }
+  return sum % 10 === 0 ? null : 'MALFORMED';
+}
+
 export type Validator = (value: string) => string | null;
 
 /** The API code of the first failed check, or null: REQUIRED, MAX_LENGTH or MALFORMED. */

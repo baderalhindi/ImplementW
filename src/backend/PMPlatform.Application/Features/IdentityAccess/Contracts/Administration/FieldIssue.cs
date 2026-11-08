@@ -21,6 +21,9 @@ public sealed record FieldIssue(string Field, string Code)
     /// <summary>Not permitted by the rule named in the error code.</summary>
     public const string NotAllowed = "NOT_ALLOWED";
 
+    /// <summary>Something still depends on the record (client review, item 6).</summary>
+    public const string InUse = "IN_USE";
+
     /// <summary>ADR-013: outside the external user's own entity.</summary>
     public const string OutsideEntity = "OUTSIDE_ENTITY";
 

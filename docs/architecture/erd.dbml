@@ -74,6 +74,7 @@ Table identity_access.department {
   parent_department_id uuid [ref: > identity_access.department.id, note: 'Hierarchy']
   directory_reference varchar(200) [note: 'Directory object identifier']
   is_active boolean [not null, default: true]
+  deleted_at timestamptz [note: 'Set when deleted (client review, item 6): out of administration and pickers; records keep its name']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -123,6 +124,9 @@ Table identity_access.user {
   mfa_enrolled_at timestamptz [note: 'MFA enrolment recorded; factors held by the MFA provider (TASK-029)']
   nafath_verification_reference varchar(200) [note: 'Only the verification reference is stored (data minimisation, OQ-007)']
   nafath_verified_at timestamptz
+  national_id_sealed varchar(200) [note: 'National ID or Iqama number, AES-256-GCM under PERSONAL_DATA_KEY (client review, item 7)']
+  national_id_fingerprint varchar(64) [unique, note: 'HMAC-SHA256 of the number; unique where set; compared with what Nafath asserts (SR-53)']
+  national_id_last_digits varchar(4) [note: 'The last four digits, for the masked display']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']

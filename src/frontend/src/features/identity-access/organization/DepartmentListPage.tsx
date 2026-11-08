@@ -32,7 +32,7 @@ const PAGE_SIZE = 25;
 
 type Editing = { mode: 'create' } | { mode: 'edit'; departmentId: string };
 
-/** ADM-012 Departments: create, edit, activate and deactivate. A department is never deleted (RETAIN). */
+/** ADM-012 Departments: create, edit, activate, deactivate and delete (client review, item 6). A deleted department's row stays (RETAIN). */
 export function DepartmentListPage(): ReactElement {
   const { t, language } = useI18n();
   const { params, page, setFilter, setFilters, goToPage } = useListParams();
@@ -55,6 +55,23 @@ export function DepartmentListPage(): ReactElement {
   const [searchText, setSearchText] = useSearchText(q ?? '', (text) => {
     setFilter('q', text, { replace: true });
   });
+
+  const confirmDelete = (chosen: DepartmentSummary[]) => {
+    setConfirmation({
+      title: t('identityAccess.departments.deleteTitle', { count: chosen.length }),
+      body: t('identityAccess.departments.deleteBody', {
+        names: chosen.map((department) => labelOf(department.name, language)).join('، '),
+      }),
+      confirmLabel: t('identityAccess.departments.delete'),
+      destructive: true,
+      action: async () => {
+        for (const department of chosen) {
+          await departmentsApi.remove(department.id);
+        }
+        selection.clear();
+      },
+    });
+  };
 
   const toggle = (department: DepartmentSummary) => {
     const name = labelOf(department.name, language);
@@ -214,6 +231,21 @@ export function DepartmentListPage(): ReactElement {
               >
                 {t('identityAccess.departments.deactivate')}
               </button>
+              <button
+                type="button"
+                className="button button--danger"
+                onClick={() => {
+                  confirmDelete(
+                    departments.data?.items.filter((department) =>
+                      selection.selected.has(department.id),
+                    ) ?? [],
+                  );
+                }}
+              >
+                {t('identityAccess.departments.deleteSelected', {
+                  count: selection.selected.size,
+                })}
+              </button>
             </SelectionBar>
             <TableContainer caption={t('identityAccess.departments.title')}>
               <thead>
@@ -277,6 +309,18 @@ export function DepartmentListPage(): ReactElement {
                         {department.isActive
                           ? t('identityAccess.departments.deactivate')
                           : t('identityAccess.departments.activate')}{' '}
+                        <span className="visually-hidden">
+                          {labelOf(department.name, language)}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="button button--danger"
+                        onClick={() => {
+                          confirmDelete([department]);
+                        }}
+                      >
+                        {t('identityAccess.departments.delete')}{' '}
                         <span className="visually-hidden">
                           {labelOf(department.name, language)}
                         </span>

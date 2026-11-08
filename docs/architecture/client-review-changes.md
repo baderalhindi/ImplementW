@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | Source | The client's numbered change list, received in parts from 7 Nov 2026 |
-| Status | **In progress**: items 1, 2, 4 and 5 built; item 3 not received |
-| Migration | `TASK-112_DeleteProjectsAndUsersUserPermissions` |
+| Status | **In progress**: items 1, 2, 4, 5, 6 and 7 built; item 3 not received |
+| Migrations | `TASK-112_DeleteProjectsAndUsersUserPermissions`, `TASK-112_UserNationalIdAndDeletedDepartments` |
 
 ## 1. Done
 
@@ -14,6 +14,8 @@
 | 2 | The governance profile's info button is removed; the client wanted an explanation, not a platform change. |
 | 4 | R02 deletes a project in any state (§2). |
 | 5 | Delete and disable users from the list and the user's page; per-user permissions (§3). |
+| 6 | Delete a department (§5). |
+| 7 | National ID or Iqama number on the user, masked, with Nafath bound to it; a Microsoft sign-in only with the profile's e-mail (§6). |
 
 ## 2. Deleting a project (item 4, decided by the client)
 
@@ -51,7 +53,42 @@
 - **Approval stages name roles.** `APPROVAL_DECIDE` granted to a person does not put them on a stage that names another role, and `RoleHolderDirectory` still routes tasks by role. A REMOVE stops the person deciding, but a task can still be addressed to them.
 - This does not pass the three people a permission profile needs. That is the client's decision: threat RBAC-T30.
 
-## 4. Not done
+## 5. Deleting a department (item 6, decided by the client)
+
+`POST /departments/{id}/delete` (`ORGANIZATION_MANAGE`, step-up) sets `department.deleted_at` and deactivates it. It leaves the list, the
+structure, every picker and the code list; its detail is 404. Records that name it keep the name.
+
+It is refused with 409 `IDENTITY_ACCESS_DEPARTMENT_IN_USE`, one field issue `IN_USE` each, while it has any of:
+
+- users not deleted (`users`), disabled ones included;
+- sub-departments not deleted (`subDepartments`);
+- projects not closed (`projects`);
+- assignments in force (`assignments`).
+
+Moving them is a separate step. The list's selection bar and each row offer Delete; the confirmation says a department still in use is refused.
+
+## 6. National ID and the sign-in checks (item 7, decided by the client)
+
+**Storage.** `user.national_id_sealed` holds the number sealed with AES-256-GCM. `national_id_fingerprint` is an HMAC-SHA256, unique where set. `national_id_last_digits` holds four digits for the mask. Both keys come by HKDF from the new secret `PERSONAL_DATA_KEY` (sheet, manifest and runbook F-5). Without the key the API answers 503 when a number is set or revealed, and refuses every Nafath verification. The API checks the number: 10 digits, starting with 1 (National ID) or 2 (Iqama), Luhn check digit.
+
+**Who sees it.** Everyone sees `nationalIdMasked` (`******6789`) on the user record. `GET /users/{id}/national-id` returns the full number:
+
+- only to the new `USER_NATIONAL_ID_VIEW`, shipped to R01 and grantable per user (§3);
+- with `Cache-Control: no-store`;
+- with every reveal audited as `IdentityAccess.UserNationalIdRevealed`.
+
+The screen shows it only when asked and hides it again. `PUT /users/{id}/national-id` (`USER_MANAGE`, step-up) sets, changes or removes it, audited without the value.
+
+**Nafath.** A verification is refused (`IDENTITY_MISMATCH`) unless the identity Nafath asserts has the user's fingerprint, or when the user has none. Setting a new number undoes an earlier verification. Accounts verified before this change stay verified. The claim read is `Identity:Nafath:NationalIdClaim`, `sub` until AHDA IT confirms it with Nafath. This closes SR-53 in code; it stays open until then.
+
+**Microsoft sign-in.** The platform asks for the `profile` and `email` scopes on top of the configured ones. It refuses (`EMAIL_MISMATCH`) a sign-in whose `email` claim, or failing that `preferred_username`, is missing or is not the profile's e-mail, ignoring case. Microsoft keeps its own verification code; the platform sends none.
+
+**Not built:**
+
+- Sign-in through Nafath, and its biometric approval: they need AHDA's Nafath production contract.
+- A job that re-seals every number under a new key.
+
+## 7. Not done
 
 - Item 3 has not been received.
 - The showcase is not deployed: it needs migrate and seed.

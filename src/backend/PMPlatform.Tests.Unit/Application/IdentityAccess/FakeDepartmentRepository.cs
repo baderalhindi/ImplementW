@@ -40,4 +40,9 @@ internal sealed class FakeDepartmentRepository : FakeStore<Department>, IDepartm
 
     public Task<IReadOnlyList<OrganizationCode>> ListActiveCodesAsync(CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<OrganizationCode>>([.. Rows.Values.Where(r => r.IsActive).OrderBy(r => r.Code, StringComparer.Ordinal).Select(r => new OrganizationCode(r.Code, r.Name))]);
+
+    /// <summary>What the next delete finds depending on a department.</summary>
+    public DepartmentUses Uses { get; set; } = new(0, 0, 0, 0);
+
+    public Task<DepartmentUses> CountUsesAsync(Guid departmentId, CancellationToken cancellationToken) => Task.FromResult(Uses);
 }

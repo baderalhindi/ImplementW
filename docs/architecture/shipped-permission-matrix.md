@@ -43,6 +43,7 @@
 | `IDENTITY_INTEGRATION_MANAGE` | IDENTITY_ACCESS | Write | ALL | — | — | — | — | — | — | — |
 | `USER_VIEW` | IDENTITY_ACCESS | Read | ALL | — | — | — | — | — | — | — |
 | `USER_MANAGE` | IDENTITY_ACCESS | Write | ALL | — | — | — | — | — | — | — |
+| `USER_NATIONAL_ID_VIEW` | IDENTITY_ACCESS | Read | ALL | — | — | — | — | — | — | — |
 | `ROLE_VIEW` | IDENTITY_ACCESS | Read | ALL | — | — | — | — | — | — | — |
 | `ROLE_MANAGE` | IDENTITY_ACCESS | Write | ALL | — | — | — | — | — | — | — |
 | `ROLE_ASSIGN` | IDENTITY_ACCESS | Write | ALL | — | — | — | — | — | — | — |

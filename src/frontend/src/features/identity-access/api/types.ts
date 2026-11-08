@@ -45,6 +45,8 @@ export interface UserDetail extends UserSummary {
   mustChangePassword: boolean;
   lockedUntil: string | null;
   accountEndsOn: string | null;
+  /** "******6789", or null when no number is recorded (client review, item 7). */
+  nationalIdMasked?: string | null;
   /** In the one response that set it, never read back: shown once and never stored. */
   temporaryPassword?: string | null;
   directorySubjectId: string | null;

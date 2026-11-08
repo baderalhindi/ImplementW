@@ -33,6 +33,7 @@ const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   IDENTITY_ACCESS_SELF_ADMINISTRATION: 'identityAccess.problems.selfAdministration',
   IDENTITY_ACCESS_SERVICE_PRINCIPAL: 'identityAccess.problems.servicePrincipal',
   IDENTITY_ACCESS_USER_HAS_NO_ROLE: 'identityAccess.problems.userHasNoRole',
+  IDENTITY_ACCESS_DEPARTMENT_IN_USE: 'identityAccess.problems.departmentInUse',
   IDENTITY_ACCESS_DIRECTORY_AUTHORITATIVE: 'identityAccess.problems.directoryAuthoritative',
   IDENTITY_ACCESS_INVALID_PERIOD: 'identityAccess.problems.invalidPeriod',
   IDENTITY_ACCESS_DEPARTMENT_CYCLE: 'identityAccess.problems.departmentCycle',

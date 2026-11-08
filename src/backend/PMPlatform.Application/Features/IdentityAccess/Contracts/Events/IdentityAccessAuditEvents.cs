@@ -34,6 +34,9 @@ public static class IdentityAccessAuditEvents
     public const string UserActivated = "IdentityAccess.UserActivated";
     public const string UserDisabled = "IdentityAccess.UserDisabled";
     public const string UserDeleted = "IdentityAccess.UserDeleted";
+    public const string UserNationalIdChanged = "IdentityAccess.UserNationalIdChanged";
+    public const string UserNationalIdRevealed = "IdentityAccess.UserNationalIdRevealed";
+    public const string DepartmentDeleted = "IdentityAccess.DepartmentDeleted";
     public const string UserPermissionOverrideSet = "IdentityAccess.UserPermissionOverrideSet";
     public const string UserPermissionOverrideCleared = "IdentityAccess.UserPermissionOverrideCleared";
 

@@ -32,7 +32,8 @@ public sealed record UserDetail(
     AccountSource AccountSource = AccountSource.Directory,
     bool MustChangePassword = false,
     DateTimeOffset? LockedUntil = null,
-    DateOnly? AccountEndsOn = null)
+    DateOnly? AccountEndsOn = null,
+    string? NationalIdMasked = null)
 {
     /// <summary>A generated or reset temporary password, in the one response that set it; never read back.</summary>
     public string? TemporaryPassword { get; init; }

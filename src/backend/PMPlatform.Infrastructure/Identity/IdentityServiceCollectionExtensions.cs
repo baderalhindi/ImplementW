@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Infrastructure.Hosting;
@@ -61,6 +62,7 @@ public static class IdentityServiceCollectionExtensions
         services.AddSingleton<ISessionTokenService, JwtSessionTokenService>();
         services.AddSingleton<IMultiFactorProvider, HttpMultiFactorProvider>();
         services.AddSingleton<IIdentityVerificationProvider, NafathIdentityVerifier>();
+        services.AddSingleton<INationalIdProtector, NationalIdProtector>();
 
         // TASK-075: every call to these providers is FG-05 telemetry.
         services.ObserveIdentityIntegrations();

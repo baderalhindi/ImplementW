@@ -22,6 +22,16 @@ public interface IUserAdministrationService
     /// </summary>
     public Task<AdministrationError?> DeleteAsync(Guid actorId, Guid userId, uint? expectedVersion, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Client review, item 7: records, replaces or (null) removes the user's National ID or Iqama number, already checked as one. A new number undoes
+    /// a Nafath verification, which was of whoever held the old one.
+    /// </summary>
+    public Task<AdministrationResult<Versioned<UserDetail>>> SetNationalIdAsync(
+        Guid actorId, Guid userId, string? nationalId, uint? expectedVersion, CancellationToken cancellationToken);
+
+    /// <summary>The full number, for a holder of USER_NATIONAL_ID_VIEW. Each reveal is an audit event.</summary>
+    public Task<AdministrationResult<NationalIdDetail>> RevealNationalIdAsync(Guid actorId, Guid userId, CancellationToken cancellationToken);
+
     /// <summary>DISABLED → ACTIVE. <paramref name="expectedVersion"/> is honoured when present (R-21).</summary>
     /// <summary>A local account's new temporary password, typed or generated; the response carries it, this once.</summary>
     public Task<AdministrationResult<Versioned<UserDetail>>> ResetPasswordAsync(Guid actorId, Guid userId, string? typedPassword, uint? expectedVersion, CancellationToken cancellationToken);
