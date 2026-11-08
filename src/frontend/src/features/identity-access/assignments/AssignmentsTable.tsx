@@ -56,9 +56,7 @@ export function AssignmentsTable({
             <th scope="col">{t('identityAccess.assignments.sponsor')}</th>
             <th scope="col">{t('identityAccess.assignments.period')}</th>
             <th scope="col">{t('identityAccess.assignments.status')}</th>
-            <th scope="col">
-              <span className="visually-hidden">{t('common.table.actions')}</span>
-            </th>
+            <th scope="col">{t('common.table.actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -80,7 +78,7 @@ export function AssignmentsTable({
                   : (userNames.get(assignment.sponsorUserId) ??
                     t('identityAccess.assignments.unknownUser'))}
               </td>
-              <td>
+              <td className="cell--period">
                 {t('identityAccess.assignments.periodValue', {
                   start: formatDateTime(assignment.startsAt),
                   end:
@@ -89,7 +87,7 @@ export function AssignmentsTable({
                       : formatDateTime(assignment.endsAt),
                 })}
               </td>
-              <td>
+              <td className="cell--wrap-badge">
                 <StatusBadge
                   label={
                     assignment.endReason === null
@@ -99,18 +97,20 @@ export function AssignmentsTable({
                   tone={assignment.status === 'ACTIVE' ? 'positive' : 'neutral'}
                 />
               </td>
-              <td>
+              <td className="cell--actions">
                 {assignment.status === 'ACTIVE' && (
-                  <button
-                    type="button"
-                    className="button button--danger"
-                    onClick={() => {
-                      setEnding(assignment);
-                    }}
-                  >
-                    {t('identityAccess.assignments.end')}{' '}
-                    <span className="visually-hidden">{assignment.roleCode}</span>
-                  </button>
+                  <span className="row-actions">
+                    <button
+                      type="button"
+                      className="button button--danger"
+                      onClick={() => {
+                        setEnding(assignment);
+                      }}
+                    >
+                      {t('identityAccess.assignments.end')}{' '}
+                      <span className="visually-hidden">{assignment.roleCode}</span>
+                    </button>
+                  </span>
                 )}
               </td>
             </tr>

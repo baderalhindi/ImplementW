@@ -1598,8 +1598,21 @@ select.field__input {
   unicode-bidi: plaintext;
 }
 
+/* A badge with a long reason ("Ended — Role changed") wraps inside its column rather than widening it. */
+.cell--wrap-badge .badge {
+  white-space: normal;
+  border-radius: 0.75rem;
+}
+
+/* A period ("6 Nov 2026, 11:13 to no end date"): wide enough for two even lines, never squeezed to one word a line. */
+.cell--period {
+  inline-size: 12rem;
+}
+
+/* As wide as its buttons and no wider, so the columns with text keep the room. */
 .cell--actions {
   white-space: nowrap;
+  inline-size: 1%;
 }
 
 /* A cell's secondary line: a date under a name, a role under a stage. */
@@ -1650,6 +1663,7 @@ select.field__input {
 .row-actions .button {
   min-block-size: 2.25rem;
   padding: var(--space-1) var(--space-3);
+  white-space: nowrap;
 }
 
 .cell--actions .row-actions .button + .button {
