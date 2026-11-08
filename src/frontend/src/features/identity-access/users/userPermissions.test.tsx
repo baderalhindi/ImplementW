@@ -75,6 +75,7 @@ describe('the user list', () => {
     const api = withIdentityAccessData(mockApi());
     renderApp({ path: '/admin/users', session: sessionFor(['R01']) });
     const link = await screen.findByRole('link', { name: internalUser.displayName });
+    expect(api.requestsTo('GET', /^\/users$/)[0]?.query.get('userType')).toBe('INTERNAL,EXTERNAL');
     const row = link.closest('tr');
     expect(row).not.toBeNull();
     expect(

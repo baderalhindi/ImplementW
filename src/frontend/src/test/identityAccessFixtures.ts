@@ -235,7 +235,7 @@ export function withIdentityAccessData(api: MockApi): MockApi {
           users.filter(
             (u) =>
               (q === undefined || u.displayName.toLowerCase().includes(q)) &&
-              (userType === null || u.userType === userType),
+              (userType === null || userType.split(',').includes(u.userType)),
           ),
         ),
       };

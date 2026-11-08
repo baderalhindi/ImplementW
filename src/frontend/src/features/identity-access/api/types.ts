@@ -64,6 +64,11 @@ export interface UserDetail extends UserSummary {
   updatedBy: string;
 }
 
+/** The list request: one type, or several comma-joined as the API reads a set (e.g. "INTERNAL,EXTERNAL"). */
+export type UserListRequest = Omit<UserQuery, 'userType'> & {
+  userType?: UserType | `${UserType},${UserType}` | undefined;
+};
+
 export interface UserQuery {
   status?: UserStatus | undefined;
   userType?: UserType | undefined;

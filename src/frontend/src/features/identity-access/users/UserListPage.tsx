@@ -30,6 +30,9 @@ import { problemMessage } from '../problems.ts';
 const PAGE_SIZE = 25;
 const USER_STATUSES: UserStatus[] = ['ACTIVE', 'DISABLED'];
 const USER_TYPES: UserType[] = ['INTERNAL', 'EXTERNAL', 'SERVICE'];
+
+/** Unless the type filter asks for them, the list shows people only: the platform's service accounts run its jobs and are not administered. */
+const PEOPLE = 'INTERNAL,EXTERNAL' as const;
 const USER_SORTS: UserSort[] = [
   'displayName:asc',
   'displayName:desc',
@@ -240,7 +243,16 @@ export function UserListPage(): ReactElement {
   const load = useCallback(
     (signal: AbortSignal) =>
       usersApi.list(
-        { q, status, userType, departmentId, externalEntityId, sort, page, pageSize: PAGE_SIZE },
+        {
+          q,
+          status,
+          userType: userType ?? PEOPLE,
+          departmentId,
+          externalEntityId,
+          sort,
+          page,
+          pageSize: PAGE_SIZE,
+        },
         signal,
       ),
     [q, status, userType, departmentId, externalEntityId, sort, page],

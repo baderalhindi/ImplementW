@@ -32,8 +32,8 @@ import {
   type RoleSummary,
   type UserCreateRequest,
   type UserDetail,
+  type UserListRequest,
   type UserPermissions,
-  type UserQuery,
   type UserSummary,
   type UserUpdateRequest,
   type PersonLookupQuery,
@@ -77,7 +77,7 @@ export const personLookupsApi = {
 };
 
 export const usersApi = {
-  list: (query: UserQuery, signal?: AbortSignal) =>
+  list: (query: UserListRequest, signal?: AbortSignal) =>
     data(apiRequest<Page<UserSummary>>('/users', { query: { ...query }, signal })),
   get: (id: string, signal?: AbortSignal) => apiRequest<UserDetail>(`/users/${id}`, { signal }),
   create: (request: UserCreateRequest) =>
