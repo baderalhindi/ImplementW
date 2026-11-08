@@ -316,6 +316,7 @@ export function UserListPage(): ReactElement {
                   <th scope="col">{t('identityAccess.users.fields.accountSource')}</th>
                   <th scope="col">{t('identityAccess.users.fields.organization')}</th>
                   <th scope="col">{t('identityAccess.users.fields.status')}</th>
+                  {mayManage && <th scope="col">{t('common.table.actions')}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -348,6 +349,40 @@ export function UserListPage(): ReactElement {
                         tone={user.status === 'ACTIVE' ? 'positive' : 'negative'}
                       />
                     </td>
+                    {mayManage && (
+                      <td className="cell--actions cell--actions-wrap">
+                        {user.userType === 'SERVICE' ? (
+                          <span className="cell__aside">
+                            {t('identityAccess.users.list.serviceAccount')}
+                          </span>
+                        ) : (
+                          <div className="actions-group">
+                            <Link className="button" to={`/admin/users/${user.id}/edit`}>
+                              {t('common.actions.edit')}{' '}
+                              <span className="visually-hidden">{user.displayName}</span>
+                            </Link>
+                            <button
+                              type="button"
+                              className="button button--danger"
+                              onClick={() => {
+                                setConfirmation({
+                                  title: t('identityAccess.users.delete.title'),
+                                  body: t('identityAccess.users.delete.body', {
+                                    name: user.displayName,
+                                  }),
+                                  confirmLabel: t('identityAccess.users.delete.confirm'),
+                                  destructive: true,
+                                  action: () => usersApi.remove(user.id, null),
+                                });
+                              }}
+                            >
+                              {t('identityAccess.users.delete.short')}{' '}
+                              <span className="visually-hidden">{user.displayName}</span>
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

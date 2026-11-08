@@ -70,6 +70,37 @@ describe('deleting a user', () => {
   });
 });
 
+describe('the user list', () => {
+  test('each person has Edit and Delete in their row; a service account has neither', async () => {
+    const api = withIdentityAccessData(mockApi());
+    renderApp({ path: '/admin/users', session: sessionFor(['R01']) });
+    const link = await screen.findByRole('link', { name: internalUser.displayName });
+    const row = link.closest('tr');
+    expect(row).not.toBeNull();
+    expect(
+      within(row as HTMLElement).getByRole('link', {
+        name: `${en('common.actions.edit')} ${internalUser.displayName}`,
+      }),
+    ).toBeTruthy();
+    const user = userEvent.setup();
+    await user.click(
+      within(row as HTMLElement).getByRole('button', {
+        name: `${en('identityAccess.users.delete.short')} ${internalUser.displayName}`,
+      }),
+    );
+    api.on('POST', /\/delete$/, { status: 204 });
+    const dialog = screen.getByRole('dialog', { name: en('identityAccess.users.delete.title') });
+    await user.click(
+      within(dialog).getByRole('button', { name: en('identityAccess.users.delete.confirm') }),
+    );
+    await waitFor(() => {
+      expect(api.requestsTo('POST', /\/delete$/).map((request) => request.path)).toEqual([
+        `/users/${internalUser.id}/delete`,
+      ]);
+    });
+  });
+});
+
 describe('custom permissions', () => {
   test('nothing adjusted says so, and what the user holds is listed with where it comes from', async () => {
     await openUser();

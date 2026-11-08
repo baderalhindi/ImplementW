@@ -133,7 +133,8 @@
         "displayNameDesc": "Name (Z to A)",
         "usernameAsc": "Username (A to Z)",
         "usernameDesc": "Username (Z to A)"
-      }
+      },
+      "serviceAccount": "Service account: not edited here"
     },
     "create": {
       "title": "Create user"
@@ -200,7 +201,8 @@
     "delete": {
       "title": "Delete user",
       "body": "Delete {name}? They can no longer sign in and leave every list. Their name stays on past records. This cannot be undone here.",
-      "confirm": "Delete user"
+      "confirm": "Delete user",
+      "short": "Delete"
     },
     "bulk": {
       "disable": "Disable selected ({count})",
