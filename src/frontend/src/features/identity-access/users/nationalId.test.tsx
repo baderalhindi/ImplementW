@@ -86,4 +86,60 @@ describe('a National ID or Iqama number', () => {
     expect(request?.body).toEqual({ nationalId: '1000000008' });
     expect(request?.headers.get('If-Match')).toBe('"7"');
   });
+
+  test('the Edit form records a new number first, then saves the profile with the newer ETag', async () => {
+    const api = withIdentityAccessData(mockApi());
+    api.on('GET', new RegExp(`^/users/${internalUser.id}$`), {
+      body: recorded,
+      headers: { ETag: '"7"' },
+    });
+    api.on('PUT', /\/national-id$/, { body: recorded, headers: { ETag: '"8"' } });
+    api.on('PUT', new RegExp(`^/users/${internalUser.id}$`), {
+      body: recorded,
+      headers: { ETag: '"9"' },
+    });
+    renderApp({ path: `/admin/users/${internalUser.id}/edit`, session: sessionFor(['R01']) });
+    const field = await screen.findByLabelText(
+      new RegExp(en('identityAccess.users.nationalId.field')),
+    );
+    expect(
+      screen.getByText(
+        en('identityAccess.users.form.nationalIdHintRecorded', { current: '******0008' }),
+      ),
+    ).toBeTruthy();
+    const user = userEvent.setup();
+
+    await user.type(field, '1000000009');
+    await user.click(screen.getByRole('button', { name: en('common.actions.save') }));
+    expect(api.requestsTo('PUT', /\/national-id$/)).toHaveLength(0);
+    expect(api.requestsTo('PUT', new RegExp(`^/users/${internalUser.id}$`))).toHaveLength(0);
+
+    await user.clear(field);
+    await user.type(field, '2000000006');
+    await user.click(screen.getByRole('button', { name: en('common.actions.save') }));
+    await waitFor(() => {
+      expect(api.requestsTo('PUT', new RegExp(`^/users/${internalUser.id}$`))).toHaveLength(1);
+    });
+    const [recordedId] = api.requestsTo('PUT', /\/national-id$/);
+    expect(recordedId?.body).toEqual({ nationalId: '2000000006' });
+    expect(recordedId?.headers.get('If-Match')).toBe('"7"');
+    const [profile] = api.requestsTo('PUT', new RegExp(`^/users/${internalUser.id}$`));
+    expect(profile?.headers.get('If-Match')).toBe('"8"');
+  });
+
+  test('the Edit form leaves the number alone when the field is blank', async () => {
+    const api = withIdentityAccessData(mockApi());
+    api.on('GET', new RegExp(`^/users/${internalUser.id}$`), {
+      body: recorded,
+      headers: { ETag: '"7"' },
+    });
+    api.on('PUT', new RegExp(`^/users/${internalUser.id}$`), { body: recorded });
+    renderApp({ path: `/admin/users/${internalUser.id}/edit`, session: sessionFor(['R01']) });
+    await screen.findByLabelText(new RegExp(en('identityAccess.users.nationalId.field')));
+    await userEvent.setup().click(screen.getByRole('button', { name: en('common.actions.save') }));
+    await waitFor(() => {
+      expect(api.requestsTo('PUT', new RegExp(`^/users/${internalUser.id}$`))).toHaveLength(1);
+    });
+    expect(api.requestsTo('PUT', /\/national-id$/)).toHaveLength(0);
+  });
 });

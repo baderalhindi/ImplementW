@@ -146,6 +146,8 @@
       "userTypeHint": "The user type cannot be changed after the user is created.",
       "externalEntityHint": "The entity the person works for. It cannot be changed after the user is created.",
       "mobileNumberHint": "International format, for example +966501234567. The user confirms the number themselves with a code.",
+      "nationalIdHintNone": "Optional. 10 digits: a National ID starts with 1, an Iqama number with 2. You may be asked for a verification code from your authenticator app.",
+      "nationalIdHintRecorded": "Recorded: {current}. Leave blank to keep it, or type a new number. Remove it from the user's page.",
       "directorySubjectIdHint": "The identifier of the person's account in the AHDA directory. Sign-in uses it to recognize them.",
       "directoryAttributesNote": "The department, manager and job title of an internal user are read from the AHDA directory each time they sign in.",
       "accountSourceDirectory": "Directory account",
