@@ -143,24 +143,52 @@ describe('Project stages (review round 5, item 7)', () => {
     expect(screen.queryByText(en('identityAccess.projectStages.empty'))).toBeNull();
   });
 
-  test('only a stage added and not saved yet can be removed; a saved one is deactivated instead', async () => {
-    open();
+  test('a saved stage removed is left out of the next version; the old version is not touched', async () => {
+    const api = open();
     expect(await screen.findAllByRole('textbox', { name: /^English name/ })).toHaveLength(2);
-    const removeName = new RegExp(`^${en('identityAccess.projectStages.remove')}`);
-    expect(screen.queryByRole('button', { name: removeName })).toBeNull();
+    const remove = screen.getAllByRole('button', {
+      name: new RegExp(`^${en('identityAccess.projectStages.remove')}`),
+    });
+    expect(remove).toHaveLength(2);
+
+    await userEvent.click(first(remove));
+    expect(screen.getAllByRole('textbox', { name: /^English name/ })).toHaveLength(1);
+    const weight = first(screen.getAllByRole('textbox', { name: /^Weight/ }));
+    await userEvent.clear(weight);
+    await userEvent.type(weight, '100');
+    await userEvent.click(
+      screen.getByRole('button', { name: en('identityAccess.projectStages.save') }),
+    );
+
+    await screen.findByText(en('identityAccess.projectStages.published'));
+    const put = api.requestsTo('PUT', /^\/configuration-versions\//)[0];
+    expect(put?.body).toMatchObject({
+      content: { projectStages: [{ code: 'B', weightPercent: 100, sortOrder: 1 }] },
+    });
+    expect(api.requestsTo('PUT', new RegExp(VERSION_ID))).toEqual([]);
+  });
+
+  test('deleting a version asks first, then retires it and keeps it in the list', async () => {
+    const api = open();
+    api.on('POST', new RegExp(`^/configuration-versions/${VERSION_ID}/retire$`), { body: {} });
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: new RegExp(`^${en('identityAccess.projectStages.deleteVersion')}`),
+      }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: en('identityAccess.projectStages.deleteVersionTitle', { version: 1 }),
+    });
+    expect(dialog.textContent).toContain(en('identityAccess.projectStages.deleteVersionPublished'));
+    expect(api.requestsTo('POST', /\/retire$/)).toEqual([]);
 
     await userEvent.click(
-      screen.getByRole('button', { name: en('identityAccess.projectStages.add') }),
+      within(dialog).getByRole('button', {
+        name: en('identityAccess.projectStages.deleteVersion'),
+      }),
     );
-    expect(screen.getAllByRole('textbox', { name: /^English name/ })).toHaveLength(3);
-    const remove = screen.getByRole('button', { name: removeName });
-    expect(remove.textContent).toContain(
-      en('identityAccess.projectStages.removeOrder', { order: 3 }),
-    );
-
-    await userEvent.click(remove);
-    expect(screen.getAllByRole('textbox', { name: /^English name/ })).toHaveLength(2);
-    expect(screen.queryByRole('button', { name: removeName })).toBeNull();
+    expect(await screen.findByText(en('identityAccess.projectStages.versionDeleted'))).toBeTruthy();
+    expect(api.requestsTo('POST', /\/retire$/)).toHaveLength(1);
   });
 
   test('a version shows its stages when opened, read once', async () => {

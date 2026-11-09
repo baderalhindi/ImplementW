@@ -635,12 +635,12 @@
     "showStages": "Show stages",
     "inactive": "Inactive",
     "remove": "Remove",
-    "removeOrder": "stage {order}, not saved yet",
+    "removeOrder": "stage {order}",
     "stages": "Stages",
     "empty": "No stages yet. Use Add stage to add the first one.",
     "publishTitle": "Publish the change",
     "title": "Project stages",
-    "description": "The stages of a project and their weights. Saving makes a new version with its effective date, so earlier figures keep the weights they were calculated with. A stage is deactivated, never deleted.",
+    "description": "The stages of a project and their weights. Saving makes a new version with its effective date, so earlier figures keep the weights they were calculated with. Removing a stage leaves it out of the next version; earlier versions keep it.",
     "order": "Order",
     "nameAr": "Arabic name",
     "nameEn": "English name",
@@ -661,6 +661,12 @@
     "needsAnother": "Saved. This environment needs another administrator to validate or publish it.",
     "history": "Versions",
     "version": "Version",
-    "state": "State"
+    "state": "State",
+    "deleteVersion": "Delete",
+    "versionNumber": "version {version}",
+    "deleteVersionTitle": "Delete version {version}",
+    "deleteVersionPublished": "The version stops applying from now on. Until you save a new version no stage setup applies — the version before it does not come back. It stays in the list as Retired, so earlier figures keep the weights they were calculated with.",
+    "deleteVersionDraft": "The unpublished version is abandoned. It stays in the list as Retired.",
+    "versionDeleted": "The version is deleted."
   }
 }

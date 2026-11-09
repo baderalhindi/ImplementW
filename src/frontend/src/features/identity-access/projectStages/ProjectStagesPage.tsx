@@ -8,6 +8,7 @@ import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
+import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useCan } from '../permissions/permissions.ts';
 import { problemMessage } from '../problems.ts';
 
@@ -155,8 +156,7 @@ function StagesEditor({
   const { t, language, formatDateTime } = useI18n();
   const mayManage = useCan('CONFIGURATION_MANAGE');
   const [rows, setRows] = useState<StageRow[]>(() => rowsOf(loaded.latest));
-  // A stage in a saved version is only ever deactivated; one added here and not saved yet can still be removed.
-  const [savedCodes] = useState(() => new Set(rowsOf(loaded.latest).map((row) => row.code)));
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [summary, setSummary] = useState('');
   const [effective, setEffective] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
@@ -375,7 +375,7 @@ function StagesEditor({
                   />
                 </td>
                 <td className="stage-editor__actions">
-                  {mayManage && !savedCodes.has(row.code) && (
+                  {mayManage && (
                     <button
                       type="button"
                       className="button button--danger"
@@ -437,6 +437,11 @@ function StagesEditor({
               <th scope="col">{t('identityAccess.projectStages.state')}</th>
               <th scope="col">{t('identityAccess.projectStages.effective')}</th>
               <th scope="col">{t('identityAccess.projectStages.stages')}</th>
+              {mayManage && (
+                <th scope="col" className="stage-editor__actions">
+                  <span className="visually-hidden">{t('common.table.actions')}</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -458,11 +463,55 @@ function StagesEditor({
                     known={loaded.latest?.id === version.id ? loaded.latest : undefined}
                   />
                 </td>
+                {mayManage && (
+                  <td className="stage-editor__actions">
+                    {version.lifecycleState !== 'RETIRED' && (
+                      <button
+                        type="button"
+                        className="button button--danger"
+                        onClick={() => {
+                          setConfirmation({
+                            title: t('identityAccess.projectStages.deleteVersionTitle', {
+                              version: version.versionNo,
+                            }),
+                            body: t(
+                              version.lifecycleState === 'PUBLISHED'
+                                ? 'identityAccess.projectStages.deleteVersionPublished'
+                                : 'identityAccess.projectStages.deleteVersionDraft',
+                            ),
+                            confirmLabel: t('identityAccess.projectStages.deleteVersion'),
+                            destructive: true,
+                            action: () =>
+                              apiRequest(`${VERSIONS}/${version.id}/retire`, { method: 'POST' }),
+                          });
+                        }}
+                      >
+                        {t('identityAccess.projectStages.deleteVersion')}
+                        <span className="visually-hidden">
+                          {' '}
+                          {t('identityAccess.projectStages.versionNumber', {
+                            version: version.versionNo,
+                          })}
+                        </span>
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </TableContainer>
       </section>
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
+          onSaved(t('identityAccess.projectStages.versionDeleted'));
+        }}
+      />
     </form>
   );
 }
