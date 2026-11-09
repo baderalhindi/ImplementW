@@ -74,8 +74,9 @@ async function readStages(signal: AbortSignal): Promise<Loaded> {
       query: { familyId, pageSize: 100 },
       signal,
     })
-  ).data.items;
-  const newest = versions.find((version) => version.lifecycleState !== 'RETIRED');
+  ).data.items.filter((version) => version.lifecycleState !== 'RETIRED');
+  // A deleted (retired) version is kept by the API for the audit trail, and is not shown here.
+  const newest = versions[0];
   const latest =
     newest === undefined
       ? null
@@ -445,6 +446,13 @@ function StagesEditor({
             </tr>
           </thead>
           <tbody>
+            {loaded.versions.length === 0 && (
+              <tr>
+                <td colSpan={mayManage ? 5 : 4} className="stage-editor__empty">
+                  {t('identityAccess.projectStages.noVersions')}
+                </td>
+              </tr>
+            )}
             {loaded.versions.map((version) => (
               <tr key={version.id}>
                 <td dir="ltr">{version.versionNo}</td>
@@ -465,36 +473,34 @@ function StagesEditor({
                 </td>
                 {mayManage && (
                   <td className="stage-editor__actions">
-                    {version.lifecycleState !== 'RETIRED' && (
-                      <button
-                        type="button"
-                        className="button button--danger"
-                        onClick={() => {
-                          setConfirmation({
-                            title: t('identityAccess.projectStages.deleteVersionTitle', {
-                              version: version.versionNo,
-                            }),
-                            body: t(
-                              version.lifecycleState === 'PUBLISHED'
-                                ? 'identityAccess.projectStages.deleteVersionPublished'
-                                : 'identityAccess.projectStages.deleteVersionDraft',
-                            ),
-                            confirmLabel: t('identityAccess.projectStages.deleteVersion'),
-                            destructive: true,
-                            action: () =>
-                              apiRequest(`${VERSIONS}/${version.id}/retire`, { method: 'POST' }),
-                          });
-                        }}
-                      >
-                        {t('identityAccess.projectStages.deleteVersion')}
-                        <span className="visually-hidden">
-                          {' '}
-                          {t('identityAccess.projectStages.versionNumber', {
+                    <button
+                      type="button"
+                      className="button button--danger"
+                      onClick={() => {
+                        setConfirmation({
+                          title: t('identityAccess.projectStages.deleteVersionTitle', {
                             version: version.versionNo,
-                          })}
-                        </span>
-                      </button>
-                    )}
+                          }),
+                          body: t(
+                            version.lifecycleState === 'PUBLISHED'
+                              ? 'identityAccess.projectStages.deleteVersionPublished'
+                              : 'identityAccess.projectStages.deleteVersionDraft',
+                          ),
+                          confirmLabel: t('identityAccess.projectStages.deleteVersion'),
+                          destructive: true,
+                          action: () =>
+                            apiRequest(`${VERSIONS}/${version.id}/retire`, { method: 'POST' }),
+                        });
+                      }}
+                    >
+                      {t('identityAccess.projectStages.deleteVersion')}
+                      <span className="visually-hidden">
+                        {' '}
+                        {t('identityAccess.projectStages.versionNumber', {
+                          version: version.versionNo,
+                        })}
+                      </span>
+                    </button>
                   </td>
                 )}
               </tr>

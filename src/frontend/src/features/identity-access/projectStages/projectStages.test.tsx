@@ -168,7 +168,7 @@ describe('Project stages (review round 5, item 7)', () => {
     expect(api.requestsTo('PUT', new RegExp(VERSION_ID))).toEqual([]);
   });
 
-  test('deleting a version asks first, then retires it and keeps it in the list', async () => {
+  test('deleting a version asks first, then removes it from the list', async () => {
     const api = open();
     api.on('POST', new RegExp(`^/configuration-versions/${VERSION_ID}/retire$`), { body: {} });
     await userEvent.click(
@@ -181,6 +181,19 @@ describe('Project stages (review round 5, item 7)', () => {
     });
     expect(dialog.textContent).toContain(en('identityAccess.projectStages.deleteVersionPublished'));
     expect(api.requestsTo('POST', /\/retire$/)).toEqual([]);
+    // After the delete the API still lists the version, as retired; the page does not show it.
+    api.on('GET', /^\/configuration-versions$/, {
+      body: {
+        items: [
+          {
+            id: VERSION_ID,
+            versionNo: 1,
+            lifecycleState: 'RETIRED',
+            effectiveFrom: '2026-01-01T00:00:00Z',
+          },
+        ],
+      },
+    });
 
     await userEvent.click(
       within(dialog).getByRole('button', {
@@ -189,6 +202,8 @@ describe('Project stages (review round 5, item 7)', () => {
     );
     expect(await screen.findByText(en('identityAccess.projectStages.versionDeleted'))).toBeTruthy();
     expect(api.requestsTo('POST', /\/retire$/)).toHaveLength(1);
+    expect(await screen.findByText(en('identityAccess.projectStages.noVersions'))).toBeTruthy();
+    expect(screen.queryByText(en('identityAccess.masterData.states.RETIRED'))).toBeNull();
   });
 
   test('a version shows its stages when opened, read once', async () => {

@@ -665,8 +665,9 @@
     "deleteVersion": "Delete",
     "versionNumber": "version {version}",
     "deleteVersionTitle": "Delete version {version}",
-    "deleteVersionPublished": "The version stops applying from now on. Until you save a new version no stage setup applies — the version before it does not come back. It stays in the list as Retired, so earlier figures keep the weights they were calculated with.",
-    "deleteVersionDraft": "The unpublished version is abandoned. It stays in the list as Retired.",
-    "versionDeleted": "The version is deleted."
+    "deleteVersionPublished": "The version stops applying from now on and is removed from the list. Until you save a new version no stage setup applies — the version before it does not come back. Figures already calculated keep their weights.",
+    "deleteVersionDraft": "The unpublished version is removed.",
+    "versionDeleted": "The version is deleted.",
+    "noVersions": "No versions yet."
   }
 }
