@@ -398,9 +398,11 @@
     "openToEdit": "فتح للمراجعة أو التعديل"
   },
   "organization": {
+    "activeOfTotal": "{active} نشطة من {total}",
+    "manageDepartments": "إدارة الإدارات",
+    "manageEntities": "إدارة الجهات",
     "title": "الهيكل التنظيمي",
-    "description": "إدارات الهيئة والجهات الخارجية المشاركة في المشاريع.",
-    "manage": "إدارة"
+    "description": "إدارات الهيئة والجهات الخارجية المشاركة في المشاريع."
   },
   "departments": {
     "title": "الإدارات",

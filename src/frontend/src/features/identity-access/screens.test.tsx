@@ -106,6 +106,25 @@ test('the organization structure nests a department under its parent', async () 
   expect(screen.getByText(/Contractor A/)).toBeTruthy();
   expect(departments).toHaveLength(2);
   expect(entities).toHaveLength(1);
+  const activeDepartments = departments.filter((d) => d.isActive).length;
+  expect(
+    screen.getByText(
+      translate('en', 'identityAccess.organization.activeOfTotal', {
+        active: activeDepartments,
+        total: departments.length,
+      }),
+    ),
+  ).toBeTruthy();
+  expect(
+    screen
+      .getByRole('link', { name: translate('en', 'identityAccess.organization.manageDepartments') })
+      .getAttribute('href'),
+  ).toBe('/admin/organization/departments');
+  expect(
+    screen
+      .getByRole('link', { name: translate('en', 'identityAccess.organization.manageEntities') })
+      .getAttribute('href'),
+  ).toBe('/admin/organization/entities');
 });
 
 test('the permission matrix shows the scope each profile grants', async () => {

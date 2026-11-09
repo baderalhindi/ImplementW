@@ -398,9 +398,11 @@
     "openToEdit": "Open to review or change"
   },
   "organization": {
+    "activeOfTotal": "{active} of {total} active",
+    "manageDepartments": "Manage departments",
+    "manageEntities": "Manage entities",
     "title": "Organization structure",
-    "description": "AHDA's departments and the external entities that take part in projects.",
-    "manage": "Manage"
+    "description": "AHDA's departments and the external entities that take part in projects."
   },
   "departments": {
     "title": "Departments",

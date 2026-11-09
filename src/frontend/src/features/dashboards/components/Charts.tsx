@@ -102,11 +102,11 @@ export function ColumnChart({
 }): ReactElement {
   const largest = Math.max(1, ...buckets.map((bucket) => bucket.count));
   return (
-    <div className="columns" aria-hidden="true">
+    <div className="column-chart" aria-hidden="true">
       {buckets.map((bucket) => (
         <div
           key={bucket.key}
-          className={`columns__item${active === null ? '' : active === bucket.key ? ' is-active' : ' is-dimmed'}`}
+          className={`column-chart__item${active === null ? '' : active === bucket.key ? ' is-active' : ' is-dimmed'}`}
           onPointerEnter={() => {
             onActive(bucket.key);
           }}
@@ -114,12 +114,12 @@ export function ColumnChart({
             onActive(null);
           }}
         >
-          <div className="columns__track">
-            <span className="columns__value" dir="ltr">
+          <div className="column-chart__track">
+            <span className="column-chart__value" dir="ltr">
               {bucket.count}
             </span>
             <span
-              className="columns__bar"
+              className="column-chart__bar"
               style={
                 {
                   blockSize: `${String((bucket.count / largest) * 100)}%`,
@@ -128,7 +128,7 @@ export function ColumnChart({
               }
             />
           </div>
-          <span className="columns__label">{bucket.text}</span>
+          <span className="column-chart__label">{bucket.text}</span>
         </div>
       ))}
     </div>
@@ -229,7 +229,7 @@ export function GroupedColumnChart({
                 );
               })}
             </div>
-            <span className="columns__label">{group.text}</span>
+            <span className="column-chart__label">{group.text}</span>
           </div>
         ))}
       </div>
