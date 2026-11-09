@@ -199,4 +199,28 @@ describe('custom permissions', () => {
     const [request] = api.requestsTo('POST', /\/clear$/);
     expect(request?.body).toMatchObject({ reason: { text: 'Back on the team.' } });
   });
+
+  test('on your own page the button is replaced by a note saying why', async () => {
+    const api = apiWithPermissions([riskManage, projectView]);
+    const session = sessionFor(['R01']);
+    api.on('GET', new RegExp(`^/users/${session.user.id}$`), {
+      body: { ...internalUser, id: session.user.id },
+    });
+    api.on('GET', new RegExp(`^/users/${session.user.id}/permissions$`), {
+      body: { userId: session.user.id, items: [riskManage, projectView] },
+    });
+    renderApp({ path: `/admin/users/${session.user.id}`, session });
+    expect(await screen.findByText(en('identityAccess.users.permissions.ownAccount'))).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: en('identityAccess.users.permissions.adjust') }),
+    ).toBeNull();
+  });
+
+  test("on another user's page there is the button and no own-account note", async () => {
+    await openUser();
+    expect(
+      await screen.findByRole('button', { name: en('identityAccess.users.permissions.adjust') }),
+    ).toBeTruthy();
+    expect(screen.queryByText(en('identityAccess.users.permissions.ownAccount'))).toBeNull();
+  });
 });

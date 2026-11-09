@@ -218,6 +218,7 @@
       "title": "Custom permissions",
       "description": "The user starts from their roles. Here you can grant or remove single permissions for this user only. A change applies at once and is recorded in the audit trail.",
       "adjust": "Adjust a permission",
+      "ownAccount": "These are your own permissions, so you cannot adjust them here. Another administrator can adjust them from your user page.",
       "adjustFor": "Adjust a permission for {name}",
       "saved": "The permission was changed.",
       "none": "No permission has been adjusted for this user.",

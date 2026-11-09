@@ -33,7 +33,8 @@ export function UserPermissionsSection({
   const { t, language } = useI18n();
   const { session } = useSession();
   const mayRead = useCan('ROLE_VIEW');
-  const mayAdjust = useCan('ROLE_ASSIGN') && session?.user.id !== userId;
+  const ownAccount = session?.user.id === userId;
+  const mayAdjust = useCan('ROLE_ASSIGN') && !ownAccount;
   const [editing, setEditing] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const load = useCallback((signal: AbortSignal) => usersApi.permissions(userId, signal), [userId]);
@@ -71,6 +72,9 @@ export function UserPermissionsSection({
         )}
       </div>
       <p>{t('identityAccess.users.permissions.description')}</p>
+      {ownAccount && (
+        <p className="form__note">{t('identityAccess.users.permissions.ownAccount')}</p>
+      )}
       {saved && (
         <p className="notice" role="status">
           {t('identityAccess.users.permissions.saved')}
