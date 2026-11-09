@@ -1573,6 +1573,11 @@ select.field__input {
   vertical-align: top;
 }
 
+/* Body cells centre on the row's tallest content, so a badge or one line of text lines up with the row's buttons. */
+.table td {
+  vertical-align: middle;
+}
+
 .table thead th {
   background: var(--color-surface);
   color: var(--color-text-muted);
