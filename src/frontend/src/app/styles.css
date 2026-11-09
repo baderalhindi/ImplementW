@@ -1671,6 +1671,19 @@ select.field__input {
   white-space: nowrap;
 }
 
+/* A two-word toggle (Activate / Deactivate) keeps the longer word's width, so the next button lines up row to row. */
+.toggle-label {
+  display: inline-grid;
+}
+
+.toggle-label > * {
+  grid-area: 1 / 1;
+}
+
+.toggle-label__reserve {
+  visibility: hidden;
+}
+
 .cell--actions .row-actions .button + .button {
   margin-inline-start: 0;
 }

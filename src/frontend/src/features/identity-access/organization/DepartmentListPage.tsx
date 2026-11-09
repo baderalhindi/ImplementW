@@ -13,6 +13,7 @@ import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { useSearchText } from '@/shared/ui/useSearchText.ts';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { ToggleLabel } from '@/shared/ui/ToggleLabel.tsx';
 
 import { departmentsApi } from '../api/identityAccessApi.ts';
 import { type DepartmentSummary } from '../api/types.ts';
@@ -306,9 +307,18 @@ export function DepartmentListPage(): ReactElement {
                           toggle(department);
                         }}
                       >
-                        {department.isActive
-                          ? t('identityAccess.departments.deactivate')
-                          : t('identityAccess.departments.activate')}{' '}
+                        <ToggleLabel
+                          current={t(
+                            department.isActive
+                              ? 'identityAccess.departments.deactivate'
+                              : 'identityAccess.departments.activate',
+                          )}
+                          other={t(
+                            department.isActive
+                              ? 'identityAccess.departments.activate'
+                              : 'identityAccess.departments.deactivate',
+                          )}
+                        />{' '}
                         <span className="visually-hidden">
                           {labelOf(department.name, language)}
                         </span>
