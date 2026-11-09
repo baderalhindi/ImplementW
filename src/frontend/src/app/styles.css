@@ -1376,6 +1376,71 @@ h3 {
   }
 }
 
+/* Project stages: the stage table under its heading and Add stage, a publish card, then the versions. */
+.stage-editor {
+  max-inline-size: none;
+  gap: var(--space-6);
+}
+
+/* A grid item would otherwise grow to the stage table's width; the table scrolls inside its own box on a phone. */
+.stage-editor > * {
+  min-inline-size: 0;
+}
+
+.stage-editor h2 {
+  margin-block: 0 var(--space-3);
+}
+
+.stage-editor__empty {
+  padding-block: var(--space-6);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.stage-editor__total {
+  margin: var(--space-3) 0 0;
+  font-weight: 600;
+}
+
+.stage-editor__total.is-complete {
+  color: var(--color-positive);
+}
+
+.stage-editor__total.is-short {
+  color: var(--color-danger);
+}
+
+.stage-publish {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: var(--shadow-card);
+}
+
+.stage-publish h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.stage-publish .form__actions {
+  margin-block-start: 0;
+}
+
+.stage-publish__fields {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .stage-publish__fields {
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
 .form__readonly {
   display: grid;
   gap: var(--space-1);

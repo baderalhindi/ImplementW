@@ -6,9 +6,19 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { AmountField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
+import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
 import { useCan } from '../permissions/permissions.ts';
 import { problemMessage } from '../problems.ts';
+
+type LifecycleState = 'DRAFT' | 'VALIDATED' | 'PUBLISHED' | 'RETIRED';
+
+const VERSION_TONE: Record<LifecycleState, StatusTone> = {
+  PUBLISHED: 'positive',
+  VALIDATED: 'info',
+  DRAFT: 'warning',
+  RETIRED: 'neutral',
+};
 
 // Review round 5, item 7: the project stages and their weights. A change is a new PROJECT_STAGE version with its effective date, on the engine
 // the risk matrix and KPI targets use, so what was calculated under an earlier version keeps its weights.
@@ -26,7 +36,7 @@ interface StageRow {
 interface VersionSummary {
   id: string;
   versionNo: number;
-  lifecycleState: string;
+  lifecycleState: LifecycleState;
   effectiveFrom: string | null;
 }
 
@@ -142,7 +152,7 @@ function StagesEditor({
   loaded: Loaded;
   onSaved: (notice: string) => void;
 }): ReactElement {
-  const { t, language } = useI18n();
+  const { t, language, formatDateTime } = useI18n();
   const mayManage = useCan('CONFIGURATION_MANAGE');
   const [rows, setRows] = useState<StageRow[]>(() => rowsOf(loaded.latest));
   const [summary, setSummary] = useState('');
@@ -165,6 +175,13 @@ function StagesEditor({
       }
       return next;
     });
+  };
+
+  const addStage = () => {
+    setRows((current) => [
+      ...current,
+      { code: nextCode(current), name: { ar: '', en: '' }, weightPercent: '0', isActive: true },
+    ]);
   };
 
   const submit = async (event: SyntheticEvent) => {
@@ -239,163 +256,178 @@ function StagesEditor({
   };
 
   return (
-    <form className="form" noValidate onSubmit={(event) => void submit(event)}>
+    <form className="form stage-editor" noValidate onSubmit={(event) => void submit(event)}>
       <FormAlert message={problem} />
-      <TableContainer caption={t('identityAccess.projectStages.title')}>
-        <thead>
-          <tr>
-            <th scope="col">{t('identityAccess.projectStages.order')}</th>
-            <th scope="col">{t('identityAccess.projectStages.nameAr')}</th>
-            <th scope="col">{t('identityAccess.projectStages.nameEn')}</th>
-            <th scope="col">{t('identityAccess.projectStages.weight')}</th>
-            <th scope="col">{t('identityAccess.projectStages.active')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => (
-            <tr key={row.code}>
-              <td>
-                <button
-                  type="button"
-                  className="button button--quiet"
-                  disabled={!mayManage || index === 0}
-                  aria-label={t('identityAccess.projectStages.moveUp', {
-                    name: row.name[language],
-                  })}
-                  onClick={() => {
-                    move(index, -1);
-                  }}
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  className="button button--quiet"
-                  disabled={!mayManage || index === rows.length - 1}
-                  aria-label={t('identityAccess.projectStages.moveDown', {
-                    name: row.name[language],
-                  })}
-                  onClick={() => {
-                    move(index, 1);
-                  }}
-                >
-                  ↓
-                </button>
-              </td>
-              <td>
-                <TextField
-                  label={t('identityAccess.projectStages.nameAr')}
-                  name={`nameAr-${row.code}`}
-                  value={row.name.ar}
-                  disabled={!mayManage}
-                  dir="rtl"
-                  onChange={(ar) => {
-                    change(index, { name: { ...row.name, ar } });
-                  }}
-                />
-              </td>
-              <td>
-                <TextField
-                  label={t('identityAccess.projectStages.nameEn')}
-                  name={`nameEn-${row.code}`}
-                  value={row.name.en}
-                  disabled={!mayManage}
-                  dir="ltr"
-                  onChange={(en) => {
-                    change(index, { name: { ...row.name, en } });
-                  }}
-                />
-              </td>
-              <td>
-                <AmountField
-                  label={t('identityAccess.projectStages.weight')}
-                  name={`weight-${row.code}`}
-                  value={row.isActive ? row.weightPercent : '0'}
-                  disabled={!mayManage || !row.isActive}
-                  onChange={(weightPercent) => {
-                    change(index, { weightPercent });
-                  }}
-                />
-              </td>
-              <td>
-                <input
-                  type="checkbox"
-                  aria-label={t('identityAccess.projectStages.activeFor', {
-                    name: row.name[language],
-                  })}
-                  checked={row.isActive}
-                  disabled={!mayManage}
-                  onChange={(event) => {
-                    change(index, { isActive: event.target.checked });
-                  }}
-                />
-              </td>
+      <section aria-labelledby="stages-heading">
+        <div className="section__header">
+          <h2 id="stages-heading">{t('identityAccess.projectStages.stages')}</h2>
+          {mayManage && (
+            <button type="button" className="button button--primary" onClick={addStage}>
+              {t('identityAccess.projectStages.add')}
+            </button>
+          )}
+        </div>
+        <TableContainer caption={t('identityAccess.projectStages.title')}>
+          <thead>
+            <tr>
+              <th scope="col">{t('identityAccess.projectStages.order')}</th>
+              <th scope="col">{t('identityAccess.projectStages.nameAr')}</th>
+              <th scope="col">{t('identityAccess.projectStages.nameEn')}</th>
+              <th scope="col">{t('identityAccess.projectStages.weight')}</th>
+              <th scope="col">{t('identityAccess.projectStages.active')}</th>
             </tr>
-          ))}
-        </tbody>
-      </TableContainer>
-      <p className={total === WEIGHT_TOTAL ? 'form__note' : 'field__error'} role="status">
-        {t('identityAccess.projectStages.total', { total: String(total) })}
-      </p>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={5} className="stage-editor__empty">
+                  {t('identityAccess.projectStages.empty')}
+                </td>
+              </tr>
+            )}
+            {rows.map((row, index) => (
+              <tr key={row.code}>
+                <td>
+                  <button
+                    type="button"
+                    className="button button--quiet"
+                    disabled={!mayManage || index === 0}
+                    aria-label={t('identityAccess.projectStages.moveUp', {
+                      name: row.name[language],
+                    })}
+                    onClick={() => {
+                      move(index, -1);
+                    }}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className="button button--quiet"
+                    disabled={!mayManage || index === rows.length - 1}
+                    aria-label={t('identityAccess.projectStages.moveDown', {
+                      name: row.name[language],
+                    })}
+                    onClick={() => {
+                      move(index, 1);
+                    }}
+                  >
+                    ↓
+                  </button>
+                </td>
+                <td>
+                  <TextField
+                    label={t('identityAccess.projectStages.nameAr')}
+                    name={`nameAr-${row.code}`}
+                    value={row.name.ar}
+                    disabled={!mayManage}
+                    dir="rtl"
+                    onChange={(ar) => {
+                      change(index, { name: { ...row.name, ar } });
+                    }}
+                  />
+                </td>
+                <td>
+                  <TextField
+                    label={t('identityAccess.projectStages.nameEn')}
+                    name={`nameEn-${row.code}`}
+                    value={row.name.en}
+                    disabled={!mayManage}
+                    dir="ltr"
+                    onChange={(en) => {
+                      change(index, { name: { ...row.name, en } });
+                    }}
+                  />
+                </td>
+                <td>
+                  <AmountField
+                    label={t('identityAccess.projectStages.weight')}
+                    name={`weight-${row.code}`}
+                    value={row.isActive ? row.weightPercent : '0'}
+                    disabled={!mayManage || !row.isActive}
+                    onChange={(weightPercent) => {
+                      change(index, { weightPercent });
+                    }}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="checkbox"
+                    aria-label={t('identityAccess.projectStages.activeFor', {
+                      name: row.name[language],
+                    })}
+                    checked={row.isActive}
+                    disabled={!mayManage}
+                    onChange={(event) => {
+                      change(index, { isActive: event.target.checked });
+                    }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </TableContainer>
+        <p
+          className={`stage-editor__total ${total === WEIGHT_TOTAL ? 'is-complete' : 'is-short'}`}
+          role="status"
+        >
+          {t('identityAccess.projectStages.total', { total: String(total) })}
+        </p>
+      </section>
       {mayManage && (
-        <>
-          <button
-            type="button"
-            className="button"
-            onClick={() => {
-              setRows((current) => [
-                ...current,
-                {
-                  code: nextCode(current),
-                  name: { ar: '', en: '' },
-                  weightPercent: '0',
-                  isActive: true,
-                },
-              ]);
-            }}
-          >
-            {t('identityAccess.projectStages.add')}
-          </button>
-          <TextField
-            label={t('identityAccess.projectStages.effective')}
-            name="effectiveFrom"
-            type="datetime-local"
-            value={effective}
-            hint={t('identityAccess.projectStages.effectiveHint')}
-            onChange={setEffective}
-          />
-          <TextField
-            label={t('identityAccess.projectStages.summary')}
-            name="changeSummary"
-            value={summary}
-            onChange={setSummary}
-          />
+        <section className="stage-publish" aria-labelledby="stage-publish-heading">
+          <h2 id="stage-publish-heading">{t('identityAccess.projectStages.publishTitle')}</h2>
+          <div className="stage-publish__fields">
+            <TextField
+              label={t('identityAccess.projectStages.effective')}
+              name="effectiveFrom"
+              type="datetime-local"
+              value={effective}
+              hint={t('identityAccess.projectStages.effectiveHint')}
+              onChange={setEffective}
+            />
+            <TextField
+              label={t('identityAccess.projectStages.summary')}
+              name="changeSummary"
+              value={summary}
+              onChange={setSummary}
+            />
+          </div>
           <div className="form__actions">
             <button type="submit" className="button button--primary" disabled={saving}>
               {saving ? t('common.states.saving') : t('identityAccess.projectStages.save')}
             </button>
           </div>
-        </>
+        </section>
       )}
-      <h2>{t('identityAccess.projectStages.history')}</h2>
-      <TableContainer caption={t('identityAccess.projectStages.history')}>
-        <thead>
-          <tr>
-            <th scope="col">{t('identityAccess.projectStages.version')}</th>
-            <th scope="col">{t('identityAccess.projectStages.state')}</th>
-            <th scope="col">{t('identityAccess.projectStages.effective')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loaded.versions.map((version) => (
-            <tr key={version.id}>
-              <td dir="ltr">{version.versionNo}</td>
-              <td>{version.lifecycleState}</td>
-              <td dir="ltr">{version.effectiveFrom ?? '—'}</td>
+      <section aria-labelledby="stage-versions-heading">
+        <h2 id="stage-versions-heading">{t('identityAccess.projectStages.history')}</h2>
+        <TableContainer caption={t('identityAccess.projectStages.history')}>
+          <thead>
+            <tr>
+              <th scope="col">{t('identityAccess.projectStages.version')}</th>
+              <th scope="col">{t('identityAccess.projectStages.state')}</th>
+              <th scope="col">{t('identityAccess.projectStages.effective')}</th>
             </tr>
-          ))}
-        </tbody>
-      </TableContainer>
+          </thead>
+          <tbody>
+            {loaded.versions.map((version) => (
+              <tr key={version.id}>
+                <td dir="ltr">{version.versionNo}</td>
+                <td>
+                  <StatusBadge
+                    label={t(`identityAccess.masterData.states.${version.lifecycleState}`)}
+                    tone={VERSION_TONE[version.lifecycleState]}
+                  />
+                </td>
+                <td>
+                  {version.effectiveFrom === null ? '—' : formatDateTime(version.effectiveFrom)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </TableContainer>
+      </section>
     </form>
   );
 }

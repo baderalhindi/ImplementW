@@ -115,4 +115,31 @@ describe('Project stages (review round 5, item 7)', () => {
     ).toBeTruthy();
     expect(within(table).getAllByRole('checkbox')).toHaveLength(2);
   });
+
+  test('Add stage, beside the heading, adds an empty row; a version reads its state in words', async () => {
+    open();
+    expect(await screen.findAllByRole('textbox', { name: /^English name/ })).toHaveLength(2);
+    expect(screen.getByText(en('identityAccess.masterData.states.PUBLISHED'))).toBeTruthy();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: en('identityAccess.projectStages.add') }),
+    );
+
+    const names = screen.getAllByRole('textbox', { name: /^English name/ });
+    expect(names).toHaveLength(3);
+    expect((names[2] as HTMLInputElement).value).toBe('');
+  });
+
+  test('with no stages yet, the table says how to add the first one', async () => {
+    mockApi()
+      .on('GET', /^\/configuration-families$/, { body: [{ id: 'family', code: 'PROJECT_STAGE' }] })
+      .on('GET', /^\/configuration-versions$/, { body: { items: [] } });
+    renderApp({ path: '/admin/project-stages', session: sessionFor(['R01']) });
+
+    expect(await screen.findByText(en('identityAccess.projectStages.empty'))).toBeTruthy();
+    await userEvent.click(
+      screen.getByRole('button', { name: en('identityAccess.projectStages.add') }),
+    );
+    expect(screen.queryByText(en('identityAccess.projectStages.empty'))).toBeNull();
+  });
 });

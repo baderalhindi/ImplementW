@@ -632,6 +632,9 @@
   },
   "temporaryPasswordRules": "At least 12 characters, mixing letters and digits, and not the username.",
   "projectStages": {
+    "stages": "Stages",
+    "empty": "No stages yet. Use Add stage to add the first one.",
+    "publishTitle": "Publish the change",
     "title": "Project stages",
     "description": "The stages of a project and their weights. Saving makes a new version with its effective date, so earlier figures keep the weights they were calculated with. A stage is deactivated, never deleted.",
     "order": "Order",
