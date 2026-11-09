@@ -14,7 +14,7 @@ import { mockApi, page } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
 import { translate } from '@/shared/i18n/i18n.ts';
 
-// Acceptance criteria 1 and 3: every ADM-002–013 screen is reachable for R01 and renders in both English (LTR)
+// Acceptance criteria 1 and 3: every ADM-002–013 screen (ADM-011 dropped in the 10 Nov 2026 client review) is reachable for R01 and renders in both English (LTR)
 // and Arabic (RTL), with no axe-core violation in either.
 
 const R01 = sessionFor(['R01']);
@@ -41,7 +41,6 @@ const SCREENS = [
     title: 'identityAccess.permissionMatrix.title',
   },
   { id: 'ADM-010', path: '/admin/role-assignments', title: 'identityAccess.assignments.title' },
-  { id: 'ADM-011', path: '/admin/organization', title: 'identityAccess.organization.title' },
   {
     id: 'ADM-012',
     path: '/admin/organization/departments',
@@ -96,35 +95,23 @@ describe('empty states for zero-result lists', () => {
   });
 });
 
-test('the organization structure nests a department under its parent', async () => {
+test('the old Organization structure address opens Departments, which names each parent', async () => {
   withIdentityAccessData(mockApi());
   renderApp({ path: '/admin/organization', session: R01 });
 
-  const child = await screen.findByText(/Quality Assurance/);
-  const parentItem = screen.getByText(/Project Management Office/).closest('li');
-  expect(parentItem?.contains(child)).toBe(true);
-  expect(screen.getByText(/Contractor A/)).toBeTruthy();
+  expect(
+    await screen.findByRole('heading', {
+      level: 1,
+      name: translate('en', 'identityAccess.departments.title'),
+    }),
+  ).toBeTruthy();
+  const childRow = (await screen.findByText('Quality Assurance', { selector: 'td' })).closest('tr');
+  expect(childRow?.textContent).toContain('Project Management Office');
+  expect(
+    screen.queryByRole('link', { name: translate('en', 'identityAccess.nav.departments') }),
+  ).toBeTruthy();
   expect(departments).toHaveLength(2);
   expect(entities).toHaveLength(1);
-  const activeDepartments = departments.filter((d) => d.isActive).length;
-  expect(
-    screen.getByText(
-      translate('en', 'identityAccess.organization.activeOfTotal', {
-        active: activeDepartments,
-        total: departments.length,
-      }),
-    ),
-  ).toBeTruthy();
-  expect(
-    screen
-      .getByRole('link', { name: translate('en', 'identityAccess.organization.manageDepartments') })
-      .getAttribute('href'),
-  ).toBe('/admin/organization/departments');
-  expect(
-    screen
-      .getByRole('link', { name: translate('en', 'identityAccess.organization.manageEntities') })
-      .getAttribute('href'),
-  ).toBe('/admin/organization/entities');
 });
 
 test('the permission matrix shows the scope each profile grants', async () => {

@@ -5,7 +5,6 @@
     "roles": "Roles",
     "permissionMatrix": "Permission matrix",
     "roleAssignments": "Role assignments",
-    "organization": "Organization structure",
     "departments": "Departments",
     "entities": "External entities",
     "masterData": "Master data",
@@ -396,13 +395,6 @@
     "empty": "No permissions or profiles are available.",
     "open": "Open this version",
     "openToEdit": "Open to review or change"
-  },
-  "organization": {
-    "activeOfTotal": "{active} of {total} active",
-    "manageDepartments": "Manage departments",
-    "manageEntities": "Manage entities",
-    "title": "Organization structure",
-    "description": "AHDA's departments and the external entities that take part in projects."
   },
   "departments": {
     "title": "Departments",

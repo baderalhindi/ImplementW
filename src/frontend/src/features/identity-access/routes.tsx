@@ -1,4 +1,4 @@
-import { type RouteObject } from 'react-router';
+import { Navigate, type RouteObject } from 'react-router';
 
 import { type TranslationKey } from '@/shared/i18n/i18n.ts';
 
@@ -7,7 +7,6 @@ import { MasterDataPage } from './masterData/MasterDataPage.tsx';
 import { ProjectStagesPage } from './projectStages/ProjectStagesPage.tsx';
 import { DepartmentListPage } from './organization/DepartmentListPage.tsx';
 import { ExternalEntityListPage } from './organization/ExternalEntityListPage.tsx';
-import { OrganizationStructurePage } from './organization/OrganizationStructurePage.tsx';
 import { PermissionMatrixPage } from './roles/PermissionMatrixPage.tsx';
 import {
   PermissionProfileCreatePage,
@@ -33,7 +32,8 @@ export const identityAccessRoutes: RouteObject[] = [
   { path: 'permission-profiles/new', element: <PermissionProfileCreatePage /> }, // ADM-008 (TASK-110)
   { path: 'permission-profile-versions/:versionId', element: <PermissionProfileVersionPage /> }, // ADM-008 (TASK-110)
   { path: 'role-assignments', element: <RoleAssignmentPage /> }, // ADM-010, MOD-081, MOD-082
-  { path: 'organization', element: <OrganizationStructurePage /> }, // ADM-011
+  // ADM-011's overview was dropped in the client review (10 Nov 2026): Departments shows each parent, so its old address leads there.
+  { path: 'organization', element: <Navigate to="departments" replace /> },
   { path: 'organization/departments', element: <DepartmentListPage /> }, // ADM-012
   { path: 'organization/entities', element: <ExternalEntityListPage /> }, // ADM-013
   { path: 'project-stages', element: <ProjectStagesPage /> }, // review round 5, item 7
@@ -44,7 +44,7 @@ export const identityAccessRoutes: RouteObject[] = [
 export interface NavigationItem {
   to: string;
   label: TranslationKey;
-  /** Exact match only, so /admin/organization is not highlighted on its sub-pages. */
+  /** Exact match only, so a parent path is not highlighted on its sub-pages. */
   end?: boolean;
   /** Offered only to a holder of one of these (the 24 Oct 2026 review, C3); none: to everyone the menu is shown to. */
   permissions?: readonly PermissionCode[];
@@ -62,12 +62,6 @@ export const identityAccessNavigation: NavigationItem[] = [
     to: '/admin/role-assignments',
     label: 'identityAccess.nav.roleAssignments',
     permissions: ['ROLE_ASSIGN'],
-  },
-  {
-    to: '/admin/organization',
-    label: 'identityAccess.nav.organization',
-    end: true,
-    permissions: ['ORGANIZATION_VIEW'],
   },
   {
     to: '/admin/organization/departments',

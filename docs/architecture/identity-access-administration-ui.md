@@ -53,7 +53,7 @@ All under `/admin`, behind the R01 guard (`features/identity-access/routes.tsx`)
 | ADM-008 Create-Edit Role (name) | `/admin/roles/:roleId/edit` | `roles/RolePages.tsx` |
 | ADM-009 Permission Matrix | `/admin/permission-matrix?profileId=&versionId=` | `roles/PermissionMatrixPage.tsx` |
 | ADM-010 Role Assignment | `/admin/role-assignments` | `assignments/RoleAssignmentPage.tsx` |
-| ADM-011 Organization Structure | `/admin/organization` | `organization/OrganizationStructurePage.tsx` |
+| ADM-011 Organization Structure | Removed in the client review of 10 Nov 2026 (see `client-review-changes.md`): `/admin/organization` redirects to ADM-012, whose Parent department column shows the hierarchy | — |
 | ADM-012 Departments (create/edit dialog, activate/deactivate) | `/admin/organization/departments` | `organization/DepartmentListPage.tsx` |
 | ADM-013 Entities (create/edit dialog, suspend/activate/retire) | `/admin/organization/entities` | `organization/ExternalEntityListPage.tsx` |
 | MOD-080 Activate/Disable User | on ADM-003 | `users/UserStatusDialog.tsx` |
