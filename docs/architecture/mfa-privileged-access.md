@@ -86,7 +86,7 @@ The adapter `HttpMultiFactorProvider` sends every call as `POST` with JSON and `
 | `Identity:Mfa:IdentityProviderMethods` | configuration | `[]` | ID token `amr` values accepted as the identity provider's own MFA (D-10) |
 | `Identity:Mfa:Provider:RequireHttps`, `Timeout` | configuration | `true`, 10 s | Transport to the provider |
 | `Identity:Session:MultiFactorTokenLifetime` | configuration | 5 min | Time between the first and the second factor. **Provisional** (F-6) |
-| `Identity:StepUp:MaxAge` | configuration | 5 min | Step-up threshold. **Provisional** (F-6) |
+| `Identity:StepUp:MaxAge` | configuration | 8 h (`appsettings.json`; the code default is 5 min) | Step-up threshold. The 10 Nov 2026 client review set it to the 8-hour session, so the second factor passed at sign-in covers every listed operation; AHDA Cybersecurity's acceptance is open (SR-14). **Provisional** (F-6) |
 | `Identity:StepUp:Operations` | configuration (`appsettings.json`) | `["IdentityAccess_TestIdentityIntegration"]` | Operations that require step-up (D-5) |
 
 ## 6. Verification

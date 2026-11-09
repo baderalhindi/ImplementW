@@ -1,12 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
+using PMPlatform.Infrastructure.Identity;
 
 namespace PMPlatform.Tests.Integration.Identity;
 
 /// <summary>
 /// TASK-029 acceptance criterion 2 and validation check 1: a privileged action requires a fresh authentication context
-/// no older than a configurable threshold (default 5 minutes). The shipped trigger is the ADM-041 connection test
-/// (appsettings.json); the trigger list itself is configuration (ADR-010). The API's clock is moved, not waited on.
+/// no older than a configurable threshold. The suites run the mechanism with a 5-minute window; the shipped window is the
+/// whole session, so the code passed at sign-in covers it (the 10 Nov 2026 client review). The trigger list is
+/// configuration (ADR-010). The API's clock is moved, not waited on.
 /// </summary>
 [Collection(IdentitySuite.Name)]
 public sealed class StepUpTests(IdentityTestHost host) : IDisposable
@@ -64,6 +67,18 @@ public sealed class StepUpTests(IdentityTestHost host) : IDisposable
         Assert.Equal(session.User.AuthenticatedAt, next.User.AuthenticatedAt);
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal("STEP_UP_REQUIRED", (await response.ReadAsync<Problem>()).Code);
+    }
+
+    /// <summary>The 10 Nov 2026 client review: once signed in with a second factor, an administrator is not asked again.</summary>
+    [Fact]
+    public void TheShippedWindowIsTheWholeSession()
+    {
+        IConfigurationRoot shipped = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false)
+            .Build();
+
+        Assert.Equal(new SessionTokenOptions().SessionLifetime, shipped.GetValue<TimeSpan>("Identity:StepUp:MaxAge"));
     }
 
     [Fact]

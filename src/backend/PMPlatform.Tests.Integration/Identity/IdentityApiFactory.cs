@@ -33,10 +33,22 @@ public sealed class IdentityApiFactory(
         ["RateLimiting:Policies:SignInOptions:PermitLimit"] = "1000000",
     };
 
+    /// <summary>
+    /// The step-up window the suites exercise. The shipped window is the whole session (the 10 Nov 2026 client review), which
+    /// would leave the mechanism untested; a suite's own settings still win.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string?> MechanismStepUpWindow = new Dictionary<string, string?>
+    {
+        ["Identity:StepUp:MaxAge"] = "00:05:00",
+    };
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
-        builder.ConfigureAppConfiguration(configuration => configuration.AddInMemoryCollection(UnreachableRateLimits).AddInMemoryCollection(settings));
+        builder.ConfigureAppConfiguration(configuration => configuration
+            .AddInMemoryCollection(UnreachableRateLimits)
+            .AddInMemoryCollection(MechanismStepUpWindow)
+            .AddInMemoryCollection(settings));
         builder.ConfigureLogging(logging => logging.AddProvider(logs).SetMinimumLevel(LogLevel.Trace));
         builder.ConfigureTestServices(collection =>
         {

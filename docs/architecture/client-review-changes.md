@@ -17,6 +17,7 @@
 | 6 | Delete a department (§5). |
 | 8 | Edit and Delete in the rows of the project registers, for every role that manages them; the Viewer (R06) and the Executive (R07) see neither (§7). |
 | 7 | National ID or Iqama number on the user, masked, with Nafath bound to it; a Microsoft sign-in only with the profile's e-mail (§6). |
+| Follow-up, 10 Nov 2026 | No verification code after sign-in: `Identity:StepUp:MaxAge` is the 8-hour session, so the code an administrator passes at sign-in covers the step-up operations. The list and the mechanism stay; AHDA Cybersecurity's acceptance is open (SR-14, `mfa-privileged-access.md`). |
 | Follow-up, 10 Nov 2026 | The client removed ADM-011 Organization Structure: it repeated the Departments and External entities pages. Its address redirects to Departments, whose Parent department column keeps the hierarchy; the tab, page and help mention are gone. The spec's screen catalogue still names ADM-011, so a check of delivered screens against it should note this decision. |
 
 ## 2. Deleting a project (item 4, decided by the client)
