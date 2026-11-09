@@ -1398,6 +1398,11 @@ h3 {
   white-space: nowrap;
 }
 
+/* The Active checkbox sits centred under its heading. */
+.stage-editor .stage-editor__active {
+  text-align: center;
+}
+
 /* Remove, for a stage not saved yet, at the table's far edge. */
 .stage-editor .stage-editor__actions {
   text-align: end;

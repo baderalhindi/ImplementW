@@ -280,7 +280,9 @@ function StagesEditor({
               <th scope="col">{t('identityAccess.projectStages.nameAr')}</th>
               <th scope="col">{t('identityAccess.projectStages.nameEn')}</th>
               <th scope="col">{t('identityAccess.projectStages.weight')}</th>
-              <th scope="col">{t('identityAccess.projectStages.active')}</th>
+              <th scope="col" className="stage-editor__active">
+                {t('identityAccess.projectStages.active')}
+              </th>
               <th scope="col" className="stage-editor__actions">
                 <span className="visually-hidden">{t('common.table.actions')}</span>
               </th>
@@ -359,7 +361,7 @@ function StagesEditor({
                     }}
                   />
                 </td>
-                <td>
+                <td className="stage-editor__active">
                   <input
                     type="checkbox"
                     aria-label={t('identityAccess.projectStages.activeFor', {
