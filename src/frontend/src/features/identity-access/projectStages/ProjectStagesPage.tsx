@@ -155,6 +155,8 @@ function StagesEditor({
   const { t, language, formatDateTime } = useI18n();
   const mayManage = useCan('CONFIGURATION_MANAGE');
   const [rows, setRows] = useState<StageRow[]>(() => rowsOf(loaded.latest));
+  // A stage in a saved version is only ever deactivated; one added here and not saved yet can still be removed.
+  const [savedCodes] = useState(() => new Set(rowsOf(loaded.latest).map((row) => row.code)));
   const [summary, setSummary] = useState('');
   const [effective, setEffective] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
@@ -182,6 +184,10 @@ function StagesEditor({
       ...current,
       { code: nextCode(current), name: { ar: '', en: '' }, weightPercent: '0', isActive: true },
     ]);
+  };
+
+  const removeStage = (code: string) => {
+    setRows((current) => current.filter((row) => row.code !== code));
   };
 
   const submit = async (event: SyntheticEvent) => {
@@ -351,17 +357,34 @@ function StagesEditor({
                   />
                 </td>
                 <td>
-                  <input
-                    type="checkbox"
-                    aria-label={t('identityAccess.projectStages.activeFor', {
-                      name: row.name[language],
-                    })}
-                    checked={row.isActive}
-                    disabled={!mayManage}
-                    onChange={(event) => {
-                      change(index, { isActive: event.target.checked });
-                    }}
-                  />
+                  <div className="stage-editor__row-end">
+                    <input
+                      type="checkbox"
+                      aria-label={t('identityAccess.projectStages.activeFor', {
+                        name: row.name[language],
+                      })}
+                      checked={row.isActive}
+                      disabled={!mayManage}
+                      onChange={(event) => {
+                        change(index, { isActive: event.target.checked });
+                      }}
+                    />
+                    {mayManage && !savedCodes.has(row.code) && (
+                      <button
+                        type="button"
+                        className="button button--danger"
+                        onClick={() => {
+                          removeStage(row.code);
+                        }}
+                      >
+                        {t('identityAccess.projectStages.remove')}
+                        <span className="visually-hidden">
+                          {' '}
+                          {t('identityAccess.projectStages.removeOrder', { order: index + 1 })}
+                        </span>
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

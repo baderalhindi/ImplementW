@@ -142,4 +142,24 @@ describe('Project stages (review round 5, item 7)', () => {
     );
     expect(screen.queryByText(en('identityAccess.projectStages.empty'))).toBeNull();
   });
+
+  test('only a stage added and not saved yet can be removed; a saved one is deactivated instead', async () => {
+    open();
+    expect(await screen.findAllByRole('textbox', { name: /^English name/ })).toHaveLength(2);
+    const removeName = new RegExp(`^${en('identityAccess.projectStages.remove')}`);
+    expect(screen.queryByRole('button', { name: removeName })).toBeNull();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: en('identityAccess.projectStages.add') }),
+    );
+    expect(screen.getAllByRole('textbox', { name: /^English name/ })).toHaveLength(3);
+    const remove = screen.getByRole('button', { name: removeName });
+    expect(remove.textContent).toContain(
+      en('identityAccess.projectStages.removeOrder', { order: 3 }),
+    );
+
+    await userEvent.click(remove);
+    expect(screen.getAllByRole('textbox', { name: /^English name/ })).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: removeName })).toBeNull();
+  });
 });

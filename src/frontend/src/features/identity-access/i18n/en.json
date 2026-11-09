@@ -632,6 +632,8 @@
   },
   "temporaryPasswordRules": "At least 12 characters, mixing letters and digits, and not the username.",
   "projectStages": {
+    "remove": "Remove",
+    "removeOrder": "stage {order}, not saved yet",
     "stages": "Stages",
     "empty": "No stages yet. Use Add stage to add the first one.",
     "publishTitle": "Publish the change",
