@@ -6,6 +6,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { CheckboxField, RadioGroupField, SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
+import { CancelLink } from '@/shared/ui/CancelLink.tsx';
 
 import { usersApi } from '../api/identityAccessApi.ts';
 import { type AccountSource, type LanguageCode, type UserDetail } from '../api/types.ts';
@@ -413,9 +414,7 @@ function UserForm({ existing }: UserFormProps): ReactElement {
         <button type="submit" className="button button--primary" disabled={save.saving}>
           {save.saving ? t('common.states.saving') : t('common.actions.save')}
         </button>
-        <Link className="button" to={cancelTo}>
-          {t('common.actions.cancel')}
-        </Link>
+        <CancelLink fallback={cancelTo} />
       </div>
     </form>
   );

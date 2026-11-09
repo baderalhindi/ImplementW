@@ -1,5 +1,5 @@
 import { type ReactElement, type SyntheticEvent, useId, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 
 import { useFocusFirstError, useSaveAction } from '@/features/identity-access/forms.ts';
 import { fieldMessage } from '@/features/identity-access/problems.ts';
@@ -13,6 +13,7 @@ import {
   TextField,
 } from '@/shared/ui/FormFields.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
+import { CancelLink } from '@/shared/ui/CancelLink.tsx';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
@@ -391,12 +392,9 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
               ? t('projects.create.submit')
               : t('common.actions.save')}
         </button>
-        <Link
-          className="button"
-          to={existing === undefined ? '/projects' : `/projects/${existing.project.id}`}
-        >
-          {t('common.actions.cancel')}
-        </Link>
+        <CancelLink
+          fallback={existing === undefined ? '/projects' : `/projects/${existing.project.id}`}
+        />
       </div>
       {!ready && (
         <p id={missingId} className="form__note">

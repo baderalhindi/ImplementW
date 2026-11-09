@@ -8,6 +8,7 @@ import { CheckboxField, SelectField, TextField } from '@/shared/ui/FormFields.ts
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { CancelLink } from '@/shared/ui/CancelLink.tsx';
 
 import { rolesApi } from '../api/identityAccessApi.ts';
 import {
@@ -380,9 +381,7 @@ function RoleCreateForm({ roles }: { roles: RoleSummary[] }): ReactElement {
         <button type="submit" className="button button--primary" disabled={save.saving}>
           {save.saving ? t('common.states.saving') : t('identityAccess.roles.create.submit')}
         </button>
-        <Link className="button" to="/admin/roles">
-          {t('common.actions.cancel')}
-        </Link>
+        <CancelLink fallback="/admin/roles" />
       </div>
     </form>
   );
@@ -762,9 +761,7 @@ function RoleNameForm({ role, etag }: { role: RoleDetail; etag: string | null })
         <button type="submit" className="button button--primary" disabled={save.saving}>
           {save.saving ? t('common.states.saving') : t('common.actions.save')}
         </button>
-        <Link className="button" to={`/admin/roles/${role.id}`}>
-          {t('common.actions.cancel')}
-        </Link>
+        <CancelLink fallback={`/admin/roles/${role.id}`} />
       </div>
     </form>
   );

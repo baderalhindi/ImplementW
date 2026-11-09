@@ -7,6 +7,7 @@ import { CheckboxField, SelectField, TextAreaField, TextField } from '@/shared/u
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { CancelLink } from '@/shared/ui/CancelLink.tsx';
 
 import {
   permissionProfilesApi,
@@ -199,9 +200,7 @@ export function PermissionProfileCreatePage(): ReactElement {
           <button type="submit" className="button button--primary" disabled={save.saving}>
             {save.saving ? t('common.states.saving') : t('identityAccess.profiles.create.submit')}
           </button>
-          <Link className="button" to="/admin/permission-matrix">
-            {t('common.actions.cancel')}
-          </Link>
+          <CancelLink fallback="/admin/permission-matrix" />
         </div>
       </form>
     </>
