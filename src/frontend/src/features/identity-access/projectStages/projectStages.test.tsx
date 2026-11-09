@@ -162,4 +162,19 @@ describe('Project stages (review round 5, item 7)', () => {
     expect(screen.getAllByRole('textbox', { name: /^English name/ })).toHaveLength(2);
     expect(screen.queryByRole('button', { name: removeName })).toBeNull();
   });
+
+  test('a version shows its stages when opened, read once', async () => {
+    const api = open();
+    const toggle = await screen.findByText(en('identityAccess.projectStages.showStages'));
+    await userEvent.click(toggle);
+
+    const list = toggle.closest('details')?.querySelector('ol');
+    expect(list?.textContent).toContain('Plan');
+    expect(list?.textContent).toContain('40%');
+    expect(list?.textContent).toContain('Build');
+    // The newest version is already loaded, so opening it asks the API for nothing more.
+    expect(
+      api.requestsTo('GET', new RegExp(`^/configuration-versions/${VERSION_ID}$`)),
+    ).toHaveLength(1);
+  });
 });

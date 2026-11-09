@@ -632,6 +632,8 @@
   },
   "temporaryPasswordRules": "12 حرفًا على الأقل، تجمع بين الحروف والأرقام، وليست اسم المستخدم.",
   "projectStages": {
+    "showStages": "عرض المراحل",
+    "inactive": "غير نشطة",
     "remove": "إزالة",
     "removeOrder": "المرحلة {order}، غير محفوظة بعد",
     "stages": "المراحل",

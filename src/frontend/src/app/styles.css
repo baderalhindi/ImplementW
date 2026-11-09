@@ -1398,6 +1398,32 @@ h3 {
   white-space: nowrap;
 }
 
+/* A version's stages, opened from the Versions table. */
+.version-stages summary {
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.version-stages__list {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-6);
+}
+
+.version-stages__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.version-stages__weight {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* The Active checkbox sits centred under its heading. */
 .stage-editor .stage-editor__active {
   text-align: center;

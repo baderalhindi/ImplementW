@@ -436,6 +436,7 @@ function StagesEditor({
               <th scope="col">{t('identityAccess.projectStages.version')}</th>
               <th scope="col">{t('identityAccess.projectStages.state')}</th>
               <th scope="col">{t('identityAccess.projectStages.effective')}</th>
+              <th scope="col">{t('identityAccess.projectStages.stages')}</th>
             </tr>
           </thead>
           <tbody>
@@ -451,11 +452,82 @@ function StagesEditor({
                 <td>
                   {version.effectiveFrom === null ? '—' : formatDateTime(version.effectiveFrom)}
                 </td>
+                <td>
+                  <VersionStages
+                    versionId={version.id}
+                    known={loaded.latest?.id === version.id ? loaded.latest : undefined}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
         </TableContainer>
       </section>
     </form>
+  );
+}
+
+/**
+ * A version's stages, behind a toggle: read when first opened, so the history does not fetch every version up front.
+ * The newest version is already loaded and is shown without another request.
+ */
+function VersionStages({
+  versionId,
+  known,
+}: {
+  versionId: string;
+  known: VersionDetail | undefined;
+}): ReactElement {
+  const { t, language } = useI18n();
+  const [detail, setDetail] = useState<VersionDetail | undefined>(known);
+  const [error, setError] = useState<string | null>(null);
+
+  const read = () => {
+    if (detail !== undefined) {
+      return;
+    }
+    setError(null);
+    apiRequest<VersionDetail>(`${VERSIONS}/${versionId}`).then(
+      (response) => {
+        setDetail(response.data);
+      },
+      (caught: unknown) => {
+        setError(problemMessage(caught, t));
+      },
+    );
+  };
+
+  const stages = [...(detail?.content.projectStages ?? [])].sort(
+    (a, b) => a.sortOrder - b.sortOrder,
+  );
+
+  return (
+    <details
+      className="version-stages"
+      onToggle={(event) => {
+        if (event.currentTarget.open) {
+          read();
+        }
+      }}
+    >
+      <summary>{t('identityAccess.projectStages.showStages')}</summary>
+      {error !== null && <FormAlert message={error} />}
+      {detail === undefined && error === null && <LoadingState />}
+      {detail !== undefined && (
+        <ol className="version-stages__list">
+          {stages.map((stage) => (
+            <li key={stage.code}>
+              <span>{stage.name[language]}</span>{' '}
+              <span className="version-stages__weight" dir="ltr">
+                {stage.isActive ? `${String(stage.weightPercent)}%` : ''}
+              </span>
+              {!stage.isActive && (
+                <StatusBadge label={t('identityAccess.projectStages.inactive')} tone="neutral" />
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </details>
   );
 }
