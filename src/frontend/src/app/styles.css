@@ -1352,6 +1352,30 @@ h3 {
   margin-block-start: 0;
 }
 
+/* From tablet width the list picker and the list's own buttons (Import, Add value) share the first row, the buttons
+   on the far side and level with the picker's box; everything after spans the width. */
+@media (min-width: 40rem) {
+  .master-data {
+    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+  }
+
+  .master-data > * {
+    grid-column: 1 / -1;
+  }
+
+  .master-data > .field {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .master-data > .form__actions {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    justify-content: flex-end;
+  }
+}
+
 .form__readonly {
   display: grid;
   gap: var(--space-1);
