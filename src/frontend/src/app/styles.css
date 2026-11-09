@@ -1398,14 +1398,12 @@ h3 {
   white-space: nowrap;
 }
 
-/* The Active checkbox and, for a stage not saved yet, its Remove button. */
-.stage-editor__row-end {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+/* Remove, for a stage not saved yet, at the table's far edge. */
+.stage-editor .stage-editor__actions {
+  text-align: end;
 }
 
-.stage-editor__row-end .button {
+.stage-editor__actions .button {
   min-block-size: 2.25rem;
   padding: var(--space-1) var(--space-3);
 }
