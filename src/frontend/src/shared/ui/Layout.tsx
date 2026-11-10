@@ -1,6 +1,10 @@
-import { type ReactElement, type ReactNode, useId, useLayoutEffect } from 'react';
+import { type ReactElement, type ReactNode, useId, useLayoutEffect, useRef } from 'react';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
+
+import { exportCheckedRows } from './exportTableRows.ts';
+import { SelectionBar } from './rowSelection.tsx';
+import { type RowSelection } from './useRowSelection.ts';
 
 interface PageHeaderProps {
   title: string;
@@ -41,26 +45,61 @@ export function PageHeader({
   );
 }
 
+/** A table whose rows can be chosen: the bar above it counts them, exports them, and holds the table's own bulk actions. */
+export interface TableSelection {
+  selection: RowSelection;
+  /** The file name's stem for Export selected, such as "users". */
+  exportName: string;
+  /** The table's commands for the chosen rows (Delete, Retire …), beside Export selected. */
+  actions?: ReactNode;
+}
+
 interface TableContainerProps {
   caption: string;
   children: ReactNode;
+  /** Review round 5, item 2 and the 10 Nov 2026 review: select, select all and Export selected on every list. */
+  selection?: TableSelection | undefined;
 }
 
 /**
  * A table that scrolls sideways on a narrow screen instead of the page. The scroll region is focusable and named so
  * a keyboard user can reach the columns off-screen.
  */
-export function TableContainer({ caption, children }: TableContainerProps): ReactElement {
+export function TableContainer({
+  caption,
+  children,
+  selection,
+}: TableContainerProps): ReactElement {
+  const { t } = useI18n();
   const captionId = useId();
+  const tableRef = useRef<HTMLTableElement>(null);
   return (
-    <div className="table-container" role="region" aria-labelledby={captionId} tabIndex={0}>
-      <table className="table">
-        <caption id={captionId} className="visually-hidden">
-          {caption}
-        </caption>
-        {children}
-      </table>
-    </div>
+    <>
+      {selection !== undefined && (
+        <SelectionBar selection={selection.selection}>
+          {selection.actions}
+          <button
+            type="button"
+            className="button"
+            onClick={() => {
+              if (tableRef.current !== null) {
+                exportCheckedRows(tableRef.current, selection.exportName);
+              }
+            }}
+          >
+            {t('common.table.exportSelected')}
+          </button>
+        </SelectionBar>
+      )}
+      <div className="table-container" role="region" aria-labelledby={captionId} tabIndex={0}>
+        <table className="table" ref={tableRef}>
+          <caption id={captionId} className="visually-hidden">
+            {caption}
+          </caption>
+          {children}
+        </table>
+      </div>
+    </>
   );
 }
 

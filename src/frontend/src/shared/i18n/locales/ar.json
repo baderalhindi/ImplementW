@@ -53,7 +53,8 @@
     "selectAll": "تحديد كل الصفوف المعروضة",
     "selectRow": "تحديد {name}",
     "selected": "تم تحديد {count}",
-    "clearSelection": "إلغاء التحديد"
+    "clearSelection": "إلغاء التحديد",
+    "exportSelected": "تصدير المحدد"
   },
   "filters": {
     "label": "عوامل التصفية",

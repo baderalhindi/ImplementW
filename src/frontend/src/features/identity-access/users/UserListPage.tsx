@@ -8,7 +8,7 @@ import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
-import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { useSearchText } from '@/shared/ui/useSearchText.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -303,18 +303,26 @@ export function UserListPage(): ReactElement {
           />
         ) : (
           <>
-            <SelectionBar selection={selection}>
-              {mayManage && (
-                <UserBulkActions
-                  users={users.data.items.filter(
-                    (user) => selection.selected.has(user.id) && user.userType !== 'SERVICE',
-                  )}
-                  onConfirm={setConfirmation}
-                  onDone={selection.clear}
-                />
-              )}
-            </SelectionBar>
-            <TableContainer caption={t('identityAccess.users.list.caption')}>
+            <TableContainer
+              caption={t('identityAccess.users.list.caption')}
+              selection={{
+                selection,
+                exportName: 'users',
+                actions: (
+                  <>
+                    {mayManage && (
+                      <UserBulkActions
+                        users={users.data.items.filter(
+                          (user) => selection.selected.has(user.id) && user.userType !== 'SERVICE',
+                        )}
+                        onConfirm={setConfirmation}
+                        onDone={selection.clear}
+                      />
+                    )}
+                  </>
+                ),
+              }}
+            >
               <thead>
                 <tr>
                   <SelectAllHeader

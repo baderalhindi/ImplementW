@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback, useState } from 'react';
+import { type ReactElement, type ReactNode, useCallback, useState } from 'react';
 import { Link } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
@@ -13,7 +13,7 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
-import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
@@ -135,36 +135,38 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
           <ProjectListEmpty filtered={filtered} forbidden={false} mine={mine} basePath={basePath} />
         ) : (
           <>
-            <SelectionBar selection={selection}>
-              {(mayEdit || mayDeleteAny) && deletable.length > 0 && (
-                <button
-                  type="button"
-                  className="button"
-                  onClick={() => {
-                    setConfirmation({
-                      title: t(`${bulkText}.deleteTitle`, { count: deletable.length }),
-                      body: t(`${bulkText}.deleteBody`, {
-                        names: deletable.map((project) => project.title.text).join('، '),
-                      }),
-                      confirmLabel: t(`${bulkText}.delete`, { count: deletable.length }),
-                      destructive: true,
-                      action: async () => {
-                        for (const project of deletable) {
-                          await projectsApi.remove(project.id, null);
-                        }
-                        selection.clear();
-                      },
-                    });
-                  }}
-                >
-                  {t(`${bulkText}.delete`, { count: deletable.length })}
-                </button>
-              )}
-              {!mayDeleteAny && deletable.length !== selection.selected.size && (
-                <span className="cell__aside">{t('projects.bulk.onlyDrafts')}</span>
-              )}
-            </SelectionBar>
             <ProjectTable
+              bulkActions={
+                <>
+                  {(mayEdit || mayDeleteAny) && deletable.length > 0 && (
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={() => {
+                        setConfirmation({
+                          title: t(`${bulkText}.deleteTitle`, { count: deletable.length }),
+                          body: t(`${bulkText}.deleteBody`, {
+                            names: deletable.map((project) => project.title.text).join('، '),
+                          }),
+                          confirmLabel: t(`${bulkText}.delete`, { count: deletable.length }),
+                          destructive: true,
+                          action: async () => {
+                            for (const project of deletable) {
+                              await projectsApi.remove(project.id, null);
+                            }
+                            selection.clear();
+                          },
+                        });
+                      }}
+                    >
+                      {t(`${bulkText}.delete`, { count: deletable.length })}
+                    </button>
+                  )}
+                  {!mayDeleteAny && deletable.length !== selection.selected.size && (
+                    <span className="cell__aside">{t('projects.bulk.onlyDrafts')}</span>
+                  )}
+                </>
+              }
               selection={selection}
               mayEdit={mayEdit}
               caption={mine ? t('projects.mine.title') : t('projects.register.title')}
@@ -251,6 +253,7 @@ function ProjectListEmpty({
 function ProjectTable({
   selection,
   mayEdit,
+  bulkActions,
   caption,
   projects,
   lookups,
@@ -262,10 +265,15 @@ function ProjectTable({
   managerName: (id: string | null) => string;
   selection: RowSelection;
   mayEdit: boolean;
+  /** The register's commands for the chosen projects, beside Export selected. */
+  bulkActions: ReactNode;
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
   return (
-    <TableContainer caption={caption}>
+    <TableContainer
+      caption={caption}
+      selection={{ selection, exportName: 'projects', actions: bulkActions }}
+    >
       <thead>
         <tr>
           <SelectAllHeader ids={projects.map((project) => project.id)} selection={selection} />

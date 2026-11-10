@@ -8,7 +8,7 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
-import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { useSearchText } from '@/shared/ui/useSearchText.ts';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
@@ -207,48 +207,59 @@ export function DepartmentListPage(): ReactElement {
           />
         ) : (
           <>
-            <SelectionBar selection={selection}>
-              <button
-                type="button"
-                className="button"
-                onClick={() => {
-                  const chosen =
-                    departments.data?.items.filter(
-                      (department) => department.isActive && selection.selected.has(department.id),
-                    ) ?? [];
-                  setConfirmation({
-                    title: t('identityAccess.departments.deactivateTitle'),
-                    body: chosen.map((department) => labelOf(department.name, language)).join('، '),
-                    confirmLabel: t('identityAccess.departments.deactivate'),
-                    destructive: true,
-                    action: async () => {
-                      for (const department of chosen) {
-                        await departmentsApi.deactivate(department.id);
-                      }
-                      selection.clear();
-                    },
-                  });
-                }}
-              >
-                {t('identityAccess.departments.deactivate')}
-              </button>
-              <button
-                type="button"
-                className="button button--danger"
-                onClick={() => {
-                  confirmDelete(
-                    departments.data?.items.filter((department) =>
-                      selection.selected.has(department.id),
-                    ) ?? [],
-                  );
-                }}
-              >
-                {t('identityAccess.departments.deleteSelected', {
-                  count: selection.selected.size,
-                })}
-              </button>
-            </SelectionBar>
-            <TableContainer caption={t('identityAccess.departments.title')}>
+            <TableContainer
+              caption={t('identityAccess.departments.title')}
+              selection={{
+                selection,
+                exportName: 'departments',
+                actions: (
+                  <>
+                    <button
+                      type="button"
+                      className="button"
+                      onClick={() => {
+                        const chosen =
+                          departments.data?.items.filter(
+                            (department) =>
+                              department.isActive && selection.selected.has(department.id),
+                          ) ?? [];
+                        setConfirmation({
+                          title: t('identityAccess.departments.deactivateTitle'),
+                          body: chosen
+                            .map((department) => labelOf(department.name, language))
+                            .join('، '),
+                          confirmLabel: t('identityAccess.departments.deactivate'),
+                          destructive: true,
+                          action: async () => {
+                            for (const department of chosen) {
+                              await departmentsApi.deactivate(department.id);
+                            }
+                            selection.clear();
+                          },
+                        });
+                      }}
+                    >
+                      {t('identityAccess.departments.deactivate')}
+                    </button>
+                    <button
+                      type="button"
+                      className="button button--danger"
+                      onClick={() => {
+                        confirmDelete(
+                          departments.data?.items.filter((department) =>
+                            selection.selected.has(department.id),
+                          ) ?? [],
+                        );
+                      }}
+                    >
+                      {t('identityAccess.departments.deleteSelected', {
+                        count: selection.selected.size,
+                      })}
+                    </button>
+                  </>
+                ),
+              }}
+            >
               <thead>
                 <tr>
                   <SelectAllHeader

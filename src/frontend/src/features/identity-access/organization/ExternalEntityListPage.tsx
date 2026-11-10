@@ -8,7 +8,7 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
-import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
@@ -220,23 +220,31 @@ export function ExternalEntityListPage(): ReactElement {
           />
         ) : (
           <>
-            <SelectionBar selection={selection}>
-              {(['activate', 'suspend', 'retire'] as const)
-                .filter(chosenAllow)
-                .map((transition) => (
-                  <button
-                    key={transition}
-                    type="button"
-                    className={transition === 'retire' ? 'button button--danger' : 'button'}
-                    onClick={() => {
-                      confirmMany(transition);
-                    }}
-                  >
-                    {t(`identityAccess.entities.transitions.${transition}.action`)}
-                  </button>
-                ))}
-            </SelectionBar>
-            <TableContainer caption={t('identityAccess.entities.title')}>
+            <TableContainer
+              caption={t('identityAccess.entities.title')}
+              selection={{
+                selection,
+                exportName: 'external-entities',
+                actions: (
+                  <>
+                    {(['activate', 'suspend', 'retire'] as const)
+                      .filter(chosenAllow)
+                      .map((transition) => (
+                        <button
+                          key={transition}
+                          type="button"
+                          className={transition === 'retire' ? 'button button--danger' : 'button'}
+                          onClick={() => {
+                            confirmMany(transition);
+                          }}
+                        >
+                          {t(`identityAccess.entities.transitions.${transition}.action`)}
+                        </button>
+                      ))}
+                  </>
+                ),
+              }}
+            >
               <thead>
                 <tr>
                   <SelectAllHeader
