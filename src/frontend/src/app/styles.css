@@ -1424,11 +1424,6 @@ h3 {
   font-variant-numeric: tabular-nums;
 }
 
-/* The Active checkbox sits centred under its heading. */
-.stage-editor .stage-editor__active {
-  text-align: center;
-}
-
 /* Remove, for a stage not saved yet, at the table's far edge. */
 .stage-editor .stage-editor__actions {
   text-align: end;
@@ -1683,12 +1678,18 @@ select.field__input {
   border-collapse: collapse;
 }
 
+/* Every table centres its headings and values (the client review of 10 Nov 2026). */
 .table th,
 .table td {
   padding: var(--space-3) var(--space-4);
   border-block-end: 1px solid var(--color-border-subtle);
-  text-align: start;
+  text-align: center;
   vertical-align: top;
+}
+
+.table .row-actions,
+.table .actions-group {
+  justify-content: center;
 }
 
 /* Body cells centre on the row's tallest content, so a badge or one line of text lines up with the row's buttons. */
@@ -1717,7 +1718,6 @@ select.field__input {
 }
 
 .cell--ltr {
-  text-align: start;
   unicode-bidi: plaintext;
 }
 
@@ -1807,16 +1807,6 @@ select.field__input {
 }
 
 /* Several peer actions (approve, reject, return) stack when the row is narrow instead of scrolling out of view. */
-/* Operational alerts: each column's heading and values centred on one line down the column. */
-.alert-list .table th,
-.alert-list .table td {
-  text-align: center;
-}
-
-.alert-list .row-actions {
-  justify-content: center;
-}
-
 .cell--actions-wrap {
   white-space: normal;
 }

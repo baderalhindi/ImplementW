@@ -89,80 +89,78 @@ export function AlertList({
   } else {
     content = (
       <>
-        <div className="alert-list">
-          <TableContainer caption={caption}>
-            <thead>
-              <tr>
-                <th scope="col">{t('integrationAdmin.fields.raisedAt')}</th>
-                <th scope="col">{t('integrationAdmin.fields.integration')}</th>
-                <th scope="col">{t('integrationAdmin.fields.alertType')}</th>
-                <th scope="col">{t('integrationAdmin.fields.severity')}</th>
-                <th scope="col">{t('integrationAdmin.fields.alertStatus')}</th>
-                <th scope="col">{t('integrationAdmin.fields.alertDetail')}</th>
-                <th scope="col">{t('common.table.actions')}</th>
+        <TableContainer caption={caption}>
+          <thead>
+            <tr>
+              <th scope="col">{t('integrationAdmin.fields.raisedAt')}</th>
+              <th scope="col">{t('integrationAdmin.fields.integration')}</th>
+              <th scope="col">{t('integrationAdmin.fields.alertType')}</th>
+              <th scope="col">{t('integrationAdmin.fields.severity')}</th>
+              <th scope="col">{t('integrationAdmin.fields.alertStatus')}</th>
+              <th scope="col">{t('integrationAdmin.fields.alertDetail')}</th>
+              <th scope="col">{t('common.table.actions')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {alerts.data.items.map((alert) => (
+              <tr key={alert.id} data-alert={alert.id} data-alert-status={alert.status}>
+                <td>
+                  <Moment value={alert.raisedAt} />
+                </td>
+                <td>
+                  <Code>{alert.integrationCode}</Code>
+                </td>
+                <td>{t(`integrationAdmin.alertType.${alert.alertType}`)}</td>
+                <td>
+                  <StatusBadge
+                    label={t(`integrationAdmin.severity.${alert.severity}`)}
+                    tone={severityTone(alert.severity)}
+                  />
+                </td>
+                <td>
+                  <StatusBadge
+                    label={t(`integrationAdmin.alertStatus.${alert.status}`)}
+                    tone={alertStatusTone(alert.status)}
+                  />
+                  {alert.acknowledgedAt !== null && (
+                    <span className="cell__aside">
+                      {t('integrationAdmin.alerts.acknowledgedAt')}{' '}
+                      <Moment value={alert.acknowledgedAt} />
+                    </span>
+                  )}
+                </td>
+                <td>
+                  {alert.detail ?? t('common.values.none')}
+                  {alert.resolutionNote !== null && (
+                    <span className="cell__aside" dir="auto">
+                      {alert.resolutionNote.text}
+                    </span>
+                  )}
+                  {alert.invocationId !== null && (
+                    <span className="cell__aside">
+                      <Link to={invocationPath(alert.invocationId)}>
+                        {t('integrationAdmin.alerts.openInvocation')}
+                      </Link>
+                    </span>
+                  )}
+                </td>
+                <td className="cell--actions">
+                  <AlertActions
+                    alert={alert}
+                    onAcknowledge={() => {
+                      setNotice(null);
+                      setAcknowledging(alert);
+                    }}
+                    onClose={(outcome) => {
+                      setNotice(null);
+                      setClosing({ alert, outcome });
+                    }}
+                  />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {alerts.data.items.map((alert) => (
-                <tr key={alert.id} data-alert={alert.id} data-alert-status={alert.status}>
-                  <td>
-                    <Moment value={alert.raisedAt} />
-                  </td>
-                  <td>
-                    <Code>{alert.integrationCode}</Code>
-                  </td>
-                  <td>{t(`integrationAdmin.alertType.${alert.alertType}`)}</td>
-                  <td>
-                    <StatusBadge
-                      label={t(`integrationAdmin.severity.${alert.severity}`)}
-                      tone={severityTone(alert.severity)}
-                    />
-                  </td>
-                  <td>
-                    <StatusBadge
-                      label={t(`integrationAdmin.alertStatus.${alert.status}`)}
-                      tone={alertStatusTone(alert.status)}
-                    />
-                    {alert.acknowledgedAt !== null && (
-                      <span className="cell__aside">
-                        {t('integrationAdmin.alerts.acknowledgedAt')}{' '}
-                        <Moment value={alert.acknowledgedAt} />
-                      </span>
-                    )}
-                  </td>
-                  <td>
-                    {alert.detail ?? t('common.values.none')}
-                    {alert.resolutionNote !== null && (
-                      <span className="cell__aside" dir="auto">
-                        {alert.resolutionNote.text}
-                      </span>
-                    )}
-                    {alert.invocationId !== null && (
-                      <span className="cell__aside">
-                        <Link to={invocationPath(alert.invocationId)}>
-                          {t('integrationAdmin.alerts.openInvocation')}
-                        </Link>
-                      </span>
-                    )}
-                  </td>
-                  <td className="cell--actions">
-                    <AlertActions
-                      alert={alert}
-                      onAcknowledge={() => {
-                        setNotice(null);
-                        setAcknowledging(alert);
-                      }}
-                      onClose={(outcome) => {
-                        setNotice(null);
-                        setClosing({ alert, outcome });
-                      }}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </TableContainer>
-        </div>
+            ))}
+          </tbody>
+        </TableContainer>
         <Pagination
           page={alerts.data.page}
           pageSize={alerts.data.pageSize}
