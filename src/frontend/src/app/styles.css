@@ -1732,6 +1732,7 @@ select.field__input {
 
 .cell--ltr {
   unicode-bidi: plaintext;
+  white-space: nowrap;
 }
 
 /* A badge with a long reason ("Ended — Role changed") wraps inside its column rather than widening it. */

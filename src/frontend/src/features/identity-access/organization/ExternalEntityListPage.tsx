@@ -8,6 +8,8 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectionBar, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { useSearchText } from '@/shared/ui/useSearchText.ts';
@@ -57,6 +59,7 @@ export function ExternalEntityListPage(): ReactElement {
   const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const selection = useRowSelection();
 
   const q = params.get('q') ?? undefined;
   const status = STATUSES.find((s) => s === params.get('status'));
@@ -83,6 +86,31 @@ export function ExternalEntityListPage(): ReactElement {
       action: () => externalEntitiesApi.transition(entity.id, transition),
     });
   };
+
+  /** The same command on every chosen entity on this page that allows it. */
+  const confirmMany = (transition: ExternalEntityTransition) => {
+    const chosen = (entities.data?.items ?? []).filter(
+      (entity) =>
+        selection.selected.has(entity.id) && TRANSITIONS[entity.status].includes(transition),
+    );
+    setConfirmation({
+      title: t(`identityAccess.entities.transitions.${transition}.title`),
+      body: chosen.map((entity) => labelOf(entity.name, language)).join('، '),
+      confirmLabel: t(`identityAccess.entities.transitions.${transition}.action`),
+      destructive: transition !== 'activate',
+      action: async () => {
+        for (const entity of chosen) {
+          await externalEntitiesApi.transition(entity.id, transition);
+        }
+        selection.clear();
+      },
+    });
+  };
+  const chosenAllow = (transition: ExternalEntityTransition) =>
+    (entities.data?.items ?? []).some(
+      (entity) =>
+        selection.selected.has(entity.id) && TRANSITIONS[entity.status].includes(transition),
+    );
 
   return (
     <>
@@ -192,9 +220,29 @@ export function ExternalEntityListPage(): ReactElement {
           />
         ) : (
           <>
+            <SelectionBar selection={selection}>
+              {(['activate', 'suspend', 'retire'] as const)
+                .filter(chosenAllow)
+                .map((transition) => (
+                  <button
+                    key={transition}
+                    type="button"
+                    className={transition === 'retire' ? 'button button--danger' : 'button'}
+                    onClick={() => {
+                      confirmMany(transition);
+                    }}
+                  >
+                    {t(`identityAccess.entities.transitions.${transition}.action`)}
+                  </button>
+                ))}
+            </SelectionBar>
             <TableContainer caption={t('identityAccess.entities.title')}>
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={entities.data.items.map((entity) => entity.id)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('identityAccess.entities.code')}</th>
                   <th scope="col">{t('identityAccess.entities.name')}</th>
                   <th scope="col">{t('identityAccess.entities.sponsor')}</th>
@@ -209,6 +257,7 @@ export function ExternalEntityListPage(): ReactElement {
                   const name = labelOf(entity.name, language);
                   return (
                     <tr key={entity.id}>
+                      <SelectRowCell id={entity.id} name={name} selection={selection} />
                       <td dir="ltr" className="cell--ltr">
                         {entity.code}
                       </td>
