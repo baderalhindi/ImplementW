@@ -8,7 +8,7 @@ import {
   type InvocationDetail,
   type InvocationPage,
   type InvocationQuery,
-  type NarrativeText,
+  type NarrativeTextRequest,
   type OperationalAlertPage,
   type OperationalAlertQuery,
   type OperationalAlertView,
@@ -136,7 +136,7 @@ export const integrationAdminApi = {
     ).data,
 
   /** RESOLVED or DISMISSED, final, with the operator's note (ADR-012). */
-  closeAlert: async (alertId: string, outcome: 'resolve' | 'dismiss', note: NarrativeText) =>
+  closeAlert: async (alertId: string, outcome: 'resolve' | 'dismiss', note: NarrativeTextRequest) =>
     (
       await apiRequest<OperationalAlertView>(`/operational-alerts/${alertId}/${outcome}`, {
         method: 'POST',

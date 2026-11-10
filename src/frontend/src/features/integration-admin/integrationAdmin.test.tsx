@@ -709,7 +709,7 @@ describe('ADM-047 alerts', () => {
 
     await screen.findByText(en('integrationAdmin.alerts.resolved'));
     expect(api.requestsTo('POST', /\/resolve$/)[0]?.body).toEqual({
-      note: { text: 'Directory corrected by IT', language: 'EN' },
+      note: { text: 'Directory corrected by IT', language: 'en' },
     });
   });
 });

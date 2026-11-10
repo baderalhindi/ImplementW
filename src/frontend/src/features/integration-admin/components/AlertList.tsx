@@ -306,7 +306,7 @@ function CloseAlertForm({
     const result = await save.run(() =>
       integrationAdminApi.closeAlert(alert.id, outcome, {
         text: note.trim(),
-        language: language === 'ar' ? 'AR' : 'EN',
+        language,
       }),
     );
     if (result.ok) {
