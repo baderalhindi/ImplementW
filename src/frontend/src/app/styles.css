@@ -1692,6 +1692,13 @@ select.field__input {
   justify-content: center;
 }
 
+/* The first column names the row, so it reads from the line's start: left in English, right in Arabic. After a
+   selection checkbox, the column beside it is the one that names the row. */
+.table :is(th, td):first-child:not(.cell--select),
+.table :is(th, td).cell--select + :is(th, td) {
+  text-align: start;
+}
+
 /* Body cells centre on the row's tallest content, so a badge or one line of text lines up with the row's buttons. */
 .table td {
   vertical-align: middle;
