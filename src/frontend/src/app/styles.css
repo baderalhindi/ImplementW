@@ -1807,6 +1807,16 @@ select.field__input {
 }
 
 /* Several peer actions (approve, reject, return) stack when the row is narrow instead of scrolling out of view. */
+/* Operational alerts: each column's heading and values centred on one line down the column. */
+.alert-list .table th,
+.alert-list .table td {
+  text-align: center;
+}
+
+.alert-list .row-actions {
+  justify-content: center;
+}
+
 .cell--actions-wrap {
   white-space: normal;
 }
