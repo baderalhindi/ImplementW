@@ -144,7 +144,7 @@ export function AlertList({
                     </span>
                   )}
                 </td>
-                <td className="cell--actions cell--actions-wrap">
+                <td className="cell--actions">
                   <AlertActions
                     alert={alert}
                     onAcknowledge={() => {
@@ -231,7 +231,7 @@ function AlertActions({
     <span className="visually-hidden">{t(`integrationAdmin.alertType.${alert.alertType}`)}</span>
   );
   return (
-    <span className="actions-group">
+    <span className="row-actions">
       {alert.status === 'OPEN' && (
         <button type="button" className="button" onClick={onAcknowledge}>
           {t('integrationAdmin.actions.acknowledge')} {subject}
