@@ -1438,7 +1438,7 @@ h3 {
   margin-block: 0 var(--space-3);
 }
 
-.stage-editor__empty {
+.stage-editor .stage-editor__empty {
   padding-block: var(--space-6);
   color: var(--color-text-muted);
   text-align: center;
@@ -1678,30 +1678,22 @@ select.field__input {
   border-collapse: collapse;
 }
 
-/* Every table centres its headings and values (the client review of 10 Nov 2026). */
+/* Headings and values sit at the page's reading side: left in English, right in Arabic (the client review of
+   10 Nov 2026). The page's direction decides, not the cell's: a code cell is dir="ltr" so it reads correctly, and
+   its own start would be left even on an Arabic page. */
 .table th,
 .table td {
   padding: var(--space-3) var(--space-4);
   border-block-end: 1px solid var(--color-border-subtle);
-  text-align: center;
   vertical-align: top;
 }
 
-.table .row-actions,
-.table .actions-group {
-  justify-content: center;
-}
-
-/* The first column names the row, so it sits at the page's start edge: left in English, right in Arabic. After a
-   selection checkbox, the column beside it is the one that names the row. The page's direction decides, not the
-   cell's: a code cell is dir="ltr" so it reads correctly, and its own start would be left even on an Arabic page. */
-.table :is(th, td):first-child:not(.cell--select),
-.table :is(th, td).cell--select + :is(th, td) {
+/* Kept at one class's weight, so a table's own column rule (a centred empty message, an end-aligned action) wins. */
+.table :where(th, td) {
   text-align: left;
 }
 
-:root[dir='rtl'] .table :is(th, td):first-child:not(.cell--select),
-:root[dir='rtl'] .table :is(th, td).cell--select + :is(th, td) {
+:where(:root[dir='rtl']) .table :where(th, td) {
   text-align: right;
 }
 
