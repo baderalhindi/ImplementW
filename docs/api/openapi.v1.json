@@ -9740,6 +9740,38 @@
         }
       }
     },
+    "/api/v1/master-data-items/{itemId}/remove": {
+      "post": {
+        "tags": [
+          "MasterDataConfig"
+        ],
+        "summary": "Review round 7, item 3: deletes an item nothing references, in any state; one something references is retired instead, and the answer says how\nmany records reference it. A shipped item is neither.",
+        "operationId": "MasterDataConfig_RemoveMasterDataItem",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MasterDataItemRemoval"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/milestone-achievements": {
       "get": {
         "tags": [
@@ -33184,6 +33216,38 @@
             "format": "int32"
           }
         }
+      },
+      "MasterDataItemRemoval": {
+        "required": [
+          "deleted",
+          "usageCount",
+          "item"
+        ],
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          },
+          "usageCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "item": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MasterDataItemDetail"
+              }
+            ]
+          }
+        },
+        "description": "What removing an item did: deleted it, or, because int MasterDataItemRemoval.UsageCount records reference it, retired it (<see cref=\"P:PMPlatform.Application.Features.MasterDataConfig.Contracts.MasterDataItemRemoval.Item\" /> as it now stands)."
       },
       "MasterDataItemSummary": {
         "required": [

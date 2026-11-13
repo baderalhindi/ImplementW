@@ -30,4 +30,13 @@ public interface IMasterDataAdministrationService
     public Task<AdministrationResult<Versioned<MasterDataItemDetail>>> PublishItemAsync(Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken);
 
     public Task<AdministrationResult<Versioned<MasterDataItemDetail>>> RetireItemAsync(Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Review round 7, item 3: deletes an item nothing references, in any state; an item something references is retired instead, and the answer says
+    /// how many records reference it. A shipped item is neither.
+    /// </summary>
+    public Task<AdministrationResult<MasterDataItemRemoval>> RemoveItemAsync(Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken);
 }
+
+/// <summary>What removing an item did: deleted it, or, because <see cref="UsageCount"/> records reference it, retired it (<see cref="Item"/> as it now stands).</summary>
+public sealed record MasterDataItemRemoval(bool Deleted, int UsageCount, MasterDataItemDetail? Item);

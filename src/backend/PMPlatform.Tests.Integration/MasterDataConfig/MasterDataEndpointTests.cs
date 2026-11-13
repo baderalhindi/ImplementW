@@ -23,7 +23,7 @@ public sealed class MasterDataEndpointTests(MasterDataConfigTestHost host)
             .Where(e => e.Metadata.GetMetadata<IEndpointNameMetadata>()?.EndpointName.StartsWith("MasterDataConfig_", StringComparison.Ordinal) == true)
             .ToDictionary(e => e.Metadata.GetMetadata<IEndpointNameMetadata>()!.EndpointName, EndpointAuthorization.DeclarationOf);
 
-        Assert.Equal(30, declarations.Count);
+        Assert.Equal(31, declarations.Count);
         Assert.All(declarations, d => Assert.Equal(
             d.Key == "MasterDataConfig_GetConfigurationResolution" ? "session" // decided in the action: RISK_VIEW for the risk matrix (review round 5)
             : d.Key.Contains("Import", StringComparison.Ordinal) ? "permission:DATA_IMPORT" // TASK-102's migration import
@@ -74,6 +74,43 @@ public sealed class MasterDataEndpointTests(MasterDataConfigTestHost host)
 
         Assert.All(reads, status => Assert.Equal(HttpStatusCode.OK, status));
         Assert.All(refused, status => Assert.Equal(HttpStatusCode.Forbidden, status));
+    }
+
+    /// <summary>
+    /// Review round 7, item 3: an item nothing references is deleted, even a draft; one a record references is retired instead, and the answer says how
+    /// many records reference it.
+    /// </summary>
+    [Fact]
+    public async Task AnUnusedItemIsDeletedAndAUsedOneRetiredWithItsUsage()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        Crew crew = await client.SignInCrewAsync();
+        Guid region = await CatalogueIdAsync(client, crew.Author, "REGION");
+        Guid city = await CatalogueIdAsync(client, crew.Author, "CITY");
+
+        Guid draft = AdministrationApi.IdOf(await (await client.PostAsync(ConfigurationApi.Items, crew.Author, new { catalogueId = region, code = "R7-DRAFT", label = new { ar = "مسودة", en = "Draft" } })).ReadObjectAsync());
+        using (HttpResponseMessage removed = await client.PostAsync($"{ConfigurationApi.Items}/{draft}/remove", crew.Publisher))
+        {
+            JsonObject body = await removed.ReadObjectAsync();
+            Assert.Equal((HttpStatusCode.OK, true, 0), (removed.StatusCode, body["deleted"]!.GetValue<bool>(), body["usageCount"]!.GetValue<int>()));
+        }
+
+        using (HttpResponseMessage gone = await client.GetAsync($"{ConfigurationApi.Items}/{draft}", crew.Author))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, gone.StatusCode);
+        }
+
+        Guid parent = AdministrationApi.IdOf(await (await client.PostAsync(ConfigurationApi.Items, crew.Author, new { catalogueId = region, code = "R7-USED", label = new { ar = "مستخدمة", en = "Used" } })).ReadObjectAsync());
+        await StepAsync(client, crew.Reviewer, parent, "validate", HttpStatusCode.OK);
+        await StepAsync(client, crew.Publisher, parent, "publish", HttpStatusCode.OK);
+        using (await client.PostAsync(ConfigurationApi.Items, crew.Author, new { catalogueId = city, code = "R7-CITY", label = new { ar = "مدينة", en = "City" }, parentItemId = parent }))
+        {
+        }
+
+        using HttpResponseMessage retired = await client.PostAsync($"{ConfigurationApi.Items}/{parent}/remove", crew.Publisher);
+        JsonObject answer = await retired.ReadObjectAsync();
+        Assert.Equal((HttpStatusCode.OK, false, 1, "RETIRED"), (
+            retired.StatusCode, answer["deleted"]!.GetValue<bool>(), answer["usageCount"]!.GetValue<int>(), answer["item"]!["governance"]!["lifecycleState"]!.GetValue<string>()));
     }
 
     /// <summary>

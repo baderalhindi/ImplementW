@@ -10,6 +10,7 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
@@ -175,7 +176,9 @@ function CatalogueItems({
   const items = useApiResource(loadItems);
   const parents = useApiResource(loadParents);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<MasterDataItemSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const selection = useRowSelection();
 
@@ -183,6 +186,38 @@ function CatalogueItems({
     id === null
       ? t('common.values.none')
       : (parents.data?.find((p) => p.id === id)?.label[language] ?? id.slice(0, 8));
+
+  /** Review round 7, item 3: deletes an unused value; a used one is retired instead and the person is told how many records use it. */
+  const remove = (item: MasterDataItemSummary) => {
+    setNotice(null);
+    setConfirmation({
+      title: t('identityAccess.masterData.delete'),
+      body: t('identityAccess.masterData.deleteConfirm', { code: item.code }),
+      confirmLabel: t('identityAccess.masterData.delete'),
+      destructive: true,
+      action: async () => {
+        const current = await apiRequest<MasterDataItemSummary>(`/master-data-items/${item.id}`);
+        const { data } = await apiRequest<{ deleted: boolean; usageCount: number }>(
+          `/master-data-items/${item.id}/remove`,
+          { method: 'POST', body: {}, ifMatch: current.etag },
+        );
+        setNotice(
+          data.deleted
+            ? {
+                tone: 'success',
+                message: t('identityAccess.masterData.deleted', { code: item.code }),
+              }
+            : {
+                tone: 'warning',
+                message: t('identityAccess.masterData.retiredInstead', {
+                  code: item.code,
+                  count: data.usageCount,
+                }),
+              },
+        );
+      },
+    });
+  };
 
   const run = async (item: MasterDataItemSummary, command: Command) => {
     setError(null);
@@ -235,6 +270,7 @@ function CatalogueItems({
         )}
       </div>
       <FormAlert message={error} />
+      <PageNotice notice={notice} />
       {items.loading && <LoadingState />}
       {items.error !== null && (
         <ErrorState
@@ -277,6 +313,7 @@ function CatalogueItems({
                 {parentCatalogue !== undefined && (
                   <th scope="col">{parentCatalogue.name[language]}</th>
                 )}
+                <th scope="col">{t('identityAccess.masterData.sortOrder')}</th>
                 <th scope="col">{t('identityAccess.masterData.state')}</th>
                 {mayManage && <th scope="col">{t('common.table.actions')}</th>}
               </tr>
@@ -295,6 +332,9 @@ function CatalogueItems({
                     {item.label.en}
                   </td>
                   {parentCatalogue !== undefined && <td>{parentName(item.parentItemId)}</td>}
+                  <td dir="ltr" className="cell--ltr">
+                    {item.sortOrder}
+                  </td>
                   <td>
                     <StatusBadge
                       label={t(
@@ -305,6 +345,17 @@ function CatalogueItems({
                   </td>
                   {mayManage && (
                     <td>
+                      {(item.lifecycleState === 'DRAFT' || item.lifecycleState === 'PUBLISHED') && (
+                        <button
+                          type="button"
+                          className="button button--quiet"
+                          onClick={() => {
+                            setEditing(item);
+                          }}
+                        >
+                          {t('common.actions.edit')}
+                        </button>
+                      )}
                       {COMMANDS.filter((command) => allows(item, command)).map((command) => (
                         <button
                           key={command}
@@ -315,6 +366,17 @@ function CatalogueItems({
                           {t(`identityAccess.masterData.${command}`)}
                         </button>
                       ))}
+                      {!item.isSystem && (
+                        <button
+                          type="button"
+                          className="button button--quiet"
+                          onClick={() => {
+                            remove(item);
+                          }}
+                        >
+                          {t('identityAccess.masterData.delete')}
+                        </button>
+                      )}
                     </td>
                   )}
                 </tr>
@@ -329,6 +391,16 @@ function CatalogueItems({
         }}
         onDone={() => {
           setConfirmation(null);
+          items.reload();
+        }}
+      />
+      <EditItemDialog
+        item={editing}
+        onClose={() => {
+          setEditing(null);
+        }}
+        onSaved={() => {
+          setEditing(null);
           items.reload();
         }}
       />
@@ -580,4 +652,123 @@ function RequestedValues(): ReactElement | null {
 
 async function readOpenRequests(signal: AbortSignal) {
   return (await projectImportApi.valueRequests('OPEN', signal)).items;
+}
+
+/**
+ * Review round 7, item 3: a value's Arabic and English names and its display order; its code never changes. A draft is edited by its author, a published
+ * value by any administrator as an audited correction (the API decides).
+ */
+function EditItemDialog({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: MasterDataItemSummary | null;
+  onClose: () => void;
+  onSaved: () => void;
+}): ReactElement {
+  const { t } = useI18n();
+  return (
+    <Dialog open={item !== null} title={t('identityAccess.masterData.editTitle')} onClose={onClose}>
+      {item !== null && (
+        <EditItemForm key={item.id} item={item} onClose={onClose} onSaved={onSaved} />
+      )}
+    </Dialog>
+  );
+}
+
+function EditItemForm({
+  item,
+  onClose,
+  onSaved,
+}: {
+  item: MasterDataItemSummary;
+  onClose: () => void;
+  onSaved: () => void;
+}): ReactElement {
+  const { t } = useI18n();
+  const [ar, setAr] = useState(item.label.ar);
+  const [en, setEn] = useState(item.label.en);
+  const [sortOrder, setSortOrder] = useState(String(item.sortOrder));
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const arIssue = ar.trim() === '' ? 'REQUIRED' : checkScript(ar.trim(), 'ar');
+  const enIssue = en.trim() === '' ? 'REQUIRED' : checkScript(en.trim(), 'en');
+  const orderValid = /^[0-9]{1,6}$/.test(sortOrder);
+  const ready = arIssue === null && enIssue === null && orderValid;
+
+  const submit = async (event: SyntheticEvent) => {
+    event.preventDefault();
+    if (!ready) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const current = await apiRequest<{ description: { ar: string; en: string } | null }>(
+        `/master-data-items/${item.id}`,
+      );
+      await apiRequest(`/master-data-items/${item.id}`, {
+        method: 'PUT',
+        body: {
+          label: { ar: ar.trim(), en: en.trim() },
+          description: current.data.description,
+          parentItemId: item.parentItemId,
+          sortOrder: Number(sortOrder),
+        },
+        ifMatch: current.etag,
+      });
+      onSaved();
+    } catch (caught) {
+      setError(problemMessage(caught, t));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form className="form" noValidate onSubmit={(event) => void submit(event)}>
+      <FormAlert message={error} />
+      <p className="form__readonly">
+        <span className="field__label">{t('identityAccess.masterData.code')}</span>
+        <span dir="ltr">{item.code}</span>
+      </p>
+      <TextField
+        label={t('identityAccess.masterData.labelAr')}
+        name="labelAr"
+        required
+        dir="rtl"
+        value={ar}
+        onChange={setAr}
+        error={arIssue === null ? undefined : fieldMessage(arIssue, t)}
+      />
+      <TextField
+        label={t('identityAccess.masterData.labelEn')}
+        name="labelEn"
+        required
+        dir="ltr"
+        value={en}
+        onChange={setEn}
+        error={enIssue === null ? undefined : fieldMessage(enIssue, t)}
+      />
+      <TextField
+        label={t('identityAccess.masterData.sortOrder')}
+        name="sortOrder"
+        required
+        dir="ltr"
+        inputMode="numeric"
+        value={sortOrder}
+        onChange={setSortOrder}
+        error={orderValid ? undefined : t('identityAccess.masterData.sortOrderInvalid')}
+      />
+      <div className="form__actions">
+        <button type="submit" className="button button--primary" disabled={!ready || saving}>
+          {saving ? t('common.states.saving') : t('common.actions.save')}
+        </button>
+        <button type="button" className="button" disabled={saving} onClick={onClose}>
+          {t('common.actions.cancel')}
+        </button>
+      </div>
+    </form>
+  );
 }

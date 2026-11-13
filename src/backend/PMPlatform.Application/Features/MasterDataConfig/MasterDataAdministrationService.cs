@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Governance;
+using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Events;
@@ -17,6 +18,7 @@ namespace PMPlatform.Application.Features.MasterDataConfig;
 /// </summary>
 internal sealed partial class MasterDataAdministrationService(
     IMasterDataRepository masterData,
+    ProfileApprovalPolicy approval,
     IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<MasterDataAdministrationService> logger) : IMasterDataAdministrationService
@@ -162,7 +164,7 @@ internal sealed partial class MasterDataAdministrationService(
         MasterDataItem? item = await masterData.FindItemForUpdateAsync(itemId, expectedVersion, cancellationToken).ConfigureAwait(false);
         return item is null
             ? (AdministrationResult<Versioned<MasterDataItemDetail>>)AdministrationError.NotFound
-            : GovernedRefusal.Of(GovernedLifecycle.Validate(item, actorId, timeProvider.GetUtcNow())) is { } refused
+            : GovernedRefusal.Of(GovernedLifecycle.Validate(item, actorId, timeProvider.GetUtcNow(), approval.RequiredAdministrators)) is { } refused
             ? refused
             : await SaveItemAsync(actorId, item, "validated", MasterDataConfigAuditEvents.ItemValidated,
                 [AuditAttribute.Change("lifecycle_state", GovernedLifecycleState.Draft, item.LifecycleState)], cancellationToken).ConfigureAwait(false);
@@ -178,7 +180,7 @@ internal sealed partial class MasterDataAdministrationService(
             return AdministrationError.NotFound;
         }
 
-        if (GovernedRefusal.Of(GovernedLifecycle.CheckPublish(item, actorId)) is { } refused)
+        if (GovernedRefusal.Of(GovernedLifecycle.CheckPublish(item, actorId, approval.RequiredAdministrators)) is { } refused)
         {
             return refused;
         }
@@ -190,7 +192,7 @@ internal sealed partial class MasterDataAdministrationService(
             return AdministrationError.Rule(MasterDataConfigErrorCodes.ReferenceInvalid, new FieldIssue("parentItemId", FieldIssue.Inactive));
         }
 
-        GovernedLifecycle.Publish(item, actorId, timeProvider.GetUtcNow());
+        GovernedLifecycle.Publish(item, actorId, timeProvider.GetUtcNow(), approval.RequiredAdministrators);
         return await SaveItemAsync(actorId, item, "published", MasterDataConfigAuditEvents.ItemPublished,
             [AuditAttribute.Change("lifecycle_state", GovernedLifecycleState.Validated, item.LifecycleState)], cancellationToken).ConfigureAwait(false);
     }
@@ -215,6 +217,51 @@ internal sealed partial class MasterDataAdministrationService(
             ? refused
             : await SaveItemAsync(actorId, item, "retired", MasterDataConfigAuditEvents.ItemRetired,
                 [AuditAttribute.Change("lifecycle_state", before, item.LifecycleState)], cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<MasterDataItemRemoval>> RemoveItemAsync(
+        Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken)
+    {
+        MasterDataItem? item = await masterData.FindItemForUpdateAsync(itemId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (item is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (item.IsSystem)
+        {
+            return AdministrationError.Rule(MasterDataConfigErrorCodes.SystemRow);
+        }
+
+        int usage = await masterData.CountReferencesAsync(item.Id, cancellationToken).ConfigureAwait(false);
+        if (usage > 0)
+        {
+            // In use: the records keep it, and no new one may take it.
+            if (item.LifecycleState == GovernedLifecycleState.Retired)
+            {
+                return new MasterDataItemRemoval(false, usage, (await masterData.FindItemAsync(item.Id, cancellationToken).ConfigureAwait(false))?.Value);
+            }
+
+            GovernedLifecycleState before = item.LifecycleState;
+            GovernedLifecycle.Retire(item, timeProvider.GetUtcNow());
+            AdministrationResult<Versioned<MasterDataItemDetail>> retired = await SaveItemAsync(actorId, item, "retired", MasterDataConfigAuditEvents.ItemRetired,
+                [AuditAttribute.Change("lifecycle_state", before, item.LifecycleState), AuditAttribute.Of("usage_count", usage)], cancellationToken).ConfigureAwait(false);
+            return retired.Error is { } failed ? failed : new MasterDataItemRemoval(false, usage, retired.Value!.Value);
+        }
+
+        audit.Stage(ConfigurationAudit.Entry(MasterDataConfigAuditEvents.ItemDeleted, actorId, nameof(MasterDataItem), item.Id,
+        [
+            AuditAttribute.Of("code", item.Code),
+            AuditAttribute.Of("lifecycle_state", item.LifecycleState),
+        ]));
+        masterData.RemoveItem(item);
+        if ((await masterData.SaveAsync(cancellationToken).ConfigureAwait(false)).Error is { } saveError)
+        {
+            return saveError;
+        }
+
+        LogChanged(logger, actorId, "deleted", nameof(MasterDataItem), item.Id);
+        return new MasterDataItemRemoval(true, 0, null);
     }
 
     /// <summary>Whether <paramref name="parentId"/> is <paramref name="itemId"/> or one of its descendants, or its ancestry already loops.</summary>

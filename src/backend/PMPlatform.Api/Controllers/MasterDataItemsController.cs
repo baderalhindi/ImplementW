@@ -118,4 +118,18 @@ public sealed class MasterDataItemsController(IMasterDataAdministrationService m
         TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
             ? Respond(await masterData.RetireItemAsync(CallerId, itemId, version, cancellationToken))
             : problem!;
+
+    /// <summary>
+    /// Review round 7, item 3: deletes an item nothing references, in any state; one something references is retired instead, and the answer says how
+    /// many records reference it. A shipped item is neither.
+    /// </summary>
+    [HttpPost("{itemId:guid}/remove")]
+    [RequirePermission(PermissionCatalogue.MasterDataManage)]
+    [SensitiveWrite]
+    [ProducesResponseType<MasterDataItemRemoval>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("MasterDataConfig_RemoveMasterDataItem")]
+    public async Task<IActionResult> Remove(Guid itemId, CancellationToken cancellationToken) =>
+        TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
+            ? Respond(await masterData.RemoveItemAsync(CallerId, itemId, version, cancellationToken))
+            : problem!;
 }

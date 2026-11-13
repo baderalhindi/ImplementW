@@ -37,6 +37,14 @@ public interface IMasterDataRepository
 
     public void AddItem(MasterDataItem item);
 
+    /// <summary>
+    /// Review round 7, item 3: how many rows anywhere reference the item, through every foreign key to it — a project, a configuration row, a child
+    /// item. Read from the database's own constraints, so a reference added later is counted too.
+    /// </summary>
+    public Task<int> CountReferencesAsync(Guid itemId, CancellationToken cancellationToken);
+
+    public void RemoveItem(MasterDataItem item);
+
     public Task<KpiDefinitionPage> ListKpiDefinitionsAsync(KpiDefinitionQuery query, CancellationToken cancellationToken);
 
     public Task<Versioned<KpiDefinitionDetail>?> FindKpiDefinitionAsync(Guid kpiDefinitionId, CancellationToken cancellationToken);

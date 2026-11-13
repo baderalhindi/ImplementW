@@ -677,7 +677,7 @@
     "validate": "Validate",
     "publish": "Publish",
     "retire": "Retire",
-    "lifecycleNote": "The value is saved as a draft. Someone else validates it, and a third person publishes it, before forms offer it.",
+    "lifecycleNote": "The value is saved as a draft, then validated and published before forms offer it. How many administrators that takes is set per environment: one where there is only one, otherwise the author, a reviewer and a publisher.",
     "states": {
       "DRAFT": "Draft",
       "VALIDATED": "Validated",
@@ -693,7 +693,13 @@
       "note": "Note to the importer",
       "added": "Mark added",
       "declined": "Decline"
-    }
+    },
+    "delete": "Delete",
+    "deleteConfirm": "Delete {code}? If records use it, it is retired instead and stays on those records.",
+    "deleted": "{code} was deleted.",
+    "retiredInstead": "{code} is used by {count} records, so it was retired instead: those records keep it and no new record can choose it.",
+    "editTitle": "Edit value",
+    "sortOrderInvalid": "Enter a whole number from 0."
   },
   "passwordSelfService": {
     "changeMenu": "Change password",
