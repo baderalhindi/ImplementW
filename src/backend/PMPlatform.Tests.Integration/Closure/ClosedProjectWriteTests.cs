@@ -55,6 +55,7 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
         ["dependencyType"] = "FS",
         ["actionType"] = "MITIGATE",
         ["concernType"] = "ISSUE",
+        ["stageCode"] = "EXECUTION",
         ["plannedResumptionDate"] = null,
     };
 
@@ -191,6 +192,7 @@ public sealed partial class ClosedProjectWriteTests(ClosureTestHost host)
         ("versions", "versionId") => "version",
         ("risks", "riskId") => "risk",
         ("projects", "projectId") => "project",
+        ("project-stage-plans", "projectId") => "project",
         (_, "evidenceReferenceId") => "evidenceReference",
         var unknown => throw new InvalidOperationException($"No fixture record for {unknown} in {path}: add one."),
     };
