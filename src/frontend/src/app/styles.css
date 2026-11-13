@@ -2297,16 +2297,6 @@ select.field__input {
   max-inline-size: none;
 }
 
-/* The biometric form keeps the Nafath panel's width, like the Nafath button above it. */
-.sign-in__biometric {
-  max-inline-size: 26rem;
-}
-
-.sign-in__biometric > .sign-in__soon {
-  justify-self: center;
-  align-self: center;
-}
-
 /*
  * The mockup's input: the icon sits inside it, at the page's end. The input follows the page direction, so text and
  * placeholder start on the left in English and on the right in Arabic.

@@ -18063,24 +18063,8 @@
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "Starts an SSO sign-in. Nothing is stored server-side; the transaction travels with the client. The biometric sign-in\nnames the account (`loginHint`, an e-mail address) and asks the provider to authenticate afresh (`reauthenticate`).",
+        "summary": "Starts an SSO sign-in. Nothing is stored server-side; the transaction travels with the client.",
         "operationId": "IdentityAccess_GetSsoAuthorization",
-        "parameters": [
-          {
-            "name": "loginHint",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "reauthenticate",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK",

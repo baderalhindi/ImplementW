@@ -60,7 +60,7 @@ internal sealed partial class NafathIdentityVerifier : IIdentityVerificationProv
             return IdentityVerificationAuthorization.Failed(AuthenticationFailure.NotConfigured);
         }
 
-        (Uri? url, string? transaction, AuthenticationFailure? failure) = await _relyingParty.BeginAsync(client, Binding(userId), parameters: null, cancellationToken).ConfigureAwait(false);
+        (Uri? url, string? transaction, AuthenticationFailure? failure) = await _relyingParty.BeginAsync(client, Binding(userId), cancellationToken).ConfigureAwait(false);
         return new IdentityVerificationAuthorization(url, transaction, failure);
     }
 

@@ -33,7 +33,7 @@ public interface IAuthenticationService
     /// <summary>Whether this environment has a complete SSO client registration, so the sign-in page can offer SSO.</summary>
     public bool IsSingleSignOnAvailable { get; }
 
-    public Task<SsoAuthorizationResult> BeginSsoSignInAsync(SsoAuthorizationRequest request, CancellationToken cancellationToken);
+    public Task<SsoAuthorizationResult> BeginSsoSignInAsync(CancellationToken cancellationToken);
 
     /// <summary>Completes an SSO sign-in with the authorization code and state the identity provider redirected with.</summary>
     public Task<AuthenticationResult> CompleteSsoSignInAsync(string code, string state, string transaction, CancellationToken cancellationToken);

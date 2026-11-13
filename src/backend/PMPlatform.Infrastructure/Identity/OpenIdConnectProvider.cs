@@ -42,28 +42,14 @@ internal sealed class OpenIdConnectProvider : ISingleSignOnProvider
 
     public bool IsConfigured => SingleSignOnClient.Read(_configuration) is not null;
 
-    public async Task<SsoAuthorizationResult> BeginAsync(SsoAuthorizationRequest request, CancellationToken cancellationToken)
+    public async Task<SsoAuthorizationResult> BeginAsync(CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(request);
         if (SingleSignOnClient.Read(_configuration) is not { } client)
         {
             return new SsoAuthorizationResult(null, null, AuthenticationFailure.NotConfigured);
         }
 
-        // The biometric sign-in: Microsoft authenticates the named account now, where the person's passkey (Face ID,
-        // Touch ID) is offered if they registered one. Which methods Microsoft allows is the tenant's policy, not the platform's.
-        Dictionary<string, string> parameters = [];
-        if (request.LoginHint is { } loginHint)
-        {
-            parameters["login_hint"] = loginHint;
-        }
-
-        if (request.Reauthenticate)
-        {
-            parameters["prompt"] = "login";
-        }
-
-        (Uri? url, string? transaction, AuthenticationFailure? failure) = await _relyingParty.BeginAsync(client, binding: null, parameters, cancellationToken).ConfigureAwait(false);
+        (Uri? url, string? transaction, AuthenticationFailure? failure) = await _relyingParty.BeginAsync(client, binding: null, cancellationToken).ConfigureAwait(false);
         return new SsoAuthorizationResult(url, transaction, failure);
     }
 

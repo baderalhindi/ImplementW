@@ -91,18 +91,8 @@ export const sessionApi = {
   getSignInOptions: async (signal: AbortSignal) =>
     (await apiRequest<SignInOptions>('/sessions/sign-in-options', { anonymous: true, signal }))
       .data,
-  /** `biometric` names the Microsoft account and has Microsoft authenticate it now, where it offers the person's passkey. */
-  beginSso: async (biometric?: { loginHint: string }) => {
-    const query =
-      biometric === undefined
-        ? ''
-        : `?${new URLSearchParams({ loginHint: biometric.loginHint, reauthenticate: 'true' }).toString()}`;
-    return (
-      await apiRequest<SsoAuthorization>(`/sessions/sso-authorization${query}`, {
-        anonymous: true,
-      })
-    ).data;
-  },
+  beginSso: async () =>
+    (await apiRequest<SsoAuthorization>('/sessions/sso-authorization', { anonymous: true })).data,
   completeSso: (code: string, state: string, transaction: string) =>
     post<SignInResult>('/sessions/sso', { code, state, transaction }),
   changePassword: (passwordChangeToken: string, newPassword: string) =>

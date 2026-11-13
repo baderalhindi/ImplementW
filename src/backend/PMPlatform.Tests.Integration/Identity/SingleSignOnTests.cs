@@ -73,41 +73,6 @@ public sealed class SingleSignOnTests(IdentityTestHost host) : IDisposable
         Assert.DoesNotContain(authorization.Transaction, authorization.AuthorizationUrl.AbsoluteUri, StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// The biometric sign-in (13 Nov 2026 review): Microsoft is told the account and asked to authenticate now, so it offers
-    /// the person's passkey. The plain "Sign in with Microsoft" sends neither.
-    /// </summary>
-    [Fact]
-    public async Task TheBiometricSignInNamesTheAccountAndAsksTheProviderToAuthenticateAfresh()
-    {
-        using HttpClient client = host.Api.CreateClient();
-
-        using HttpResponseMessage biometric = await client.GetAsync($"{SessionApi.SsoAuthorization}?loginHint=r01.user%40identity.test&reauthenticate=true");
-        using HttpResponseMessage plain = await client.GetAsync(SessionApi.SsoAuthorization);
-
-        Assert.Equal(HttpStatusCode.OK, biometric.StatusCode);
-        Dictionary<string, Microsoft.Extensions.Primitives.StringValues> query =
-            QueryHelpers.ParseQuery((await biometric.ReadAsync<SsoAuthorization>()).AuthorizationUrl.Query);
-        Assert.Equal("r01.user@identity.test", query["login_hint"]);
-        Assert.Equal("login", query["prompt"]);
-        Assert.Equal("S256", query["code_challenge_method"]);
-        Dictionary<string, Microsoft.Extensions.Primitives.StringValues> plainQuery =
-            QueryHelpers.ParseQuery((await plain.ReadAsync<SsoAuthorization>()).AuthorizationUrl.Query);
-        Assert.False(plainQuery.ContainsKey("login_hint"));
-        Assert.False(plainQuery.ContainsKey("prompt"));
-    }
-
-    [Fact]
-    public async Task ABiometricSignInWithAMalformedEmailIsRefusedBeforeTheProvider()
-    {
-        using HttpClient client = host.Api.CreateClient();
-
-        using HttpResponseMessage response = await client.GetAsync($"{SessionApi.SsoAuthorization}?loginHint=not-an-email&reauthenticate=true");
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("VALIDATION_FAILED", (await response.ReadAsync<Problem>()).Code);
-    }
-
     [Fact]
     public async Task TheSignInOptionsOfferSsoOnlyWhereItsClientIsComplete()
     {

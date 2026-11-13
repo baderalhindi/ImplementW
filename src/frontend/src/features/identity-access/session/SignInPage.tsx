@@ -15,13 +15,7 @@ import { isAppPath } from '@/shared/navigation/appPath.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 
-import {
-  checkText,
-  EMAIL_PATTERN,
-  type SaveAction,
-  useFocusFirstError,
-  useSaveAction,
-} from '../forms.ts';
+import { checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { DirectoryPasswordHelp, NewPasswordFields } from './passwordSelfService.tsx';
 import { checkNewPassword } from './passwordUpdate.ts';
 import { SecondFactorForm } from './SecondFactorForm.tsx';
@@ -155,102 +149,13 @@ function CredentialField({
   );
 }
 
-/** Sends the browser to Microsoft with the sealed transaction kept for the return. */
-async function leaveForMicrosoft(
-  run: SaveAction['run'],
-  returnTo: string,
-  biometric?: { loginHint: string },
-): Promise<void> {
-  const result = await run(async () => {
-    const { authorizationUrl, transaction } = await sessionApi.beginSso(biometric);
-    ssoTransaction.save({ transaction, returnTo });
-    return authorizationUrl;
-  });
-  if (result.ok) {
-    identityProviderRedirect.go(result.value);
-  }
-}
-
-const biometricIcon = (
-  <Icon>
-    <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" />
-    <path d="M9 10v1M15 10v1M12 10v3h-1M9.5 16a3.5 3.5 0 0 0 5 0" />
-  </Icon>
-);
-
 /**
- * Face ID / Touch ID through Microsoft (13 Nov 2026 review): the person names their Microsoft account and Microsoft
- * authenticates it now, offering the passkey they registered there. The platform never sees the biometric; it receives
- * Microsoft's ID token exactly as for "Sign in with Microsoft", second factor and all.
+ * National single sign-on as the mockup lays it out. Nafath and its biometric fallback have no API yet, so every
+ * control here is disabled and the panel says so.
  */
-function BiometricSignIn({
-  available,
-  loading,
-  returnTo,
-}: {
-  available: boolean;
-  loading: boolean;
-  returnTo: string;
-}): ReactElement {
+function NafathPanel(): ReactElement {
   const { t } = useI18n();
-  const formRef = useRef<HTMLFormElement>(null);
-  const save = useSaveAction();
-  useFocusFirstError(formRef, save.fieldErrors);
-  const [email, setEmail] = useState('');
-
-  const submit = async (event: SyntheticEvent) => {
-    event.preventDefault();
-    const loginHint = email.trim();
-    if (
-      !save.validate({
-        loginHint: checkText(loginHint, { required: true, pattern: EMAIL_PATTERN }),
-      })
-    ) {
-      return;
-    }
-    await leaveForMicrosoft(save.run, returnTo, { loginHint });
-  };
-
-  return (
-    <form
-      ref={formRef}
-      className="form sign-in__form sign-in__biometric"
-      noValidate
-      aria-label={t('identityAccess.signIn.biometric.submit')}
-      onSubmit={(event) => void submit(event)}
-    >
-      <p className="sign-in__note">{t('identityAccess.signIn.biometric.instructions')}</p>
-      {!available && !loading && (
-        <p className="badge sign-in__soon">{t('identityAccess.signIn.comingSoon')}</p>
-      )}
-      <FormAlert message={save.formError} />
-      <CredentialField
-        label={t('identityAccess.signIn.biometric.email')}
-        name="loginHint"
-        autoComplete="email"
-        value={email}
-        onChange={setEmail}
-        error={save.fieldErrors.loginHint}
-        icon={biometricIcon}
-        disabled={!available}
-      />
-      <button type="submit" className="button sign-in__wide" disabled={!available || save.saving}>
-        {t('identityAccess.signIn.biometric.submit')}
-      </button>
-    </form>
-  );
-}
-
-/**
- * National single sign-on as the mockup lays it out. Nafath has no API yet, so its button is disabled and the panel
- * says so. Below it, the biometric sign-in goes through Microsoft wherever single sign-on is configured.
- */
-function NafathPanel({
-  biometric,
-}: {
-  biometric: { available: boolean; loading: boolean; returnTo: string };
-}): ReactElement {
-  const { t } = useI18n();
+  const idFieldId = useId();
   return (
     <section
       className="sign-in__panel sign-in__nafath"
@@ -275,15 +180,31 @@ function NafathPanel({
         {t('identityAccess.signIn.nafath.submit')}
       </button>
       <p className="sign-in__divider">{t('identityAccess.signIn.or')}</p>
-      <BiometricSignIn {...biometric} />
+      <p className="sign-in__note">{t('identityAccess.signIn.biometric.instructions')}</p>
+      <div className="field">
+        <label className="field__label" htmlFor={idFieldId}>
+          {t('identityAccess.signIn.biometric.nationalId')}
+        </label>
+        <input
+          id={idFieldId}
+          name="nationalId"
+          className="field__input"
+          inputMode="numeric"
+          placeholder={t('identityAccess.signIn.biometric.nationalIdPlaceholder')}
+          disabled
+        />
+      </div>
+      <button type="button" className="button sign-in__wide" disabled>
+        {t('identityAccess.signIn.biometric.submit')}
+      </button>
     </section>
   );
 }
 
 /**
- * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Nafath is shown
- * disabled until its integration exists; Microsoft, and the biometric sign-in through it, are offered where the API says
- * single sign-on is configured. Every method keeps its second factor (TASK-028, TASK-029); R01 always requires MFA. A local account on a temporary
+ * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Nafath and biometric
+ * sign-in are shown disabled until their integrations exist; Microsoft is offered where the API says single sign-on is
+ * configured. Every method keeps its second factor (TASK-028, TASK-029); R01 always requires MFA. A local account on a temporary
  * password sets a new one first (the 5 Nov 2026 review §6.1), then continues to its second factor or its session.
  */
 export function SignInPage(): ReactElement {
@@ -328,7 +249,16 @@ export function SignInPage(): ReactElement {
     void navigate(target, { replace: true });
   };
 
-  const startSingleSignOn = () => leaveForMicrosoft(save.run, target);
+  const startSingleSignOn = async () => {
+    const result = await save.run(async () => {
+      const { authorizationUrl, transaction } = await sessionApi.beginSso();
+      ssoTransaction.save({ transaction, returnTo: target });
+      return authorizationUrl;
+    });
+    if (result.ok) {
+      identityProviderRedirect.go(result.value);
+    }
+  };
 
   const submitCredentials = async (event: SyntheticEvent) => {
     event.preventDefault();
@@ -574,13 +504,7 @@ export function SignInPage(): ReactElement {
             <SecondFactorForm secondFactor={secondFactor} onSession={finish} />
           )}
         </section>
-        <NafathPanel
-          biometric={{
-            available: singleSignOnAvailable,
-            loading: signInOptions.loading,
-            returnTo: target,
-          }}
-        />
+        <NafathPanel />
       </div>
       <footer className="sign-in__footer">
         {t('identityAccess.signIn.copyright', { year: new Date().getFullYear() })}

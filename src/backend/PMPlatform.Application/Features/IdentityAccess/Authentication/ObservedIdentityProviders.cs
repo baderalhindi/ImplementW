@@ -41,8 +41,8 @@ internal sealed class ObservedSingleSignOnProvider(ISingleSignOnProvider inner, 
 {
     public bool IsConfigured => inner.IsConfigured;
 
-    public Task<SsoAuthorizationResult> BeginAsync(SsoAuthorizationRequest request, CancellationToken cancellationToken) =>
-        telemetry.ObserveAsync(IntegrationCodes.SingleSignOn, "AUTHORIZE", () => inner.BeginAsync(request, cancellationToken), r => InvocationObservation.Of(r.Failure));
+    public Task<SsoAuthorizationResult> BeginAsync(CancellationToken cancellationToken) =>
+        telemetry.ObserveAsync(IntegrationCodes.SingleSignOn, "AUTHORIZE", () => inner.BeginAsync(cancellationToken), r => InvocationObservation.Of(r.Failure));
 
     public Task<SingleSignOnResult> CompleteAsync(string code, string state, string transaction, CancellationToken cancellationToken) =>
         telemetry.ObserveAsync(IntegrationCodes.SingleSignOn, "TOKEN_REDEEM", () => inner.CompleteAsync(code, state, transaction, cancellationToken), r => InvocationObservation.Of(r.Failure));

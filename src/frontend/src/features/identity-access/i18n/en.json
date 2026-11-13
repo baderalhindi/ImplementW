@@ -500,9 +500,10 @@
       "submit": "Sign in with Nafath"
     },
     "biometric": {
-      "instructions": "Sign in with Face ID or Touch ID: Microsoft checks the passkey saved in your Microsoft account.",
-      "email": "Microsoft account e-mail",
-      "submit": "Sign in with Face ID or Touch ID"
+      "instructions": "If you cannot use the Nafath app, you can sign in with biometric verification",
+      "nationalId": "National ID / Iqama number",
+      "nationalIdPlaceholder": "Enter your national ID or Iqama number",
+      "submit": "Sign in with biometrics"
     },
     "copyright": "© {year} Al Ahsa Development Authority. All rights reserved.",
     "wrongCredentials": "The username or password is wrong.",
