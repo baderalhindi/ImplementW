@@ -1,5 +1,6 @@
 using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.FollowUp;
 using PMPlatform.Domain.Common;
@@ -29,6 +30,12 @@ public sealed record PortfolioBreakdown(IReadOnlyList<PortfolioBreakdownRow> Row
 
 public sealed record PortfolioStageCount(ProjectLifecycleState Status, int Projects, decimal Percent);
 
+/// <summary>
+/// Projects by their current stage (review round 7, item 1): the first applicable stage below 100% in the latest published stage-based update, or as
+/// imported. <see cref="StageCode"/> null counts the projects with none yet. Stages run in stage order; a value is null when the caller may not see amounts.
+/// </summary>
+public sealed record PortfolioCurrentStage(string? StageCode, BilingualLabel? Name, int Projects, string? ValueSar, int ValueEntered);
+
 public sealed record PortfolioOnPlan(int OnTrack, int Late, int Stalled, int NotMeasured);
 
 /// <summary>Each project counted once, under its first reason in the Follow-up list's order.</summary>
@@ -44,7 +51,7 @@ public sealed record PortfolioTopProject(
 /// </summary>
 public sealed record PortfolioInsights(
     PortfolioHeadline? Headline, PortfolioBreakdown? ByPortfolio, PortfolioBreakdown? ByInitiative, PortfolioBreakdown? BySector, IReadOnlyList<PortfolioStageCount>? Stages, PortfolioOnPlan? OnPlan,
-    PortfolioFollowUpReasons? FollowUpReasons, IReadOnlyList<PortfolioTopProject>? TopFollowUp);
+    PortfolioFollowUpReasons? FollowUpReasons, IReadOnlyList<PortfolioTopProject>? TopFollowUp, IReadOnlyList<PortfolioCurrentStage>? ByCurrentStage = null);
 
 public enum PortfolioCardDimension
 {
@@ -70,7 +77,9 @@ public interface IPortfolioInsightsService
 }
 
 /// <inheritdoc cref="IPortfolioInsightsService"/>
-internal sealed class PortfolioInsightsService(IProjectRepository repository, IAuthorizationEngine engine, ProjectIndicatorReader indicators, OnPlanPolicy onPlanPolicy, TimeProvider timeProvider) : IPortfolioInsightsService
+internal sealed class PortfolioInsightsService(
+    IProjectRepository repository, IAuthorizationEngine engine, ProjectIndicatorReader indicators, OnPlanPolicy onPlanPolicy, IConfigurationResolver resolver, TimeProvider timeProvider)
+    : IPortfolioInsightsService
 {
     private const int TopCount = 10;
 
@@ -96,6 +105,7 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
         IReadOnlyList<Row>? breakdown = await Reach(PermissionCatalogue.PortfolioBreakdownView).ConfigureAwait(false);
         IReadOnlyList<Row>? status = await Reach(PermissionCatalogue.PortfolioStatusView).ConfigureAwait(false);
         IReadOnlyList<Row>? followUp = await Reach(PermissionCatalogue.PortfolioFollowUpView).ConfigureAwait(false);
+        ProjectStageSet? stages = status is null ? null : await resolver.ResolveStagesAsync(timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
         return new PortfolioInsights(
             summary is null ? null : Headline(summary, amounts, thresholds),
@@ -114,7 +124,8 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
                 .Take(TopCount)
                 .Select(r => new PortfolioTopProject(
                     r.Project.Id, r.Project.FormalProjectId, r.Project.LegacyReference, r.Project.Title, r.Project.StrategicPortfolioItemId, r.Indicators.FollowUpReasons[0], r.Project.CurrentObstacle,
-                    r.Project.NextAction, r.Project.NextActionOwner, r.Project.NextActionDueDate))]);
+                    r.Project.NextAction, r.Project.NextActionOwner, r.Project.NextActionDueDate))],
+            status is null || stages is null ? null : ByCurrentStage(status, stages, amounts));
     }
 
     public async Task<AdministrationResult<PortfolioCard>> GetCardAsync(Guid callerId, PortfolioCardDimension dimension, Guid itemId, CancellationToken cancellationToken)
@@ -206,6 +217,19 @@ internal sealed class PortfolioInsightsService(IProjectRepository repository, IA
 
     private static IReadOnlyList<PortfolioStageCount> Stages(IReadOnlyList<Row> rows) =>
         [.. rows.GroupBy(r => r.Project.LifecycleState).OrderByDescending(g => g.Count()).Select(g => new PortfolioStageCount(g.Key, g.Count(), decimal.Round(g.Count() * 100m / rows.Count, 1)))];
+
+    /// <summary>Every stage of the version in force, in stage order, with none left out, then the projects with no current stage.</summary>
+    private static IReadOnlyList<PortfolioCurrentStage> ByCurrentStage(IReadOnlyList<Row> rows, ProjectStageSet stages, bool amounts)
+    {
+        PortfolioCurrentStage Of(string? code, BilingualLabel? name, List<Row> group) =>
+            new(code, name, group.Count, amounts ? Sar(group.Sum(r => r.Project.RegistrationBudgetSar?.Amount ?? 0m)) : null, group.Count(r => r.Project.RegistrationBudgetSar is not null));
+        HashSet<string> known = [.. stages.Stages.Select(s => s.Code)];
+        return
+        [
+            .. stages.Stages.Select(s => Of(s.Code, s.Name, [.. rows.Where(r => r.Project.CurrentStageCode == s.Code)])),
+            Of(null, null, [.. rows.Where(r => r.Project.CurrentStageCode is not { } code || !known.Contains(code))]),
+        ];
+    }
 
     private static PortfolioFollowUpReasons Reasons(IReadOnlyList<Row> rows)
     {

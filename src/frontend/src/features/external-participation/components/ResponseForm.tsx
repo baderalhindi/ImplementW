@@ -243,6 +243,18 @@ export function ResponseInput({
           onChange={onChange}
         />
       );
+    case 'CODE':
+      return (
+        <TextField
+          label={label}
+          name={definition.fieldCode}
+          value={value}
+          required={definition.required}
+          dir="ltr"
+          error={error}
+          onChange={onChange}
+        />
+      );
     case 'DATE':
       return (
         <TextField

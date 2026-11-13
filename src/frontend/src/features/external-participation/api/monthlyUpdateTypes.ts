@@ -1,3 +1,4 @@
+import { type BilingualLabel } from '@/features/identity-access/api/types.ts';
 import { type NarrativeText } from '@/features/projects/api/types.ts';
 
 import { type ExternalContributionStatus, type ExternalUpdateRequestStatus } from './types.ts';
@@ -24,6 +25,18 @@ export interface MyUpdateRequest {
   plannedProgressPercent: number | null;
   prefill: Record<string, string>;
   prefillLanguages: Record<string, 'AR' | 'EN'>;
+  /**
+   * The stages of the project's plan that apply, each with its planned % today (review round 7, item 1). When there are any, the answer gives the
+   * current stage and its % complete, and the overall figure is weighed from them.
+   */
+  stages?: MonthlyStage[];
+}
+
+export interface MonthlyStage {
+  stageCode: string;
+  name: BilingualLabel;
+  weightPercent: number | string;
+  plannedPercent: number | string | null;
 }
 
 export interface MyUpdateRequestPage {

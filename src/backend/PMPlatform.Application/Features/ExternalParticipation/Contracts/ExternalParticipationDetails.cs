@@ -144,4 +144,7 @@ public enum ContributionFieldType
     Narrative = 1,
     Number = 2,
     Date = 3,
+
+    /// <summary>A business code, such as a PROJECT_STAGE code (review round 7, item 1): upper-case letters, digits, hyphen and underscore.</summary>
+    Code = 4,
 }

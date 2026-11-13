@@ -4,11 +4,13 @@ import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { type Session } from '@/features/identity-access/session/sessionApi.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { languageTag } from '@/features/projects/presentation.ts';
+import { oneDecimal } from '@/features/projects/stagePlan/stageProgress.ts';
 import { type Translate } from '@/features/identity-access/problems.ts';
 import { type ApiResponse } from '@/shared/api/httpClient.ts';
 import { type FieldCodes, useFieldErrors } from '@/shared/forms/useFieldErrors.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
+import { SelectField } from '@/shared/ui/FormFields.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 
@@ -22,7 +24,12 @@ import { isStale, participationProblemMessage, responseFieldMessage } from '../p
 import { responseFieldCodes, responseIssuesOf } from '../rules.ts';
 
 import { useCounted, useDayAndMonth, useMonthName } from './counts.ts';
-import { MONTHLY_FIELDS, monthlyFieldsToSend } from './monthlyForm.ts';
+import {
+  CURRENT_STAGE_FIELD,
+  monthlyFields,
+  monthlyFieldsToSend,
+  monthlyStageFigures,
+} from './monthlyForm.ts';
 import { myUpdatesStore, useMyUpdates } from './myUpdatesStore.ts';
 
 /** The revision being answered: where the next save goes and the ETag it sends. */
@@ -198,9 +205,9 @@ function useLocalDrafts(): LocalDrafts {
     persist,
     saveQuietly: async (request) => {
       const draft = draftOf(request);
-      const malformed = Object.values(responseFieldCodes(MONTHLY_FIELDS, draft.values, false)).some(
-        (code) => code !== null,
-      );
+      const malformed = Object.values(
+        responseFieldCodes(monthlyFields(request), draft.values, false),
+      ).some((code) => code !== null);
       if (!draft.dirty || malformed) {
         return;
       }
@@ -425,22 +432,25 @@ function ProjectForm({
   drafts: LocalDrafts;
   onSubmitted: () => void;
 }): ReactElement {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const label = useFieldLabel();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(participationProblemMessage);
   const [serverCodes, setServerCodes] = useState<FieldCodes>({});
   const [saved, setSaved] = useState(false);
   const draft = drafts.draftOf(request);
-  const clientCodes = responseFieldCodes(MONTHLY_FIELDS, draft.values, true);
+  const definitions = monthlyFields(request);
+  const stages = request.stages ?? [];
+  const stageFigures = stages.length > 0 ? monthlyStageFigures(request, draft.values) : null;
+  const clientCodes = responseFieldCodes(definitions, draft.values, true);
   const codes = Object.fromEntries(
-    MONTHLY_FIELDS.map(({ fieldCode }) => [
+    definitions.map(({ fieldCode }) => [
       fieldCode,
       clientCodes[fieldCode] ?? serverCodes[fieldCode] ?? null,
     ]),
   );
   const describe = (field: string, code: string, translate: Translate) => {
-    const definition = MONTHLY_FIELDS.find((candidate) => candidate.fieldCode === field);
+    const definition = definitions.find((candidate) => candidate.fieldCode === field);
     return code === 'OUT_OF_RANGE' && definition !== undefined
       ? translate('externalParticipation.fieldErrors.answerOutOfRange', {
           min: definition.minimum ?? '—',
@@ -462,7 +472,7 @@ function ProjectForm({
     event.preventDefault();
     setSaved(false);
     // A draft may be incomplete: only a value of the wrong shape stops it.
-    const shapeOnly = responseFieldCodes(MONTHLY_FIELDS, draft.values, false);
+    const shapeOnly = responseFieldCodes(definitions, draft.values, false);
     if (Object.values(shapeOnly).some((code) => code !== null)) {
       fields.attempt();
       return;
@@ -523,21 +533,54 @@ function ProjectForm({
               percent: request.plannedProgressPercent,
             })}
       </p>
-      {MONTHLY_FIELDS.map((definition) => (
-        <ResponseInput
-          key={definition.fieldCode}
-          definition={definition}
-          label={label(definition.fieldCode)}
-          value={draft.values[definition.fieldCode] ?? ''}
-          error={fields.errorOf(definition.fieldCode)}
-          onChange={(value) => {
-            drafts.edit(request, definition.fieldCode, value);
-            setServerCodes({});
-            setSaved(false);
-            fields.clearServer();
-          }}
-        />
-      ))}
+      {stageFigures !== null && (
+        <p className="form__note" role="status" aria-live="polite">
+          {t('externalParticipation.monthly.form.stageOverall', {
+            actual: stageFigures.actual === null ? '—' : `${oneDecimal(stageFigures.actual)}%`,
+            planned: stageFigures.planned === null ? '—' : `${oneDecimal(stageFigures.planned)}%`,
+          })}
+        </p>
+      )}
+      {definitions.map((definition) => {
+        const change = (value: string) => {
+          drafts.edit(request, definition.fieldCode, value);
+          setServerCodes({});
+          setSaved(false);
+          fields.clearServer();
+        };
+        // The current stage is chosen from the plan, each stage shown with its planned % today.
+        return definition.fieldCode === CURRENT_STAGE_FIELD ? (
+          <SelectField
+            key={definition.fieldCode}
+            label={label(definition.fieldCode)}
+            name={definition.fieldCode}
+            required
+            value={draft.values[definition.fieldCode] ?? ''}
+            placeholder={t('common.form.choose')}
+            options={stages.map((stage) => ({
+              value: stage.stageCode,
+              label: t('externalParticipation.monthly.form.stageOption', {
+                stage: stage.name[language],
+                planned:
+                  stage.plannedPercent === null
+                    ? '—'
+                    : `${oneDecimal(Number(stage.plannedPercent))}%`,
+              }),
+            }))}
+            error={fields.errorOf(definition.fieldCode)}
+            onChange={change}
+          />
+        ) : (
+          <ResponseInput
+            key={definition.fieldCode}
+            definition={definition}
+            label={label(definition.fieldCode)}
+            value={draft.values[definition.fieldCode] ?? ''}
+            error={fields.errorOf(definition.fieldCode)}
+            onChange={change}
+          />
+        );
+      })}
       {saved && (
         <p className="form__note" role="status">
           {t('externalParticipation.monthly.form.saved')}

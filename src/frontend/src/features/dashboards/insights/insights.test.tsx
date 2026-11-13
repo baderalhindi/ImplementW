@@ -61,7 +61,7 @@ describe('the sections', () => {
   test('each section shows only when answered, and none of a null one', async () => {
     dashboardApi({ ...NO_SECTIONS, stages: fullInsights().stages, onPlan: fullInsights().onPlan });
     renderApp({ path: DASHBOARD, session: session() });
-    await screen.findByRole('heading', { level: 2, name: en('dashboards.insights.stages') });
+    await screen.findByRole('heading', { level: 2, name: en('dashboards.insights.byStatus') });
     expect(section('headline')).toBeNull();
     expect(section('portfolio')).toBeNull();
     expect(section('sector')).toBeNull();
@@ -69,6 +69,42 @@ describe('the sections', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: en('dashboards.insights.onPlan') }),
     ).toBeTruthy();
+  });
+
+  test('projects by status and, apart from them, by current stage with their value (round 7, item 1)', async () => {
+    dashboardApi({
+      ...NO_SECTIONS,
+      stages: fullInsights().stages,
+      byCurrentStage: [
+        {
+          stageCode: 'DESIGN',
+          name: { en: 'Design', ar: 'التصميم' },
+          projects: 3,
+          valueSar: '9000000.00',
+          valueEntered: 3,
+        },
+        {
+          stageCode: 'EXECUTION',
+          name: { en: 'Execution', ar: 'التنفيذ' },
+          projects: 5,
+          valueSar: '41000000.00',
+          valueEntered: 4,
+        },
+        { stageCode: null, name: null, projects: 2, valueSar: '0.00', valueEntered: 0 },
+      ],
+    });
+    renderApp({ path: DASHBOARD, session: session() });
+    await screen.findByRole('heading', {
+      level: 2,
+      name: en('dashboards.insights.byCurrentStage'),
+    });
+    expect(
+      screen.getByRole('heading', { level: 2, name: en('dashboards.insights.byStatus') }),
+    ).toBeTruthy();
+    const stages = plain(section('current-stage')?.textContent);
+    expect(stages).toContain('Execution');
+    expect(stages).toContain(en('dashboards.insights.noCurrentStage'));
+    expect(stages).toContain('41,000,000');
   });
 
   test('nothing at all when every section is null', async () => {

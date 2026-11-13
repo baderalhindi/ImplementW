@@ -34,6 +34,7 @@ import {
   type PortfolioHeadline,
   type PortfolioInsights,
   type PortfolioOnPlan,
+  type PortfolioCurrentStage,
   type PortfolioStageCount,
   type PortfolioTopProject,
 } from '../api/insightTypes.ts';
@@ -144,6 +145,7 @@ function Sections({ insights }: { insights: PortfolioInsights }): ReactElement {
     followUpReasons,
     topFollowUp,
   } = insights;
+  const byCurrentStage = insights.byCurrentStage ?? null;
 
   return (
     <div className="insights">
@@ -151,6 +153,7 @@ function Sections({ insights }: { insights: PortfolioInsights }): ReactElement {
       <InsightCharts
         byPortfolio={byPortfolio}
         stages={stages}
+        byCurrentStage={byCurrentStage}
         onPlan={onPlan}
         itemName={itemName}
       />
@@ -190,6 +193,9 @@ function Sections({ insights }: { insights: PortfolioInsights }): ReactElement {
         </InsightSection>
       )}
       {stages !== null && stages.length > 0 && <Stages stages={stages} />}
+      {byCurrentStage !== null && byCurrentStage.some((stage) => stage.projects > 0) && (
+        <CurrentStages stages={byCurrentStage} />
+      )}
       {onPlan !== null && <OnPlanCounts onPlan={onPlan} />}
       {followUpReasons !== null && <Reasons reasons={followUpReasons} />}
       {topFollowUp !== null && topFollowUp.length > 0 && (
@@ -509,9 +515,9 @@ function Stages({ stages }: { stages: PortfolioStageCount[] }): ReactElement {
   const { t } = useI18n();
   const selection = useRowSelection();
   return (
-    <InsightSection id="stages" title={t('dashboards.insights.stages')}>
+    <InsightSection id="stages" title={t('dashboards.insights.byStatus')}>
       <TableContainer
-        caption={t('dashboards.insights.stages')}
+        caption={t('dashboards.insights.byStatus')}
         selection={{ selection, exportName: 'projects-by-stage' }}
       >
         <thead>
@@ -537,6 +543,59 @@ function Stages({ stages }: { stages: PortfolioStageCount[] }): ReactElement {
               <td>
                 <Percent value={stage.percent} />
               </td>
+            </tr>
+          ))}
+        </tbody>
+      </TableContainer>
+    </InsightSection>
+  );
+}
+
+/** Review round 7, item 1: the projects by their current stage, in stage order, with their value; then those with no stage reported yet. */
+function CurrentStages({ stages }: { stages: PortfolioCurrentStage[] }): ReactElement {
+  const { t, language } = useI18n();
+  const selection = useRowSelection();
+  const showValue = stages.some((stage) => stage.valueSar !== null);
+  const nameOf = (stage: PortfolioCurrentStage) =>
+    stage.name?.[language] ?? t('dashboards.insights.noCurrentStage');
+  return (
+    <InsightSection id="current-stage" title={t('dashboards.insights.byCurrentStage')}>
+      <TableContainer
+        caption={t('dashboards.insights.byCurrentStage')}
+        selection={{ selection, exportName: 'projects-by-current-stage' }}
+      >
+        <thead>
+          <tr>
+            <SelectAllHeader
+              ids={stages.map((stage) => stage.stageCode ?? 'none')}
+              selection={selection}
+            />
+            <th scope="col">{t('dashboards.insights.currentStage')}</th>
+            <th scope="col">{t('dashboards.insights.projects')}</th>
+            {showValue && <th scope="col">{t('dashboards.insights.value')}</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {stages.map((stage) => (
+            <tr key={stage.stageCode ?? 'none'}>
+              <SelectRowCell
+                id={stage.stageCode ?? 'none'}
+                name={nameOf(stage)}
+                selection={selection}
+              />
+              <th scope="row">{nameOf(stage)}</th>
+              <td dir="ltr" className="cell--ltr">
+                {stage.projects}
+              </td>
+              {showValue && (
+                <td>
+                  {stage.valueSar === null || stage.valueEntered === 0 ? (
+                    <Percent value={null} />
+                  ) : (
+                    <span dir="ltr">{formatSar(stage.valueSar)}</span>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -836,15 +895,17 @@ function EntityCompletionChart(): ReactElement {
 function InsightCharts({
   byPortfolio,
   stages,
+  byCurrentStage,
   onPlan,
   itemName,
 }: {
   byPortfolio: PortfolioBreakdown | null;
   stages: PortfolioStageCount[] | null;
+  byCurrentStage: PortfolioCurrentStage[] | null;
   onPlan: PortfolioOnPlan | null;
   itemName: ItemName;
 }): ReactElement | null {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { session } = useSession();
   // Beside the on-plan donut, for those who see the entity table at the bottom (AHDA's people with EXTERNAL_REQUEST_VIEW).
   const showsCompletion = useCan('EXTERNAL_REQUEST_VIEW') && session?.user.userType !== 'EXTERNAL';
@@ -927,6 +988,22 @@ function InsightCharts({
                 key: stage.status,
                 count: stage.projects,
                 text: t(`projects.status.${stage.status}`),
+                color: single,
+              }))}
+              active={active}
+              onActive={onActive}
+            />
+          )}
+        </ChartCard>
+      )}
+      {byCurrentStage !== null && byCurrentStage.some((stage) => stage.projects > 0) && (
+        <ChartCard title={t('dashboards.insights.byCurrentStage')}>
+          {(active, onActive) => (
+            <BarChart
+              buckets={byCurrentStage.map((stage) => ({
+                key: stage.stageCode ?? 'none',
+                count: stage.projects,
+                text: stage.name?.[language] ?? t('dashboards.insights.noCurrentStage'),
                 color: single,
               }))}
               active={active}

@@ -257,7 +257,6 @@
     "split": "حسب المحفظة",
     "splitRow": "{portfolio}: {count}",
     "total": "الإجمالي",
-    "stages": "المشاريع حسب المرحلة",
     "percent": "النسبة",
     "onPlan": "مؤشر الالتزام بالخطة",
     "notMeasured": "غير مقيس",
@@ -292,6 +291,10 @@
       "noRequests": "لا طلبات في الفترة"
     },
     "completionBandEmpty": "لا توجد جهة في هذه الفئة.",
-    "completionUnavailable": "تعذّر تحميل نسب الإنجاز."
+    "completionUnavailable": "تعذّر تحميل نسب الإنجاز.",
+    "byStatus": "المشاريع حسب الحالة",
+    "byCurrentStage": "المشاريع حسب المرحلة",
+    "currentStage": "المرحلة الحالية",
+    "noCurrentStage": "لم تُرفع مرحلة بعد"
   }
 }

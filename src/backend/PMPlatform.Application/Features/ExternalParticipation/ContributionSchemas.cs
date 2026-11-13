@@ -12,6 +12,9 @@ internal sealed record ContributionSchema(
     public ContributionFieldDefinition? Field(string fieldCode) => Fields.FirstOrDefault(f => f.FieldCode == fieldCode);
 
     public bool HasTarget => TargetType is not null;
+
+    /// <summary>Groups of fields of which at least one must be answered whole, beside the required fields.</summary>
+    public IReadOnlyList<IReadOnlyList<string>>? RequiredOneOf { get; init; }
 }
 
 /// <summary>
@@ -37,6 +40,10 @@ internal static class ContributionSchemas
     public const string NextActionDueDate = "nextActionDueDate";
     public const string Note = "note";
 
+    /// <summary>Review round 7, item 1: a project with a stage plan reports its current stage and that stage's % complete; the overall figure is weighed from them.</summary>
+    public const string CurrentStageCode = "currentStageCode";
+    public const string CurrentStagePercent = "currentStagePercent";
+
     public const string ActualPercentComplete = "actualPercentComplete";
     public const string ProgressNote = "progressNote";
     public const string Response = "response";
@@ -59,13 +66,19 @@ internal static class ContributionSchemas
             ProjectMonthlyTarget.Module,
             ProjectMonthlyTarget.Type,
             [
-                new(ActualProgressPercent, ContributionFieldType.Number, Required: true, Minimum: 0m, Maximum: 100m),
+                new(ActualProgressPercent, ContributionFieldType.Number, Required: false, Minimum: 0m, Maximum: 100m),
+                new(CurrentStageCode, ContributionFieldType.Code, Required: false, Minimum: null, Maximum: null),
+                new(CurrentStagePercent, ContributionFieldType.Number, Required: false, Minimum: 0m, Maximum: 100m),
                 new(ActualSpendPercent, ContributionFieldType.Number, Required: false, Minimum: 0m, Maximum: 100m),
                 new(CurrentObstacle, ContributionFieldType.Narrative, Required: false, Minimum: null, Maximum: null),
                 new(NextAction, ContributionFieldType.Narrative, Required: false, Minimum: null, Maximum: null),
                 new(NextActionDueDate, ContributionFieldType.Date, Required: false, Minimum: null, Maximum: null),
                 new(Note, ContributionFieldType.Narrative, Required: false, Minimum: null, Maximum: null),
-            ]),
+            ])
+        {
+            // The overall % as before, or, for a project with a stage plan, its current stage and that stage's %.
+            RequiredOneOf = [[ActualProgressPercent], [CurrentStageCode, CurrentStagePercent]],
+        },
         [ProjectInformation] = new(
             ProjectInformation,
             ContributionApplicationMode.ReferenceOnly,

@@ -17,6 +17,8 @@ const FIELD_LABELS: Partial<Record<string, TranslationKey>> = {
   nextAction: 'externalParticipation.fields.nextAction',
   nextActionDueDate: 'externalParticipation.fields.nextActionDueDate',
   note: 'externalParticipation.fields.note',
+  currentStageCode: 'externalParticipation.fields.currentStageCode',
+  currentStagePercent: 'externalParticipation.fields.currentStagePercent',
 };
 
 export function useFieldLabel(): (fieldCode: string) => string {

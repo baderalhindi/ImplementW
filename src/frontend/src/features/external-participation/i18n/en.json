@@ -119,7 +119,9 @@
     "currentObstacle": "Current obstacle",
     "nextAction": "Next action",
     "nextActionDueDate": "Next action due",
-    "note": "Note"
+    "note": "Note",
+    "currentStageCode": "Current stage",
+    "currentStagePercent": "% complete of the current stage"
   },
   "values": {
     "notAnswered": "Not answered"
@@ -538,7 +540,9 @@
       "saved": "Draft saved.",
       "returned": "Returned for correction:",
       "planned": "Planned progress: {percent}%",
-      "plannedUnknown": "Planned progress: not available"
+      "plannedUnknown": "Planned progress: not available",
+      "stageOverall": "Overall progress from this answer: {actual} (planned {planned}).",
+      "stageOption": "{stage} — planned {planned}"
     }
   },
   "batch": {

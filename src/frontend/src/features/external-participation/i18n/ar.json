@@ -119,7 +119,9 @@
     "currentObstacle": "العائق الحالي",
     "nextAction": "الإجراء التالي",
     "nextActionDueDate": "موعد الإجراء التالي",
-    "note": "ملاحظة"
+    "note": "ملاحظة",
+    "currentStageCode": "المرحلة الحالية",
+    "currentStagePercent": "نسبة إنجاز المرحلة الحالية"
   },
   "values": {
     "notAnswered": "لم يُجَب"
@@ -538,7 +540,9 @@
       "saved": "حُفظت المسودة.",
       "returned": "أُعيد للتصحيح:",
       "planned": "الإنجاز المخطط: {percent}%",
-      "plannedUnknown": "الإنجاز المخطط: غير متوفر"
+      "plannedUnknown": "الإنجاز المخطط: غير متوفر",
+      "stageOverall": "التقدم الإجمالي وفق هذه الإجابة: {actual} (المخطط {planned}).",
+      "stageOption": "{stage} — المخطط {planned}"
     }
   },
   "batch": {

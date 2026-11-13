@@ -257,7 +257,6 @@
     "split": "By portfolio",
     "splitRow": "{portfolio}: {count}",
     "total": "Total",
-    "stages": "Projects by stage",
     "percent": "Share",
     "onPlan": "On-plan indicator",
     "notMeasured": "Not measured",
@@ -292,6 +291,10 @@
       "noRequests": "No requests in the period"
     },
     "completionBandEmpty": "No entity is in this band.",
-    "completionUnavailable": "The completion rates could not be loaded."
+    "completionUnavailable": "The completion rates could not be loaded.",
+    "byStatus": "Projects by status",
+    "byCurrentStage": "Projects by stage",
+    "currentStage": "Current stage",
+    "noCurrentStage": "No stage reported yet"
   }
 }

@@ -36,6 +36,7 @@ internal sealed class ProjectImportService(
     IAuthorizationEngine engine,
     IAuditTrail audit,
     IOutbox outbox,
+    IConfigurationResolver resolver,
     TimeProvider timeProvider) : IProjectImportService, IProjectImportValidationRunner
 {
     private static readonly JsonSerializerOptions PlanJson = new(JsonSerializerDefaults.Web)
@@ -503,6 +504,8 @@ internal sealed class ProjectImportService(
             DeclaredActualPercent = row.ActualPercent,
             DeclaredPlannedSpendPercent = row.PlannedSpendPercent,
             DeclaredActualSpendPercent = row.ActualSpendPercent,
+            CurrentStageCode = row.CurrentStageCode,
+            CurrentStagePercent = row.CurrentStagePercent,
             DeclaredAsOf = declared ? DateOnly.FromDateTime(batch.CreatedAt.UtcDateTime) : null,
             DeclaredSource = declared ? DeclaredValueSource.Import : null,
             EntityUpdateCompliant = row.EntityCompliant,
@@ -557,6 +560,12 @@ internal sealed class ProjectImportService(
         }
 
         project.EntityUpdateCompliant = row.EntityCompliant;
+        if (ProjectImportStages.TakesImportedStage(project))
+        {
+            project.CurrentStageCode = row.CurrentStageCode;
+            project.CurrentStagePercent = row.CurrentStagePercent;
+        }
+
         project.UpdatedAt = now;
         project.UpdatedBy = approverId;
         audit.Stage(ProjectAudit.UpdatedByImport(approverId, before, followUpBefore, project, batch.Id));
@@ -614,7 +623,10 @@ internal sealed class ProjectImportService(
             await projects.ListByFormalProjectIdsAsync(legacy, cancellationToken).ConfigureAwait(false),
             [.. reachable.Select(p => (ImportNames.Key(p.Title.Text), p.ExternalEntityId))],
             plan,
-            DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime));
+            DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime))
+        {
+            Stages = (await resolver.ResolveStagesAsync(timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false))?.Stages ?? [],
+        };
         string sha256 = Convert.ToHexStringLower(SHA256.HashData(content));
         return ProjectImportEvaluator.Evaluate(sheet, sha256, context);
     }
