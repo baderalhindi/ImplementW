@@ -66,6 +66,8 @@
 | `PROJECT_IMPORT_APPROVE` | PROJECT | Write | — | ALL | — | — | — | — | — | — |
 | `PROJECT_DELETE` | PROJECT | Write | — | ALL | — | — | — | — | — | — |
 | `PROJECT_FOLLOW_UP` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
+| `PROJECT_MANAGER_CHANGE` | PROJECT | Write | — | ALL | DEPT | — | — | — | — | — |
+| `PROJECT_REGISTRATION_EDIT` | PROJECT | Write | — | ALL | — | — | — | — | — | — |
 | `PROGRESS_VIEW` | PROGRESS | Read | — | ALL | DEPT | OWN | ASSIGNED | DEPT | ALL | ENTITY |
 | `PROGRESS_SUBMIT` | PROGRESS | Write | — | — | — | OWN | — | — | — | — |
 | `PROGRESS_REVIEW` | PROGRESS | Write | — | ALL | DEPT | — | — | — | — | — |
