@@ -96,7 +96,9 @@ function LanguageSwitch({ labelled = false }: { labelled?: boolean }): ReactElem
         }}
       >
         <ShellIcon name="globe" className="language-switch__icon" />
-        <span className={labelled ? undefined : 'visually-hidden'}>{t('common.language')}</span>
+        <span className={labelled ? 'topbar__control-label' : 'visually-hidden'}>
+          {t('common.language')}
+        </span>
         {labelled && <ShellIcon name="chevronDown" className="topbar__chevron" />}
       </button>
       <ul className="popover__menu" id={menuId} hidden={!open}>
@@ -176,7 +178,7 @@ function CreateMenu(): ReactElement | null {
         }}
       >
         <ShellIcon name="create" />
-        {t('common.shell.create')}
+        <span className="topbar__control-label">{t('common.shell.create')}</span>
       </button>
       <ul className="popover__menu" id={menuId} hidden={!open}>
         {project && (
@@ -643,6 +645,16 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
               {t(drawerOpen ? 'common.menu.close' : 'common.menu.open')}
             </span>
           </button>
+          {/* The rail, and its logo, is a drawer on a phone or tablet: the bar shows the logo instead. */}
+          <Link className="topbar__brand" to="/" aria-label={t('common.organizationName')}>
+            <img
+              className="shell__logo topbar__logo"
+              src="/brand/ahda-logo.png"
+              alt=""
+              width="596"
+              height="232"
+            />
+          </Link>
           <Breadcrumb menu={current} pathname={pathname} />
           <div className="topbar__actions">
             <GlobalSearch menus={menus} />

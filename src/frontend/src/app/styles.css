@@ -596,6 +596,15 @@ h3 {
   background: transparent;
 }
 
+.topbar__brand {
+  display: none;
+  flex: none;
+}
+
+.topbar__logo {
+  block-size: 2.25rem;
+}
+
 /* Takes only what the breadcrumb leaves, so an opening search shrinks before the breadcrumb wraps. */
 .topbar__actions {
   display: flex;
@@ -752,14 +761,60 @@ h3 {
   }
 }
 
-/* On a phone the open search takes its own row under the bar's other controls. */
+/*
+ * On a phone the bar is one row: menu and logo at the start, icons at the end. Language and Create keep their icon and
+ * drop their word (their accessible name stays), and the controls are a little smaller. The open search takes its own
+ * row under the others.
+ */
 @media (max-width: 48rem) {
   .topbar {
     flex-wrap: wrap;
+    gap: var(--space-1);
+    padding-inline: var(--space-2);
   }
 
-  .topbar .topbar__drawer {
+  .topbar__brand {
     margin-inline-end: auto;
+  }
+
+  .topbar__logo {
+    block-size: 2rem;
+  }
+
+  .topbar .topbar__control-label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .topbar .topbar__chevron {
+    display: none;
+  }
+
+  .topbar .global-search--collapsed {
+    flex-basis: 2.25rem;
+    min-inline-size: 2.25rem;
+  }
+
+  .topbar .topbar__drawer,
+  .topbar .topbar__bell,
+  .topbar .topbar__control,
+  .topbar .topbar__create,
+  .topbar .theme-switch__button {
+    inline-size: 2.25rem;
+    min-inline-size: 2.25rem;
+    block-size: 2.25rem;
+    min-block-size: 2.25rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .topbar__avatar {
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
   }
 
   .topbar__actions {
@@ -1022,6 +1077,10 @@ h3 {
 
   .topbar .topbar__drawer {
     display: inline-flex;
+  }
+
+  .topbar__brand {
+    display: block;
   }
 
   .breadcrumb {
@@ -2291,6 +2350,43 @@ select.field__input {
   margin: 0;
   font-size: 1rem;
   text-align: center;
+}
+
+/* On a phone: tighter card, each tab on one line, and the Microsoft button's text across its width with "Coming soon" under it. */
+@media (max-width: 40rem) {
+  .sign-in {
+    margin-block-start: var(--space-4);
+  }
+
+  .sign-in__card {
+    gap: var(--space-6);
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .sign-in__tab {
+    gap: var(--space-1);
+    padding-inline: var(--space-1);
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  .sign-in__tabpanel {
+    padding: var(--space-3);
+  }
+
+  .sign-in__provider {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: var(--space-2);
+  }
+
+  .sign-in__provider-text {
+    flex: 1 1 calc(100% - 3rem);
+  }
+
+  .sign-in__provider > .sign-in__soon {
+    margin-inline: auto;
+  }
 }
 
 .sign-in__form {
