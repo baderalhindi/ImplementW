@@ -22,6 +22,8 @@ const ISSUE_MESSAGES: Record<string, TranslationKey> = {
   REQUIRED: 'dataImport.issues.REQUIRED',
   MAX_LENGTH: 'dataImport.issues.MAX_LENGTH',
   MALFORMED: 'dataImport.issues.MALFORMED',
+  NOT_ARABIC: 'dataImport.issues.NOT_ARABIC',
+  NOT_ENGLISH: 'dataImport.issues.NOT_ENGLISH',
   ENUM_VALUE: 'dataImport.issues.ENUM_VALUE',
   OUT_OF_RANGE: 'dataImport.issues.OUT_OF_RANGE',
   INVALID_CHARACTER: 'dataImport.issues.INVALID_CHARACTER',

@@ -17,4 +17,10 @@ internal sealed record FieldError(string Field, string Code)
 
     /// <summary>Text holding a character no field accepts (TASK-077).</summary>
     public const string InvalidCharacter = ValidationCode.InvalidCharacter;
+
+    /// <summary>The Arabic text of a bilingual field has no Arabic letter (13 Nov 2026 review).</summary>
+    public const string NotArabic = ValidationCode.NotArabic;
+
+    /// <summary>The English text of a bilingual field has no English letter, or has an Arabic one.</summary>
+    public const string NotEnglish = ValidationCode.NotEnglish;
 }

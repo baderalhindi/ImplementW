@@ -1,6 +1,7 @@
 using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.Common;
+using PMPlatform.Application.Common.Validation;
 
 namespace PMPlatform.Application.Features.IdentityAccess.Administration;
 
@@ -27,8 +28,8 @@ internal sealed class DepartmentImportRegister(IDepartmentAdministrationService 
     public IReadOnlyList<ImportColumn> Columns { get; } =
     [
         new(CodeColumn, ImportValueKind.Code, Required: true, "The department's code, unique.", "رمز الإدارة، فريد."),
-        new(NameArColumn, ImportValueKind.Text, Required: true, "The name in Arabic.", "الاسم بالعربية."),
-        new(NameEnColumn, ImportValueKind.Text, Required: true, "The name in English.", "الاسم بالإنجليزية."),
+        new(NameArColumn, ImportValueKind.Text, Required: true, "The name in Arabic.", "الاسم بالعربية.") { Script = TextScript.Arabic },
+        new(NameEnColumn, ImportValueKind.Text, Required: true, "The name in English.", "الاسم بالإنجليزية.") { Script = TextScript.English },
         new(ParentCodeColumn, ImportValueKind.Code, Required: false,
             "The parent department's code: an active department, or a row above this one. Empty for a top-level department.",
             "رمز الإدارة الأم: إدارة نشطة أو صف يسبق هذا الصف. يُترك فارغًا للإدارة العليا."),

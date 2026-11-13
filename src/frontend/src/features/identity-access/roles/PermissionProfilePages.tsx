@@ -112,8 +112,8 @@ export function PermissionProfileCreatePage(): ReactElement {
     event.preventDefault();
     const valid = save.validate({
       code: checkText(code, { required: true, pattern: CODE_PATTERN }),
-      'name.ar': checkText(nameAr, { required: true }),
-      'name.en': checkText(nameEn, { required: true }),
+      'name.ar': checkText(nameAr, { required: true, script: 'ar' }),
+      'name.en': checkText(nameEn, { required: true, script: 'en' }),
       baseRoleId: chosenRoleId === '' ? 'REQUIRED' : null,
     });
     if (!valid) {

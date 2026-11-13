@@ -11,8 +11,9 @@ import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
+import { checkScript } from '../forms.ts';
 import { useCan } from '../permissions/permissions.ts';
-import { problemMessage } from '../problems.ts';
+import { fieldMessage, problemMessage } from '../problems.ts';
 
 type LifecycleState = 'DRAFT' | 'VALIDATED' | 'PUBLISHED' | 'RETIRED';
 
@@ -183,6 +184,12 @@ function StagesEditor({
     });
   };
 
+  /** A typed name in the wrong language, as soon as it is typed. */
+  const nameIssue = (value: string, script: 'ar' | 'en') => {
+    const issue = value.trim() === '' ? null : checkScript(value.trim(), script);
+    return issue === null ? undefined : fieldMessage(issue, t);
+  };
+
   const addStage = () => {
     setRows((current) => [
       ...current,
@@ -199,6 +206,16 @@ function StagesEditor({
     setProblem(null);
     if (rows.some((row) => row.name.ar.trim() === '' || row.name.en.trim() === '')) {
       setProblem(t('identityAccess.projectStages.namesRequired'));
+      return;
+    }
+    if (
+      rows.some(
+        (row) =>
+          checkScript(row.name.ar.trim(), 'ar') !== null ||
+          checkScript(row.name.en.trim(), 'en') !== null,
+      )
+    ) {
+      setProblem(t('identityAccess.projectStages.namesLanguage'));
       return;
     }
     if (total !== WEIGHT_TOTAL) {
@@ -364,6 +381,7 @@ function StagesEditor({
                     onChange={(ar) => {
                       change(index, { name: { ...row.name, ar } });
                     }}
+                    error={nameIssue(row.name.ar, 'ar')}
                   />
                 </td>
                 <td>
@@ -376,6 +394,7 @@ function StagesEditor({
                     onChange={(en) => {
                       change(index, { name: { ...row.name, en } });
                     }}
+                    error={nameIssue(row.name.en, 'en')}
                   />
                 </td>
                 <td>

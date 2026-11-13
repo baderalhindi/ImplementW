@@ -58,14 +58,30 @@ export function checkNationalId(value: string): string | null {
 
 export type Validator = (value: string) => string | null;
 
-/** The API code of the first failed check, or null: REQUIRED, MAX_LENGTH or MALFORMED. */
+const ARABIC_LETTER =
+  /[\u0621-\u064A\u066E-\u06D3\u06D5\u06EE\u06EF\u06FA-\u06FC\u0750-\u077F\u08A0-\u08C9\uFB50-\uFDFB\uFE70-\uFEFC]/u;
+const LATIN_LETTER = /[A-Za-z]/;
+
+/**
+ * The 13 Nov 2026 review, as the API checks it (TextShape.IsInScript): Arabic text has an Arabic letter and may still name a product
+ * in Latin letters; English text has an English letter and no Arabic one. The code of the failure, or null.
+ */
+export function checkScript(value: string, script: 'ar' | 'en'): string | null {
+  if (script === 'ar') {
+    return ARABIC_LETTER.test(value) ? null : 'NOT_ARABIC';
+  }
+  return LATIN_LETTER.test(value) && !ARABIC_LETTER.test(value) ? null : 'NOT_ENGLISH';
+}
+
+/** The API code of the first failed check, or null: REQUIRED, MAX_LENGTH, MALFORMED, NOT_ARABIC or NOT_ENGLISH. */
 export function checkText(
   value: string,
   {
     required = false,
     maxLength = NAME_LENGTH,
     pattern,
-  }: { required?: boolean; maxLength?: number; pattern?: RegExp },
+    script,
+  }: { required?: boolean; maxLength?: number; pattern?: RegExp; script?: 'ar' | 'en' },
 ): string | null {
   const trimmed = value.trim();
   if (trimmed === '') {
@@ -77,7 +93,7 @@ export function checkText(
   if (pattern !== undefined && !pattern.test(value)) {
     return 'MALFORMED';
   }
-  return null;
+  return script === undefined ? null : checkScript(trimmed, script);
 }
 
 /** An optional text input as the API expects it: absent (null) when blank, never an empty string. */

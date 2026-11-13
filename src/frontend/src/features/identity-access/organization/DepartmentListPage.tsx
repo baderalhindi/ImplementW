@@ -472,8 +472,8 @@ function DepartmentFields({
         current === undefined
           ? checkText(code, { required: true, maxLength: CODE_LENGTH, pattern: CODE_PATTERN })
           : null,
-      'name.ar': checkText(nameAr, { required: true }),
-      'name.en': checkText(nameEn, { required: true }),
+      'name.ar': checkText(nameAr, { required: true, script: 'ar' }),
+      'name.en': checkText(nameEn, { required: true, script: 'en' }),
       directoryReference: checkText(directoryReference, {}),
     });
     if (!valid) {

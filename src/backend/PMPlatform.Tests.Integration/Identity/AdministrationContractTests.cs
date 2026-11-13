@@ -232,6 +232,7 @@ public sealed class AdministrationContractTests(IdentityTestHost host)
         using HttpResponseMessage children = await client.GetAsync($"{AdministrationApi.Departments}?parentDepartmentId={parentId}", token);
         using HttpResponseMessage deactivated = await client.PostAsync($"{parentPath}/deactivate", token, ifMatch: AdministrationApi.ETagOf(parent));
         using HttpResponseMessage noLabel = await client.PostAsync(AdministrationApi.Departments, token, new { code = "lower-case", name = new { ar = "", en = "Label" } });
+        using HttpResponseMessage swapped = await client.PostAsync(AdministrationApi.Departments, token, new { code = $"{code}-2", name = new { ar = "Parent", en = "إدارة" } });
 
         Assert.Equal(HttpStatusCode.Created, child.StatusCode);
         await AssertProblemAsync(duplicate, HttpStatusCode.Conflict, IdentityAccessErrorCodes.DuplicateKey);
@@ -240,6 +241,8 @@ public sealed class AdministrationContractTests(IdentityTestHost host)
         Assert.Equal(childId, AdministrationApi.IdOf(Assert.Single((await children.ReadObjectAsync())["items"]!.AsArray())!.AsObject()));
         Assert.False((await deactivated.ReadObjectAsync())["isActive"]!.GetValue<bool>());
         Assert.Equal(["code MALFORMED", "name.ar REQUIRED"], await noLabel.ReadFieldErrorsAsync());
+        // The 13 Nov 2026 review: each language's field is written in that language.
+        Assert.Equal(["name.ar NOT_ARABIC", "name.en NOT_ENGLISH"], await swapped.ReadFieldErrorsAsync());
     }
 
     [Fact]

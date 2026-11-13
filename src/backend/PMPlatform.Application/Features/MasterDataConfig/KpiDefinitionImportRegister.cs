@@ -32,10 +32,10 @@ internal sealed class KpiDefinitionImportRegister(
     public IReadOnlyList<ImportColumn> Columns { get; } =
     [
         new(CodeColumn, ImportValueKind.Code, Required: true, "The KPI's code, unique.", "رمز المؤشر، فريد."),
-        new(NameArColumn, ImportValueKind.Text, Required: true, "The name in Arabic.", "الاسم بالعربية."),
-        new(NameEnColumn, ImportValueKind.Text, Required: true, "The name in English.", "الاسم بالإنجليزية."),
-        new(DescriptionArColumn, ImportValueKind.Text, Required: false, "The description in Arabic; give both languages or neither.", "الوصف بالعربية؛ أدخل اللغتين معًا أو اتركهما."),
-        new(DescriptionEnColumn, ImportValueKind.Text, Required: false, "The description in English.", "الوصف بالإنجليزية."),
+        new(NameArColumn, ImportValueKind.Text, Required: true, "The name in Arabic.", "الاسم بالعربية.") { Script = TextScript.Arabic },
+        new(NameEnColumn, ImportValueKind.Text, Required: true, "The name in English.", "الاسم بالإنجليزية.") { Script = TextScript.English },
+        new(DescriptionArColumn, ImportValueKind.Text, Required: false, "The description in Arabic; give both languages or neither.", "الوصف بالعربية؛ أدخل اللغتين معًا أو اتركهما.") { Script = TextScript.Arabic },
+        new(DescriptionEnColumn, ImportValueKind.Text, Required: false, "The description in English.", "الوصف بالإنجليزية.") { Script = TextScript.English },
         new(UnitColumn, ImportValueKind.Code, Required: true, "The unit's code.", "رمز وحدة القياس."),
         ImportColumn.ChoiceOf<KpiDirection>(DirectionColumn, required: true, "Which way is better.", "أي اتجاه أفضل."),
     ];

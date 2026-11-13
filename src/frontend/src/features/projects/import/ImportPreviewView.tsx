@@ -47,6 +47,8 @@ const ISSUE_CODES = [
   'REQUIRED',
   'MALFORMED',
   'MAX_LENGTH',
+  'NOT_ARABIC',
+  'NOT_ENGLISH',
   'ENUM_VALUE',
   'NOT_ALLOWED',
 ] as const;

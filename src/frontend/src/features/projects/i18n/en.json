@@ -463,7 +463,9 @@
       "MAX_LENGTH": "Too long",
       "ENUM_VALUE": "Not one of the allowed values",
       "NOT_ALLOWED": "Not allowed here",
-      "OWNER_UNMATCHED": "No active AHDA user has this name: left empty unless you map it"
+      "OWNER_UNMATCHED": "No active AHDA user has this name: left empty unless you map it",
+      "NOT_ARABIC": "Write this in Arabic.",
+      "NOT_ENGLISH": "Write this in English, without Arabic letters."
     },
     "fileLevel": "Whole file",
     "background": "{rows} rows in {file}: validating in the background. You will get a notification when it is done; you may leave this page.",

@@ -89,7 +89,9 @@
     "malformed": "This value is not in the expected format.",
     "invalidChoice": "Choose one of the listed values.",
     "notAllowed": "This field does not apply here; leave it empty.",
-    "invalid": "This value is not accepted."
+    "invalid": "This value is not accepted.",
+    "notArabic": "Write this in Arabic.",
+    "notEnglish": "Write this in English, without Arabic letters."
   },
   "problems": {
     "network": "The server could not be reached. Check your connection and try again.",

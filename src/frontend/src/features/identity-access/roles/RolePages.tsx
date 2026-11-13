@@ -775,8 +775,8 @@ function RoleNameForm({ role, etag }: { role: RoleDetail; etag: string | null })
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
     const valid = save.validate({
-      'name.ar': checkText(nameAr, { required: true }),
-      'name.en': checkText(nameEn, { required: true }),
+      'name.ar': checkText(nameAr, { required: true, script: 'ar' }),
+      'name.en': checkText(nameEn, { required: true, script: 'en' }),
     });
     if (!valid) {
       return;

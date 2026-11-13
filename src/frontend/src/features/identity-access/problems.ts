@@ -70,6 +70,8 @@ const FIELD_MESSAGES: Record<string, TranslationKey> = {
   PASSWORD_INCORRECT: 'identityAccess.fieldErrors.passwordIncorrect',
   PASSWORD_REJECTED_BY_DIRECTORY: 'identityAccess.fieldErrors.passwordRejectedByDirectory',
   PASSWORD_MISMATCH: 'identityAccess.fieldErrors.passwordMismatch',
+  NOT_ARABIC: 'common.fieldErrors.notArabic',
+  NOT_ENGLISH: 'common.fieldErrors.notEnglish',
 };
 
 export function problemMessage(error: unknown, t: Translate): string {

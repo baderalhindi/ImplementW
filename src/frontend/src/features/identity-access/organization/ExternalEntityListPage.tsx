@@ -445,8 +445,8 @@ function ExternalEntityFields({
         current === null
           ? checkText(code, { required: true, maxLength: CODE_LENGTH, pattern: CODE_PATTERN })
           : null,
-      'name.ar': checkText(nameAr, { required: true }),
-      'name.en': checkText(nameEn, { required: true }),
+      'name.ar': checkText(nameAr, { required: true, script: 'ar' }),
+      'name.en': checkText(nameEn, { required: true, script: 'en' }),
       entityTypeItemId: checkText(entityTypeItemId, { required: true, pattern: UUID_PATTERN }),
     });
     if (!valid) {

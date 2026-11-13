@@ -18,7 +18,8 @@ import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { usePersonNames } from '../assignments/useUserNames.ts';
 import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useCan } from '../permissions/permissions.ts';
-import { problemMessage } from '../problems.ts';
+import { checkScript } from '../forms.ts';
+import { fieldMessage, problemMessage } from '../problems.ts';
 
 /** A catalogue as GET /master-data-catalogues lists it (FG-04). */
 interface Catalogue {
@@ -372,10 +373,15 @@ function CreateItemDialog({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const codeValid = CODE_PATTERN.test(code.trim());
+  // Shown as soon as something is typed: each label in its own language (13 Nov 2026 review).
+  const arIssue = ar.trim() === '' ? null : checkScript(ar.trim(), 'ar');
+  const enIssue = en.trim() === '' ? null : checkScript(en.trim(), 'en');
   const ready =
     codeValid &&
     ar.trim() !== '' &&
     en.trim() !== '' &&
+    arIssue === null &&
+    enIssue === null &&
     (sortOrder === '' || /^[0-9]{1,6}$/.test(sortOrder));
 
   const submit = async (event: SyntheticEvent) => {
@@ -435,6 +441,7 @@ function CreateItemDialog({
           dir="rtl"
           value={ar}
           onChange={setAr}
+          error={arIssue === null ? undefined : fieldMessage(arIssue, t)}
         />
         <TextField
           label={t('identityAccess.masterData.labelEn')}
@@ -443,6 +450,7 @@ function CreateItemDialog({
           dir="ltr"
           value={en}
           onChange={setEn}
+          error={enIssue === null ? undefined : fieldMessage(enIssue, t)}
         />
         {parentLabel !== undefined && (
           <SelectField

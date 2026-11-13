@@ -86,7 +86,7 @@ internal static class RequestValidation
         }
     }
 
-    /// <summary>R-17: both languages, each present and not blank.</summary>
+    /// <summary>R-17: both languages, each present and not blank, and each in its own language (13 Nov 2026 review).</summary>
     public static void Label(BilingualLabelRequest? value, string field, List<FieldError> errors)
     {
         if (value is null)
@@ -95,8 +95,19 @@ internal static class RequestValidation
             return;
         }
 
-        RequireText(value.Ar, $"{field}.ar", NameLength, errors);
-        RequireText(value.En, $"{field}.en", NameLength, errors);
+        RequireText(value.Ar, $"{field}.ar", NameLength, TextScript.Arabic, errors);
+        RequireText(value.En, $"{field}.en", NameLength, TextScript.English, errors);
+    }
+
+    /// <summary><see cref="RequireText(string?, string, int, List{FieldError})"/>, then the text's language.</summary>
+    public static void RequireText(string? value, string field, int maxLength, TextScript script, List<FieldError> errors)
+    {
+        int before = errors.Count;
+        RequireText(value, field, maxLength, errors);
+        if (errors.Count == before && !TextShape.IsInScript(value!, script))
+        {
+            errors.Add(new FieldError(field, TextShape.NotInScript(script)));
+        }
     }
 
     /// <summary>R-18: <c>ar</c> or <c>en</c>; <paramref name="fallback"/> when absent, or REQUIRED if there is none.</summary>

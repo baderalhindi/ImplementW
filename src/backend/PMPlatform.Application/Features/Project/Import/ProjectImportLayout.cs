@@ -1,4 +1,5 @@
 using PMPlatform.Application.Common.DataImport;
+using PMPlatform.Application.Common.Validation;
 
 namespace PMPlatform.Application.Features.Project.Import;
 
@@ -66,8 +67,8 @@ public static class ProjectImportLayout
     public static IReadOnlyList<(ImportColumn Column, string HeaderAr)> Columns { get; } =
     [
         (Text(LegacyRef, true, 100), "رقم المشروع (المرجع السابق)"),
-        (Text(NameAr, true, 2000), "اسم المشروع (عربي)"),
-        (Text(NameEn, false, 2000), "اسم المشروع (إنجليزي)"),
+        (Text(NameAr, true, 2000) with { Script = TextScript.Arabic }, "اسم المشروع (عربي)"),
+        (Text(NameEn, false, 2000) with { Script = TextScript.English }, "اسم المشروع (إنجليزي)"),
         (Text(Entity, true), "الجهة المالكة/المنفذة"),
         (Text(Department, true), "الإدارة"),
         (Text(Sector, true), "القطاع"),
