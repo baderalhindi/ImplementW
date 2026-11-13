@@ -7,6 +7,9 @@ namespace PMPlatform.Application.Features.Project.Contracts;
 public sealed record ProjectMonthlyUpdateValues(
     decimal ActualProgressPercent, decimal? ActualSpendPercent, NarrativeText? CurrentObstacle, NarrativeText? NextAction, DateOnly? NextActionDueDate, NarrativeText? Note);
 
+/// <summary>A published period's figures for its project: the actual, and for a stage-based period the planned figure and the current stage with its %.</summary>
+public sealed record PublishedProgressValues(decimal ActualPercent, bool IsStageBased = false, decimal? PlannedPercent = null, string? CurrentStageCode = null, decimal? CurrentStagePercent = null);
+
 /// <summary>A project as a monthly update needs it: last month's values, which pre-fill the form, and who answers by default.</summary>
 public sealed record ProjectMonthlySnapshot(
     Guid Id, string? FormalProjectId, string? LegacyReference, NarrativeText Title, Guid DepartmentId, Guid? ExternalEntityId, ProjectLifecycleState Status, Guid? EntityContactUserId,
@@ -21,8 +24,11 @@ public interface IProjectMonthlyUpdates
     /// <summary>Stages the accepted values on the project, source ENTITY_UPDATE, in the caller's unit of work. False when the project cannot take them: gone or closed.</summary>
     public Task<bool> StageAsync(Guid projectId, ProjectMonthlyUpdateValues values, Guid actorId, CancellationToken cancellationToken);
 
-    /// <summary>Stages a published progress figure as the project's declared actual, source PROGRESS_UPDATE, in the caller's unit of work.</summary>
-    public Task StagePublishedProgressAsync(Guid projectId, decimal actualPercent, Guid actorId, CancellationToken cancellationToken);
+    /// <summary>
+    /// Stages a published progress figure as the project's declared actual, source PROGRESS_UPDATE, in the caller's unit of work. A stage-based period
+    /// (review round 7, item 1) also gives its planned figure and current stage, which replace the declared ones.
+    /// </summary>
+    public Task StagePublishedProgressAsync(Guid projectId, PublishedProgressValues values, Guid actorId, CancellationToken cancellationToken);
 
     /// <summary>Records who answers the project's update requests by default, in the caller's unit of work.</summary>
     public Task StageEntityContactAsync(Guid projectId, Guid contactUserId, Guid actorId, CancellationToken cancellationToken);

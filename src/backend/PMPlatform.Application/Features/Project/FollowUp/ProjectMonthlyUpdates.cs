@@ -53,8 +53,9 @@ internal sealed class ProjectMonthlyUpdates(IProjectRepository repository, IAudi
         return true;
     }
 
-    public async Task StagePublishedProgressAsync(Guid projectId, decimal actualPercent, Guid actorId, CancellationToken cancellationToken)
+    public async Task StagePublishedProgressAsync(Guid projectId, PublishedProgressValues values, Guid actorId, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(values);
         if (await repository.FindAsync(projectId, null, cancellationToken).ConfigureAwait(false) is not { } project)
         {
             return;
@@ -62,7 +63,14 @@ internal sealed class ProjectMonthlyUpdates(IProjectRepository repository, IAudi
 
         DateTimeOffset now = timeProvider.GetUtcNow();
         ProjectFollowUpDetail before = ProjectMapping.ToFollowUp(project);
-        project.DeclaredActualPercent = actualPercent;
+        project.DeclaredActualPercent = values.ActualPercent;
+        if (values.IsStageBased)
+        {
+            project.DeclaredPlannedPercent = values.PlannedPercent;
+            project.CurrentStageCode = values.CurrentStageCode;
+            project.CurrentStagePercent = values.CurrentStageCode is null ? null : values.CurrentStagePercent;
+        }
+
         project.DeclaredAsOf = DateOnly.FromDateTime(now.UtcDateTime);
         project.DeclaredSource = DeclaredValueSource.ProgressUpdate;
         project.UpdatedAt = now;

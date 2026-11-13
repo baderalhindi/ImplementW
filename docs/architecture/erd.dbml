@@ -728,6 +728,9 @@ Table project.project {
   declared_as_of date [note: 'The date the declared values hold for']
   declared_source varchar(50) [note: 'IMPORT | MANUAL | ENTITY_UPDATE | PROGRESS_UPDATE']
   entity_update_compliant boolean [note: 'Whether the entity keeps to its periodic updates, as RPMO records it']
+  stage_plan_revision_no integer [not null, default: 0, note: 'Stage plan revision: 0 until a plan is saved; a change after approval claims a STAGE_PLAN_CHANGE authorisation of it (review round 7)']
+  current_stage_code varchar(50) [note: 'PROJECT_STAGE code of the latest published stage-based period, or as imported (review round 7)']
+  current_stage_percent numeric(5,2) [note: '% complete of current_stage_code, 0-100']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
@@ -748,6 +751,24 @@ Table project.project_follow_up_note {
     (project_id, created_at, id)
   }
   Note: 'A dated follow-up note on a project, attributed by its creation stamp (2 Nov 2026 review, R3-3). Delete policy: APPEND_ONLY.'
+}
+
+Table project.project_stage_plan {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  project_id uuid [not null, ref: > project.project.id, note: 'ON DELETE CASCADE: the plan is part of its project']
+  stage_code varchar(50) [not null, note: 'PROJECT_STAGE code; name and weight come from the version in force']
+  applies boolean [not null]
+  planned_start_date date [note: 'Required while the stage applies, within the project planned dates']
+  planned_end_date date
+  starting_percent numeric(5,2) [note: '% complete when a project already under way entered the platform, 0-100']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (project_id, stage_code) [unique]
+  }
+  Note: 'A project stage plan, one row per stage (review round 7, item 1); reviewed with the registration, changed after approval by an approved schedule change. Delete policy: NONE.'
 }
 
 Table project.project_import_batch {
@@ -892,7 +913,7 @@ Table progress.progress_submission {
   revision_no integer [not null, default: 1, note: 'Business revision; a RETURNED request creates revision+1 and a new ApprovalInstance (TASK-035)']
   status varchar(50) [not null, note: 'DRAFT | SUBMITTED | UNDER_REVIEW | RETURNED | PUBLISHED']
   actual_percent_calculated numeric(18,4) [not null, note: 'Duration-weighted roll-up from WF-04 at submission (ADR-009); stored — D-8 register']
-  actual_source varchar(50) [not null, default: 'WORK_BREAKDOWN', note: 'WORK_BREAKDOWN | DECLARED | NOT_AVAILABLE: where the calculated figure comes from; a project with no breakdown reports its declared figure (review round 5)']
+  actual_source varchar(50) [not null, default: 'WORK_BREAKDOWN', note: 'WORK_BREAKDOWN | DECLARED | NOT_AVAILABLE | STAGE_WEIGHTED: where the calculated figure comes from; a project with no breakdown reports its declared figure (review round 5); a stage-based period its weighted stages (review round 7)']
   actual_percent_override numeric(18,4) [note: 'Project-level override; calculated value retained (ADR-009)']
   override_reason text [note: 'Narrative, stored as entered (ADR-012)']
   override_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
@@ -901,6 +922,7 @@ Table progress.progress_submission {
   narrative text [note: 'Narrative, stored as entered (ADR-012)']
   narrative_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
   project_intake_id uuid [ref: > project.project_intake.id, note: 'Set on the opening-position submission only (ADR-014)']
+  stage_configuration_version_id uuid [ref: > master_data_config.configuration_version.id, note: 'PROJECT_STAGE version a stage-based period weighs by: in force the day it was started (review round 7)']
   submitted_by_user_id uuid [ref: > identity_access.user.id]
   submitted_at timestamptz
   reviewed_by_user_id uuid [ref: > identity_access.user.id]
@@ -915,6 +937,31 @@ Table progress.progress_submission {
     (reporting_cycle_id, revision_no) [unique]
   }
   Note: 'The working progress record for a cycle: derived actual %, planned %, override and narrative (ADR-009, ADR-014). Delete policy: HARD_DRAFT.'
+}
+
+Table progress.progress_stage_entry {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  progress_submission_id uuid [not null, ref: > progress.progress_submission.id, note: 'ON DELETE CASCADE: a period stages go with it']
+  stage_code varchar(50) [not null]
+  sort_order smallint [not null]
+  weight_percent numeric(5,2) [not null, note: 'Copied from the PROJECT_STAGE version the period weighs by']
+  applies boolean [not null]
+  planned_percent numeric(18,4) [note: 'From the stage plan dates on the period date: 0 before start, 100 from end, linear between']
+  percent_complete numeric(18,4) [note: 'Entered 0-100; Execution from the schedule while a baseline is active']
+  is_from_schedule boolean [not null]
+  actual_start_date date [note: 'Required once the stage has started']
+  actual_finish_date date [note: 'Required once the stage reaches 100']
+  note varchar(200) [note: 'One line, optional']
+  decrease_reason text [note: 'Narrative, stored as entered (ADR-012); required below the last published period %']
+  decrease_reason_lang char(2) [note: 'Entry language of the field: ar | en (TASK-109)']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2); equals created_at on APPEND_ONLY tables']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    (progress_submission_id, stage_code) [unique]
+  }
+  Note: 'One stage of a period progress (review round 7, item 1): overall = sum of weight x % complete / sum of weight over the stages that apply. Delete policy: HARD_DRAFT, with its submission.'
 }
 
 Table progress.published_progress_snapshot {
@@ -1467,7 +1514,7 @@ Table change_request.change_authorization {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   change_request_id uuid [not null, ref: > change_request.change_request.id]
   approval_instance_id uuid [not null, ref: > approval.approval_instance.id, note: 'Approval that produced it']
-  authorization_scope varchar(50) [not null, note: 'REBASELINE | COMMITMENT_CHANGE | PROFILE_CHANGE | SCOPE_CHANGE']
+  authorization_scope varchar(50) [not null, note: 'REBASELINE | COMMITMENT_CHANGE | PROFILE_CHANGE | SCOPE_CHANGE | STAGE_PLAN_CHANGE']
   target_module varchar(50) [not null, note: 'Schedule | FinancialKpi | Project']
   target_type varchar(100) [not null]
   target_id uuid [not null, note: 'Identifier only (M-4)']

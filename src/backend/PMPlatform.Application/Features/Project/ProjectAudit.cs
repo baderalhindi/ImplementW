@@ -199,6 +199,20 @@ internal static class ProjectAudit
     public static AuditEntry FollowUpNoteAdded(Guid actorId, ProjectEntity project, ProjectFollowUpNote note) =>
         Entry(AuditEventClass.DataChange, ProjectAuditEvents.FollowUpNoteAdded, actorId, project, [AuditAttribute.Of(ProjectAuditAttributes.FollowUpNoteId, note.Id)]);
 
+    /// <summary>Review round 7, item 1: each stage whose plan changed, the plan's revision, and the authorisation and reason of a change after approval.</summary>
+    public static AuditEntry StagePlanChanged(
+        Guid actorId, ProjectEntity project, int fromRevisionNo, IReadOnlyDictionary<string, string?> before, IReadOnlyDictionary<string, string?> after,
+        Guid? changeAuthorizationId, NarrativeText? reason) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.StagePlanChanged, actorId, project, new[]
+        {
+            AuditAttribute.Change(ProjectAuditAttributes.StagePlanRevisionNo, fromRevisionNo, project.StagePlanRevisionNo),
+            changeAuthorizationId is null ? null : AuditAttribute.Of(ProjectAuditAttributes.ChangeAuthorizationId, changeAuthorizationId),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.ReasonText, null, reason?.Text),
+        }
+        .Concat(after.Keys.Union(before.Keys).Order(StringComparer.Ordinal)
+            .Select(code => AuditAttribute.Change(ProjectAuditAttributes.StagePlanOf(code), before.GetValueOrDefault(code), after.GetValueOrDefault(code))))
+        .OfType<AuditAttribute>());
+
     /// <summary>R3-4: what an approved import batch changed on an existing project, its classification and its follow-up.</summary>
     public static AuditEntry UpdatedByImport(Guid actorId, ProjectDraft before, ProjectFollowUpDetail followUpBefore, ProjectEntity project, Guid batchId) =>
         Entry(AuditEventClass.DataChange, ProjectAuditEvents.ProjectUpdatedByImport, actorId, project,

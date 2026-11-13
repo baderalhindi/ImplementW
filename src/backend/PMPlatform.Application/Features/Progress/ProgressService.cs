@@ -23,6 +23,7 @@ internal sealed class ProgressService(
     IProgressInputs inputs,
     ReportingPeriods periods,
     IProjectMonthlyUpdates declared,
+    ProgressStages stages,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProgressService
 {
@@ -47,13 +48,20 @@ internal sealed class ProgressService(
         }
 
         (IReadOnlyList<ProgressSubmission> items, int total) = await repository.PageSubmissionsAsync(projectId, page, cancellationToken).ConfigureAwait(false);
-        return new ProgressSubmissionPage([.. items.Select(ProgressMapping.ToDetail)], page.Page, page.PageSize, total);
+        ILookup<Guid, ProgressStageEntry> entries = await repository.ReadStagesAsync([.. items.Select(s => s.Id)], cancellationToken).ConfigureAwait(false);
+        List<ProgressSubmissionDetail> details = [];
+        foreach (ProgressSubmission item in items)
+        {
+            details.Add(await DetailAsync(item, [.. entries[item.Id]], cancellationToken).ConfigureAwait(false));
+        }
+
+        return new ProgressSubmissionPage(details, page.Page, page.PageSize, total);
     }
 
     public async Task<AdministrationResult<Versioned<ProgressSubmissionDetail>>> GetSubmissionAsync(Guid callerId, Guid submissionId, CancellationToken cancellationToken)
     {
         Loaded loaded = await LoadAsync(callerId, PermissionCatalogue.ProgressView, submissionId, null, cancellationToken).ConfigureAwait(false);
-        return loaded.Error is { } refused ? refused : Versioned(loaded.Submission!);
+        return loaded.Error is { } refused ? refused : await VersionedAsync(loaded.Submission!, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<AdministrationResult<Versioned<ProgressSubmissionDetail>>> StartAsync(Guid callerId, Guid projectId, CancellationToken cancellationToken)
@@ -110,11 +118,18 @@ internal sealed class ProgressService(
             UpdatedBy = callerId,
         };
         Plan(submission, read, cycle, today);
+
+        // Review round 7, item 1: with project stages configured, the period is stage-based and the stage plan comes first.
+        if (await stages.StartAsync(submission, project, read, AsOf(cycle, today), now, callerId, cancellationToken).ConfigureAwait(false) is { } unplanned)
+        {
+            return unplanned;
+        }
+
         repository.Add(submission);
         audit.Stage(ProgressAudit.Started(callerId, project, submission));
         return await repository.SaveAsync(cancellationToken).ConfigureAwait(false) switch
         {
-            ProgressSaveOutcome.Saved => Versioned(submission),
+            ProgressSaveOutcome.Saved => await VersionedAsync(submission, cancellationToken).ConfigureAwait(false),
             ProgressSaveOutcome.Duplicate => AdministrationError.Conflict(ProgressErrorCodes.SubmissionExists),
             ProgressSaveOutcome.ConcurrencyConflict => AdministrationError.PreconditionFailed,
             _ => throw new InvalidOperationException("Unknown save outcome."),
@@ -141,6 +156,12 @@ internal sealed class ProgressService(
         if (changes.Override is { ActualPercent: < 0 or > 100 })
         {
             throw new ArgumentOutOfRangeException(nameof(changes), changes.Override.ActualPercent, "An override is a percentage, 0–100.");
+        }
+
+        if (changes.Stages is { } stageChanges
+            && await stages.ApplyAsync(submission, stageChanges, callerId, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false) is { } invalid)
+        {
+            return invalid;
         }
 
         (NarrativeText? narrative, decimal? overridePercent, NarrativeText? reason) = (submission.Narrative, submission.ActualPercentOverride, submission.OverrideReason);
@@ -175,7 +196,17 @@ internal sealed class ProgressService(
         ProgressInputs read = await inputs.ReadAsync(project.Id, cancellationToken).ConfigureAwait(false);
 
         // The figures are fixed at submission (ERD). The opening position keeps the figure entered once at intake (ADR-014).
-        if (submission.ProjectIntakeId is null)
+        if (submission.ProjectIntakeId is null && submission.StageConfigurationVersionId is not null)
+        {
+            // Review round 7, item 1: a stage-based period needs no work breakdown; its figures are its stages'.
+            ReportingCycle cycle = await repository.FindCycleAsync(submission.ReportingCycleId, cancellationToken).ConfigureAwait(false)
+                                   ?? throw new InvalidOperationException($"Submission {submission.Id} has no reporting cycle.");
+            if (await stages.SubmitAsync(submission, read, AsOf(cycle, ReportingCalendar.Today(now)), cancellationToken).ConfigureAwait(false) is { } incomplete)
+            {
+                return incomplete;
+            }
+        }
+        else if (submission.ProjectIntakeId is null)
         {
             (decimal? actual, ProgressActualSource source) = read.Actual();
             if (actual is null && !submission.IsOverridden)
@@ -260,12 +291,14 @@ internal sealed class ProgressService(
             BaselineId = submission.BaselineId,
             Narrative = submission.Narrative,
             ProjectIntakeId = submission.ProjectIntakeId,
+            StageConfigurationVersionId = submission.StageConfigurationVersionId,
             CreatedAt = now,
             CreatedBy = callerId,
             UpdatedAt = now,
             UpdatedBy = callerId,
         };
         repository.Add(next);
+        await stages.CopyAsync(submission, next, now, callerId, cancellationToken).ConfigureAwait(false);
         audit.Stage(ProgressAudit.Returned(callerId, project, submission));
         audit.Stage(ProgressAudit.Started(callerId, project, next));
         return await SaveAsync(submission, cancellationToken).ConfigureAwait(false);
@@ -324,13 +357,30 @@ internal sealed class ProgressService(
         cycle.UpdatedBy = callerId;
         audit.Stage(ProgressAudit.Published(callerId, project, submission, snapshot));
 
-        // A project with no work breakdown has only its declared figure on the register and the dashboards, so the published one replaces it.
-        if (submission.ActualSource != ProgressActualSource.WorkBreakdown)
+        // A project with no work breakdown has only its declared figure on the register and the dashboards, so the published one replaces it. A
+        // stage-based period's figures replace the declared ones everywhere, planned and current stage included (review round 7, item 1).
+        if (submission.ActualSource == ProgressActualSource.StageWeighted)
         {
-            await declared.StagePublishedProgressAsync(project.Id, submission.EffectiveActualPercent, callerId, cancellationToken).ConfigureAwait(false);
+            ProgressStageEntry? current = ProgressStages.Current(await repository.ListStagesAsync(submission.Id, track: false, cancellationToken).ConfigureAwait(false));
+            await declared.StagePublishedProgressAsync(
+                project.Id,
+                new PublishedProgressValues(submission.EffectiveActualPercent, true, submission.PlannedPercent, current?.StageCode, current?.PercentComplete),
+                callerId,
+                cancellationToken).ConfigureAwait(false);
+            await RecomputeCurrentHealthAsync(callerId, project, read, rule, now, cancellationToken, (submission.EffectiveActualPercent, submission.PlannedPercent))
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            if (submission.ActualSource != ProgressActualSource.WorkBreakdown)
+            {
+                await declared.StagePublishedProgressAsync(project.Id, new PublishedProgressValues(submission.EffectiveActualPercent), callerId, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            await RecomputeCurrentHealthAsync(callerId, project, read, rule, now, cancellationToken).ConfigureAwait(false);
         }
 
-        await RecomputeCurrentHealthAsync(callerId, project, read, rule, now, cancellationToken).ConfigureAwait(false);
         return await SaveAsync(submission, cancellationToken).ConfigureAwait(false);
     }
 
@@ -361,10 +411,12 @@ internal sealed class ProgressService(
     /// Rewrites the CURRENT/LIVE health from the derived figures as they stand now — never from an unpublished override —
     /// staged with this unit of work (ICD-03, M-12).
     /// </summary>
-    private async Task RecomputeCurrentHealthAsync(Guid callerId, ProjectFacts project, ProgressInputs read, HealthRule rule, DateTimeOffset now, CancellationToken cancellationToken)
+    private async Task RecomputeCurrentHealthAsync(
+        Guid callerId, ProjectFacts project, ProgressInputs read, HealthRule rule, DateTimeOffset now, CancellationToken cancellationToken,
+        (decimal? Actual, decimal? Planned)? published = null)
     {
-        decimal? actual = read.Actual().Percent;
-        decimal? planned = ProgressRollup.Planned(read.Baseline, ReportingCalendar.Today(now));
+        decimal? actual = published is { } stageBased ? stageBased.Actual : read.Actual().Percent;
+        decimal? planned = published is { } stagePlanned ? stagePlanned.Planned : ProgressRollup.Planned(read.Baseline, ReportingCalendar.Today(now));
         ProjectHealthStatus? health = await repository.FindHealthStatusAsync(project.Id, track: true, cancellationToken).ConfigureAwait(false);
         HealthStatus? before = health?.OverallHealth;
         if (health is null)
@@ -386,9 +438,12 @@ internal sealed class ProgressService(
     /// <summary>Planned progress at the period's end, or today while the period runs (ADR-009: from the baseline, never entered).</summary>
     private static void Plan(ProgressSubmission submission, ProgressInputs read, ReportingCycle cycle, DateOnly today)
     {
-        submission.PlannedPercent = ProgressRollup.Planned(read.Baseline, today < cycle.PeriodEnd ? today : cycle.PeriodEnd);
+        submission.PlannedPercent = ProgressRollup.Planned(read.Baseline, AsOf(cycle, today));
         submission.BaselineId = submission.PlannedPercent is null ? null : read.Baseline!.BaselineId;
     }
+
+    /// <summary>The date a period's planned figures are taken on: its end, or today while it runs.</summary>
+    private static DateOnly AsOf(ReportingCycle cycle, DateOnly today) => today < cycle.PeriodEnd ? today : cycle.PeriodEnd;
 
     /// <summary>Whether the caller may view the project's progress: a collection of a project they may not see is empty.</summary>
     private async Task<bool> ReachesAsync(Guid callerId, Guid projectId, CancellationToken cancellationToken) =>
@@ -425,10 +480,25 @@ internal sealed class ProgressService(
 
     private async Task<AdministrationResult<Versioned<ProgressSubmissionDetail>>> SaveAsync(ProgressSubmission submission, CancellationToken cancellationToken) =>
         await repository.SaveAsync(cancellationToken).ConfigureAwait(false) == ProgressSaveOutcome.Saved
-            ? Versioned(submission)
+            ? await VersionedAsync(submission, cancellationToken).ConfigureAwait(false)
             : AdministrationError.PreconditionFailed;
 
-    private Versioned<ProgressSubmissionDetail> Versioned(ProgressSubmission submission) => new(ProgressMapping.ToDetail(submission), repository.RowVersionOf(submission));
+    private async Task<Versioned<ProgressSubmissionDetail>> VersionedAsync(ProgressSubmission submission, CancellationToken cancellationToken) =>
+        new(
+            await DetailAsync(submission, await repository.ListStagesAsync(submission.Id, track: false, cancellationToken).ConfigureAwait(false), cancellationToken)
+                .ConfigureAwait(false),
+            repository.RowVersionOf(submission));
+
+    private async Task<ProgressSubmissionDetail> DetailAsync(ProgressSubmission submission, IReadOnlyList<ProgressStageEntry> entries, CancellationToken cancellationToken) =>
+        submission.StageConfigurationVersionId is null
+            ? ProgressMapping.ToDetail(submission)
+            : ProgressMapping.ToDetail(submission) with
+            {
+                StageConfigurationVersionId = submission.StageConfigurationVersionId,
+                StageVersionNo = await stages.VersionNoAsync(submission.StageConfigurationVersionId.Value, cancellationToken).ConfigureAwait(false),
+                CurrentStageCode = ProgressStages.Current(entries)?.StageCode,
+                Stages = await stages.DetailAsync(submission, entries, cancellationToken).ConfigureAwait(false),
+            };
 
     private void Touch(ProgressSubmission submission, Guid by)
     {

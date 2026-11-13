@@ -11,4 +11,7 @@ public enum ProgressActualSource
 
     /// <summary>Neither exists: the calculated figure is a placeholder, so the person submitting must enter one with a reason.</summary>
     NotAvailable = 3,
+
+    /// <summary>Σ weight × % complete ÷ Σ weight over the stages that apply (review round 7, item 1).</summary>
+    StageWeighted = 4,
 }

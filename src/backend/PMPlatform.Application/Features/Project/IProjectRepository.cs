@@ -55,6 +55,14 @@ public interface IProjectRepository
     /// <summary>Stages the removal of these projects' follow-up notes, with the projects a rolled-back import batch removes (R3-4).</summary>
     public Task RemoveFollowUpNotesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
 
+    /// <summary>Review round 7, item 1: a project's stage plan, one row per stage. Tracked: the plan's change updates these rows.</summary>
+    public Task<IReadOnlyList<ProjectStagePlanEntry>> ListStagePlanAsync(Guid projectId, CancellationToken cancellationToken);
+
+    /// <summary>Not tracked: the stage plans of these projects, by project.</summary>
+    public Task<ILookup<Guid, ProjectStagePlanEntry>> ReadStagePlansAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken);
+
+    public void Add(ProjectStagePlanEntry entry);
+
     public void Remove(ProjectEntity project);
 
     /// <summary>

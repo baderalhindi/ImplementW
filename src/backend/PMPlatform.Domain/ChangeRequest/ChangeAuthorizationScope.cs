@@ -14,4 +14,7 @@ public enum ChangeAuthorizationScope
 
     /// <summary>Change the project's scope. No module applies it yet.</summary>
     ScopeChange = 4,
+
+    /// <summary>Change the dates or applicability of the project's stage plan once its registration is approved (review round 7, item 1).</summary>
+    StagePlanChange = 5,
 }

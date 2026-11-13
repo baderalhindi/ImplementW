@@ -196,6 +196,10 @@ public static class DependencyInjection
         services.AddScoped<ProjectIndicatorReader>();
         services.TryAddScoped<IProjectUpdateComplianceSource, NoUpdateComplianceSource>();
         services.AddScoped<IProjectFollowUpService, ProjectFollowUpService>();
+        services.AddScoped<ProjectStagePlanService>();
+        services.AddScoped<IProjectStagePlanService>(provider => provider.GetRequiredService<ProjectStagePlanService>());
+        services.AddScoped<IProjectStagePlans>(provider => provider.GetRequiredService<ProjectStagePlanService>());
+        services.AddScoped<IStagePlanChangeAuthorization, StagePlanChangeAuthorization>();
         services.AddScoped<ProjectImportService>();
         services.AddScoped<IProjectImportService>(sp => sp.GetRequiredService<ProjectImportService>());
         services.AddScoped<IProjectImportValidationRunner>(sp => sp.GetRequiredService<ProjectImportService>());
@@ -217,6 +221,7 @@ public static class DependencyInjection
         services.TryAddScoped<IProgressInputs, ProgressInputsReader>();
         services.AddScoped<ReportingPeriods>();
         services.AddScoped<IReportingPeriodSource, ReportingPeriodSource>();
+        services.AddScoped<ProgressStages>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ProgressOpeningPosition>();
         services.AddScoped<IProjectIntakeHandler, ProgressIntakeHandler>();

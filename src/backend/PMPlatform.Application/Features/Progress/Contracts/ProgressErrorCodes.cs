@@ -20,4 +20,13 @@ public static class ProgressErrorCodes
 
     /// <summary>409: only a DRAFT is edited.</summary>
     public const string NotEditable = "PROGRESS_NOT_EDITABLE";
+
+    /// <summary>422: project stages are configured and the project has no stage plan: the plan is set first (review round 7, item 1).</summary>
+    public const string StagePlanRequired = "PROGRESS_STAGE_PLAN_REQUIRED";
+
+    /// <summary>
+    /// 422: a stage's entry breaks a rule: a stage the period does not have or that does not apply, a % the schedule measures, a % lower than the last
+    /// published period's without a reason, a started stage without its actual start, a complete one without its finish, a note longer than a line.
+    /// </summary>
+    public const string StageEntryInvalid = "PROGRESS_STAGE_ENTRY_INVALID";
 }

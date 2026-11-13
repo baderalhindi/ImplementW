@@ -14445,6 +14445,135 @@
         }
       }
     },
+    "/api/v1/project-stage-plans/{projectId}": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The plan. A stage not planned yet reads as applying, undated.",
+        "operationId": "Project_GetProjectStagePlan",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStagePlan"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "The whole plan. While the registration is DRAFT or RETURNED, by its writer, and a stage's dates may wait for submission; once approved, by its\nwriter or whoever records the project's progress, once freely when it has no plan and otherwise with an approved schedule change's\n`changeAuthorizationId`. Requires the project's `If-Match` (R-21).",
+        "operationId": "Project_UpdateProjectStagePlan",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectStagePlanRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectStagePlanRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectStagePlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStagePlan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/project-stages": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Each stage applying and undated; none when no PROJECT_STAGE version is published.",
+        "operationId": "Project_ListProjectStages",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStagePage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/project-tasks/import-template/content": {
       "get": {
         "tags": [
@@ -23241,7 +23370,8 @@
           "REBASELINE",
           "COMMITMENT_CHANGE",
           "PROFILE_CHANGE",
-          "SCOPE_CHANGE"
+          "SCOPE_CHANGE",
+          "STAGE_PLAN_CHANGE"
         ],
         "description": "ERD `change_authorization.authorization_scope`: the one kind of change an authorisation permits."
       },
@@ -37483,7 +37613,8 @@
         "enum": [
           "WORK_BREAKDOWN",
           "DECLARED",
-          "NOT_AVAILABLE"
+          "NOT_AVAILABLE",
+          "STAGE_WEIGHTED"
         ],
         "description": "Where a submission's calculated figure comes from. A project with no work breakdown reports its declared figure until it has one."
       },
@@ -37534,6 +37665,173 @@
           }
         },
         "description": "Returning a submission says why."
+      },
+      "ProgressStageDetail": {
+        "required": [
+          "stageCode",
+          "name",
+          "sortOrder",
+          "weightPercent",
+          "applies",
+          "plannedPercent",
+          "percentComplete",
+          "previousPercent",
+          "isFromSchedule",
+          "actualStartDate",
+          "actualFinishDate",
+          "note",
+          "decreaseReason"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": "string"
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BilingualLabel"
+              }
+            ]
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "applies": {
+            "type": "boolean"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "percentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "previousPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "isFromSchedule": {
+            "type": "boolean"
+          },
+          "actualStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "actualFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "decreaseReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeText"
+              }
+            ]
+          }
+        },
+        "description": "One stage of a period: its name and weight in the version the period weighs by, whether it applies, the planned % on the period's date, the % complete\nand the last published period's (decimal? ProgressStageDetail.PreviousPercent, below which a decrease needs a reason), and whether the schedule measures it."
+      },
+      "ProgressStageRequest": {
+        "required": [
+          "stageCode"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "percentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "actualStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "actualFinishDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "decreaseReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "One stage: its code, % complete 0–100 to two places, actual start and finish, an optional one-line note, and why a % went down."
       },
       "ProgressSubmissionDetail": {
         "required": [
@@ -37714,9 +38012,37 @@
           "updatedBy": {
             "type": "string",
             "format": "uuid"
+          },
+          "stageConfigurationVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "stageVersionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "currentStageCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgressStageDetail"
+            }
           }
         },
-        "description": "One revision of a period's progress, with actual and planned side by side (ADR-009). decimal ProgressSubmissionDetail.ActualPercent is\nthe reported figure: the override when bool ProgressSubmissionDetail.IsOverridden, else the calculated one, which is always kept.\nGuid? ProgressSubmissionDetail.ProjectIntakeId marks the ADR-014 opening position."
+        "description": "One revision of a period's progress, with actual and planned side by side (ADR-009). decimal ProgressSubmissionDetail.ActualPercent is\nthe reported figure: the override when bool ProgressSubmissionDetail.IsOverridden, else the calculated one, which is always kept.\nGuid? ProgressSubmissionDetail.ProjectIntakeId marks the ADR-014 opening position. A stage-based period (review round 7, item 1) has its IReadOnlyList&lt;ProgressStageDetail&gt; ProgressSubmissionDetail.Stages,\nweighed by the PROJECT_STAGE version int? ProgressSubmissionDetail.StageVersionNo, and names its string? ProgressSubmissionDetail.CurrentStageCode."
       },
       "ProgressSubmissionPage": {
         "required": [
@@ -37786,9 +38112,18 @@
                 "$ref": "#/components/schemas/ProgressOverrideRequest"
               }
             ]
+          },
+          "stages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProgressStageRequest"
+            }
           }
         },
-        "description": "What a person writes on a DRAFT, as a whole (R-5): the narrative and the override. There is no actual or planned\npercentage: both are derived (ADR-009), and an unknown property is ignored."
+        "description": "What a person writes on a DRAFT, as a whole (R-5): the narrative and the override, and on a stage-based period each stage's % complete and dates\n(review round 7, item 1; omitted, they stay as they are). There is no project-level actual or planned percentage: both are derived (ADR-009), and an\nunknown property is ignored."
       },
       "ProgressSubmissionStartRequest": {
         "required": [
@@ -40312,6 +40647,246 @@
           }
         },
         "description": "A project stage in a PROJECT_STAGE version: active stages carry the weights, which total 100."
+      },
+      "ProjectStagePage": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStagePlanStage"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ProjectStagePlan": {
+        "required": [
+          "projectId",
+          "revisionNo",
+          "requiresChangeAuthorization",
+          "acceptsStartingPercent",
+          "stageVersionId",
+          "stageVersionNo",
+          "stages"
+        ],
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revisionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "requiresChangeAuthorization": {
+            "type": "boolean"
+          },
+          "acceptsStartingPercent": {
+            "type": "boolean"
+          },
+          "stageVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "stageVersionNo": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStagePlanStage"
+            }
+          }
+        },
+        "description": "A project's stage plan. int ProjectStagePlan.RevisionNo is 0 until the plan is first saved. bool ProjectStagePlan.RequiresChangeAuthorization: a change now claims an\napproved schedule change request's STAGE_PLAN_CHANGE authorisation. bool ProjectStagePlan.AcceptsStartingPercent: the project was already under way when it\nentered the platform, so each stage may carry how far it had come. int? ProjectStagePlan.StageVersionNo is the PROJECT_STAGE version in force; null when\nnone is published, and then the project has no stages to plan."
+      },
+      "ProjectStagePlanEntryRequest": {
+        "required": [
+          "stageCode",
+          "applies"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "applies": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "plannedStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "startingPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "One stage of the plan: its PROJECT_STAGE code, whether it applies, and while it does its planned dates and, optionally, its starting %."
+      },
+      "ProjectStagePlanRequest": {
+        "required": [
+          "stages"
+        ],
+        "type": "object",
+        "properties": {
+          "stages": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProjectStagePlanEntryRequest"
+            }
+          },
+          "changeAuthorizationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "A project's whole stage plan (review round 7, item 1): every stage of the version in force. Once the registration is approved,\n`changeAuthorizationId` names the STAGE_PLAN_CHANGE authorisation an approved schedule change issued, and `reason` says why."
+      },
+      "ProjectStagePlanStage": {
+        "required": [
+          "stageCode",
+          "name",
+          "sortOrder",
+          "weightPercent",
+          "applies",
+          "plannedStartDate",
+          "plannedEndDate",
+          "startingPercent"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "sortOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int16"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "applies": {
+            "type": "boolean"
+          },
+          "plannedStartDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "plannedEndDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "startingPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "One stage of a project's stage plan as read (review round 7, item 1): the stage as the PROJECT_STAGE version in force names and weighs it,\nand the project's plan for it. A stage the project has no row for yet is pre-filled: it applies, with no dates."
       },
       "ProjectStageRequest": {
         "required": [

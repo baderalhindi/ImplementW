@@ -9,7 +9,9 @@ namespace PMPlatform.Application.Features.Project.Contracts;
 /// record day to day (ADR-013), on which FG-04's participation rules are keyed (TASK-066). <see cref="Title"/> names the project as entered (ADR-012) for
 /// FG-02's report rows (edge 30 through edge 47, TASK-071). <see cref="RegionItemId"/> and <see cref="CityItemId"/> are where it is delivered,
 /// by which FG-01's portfolio filters and locates it (the 27 Oct 2026 review); its classification (sector), priority and strategic portfolio and
-/// initiative are the filters the 2 Nov 2026 review added.
+/// initiative are the filters the 2 Nov 2026 review added. <see cref="StagePlanRevisionNo"/> is the stage plan revision an approved schedule change
+/// authorises a change of (review round 7, item 1); 0 while the project has no plan. <see cref="CurrentStageCode"/> and <see cref="CurrentStagePercent"/>
+/// are the latest published stage-based period's, or as imported.
 /// </summary>
 public sealed record ProjectFacts(
     Guid Id,
@@ -30,4 +32,7 @@ public sealed record ProjectFacts(
     Guid? StrategicPortfolioItemId = null,
     Guid? StrategicInitiativeItemId = null,
     DateOnly? PlannedStartDate = null,
-    DateOnly? PlannedEndDate = null);
+    DateOnly? PlannedEndDate = null,
+    int StagePlanRevisionNo = 0,
+    string? CurrentStageCode = null,
+    decimal? CurrentStagePercent = null);

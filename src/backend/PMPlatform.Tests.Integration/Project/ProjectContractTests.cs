@@ -51,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(30, built["paths"]!.AsObject().Count);
+        Assert.Equal(33, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -119,6 +119,25 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         Assert.Single((await responses.CheckAsync("GET", "/api/v1/project-follow-up-notes", notes))!["items"]!.AsArray());
         using HttpResponseMessage followUps = await client.GetAsync("/api/v1/project-follow-ups", sessions.Approver);
         Assert.Contains((await responses.CheckAsync("GET", "/api/v1/project-follow-ups", followUps))!["items"]!.AsArray(), i => i!["projectId"]!.GetValue<string>() == projectId.ToString());
+
+        // Review round 7, item 1: the stage plan of the active project, which has none, set once. The stages are in force only for this step: with
+        // them every registration in this suite would need a plan.
+        await StageFixture.PublishAsync(host.Database);
+        try
+        {
+            using HttpResponseMessage stages = await client.GetAsync("/api/v1/project-stages", sessions.Approver);
+            Assert.Equal(6, (await responses.CheckAsync("GET", "/api/v1/project-stages", stages))!["items"]!.AsArray().Count);
+            using HttpResponseMessage plan = await client.GetAsync($"/api/v1/project-stage-plans/{projectId}", sessions.Entity);
+            await responses.CheckAsync("GET", "/api/v1/project-stage-plans/{projectId}", plan);
+            DateOnly start = DateOnly.Parse((await host.RowAsync(projectId))["planned_start_date"]!.GetValue<string>(), System.Globalization.CultureInfo.InvariantCulture);
+            using HttpResponseMessage planned = await client.PutAsync(
+                $"/api/v1/project-stage-plans/{projectId}", sessions.Entity, StageFixture.Plan(start), AdministrationApi.ETagOf(plan));
+            Assert.Equal(1, (await responses.CheckAsync("PUT", "/api/v1/project-stage-plans/{projectId}", planned))!["revisionNo"]!.GetValue<int>());
+        }
+        finally
+        {
+            await StageFixture.WithdrawAsync(host.Database);
+        }
 
         // R3-4: a batch from RPMO's workbook, validated, submitted by local.r03, approved and rolled back by local.r02; a second one returned.
         const string batches = "/api/v1/project-import-batches";

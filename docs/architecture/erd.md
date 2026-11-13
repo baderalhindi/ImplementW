@@ -461,6 +461,11 @@ erDiagram
         uuid id PK
         uuid project_id FK
     }
+    ProjectStagePlanEntry {
+        uuid id PK
+        uuid project_id FK
+        varchar stage_code
+    }
     ProjectImportBatch {
         uuid id PK
         integer batch_no UK
@@ -493,6 +498,7 @@ erDiagram
     Project ||--o| ProjectIntake : "project_id"
     ProjectIntake ||--o{ ProjectIntakeMilestone : "project_intake_id"
     Project ||--o{ ProjectFollowUpNote : "project_id"
+    Project ||--o{ ProjectStagePlanEntry : "project_id"
     ProjectImportBatch |o--o{ Project : "project_import_batch_id"
 ```
 
@@ -504,6 +510,7 @@ The 2 Nov 2026 review (R3-3, R3-4) adds RPMO's strategy classification — a str
 | **ProjectIntake** | `project.project_intake` | The one-time declaration for a project already under way: Declared Baseline inputs and opening position (ADR-014, TASK-104). Source of the ProjectIntakeRecorded event (§11.1 of the solution architecture). | — | APPEND_ONLY | referenceable |
 | **ProjectIntakeMilestone** | `project.project_intake_milestone` | A milestone declared as already achieved at intake; WF-05 records the achievement on the event. | — | APPEND_ONLY | — |
 | **ProjectFollowUpNote** | `project.project_follow_up_note` | A dated follow-up note on a project, attributed by its creation stamp: RPMO's "ملاحظات" (2 Nov 2026 review, R3-3). | — | APPEND_ONLY | — |
+| **ProjectStagePlanEntry** | `project.project_stage_plan` | One stage of a project's stage plan: whether it applies, its planned dates, its starting % (review round 7, item 1). Reviewed with the registration; changed after approval only by an approved schedule change (STAGE_PLAN_CHANGE). | — | NONE | — |
 | **ProjectImportBatch** | `project.project_import_batch` | A batch of projects imported from RPMO's workbook: the file, the submitted plan, the counts, and a second person's decision; the projects it created carry its id (R3-4). | — | RETAIN | — |
 | **ProjectImportNameMapping** | `project.project_import_name_mapping` | A workbook name mapped to the platform value it means, remembered for the next import (R3-4). | — | RETAIN | — |
 | **ProjectImportValidation** | `project.project_import_validation` | A workbook of more than 200 rows validated in the background, its result kept for its importer, who is notified when it is done. | `status` → QUEUED · RUNNING · COMPLETED · FAILED | RETAIN | — |
@@ -520,6 +527,11 @@ erDiagram
         uuid project_id FK
         date period_start
         varchar status
+    }
+    ProgressStageEntry {
+        uuid id PK
+        uuid progress_submission_id FK
+        varchar stage_code
     }
     ProgressSubmission {
         uuid id PK
@@ -562,6 +574,7 @@ erDiagram
     Project ||..o{ ReportingCycle : "project_id"
     Project ||..o{ ProgressSubmission : "project_id"
     ReportingCycle ||--o{ ProgressSubmission : "reporting_cycle_id"
+    ProgressSubmission ||--o{ ProgressStageEntry : "progress_submission_id"
     ProjectBaseline |o..o{ ProgressSubmission : "baseline_id"
     ProjectIntake |o..o{ ProgressSubmission : "project_intake_id"
     Project ||..o{ PublishedProgressSnapshot : "project_id"
@@ -577,6 +590,7 @@ erDiagram
 | --- | --- | --- | --- | --- | --- |
 | **ReportingCycle** | `progress.reporting_cycle` | A reporting period for a project, generated from the governance profile cadence (TASK-044, ADR-015). | `status` → OPEN · CLOSED | RETAIN | referenceable |
 | **ProgressSubmission** | `progress.progress_submission` | The working progress record for a cycle: derived actual %, planned %, override and narrative (ADR-009, ADR-014). | `status` → DRAFT · SUBMITTED · UNDER_REVIEW · RETURNED · PUBLISHED | HARD_DRAFT | referenceable |
+| **ProgressStageEntry** | `progress.progress_stage_entry` | One stage of a period's progress, its weight copied from the PROJECT_STAGE version the period weighs by (review round 7, item 1). | — | HARD_DRAFT | — |
 | **PublishedProgressSnapshot** | `progress.published_progress_snapshot` | Immutable PUBLISHED/OFFICIAL snapshot of a cycle, including Overall Project Health computed only here (ICD-03, TASK-044). | — | APPEND_ONLY | referenceable |
 | **ProjectHealthStatus** | `progress.project_health_status` | CURRENT/LIVE Overall Project Health projection, rewritten by WF-02 on each recompute; the only writer (ICD-03, M-12). | — | RETAIN | — |
 | **PeriodicUpdateSession** | `progress.periodic_update_session` | Consolidated periodic update flow: draft/resume and completion-time instrumentation (TASK-107, ADR-017). Holds references, not copies (solution architecture §11.2). | `status` → IN_PROGRESS · COMPLETED · ABANDONED | RETAIN | — |

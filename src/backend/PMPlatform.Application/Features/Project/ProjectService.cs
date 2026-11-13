@@ -23,6 +23,7 @@ internal sealed class ProjectService(
     IEnumerable<IProjectActivationPrecondition> activationPreconditions,
     IAuthorizationEngine engine,
     ProjectIndicatorReader indicators,
+    ProjectStagePlanService stagePlans,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProjectService
 {
@@ -216,6 +217,12 @@ internal sealed class ProjectService(
         if (Incomplete(project) is { } incomplete)
         {
             return incomplete;
+        }
+
+        // AHDA reviews the stage plan with the registration (review round 7, item 1).
+        if (await stagePlans.IncompleteAsync(project, cancellationToken).ConfigureAwait(false) is { } unplanned)
+        {
+            return unplanned;
         }
 
         if (!await managers.IsEligibleAsync(submission.ProjectManagerUserId, project, cancellationToken).ConfigureAwait(false))

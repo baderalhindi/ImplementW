@@ -36,6 +36,24 @@ public static class ProjectErrorCodes
     /// <summary>409: another project already has this legacy reference, which matches a row on re-import (R3-3).</summary>
     public const string LegacyReferenceTaken = "PROJECT_LEGACY_REFERENCE_TAKEN";
 
+    /// <summary>409: no PROJECT_STAGE version is published, so there are no stages to plan (review round 7, item 1).</summary>
+    public const string StagesNotConfigured = "PROJECT_STAGES_NOT_CONFIGURED";
+
+    /// <summary>
+    /// 422: a stage plan that names a stage the version in force does not have, or twice, leaves one out, applies none, or dates a stage that applies
+    /// outside the project's planned dates or not at all; or gives a starting % to a project that was not under way when it entered the platform.
+    /// </summary>
+    public const string StagePlanInvalid = "PROJECT_STAGE_PLAN_INVALID";
+
+    /// <summary>409: the registration is under review, and AHDA reviews the stage plan with it: it changes again only if AHDA returns it.</summary>
+    public const string StagePlanUnderReview = "PROJECT_STAGE_PLAN_UNDER_REVIEW";
+
+    /// <summary>
+    /// 422: the registration is approved, so changing the stage plan's dates or stages is a schedule change: it needs an applicable STAGE_PLAN_CHANGE
+    /// authorisation of the plan's current revision, which an approved schedule change request in implementation issues.
+    /// </summary>
+    public const string StagePlanChangeRequired = "PROJECT_STAGE_PLAN_CHANGE_REQUIRED";
+
     /// <summary>409: the follow-up of a project not yet approved is not kept: RPMO follows up registered projects (R3-3).</summary>
     public const string FollowUpNotOpen = "PROJECT_FOLLOW_UP_NOT_OPEN";
 }

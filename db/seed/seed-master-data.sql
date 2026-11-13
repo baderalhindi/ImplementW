@@ -689,6 +689,40 @@ BEGIN
     WHERE id = version;
 END $$;
 
+-- The project stages of review round 7 (item 1): the six AHDA agreed, with their standard weights, as a PUBLISHED version, once, when the family has
+-- no published version yet. Stage-weighted progress resolves the version in force on the day a period is recorded; AHDA changes weights by publishing
+-- a later version, which never recalculates a published period.
+DO $$
+DECLARE
+    family uuid := (SELECT id FROM master_data_config.configuration_family WHERE code = 'PROJECT_STAGE');
+    version uuid := md5('configuration_version:PROJECT_STAGE:standard')::uuid;
+BEGIN
+    IF EXISTS (SELECT 1 FROM master_data_config.configuration_version WHERE id = version)
+       OR EXISTS (SELECT 1 FROM master_data_config.configuration_version WHERE configuration_family_id = family AND lifecycle_state = 'PUBLISHED') THEN
+        RETURN;
+    END IF;
+
+    INSERT INTO master_data_config.configuration_version (id, configuration_family_id, version_no, change_summary_lang, change_summary, lifecycle_state, created_at, created_by, updated_at, updated_by)
+    SELECT version, family, 1 + count(*), 'en', 'Six project stages with their standard weights (seed, review round 7).', 'DRAFT', now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM master_data_config.configuration_version WHERE configuration_family_id = family;
+
+    INSERT INTO master_data_config.project_stage_definition (id, configuration_version_id, code, sort_order, weight_percent, is_active, name_ar, name_en, created_at, created_by, updated_at, updated_by)
+    SELECT md5(version::text || s.code)::uuid, version, s.code, s.sort_order, s.weight_percent, true, s.name_ar, s.name_en,
+           now(), '00000000-0000-4000-8000-0000000000ff', now(), '00000000-0000-4000-8000-0000000000ff'
+    FROM (VALUES
+        ('BUSINESS_CASE', 1::smallint,  5.00, 'دراسة الجدوى وحالة العمل',      'Business case'),
+        ('DESIGN',        2::smallint, 15.00, 'التصميم',                        'Design'),
+        ('TENDERING',     3::smallint, 10.00, 'الطرح والترسية',                 'Tendering and award'),
+        ('EXECUTION',     4::smallint, 55.00, 'التنفيذ',                        'Execution'),
+        ('TESTING',       5::smallint, 10.00, 'الاختبار والتشغيل التجريبي',     'Testing and commissioning'),
+        ('HANDOVER',      6::smallint,  5.00, 'التسليم والإغلاق',               'Handover and closure')
+    ) AS s (code, sort_order, weight_percent, name_ar, name_en);
+
+    UPDATE master_data_config.configuration_version
+    SET lifecycle_state = 'PUBLISHED', published_by_user_id = '00000000-0000-4000-8000-0000000000ff', published_at = now(), effective_from = now()
+    WHERE id = version;
+END $$;
+
 -- 5. The risk and issue scale, generically (ADR-011; OQ-006). Version 1 of RISK_MATRIX stays DRAFT: resolution
 -- reads PUBLISHED versions only and fails closed without one (TASK-034), so nothing resolves against a scale AHDA
 -- has not approved. AHDA adds the descriptions, boundaries, rating labels and 5×5 mapping on FG-04 and publishes.

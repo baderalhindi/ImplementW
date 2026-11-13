@@ -148,6 +148,18 @@ public sealed class Project : AuditedEntity, IDeletable
     /// <summary>Where the declared values came from; set whenever one of them is.</summary>
     public DeclaredValueSource? DeclaredSource { get; set; }
 
+    /// <summary>
+    /// The stage plan's revision (review round 7, item 1): 0 while the project has none, raised by each change. A change once the registration is
+    /// approved claims a STAGE_PLAN_CHANGE authorisation of this revision.
+    /// </summary>
+    public int StagePlanRevisionNo { get; set; }
+
+    /// <summary>The first applicable stage below 100% in the latest published stage-based period, or as imported; null before either.</summary>
+    public string? CurrentStageCode { get; set; }
+
+    /// <summary>The % complete of <see cref="CurrentStageCode"/>, 0 to 100.</summary>
+    public decimal? CurrentStagePercent { get; set; }
+
     /// <summary>Whether the delivering entity keeps to its periodic updates, as RPMO records it.</summary>
     public bool? EntityUpdateCompliant { get; set; }
 

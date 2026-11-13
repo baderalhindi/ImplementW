@@ -82,9 +82,19 @@ public sealed class IdentityDatabase : TestDatabase
             ('00000000-0111-4000-8000-000000000083', '{UserId(8)}', '{ProfileVersionId(1)}', NULL, NULL, NULL, '{UserId(2)}', now() - interval '1 day', NULL, NULL, 'ACTIVE', now(), '{SeedPrincipalId}', now(), '{SeedPrincipalId}');
         """;
 
+    /// <summary>Withdraws the seeded PROJECT_STAGE version from its first instant, so no stage version is in force.</summary>
+    private const string RetireSeededStages = """
+        UPDATE master_data_config.configuration_version SET lifecycle_state = 'RETIRED', effective_to = effective_from
+        WHERE id = md5('configuration_version:PROJECT_STAGE:standard')::uuid;
+        """;
+
     protected override async Task PopulateAsync()
     {
         await SeededDatabase.RunCommandAsync(ConnectionString, DatabaseScripts.SeedCommand);
         await ExecuteAsync(Users);
+
+        // Review round 7: the seed publishes the six project stages, and with stages in force every registration needs a stage plan and every
+        // progress period is stage-based. The suites written before stages keep testing the paths without them; StageFixture publishes them again.
+        await ExecuteAsync(RetireSeededStages);
     }
 }

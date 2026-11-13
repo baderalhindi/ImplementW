@@ -18,6 +18,9 @@ public sealed record FieldIssue(string Field, string Code)
     /// <summary>A date that must follow another does not (api-conventions R-23).</summary>
     public const string BeforeStart = "DATE_BEFORE_START";
 
+    /// <summary>A date outside the period it must fall in, such as a stage ending after its project (review round 7, item 1).</summary>
+    public const string OutsideRange = "OUTSIDE_RANGE";
+
     /// <summary>Not permitted by the rule named in the error code.</summary>
     public const string NotAllowed = "NOT_ALLOWED";
 

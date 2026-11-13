@@ -173,6 +173,17 @@ internal sealed class ProjectRepository(PMPlatformDbContext context) : IProjectR
     public async Task RemoveFollowUpNotesAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
         context.RemoveRange(await context.Set<ProjectFollowUpNote>().Where(n => projectIds.Contains(n.ProjectId)).ToListAsync(cancellationToken).ConfigureAwait(false));
 
+    public async Task<IReadOnlyList<ProjectStagePlanEntry>> ListStagePlanAsync(Guid projectId, CancellationToken cancellationToken) =>
+        await context.Set<ProjectStagePlanEntry>().Where(e => e.ProjectId == projectId).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<ILookup<Guid, ProjectStagePlanEntry>> ReadStagePlansAsync(IReadOnlyCollection<Guid> projectIds, CancellationToken cancellationToken) =>
+        projectIds.Count == 0
+            ? Array.Empty<ProjectStagePlanEntry>().ToLookup(e => e.ProjectId)
+            : (await context.Set<ProjectStagePlanEntry>().AsNoTracking().Where(e => projectIds.Contains(e.ProjectId)).ToListAsync(cancellationToken).ConfigureAwait(false))
+                .ToLookup(e => e.ProjectId);
+
+    public void Add(ProjectStagePlanEntry entry) => context.Add(entry);
+
     public void Remove(ProjectEntity project) => context.Remove(project);
 
     public async Task<ProjectSaveOutcome> SaveAsync(CancellationToken cancellationToken)

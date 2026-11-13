@@ -69,6 +69,12 @@ public static class ProjectAuditEvents
     /// <summary>DATA_CHANGE: a dated follow-up note was added to a project (R3-3).</summary>
     public const string FollowUpNoteAdded = "Project.FollowUpNoteAdded";
 
+    /// <summary>
+    /// DATA_CHANGE: a project's stage plan was set or changed (review round 7, item 1): each stage's applicability, planned dates and starting %,
+    /// old and new, and the STAGE_PLAN_CHANGE authorisation a change after approval applied.
+    /// </summary>
+    public const string StagePlanChanged = "Project.StagePlanChanged";
+
     /// <summary>DATA_CHANGE: an approved import batch updated an existing project, matched by its legacy reference or Formal Project ID (R3-4).</summary>
     public const string ProjectUpdatedByImport = "Project.ProjectUpdatedByImport";
 

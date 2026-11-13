@@ -87,6 +87,21 @@ internal sealed class ProgressRepository(PMPlatformDbContext context) : IProgres
 
     public void Add(ProgressSubmission submission) => context.Add(submission);
 
+    public async Task<IReadOnlyList<ProgressStageEntry>> ListStagesAsync(Guid submissionId, bool track, CancellationToken cancellationToken)
+    {
+        IQueryable<ProgressStageEntry> rows = context.Set<ProgressStageEntry>().Where(e => e.ProgressSubmissionId == submissionId);
+        return await (track ? rows : rows.AsNoTracking()).OrderBy(e => e.SortOrder).ThenBy(e => e.StageCode).ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<ILookup<Guid, ProgressStageEntry>> ReadStagesAsync(IReadOnlyCollection<Guid> submissionIds, CancellationToken cancellationToken) =>
+        submissionIds.Count == 0
+            ? Array.Empty<ProgressStageEntry>().ToLookup(e => e.ProgressSubmissionId)
+            : (await context.Set<ProgressStageEntry>().AsNoTracking().Where(e => submissionIds.Contains(e.ProgressSubmissionId))
+                .OrderBy(e => e.SortOrder).ThenBy(e => e.StageCode).ToListAsync(cancellationToken).ConfigureAwait(false))
+                .ToLookup(e => e.ProgressSubmissionId);
+
+    public void Add(ProgressStageEntry entry) => context.Add(entry);
+
     public void Add(PublishedProgressSnapshot snapshot) => context.Add(snapshot);
 
     public void Add(ProjectHealthStatus healthStatus) => context.Add(healthStatus);

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PMPlatform.Domain.IdentityAccess;
+using PMPlatform.Domain.MasterDataConfig;
 using PMPlatform.Domain.Progress;
 using PMPlatform.Domain.Project;
 using PMPlatform.Domain.Schedule;
@@ -35,7 +36,8 @@ internal sealed class ProgressSubmissionConfiguration : IEntityTypeConfiguration
 
         // ADR-009: an override needs its recorded reason, and a reason is only ever an override's.
         builder.HasCheck("override", "(actual_percent_override IS NULL) = (override_reason IS NULL)");
-        builder.HasCheck("planned_baseline", "planned_percent IS NULL OR baseline_id IS NOT NULL");
+        // Planned progress comes from the active baseline or, for a stage-based period, from the stage plan (review round 7, item 1).
+        builder.HasCheck("planned_baseline", "planned_percent IS NULL OR baseline_id IS NOT NULL OR stage_configuration_version_id IS NOT NULL");
 
         // Who submitted and who decided are set by the transitions that make them so, and only then.
         builder.HasCheck("submitted", "(status = 'DRAFT') = (submitted_at IS NULL) AND (submitted_at IS NULL) = (submitted_by_user_id IS NULL)");
@@ -48,5 +50,6 @@ internal sealed class ProgressSubmissionConfiguration : IEntityTypeConfiguration
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.SubmittedByUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<User>().WithMany().HasForeignKey(e => e.ReviewedByUserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<ProjectBaseline>().WithMany().HasForeignKey(e => e.BaselineId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ConfigurationVersion>().WithMany().HasForeignKey(e => e.StageConfigurationVersionId).OnDelete(DeleteBehavior.Restrict);
     }
 }

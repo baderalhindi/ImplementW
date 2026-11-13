@@ -826,7 +826,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_change_authorization_applied", "(status = 'APPLIED') = (applied_at IS NOT NULL) AND (status = 'APPLIED') = (applied_by_user_id IS NOT NULL) AND (status = 'APPLIED') = (applied_reference IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_change_authorization_authorization_scope", "\"authorization_scope\" IN ('REBASELINE', 'COMMITMENT_CHANGE', 'PROFILE_CHANGE', 'SCOPE_CHANGE')");
+                            t.HasCheckConstraint("ck_change_authorization_authorization_scope", "\"authorization_scope\" IN ('REBASELINE', 'COMMITMENT_CHANGE', 'PROFILE_CHANGE', 'SCOPE_CHANGE', 'STAGE_PLAN_CHANGE')");
 
                             t.HasCheckConstraint("ck_change_authorization_expires_at", "expires_at IS NULL OR expires_at > issued_at");
 
@@ -8732,6 +8732,111 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressStageEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("ActualFinishDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_finish_date");
+
+                    b.Property<DateOnly?>("ActualStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("actual_start_date");
+
+                    b.Property<bool>("Applies")
+                        .HasColumnType("boolean")
+                        .HasColumnName("applies");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsFromSchedule")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_from_schedule");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<decimal?>("PercentComplete")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("percent_complete");
+
+                    b.Property<decimal?>("PlannedPercent")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("planned_percent");
+
+                    b.Property<Guid>("ProgressSubmissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("progress_submission_id");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("StageCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("stage_code");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<decimal>("WeightPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("weight_percent");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "DecreaseReason", "PMPlatform.Domain.Progress.ProgressStageEntry.DecreaseReason#NarrativeText", b1 =>
+                        {
+                            b1.Property<string>("Language")
+                                .IsRequired()
+                                .HasColumnType("char(2)")
+                                .HasColumnName("decrease_reason_lang");
+
+                            b1.Property<string>("Text")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("decrease_reason");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_progress_stage_entry");
+
+                    b.HasIndex("ProgressSubmissionId", "StageCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_progress_stage_entry_progress_submission_id_stage_code");
+
+                    b.ToTable("progress_stage_entry", "progress", t =>
+                        {
+                            t.HasCheckConstraint("ck_progress_stage_entry_actual_dates", "actual_start_date IS NULL OR actual_finish_date IS NULL OR actual_start_date <= actual_finish_date");
+
+                            t.HasCheckConstraint("ck_progress_stage_entry_decrease_reason_lang", "\"decrease_reason_lang\" IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("ck_progress_stage_entry_decrease_reason_pair", "(\"decrease_reason\" IS NULL) = (\"decrease_reason_lang\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_progress_stage_entry_percent", "weight_percent BETWEEN 0 AND 100 AND (planned_percent IS NULL OR planned_percent BETWEEN 0 AND 100) AND (percent_complete IS NULL OR percent_complete BETWEEN 0 AND 100)");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressSubmission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8799,6 +8904,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(1)
                         .HasColumnName("revision_no");
+
+                    b.Property<Guid?>("StageConfigurationVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("stage_configuration_version_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -8879,6 +8988,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("ReviewedByUserId")
                         .HasDatabaseName("ix_progress_submission_reviewed_by_user_id");
 
+                    b.HasIndex("StageConfigurationVersionId")
+                        .HasDatabaseName("ix_progress_submission_stage_configuration_version_id");
+
                     b.HasIndex("SubmittedByUserId")
                         .HasDatabaseName("ix_progress_submission_submitted_by_user_id");
 
@@ -8891,7 +9003,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.ToTable("progress_submission", "progress", t =>
                         {
-                            t.HasCheckConstraint("ck_progress_submission_actual_source", "\"actual_source\" IN ('WORK_BREAKDOWN', 'DECLARED', 'NOT_AVAILABLE')");
+                            t.HasCheckConstraint("ck_progress_submission_actual_source", "\"actual_source\" IN ('WORK_BREAKDOWN', 'DECLARED', 'NOT_AVAILABLE', 'STAGE_WEIGHTED')");
 
                             t.HasCheckConstraint("ck_progress_submission_narrative_lang", "\"narrative_lang\" IN ('ar', 'en')");
 
@@ -8905,7 +9017,7 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_progress_submission_percent", "actual_percent_calculated BETWEEN 0 AND 100 AND (actual_percent_override IS NULL OR actual_percent_override BETWEEN 0 AND 100) AND (planned_percent IS NULL OR planned_percent BETWEEN 0 AND 100)");
 
-                            t.HasCheckConstraint("ck_progress_submission_planned_baseline", "planned_percent IS NULL OR baseline_id IS NOT NULL");
+                            t.HasCheckConstraint("ck_progress_submission_planned_baseline", "planned_percent IS NULL OR baseline_id IS NOT NULL OR stage_configuration_version_id IS NOT NULL");
 
                             t.HasCheckConstraint("ck_progress_submission_return_reason", "(status = 'RETURNED') = (return_reason IS NOT NULL)");
 
@@ -9194,6 +9306,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("CurrentStageCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("current_stage_code");
+
+                    b.Property<decimal?>("CurrentStagePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("current_stage_percent");
+
                     b.Property<decimal?>("DeclaredActualPercent")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -9361,6 +9483,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("seed_source");
 
+                    b.Property<int>("StagePlanRevisionNo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("stage_plan_revision_no");
+
                     b.Property<Guid?>("StrategicInitiativeItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("strategic_initiative_item_id");
@@ -9527,6 +9655,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_project_current_obstacle_pair", "(\"current_obstacle\" IS NULL) = (\"current_obstacle_lang\" IS NULL)");
 
+                            t.HasCheckConstraint("ck_project_current_stage_percent", "current_stage_percent IS NULL OR (current_stage_code IS NOT NULL AND current_stage_percent BETWEEN 0 AND 100)");
+
                             t.HasCheckConstraint("ck_project_declared_percent_range", "(declared_planned_percent IS NULL OR declared_planned_percent BETWEEN 0 AND 100) AND (declared_actual_percent IS NULL OR declared_actual_percent BETWEEN 0 AND 100) AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100) AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
 
                             t.HasCheckConstraint("ck_project_declared_source", "\"declared_source\" IN ('IMPORT', 'MANUAL', 'ENTITY_UPDATE', 'PROGRESS_UPDATE')");
@@ -9552,6 +9682,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_project_participation_mode", "\"participation_mode\" IN ('ENTITY_MANAGED', 'AHDA_MANAGED')");
 
                             t.HasCheckConstraint("ck_project_seed_source", "seed_source IS NULL OR seed_source = 'DEMO'");
+
+                            t.HasCheckConstraint("ck_project_stage_plan_revision_no", "stage_plan_revision_no >= 0");
 
                             t.HasCheckConstraint("ck_project_title_lang", "\"title_lang\" IN ('ar', 'en')");
                         });
@@ -10140,6 +10272,71 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_project_intake_milestone_append_only", "updated_at = created_at AND updated_by = created_by");
 
                             t.HasCheckConstraint("ck_project_intake_milestone_title_lang", "\"title_lang\" IN ('ar', 'en')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectStagePlanEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Applies")
+                        .HasColumnType("boolean")
+                        .HasColumnName("applies");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly?>("PlannedEndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_end_date");
+
+                    b.Property<DateOnly?>("PlannedStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("planned_start_date");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("StageCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("stage_code");
+
+                    b.Property<decimal?>("StartingPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("starting_percent");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_project_stage_plan");
+
+                    b.HasIndex("ProjectId", "StageCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_project_stage_plan_project_id_stage_code");
+
+                    b.ToTable("project_stage_plan", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_project_stage_plan_dates", "planned_start_date IS NULL OR planned_end_date IS NULL OR planned_start_date <= planned_end_date");
+
+                            t.HasCheckConstraint("ck_project_stage_plan_starting_percent", "starting_percent IS NULL OR starting_percent BETWEEN 0 AND 100");
                         });
                 });
 
@@ -14734,6 +14931,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_notification_template_user_validated_by_user_id");
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressStageEntry", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Progress.ProgressSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("ProgressSubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_progress_stage_entry_progress_submission_progress_submissio");
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Progress.ProgressSubmission", b =>
                 {
                     b.HasOne("PMPlatform.Domain.Schedule.ProjectBaseline", null)
@@ -14767,6 +14974,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ReviewedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_progress_submission_user_reviewed_by_user_id");
+
+                    b.HasOne("PMPlatform.Domain.MasterDataConfig.ConfigurationVersion", null)
+                        .WithMany()
+                        .HasForeignKey("StageConfigurationVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_progress_submission_configuration_version_stage_configurati");
 
                     b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
                         .WithMany()
@@ -14989,6 +15202,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_project_intake_milestone_project_intake_project_intake_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.Project.ProjectStagePlanEntry", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.Project.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_project_stage_plan_project_project_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.ProjectTask.ActivityExecutionProgress", b =>

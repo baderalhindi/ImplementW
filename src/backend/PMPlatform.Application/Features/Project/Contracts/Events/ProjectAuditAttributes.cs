@@ -55,6 +55,12 @@ public static class ProjectAuditAttributes
     public const string DeclaredSource = "declared_source";
     public const string EntityUpdateCompliant = "entity_update_compliant";
     public const string FollowUpNoteId = "follow_up_note_id";
+    public const string StagePlanRevisionNo = "stage_plan_revision_no";
+    public const string ChangeAuthorizationId = "change_authorization_id";
+    public const string ReasonText = "reason_text";
+
+    /// <summary>One stage's plan, <c>stage_plan_{code}</c> in lower case: whether it applies, its planned start and end, and its starting %.</summary>
+    public static string StagePlanOf(string stageCode) => $"stage_plan_{stageCode.ToLowerInvariant()}";
     public const string ProjectImportBatchId = "project_import_batch_id";
     public const string BatchNo = "batch_no";
     public const string FileSha256 = "file_sha256";

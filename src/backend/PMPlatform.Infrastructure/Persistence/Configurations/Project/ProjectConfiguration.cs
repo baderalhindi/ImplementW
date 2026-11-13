@@ -44,6 +44,13 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<ProjectEnt
             + " AND (declared_planned_spend_percent IS NULL OR declared_planned_spend_percent BETWEEN 0 AND 100)"
             + " AND (declared_actual_spend_percent IS NULL OR declared_actual_spend_percent BETWEEN 0 AND 100)");
 
+        // Review round 7, item 1: the stage plan's revision and the current stage of the latest published stage-based period.
+        builder.Property(e => e.StagePlanRevisionNo).HasDatabaseDefault(0);
+        builder.HasCheck("stage_plan_revision_no", "stage_plan_revision_no >= 0");
+        builder.Property(e => e.CurrentStageCode).HasMaxLength(50);
+        builder.Property(e => e.CurrentStagePercent).HasPrecision(5, 2);
+        builder.HasCheck("current_stage_percent", "current_stage_percent IS NULL OR (current_stage_code IS NOT NULL AND current_stage_percent BETWEEN 0 AND 100)");
+
         // TASK-041: the formal identifier is issued when AHDA approves, so every state from APPROVED_PLANNED on has one.
         builder.HasCheck(
             "formal_project_id",
