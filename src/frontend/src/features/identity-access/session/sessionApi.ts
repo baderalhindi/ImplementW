@@ -112,9 +112,12 @@ export const sessionApi = {
     (await apiRequest<SsoAuthorization>('/sessions/sso-authorization', { anonymous: true })).data,
   completeSso: (code: string, state: string, transaction: string) =>
     post<SignInResult>('/sessions/sso', { code, state, transaction }),
-  /** Sign-in with biometrics: options for the passkey of the National ID's owner (the same answer for any number). */
-  beginPasskeySignIn: (nationalId: string) =>
-    post<PasskeyOptions>('/sessions/passkey-challenge', { nationalId }),
+  /**
+   * Options for a passkey sign-in. With a National ID (sign-in with biometrics), only its owner's passkey verifies, and the
+   * answer is the same for any number; with null (the Face ID / Touch ID button), the device's passkey signs its owner in.
+   */
+  beginPasskeySignIn: (nationalId: string | null) =>
+    post<PasskeyOptions>('/sessions/passkey-challenge', nationalId === null ? {} : { nationalId }),
   signInWithPasskey: (transaction: string, credential: unknown) =>
     post<SignInResult>('/sessions/passkey', { transaction, credential }),
   /** Sign-in with biometrics: a code to the verified mobile number of the National ID's owner. */

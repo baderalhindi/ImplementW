@@ -87,9 +87,10 @@ export function PasswordlessSignIn({
 
   const id = nationalId.trim();
 
-  const signInWithPasskey = async () => {
+  /** With the National ID, only its owner's passkey verifies; without it, the passkey the device offers signs its owner in. */
+  const signInWithPasskey = async (forNationalId: string | null) => {
     const result = await save.run(async () => {
-      const { options, transaction } = await sessionApi.beginPasskeySignIn(id);
+      const { options, transaction } = await sessionApi.beginPasskeySignIn(forNationalId);
       const credential = (await navigator.credentials.get({
         publicKey: requestOptions(options),
       })) as PublicKeyCredential | null;
@@ -176,6 +177,25 @@ export function PasswordlessSignIn({
           <button type="submit" className="button sign-in__wide" disabled={!available}>
             {t('identityAccess.signIn.passwordless.submit')}
           </button>
+          {passkeyAvailable && (
+            <>
+              <button
+                type="button"
+                className="button button--primary sign-in__wide"
+                disabled={deviceReady !== true || save.saving}
+                onClick={() => void signInWithPasskey(null)}
+              >
+                {save.saving
+                  ? t('identityAccess.signIn.signingIn')
+                  : t(`identityAccess.signIn.passwordless.direct.${unlock}`)}
+              </button>
+              {deviceReady === false && (
+                <p className="sign-in__note">
+                  {t('identityAccess.signIn.passwordless.noDeviceUnlock')}
+                </p>
+              )}
+            </>
+          )}
         </>
       )}
 
@@ -188,7 +208,7 @@ export function PasswordlessSignIn({
                 type="button"
                 className="button button--primary sign-in__wide"
                 disabled={deviceReady !== true || save.saving}
-                onClick={() => void signInWithPasskey()}
+                onClick={() => void signInWithPasskey(id)}
               >
                 {t(`identityAccess.signIn.passwordless.passkey.${unlock}`)}
               </button>

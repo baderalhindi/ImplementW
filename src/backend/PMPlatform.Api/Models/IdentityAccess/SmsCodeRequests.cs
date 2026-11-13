@@ -22,6 +22,24 @@ public sealed record BiometricSignInRequest(string? NationalId)
     }
 }
 
+/// <summary>
+/// Starts a passkey sign-in: with <see cref="NationalId"/> (sign-in with biometrics) only its owner's passkey will verify;
+/// without it (the Face ID / Touch ID button) the passkey the device offers signs its owner in.
+/// </summary>
+public sealed record PasskeyChallengeRequest(string? NationalId)
+{
+    internal List<FieldError> Validate()
+    {
+        List<FieldError> errors = [];
+        if (NationalId is not null && !NationalIdNumber.IsValid(NationalId))
+        {
+            errors.Add(new FieldError("nationalId", FieldError.Malformed));
+        }
+
+        return errors;
+    }
+}
+
 /// <summary>Signs in with the code the SMS carried, for the challenge it was sent under.</summary>
 public sealed record SmsSessionCreateRequest(Guid? ChallengeId, string? Code)
 {

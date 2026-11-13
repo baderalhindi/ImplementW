@@ -14,12 +14,16 @@ namespace PMPlatform.Application.Features.IdentityAccess.Authentication;
 /// </summary>
 internal sealed partial class AuthenticationService
 {
-    public bool IsPasskeySignInAvailable => passkeyRelyingParty.IsConfigured && nationalIds.IsConfigured;
+    public bool IsPasskeySignInAvailable => passkeyRelyingParty.IsConfigured;
 
-    public async Task<PasskeyCeremony?> BeginPasskeySignInAsync(string nationalId, CancellationToken cancellationToken) =>
-        IsPasskeySignInAvailable
-            ? passkeyRelyingParty.BeginAssertion(await UserOfNationalIdAsync(nationalId, cancellationToken).ConfigureAwait(false) ?? Guid.Empty)
-            : null;
+    /// <summary>
+    /// With a National ID, only its owner's passkey will verify (<see cref="Guid.Empty"/> when it is nobody's); without one,
+    /// any registered passkey signs its own owner in, as the device offers it.
+    /// </summary>
+    public async Task<PasskeyCeremony?> BeginPasskeySignInAsync(string? nationalId, CancellationToken cancellationToken) =>
+        !IsPasskeySignInAvailable ? null
+        : nationalId is null ? passkeyRelyingParty.BeginAssertion(expectedUserId: null)
+        : passkeyRelyingParty.BeginAssertion(await UserOfNationalIdAsync(nationalId, cancellationToken).ConfigureAwait(false) ?? Guid.Empty);
 
     public async Task<AuthenticationResult> SignInWithPasskeyAsync(string transaction, string credentialJson, CancellationToken cancellationToken)
     {
@@ -117,6 +121,7 @@ internal sealed partial class AuthenticationService
     /// <summary>The user whose National ID or Iqama number this is, found by its fingerprint; the number itself is never stored or compared.</summary>
     private async Task<Guid?> UserOfNationalIdAsync(string nationalId, CancellationToken cancellationToken) =>
         NationalIdNumber.IsValid(nationalId)
+            && nationalIds.IsConfigured
             ? await users.FindByNationalIdFingerprintAsync(nationalIds.Fingerprint(nationalId), cancellationToken).ConfigureAwait(false)
             : null;
 

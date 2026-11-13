@@ -507,6 +507,13 @@
       "instructions": "If you cannot use the Nafath app, you can sign in with biometric verification",
       "nationalId": "National ID / Iqama number",
       "submit": "Sign in with biometrics",
+      "direct": {
+        "faceId": "Sign in with Face ID",
+        "touchId": "Sign in with Touch ID",
+        "windowsHello": "Sign in with Windows Hello",
+        "fingerprint": "Sign in with your fingerprint",
+        "deviceUnlock": "Sign in with this device"
+      },
       "choose": "How do you want to verify it is you?",
       "passkey": {
         "faceId": "Use Face ID",
@@ -515,7 +522,7 @@
         "fingerprint": "Use your fingerprint",
         "deviceUnlock": "Use this device"
       },
-      "noDeviceUnlock": "This device or browser cannot use a passkey. Use the code by SMS.",
+      "noDeviceUnlock": "This device or browser cannot use a passkey. Use the code by SMS or your password.",
       "passkeyCancelled": "The verification was cancelled, or this device has no passkey for your account. Add one under Sign-in methods after signing in another way.",
       "refused": "We could not verify you. Check the National ID, or verify another way.",
       "sendCode": "Send a code to my mobile number",

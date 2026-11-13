@@ -149,16 +149,16 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     }
 
     /// <summary>
-    /// Sign-in with biometrics by passkey (13 Nov 2026 review): options for <c>navigator.credentials.get</c>, for the owner
-    /// of the National ID given. The answer is the same whether or not anyone has that number; only its owner's passkey
-    /// will verify. Nothing is stored server-side.
+    /// Passkey sign-in (13 Nov 2026 review): options for <c>navigator.credentials.get</c>. With a National ID (sign-in with
+    /// biometrics), only its owner's passkey will verify, and the answer is the same whether or not anyone has that number.
+    /// Without one (the Face ID / Touch ID button), the passkey the device offers signs its owner in. Nothing is stored server-side.
     /// </summary>
     [HttpPost("passkey-challenge")]
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_CreatePasskeyChallenge")]
     [ProducesResponseType<PasskeyOptionsDetail>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> CreatePasskeyChallenge(BiometricSignInRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreatePasskeyChallenge(PasskeyChallengeRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.Validate() is { Count: > 0 } errors)
@@ -166,7 +166,7 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
             return ValidationFailed(errors);
         }
 
-        PasskeyCeremony? ceremony = await authentication.BeginPasskeySignInAsync(request.NationalId!, cancellationToken);
+        PasskeyCeremony? ceremony = await authentication.BeginPasskeySignInAsync(request.NationalId, cancellationToken);
         NoStore();
         return ceremony is null ? Unavailable() : Ok(PasskeyOptionsDetail.From(ceremony));
     }

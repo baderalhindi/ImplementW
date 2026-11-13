@@ -190,6 +190,20 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         Assert.Equal(HttpStatusCode.Created, asOwner.StatusCode);
     }
 
+    /// <summary>The Face ID / Touch ID button: no National ID, so the passkey the device offers signs its own owner in.</summary>
+    [Fact]
+    public async Task APasskeyWithoutANationalIdSignsInItsOwnOwner()
+    {
+        using HttpClient client = _api.CreateClient();
+        using TestPasskeyDevice device = new(Origin, RelyingPartyId);
+        await RegisterAsync(client, (await client.SignInOrFailAsync(3)).AccessToken, device, "Mac");
+
+        using HttpResponseMessage response = await SignInWithPasskeyAsync(client, device, nationalId: null);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal(Guid.Parse(IdentityDatabase.UserId(3)), (await response.ReadAsync<Session>()).User.Id);
+    }
+
     [Theory]
     [InlineData("1000000009")]
     [InlineData("3000000000")]
@@ -325,7 +339,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
     }
 
     private static async Task<HttpResponseMessage> SignInWithPasskeyAsync(
-        HttpClient client, TestPasskeyDevice device, string nationalId, Func<byte[], byte[]>? tamper = null)
+        HttpClient client, TestPasskeyDevice device, string? nationalId, Func<byte[], byte[]>? tamper = null)
     {
         using HttpResponseMessage started = await client.PostAsJsonAsync(PasskeyChallenge, new { nationalId });
         Assert.Equal(HttpStatusCode.OK, started.StatusCode);

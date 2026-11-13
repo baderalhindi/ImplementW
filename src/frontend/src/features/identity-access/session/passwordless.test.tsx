@@ -134,6 +134,40 @@ describe('sign-in with biometrics', () => {
     });
   });
 
+  test('the Face ID / Touch ID button signs in with the device passkey, no National ID asked', async () => {
+    credentials.get.mockResolvedValue({
+      id: 'cred',
+      rawId: bytes(1),
+      type: 'public-key',
+      response: {
+        clientDataJSON: bytes(2),
+        authenticatorData: bytes(3),
+        signature: bytes(4),
+        userHandle: null,
+      },
+    });
+    const api = offerPasswordless(withIdentityAccessData(mockApi()))
+      .on('POST', /^\/sessions\/passkey-challenge$/, {
+        body: { options: { challenge: 'AQ' }, transaction: 'sealed' },
+      })
+      .on('POST', /^\/sessions\/passkey$/, { status: 201, body: sessionFor(['R03']) });
+    const user = userEvent.setup();
+    const { router } = renderApp({ path: '/sign-in' });
+
+    const button = await screen.findByRole('button', {
+      name: /^Sign in with (Face ID|Touch ID|Windows Hello|your fingerprint|this device)$/,
+    });
+    await waitFor(() => {
+      expect((button as HTMLButtonElement).disabled).toBe(false);
+    });
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/');
+    });
+    expect(api.requestsTo('POST', /^\/sessions\/passkey-challenge$/)[0]?.body).toEqual({});
+  });
+
   test('says how to go on when the person closes the device prompt', async () => {
     credentials.get.mockRejectedValue(new DOMException('cancelled', 'NotAllowedError'));
     const api = offerPasswordless(mockApi()).on('POST', /^\/sessions\/passkey-challenge$/, {

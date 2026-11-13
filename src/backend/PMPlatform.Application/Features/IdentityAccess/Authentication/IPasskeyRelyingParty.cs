@@ -19,10 +19,10 @@ public interface IPasskeyRelyingParty
     public Task<NewPasskeyCredential?> CompleteRegistrationAsync(Guid userId, string transaction, string credentialJson, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Asks the device for one of this platform's passkeys, to be verified only if it is <paramref name="expectedUserId"/>'s.
-    /// No credential is named in the options, so they do not say whether that person has any.
+    /// Asks the device for one of this platform's passkeys, to be verified only if it is <paramref name="expectedUserId"/>'s,
+    /// or anyone's when that is null. No credential is named in the options, so they do not say whether anyone has one.
     /// </summary>
-    public PasskeyCeremony BeginAssertion(Guid expectedUserId);
+    public PasskeyCeremony BeginAssertion(Guid? expectedUserId);
 
     /// <summary>The credential id the device answered with, to look its passkey up by; null if the answer cannot be read.</summary>
     public byte[]? CredentialIdOf(string credentialJson);

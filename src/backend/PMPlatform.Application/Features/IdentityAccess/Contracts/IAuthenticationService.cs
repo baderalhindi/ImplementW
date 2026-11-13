@@ -35,14 +35,15 @@ public interface IAuthenticationService
 
     public Task<SsoAuthorizationResult> BeginSsoSignInAsync(CancellationToken cancellationToken);
 
-    /// <summary>Whether this environment knows its WebAuthn relying party and can read National IDs, so the sign-in page can offer Face ID / Touch ID.</summary>
+    /// <summary>Whether this environment knows its WebAuthn relying party, so the sign-in page can offer Face ID / Touch ID.</summary>
     public bool IsPasskeySignInAvailable { get; }
 
     /// <summary>
-    /// The options for a passkey sign-in as the owner of <paramref name="nationalId"/>, or null where passkeys are not
-    /// configured. The answer is the same whether or not anyone has that number; only its owner's passkey will verify.
+    /// The options for a passkey sign-in, or null where passkeys are not configured. With <paramref name="nationalId"/>,
+    /// only its owner's passkey will verify, and the answer is the same whether or not anyone has that number; without
+    /// one, the passkey the device offers signs its own owner in.
     /// </summary>
-    public Task<PasskeyCeremony?> BeginPasskeySignInAsync(string nationalId, CancellationToken cancellationToken);
+    public Task<PasskeyCeremony?> BeginPasskeySignInAsync(string? nationalId, CancellationToken cancellationToken);
 
     /// <summary>Signs in with the passkey the device answered with. A passkey passes the second factor too (13 Nov 2026 review).</summary>
     public Task<AuthenticationResult> SignInWithPasskeyAsync(string transaction, string credentialJson, CancellationToken cancellationToken);

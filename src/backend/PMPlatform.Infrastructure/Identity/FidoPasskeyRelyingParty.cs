@@ -81,7 +81,7 @@ internal sealed partial class FidoPasskeyRelyingParty(
         }
     }
 
-    public PasskeyCeremony BeginAssertion(Guid expectedUserId)
+    public PasskeyCeremony BeginAssertion(Guid? expectedUserId)
     {
         AssertionOptions requested = Fido().GetAssertionOptions(new GetAssertionOptionsParams
         {
@@ -107,7 +107,7 @@ internal sealed partial class FidoPasskeyRelyingParty(
     public async Task<long?> VerifyAssertionAsync(string transaction, string credentialJson, StoredPasskey stored, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(stored);
-        if (Open(transaction) is not { SignIn: true } ceremony || ceremony.UserId != stored.UserId)
+        if (Open(transaction) is not { SignIn: true } ceremony || (ceremony.UserId is { } expected && expected != stored.UserId))
         {
             return null;
         }
@@ -166,9 +166,10 @@ internal sealed partial class FidoPasskeyRelyingParty(
 
     /// <summary>
     /// A ceremony in flight: the options the device was given, whose passkey it is for (the registering person, or the
-    /// person a sign-in names; <see cref="Guid.Empty"/> when the National ID is nobody's), until when, and which kind.
+    /// person a sign-in names; <see cref="Guid.Empty"/> when the National ID is nobody's, null when the sign-in names nobody
+    /// and the passkey's own owner signs in), until when, and which kind.
     /// </summary>
-    private sealed record Ceremony(string Options, Guid UserId, DateTimeOffset ExpiresAt, bool SignIn);
+    private sealed record Ceremony(string Options, Guid? UserId, DateTimeOffset ExpiresAt, bool SignIn);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Passkey {Ceremony} rejected ({Reason}): {Detail}")]
     private static partial void LogRejected(ILogger logger, string ceremony, string reason, string detail);
