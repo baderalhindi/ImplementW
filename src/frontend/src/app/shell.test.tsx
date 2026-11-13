@@ -317,20 +317,21 @@ describe('the master navigation', () => {
     expect(sectionTabs()).toBeNull();
   });
 
-  test('the Home’s cards offer every screen of the rail’s menus that this person may open, and no other', async () => {
+  test('only the administrator’s Home has the cards; everyone else goes by the side menu (13 Nov 2026 review)', async () => {
     withInbox(withDashboards(mockApi(), { catalogue: catalogueFor(['R04']) }));
     renderApp({ path: '/', session: sessionFor(['R04']) });
 
+    await findMainMenu();
+    expect(await screen.findByRole('heading', { name: en('home.work.title') })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: en('home.menus.title') })).toBeNull();
+  });
+
+  test('the administrator’s cards offer every screen of the rail’s menus they may open, and no other', async () => {
+    withInbox(withDashboards(mockApi(), { catalogue: catalogueFor(['R01']) }));
+    renderApp({ path: '/', session: sessionFor(['R01']) });
+
     const overview = await screen.findByRole('region', { name: en('home.menus.title') });
     expect(sectionTabs()).toBeNull();
-    const projects = await within(overview).findByRole('list', {
-      name: en('common.menu.projects'),
-    });
-    expect(
-      within(projects)
-        .getByRole('link', { name: en('projects.nav.register') })
-        .getAttribute('href'),
-    ).toBe('/projects');
     const cards = within(overview)
       .getAllByRole('heading', { level: 3 })
       .map((heading) => heading.textContent);
@@ -338,8 +339,9 @@ describe('the master navigation', () => {
       .map((label) => label.textContent)
       .filter((name) => name !== en('common.menu.home'));
     expect(cards).toEqual(menus);
-    // The Project Manager administers nothing (the review, C3).
-    expect(within(overview).queryByText(en('identityAccess.nav.users'))).toBeNull();
+    expect(
+      within(overview).getByRole('link', { name: en('identityAccess.nav.users') }),
+    ).toBeTruthy();
   });
 
   test('collapsing keeps every menu’s name for screen readers and is remembered', async () => {

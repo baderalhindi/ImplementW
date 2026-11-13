@@ -18,7 +18,8 @@ import { PortfolioSnapshot } from './PortfolioSnapshot.tsx';
  * Dashboard's audience a snapshot of the portfolio — its headline figures and where its projects are — above their work. The full
  * analysis stays the Portfolio menu's (/dashboards). Someone who administers the platform and holds no business data, R01, sees the
  * platform's health instead (M-1), under the same welcome banner with the administration's ways in. `menuOverview` is the shell's map
- * of the screens this person can open, directly under the banner.
+ * of the screens this person can open, directly under the banner; since the 13 Nov 2026 review only the administrator sees it, and
+ * everyone else reaches the screens from the side menu.
  */
 export function HomePage({ menuOverview }: { menuOverview: ReactNode }): ReactElement {
   const { t, language } = useI18n();
@@ -50,7 +51,7 @@ export function HomePage({ menuOverview }: { menuOverview: ReactNode }): ReactEl
         </p>
         {administers ? <AdministrationActions /> : <StartOrOpen user={session.user} />}
       </header>
-      {menuOverview}
+      {administers && menuOverview}
       {administers ? (
         <PlatformHealth />
       ) : (
