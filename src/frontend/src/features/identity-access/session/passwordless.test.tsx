@@ -7,6 +7,7 @@ import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixture
 import { type MockApi, mockApi } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
 
+import { hasDeviceUnlock, rememberDeviceUnlock } from './deviceUnlockMemory.ts';
 import { deviceUnlock } from './webAuthn.ts';
 
 // Sign-in with biometrics (13 Nov 2026 review): the National ID, then the passkey on this device or a code by SMS. The
@@ -37,6 +38,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  localStorage.clear();
   vi.unstubAllGlobals();
   credentials.get.mockReset();
   credentials.create.mockReset();
@@ -70,7 +72,8 @@ describe('sign-in with biometrics', () => {
     expect(api.requests.filter((request) => request.method === 'POST')).toHaveLength(0);
   });
 
-  test('with the passkey: asks the device and signs in with its answer', async () => {
+  test('where this device has Touch ID for the National ID, asks for it at once and signs in', async () => {
+    await rememberDeviceUnlock(NATIONAL_ID);
     credentials.get.mockResolvedValue({
       id: 'cred',
       rawId: bytes(1, 2, 3),
@@ -168,7 +171,8 @@ describe('sign-in with biometrics', () => {
     expect(api.requestsTo('POST', /^\/sessions\/passkey-challenge$/)[0]?.body).toEqual({});
   });
 
-  test('says how to go on when the person closes the device prompt', async () => {
+  test('says how to go on when the person closes the device prompt, and offers the setup again', async () => {
+    await rememberDeviceUnlock(NATIONAL_ID);
     credentials.get.mockRejectedValue(new DOMException('cancelled', 'NotAllowedError'));
     const api = offerPasswordless(mockApi()).on('POST', /^\/sessions\/passkey-challenge$/, {
       body: { options: { challenge: 'AQID' }, transaction: 'sealed' },
@@ -187,6 +191,112 @@ describe('sign-in with biometrics', () => {
       await screen.findByText(en('identityAccess.signIn.passwordless.passkeyCancelled')),
     ).toBeTruthy();
     expect(api.requestsTo('POST', /^\/sessions\/passkey$/)).toHaveLength(0);
+    expect(
+      screen.getByRole('button', {
+        name: /^Set up (Face ID|Touch ID|Windows Hello|your fingerprint|this device's unlock) again on this device$/,
+      }),
+    ).toBeTruthy();
+    expect(await hasDeviceUnlock(NATIONAL_ID)).toBe(false);
+  });
+
+  test('the first time on a device, the SMS code confirms the person and Touch ID is saved before signing in', async () => {
+    credentials.create.mockResolvedValue({
+      id: 'new',
+      rawId: bytes(9),
+      type: 'public-key',
+      response: {
+        clientDataJSON: bytes(1),
+        attestationObject: bytes(2),
+        getTransports: () => ['internal'],
+      },
+    });
+    const session = sessionFor(['R03']);
+    const api = offerPasswordless(withIdentityAccessData(mockApi()))
+      .on('POST', /^\/sessions\/sms-code-challenge$/, {
+        body: { challengeId: 'challenge-1', expiresAt: '2099-01-01T00:00:00Z' },
+      })
+      .on('POST', /^\/sessions\/sms$/, { status: 201, body: session })
+      .on('GET', /^\/users\/current\/passkeys\/registration-options$/, {
+        body: {
+          options: {
+            challenge: 'AQ',
+            user: { id: 'Ag', name: 'local.r03', displayName: 'Local R03' },
+          },
+          transaction: 'sealed',
+        },
+      })
+      .on('POST', /^\/users\/current\/passkeys$/, {
+        status: 201,
+        body: { id: 'p1', name: 'Mac', createdAt: '2026-11-13T10:00:00Z', lastUsedAt: null },
+      });
+    const user = userEvent.setup();
+    const { router } = renderApp({ path: '/sign-in' });
+
+    await giveNationalId(user);
+    const button = await passkeyButton();
+    await waitFor(() => {
+      expect((button as HTMLButtonElement).disabled).toBe(false);
+    });
+    await user.click(button);
+    await user.click(
+      await screen.findByRole('button', {
+        name: en('identityAccess.signIn.passwordless.setup.sendCode'),
+      }),
+    );
+    await user.type(await screen.findByLabelText(/^Verification code/), '123456');
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.signInWithCode') }),
+    );
+    await user.click(
+      await screen.findByRole('button', {
+        name: /^Save (Face ID|Touch ID|Windows Hello|your fingerprint|this device's unlock)$/,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/');
+    });
+    expect(credentials.get).not.toHaveBeenCalled();
+    const saved = api.requestsTo('POST', /^\/users\/current\/passkeys$/)[0];
+    expect(saved?.headers.get('Authorization')).toBe(`Bearer ${session.accessToken}`);
+    expect(await hasDeviceUnlock(NATIONAL_ID)).toBe(true);
+  });
+
+  test('the first time on a device, Not now signs in without saving anything', async () => {
+    const api = offerPasswordless(withIdentityAccessData(mockApi()))
+      .on('POST', /^\/sessions\/sms-code-challenge$/, {
+        body: { challengeId: 'challenge-1', expiresAt: '2099-01-01T00:00:00Z' },
+      })
+      .on('POST', /^\/sessions\/sms$/, { status: 201, body: sessionFor(['R03']) });
+    const user = userEvent.setup();
+    const { router } = renderApp({ path: '/sign-in' });
+
+    await giveNationalId(user);
+    const button = await passkeyButton();
+    await waitFor(() => {
+      expect((button as HTMLButtonElement).disabled).toBe(false);
+    });
+    await user.click(button);
+    await user.click(
+      await screen.findByRole('button', {
+        name: en('identityAccess.signIn.passwordless.setup.sendCode'),
+      }),
+    );
+    await user.type(await screen.findByLabelText(/^Verification code/), '123456');
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.signInWithCode') }),
+    );
+    await user.click(
+      await screen.findByRole('button', {
+        name: en('identityAccess.signIn.passwordless.setup.notNow'),
+      }),
+    );
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/');
+    });
+    expect(credentials.create).not.toHaveBeenCalled();
+    expect(api.requestsTo('POST', /passkeys$/)).toHaveLength(0);
   });
 
   test('on a device without Face ID or Touch ID the passkey is disabled and SMS remains', async () => {

@@ -32,13 +32,24 @@ const PASSKEYS = '/users/current/passkeys';
 export const signInMethodsApi = {
   listPasskeys: async (signal: AbortSignal) =>
     (await apiRequest<PasskeyList>(PASSKEYS, { signal })).data,
-  getRegistrationOptions: async () =>
-    (await apiRequest<PasskeyOptions>(`${PASSKEYS}/registration-options`)).data,
-  addPasskey: async (transaction: string, credential: unknown, name: string) =>
+  /** `accessToken`: a session the sign-in page holds while it sets Face ID / Touch ID up, before the session store has it. */
+  getRegistrationOptions: async (accessToken?: string) =>
+    (
+      await apiRequest<PasskeyOptions>(`${PASSKEYS}/registration-options`, {
+        ...(accessToken === undefined ? {} : { accessToken }),
+      })
+    ).data,
+  addPasskey: async (
+    transaction: string,
+    credential: unknown,
+    name: string,
+    accessToken?: string,
+  ) =>
     (
       await apiRequest<PasskeySummary>(PASSKEYS, {
         method: 'POST',
         body: { transaction, credential, name },
+        ...(accessToken === undefined ? {} : { accessToken }),
       })
     ).data,
   removePasskey: async (passkeyId: string) =>

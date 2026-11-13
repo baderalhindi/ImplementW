@@ -522,8 +522,8 @@
         "fingerprint": "Use your fingerprint",
         "deviceUnlock": "Use this device"
       },
-      "noDeviceUnlock": "This device or browser cannot use a passkey. Use the code by SMS or your password.",
-      "passkeyCancelled": "The verification was cancelled, or this device has no passkey for your account. Add one under Sign-in methods after signing in another way.",
+      "noDeviceUnlock": "This device or browser does not support Face ID or Touch ID. Use the code by SMS.",
+      "passkeyCancelled": "Face ID / Touch ID was cancelled, or is not set up on this device for this account.",
       "refused": "We could not verify you. Check the National ID, or verify another way.",
       "sendCode": "Send a code to my mobile number",
       "codeSent": "If this ID has a verified mobile number, a code is on its way. Enter it below.",
@@ -531,7 +531,48 @@
       "resend": "Send a new code",
       "resendIn": "Send a new code in {seconds} s",
       "otherWay": "Verify another way",
-      "changeNationalId": "Use another National ID"
+      "changeNationalId": "Use another National ID",
+      "setup": {
+        "intro": {
+          "faceId": "First time with Face ID on this device: confirm it is you with a code sent to your mobile number, and Face ID is saved here. Next time, Face ID is all you need.",
+          "touchId": "First time with Touch ID on this device: confirm it is you with a code sent to your mobile number, and Touch ID is saved here. Next time, Touch ID is all you need.",
+          "windowsHello": "First time with Windows Hello on this device: confirm it is you with a code sent to your mobile number, and Windows Hello is saved here. Next time, Windows Hello is all you need.",
+          "fingerprint": "First time with your fingerprint on this device: confirm it is you with a code sent to your mobile number, and your fingerprint is saved here. Next time, your fingerprint is all you need.",
+          "deviceUnlock": "First time with this device's unlock on this device: confirm it is you with a code sent to your mobile number, and this device's unlock is saved here. Next time, this device's unlock is all you need."
+        },
+        "sendCode": "Send the code to my mobile number",
+        "noSms": "You can set it up under Sign-in methods after signing in another way.",
+        "already": {
+          "faceId": "Face ID is already set up on this device",
+          "touchId": "Touch ID is already set up on this device",
+          "windowsHello": "Windows Hello is already set up on this device",
+          "fingerprint": "your fingerprint is already set up on this device",
+          "deviceUnlock": "this device's unlock is already set up on this device"
+        },
+        "again": {
+          "faceId": "Set up Face ID again on this device",
+          "touchId": "Set up Touch ID again on this device",
+          "windowsHello": "Set up Windows Hello again on this device",
+          "fingerprint": "Set up your fingerprint again on this device",
+          "deviceUnlock": "Set up this device's unlock again on this device"
+        },
+        "confirmed": {
+          "faceId": "It is you. Save Face ID on this device so that next time it is all you need.",
+          "touchId": "It is you. Save Touch ID on this device so that next time it is all you need.",
+          "windowsHello": "It is you. Save Windows Hello on this device so that next time it is all you need.",
+          "fingerprint": "It is you. Save your fingerprint on this device so that next time it is all you need.",
+          "deviceUnlock": "It is you. Save this device's unlock on this device so that next time it is all you need."
+        },
+        "save": {
+          "faceId": "Save Face ID",
+          "touchId": "Save Touch ID",
+          "windowsHello": "Save Windows Hello",
+          "fingerprint": "Save your fingerprint",
+          "deviceUnlock": "Save this device's unlock"
+        },
+        "notNow": "Not now",
+        "cancelled": "Nothing was saved: the prompt was closed. Try again, or choose Not now."
+      }
     },
     "copyright": "© {year} Al Ahsa Development Authority. All rights reserved.",
     "wrongCredentials": "The username or password is wrong.",

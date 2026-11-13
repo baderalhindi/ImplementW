@@ -7,6 +7,7 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { checkNationalId, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { type ProblemDescriber, problemMessage } from '../problems.ts';
+import { forgetDeviceUnlock, hasDeviceUnlock, rememberDeviceUnlock } from './deviceUnlockMemory.ts';
 import { sessionApi, type SmsCodeChallenge } from './sessionApi.ts';
 import { nextStep } from './signInSteps.ts';
 import {
@@ -29,13 +30,14 @@ const describe: ProblemDescriber = (error, t) =>
       ? t('identityAccess.signIn.passwordless.refused')
       : problemMessage(error, t);
 
-type Stage = 'nationalId' | 'choose' | 'smsCode';
+type Stage = 'nationalId' | 'choose' | 'setup' | 'smsCode';
 
 /**
  * Sign-in with biometrics (13 Nov 2026 review). The person gives their National ID or Iqama number, then proves it is
- * them: with the passkey on this device (Face ID, Touch ID or its own unlock), or with a code by SMS to the mobile number
- * verified on their account. The choice looks the same for any number, so the page says nothing about who has an account.
- * Each way is offered only where the API says it can work, and the passkey only on a device that can unlock one.
+ * them: with Face ID / Touch ID on this device, or with a code by SMS to the mobile number verified on their account. The
+ * first time on a device, Face ID / Touch ID is set up on the way: the SMS code proves who they are, then the device keeps
+ * their Face ID / Touch ID for the account (a passkey, though the page never says the word), and from then on it is all
+ * they need. The choice looks the same for any number, so the page says nothing about who has an account.
  */
 export function PasswordlessSignIn({
   passkeyAvailable,
@@ -46,7 +48,8 @@ export function PasswordlessSignIn({
   passkeyAvailable: boolean;
   smsAvailable: boolean;
   loading: boolean;
-  onSignedIn: (step: SignInStep) => void;
+  /** `setUpForNationalId`: the person signed in to set Face ID / Touch ID up on this device for that National ID. */
+  onSignedIn: (step: SignInStep, setUpForNationalId: string | null) => void;
 }): ReactElement {
   const { t } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
@@ -59,6 +62,8 @@ export function PasswordlessSignIn({
   const [challenge, setChallenge] = useState<SmsCodeChallenge | null>(null);
   const [resendIn, setResendIn] = useState(0);
   const [deviceReady, setDeviceReady] = useState<boolean | null>(null);
+  const [forSetup, setForSetup] = useState(false);
+  const [deviceUnlockFailed, setDeviceUnlockFailed] = useState(false);
   const available = passkeyAvailable || smsAvailable;
 
   useEffect(() => {
@@ -100,13 +105,30 @@ export function PasswordlessSignIn({
       return nextStep(await sessionApi.signInWithPasskey(transaction, credentialJson(credential)));
     });
     if (result.ok) {
-      onSignedIn(result.value);
+      if (forNationalId !== null) {
+        await rememberDeviceUnlock(forNationalId);
+      }
+      onSignedIn(result.value, null);
+    } else if (forNationalId !== null) {
+      // Not set up here after all (removed, or another browser profile): offer the setup instead.
+      await forgetDeviceUnlock(forNationalId);
+      setDeviceUnlockFailed(true);
     }
   };
 
-  const sendCode = async () => {
+  /** Asks for Face ID / Touch ID at once where this device has it for the National ID; otherwise sets it up first. */
+  const signInWithDeviceUnlock = async () => {
+    if (await hasDeviceUnlock(id)) {
+      await signInWithPasskey(id);
+    } else {
+      setStage('setup');
+    }
+  };
+
+  const sendCode = async (setup: boolean) => {
     const result = await save.run(() => sessionApi.requestSmsCode(id));
     if (result.ok) {
+      setForSetup(setup);
       setChallenge(result.value);
       setCode('');
       setResendIn(RESEND_SECONDS);
@@ -137,7 +159,7 @@ export function PasswordlessSignIn({
       nextStep(await sessionApi.signInWithSmsCode(challenge.challengeId, entered)),
     );
     if (result.ok) {
-      onSignedIn(result.value);
+      onSignedIn(result.value, forSetup ? id : null);
     }
   };
 
@@ -145,6 +167,7 @@ export function PasswordlessSignIn({
     setStage('nationalId');
     setChallenge(null);
     setCode('');
+    setDeviceUnlockFailed(false);
   };
 
   return (
@@ -208,10 +231,22 @@ export function PasswordlessSignIn({
                 type="button"
                 className="button button--primary sign-in__wide"
                 disabled={deviceReady !== true || save.saving}
-                onClick={() => void signInWithPasskey(id)}
+                onClick={() => void signInWithDeviceUnlock()}
               >
                 {t(`identityAccess.signIn.passwordless.passkey.${unlock}`)}
               </button>
+              {deviceUnlockFailed && smsAvailable && (
+                <button
+                  type="button"
+                  className="button button--quiet sign-in__wide"
+                  disabled={save.saving}
+                  onClick={() => {
+                    setStage('setup');
+                  }}
+                >
+                  {t(`identityAccess.signIn.passwordless.setup.again.${unlock}`)}
+                </button>
+              )}
               {deviceReady === false && (
                 <p className="sign-in__note">
                   {t('identityAccess.signIn.passwordless.noDeviceUnlock')}
@@ -224,7 +259,7 @@ export function PasswordlessSignIn({
               type="button"
               className="button sign-in__wide"
               disabled={save.saving}
-              onClick={() => void sendCode()}
+              onClick={() => void sendCode(false)}
             >
               {t('identityAccess.signIn.passwordless.sendCode')}
             </button>
@@ -236,6 +271,44 @@ export function PasswordlessSignIn({
             onClick={startOver}
           >
             {t('identityAccess.signIn.passwordless.changeNationalId')}
+          </button>
+        </>
+      )}
+
+      {stage === 'setup' && (
+        <>
+          <p className="sign-in__note">
+            {t(`identityAccess.signIn.passwordless.setup.intro.${unlock}`)}
+          </p>
+          {smsAvailable ? (
+            <button
+              type="button"
+              className="button button--primary sign-in__wide"
+              disabled={save.saving}
+              onClick={() => void sendCode(true)}
+            >
+              {t('identityAccess.signIn.passwordless.setup.sendCode')}
+            </button>
+          ) : (
+            <p className="sign-in__note">{t('identityAccess.signIn.passwordless.setup.noSms')}</p>
+          )}
+          <button
+            type="button"
+            className="button button--quiet sign-in__wide"
+            disabled={save.saving}
+            onClick={() => void signInWithPasskey(id)}
+          >
+            {t(`identityAccess.signIn.passwordless.setup.already.${unlock}`)}
+          </button>
+          <button
+            type="button"
+            className="button button--quiet sign-in__wide"
+            disabled={save.saving}
+            onClick={() => {
+              setStage('choose');
+            }}
+          >
+            {t('identityAccess.signIn.passwordless.otherWay')}
           </button>
         </>
       )}
@@ -269,7 +342,7 @@ export function PasswordlessSignIn({
               type="button"
               className="button button--quiet"
               disabled={resendIn > 0 || save.saving}
-              onClick={() => void sendCode()}
+              onClick={() => void sendCode(forSetup)}
             >
               {resendIn > 0
                 ? t('identityAccess.signIn.passwordless.resendIn', { seconds: resendIn })

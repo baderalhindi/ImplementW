@@ -75,6 +75,11 @@ export interface RequestOptions {
   idempotencyKey?: string;
   /** Sign-in, refresh and step-up calls carry no access token and never trigger refresh or step-up. */
   anonymous?: boolean;
+  /**
+   * A session's access token not yet handed to the session store, such as the one a sign-in just issued while the sign-in page
+   * finishes setting Face ID / Touch ID up. Sent as is, never refreshed or stepped up.
+   */
+  accessToken?: string;
   signal?: AbortSignal | undefined;
 }
 
@@ -121,7 +126,9 @@ function requestHeaders(
   accept: string,
 ): Headers {
   const headers = new Headers({ Accept: accept });
-  const token = options.anonymous === true ? null : (authentication?.accessToken() ?? null);
+  const token =
+    options.accessToken ??
+    (options.anonymous === true ? null : (authentication?.accessToken() ?? null));
   if (token !== null) {
     headers.set('Authorization', `Bearer ${token}`);
   }
@@ -179,7 +186,7 @@ async function exchange(
 
   let response = await attempt();
 
-  if (options.anonymous !== true && authentication !== null) {
+  if (options.anonymous !== true && options.accessToken === undefined && authentication !== null) {
     if (response.status === 401 && (await authentication.refresh())) {
       response = await attempt();
     }

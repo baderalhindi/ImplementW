@@ -117,6 +117,19 @@ export function deviceUnlock(
   return 'deviceUnlock';
 }
 
+const DEVICE_NAMES: Record<DeviceUnlock, string> = {
+  faceId: 'iPhone',
+  touchId: 'Mac',
+  windowsHello: 'Windows',
+  fingerprint: 'Android',
+  deviceUnlock: 'Device',
+};
+
+/** A name for the device in hand, for the person's list of devices. */
+export function deviceName(unlock: DeviceUnlock = deviceUnlock()): string {
+  return DEVICE_NAMES[unlock];
+}
+
 /** The person closed the device's prompt, or the device had no passkey for this site. */
 export function isPasskeyCancelled(error: unknown): boolean {
   return (

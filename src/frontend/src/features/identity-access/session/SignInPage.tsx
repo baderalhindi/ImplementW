@@ -17,6 +17,7 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { DirectoryPasswordHelp, NewPasswordFields } from './passwordSelfService.tsx';
+import { DeviceUnlockSetup } from './DeviceUnlockSetup.tsx';
 import { PasswordlessSignIn } from './PasswordlessSignIn.tsx';
 import { checkNewPassword } from './passwordUpdate.ts';
 import { SecondFactorForm } from './SecondFactorForm.tsx';
@@ -199,6 +200,11 @@ export function SignInPage(): ReactElement {
   const formRef = useRef<HTMLFormElement>(null);
   const [passwordChange, setPasswordChange] = useState<PasswordChangePending | null>(null);
   const [secondFactor, setSecondFactor] = useState<PendingSecondFactor | null>(null);
+  /** Face ID / Touch ID being set up on this device: for this National ID, once the sign-in has a session. */
+  const [deviceUnlockSetup, setDeviceUnlockSetup] = useState<{
+    nationalId: string;
+    session: Session | null;
+  } | null>(null);
   const save = useSaveAction(
     describeRefusal(
       passwordChange !== null
@@ -485,21 +491,47 @@ export function SignInPage(): ReactElement {
               </div>
             </div>
           ) : (
-            <SecondFactorForm secondFactor={secondFactor} onSession={finish} />
+            <SecondFactorForm
+              secondFactor={secondFactor}
+              onSession={(signedIn) => {
+                if (deviceUnlockSetup === null) {
+                  finish(signedIn);
+                } else {
+                  setDeviceUnlockSetup({ ...deviceUnlockSetup, session: signedIn });
+                  setSecondFactor(null);
+                }
+              }}
+            />
           )}
         </section>
         <NafathPanel
           passwordless={
-            secondFactor === null && passwordChange === null ? (
+            deviceUnlockSetup?.session ? (
+              <DeviceUnlockSetup
+                session={deviceUnlockSetup.session}
+                nationalId={deviceUnlockSetup.nationalId}
+                onDone={() => {
+                  if (deviceUnlockSetup.session) {
+                    finish(deviceUnlockSetup.session);
+                  }
+                }}
+              />
+            ) : secondFactor === null && passwordChange === null ? (
               <PasswordlessSignIn
                 passkeyAvailable={signInOptions.data?.passkeySignInAvailable === true}
                 smsAvailable={signInOptions.data?.smsSignInAvailable === true}
                 loading={signInOptions.loading}
-                onSignedIn={(step) => {
-                  if ('session' in step) {
-                    finish(step.session);
-                  } else {
+                onSignedIn={(step, setUpForNationalId) => {
+                  if (setUpForNationalId !== null) {
+                    setDeviceUnlockSetup({
+                      nationalId: setUpForNationalId,
+                      session: 'session' in step ? step.session : null,
+                    });
+                  }
+                  if (!('session' in step)) {
                     setSecondFactor(step.secondFactor);
+                  } else if (setUpForNationalId === null) {
+                    finish(step.session);
                   }
                 }}
               />

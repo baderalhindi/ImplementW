@@ -18,7 +18,7 @@ import {
 import {
   creationOptions,
   credentialJson,
-  type DeviceUnlock,
+  deviceName,
   deviceUnlock,
   isPasskeyCancelled,
   platformPasskeysAvailable,
@@ -26,15 +26,6 @@ import {
 
 const loadPasskeys = (signal: AbortSignal) => signInMethodsApi.listPasskeys(signal);
 const loadMobileNumber = (signal: AbortSignal) => signInMethodsApi.getMobileNumber(signal);
-
-/** A name for the device in hand, which the person can change before saving. */
-const DEVICE_NAMES: Record<DeviceUnlock, string> = {
-  faceId: 'iPhone',
-  touchId: 'Mac',
-  windowsHello: 'Windows',
-  fingerprint: 'Android',
-  deviceUnlock: 'Device',
-};
 
 function AddPasskeyForm({ onAdded }: { onAdded: () => void }): ReactElement {
   const { t } = useI18n();
@@ -46,7 +37,7 @@ function AddPasskeyForm({ onAdded }: { onAdded: () => void }): ReactElement {
       : problemMessage(error, translate),
   );
   useFocusFirstError(formRef, save.fieldErrors);
-  const [name, setName] = useState(DEVICE_NAMES[unlock]);
+  const [name, setName] = useState(deviceName(unlock));
   const [deviceReady, setDeviceReady] = useState<boolean | null>(null);
 
   useEffect(() => {
