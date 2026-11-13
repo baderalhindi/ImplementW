@@ -5848,8 +5848,11 @@ path.trend__line--ACTUAL_PERCENT {
   display: none;
 }
 
+/* As wide as the choice it shows ("Owning department: Any" in full), never narrower than before nor wider than the row. */
 .filter-bar__select {
-  inline-size: 12.5rem;
+  field-sizing: content;
+  inline-size: auto;
+  min-inline-size: 12.5rem;
   max-inline-size: 100%;
   min-block-size: 2.75rem;
   padding-inline: var(--space-3);
