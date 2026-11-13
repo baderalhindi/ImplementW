@@ -280,6 +280,18 @@
       "summary": "الملخص",
       "projects": "مشاريع المجموعة"
     },
-    "sectorSpend": "الصرف والتوزيع على المحافظ حسب القطاع"
+    "sectorSpend": "الصرف والتوزيع على المحافظ حسب القطاع",
+    "completion": "نسبة إنجاز التحديثات حسب الجهة",
+    "completionOverall": "جميع الجهات",
+    "completionEntities": "جهة",
+    "completionBands": {
+      "from90": "٩٠٪ فأكثر",
+      "from70": "٧٠–٨٩٪",
+      "from50": "٥٠–٦٩٪",
+      "below50": "أقل من ٥٠٪",
+      "noRequests": "لا طلبات في الفترة"
+    },
+    "completionBandEmpty": "لا توجد جهة في هذه الفئة.",
+    "completionUnavailable": "تعذّر تحميل نسب الإنجاز."
   }
 }

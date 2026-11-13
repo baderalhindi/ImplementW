@@ -280,6 +280,18 @@
       "summary": "Summary",
       "projects": "The group's projects"
     },
-    "sectorSpend": "Spend and portfolio split by sector"
+    "sectorSpend": "Spend and portfolio split by sector",
+    "completion": "Update completion by entity",
+    "completionOverall": "all entities",
+    "completionEntities": "entities",
+    "completionBands": {
+      "from90": "90% or more",
+      "from70": "70–89%",
+      "from50": "50–69%",
+      "below50": "Below 50%",
+      "noRequests": "No requests in the period"
+    },
+    "completionBandEmpty": "No entity is in this band.",
+    "completionUnavailable": "The completion rates could not be loaded."
   }
 }

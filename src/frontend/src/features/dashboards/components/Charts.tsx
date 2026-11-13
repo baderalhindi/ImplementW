@@ -22,11 +22,14 @@ export function DonutChart({
   active,
   onActive,
   totalLabel,
+  summary,
 }: {
   buckets: ChartBucket[];
   active: string | null;
   onActive: (key: string | null) => void;
   totalLabel: string;
+  /** What the centre shows while nothing is hovered, in place of the total, such as an overall rate. */
+  summary?: { value: string; label: string };
 }): ReactElement {
   const drawn = buckets.filter((bucket) => bucket.count > 0);
   const total = drawn.reduce((sum, bucket) => sum + bucket.count, 0);
@@ -79,11 +82,11 @@ export function DonutChart({
         }
       >
         <span className="donut__value" dir="ltr">
-          {hovered === undefined ? total : hovered.count}
+          {hovered === undefined ? (summary?.value ?? total) : hovered.count}
         </span>
         <span className="donut__label">
           {hovered !== undefined && <span className="distribution__key" />}
-          {hovered === undefined ? totalLabel : hovered.text}
+          {hovered === undefined ? (summary?.label ?? totalLabel) : hovered.text}
         </span>
       </p>
     </div>

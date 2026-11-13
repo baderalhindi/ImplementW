@@ -6335,6 +6335,51 @@ tr[data-flagged='true'] {
   font-size: 0.85rem;
 }
 
+/* Round 7, item 5: the completion donut's legend chooses a band, whose entities are listed under the chart. */
+.completion-band__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.completion-band__toggle[aria-pressed='true'] {
+  font-weight: 600;
+}
+
+.completion-band {
+  margin-block-start: var(--space-3);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.completion-band__title {
+  margin: 0 0 var(--space-2);
+  font-size: 0.875rem;
+}
+
+.completion-band__list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  max-block-size: 12rem;
+  overflow-y: auto;
+  font-size: 0.875rem;
+}
+
+.completion-band__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .distribution--donut > .grouped-columns__legend {
   flex-direction: column;
   align-self: center;

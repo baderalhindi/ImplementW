@@ -190,7 +190,8 @@ describe('the sections', () => {
         .getByRole('link', { name: en('dashboards.insights.fullFollowUp') })
         .getAttribute('href'),
     ).toBe('/projects/follow-up');
-    expect(document.querySelectorAll('.insights__chart')).toHaveLength(4);
+    // Round 7, item 5: the entity completion donut joins the four charts.
+    expect(document.querySelectorAll('.insights__chart')).toHaveLength(5);
     expect(describeViolations(await accessibilityViolations())).toBe('');
   });
 
@@ -431,5 +432,116 @@ describe('Projects by location', () => {
 
     expect(await screen.findByText('Hofuf')).toBeTruthy();
     expect(screen.queryByRole('region', { name: en('dashboards.locations.mapLabel') })).toBeNull();
+  });
+});
+
+describe('the entity completion donut (round 7, item 5)', () => {
+  const entity = (n: number, isActive = true) => ({
+    id: `00000000-0000-4000-8000-00000000000${String(n)}`,
+    code: `E${String(n)}`,
+    name: { ar: `جهة ${String(n)}`, en: `Entity ${String(n)}` },
+    isActive,
+  });
+  const row = (n: number, issued: number, accepted: number) => ({
+    externalEntityId: entity(n).id,
+    issued,
+    submitted: accepted,
+    accepted,
+    overdue: 0,
+    completionPercent: (accepted * 100) / issued,
+  });
+
+  function completionApi(): MockApi {
+    return dashboardApi(fullInsights())
+      .on('GET', /^\/entity-completion-rates$/, {
+        body: {
+          items: [row(4, 10, 2), row(3, 10, 5), row(2, 10, 8), row(5, 10, 9), row(1, 10, 10)],
+          page: 1,
+          pageSize: 100,
+          totalCount: 5,
+          averagePercent: 68,
+        },
+      })
+      .on('GET', /^\/organization-units$/, {
+        body: {
+          departments: [],
+          externalEntities: [1, 2, 3, 4, 5, 6].map((n) => entity(n)).concat(entity(7, false)),
+        },
+      });
+  }
+
+  const card = async () =>
+    around(
+      await screen.findByRole('heading', { name: en('dashboards.insights.completion'), level: 3 }),
+      '.insights__chart',
+    );
+
+  test('shows all entities together in the centre and how many entities are in each band', async () => {
+    completionApi();
+    renderApp({ path: DASHBOARD, session: session() });
+
+    const chart = await card();
+    // (10 + 8 + 5 + 2 + 9) accepted of 50 issued: accepted over issued, not the mean of the rates.
+    await waitFor(() => {
+      expect(plain(chart.querySelector('.donut__value')?.textContent)).toBe('68%');
+    });
+    const legend = within(chart)
+      .getAllByRole('button')
+      .map((button) => plain(button.textContent));
+    expect(legend).toEqual([
+      `${en('dashboards.insights.completionBands.from90')} (2)`,
+      `${en('dashboards.insights.completionBands.from70')} (1)`,
+      `${en('dashboards.insights.completionBands.from50')} (1)`,
+      `${en('dashboards.insights.completionBands.below50')} (1)`,
+      `${en('dashboards.insights.completionBands.noRequests')} (1)`,
+    ]);
+  });
+
+  test('choosing a band lists its entities, lowest rate first; an entity with no requests is listed by name', async () => {
+    completionApi();
+    const user = userEvent.setup();
+    renderApp({ path: DASHBOARD, session: session() });
+    const chart = await card();
+
+    await user.click(
+      await within(chart).findByRole('button', {
+        name: new RegExp(en('dashboards.insights.completionBands.from90')),
+      }),
+    );
+    const listed = within(chart)
+      .getAllByRole('listitem')
+      .filter((item) => item.closest('.completion-band__list') !== null)
+      .map((item) => plain(item.textContent));
+    expect(listed).toEqual(['Entity 590%', 'Entity 1100%']);
+
+    await user.click(
+      within(chart).getByRole('button', {
+        name: new RegExp(en('dashboards.insights.completionBands.noRequests')),
+      }),
+    );
+    expect(within(chart).getByText('Entity 6')).toBeTruthy();
+    expect(within(chart).queryByText('Entity 7')).toBeNull();
+  });
+
+  test('covers the period chosen on the table, which stays as it was', async () => {
+    const api = completionApi();
+    const user = userEvent.setup();
+    renderApp({ path: DASHBOARD, session: session() });
+    await card();
+
+    await user.selectOptions(
+      await screen.findByLabelText(en('externalParticipation.completion.period')),
+      'ThisYear',
+    );
+
+    await waitFor(() => {
+      const periods = api
+        .requestsTo('GET', /^\/entity-completion-rates$/)
+        .map((request) => request.query.get('period'));
+      expect(periods.filter((period) => period === 'ThisYear').length).toBe(2);
+    });
+    expect(
+      screen.getByRole('table', { name: en('externalParticipation.completion.title') }),
+    ).toBeTruthy();
   });
 });

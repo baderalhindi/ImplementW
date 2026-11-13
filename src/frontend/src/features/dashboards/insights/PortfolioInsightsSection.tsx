@@ -16,7 +16,13 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
-import { EmptyState } from '@/shared/ui/States.tsx';
+import {
+  type CompletionBandKey,
+  percent,
+  useEntityCompletionBands,
+} from '@/features/external-participation/entityCompletion.ts';
+import { useSession } from '@/features/identity-access/session/useSession.ts';
+import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
@@ -720,6 +726,113 @@ function BucketLegend({ buckets }: { buckets: ChartBucket[] }): ReactElement {
   );
 }
 
+/** Each band's fill, highest band first, then the entities with no request in the period. */
+const COMPLETION_BAND_TONES: StatusTone[] = ['positive', 'info', 'warning', 'negative', 'neutral'];
+
+/**
+ * Round 7, item 5: the update completion rate by entity, at a glance. The centre is all entities together (requests accepted ÷
+ * requests issued); each segment is the number of entities in a band. Hovering a segment or its legend entry, or choosing the
+ * legend entry, lists the entities in that band, lowest rate first. It covers the period the table at the bottom shows.
+ */
+function EntityCompletionChart(): ReactElement {
+  const { t } = useI18n();
+  const completion = useEntityCompletionBands();
+  const [chosen, setChosen] = useState<CompletionBandKey | null>(null);
+  return (
+    <ChartCard title={t('dashboards.insights.completion')}>
+      {(active, onActive) => {
+        if (completion.data === undefined) {
+          return completion.loading ? (
+            <LoadingState />
+          ) : (
+            <ErrorState
+              error={completion.error}
+              message={t('dashboards.insights.completionUnavailable')}
+              onRetry={completion.reload}
+            />
+          );
+        }
+        const colors = bucketColors(COMPLETION_BAND_TONES, true);
+        const buckets: ChartBucket[] = completion.data.bands.map((band, index) => ({
+          key: band.key,
+          count: band.entities.length,
+          text: t(`dashboards.insights.completionBands.${band.key}`),
+          color: colors[index] ?? 'var(--chart-single)',
+        }));
+        const shownKey = active ?? chosen;
+        const shown = completion.data.bands.find((band) => band.key === shownKey);
+        const shownBucket = buckets.find((bucket) => bucket.key === shownKey);
+        return (
+          <>
+            <div className="distribution distribution--donut">
+              <DonutChart
+                buckets={buckets}
+                active={active}
+                onActive={onActive}
+                totalLabel={t('dashboards.insights.completionEntities')}
+                summary={{
+                  value:
+                    completion.data.overallPercent === null
+                      ? '—'
+                      : percent(completion.data.overallPercent),
+                  label: t('dashboards.insights.completionOverall'),
+                }}
+              />
+              <ul className="grouped-columns__legend">
+                {buckets.map((bucket) => (
+                  <li key={bucket.key}>
+                    <button
+                      type="button"
+                      className="completion-band__toggle"
+                      aria-pressed={chosen === bucket.key}
+                      onPointerEnter={() => {
+                        onActive(bucket.key);
+                      }}
+                      onPointerLeave={() => {
+                        onActive(null);
+                      }}
+                      onClick={() => {
+                        setChosen((current) =>
+                          current === bucket.key ? null : (bucket.key as CompletionBandKey),
+                        );
+                      }}
+                    >
+                      <span
+                        className="distribution__key"
+                        style={{ '--chart-color': bucket.color } as CSSProperties}
+                      />
+                      {`${bucket.text} (${String(bucket.count)})`}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {shown !== undefined && shownBucket !== undefined && (
+              <div className="completion-band" aria-live="polite">
+                <h4 className="completion-band__title">{shownBucket.text}</h4>
+                {shown.entities.length === 0 ? (
+                  <p>{t('dashboards.insights.completionBandEmpty')}</p>
+                ) : (
+                  <ol className="completion-band__list">
+                    {shown.entities.map((entity) => (
+                      <li key={entity.id}>
+                        <span>{entity.name}</span>
+                        {entity.percent !== null && (
+                          <span dir="ltr">{percent(entity.percent)}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            )}
+          </>
+        );
+      }}
+    </ChartCard>
+  );
+}
+
 function InsightCharts({
   byPortfolio,
   stages,
@@ -732,6 +845,9 @@ function InsightCharts({
   itemName: ItemName;
 }): ReactElement | null {
   const { t } = useI18n();
+  const { session } = useSession();
+  // Beside the on-plan donut, for those who see the entity table at the bottom (AHDA's people with EXTERNAL_REQUEST_VIEW).
+  const showsCompletion = useCan('EXTERNAL_REQUEST_VIEW') && session?.user.userType !== 'EXTERNAL';
   const portfolioRows = byPortfolio?.rows ?? [];
   const single = 'var(--chart-single)';
   const onPlanBuckets: ChartBucket[] | null =
@@ -750,7 +866,12 @@ function InsightCharts({
             },
           ].map((bucket, index) => ({ ...bucket, color: colors[index] ?? single }));
         })();
-  if (portfolioRows.length === 0 && (stages ?? []).length === 0 && onPlanBuckets === null) {
+  if (
+    portfolioRows.length === 0 &&
+    (stages ?? []).length === 0 &&
+    onPlanBuckets === null &&
+    !showsCompletion
+  ) {
     return null;
   }
   return (
@@ -829,6 +950,7 @@ function InsightCharts({
           )}
         </ChartCard>
       )}
+      {showsCompletion && <EntityCompletionChart />}
     </section>
   );
 }

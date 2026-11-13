@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router';
 
 import {
+  CompletionPeriodProvider,
   EntityCompletionPanel,
   OwnEntityCompletionCard,
 } from '@/features/external-participation/EntityCompletion.tsx';
@@ -182,17 +183,20 @@ export function DashboardsPage(): ReactElement {
         <ProjectLanding />
       ) : (
         <>
-          <HostedDashboard
-            key={entry.code}
-            entry={entry}
-            filters={filters}
-            onFilterChange={setFilter}
-            onClearFilters={clearFilters}
-          />
-          {/* The 13 Nov 2026 review: the dashboard's cards come first; this table joins its tables below them. */}
-          {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && (
-            <EntityCompletionPanel />
-          )}
+          {/* Round 7, item 5: the completion donut near the top and the table below cover one period, the table's. */}
+          <CompletionPeriodProvider>
+            <HostedDashboard
+              key={entry.code}
+              entry={entry}
+              filters={filters}
+              onFilterChange={setFilter}
+              onClearFilters={clearFilters}
+            />
+            {/* The 13 Nov 2026 review: the dashboard's cards come first; this table joins its tables below them. */}
+            {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && (
+              <EntityCompletionPanel />
+            )}
+          </CompletionPeriodProvider>
         </>
       )}
     </>

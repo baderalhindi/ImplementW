@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback, useState } from 'react';
+import { type ReactElement, type ReactNode, useCallback, useState } from 'react';
 import { Link } from 'react-router';
 
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
@@ -11,28 +11,19 @@ import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
+import {
+  CompletionPeriodContext,
+  type EntityCompletionPage,
+  type Period,
+  PERIODS,
+  percent,
+  useCompletionPeriod,
+} from './entityCompletion.ts';
 import { PARTICIPATION_MONITOR_PATH } from './paths.ts';
 import { participationProblemMessage } from './problems.ts';
 import { useEntityNames } from './useExternalParticipationData.ts';
 
 // Items 9 and 10 of review round 5: one definition, so an entity and AHDA read the same number. The API does the counting.
-
-const PERIODS = ['ThisMonth', 'LastThreeMonths', 'ThisYear'] as const;
-type Period = (typeof PERIODS)[number];
-
-interface EntityCompletionRow {
-  externalEntityId: string;
-  issued: number;
-  submitted: number;
-  accepted: number;
-  overdue: number;
-  completionPercent: number;
-}
-
-interface EntityCompletionPage {
-  items: EntityCompletionRow[];
-  averagePercent: number | null;
-}
 
 interface OwnEntityCompletion {
   issued: number;
@@ -65,9 +56,13 @@ function PeriodField({
   );
 }
 
-/** Whole points when it is a whole number, else the two places the API keeps. */
-function percent(value: number): string {
-  return `${String(Number(value.toFixed(2)))}%`;
+export function CompletionPeriodProvider({ children }: { children: ReactNode }): ReactElement {
+  const [period, setPeriod] = useState<Period>('ThisMonth');
+  return (
+    <CompletionPeriodContext.Provider value={{ period, setPeriod }}>
+      {children}
+    </CompletionPeriodContext.Provider>
+  );
 }
 
 /** The entity's dashboard: its rate in one chart with the all-entity average as a marked line, and no other entity. */
@@ -156,7 +151,7 @@ export function EntityCompletionPanel(): ReactElement | null {
 function EntityCompletionTable(): ReactElement {
   const { t } = useI18n();
   const entityName = useEntityNames();
-  const [period, setPeriod] = useState<Period>('ThisMonth');
+  const { period, setPeriod } = useCompletionPeriod();
   const load = useCallback(
     async (signal: AbortSignal) =>
       (
