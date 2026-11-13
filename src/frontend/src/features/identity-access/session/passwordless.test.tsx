@@ -7,14 +7,14 @@ import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixture
 import { type MockApi, mockApi } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
 
-import { toE164 } from './mobileNumber.ts';
 import { deviceUnlock } from './webAuthn.ts';
 
-// Sign-in without a password (13 Nov 2026 review): the passkey on this device, or a code by SMS. The device is a stub;
-// what is checked is what the page asks of it and what it sends the API.
+// Sign-in with biometrics (13 Nov 2026 review): the National ID, then the passkey on this device or a code by SMS. The
+// device is a stub; what is checked is what the page asks of it and what it sends the API.
 
 const en = (key: string, values?: Record<string, string | number>) => translate('en', key, values);
 const bytes = (...values: number[]) => new Uint8Array(values).buffer;
+const NATIONAL_ID = '1000000032';
 
 const offerPasswordless = (api: MockApi, options: { passkey?: boolean; sms?: boolean } = {}) =>
   api.on('GET', /^\/sessions\/sign-in-options$/, {
@@ -42,13 +42,35 @@ afterEach(() => {
   credentials.create.mockReset();
 });
 
-describe('signing in with Face ID / Touch ID', () => {
-  const passkeyButton = () =>
-    screen.findByRole('button', {
-      name: /^Sign in with (Face ID|Touch ID|Windows Hello|your fingerprint|this device)$/,
-    });
+/** Types the National ID and presses Sign in with biometrics, as the person does first. */
+async function giveNationalId(user: ReturnType<typeof userEvent.setup>, nationalId = NATIONAL_ID) {
+  await user.type(await screen.findByLabelText(/^National ID \/ Iqama number/), nationalId);
+  await user.click(
+    screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.submit') }),
+  );
+}
 
-  test('asks the device for a passkey and signs in with its answer', async () => {
+const passkeyButton = () =>
+  screen.findByRole('button', {
+    name: /^Use (Face ID|Touch ID|Windows Hello|your fingerprint|this device)$/,
+  });
+
+describe('sign-in with biometrics', () => {
+  test('asks for a valid National ID before anything else', async () => {
+    const api = offerPasswordless(mockApi());
+    const user = userEvent.setup();
+    renderApp({ path: '/sign-in' });
+
+    await giveNationalId(user, '1234567890');
+
+    expect(
+      (await screen.findByLabelText(/^National ID \/ Iqama number/)).getAttribute('aria-invalid'),
+    ).toBe('true');
+    expect(screen.queryByText(en('identityAccess.signIn.passwordless.choose'))).toBeNull();
+    expect(api.requests.filter((request) => request.method === 'POST')).toHaveLength(0);
+  });
+
+  test('with the passkey: asks the device and signs in with its answer', async () => {
     credentials.get.mockResolvedValue({
       id: 'cred',
       rawId: bytes(1, 2, 3),
@@ -61,7 +83,7 @@ describe('signing in with Face ID / Touch ID', () => {
       },
     });
     const api = offerPasswordless(withIdentityAccessData(mockApi()))
-      .on('GET', /^\/sessions\/passkey-options$/, {
+      .on('POST', /^\/sessions\/passkey-challenge$/, {
         body: {
           options: {
             challenge: 'AQID',
@@ -75,15 +97,19 @@ describe('signing in with Face ID / Touch ID', () => {
       .on('POST', /^\/sessions\/passkey$/, { status: 201, body: sessionFor(['R01']) });
     const user = userEvent.setup();
     const { router } = renderApp({ path: '/sign-in' });
+
+    await giveNationalId(user);
     const button = await passkeyButton();
     await waitFor(() => {
       expect((button as HTMLButtonElement).disabled).toBe(false);
     });
-
     await user.click(button);
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/');
+    });
+    expect(api.requestsTo('POST', /^\/sessions\/passkey-challenge$/)[0]?.body).toEqual({
+      nationalId: NATIONAL_ID,
     });
     const asked = credentials.get.mock.calls[0]?.[0] as {
       publicKey: PublicKeyCredentialRequestOptions;
@@ -110,16 +136,17 @@ describe('signing in with Face ID / Touch ID', () => {
 
   test('says how to go on when the person closes the device prompt', async () => {
     credentials.get.mockRejectedValue(new DOMException('cancelled', 'NotAllowedError'));
-    const api = offerPasswordless(mockApi()).on('GET', /^\/sessions\/passkey-options$/, {
+    const api = offerPasswordless(mockApi()).on('POST', /^\/sessions\/passkey-challenge$/, {
       body: { options: { challenge: 'AQID' }, transaction: 'sealed' },
     });
     const user = userEvent.setup();
     renderApp({ path: '/sign-in' });
+
+    await giveNationalId(user);
     const button = await passkeyButton();
     await waitFor(() => {
       expect((button as HTMLButtonElement).disabled).toBe(false);
     });
-
     await user.click(button);
 
     expect(
@@ -128,33 +155,39 @@ describe('signing in with Face ID / Touch ID', () => {
     expect(api.requestsTo('POST', /^\/sessions\/passkey$/)).toHaveLength(0);
   });
 
-  test('stays disabled on a device without Face ID, Touch ID or a device unlock', async () => {
+  test('on a device without Face ID or Touch ID the passkey is disabled and SMS remains', async () => {
     vi.stubGlobal('PublicKeyCredential', {
       isUserVerifyingPlatformAuthenticatorAvailable: () => Promise.resolve(false),
     });
     offerPasswordless(mockApi());
+    const user = userEvent.setup();
     renderApp({ path: '/sign-in' });
+
+    await giveNationalId(user);
 
     expect(
       await screen.findByText(en('identityAccess.signIn.passwordless.noDeviceUnlock')),
     ).toBeTruthy();
     expect(((await passkeyButton()) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      screen
+        .getByRole('button', { name: en('identityAccess.signIn.passwordless.sendCode') })
+        .hasAttribute('disabled'),
+    ).toBe(false);
   });
 
-  test('is not offered where the environment has no passkeys, and neither is SMS', async () => {
+  test('is disabled and marked Coming soon where neither way is configured', async () => {
     offerPasswordless(mockApi(), { passkey: false, sms: false });
     renderApp({ path: '/sign-in' });
 
+    const submit = await screen.findByRole('button', {
+      name: en('identityAccess.signIn.passwordless.submit'),
+    });
+    expect((submit as HTMLButtonElement).disabled).toBe(true);
     expect(await screen.findAllByText(en('identityAccess.signIn.comingSoon'))).not.toHaveLength(0);
-    expect(screen.queryByRole('button', { name: /^Sign in with (Face ID|Touch ID)/ })).toBeNull();
-    expect(
-      screen.queryByRole('button', { name: en('identityAccess.signIn.passwordless.sendCode') }),
-    ).toBeNull();
   });
-});
 
-describe('signing in with a code by SMS', () => {
-  test('sends the code to the number in E.164 and signs in with it', async () => {
+  test('with SMS: sends the code for the National ID and signs in with it', async () => {
     const api = offerPasswordless(withIdentityAccessData(mockApi()), { passkey: false })
       .on('POST', /^\/sessions\/sms-code-challenge$/, {
         body: { challengeId: 'challenge-1', expiresAt: '2099-01-01T00:00:00Z' },
@@ -163,9 +196,12 @@ describe('signing in with a code by SMS', () => {
     const user = userEvent.setup();
     const { router } = renderApp({ path: '/sign-in' });
 
-    await user.type(await screen.findByLabelText(/^Mobile number/), '050 123 4567');
+    await giveNationalId(user);
+    expect(screen.queryByRole('button', { name: /^Use (Face ID|Touch ID)/ })).toBeNull();
     await user.click(
-      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.sendCode') }),
+      await screen.findByRole('button', {
+        name: en('identityAccess.signIn.passwordless.sendCode'),
+      }),
     );
     await user.type(await screen.findByLabelText(/^Verification code/), '123456');
     await user.click(
@@ -176,34 +212,15 @@ describe('signing in with a code by SMS', () => {
       expect(router.state.location.pathname).toBe('/');
     });
     expect(api.requestsTo('POST', /^\/sessions\/sms-code-challenge$/)[0]?.body).toEqual({
-      mobileNumber: '+966501234567',
+      nationalId: NATIONAL_ID,
     });
     expect(api.requestsTo('POST', /^\/sessions\/sms$/)[0]?.body).toEqual({
       challengeId: 'challenge-1',
       code: '123456',
     });
-    expect(
-      screen.queryByRole('button', { name: en('identityAccess.signIn.passwordless.resend') }),
-    ).toBeNull();
   });
 
-  test('refuses a number that is not one before asking the API', async () => {
-    const api = offerPasswordless(mockApi(), { passkey: false });
-    const user = userEvent.setup();
-    renderApp({ path: '/sign-in' });
-
-    await user.type(await screen.findByLabelText(/^Mobile number/), '12345');
-    await user.click(
-      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.sendCode') }),
-    );
-
-    expect((await screen.findByLabelText(/^Mobile number/)).getAttribute('aria-invalid')).toBe(
-      'true',
-    );
-    expect(api.requestsTo('POST', /sms-code-challenge/)).toHaveLength(0);
-  });
-
-  test('a person who requires MFA continues to their authenticator code', async () => {
+  test('with SMS, a person who requires MFA continues to their authenticator code', async () => {
     offerPasswordless(withIdentityAccessData(mockApi()), { passkey: false })
       .on('POST', /^\/sessions\/sms-code-challenge$/, {
         body: { challengeId: 'challenge-1', expiresAt: '2099-01-01T00:00:00Z' },
@@ -221,9 +238,11 @@ describe('signing in with a code by SMS', () => {
     const user = userEvent.setup();
     renderApp({ path: '/sign-in' });
 
-    await user.type(await screen.findByLabelText(/^Mobile number/), '+966501234567');
+    await giveNationalId(user);
     await user.click(
-      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.sendCode') }),
+      await screen.findByRole('button', {
+        name: en('identityAccess.signIn.passwordless.sendCode'),
+      }),
     );
     await user.type(await screen.findByLabelText(/^Verification code/), '123456');
     await user.click(
@@ -356,12 +375,6 @@ describe('the sign-in methods page', () => {
 });
 
 describe('the helpers', () => {
-  test('a Saudi number in local form becomes E.164; others are sent as typed', () => {
-    expect(toE164('0501234567')).toBe('+966501234567');
-    expect(toE164('+966 50-123-4567')).toBe('+966501234567');
-    expect(toE164('+447700900123')).toBe('+447700900123');
-  });
-
   test('the button names what unlocks a passkey on the device', () => {
     expect(deviceUnlock('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', 5)).toBe(
       'faceId',

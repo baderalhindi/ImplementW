@@ -2297,12 +2297,13 @@ select.field__input {
   max-inline-size: none;
 }
 
-/* Sign-in without a password (13 Nov 2026 review): the device's passkey, then a code by SMS. */
-.sign-in__passwordless,
-.sign-in__passwordless-option {
+/* Sign-in with biometrics (13 Nov 2026 review): the National ID, then the device's passkey or a code by SMS. It keeps
+   the Nafath panel's width, like the Nafath button above it. */
+.sign-in__passwordless {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  max-inline-size: 26rem;
 }
 
 .sign-in__sms-actions {

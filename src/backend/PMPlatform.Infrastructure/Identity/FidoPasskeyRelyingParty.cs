@@ -44,12 +44,12 @@ internal sealed partial class FidoPasskeyRelyingParty(
             AttestationPreference = AttestationConveyancePreference.None,
         });
         string json = created.ToJson();
-        return new PasskeyCeremony(json, _ceremonies.Protect(new Ceremony(json, holder.UserId, Expiry())));
+        return new PasskeyCeremony(json, _ceremonies.Protect(new Ceremony(json, holder.UserId, Expiry(), SignIn: false)));
     }
 
     public async Task<NewPasskeyCredential?> CompleteRegistrationAsync(Guid userId, string transaction, string credentialJson, CancellationToken cancellationToken)
     {
-        if (Open(transaction) is not { UserId: { } owner } ceremony || owner != userId)
+        if (Open(transaction) is not { SignIn: false } ceremony || ceremony.UserId != userId)
         {
             return null;
         }
@@ -81,7 +81,7 @@ internal sealed partial class FidoPasskeyRelyingParty(
         }
     }
 
-    public PasskeyCeremony BeginAssertion()
+    public PasskeyCeremony BeginAssertion(Guid expectedUserId)
     {
         AssertionOptions requested = Fido().GetAssertionOptions(new GetAssertionOptionsParams
         {
@@ -89,7 +89,7 @@ internal sealed partial class FidoPasskeyRelyingParty(
             UserVerification = UserVerificationRequirement.Required,
         });
         string json = requested.ToJson();
-        return new PasskeyCeremony(json, _ceremonies.Protect(new Ceremony(json, UserId: null, Expiry())));
+        return new PasskeyCeremony(json, _ceremonies.Protect(new Ceremony(json, expectedUserId, Expiry(), SignIn: true)));
     }
 
     public byte[]? CredentialIdOf(string credentialJson)
@@ -107,7 +107,7 @@ internal sealed partial class FidoPasskeyRelyingParty(
     public async Task<long?> VerifyAssertionAsync(string transaction, string credentialJson, StoredPasskey stored, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(stored);
-        if (Open(transaction) is not { UserId: null } ceremony)
+        if (Open(transaction) is not { SignIn: true } ceremony || ceremony.UserId != stored.UserId)
         {
             return null;
         }
@@ -164,8 +164,11 @@ internal sealed partial class FidoPasskeyRelyingParty(
     private static bool IsRejection(Exception exception) =>
         exception is Fido2VerificationException or JsonException or FormatException or ArgumentException or InvalidOperationException;
 
-    /// <summary>A ceremony in flight: the options the device was given, whose passkey a registration is for, and until when.</summary>
-    private sealed record Ceremony(string Options, Guid? UserId, DateTimeOffset ExpiresAt);
+    /// <summary>
+    /// A ceremony in flight: the options the device was given, whose passkey it is for (the registering person, or the
+    /// person a sign-in names; <see cref="Guid.Empty"/> when the National ID is nobody's), until when, and which kind.
+    /// </summary>
+    private sealed record Ceremony(string Options, Guid UserId, DateTimeOffset ExpiresAt, bool SignIn);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Passkey {Ceremony} rejected ({Reason}): {Detail}")]
     private static partial void LogRejected(ILogger logger, string ceremony, string reason, string detail);

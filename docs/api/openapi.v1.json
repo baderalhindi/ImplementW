@@ -18170,13 +18170,33 @@
         }
       }
     },
-    "/api/v1/sessions/passkey-options": {
-      "get": {
+    "/api/v1/sessions/passkey-challenge": {
+      "post": {
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "Starts a passkey sign-in (13 Nov 2026 review): options for `navigator.credentials.get` that let the person pick\nany of their passkeys on the device, so no username is typed. Nothing is stored server-side.",
-        "operationId": "IdentityAccess_GetPasskeySignInOptions",
+        "summary": "Sign-in with biometrics by passkey (13 Nov 2026 review): options for `navigator.credentials.get`, for the owner\nof the National ID given. The answer is the same whether or not anyone has that number; only its owner's passkey\nwill verify. Nothing is stored server-side.",
+        "operationId": "IdentityAccess_CreatePasskeyChallenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricSignInRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricSignInRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiometricSignInRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -18247,23 +18267,23 @@
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "Sends a sign-in code by SMS to a verified mobile number. The answer is the same whether or not the number is anyone's,\nso it cannot tell a caller whose number it is; a code goes only to a number exactly one person has verified.",
+        "summary": "Sign-in with biometrics by SMS: sends a code to the verified mobile number of the owner of the National ID given. The\nanswer is the same whether or not anyone has that number, or a verified mobile number.",
         "operationId": "IdentityAccess_CreateSmsCodeChallenge",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+                "$ref": "#/components/schemas/BiometricSignInRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+                "$ref": "#/components/schemas/BiometricSignInRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+                "$ref": "#/components/schemas/BiometricSignInRequest"
               }
             }
           },
@@ -22941,6 +22961,21 @@
           }
         },
         "description": "A bilingual label as a request carries it (R-17), validated before it becomes a BilingualLabel."
+      },
+      "BiometricSignInRequest": {
+        "required": [
+          "nationalId"
+        ],
+        "type": "object",
+        "properties": {
+          "nationalId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The first step of sign-in with biometrics: the person's National ID or Iqama number, ten digits. The passkey challenge\nand the SMS code challenge both take it."
       },
       "BusinessLinkDetail": {
         "required": [
@@ -46187,21 +46222,6 @@
           }
         },
         "description": "The OIDC client settings. Authority, client id and callback URL are Public in the Environment and Secrets sheet; the client secret is reduced to whether it is set."
-      },
-      "SmsCodeChallengeCreateRequest": {
-        "required": [
-          "mobileNumber"
-        ],
-        "type": "object",
-        "properties": {
-          "mobileNumber": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        },
-        "description": "Asks for a sign-in code by SMS to a mobile number in E.164 (ADR-004), such as `+966501234567`."
       },
       "SmsSessionCreateRequest": {
         "required": [

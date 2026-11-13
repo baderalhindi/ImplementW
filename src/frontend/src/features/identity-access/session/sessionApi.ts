@@ -112,12 +112,14 @@ export const sessionApi = {
     (await apiRequest<SsoAuthorization>('/sessions/sso-authorization', { anonymous: true })).data,
   completeSso: (code: string, state: string, transaction: string) =>
     post<SignInResult>('/sessions/sso', { code, state, transaction }),
-  getPasskeySignInOptions: async () =>
-    (await apiRequest<PasskeyOptions>('/sessions/passkey-options', { anonymous: true })).data,
+  /** Sign-in with biometrics: options for the passkey of the National ID's owner (the same answer for any number). */
+  beginPasskeySignIn: (nationalId: string) =>
+    post<PasskeyOptions>('/sessions/passkey-challenge', { nationalId }),
   signInWithPasskey: (transaction: string, credential: unknown) =>
     post<SignInResult>('/sessions/passkey', { transaction, credential }),
-  requestSmsCode: (mobileNumber: string) =>
-    post<SmsCodeChallenge>('/sessions/sms-code-challenge', { mobileNumber }),
+  /** Sign-in with biometrics: a code to the verified mobile number of the National ID's owner. */
+  requestSmsCode: (nationalId: string) =>
+    post<SmsCodeChallenge>('/sessions/sms-code-challenge', { nationalId }),
   signInWithSmsCode: (challengeId: string, code: string) =>
     post<SignInResult>('/sessions/sms', { challengeId, code }),
   changePassword: (passwordChangeToken: string, newPassword: string) =>

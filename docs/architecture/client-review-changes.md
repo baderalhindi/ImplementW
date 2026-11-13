@@ -163,7 +163,7 @@ The approval's outcome handlers would otherwise fail on a missing record, and th
 
 The client first asked for Face ID / Touch ID through Microsoft (`login_hint` and `prompt=login` on the Microsoft sign-in), then replaced it: the platform keeps its own passkeys, and offers a code by SMS as the second way. The Microsoft version is reverted (`778f3ab`). The client chose:
 
-- **SMS:** the person types only their mobile number. A code goes only to a number its holder has verified (ADR-004) and that exactly one active person holds; the answer is the same either way.
+- **Sign-in with biometrics starts from the National ID** (follow-up the same day). The panel keeps the mockup's National ID / Iqama number field and "Sign in with biometrics" button. The person then chooses Face ID / Touch ID (their passkey) or a code by SMS to the mobile number verified on their account; no mobile number is typed. The choice looks the same for any number, nobody's included, so the page says nothing about who has an account. Only the passkey of the National ID's owner verifies (the sealed ceremony carries the expected user). It needs `PERSONAL_DATA_KEY`, as National IDs do.
 - **SMS is a first factor.** A role that needs MFA (R01) still gives its authenticator code after it.
 - **A passkey counts as both factors.** It is the device in hand plus its biometric or PIN, and it is phishing-resistant, so no authenticator code follows.
 - **Until AHDA selects an SMS provider (OQ-012)**, a stand-in sends each SMS as an e-mail to a test mailbox (`Notifications:Sms:StandIn:Enabled`, mailpit locally). Real phones receive nothing.
@@ -172,18 +172,18 @@ The client first asked for Face ID / Touch ID through Microsoft (`login_hint` an
 
 | Endpoint | What |
 | --- | --- |
-| `GET /sessions/passkey-options`, `POST /sessions/passkey` | Anonymous passkey sign-in, under the `SignIn` rate limit |
-| `POST /sessions/sms-code-challenge`, `POST /sessions/sms` | Anonymous SMS sign-in, under the `SignIn` rate limit |
+| `POST /sessions/passkey-challenge` `{ nationalId }`, `POST /sessions/passkey` | Anonymous passkey sign-in, under the `SignIn` rate limit |
+| `POST /sessions/sms-code-challenge` `{ nationalId }`, `POST /sessions/sms` | Anonymous SMS sign-in, under the `SignIn` rate limit |
 | `GET /users/current/passkeys`, `GET …/registration-options`, `POST /users/current/passkeys`, `POST …/{id}/delete` | The person's own passkeys. Adding one needs a sign-in within 15 minutes (`IDENTITY_ACCESS_RECENT_SIGN_IN_REQUIRED`) |
 | `GET /users/current/mobile-number` | The person's own number, whether it is verified, and whether a code can be sent |
 
 **SMS codes.** Six digits drawn by the platform, kept only as a hash in `identity_access.sms_code`, five tries, five minutes, used once. A person gets one code per purpose a minute (`Identity:SmsCodes`). The same codes now back ADR-004's mobile verification, which until now had no sender (`UnconfiguredMobileNumberVerifier` is gone). The text is in the person's language.
 
-**Screens.** The sign-in page's Nafath panel replaces the disabled National ID field with the two options. The device button is named for the device (Face ID on iPhone and iPad, Touch ID on a Mac, Windows Hello, fingerprint on Android) and stays disabled where the browser has no device unlock. The account menu gains **Sign-in methods** (`/account/sign-in-methods`): add a passkey for this device, list and remove passkeys, and verify the mobile number. Change password now treats a passkey or SMS session like a password one.
+**Screens.** The sign-in page's Nafath panel: National ID, Sign in with biometrics, then the choice. The device button is named for the device (Face ID on iPhone and iPad, Touch ID on a Mac, Windows Hello, fingerprint on Android) and stays disabled where the browser has no device unlock. The account menu gains **Sign-in methods** (`/account/sign-in-methods`): add a passkey for this device, list and remove passkeys, and verify the mobile number. Change password now treats a passkey or SMS session like a password one.
 
 **Security.** AUTH-T35 to AUTH-T37 and SR-87 to SR-89 in `docs/security`: SR-87 (SMS as a sign-in factor) needs AHDA's acceptance, and SR-89 (no guard against the stand-in in UAT or PROD) is open.
 
-**Verified.** 13 integration tests drive real WebAuthn messages from a software authenticator and the SMS flows. 11 SPA tests cover both sign-in options and the account page. In Chromium with a virtual platform authenticator, on the preview: a passkey added from Sign-in methods; the number verified with the code from mailpit; a passkey sign-in (method `PASSKEY`); an SMS sign-in. Not tried on a physical iPhone or Mac.
+**Verified.** 17 integration tests drive real WebAuthn messages from a software authenticator and the SMS flows. 10 SPA tests cover the National ID step, both ways and the account page. In Chromium with a virtual platform authenticator, on localhost:5173: a passkey added from Sign-in methods; National ID then Touch ID signs in; the same passkey with another person's National ID is refused; National ID then the SMS code from mailpit signs in. Not tried on a physical iPhone or Mac.
 
 ## 9. Not done
 

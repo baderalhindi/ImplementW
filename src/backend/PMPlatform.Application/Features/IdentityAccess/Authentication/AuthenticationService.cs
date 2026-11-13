@@ -2,6 +2,7 @@ using System.Text;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using PMPlatform.Application.Common.Auditing;
+using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Events;
 using PMPlatform.Domain.Common;
@@ -32,6 +33,7 @@ internal sealed partial class AuthenticationService(
     IdentityVerificationPolicy identityVerificationPolicy,
     LocalAccountPolicy localAccounts,
     IPasswordResetMailer passwordResetMailer,
+    INationalIdProtector nationalIds,
     IPasskeyRelyingParty passkeyRelyingParty,
     IPasskeyRepository passkeys,
     SmsOneTimeCodes smsCodes,

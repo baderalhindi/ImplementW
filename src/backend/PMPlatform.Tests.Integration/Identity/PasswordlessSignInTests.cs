@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
 
 namespace PMPlatform.Tests.Integration.Identity;
@@ -20,17 +21,23 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
     private const string RelyingPartyId = "pmplatform.test";
     private const string Passkeys = "/api/v1/users/current/passkeys";
     private const string RegistrationOptions = "/api/v1/users/current/passkeys/registration-options";
-    private const string PasskeySignInOptions = "/api/v1/sessions/passkey-options";
+    private const string PasskeyChallenge = "/api/v1/sessions/passkey-challenge";
     private const string PasskeySessions = "/api/v1/sessions/passkey";
     private const string SmsChallenge = "/api/v1/sessions/sms-code-challenge";
     private const string SmsSessions = "/api/v1/sessions/sms";
     private const string OwnMobileNumber = "/api/v1/users/current/mobile-number";
     private const string Mobile = "+966500000003";
 
+    /// <summary>A valid National ID nobody holds.</summary>
+    private const string NobodysNationalId = "1000000016";
+
+    /// <summary>Valid National ID and Iqama numbers (Luhn) for the people these tests sign in.</summary>
+    private static readonly Dictionary<int, string> NationalIds = new() { [1] = "1000000008", [3] = "1000000032", [6] = "2000000063" };
+
     private readonly TestSmsCodeSender _sms = new();
     private IdentityApiFactory _api = null!;
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
         _api = host.CreateApi(
             new Dictionary<string, string?>
@@ -43,13 +50,20 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
                 services.RemoveAll<ISmsCodeSender>();
                 services.AddSingleton<ISmsCodeSender>(_sms);
             });
-        return Task.CompletedTask;
+        INationalIdProtector protector = _api.Services.GetRequiredService<INationalIdProtector>();
+        foreach ((int person, string nationalId) in NationalIds)
+        {
+            await host.Database.ExecuteAsync(
+                $"UPDATE identity_access.\"user\" SET national_id_sealed = '{protector.Seal(nationalId)}', national_id_fingerprint = '{protector.Fingerprint(nationalId)}', national_id_last_digits = '{nationalId[^4..]}' WHERE id = '{IdentityDatabase.UserId(person)}'");
+        }
     }
 
     public async Task DisposeAsync()
     {
         host.Clock.Reset();
         await host.Database.ExecuteAsync("DELETE FROM identity_access.user_passkey; DELETE FROM identity_access.sms_code;");
+        await host.Database.ExecuteAsync(
+            $"UPDATE identity_access.\"user\" SET national_id_sealed = NULL, national_id_fingerprint = NULL, national_id_last_digits = NULL WHERE id IN ({string.Join(", ", NationalIds.Keys.Select(p => $"'{IdentityDatabase.UserId(p)}'"))})");
         await host.Database.ExecuteAsync(
             $"UPDATE identity_access.\"user\" SET mobile_number = NULL, mobile_verified_at = NULL WHERE mobile_number = '{Mobile}'");
         await _api.DisposeAsync();
@@ -75,7 +89,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         Session signedIn = await client.SignInOrFailAsync(1);
         await RegisterAsync(client, signedIn.AccessToken, device, "iPhone");
 
-        using HttpResponseMessage response = await SignInWithPasskeyAsync(client, device);
+        using HttpResponseMessage response = await SignInWithPasskeyAsync(client, device, NationalIds[1]);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Session session = await response.ReadAsync<Session>();
@@ -95,7 +109,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         using TestPasskeyDevice device = new(Origin, RelyingPartyId);
         await RegisterAsync(client, (await client.SignInOrFailAsync(3)).AccessToken, device, "Mac");
 
-        using HttpResponseMessage response = await SignInWithPasskeyAsync(client, device, tamper: signature => [.. signature[..^1], (byte)(signature[^1] ^ 0x01)]);
+        using HttpResponseMessage response = await SignInWithPasskeyAsync(client, device, NationalIds[3], tamper: signature => [.. signature[..^1], (byte)(signature[^1] ^ 0x01)]);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -139,7 +153,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         Guid passkeyId = await RegisterAsync(client, session.AccessToken, device, "Mac");
 
         using HttpResponseMessage removed = await client.PostAsync($"{Passkeys}/{passkeyId}/delete", session.AccessToken);
-        using HttpResponseMessage response = await SignInWithPasskeyAsync(client, device);
+        using HttpResponseMessage response = await SignInWithPasskeyAsync(client, device, NationalIds[3]);
 
         Assert.Equal(HttpStatusCode.OK, removed.StatusCode);
         Assert.Empty((await removed.ReadObjectAsync())["items"]!.AsArray());
@@ -156,7 +170,40 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         using HttpResponseMessage response = await client.PostAsync($"{Passkeys}/{passkeyId}/delete", (await client.SignInOrFailAsync(6)).AccessToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal(HttpStatusCode.Created, (await SignInWithPasskeyAsync(client, device)).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await SignInWithPasskeyAsync(client, device, NationalIds[3])).StatusCode);
+    }
+
+    /// <summary>The National ID names whose passkey may sign in: another person's ID, or nobody's, gets the same 401.</summary>
+    [Fact]
+    public async Task APasskeySignsInOnlyAsTheOwnerOfTheNationalIdGiven()
+    {
+        using HttpClient client = _api.CreateClient();
+        using TestPasskeyDevice device = new(Origin, RelyingPartyId);
+        await RegisterAsync(client, (await client.SignInOrFailAsync(3)).AccessToken, device, "Mac");
+
+        using HttpResponseMessage asSomeoneElse = await SignInWithPasskeyAsync(client, device, NationalIds[6]);
+        using HttpResponseMessage asNobody = await SignInWithPasskeyAsync(client, device, NobodysNationalId);
+        using HttpResponseMessage asOwner = await SignInWithPasskeyAsync(client, device, NationalIds[3]);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, asSomeoneElse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, asNobody.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, asOwner.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("1000000009")]
+    [InlineData("3000000000")]
+    [InlineData("12345")]
+    public async Task ANumberThatIsNoNationalIdIsRefusedBeforeAnything(string nationalId)
+    {
+        using HttpClient client = _api.CreateClient();
+
+        using HttpResponseMessage passkey = await client.PostAsJsonAsync(PasskeyChallenge, new { nationalId });
+        using HttpResponseMessage sms = await client.PostAsJsonAsync(SmsChallenge, new { nationalId });
+
+        Assert.Equal(HttpStatusCode.BadRequest, passkey.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, sms.StatusCode);
+        Assert.Empty(_sms.Sent);
     }
 
     [Fact]
@@ -165,7 +212,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         await VerifiedMobileAsync(3);
         using HttpClient client = _api.CreateClient();
 
-        SmsChallengeDetail challenge = await RequestCodeAsync(client, Mobile);
+        SmsChallengeDetail challenge = await RequestCodeAsync(client, NationalIds[3]);
         using HttpResponseMessage response = await client.PostAsJsonAsync(SmsSessions, new { challengeId = challenge.ChallengeId, code = _sms.LastCodeTo(Mobile) });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -182,7 +229,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         await VerifiedMobileAsync(1);
         using HttpClient client = _api.CreateClient();
 
-        SmsChallengeDetail challenge = await RequestCodeAsync(client, Mobile);
+        SmsChallengeDetail challenge = await RequestCodeAsync(client, NationalIds[1]);
         using HttpResponseMessage response = await client.PostAsJsonAsync(SmsSessions, new { challengeId = challenge.ChallengeId, code = _sms.LastCodeTo(Mobile) });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -190,15 +237,15 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         Assert.True(session.User.MultiFactorAuthenticated);
     }
 
-    /// <summary>An unknown or unverified number gets the same answer and no SMS, so the page tells nobody whose number is whose.</summary>
+    /// <summary>A National ID with no verified number, or nobody's, gets the same answer and no SMS, so the page tells nobody who has an account.</summary>
     [Fact]
-    public async Task ANumberNobodyHasVerifiedGetsTheSameAnswerAndNoCode()
+    public async Task ANationalIdWithoutAVerifiedNumberGetsTheSameAnswerAndNoCode()
     {
         await host.Database.ExecuteAsync($"UPDATE identity_access.\"user\" SET mobile_number = '{Mobile}', mobile_verified_at = NULL WHERE id = '{IdentityDatabase.UserId(3)}'");
         using HttpClient client = _api.CreateClient();
 
-        SmsChallengeDetail unverified = await RequestCodeAsync(client, Mobile);
-        SmsChallengeDetail unknown = await RequestCodeAsync(client, "+966500000999");
+        SmsChallengeDetail unverified = await RequestCodeAsync(client, NationalIds[3]);
+        SmsChallengeDetail unknown = await RequestCodeAsync(client, NobodysNationalId);
         using HttpResponseMessage response = await client.PostAsJsonAsync(SmsSessions, new { challengeId = unverified.ChallengeId, code = "123456" });
 
         Assert.Empty(_sms.Sent);
@@ -211,7 +258,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
     {
         await VerifiedMobileAsync(3);
         using HttpClient client = _api.CreateClient();
-        SmsChallengeDetail challenge = await RequestCodeAsync(client, Mobile);
+        SmsChallengeDetail challenge = await RequestCodeAsync(client, NationalIds[3]);
         string code = _sms.LastCodeTo(Mobile);
         string wrong = code == "000000" ? "111111" : "000000";
 
@@ -223,7 +270,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync(SmsSessions, new { challengeId = challenge.ChallengeId, code })).StatusCode);
 
         host.Clock.Advance(TimeSpan.FromMinutes(2));
-        SmsChallengeDetail next = await RequestCodeAsync(client, Mobile);
+        SmsChallengeDetail next = await RequestCodeAsync(client, NationalIds[3]);
         string nextCode = _sms.LastCodeTo(Mobile);
         Assert.Equal(HttpStatusCode.Created, (await client.PostAsJsonAsync(SmsSessions, new { challengeId = next.ChallengeId, code = nextCode })).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync(SmsSessions, new { challengeId = next.ChallengeId, code = nextCode })).StatusCode);
@@ -234,7 +281,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
     {
         await VerifiedMobileAsync(3);
         using HttpClient client = _api.CreateClient();
-        SmsChallengeDetail challenge = await RequestCodeAsync(client, Mobile);
+        SmsChallengeDetail challenge = await RequestCodeAsync(client, NationalIds[3]);
         host.Clock.Advance(TimeSpan.FromMinutes(6));
 
         using HttpResponseMessage response = await client.PostAsJsonAsync(SmsSessions, new { challengeId = challenge.ChallengeId, code = _sms.LastCodeTo(Mobile) });
@@ -262,7 +309,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         Assert.Null(before["verifiedAt"]);
         Assert.True((bool)before["verificationAvailable"]!);
         Assert.NotNull(after["verifiedAt"]);
-        await RequestCodeAsync(client, Mobile);
+        await RequestCodeAsync(client, NationalIds[6]);
         Assert.Equal(2, _sms.Sent.Count);
     }
 
@@ -277,15 +324,18 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         return (Guid)(await created.ReadObjectAsync())["id"]!;
     }
 
-    private static async Task<HttpResponseMessage> SignInWithPasskeyAsync(HttpClient client, TestPasskeyDevice device, Func<byte[], byte[]>? tamper = null)
+    private static async Task<HttpResponseMessage> SignInWithPasskeyAsync(
+        HttpClient client, TestPasskeyDevice device, string nationalId, Func<byte[], byte[]>? tamper = null)
     {
-        PasskeyOptions options = await (await client.GetAsync(PasskeySignInOptions)).ReadAsync<PasskeyOptions>();
+        using HttpResponseMessage started = await client.PostAsJsonAsync(PasskeyChallenge, new { nationalId });
+        Assert.Equal(HttpStatusCode.OK, started.StatusCode);
+        PasskeyOptions options = await started.ReadAsync<PasskeyOptions>();
         return await client.PostAsJsonAsync(PasskeySessions, new { transaction = options.Transaction, credential = device.Get(options.Options, tamper) });
     }
 
-    private static async Task<SmsChallengeDetail> RequestCodeAsync(HttpClient client, string mobileNumber)
+    private static async Task<SmsChallengeDetail> RequestCodeAsync(HttpClient client, string nationalId)
     {
-        using HttpResponseMessage response = await client.PostAsJsonAsync(SmsChallenge, new { mobileNumber });
+        using HttpResponseMessage response = await client.PostAsJsonAsync(SmsChallenge, new { nationalId });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return await response.ReadAsync<SmsChallengeDetail>();
     }

@@ -18,13 +18,16 @@ public interface IPasskeyRelyingParty
     /// <summary>The new credential, or null if the device's answer does not verify for this user's ceremony. Whether its id is taken is the caller's to check.</summary>
     public Task<NewPasskeyCredential?> CompleteRegistrationAsync(Guid userId, string transaction, string credentialJson, CancellationToken cancellationToken);
 
-    /// <summary>Asks the device for any of this platform's passkeys: the person picks theirs, so no username is typed.</summary>
-    public PasskeyCeremony BeginAssertion();
+    /// <summary>
+    /// Asks the device for one of this platform's passkeys, to be verified only if it is <paramref name="expectedUserId"/>'s.
+    /// No credential is named in the options, so they do not say whether that person has any.
+    /// </summary>
+    public PasskeyCeremony BeginAssertion(Guid expectedUserId);
 
     /// <summary>The credential id the device answered with, to look its passkey up by; null if the answer cannot be read.</summary>
     public byte[]? CredentialIdOf(string credentialJson);
 
-    /// <summary>The passkey's signature counter now, or null if the answer does not verify against <paramref name="stored"/> for this ceremony.</summary>
+    /// <summary>The passkey's signature counter now, or null if the answer does not verify against <paramref name="stored"/>, or <paramref name="stored"/> is not the expected person's.</summary>
     public Task<long?> VerifyAssertionAsync(string transaction, string credentialJson, StoredPasskey stored, CancellationToken cancellationToken);
 }
 

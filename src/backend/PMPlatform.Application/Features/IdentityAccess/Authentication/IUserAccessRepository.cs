@@ -9,8 +9,11 @@ public interface IUserAccessRepository
 
     public Task<UserAccess?> FindByIdAsync(Guid userId, CancellationToken cancellationToken);
 
-    /// <summary>The users whose profile holds <paramref name="mobileNumber"/> and whose holder has verified it (ADR-004).</summary>
-    public Task<IReadOnlyList<Guid>> FindByVerifiedMobileNumberAsync(string mobileNumber, CancellationToken cancellationToken);
+    /// <summary>The user whose National ID or Iqama number has this fingerprint (client review, item 7), if any.</summary>
+    public Task<Guid?> FindByNationalIdFingerprintAsync(string fingerprint, CancellationToken cancellationToken);
+
+    /// <summary>The user's mobile number if its holder has verified it (ADR-004); null otherwise.</summary>
+    public Task<string?> FindVerifiedMobileNumberAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>The fingerprint of the National ID or Iqama number recorded for the user, if any (client review, item 7).</summary>
     public Task<string?> FindNationalIdFingerprintAsync(Guid userId, CancellationToken cancellationToken);

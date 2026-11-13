@@ -6,7 +6,7 @@
       {
         "heading": "Sign in",
         "paragraphs": [
-          "Sign in with your AHDA username and password. The form appears under the Microsoft tab and the [[identityAccess.signIn.tabs.directory]] tab alike. You can also sign in without a password: with Face ID or Touch ID, once you have added a passkey for the device under [[identityAccess.signInMethods.menu]] in the account menu, or with a code sent by SMS to the mobile number you verified there. Options marked [[identityAccess.signIn.comingSoon]] cannot be used yet.",
+          "Sign in with your AHDA username and password. The form appears under the Microsoft tab and the [[identityAccess.signIn.tabs.directory]] tab alike. You can also use [[identityAccess.signIn.passwordless.submit]]: enter your National ID or Iqama number, then verify with Face ID or Touch ID (a passkey you added for the device under [[identityAccess.signInMethods.menu]] in the account menu) or with a code sent by SMS to the mobile number you verified there. Options marked [[identityAccess.signIn.comingSoon]] cannot be used yet.",
           "The platform does not reset passwords itself. If you have forgotten yours, use the link or the contact shown under the password field."
         ],
         "note": "If your account needs a verification code, the platform asks for it from your authenticator app each time you sign in; the first time, it shows a key to add to the app."
