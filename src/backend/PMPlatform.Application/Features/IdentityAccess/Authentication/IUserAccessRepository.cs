@@ -12,8 +12,11 @@ public interface IUserAccessRepository
     /// <summary>The user whose National ID or Iqama number has this fingerprint (client review, item 7), if any.</summary>
     public Task<Guid?> FindByNationalIdFingerprintAsync(string fingerprint, CancellationToken cancellationToken);
 
-    /// <summary>The user's mobile number if its holder has verified it (ADR-004); null otherwise.</summary>
-    public Task<string?> FindVerifiedMobileNumberAsync(Guid userId, CancellationToken cancellationToken);
+    /// <summary>The mobile number on the user's profile, verified or not.</summary>
+    public Task<string?> FindMobileNumberAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>Marks the number verified (ADR-004) if it is still the user's and not yet verified: a sign-in code sent to it was entered.</summary>
+    public Task RecordMobileNumberVerifiedAsync(Guid userId, string mobileNumber, CancellationToken cancellationToken);
 
     /// <summary>The fingerprint of the National ID or Iqama number recorded for the user, if any (client review, item 7).</summary>
     public Task<string?> FindNationalIdFingerprintAsync(Guid userId, CancellationToken cancellationToken);

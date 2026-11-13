@@ -120,9 +120,12 @@ export const sessionApi = {
     post<PasskeyOptions>('/sessions/passkey-challenge', nationalId === null ? {} : { nationalId }),
   signInWithPasskey: (transaction: string, credential: unknown) =>
     post<SignInResult>('/sessions/passkey', { transaction, credential }),
-  /** Sign-in with biometrics: a code to the verified mobile number of the National ID's owner. */
-  requestSmsCode: (nationalId: string) =>
-    post<SmsCodeChallenge>('/sessions/sms-code-challenge', { nationalId }),
+  /** Sign-in with biometrics, first step: whether the National ID or Iqama number is registered to someone who may sign in. */
+  checkNationalId: (nationalId: string) =>
+    post<{ registered: boolean }>('/sessions/national-id-check', { nationalId }),
+  /** The first time on a device: a code to the mobile number, if it is the one on the National ID owner's profile. */
+  requestSmsCode: (nationalId: string, mobileNumber: string) =>
+    post<SmsCodeChallenge>('/sessions/sms-code-challenge', { nationalId, mobileNumber }),
   signInWithSmsCode: (challengeId: string, code: string) =>
     post<SignInResult>('/sessions/sms', { challengeId, code }),
   changePassword: (passwordChangeToken: string, newPassword: string) =>

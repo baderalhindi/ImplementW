@@ -72,6 +72,12 @@ public static class IdentityAccessErrorCodes
     /// <summary>422: the device's answer did not verify: wrong origin, expired or altered ceremony, no user verification, or a key already registered.</summary>
     public const string PasskeyRejected = "IDENTITY_ACCESS_PASSKEY_REJECTED";
 
+    /// <summary>422: sign-in with biometrics: no person who may sign in has this National ID or Iqama number (field <c>nationalId</c>).</summary>
+    public const string NationalIdNotRegistered = "IDENTITY_ACCESS_NATIONAL_ID_NOT_REGISTERED";
+
+    /// <summary>422: sign-in with biometrics: the mobile number given is not the one on the person's profile (field <c>mobileNumber</c>).</summary>
+    public const string MobileNumberMismatch = "IDENTITY_ACCESS_MOBILE_NUMBER_MISMATCH";
+
     /// <summary>422: the number already has a code on its way: a new one can be sent once the resend wait is over.</summary>
     public const string SmsCodeRecentlySent = "IDENTITY_ACCESS_SMS_CODE_RECENTLY_SENT";
 

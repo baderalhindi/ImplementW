@@ -22,6 +22,21 @@ public sealed record BiometricSignInRequest(string? NationalId)
     }
 }
 
+/// <summary>The first time on a device: the National ID and the mobile number on the person's profile, for the code to go to it.</summary>
+public sealed record SmsCodeChallengeCreateRequest(string? NationalId, string? MobileNumber)
+{
+    internal List<FieldError> Validate()
+    {
+        List<FieldError> errors = new BiometricSignInRequest(NationalId).Validate();
+        RequestValidation.Require(MobileNumber, "mobileNumber", 20, errors);
+        RequestValidation.MobileNumber(MobileNumber, "mobileNumber", errors);
+        return errors;
+    }
+}
+
+/// <summary>Whether a National ID or Iqama number belongs to a person who may sign in.</summary>
+public sealed record NationalIdCheckDetail(bool Registered);
+
 /// <summary>
 /// Starts a passkey sign-in: with <see cref="NationalId"/> (sign-in with biometrics) only its owner's passkey will verify;
 /// without it (the Face ID / Touch ID button) the passkey the device offers signs its owner in.

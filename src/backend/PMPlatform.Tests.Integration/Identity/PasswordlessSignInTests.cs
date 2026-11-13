@@ -25,6 +25,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
     private const string PasskeySessions = "/api/v1/sessions/passkey";
     private const string SmsChallenge = "/api/v1/sessions/sms-code-challenge";
     private const string SmsSessions = "/api/v1/sessions/sms";
+    private const string NationalIdCheck = "/api/v1/sessions/national-id-check";
     private const string OwnMobileNumber = "/api/v1/users/current/mobile-number";
     private const string Mobile = "+966500000003";
 
@@ -34,8 +35,13 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
     /// <summary>Valid National ID and Iqama numbers (Luhn) for the people these tests sign in.</summary>
     private static readonly Dictionary<int, string> NationalIds = new() { [1] = "1000000008", [3] = "1000000032", [6] = "2000000063" };
 
+    private static string PeopleList => string.Join(", ", NationalIds.Keys.Select(p => $"'{IdentityDatabase.UserId(p)}'"));
+
     private readonly TestSmsCodeSender _sms = new();
     private IdentityApiFactory _api = null!;
+
+    /// <summary>Who last updated each person's row: a sign-in code verifies the number as the person, and other suites read this column.</summary>
+    private IReadOnlyList<string> _updatedBy = [];
 
     public async Task InitializeAsync()
     {
@@ -50,6 +56,8 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
                 services.RemoveAll<ISmsCodeSender>();
                 services.AddSingleton<ISmsCodeSender>(_sms);
             });
+        _updatedBy = await host.Database.QueryAsync(
+            $"SELECT id || '|' || updated_by FROM identity_access.\"user\" WHERE id IN ({PeopleList})");
         INationalIdProtector protector = _api.Services.GetRequiredService<INationalIdProtector>();
         foreach ((int person, string nationalId) in NationalIds)
         {
@@ -63,7 +71,12 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         host.Clock.Reset();
         await host.Database.ExecuteAsync("DELETE FROM identity_access.user_passkey; DELETE FROM identity_access.sms_code;");
         await host.Database.ExecuteAsync(
-            $"UPDATE identity_access.\"user\" SET national_id_sealed = NULL, national_id_fingerprint = NULL, national_id_last_digits = NULL WHERE id IN ({string.Join(", ", NationalIds.Keys.Select(p => $"'{IdentityDatabase.UserId(p)}'"))})");
+            $"UPDATE identity_access.\"user\" SET national_id_sealed = NULL, national_id_fingerprint = NULL, national_id_last_digits = NULL WHERE id IN ({PeopleList})");
+        foreach (string row in _updatedBy)
+        {
+            string[] parts = row.Split('|');
+            await host.Database.ExecuteAsync($"UPDATE identity_access.\"user\" SET updated_by = '{parts[1]}' WHERE id = '{parts[0]}'");
+        }
         await host.Database.ExecuteAsync(
             $"UPDATE identity_access.\"user\" SET mobile_number = NULL, mobile_verified_at = NULL WHERE mobile_number = '{Mobile}'");
         await _api.DisposeAsync();
@@ -221,9 +234,9 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
     }
 
     [Fact]
-    public async Task ACodeBySmsToAVerifiedNumberSignsThePersonIn()
+    public async Task ACodeBySmsToTheProfilesNumberSignsThePersonInAndVerifiesTheNumber()
     {
-        await VerifiedMobileAsync(3);
+        await ProfileMobileAsync(3);
         using HttpClient client = _api.CreateClient();
 
         SmsChallengeDetail challenge = await RequestCodeAsync(client, NationalIds[3]);
@@ -234,13 +247,16 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         Assert.Equal(Guid.Parse(IdentityDatabase.UserId(3)), session.User.Id);
         Assert.Equal("SMS_CODE", session.User.AuthenticationMethod);
         Assert.False(session.User.MultiFactorAuthenticated);
+        IReadOnlyList<string> verified = await host.Database.QueryAsync(
+            $"SELECT (mobile_verified_at IS NOT NULL)::text FROM identity_access.\"user\" WHERE id = '{IdentityDatabase.UserId(3)}'");
+        Assert.Equal("true", Assert.Single(verified));
     }
 
     /// <summary>An SMS code proves the phone only: R01 still gives the authenticator code.</summary>
     [Fact]
     public async Task ASmsCodeIsAFirstFactorOnly()
     {
-        await VerifiedMobileAsync(1);
+        await ProfileMobileAsync(1);
         using HttpClient client = _api.CreateClient();
 
         SmsChallengeDetail challenge = await RequestCodeAsync(client, NationalIds[1]);
@@ -251,26 +267,54 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         Assert.True(session.User.MultiFactorAuthenticated);
     }
 
-    /// <summary>A National ID with no verified number, or nobody's, gets the same answer and no SMS, so the page tells nobody who has an account.</summary>
+    /// <summary>The client's decision: the first step says plainly whether the National ID is registered.</summary>
     [Fact]
-    public async Task ANationalIdWithoutAVerifiedNumberGetsTheSameAnswerAndNoCode()
+    public async Task TheNationalIdCheckSaysWhetherTheNumberBelongsToSomeoneWhoMaySignIn()
     {
-        await host.Database.ExecuteAsync($"UPDATE identity_access.\"user\" SET mobile_number = '{Mobile}', mobile_verified_at = NULL WHERE id = '{IdentityDatabase.UserId(3)}'");
         using HttpClient client = _api.CreateClient();
 
-        SmsChallengeDetail unverified = await RequestCodeAsync(client, NationalIds[3]);
-        SmsChallengeDetail unknown = await RequestCodeAsync(client, NobodysNationalId);
-        using HttpResponseMessage response = await client.PostAsJsonAsync(SmsSessions, new { challengeId = unverified.ChallengeId, code = "123456" });
+        JsonObject registered = await (await client.PostAsJsonAsync(NationalIdCheck, new { nationalId = NationalIds[3] })).ReadObjectAsync();
+        JsonObject nobody = await (await client.PostAsJsonAsync(NationalIdCheck, new { nationalId = NobodysNationalId })).ReadObjectAsync();
 
+        Assert.True((bool)registered["registered"]!);
+        Assert.False((bool)nobody["registered"]!);
+    }
+
+    /// <summary>No code goes to a number that is not the profile's, nor for a National ID nobody holds.</summary>
+    [Fact]
+    public async Task AnotherMobileNumberOrAnUnregisteredNationalIdGetsNoCode()
+    {
+        await ProfileMobileAsync(3);
+        using HttpClient client = _api.CreateClient();
+
+        using HttpResponseMessage otherNumber = await client.PostAsJsonAsync(SmsChallenge, new { nationalId = NationalIds[3], mobileNumber = "+966500000999" });
+        using HttpResponseMessage nobody = await client.PostAsJsonAsync(SmsChallenge, new { nationalId = NobodysNationalId, mobileNumber = Mobile });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, otherNumber.StatusCode);
+        Assert.Equal("IDENTITY_ACCESS_MOBILE_NUMBER_MISMATCH", (await otherNumber.ReadAsync<Problem>()).Code);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, nobody.StatusCode);
+        Assert.Equal("IDENTITY_ACCESS_NATIONAL_ID_NOT_REGISTERED", (await nobody.ReadAsync<Problem>()).Code);
         Assert.Empty(_sms.Sent);
-        Assert.NotEqual(unverified.ChallengeId, unknown.ChallengeId);
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ASecondCodeWithinTheMinuteIsRefused()
+    {
+        await ProfileMobileAsync(3);
+        using HttpClient client = _api.CreateClient();
+        await RequestCodeAsync(client, NationalIds[3]);
+
+        using HttpResponseMessage again = await client.PostAsJsonAsync(SmsChallenge, new { nationalId = NationalIds[3], mobileNumber = Mobile });
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, again.StatusCode);
+        Assert.Equal("IDENTITY_ACCESS_SMS_CODE_RECENTLY_SENT", (await again.ReadAsync<Problem>()).Code);
+        Assert.Single(_sms.Sent);
     }
 
     [Fact]
     public async Task ACodeStopsWorkingAfterFiveWrongTriesAndWorksOnce()
     {
-        await VerifiedMobileAsync(3);
+        await ProfileMobileAsync(3);
         using HttpClient client = _api.CreateClient();
         SmsChallengeDetail challenge = await RequestCodeAsync(client, NationalIds[3]);
         string code = _sms.LastCodeTo(Mobile);
@@ -293,7 +337,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
     [Fact]
     public async Task AnExpiredCodeIsNoSignIn()
     {
-        await VerifiedMobileAsync(3);
+        await ProfileMobileAsync(3);
         using HttpClient client = _api.CreateClient();
         SmsChallengeDetail challenge = await RequestCodeAsync(client, NationalIds[3]);
         host.Clock.Advance(TimeSpan.FromMinutes(6));
@@ -347,15 +391,16 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         return await client.PostAsJsonAsync(PasskeySessions, new { transaction = options.Transaction, credential = device.Get(options.Options, tamper) });
     }
 
-    private static async Task<SmsChallengeDetail> RequestCodeAsync(HttpClient client, string nationalId)
+    private static async Task<SmsChallengeDetail> RequestCodeAsync(HttpClient client, string nationalId, string mobileNumber = Mobile)
     {
-        using HttpResponseMessage response = await client.PostAsJsonAsync(SmsChallenge, new { nationalId });
+        using HttpResponseMessage response = await client.PostAsJsonAsync(SmsChallenge, new { nationalId, mobileNumber });
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return await response.ReadAsync<SmsChallengeDetail>();
     }
 
-    private Task VerifiedMobileAsync(int person) =>
-        host.Database.ExecuteAsync($"UPDATE identity_access.\"user\" SET mobile_number = '{Mobile}', mobile_verified_at = now() WHERE id = '{IdentityDatabase.UserId(person)}'");
+    /// <summary>The number an administrator recorded on the profile, not yet verified: the sign-in code verifies it.</summary>
+    private Task ProfileMobileAsync(int person) =>
+        host.Database.ExecuteAsync($"UPDATE identity_access.\"user\" SET mobile_number = '{Mobile}', mobile_verified_at = NULL WHERE id = '{IdentityDatabase.UserId(person)}'");
 
     private sealed record PasskeyOptions(JsonElement Options, string Transaction);
 

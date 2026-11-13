@@ -54,6 +54,9 @@ const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   IDENTITY_ACCESS_PASSKEY_REJECTED: 'identityAccess.problems.passkeyRejected',
   IDENTITY_ACCESS_MOBILE_NUMBER_MISSING: 'identityAccess.problems.mobileNumberMissing',
   IDENTITY_ACCESS_MOBILE_VERIFICATION_FAILED: 'identityAccess.problems.mobileVerificationFailed',
+  IDENTITY_ACCESS_NATIONAL_ID_NOT_REGISTERED: 'identityAccess.problems.nationalIdNotRegistered',
+  IDENTITY_ACCESS_MOBILE_NUMBER_MISMATCH: 'identityAccess.problems.mobileNumberMismatch',
+  IDENTITY_ACCESS_SMS_CODE_RECENTLY_SENT: 'identityAccess.problems.smsCodeRecentlySent',
 };
 
 const FIELD_MESSAGES: Record<string, TranslationKey> = {
@@ -76,6 +79,8 @@ const FIELD_MESSAGES: Record<string, TranslationKey> = {
   PASSWORD_MISMATCH: 'identityAccess.fieldErrors.passwordMismatch',
   NOT_ARABIC: 'common.fieldErrors.notArabic',
   NOT_ENGLISH: 'common.fieldErrors.notEnglish',
+  NOT_REGISTERED: 'identityAccess.fieldErrors.nationalIdNotRegistered',
+  MISMATCH: 'identityAccess.fieldErrors.mobileNumberMismatch',
 };
 
 export function problemMessage(error: unknown, t: Translate): string {

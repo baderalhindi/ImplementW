@@ -191,15 +191,16 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     }
 
     /// <summary>
-    /// Sign-in with biometrics by SMS: sends a code to the verified mobile number of the owner of the National ID given. The
-    /// answer is the same whether or not anyone has that number, or a verified mobile number.
+    /// Sign-in with biometrics, first step (the client's decision, 13 Nov 2026): whether the National ID or Iqama number
+    /// belongs to a person who may sign in. Answered plainly, so it tells a caller whether a number has an account; the
+    /// <c>SignIn</c> rate limit bounds how fast numbers can be tried (AUTH-T35).
     /// </summary>
-    [HttpPost("sms-code-challenge")]
+    [HttpPost("national-id-check")]
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
-    [EndpointName("IdentityAccess_CreateSmsCodeChallenge")]
-    [ProducesResponseType<SmsSignInChallenge>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> CreateSmsCodeChallenge(BiometricSignInRequest request, CancellationToken cancellationToken)
+    [EndpointName("IdentityAccess_CheckNationalId")]
+    [ProducesResponseType<NationalIdCheckDetail>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> CheckNationalId(BiometricSignInRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.Validate() is { Count: > 0 } errors)
@@ -207,9 +208,48 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
             return ValidationFailed(errors);
         }
 
-        SmsSignInChallenge? challenge = await authentication.RequestSmsSignInCodeAsync(request.NationalId!, cancellationToken);
+        if (!authentication.IsSmsSignInAvailable && !authentication.IsPasskeySignInAvailable)
+        {
+            return Unavailable();
+        }
+
         NoStore();
-        return challenge is null ? Unavailable() : Ok(challenge);
+        return Ok(new NationalIdCheckDetail(await authentication.IsNationalIdRegisteredAsync(request.NationalId!, cancellationToken)));
+    }
+
+    /// <summary>
+    /// Sign-in with biometrics, the first time on a device: sends a code to the mobile number, if it is the one on the profile
+    /// of the National ID's owner. 422 <c>IDENTITY_ACCESS_NATIONAL_ID_NOT_REGISTERED</c> or <c>IDENTITY_ACCESS_MOBILE_NUMBER_MISMATCH</c>
+    /// otherwise, or <c>IDENTITY_ACCESS_SMS_CODE_RECENTLY_SENT</c> within the resend wait.
+    /// </summary>
+    [HttpPost("sms-code-challenge")]
+    [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
+    [EndpointName("IdentityAccess_CreateSmsCodeChallenge")]
+    [ProducesResponseType<SmsSignInChallenge>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> CreateSmsCodeChallenge(SmsCodeChallengeCreateRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Validate() is { Count: > 0 } errors)
+        {
+            return ValidationFailed(errors);
+        }
+
+        SmsSignInCodeRequest result = await authentication.RequestSmsSignInCodeAsync(request.NationalId!, request.MobileNumber!, cancellationToken);
+        NoStore();
+        return result switch
+        {
+            { Challenge: { } challenge } => Ok(challenge),
+            { Refusal: SmsSignInCodeRefusal.NationalIdNotRegistered } => ApiProblem.Result(
+                HttpContext, StatusCodes.Status422UnprocessableEntity, IdentityAccessErrorCodes.NationalIdNotRegistered,
+                "The National ID is not registered.", [new FieldError("nationalId", "NOT_REGISTERED")]),
+            { Refusal: SmsSignInCodeRefusal.MobileNumberMismatch } => ApiProblem.Result(
+                HttpContext, StatusCodes.Status422UnprocessableEntity, IdentityAccessErrorCodes.MobileNumberMismatch,
+                "The mobile number is not the one on the account.", [new FieldError("mobileNumber", "MISMATCH")]),
+            { Refusal: SmsSignInCodeRefusal.RecentlySent } => ApiProblem.Result(
+                HttpContext, StatusCodes.Status422UnprocessableEntity, IdentityAccessErrorCodes.SmsCodeRecentlySent, "A code was sent a moment ago."),
+            _ => Unavailable(),
+        };
     }
 
     /// <summary>Signs in with an SMS code. It proves the phone only: a person who requires MFA continues to their second factor.</summary>

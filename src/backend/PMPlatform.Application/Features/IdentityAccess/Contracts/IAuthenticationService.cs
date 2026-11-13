@@ -51,8 +51,11 @@ public interface IAuthenticationService
     /// <summary>Whether an SMS gateway is configured and National IDs can be read, so the sign-in page can offer a code by SMS.</summary>
     public bool IsSmsSignInAvailable { get; }
 
-    /// <summary>Sends a sign-in code to the verified mobile number of the owner of <paramref name="nationalId"/>; null where SMS is not configured.</summary>
-    public Task<SmsSignInChallenge?> RequestSmsSignInCodeAsync(string nationalId, CancellationToken cancellationToken);
+    /// <summary>Whether this National ID or Iqama number belongs to a person who may sign in (the client's decision: answered plainly).</summary>
+    public Task<bool> IsNationalIdRegisteredAsync(string nationalId, CancellationToken cancellationToken);
+
+    /// <summary>Sends a sign-in code to <paramref name="mobileNumber"/> if it is the number on the profile of the National ID's owner.</summary>
+    public Task<SmsSignInCodeRequest> RequestSmsSignInCodeAsync(string nationalId, string mobileNumber, CancellationToken cancellationToken);
 
     /// <summary>Signs in with an SMS code. It is a first factor: a person who requires MFA continues to their second factor.</summary>
     public Task<AuthenticationResult> SignInWithSmsCodeAsync(Guid challengeId, string code, CancellationToken cancellationToken);

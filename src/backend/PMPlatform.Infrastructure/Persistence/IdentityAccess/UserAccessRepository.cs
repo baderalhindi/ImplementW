@@ -27,9 +27,17 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
         context.Set<User>().AsNoTracking().Where(u => u.NationalIdFingerprint == fingerprint).Select(u => (Guid?)u.Id)
             .SingleOrDefaultAsync(cancellationToken);
 
-    public Task<string?> FindVerifiedMobileNumberAsync(Guid userId, CancellationToken cancellationToken) =>
-        context.Set<User>().AsNoTracking().Where(u => u.Id == userId && u.MobileVerifiedAt != null).Select(u => u.MobileNumber)
-            .SingleOrDefaultAsync(cancellationToken);
+    public Task<string?> FindMobileNumberAsync(Guid userId, CancellationToken cancellationToken) =>
+        context.Set<User>().AsNoTracking().Where(u => u.Id == userId).Select(u => u.MobileNumber).SingleOrDefaultAsync(cancellationToken);
+
+    public async Task RecordMobileNumberVerifiedAsync(Guid userId, string mobileNumber, CancellationToken cancellationToken)
+    {
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        await context.Set<User>()
+            .Where(u => u.Id == userId && u.MobileNumber == mobileNumber && u.MobileVerifiedAt == null)
+            .ExecuteUpdateAsync(set => set.SetProperty(u => u.MobileVerifiedAt, now).SetProperty(u => u.UpdatedAt, now).SetProperty(u => u.UpdatedBy, userId), cancellationToken)
+            .ConfigureAwait(false);
+    }
 
     public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken) =>
         LocalCredentialAsync(u => u.Username == username, cancellationToken);

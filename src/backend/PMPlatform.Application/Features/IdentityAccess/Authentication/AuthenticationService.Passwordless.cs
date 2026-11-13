@@ -8,9 +8,9 @@ namespace PMPlatform.Application.Features.IdentityAccess.Authentication;
 /// Sign-in with biometrics (13 Nov 2026 review): the person gives their National ID or Iqama number, then proves it is
 /// them with the passkey on their device (Face ID, Touch ID or the device unlock) or with a code by SMS to the mobile
 /// number they verified. A passkey is the device in hand plus the person's biometric, so it passes both factors; an SMS
-/// code proves only the phone, so a person who requires MFA still gives their authenticator code. Every answer before
-/// the proof is the same whether or not the number belongs to anyone, so the page cannot be used to learn who has an
-/// account. Both end in <see cref="ContinueSignInAsync"/>, like every other sign-in.
+/// code proves only the phone, so a person who requires MFA still gives their authenticator code. At the client's request
+/// the National ID is checked plainly (registered or not), and the first time on a device the person also types the mobile
+/// number on their profile. Both end in <see cref="ContinueSignInAsync"/>, like every other sign-in.
 /// </summary>
 internal sealed partial class AuthenticationService
 {
@@ -62,22 +62,42 @@ internal sealed partial class AuthenticationService
     public bool IsSmsSignInAvailable => smsCodes.IsConfigured && nationalIds.IsConfigured;
 
     /// <summary>
-    /// Sends a code to the verified mobile number of the person with this National ID, if they may sign in. The answer, and
-    /// its timing, are the same either way.
+    /// The first step of sign-in with biometrics (the client's decision, 13 Nov 2026): whether this National ID belongs to a
+    /// person who may sign in. It is answered plainly, so it tells a caller whether a number has an account (AUTH-T35).
     /// </summary>
-    public async Task<SmsSignInChallenge?> RequestSmsSignInCodeAsync(string nationalId, CancellationToken cancellationToken)
+    public async Task<bool> IsNationalIdRegisteredAsync(string nationalId, CancellationToken cancellationToken) =>
+        await SignInHolderOfAsync(nationalId, cancellationToken).ConfigureAwait(false) is not null;
+
+    /// <summary>
+    /// The first time on a device: sends a code to the mobile number on the profile of the National ID's owner, if the number
+    /// the person typed is that one. The code proves they hold it.
+    /// </summary>
+    public async Task<SmsSignInCodeRequest> RequestSmsSignInCodeAsync(string nationalId, string mobileNumber, CancellationToken cancellationToken)
     {
         if (!IsSmsSignInAvailable)
         {
-            return null;
+            return SmsSignInCodeRequest.Unavailable;
         }
 
-        long startedAt = timeProvider.GetTimestamp();
-        SmsCodeSending sending = await SendSmsSignInCodeAsync(nationalId, cancellationToken).ConfigureAwait(false);
-        await WaitOutRejectionFloorAsync(startedAt, cancellationToken).ConfigureAwait(false);
-        return sending.ChallengeId is { } challengeId
-            ? new SmsSignInChallenge(challengeId, sending.ExpiresAt!.Value)
-            : new SmsSignInChallenge(Guid.CreateVersion7(timeProvider.GetUtcNow()), timeProvider.GetUtcNow() + smsCodeOptions.Lifetime);
+        if (await SignInHolderOfAsync(nationalId, cancellationToken).ConfigureAwait(false) is not { } access)
+        {
+            return SmsSignInCodeRequest.Refused(SmsSignInCodeRefusal.NationalIdNotRegistered);
+        }
+
+        if (await users.FindMobileNumberAsync(access.UserId, cancellationToken).ConfigureAwait(false) != mobileNumber)
+        {
+            LogMobileNumberMismatch(logger, access.UserId);
+            return SmsSignInCodeRequest.Refused(SmsSignInCodeRefusal.MobileNumberMismatch);
+        }
+
+        SmsCodeSending sending = await smsCodes.SendAsync(access.UserId, mobileNumber, SmsCodePurpose.SignIn, access.PreferredLanguage, cancellationToken)
+            .ConfigureAwait(false);
+        return sending switch
+        {
+            { ChallengeId: { } challengeId, ExpiresAt: { } expiresAt } => SmsSignInCodeRequest.Sent(new SmsSignInChallenge(challengeId, expiresAt)),
+            { IsTooSoon: true } => SmsSignInCodeRequest.Refused(SmsSignInCodeRefusal.RecentlySent),
+            _ => SmsSignInCodeRequest.Unavailable,
+        };
     }
 
     public async Task<AuthenticationResult> SignInWithSmsCodeAsync(Guid challengeId, string code, CancellationToken cancellationToken)
@@ -94,29 +114,27 @@ internal sealed partial class AuthenticationService
                         return await FailAsync(attempt, AuthenticationFailureReason.CredentialsRejected, userId: null).ConfigureAwait(false);
                     }
 
-                    // The number must still be the person's and verified, and the person still allowed in.
+                    // The number must still be the person's, and the person still allowed in. The code proved they hold the
+                    // number, so it is now verified (ADR-004).
                     UserAccess? access = await users.FindByIdAsync(sent.UserId, cancellationToken).ConfigureAwait(false);
-                    string? verified = await users.FindVerifiedMobileNumberAsync(sent.UserId, cancellationToken).ConfigureAwait(false);
-                    return access is { MaySignIn: true } && verified == sent.MobileNumber
-                        ? await ContinueSignInAsync(attempt, access, verifiedByIdentityProvider: null).ConfigureAwait(false)
-                        : await FailAsync(attempt, AuthenticationFailureReason.AccountInactive, sent.UserId).ConfigureAwait(false);
+                    string? current = await users.FindMobileNumberAsync(sent.UserId, cancellationToken).ConfigureAwait(false);
+                    if (access is not { MaySignIn: true } || current != sent.MobileNumber)
+                    {
+                        return await FailAsync(attempt, AuthenticationFailureReason.AccountInactive, sent.UserId).ConfigureAwait(false);
+                    }
+
+                    await users.RecordMobileNumberVerifiedAsync(sent.UserId, sent.MobileNumber, cancellationToken).ConfigureAwait(false);
+                    return await ContinueSignInAsync(attempt, access, verifiedByIdentityProvider: null).ConfigureAwait(false);
                 },
                 cancellationToken)
             .ConfigureAwait(false);
     }
 
-    private async Task<SmsCodeSending> SendSmsSignInCodeAsync(string nationalId, CancellationToken cancellationToken)
-    {
-        if (await UserOfNationalIdAsync(nationalId, cancellationToken).ConfigureAwait(false) is not { } userId
-            || await users.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false) is not { MaySignIn: true } access
-            || await users.FindVerifiedMobileNumberAsync(userId, cancellationToken).ConfigureAwait(false) is not { } mobileNumber)
-        {
-            LogSmsSignInCodeNotSent(logger);
-            return SmsCodeSending.Unavailable;
-        }
-
-        return await smsCodes.SendAsync(access.UserId, mobileNumber, SmsCodePurpose.SignIn, access.PreferredLanguage, cancellationToken).ConfigureAwait(false);
-    }
+    private async Task<UserAccess?> SignInHolderOfAsync(string nationalId, CancellationToken cancellationToken) =>
+        await UserOfNationalIdAsync(nationalId, cancellationToken).ConfigureAwait(false) is { } userId
+        && await users.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false) is { MaySignIn: true } access
+            ? access
+            : null;
 
     /// <summary>The user whose National ID or Iqama number this is, found by its fingerprint; the number itself is never stored or compared.</summary>
     private async Task<Guid?> UserOfNationalIdAsync(string nationalId, CancellationToken cancellationToken) =>
@@ -125,6 +143,6 @@ internal sealed partial class AuthenticationService
             ? await users.FindByNationalIdFingerprintAsync(nationalIds.Fingerprint(nationalId), cancellationToken).ConfigureAwait(false)
             : null;
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "SMS sign-in code not sent: no user who may sign in has that National ID and a verified mobile number.")]
-    private static partial void LogSmsSignInCodeNotSent(ILogger logger);
+    [LoggerMessage(Level = LogLevel.Information, Message = "SMS sign-in code not sent: the mobile number given is not the one on user {UserId}'s profile.")]
+    private static partial void LogMobileNumberMismatch(ILogger logger, Guid userId);
 }

@@ -18262,13 +18262,13 @@
         }
       }
     },
-    "/api/v1/sessions/sms-code-challenge": {
+    "/api/v1/sessions/national-id-check": {
       "post": {
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "Sign-in with biometrics by SMS: sends a code to the verified mobile number of the owner of the National ID given. The\nanswer is the same whether or not anyone has that number, or a verified mobile number.",
-        "operationId": "IdentityAccess_CreateSmsCodeChallenge",
+        "summary": "Sign-in with biometrics, first step (the client's decision, 13 Nov 2026): whether the National ID or Iqama number\nbelongs to a person who may sign in. Answered plainly, so it tells a caller whether a number has an account; the\n`SignIn` rate limit bounds how fast numbers can be tried (AUTH-T35).",
+        "operationId": "IdentityAccess_CheckNationalId",
         "requestBody": {
           "content": {
             "application/json": {
@@ -18284,6 +18284,47 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/BiometricSignInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NationalIdCheckDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/sms-code-challenge": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Sign-in with biometrics, the first time on a device: sends a code to the mobile number, if it is the one on the profile\nof the National ID's owner. 422 `IDENTITY_ACCESS_NATIONAL_ID_NOT_REGISTERED` or `IDENTITY_ACCESS_MOBILE_NUMBER_MISMATCH`\notherwise, or `IDENTITY_ACCESS_SMS_CODE_RECENTLY_SENT` within the resend wait.",
+        "operationId": "IdentityAccess_CreateSmsCodeChallenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
               }
             }
           },
@@ -33985,6 +34026,18 @@
         },
         "description": "Free text in the language it was entered in (ERD D-7; R-18)."
       },
+      "NationalIdCheckDetail": {
+        "required": [
+          "registered"
+        ],
+        "type": "object",
+        "properties": {
+          "registered": {
+            "type": "boolean"
+          }
+        },
+        "description": "Whether a National ID or Iqama number belongs to a person who may sign in."
+      },
       "NationalIdDetail": {
         "required": [
           "nationalId"
@@ -46238,6 +46291,28 @@
         },
         "description": "The OIDC client settings. Authority, client id and callback URL are Public in the Environment and Secrets sheet; the client secret is reduced to whether it is set."
       },
+      "SmsCodeChallengeCreateRequest": {
+        "required": [
+          "nationalId",
+          "mobileNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "nationalId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mobileNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The first time on a device: the National ID and the mobile number on the person's profile, for the code to go to it."
+      },
       "SmsSessionCreateRequest": {
         "required": [
           "challengeId",
@@ -46277,7 +46352,7 @@
             "format": "date-time"
           }
         },
-        "description": "The answer to a request for an SMS sign-in code. It is the same whether or not the number belongs to anyone, so it says\nnothing about who holds which number; a code was sent only if it did."
+        "description": "A code sent by SMS for signing in: the challenge to answer it with."
       },
       "SourceApplicationCreateRequest": {
         "required": [

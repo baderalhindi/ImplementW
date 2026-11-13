@@ -8,6 +8,7 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 import { checkNationalId, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { type ProblemDescriber, problemMessage } from '../problems.ts';
 import { forgetDeviceUnlock, hasDeviceUnlock, rememberDeviceUnlock } from './deviceUnlockMemory.ts';
+import { MOBILE_PATTERN, toE164 } from './mobileNumber.ts';
 import { sessionApi, type SmsCodeChallenge } from './sessionApi.ts';
 import { nextStep } from './signInSteps.ts';
 import {
@@ -30,14 +31,18 @@ const describe: ProblemDescriber = (error, t) =>
       ? t('identityAccess.signIn.passwordless.refused')
       : problemMessage(error, t);
 
-type Stage = 'nationalId' | 'choose' | 'setup' | 'smsCode';
+type Stage = 'nationalId' | 'mobileNumber' | 'smsCode';
 
 /**
- * Sign-in with biometrics (13 Nov 2026 review). The person gives their National ID or Iqama number, then proves it is
- * them: with Face ID / Touch ID on this device, or with a code by SMS to the mobile number verified on their account. The
- * first time on a device, Face ID / Touch ID is set up on the way: the SMS code proves who they are, then the device keeps
- * their Face ID / Touch ID for the account (a passkey, though the page never says the word), and from then on it is all
- * they need. The choice looks the same for any number, so the page says nothing about who has an account.
+ * Sign-in with biometrics (the client's flow, 13 Nov 2026):
+ *
+ * 1. The National ID or Iqama number, which must be registered to a person who may sign in.
+ * 2. Where this device already has Face ID / Touch ID for that number, it is asked for at once, and that is all.
+ * 3. Otherwise (the first time on this device), the person types the mobile number on their profile; a code goes to it, and
+ *    once it is entered (with the authenticator code where the role needs one) the device saves their Face ID / Touch ID,
+ *    so next time step 2 is all they need. Another device starts at step 3 again.
+ *
+ * The device keeps the Face ID / Touch ID as a passkey; the page never says the word.
  */
 export function PasswordlessSignIn({
   passkeyAvailable,
@@ -48,7 +53,7 @@ export function PasswordlessSignIn({
   passkeyAvailable: boolean;
   smsAvailable: boolean;
   loading: boolean;
-  /** `setUpForNationalId`: the person signed in to set Face ID / Touch ID up on this device for that National ID. */
+  /** `setUpForNationalId`: save Face ID / Touch ID on this device for that National ID once the session is issued. */
   onSignedIn: (step: SignInStep, setUpForNationalId: string | null) => void;
 }): ReactElement {
   const { t } = useI18n();
@@ -58,13 +63,13 @@ export function PasswordlessSignIn({
   const unlock = deviceUnlock();
   const [stage, setStage] = useState<Stage>('nationalId');
   const [nationalId, setNationalId] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
   const [code, setCode] = useState('');
   const [challenge, setChallenge] = useState<SmsCodeChallenge | null>(null);
   const [resendIn, setResendIn] = useState(0);
   const [deviceReady, setDeviceReady] = useState<boolean | null>(null);
-  const [forSetup, setForSetup] = useState(false);
-  const [deviceUnlockFailed, setDeviceUnlockFailed] = useState(false);
   const available = passkeyAvailable || smsAvailable;
+  const canSetUp = passkeyAvailable && deviceReady === true;
 
   useEffect(() => {
     let current = true;
@@ -92,15 +97,15 @@ export function PasswordlessSignIn({
 
   const id = nationalId.trim();
 
-  /** With the National ID, only its owner's passkey verifies; without it, the passkey the device offers signs its owner in. */
-  const signInWithPasskey = async (forNationalId: string | null) => {
+  /** With the National ID, only its owner's Face ID / Touch ID verifies; without it, whoever the device's belongs to signs in. */
+  const signInWithDeviceUnlock = async (forNationalId: string | null): Promise<boolean> => {
     const result = await save.run(async () => {
       const { options, transaction } = await sessionApi.beginPasskeySignIn(forNationalId);
       const credential = (await navigator.credentials.get({
         publicKey: requestOptions(options),
       })) as PublicKeyCredential | null;
       if (credential === null) {
-        throw new DOMException('No passkey was chosen.', 'NotAllowedError');
+        throw new DOMException('Nothing was chosen.', 'NotAllowedError');
       }
       return nextStep(await sessionApi.signInWithPasskey(transaction, credentialJson(credential)));
     });
@@ -109,26 +114,43 @@ export function PasswordlessSignIn({
         await rememberDeviceUnlock(forNationalId);
       }
       onSignedIn(result.value, null);
-    } else if (forNationalId !== null) {
-      // Not set up here after all (removed, or another browser profile): offer the setup instead.
+      return true;
+    }
+    if (forNationalId !== null) {
       await forgetDeviceUnlock(forNationalId);
-      setDeviceUnlockFailed(true);
     }
+    return false;
   };
 
-  /** Asks for Face ID / Touch ID at once where this device has it for the National ID; otherwise sets it up first. */
-  const signInWithDeviceUnlock = async () => {
-    if (await hasDeviceUnlock(id)) {
-      await signInWithPasskey(id);
-    } else {
-      setStage('setup');
+  const checkId = async () => {
+    if (!save.validate({ nationalId: checkNationalId(nationalId) })) {
+      return;
     }
+    const checked = await save.run(() => sessionApi.checkNationalId(id));
+    if (!checked.ok) {
+      return;
+    }
+    if (!checked.value.registered) {
+      save.validate({ nationalId: 'NOT_REGISTERED' });
+      return;
+    }
+    if (canSetUp && (await hasDeviceUnlock(id)) && (await signInWithDeviceUnlock(id))) {
+      return;
+    }
+    setStage('mobileNumber');
   };
 
-  const sendCode = async (setup: boolean) => {
-    const result = await save.run(() => sessionApi.requestSmsCode(id));
+  const sendCode = async () => {
+    const number = toE164(mobileNumber);
+    if (
+      !save.validate({
+        mobileNumber: MOBILE_PATTERN.test(number) ? null : number === '' ? 'REQUIRED' : 'MALFORMED',
+      })
+    ) {
+      return;
+    }
+    const result = await save.run(() => sessionApi.requestSmsCode(id, number));
     if (result.ok) {
-      setForSetup(setup);
       setChallenge(result.value);
       setCode('');
       setResendIn(RESEND_SECONDS);
@@ -139,12 +161,14 @@ export function PasswordlessSignIn({
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
     if (stage === 'nationalId') {
-      if (save.validate({ nationalId: checkNationalId(nationalId) })) {
-        setStage('choose');
-      }
+      await checkId();
       return;
     }
-    if (stage !== 'smsCode' || challenge === null) {
+    if (stage === 'mobileNumber') {
+      await sendCode();
+      return;
+    }
+    if (challenge === null) {
       return;
     }
     const entered = code.trim();
@@ -159,7 +183,7 @@ export function PasswordlessSignIn({
       nextStep(await sessionApi.signInWithSmsCode(challenge.challengeId, entered)),
     );
     if (result.ok) {
-      onSignedIn(result.value, forSetup ? id : null);
+      onSignedIn(result.value, canSetUp ? id : null);
     }
   };
 
@@ -167,7 +191,7 @@ export function PasswordlessSignIn({
     setStage('nationalId');
     setChallenge(null);
     setCode('');
-    setDeviceUnlockFailed(false);
+    setMobileNumber('');
   };
 
   return (
@@ -197,7 +221,11 @@ export function PasswordlessSignIn({
             error={save.fieldErrors.nationalId}
             disabled={!available}
           />
-          <button type="submit" className="button sign-in__wide" disabled={!available}>
+          <button
+            type="submit"
+            className="button sign-in__wide"
+            disabled={!available || save.saving}
+          >
             {t('identityAccess.signIn.passwordless.submit')}
           </button>
           {passkeyAvailable && (
@@ -206,11 +234,9 @@ export function PasswordlessSignIn({
                 type="button"
                 className="button button--primary sign-in__wide"
                 disabled={deviceReady !== true || save.saving}
-                onClick={() => void signInWithPasskey(null)}
+                onClick={() => void signInWithDeviceUnlock(null)}
               >
-                {save.saving
-                  ? t('identityAccess.signIn.signingIn')
-                  : t(`identityAccess.signIn.passwordless.direct.${unlock}`)}
+                {t(`identityAccess.signIn.passwordless.direct.${unlock}`)}
               </button>
               {deviceReady === false && (
                 <p className="sign-in__note">
@@ -222,46 +248,45 @@ export function PasswordlessSignIn({
         </>
       )}
 
-      {stage === 'choose' && (
+      {stage === 'mobileNumber' && (
         <>
-          <p className="sign-in__subtitle">{t('identityAccess.signIn.passwordless.choose')}</p>
-          {passkeyAvailable && (
+          <p className="sign-in__note">
+            {canSetUp
+              ? t(`identityAccess.signIn.passwordless.firstTime.${unlock}`)
+              : t('identityAccess.signIn.passwordless.mobileOnly')}
+          </p>
+          {smsAvailable ? (
             <>
+              <TextField
+                label={t('identityAccess.signIn.passwordless.mobileNumber')}
+                name="mobileNumber"
+                type="tel"
+                inputMode="tel"
+                dir="ltr"
+                autoComplete="tel"
+                value={mobileNumber}
+                onChange={setMobileNumber}
+                error={save.fieldErrors.mobileNumber}
+              />
               <button
-                type="button"
+                type="submit"
                 className="button button--primary sign-in__wide"
-                disabled={deviceReady !== true || save.saving}
-                onClick={() => void signInWithDeviceUnlock()}
+                disabled={save.saving}
               >
-                {t(`identityAccess.signIn.passwordless.passkey.${unlock}`)}
+                {t('identityAccess.signIn.passwordless.sendCode')}
               </button>
-              {deviceUnlockFailed && smsAvailable && (
-                <button
-                  type="button"
-                  className="button button--quiet sign-in__wide"
-                  disabled={save.saving}
-                  onClick={() => {
-                    setStage('setup');
-                  }}
-                >
-                  {t(`identityAccess.signIn.passwordless.setup.again.${unlock}`)}
-                </button>
-              )}
-              {deviceReady === false && (
-                <p className="sign-in__note">
-                  {t('identityAccess.signIn.passwordless.noDeviceUnlock')}
-                </p>
-              )}
             </>
+          ) : (
+            <p className="sign-in__note">{t('identityAccess.signIn.passwordless.noSms')}</p>
           )}
-          {smsAvailable && (
+          {canSetUp && (
             <button
               type="button"
-              className="button sign-in__wide"
+              className="button button--quiet sign-in__wide"
               disabled={save.saving}
-              onClick={() => void sendCode(false)}
+              onClick={() => void signInWithDeviceUnlock(id)}
             >
-              {t('identityAccess.signIn.passwordless.sendCode')}
+              {t(`identityAccess.signIn.passwordless.already.${unlock}`)}
             </button>
           )}
           <button
@@ -275,48 +300,10 @@ export function PasswordlessSignIn({
         </>
       )}
 
-      {stage === 'setup' && (
-        <>
-          <p className="sign-in__note">
-            {t(`identityAccess.signIn.passwordless.setup.intro.${unlock}`)}
-          </p>
-          {smsAvailable ? (
-            <button
-              type="button"
-              className="button button--primary sign-in__wide"
-              disabled={save.saving}
-              onClick={() => void sendCode(true)}
-            >
-              {t('identityAccess.signIn.passwordless.setup.sendCode')}
-            </button>
-          ) : (
-            <p className="sign-in__note">{t('identityAccess.signIn.passwordless.setup.noSms')}</p>
-          )}
-          <button
-            type="button"
-            className="button button--quiet sign-in__wide"
-            disabled={save.saving}
-            onClick={() => void signInWithPasskey(id)}
-          >
-            {t(`identityAccess.signIn.passwordless.setup.already.${unlock}`)}
-          </button>
-          <button
-            type="button"
-            className="button button--quiet sign-in__wide"
-            disabled={save.saving}
-            onClick={() => {
-              setStage('choose');
-            }}
-          >
-            {t('identityAccess.signIn.passwordless.otherWay')}
-          </button>
-        </>
-      )}
-
       {stage === 'smsCode' && (
         <>
           <p className="sign-in__note" role="status">
-            {t('identityAccess.signIn.passwordless.codeSent')}
+            {t('identityAccess.signIn.passwordless.codeSent', { number: toE164(mobileNumber) })}
           </p>
           <TextField
             label={t('identityAccess.signIn.code')}
@@ -335,14 +322,14 @@ export function PasswordlessSignIn({
           >
             {save.saving
               ? t('identityAccess.signIn.signingIn')
-              : t('identityAccess.signIn.passwordless.signInWithCode')}
+              : t('identityAccess.signIn.passwordless.verifyCode')}
           </button>
           <div className="sign-in__sms-actions">
             <button
               type="button"
               className="button button--quiet"
               disabled={resendIn > 0 || save.saving}
-              onClick={() => void sendCode(forSetup)}
+              onClick={() => void sendCode()}
             >
               {resendIn > 0
                 ? t('identityAccess.signIn.passwordless.resendIn', { seconds: resendIn })
@@ -352,11 +339,9 @@ export function PasswordlessSignIn({
               type="button"
               className="button button--quiet"
               disabled={save.saving}
-              onClick={() => {
-                setStage('choose');
-              }}
+              onClick={startOver}
             >
-              {t('identityAccess.signIn.passwordless.otherWay')}
+              {t('identityAccess.signIn.passwordless.changeNationalId')}
             </button>
           </div>
         </>
