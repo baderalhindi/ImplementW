@@ -172,7 +172,7 @@ function NewImport({ onSubmitted }: { onSubmitted: (batch: ImportBatch) => void 
     '';
 
   return (
-    <section className="section" aria-labelledby="new-import-heading">
+    <section className="section section--steps" aria-labelledby="new-import-heading">
       <h2 id="new-import-heading">{t('projects.import.steps.template')}</h2>
       <p>{t('projects.import.templateHint')}</p>
       <button
@@ -347,7 +347,7 @@ function BatchList(): ReactElement {
   const selection = useRowSelection();
   const submitter = usePersonNames((batches.data?.items ?? []).map((batch) => batch.submittedBy));
   return (
-    <section className="section" aria-labelledby="batches-heading">
+    <section className="section section--steps" aria-labelledby="batches-heading">
       <h2 id="batches-heading">{t('projects.import.batches')}</h2>
       {batches.loading && <LoadingState />}
       {batches.error !== null && (

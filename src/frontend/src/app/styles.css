@@ -1077,6 +1077,15 @@ h3 {
   margin-block-start: var(--space-6);
 }
 
+/* A page laid out as numbered steps: each step's heading, and the section after the steps, stand clear of what precedes them. */
+.section--steps {
+  margin-block-start: var(--space-8);
+}
+
+.section--steps > * + h2 {
+  margin-block-start: var(--space-8);
+}
+
 .section__actions {
   display: flex;
   flex-wrap: wrap;
