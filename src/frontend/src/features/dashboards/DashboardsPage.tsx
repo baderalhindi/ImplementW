@@ -182,9 +182,6 @@ export function DashboardsPage(): ReactElement {
         <ProjectLanding />
       ) : (
         <>
-          {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && (
-            <EntityCompletionPanel />
-          )}
           <HostedDashboard
             key={entry.code}
             entry={entry}
@@ -192,6 +189,10 @@ export function DashboardsPage(): ReactElement {
             onFilterChange={setFilter}
             onClearFilters={clearFilters}
           />
+          {/* The 13 Nov 2026 review: the dashboard's cards come first; this table joins its tables below them. */}
+          {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && (
+            <EntityCompletionPanel />
+          )}
         </>
       )}
     </>
