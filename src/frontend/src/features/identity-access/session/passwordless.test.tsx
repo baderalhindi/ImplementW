@@ -44,18 +44,17 @@ afterEach(() => {
   credentials.create.mockReset();
 });
 
-/** Types the National ID and presses Sign in with biometrics, as the person does first. */
+const startButton = () =>
+  screen.findByRole('button', { name: en('identityAccess.signIn.passwordless.submit') });
+
+/** Presses Sign in with biometrics, then types the National ID and continues, as the person does on a new device. */
 async function giveNationalId(user: ReturnType<typeof userEvent.setup>, nationalId = NATIONAL_ID) {
+  await user.click(await startButton());
   await user.type(await screen.findByLabelText(/^National ID \/ Iqama number/), nationalId);
   await user.click(
-    screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.submit') }),
+    screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.continue') }),
   );
 }
-
-const directButton = () =>
-  screen.findByRole('button', {
-    name: /^Sign in with (Face ID|Touch ID|Windows Hello|your fingerprint|this device)$/,
-  });
 
 const deviceAnswer = {
   id: 'cred',
@@ -103,9 +102,9 @@ function registeredPerson(api: MockApi, session = sessionFor(['R03'])) {
     });
 }
 
-/** Waits until the browser has said whether Face ID / Touch ID can be used here, as the page does before the first step. */
+/** Waits until the browser has said whether Face ID / Touch ID can be used here: the button is enabled then. */
 async function deviceChecked() {
-  const button = await directButton();
+  const button = await startButton();
   await waitFor(() => {
     expect((button as HTMLButtonElement).disabled).toBe(false);
   });
@@ -158,7 +157,7 @@ describe('sign-in with biometrics', () => {
     });
   });
 
-  test('where this device has Face ID / Touch ID for the National ID, asks for it at once and signs in', async () => {
+  test('where this device has Face ID / Touch ID, the one button asks for it at once: no National ID', async () => {
     await rememberDeviceUnlock(NATIONAL_ID);
     credentials.get.mockResolvedValue(deviceAnswer);
     const api = offerPasswordless(withIdentityAccessData(mockApi()))
@@ -174,14 +173,14 @@ describe('sign-in with biometrics', () => {
     const { router } = renderApp({ path: '/sign-in' });
     await deviceChecked();
 
-    await giveNationalId(user);
+    await user.click(await startButton());
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/');
     });
-    expect(api.requestsTo('POST', /^\/sessions\/passkey-challenge$/)[0]?.body).toEqual({
-      nationalId: NATIONAL_ID,
-    });
+    expect(screen.queryByLabelText(/^National ID \/ Iqama number/)).toBeNull();
+    expect(api.requestsTo('POST', /^\/sessions\/national-id-check$/)).toHaveLength(0);
+    expect(api.requestsTo('POST', /^\/sessions\/passkey-challenge$/)[0]?.body).toEqual({});
     const asked = credentials.get.mock.calls[0]?.[0] as {
       publicKey: PublicKeyCredentialRequestOptions;
     };
@@ -205,7 +204,7 @@ describe('sign-in with biometrics', () => {
     });
   });
 
-  test('when Face ID / Touch ID fails on a device that had it, asks for the mobile number to set it up again', async () => {
+  test('when Face ID / Touch ID is cancelled, the National ID and the mobile number follow, with no second prompt', async () => {
     await rememberDeviceUnlock(NATIONAL_ID);
     credentials.get.mockRejectedValue(new DOMException('cancelled', 'NotAllowedError'));
     offerPasswordless(mockApi())
@@ -220,7 +219,20 @@ describe('sign-in with biometrics', () => {
     await giveNationalId(user);
 
     expect(await screen.findByLabelText(/^Mobile number/)).toBeTruthy();
-    expect(await hasDeviceUnlock(NATIONAL_ID)).toBe(false);
+    expect(credentials.get).toHaveBeenCalledTimes(1);
+  });
+
+  test('without Face ID / Touch ID saved here, the one button asks for the National ID first', async () => {
+    const api = offerPasswordless(mockApi());
+    const user = userEvent.setup();
+    renderApp({ path: '/sign-in' });
+    await deviceChecked();
+
+    await user.click(await startButton());
+
+    expect(await screen.findByLabelText(/^National ID \/ Iqama number/)).toBeTruthy();
+    expect(credentials.get).not.toHaveBeenCalled();
+    expect(api.requests.filter((request) => request.method === 'POST')).toHaveLength(0);
   });
 
   test('the first time on a device: mobile number, code, then Face ID / Touch ID is saved before signing in', async () => {
@@ -348,28 +360,6 @@ describe('sign-in with biometrics', () => {
     expect(await screen.findByText(en('identityAccess.signIn.codeInstructions'))).toBeTruthy();
   });
 
-  test('the Face ID / Touch ID button signs in with no National ID asked', async () => {
-    credentials.get.mockResolvedValue({
-      ...deviceAnswer,
-      response: { ...deviceAnswer.response, userHandle: null },
-    });
-    const api = offerPasswordless(withIdentityAccessData(mockApi()))
-      .on('POST', /^\/sessions\/passkey-challenge$/, {
-        body: { options: { challenge: 'AQ' }, transaction: 'sealed' },
-      })
-      .on('POST', /^\/sessions\/passkey$/, { status: 201, body: sessionFor(['R03']) });
-    const user = userEvent.setup();
-    const { router } = renderApp({ path: '/sign-in' });
-    await deviceChecked();
-
-    await user.click(await directButton());
-
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/');
-    });
-    expect(api.requestsTo('POST', /^\/sessions\/passkey-challenge$/)[0]?.body).toEqual({});
-  });
-
   test('on a device without Face ID or Touch ID, the mobile number signs in and nothing is saved', async () => {
     vi.stubGlobal('PublicKeyCredential', {
       isUserVerifyingPlatformAuthenticatorAvailable: () => Promise.resolve(false),
@@ -380,8 +370,6 @@ describe('sign-in with biometrics', () => {
     expect(
       await screen.findByText(en('identityAccess.signIn.passwordless.noDeviceUnlock')),
     ).toBeTruthy();
-    expect(((await directButton()) as HTMLButtonElement).disabled).toBe(true);
-
     await giveNationalId(user);
     expect(
       await screen.findByText(en('identityAccess.signIn.passwordless.mobileOnly')),

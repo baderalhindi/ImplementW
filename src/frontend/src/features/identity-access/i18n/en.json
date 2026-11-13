@@ -512,13 +512,7 @@
       "instructions": "If you cannot use the Nafath app, you can sign in with biometric verification",
       "nationalId": "National ID / Iqama number",
       "submit": "Sign in with biometrics",
-      "direct": {
-        "faceId": "Sign in with Face ID",
-        "touchId": "Sign in with Touch ID",
-        "windowsHello": "Sign in with Windows Hello",
-        "fingerprint": "Sign in with your fingerprint",
-        "deviceUnlock": "Sign in with this device"
-      },
+      "continue": "Continue",
       "noDeviceUnlock": "This device or browser does not support Face ID or Touch ID. Use the code by SMS.",
       "passkeyCancelled": "Face ID / Touch ID was cancelled, or is not set up on this device for this account.",
       "refused": "We could not verify you. Check the National ID, or verify another way.",

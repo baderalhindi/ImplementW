@@ -36,6 +36,11 @@ function write(values: string[]): void {
   }
 }
 
+/** Whether Face ID / Touch ID was saved on this device for any account: then one press can sign in without a National ID. */
+export function hasAnyDeviceUnlock(): boolean {
+  return read().length > 0;
+}
+
 export async function hasDeviceUnlock(nationalId: string): Promise<boolean> {
   const hash = await digest(nationalId);
   return hash !== null && read().includes(hash);

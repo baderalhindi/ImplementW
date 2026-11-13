@@ -7,7 +7,12 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { checkNationalId, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { type ProblemDescriber, problemMessage } from '../problems.ts';
-import { forgetDeviceUnlock, hasDeviceUnlock, rememberDeviceUnlock } from './deviceUnlockMemory.ts';
+import {
+  forgetDeviceUnlock,
+  hasAnyDeviceUnlock,
+  hasDeviceUnlock,
+  rememberDeviceUnlock,
+} from './deviceUnlockMemory.ts';
 import { MOBILE_PATTERN, toE164 } from './mobileNumber.ts';
 import { sessionApi, type SmsCodeChallenge } from './sessionApi.ts';
 import { nextStep } from './signInSteps.ts';
@@ -37,13 +42,15 @@ const describeCode: ProblemDescriber = (error, t) =>
     ? t('identityAccess.signIn.wrongCode')
     : problemMessage(error, t);
 
-type Stage = 'nationalId' | 'mobileNumber' | 'smsCode';
+type Stage = 'start' | 'nationalId' | 'mobileNumber' | 'smsCode';
 
 /**
  * Sign-in with biometrics (the client's flow, 13 Nov 2026):
  *
- * 1. The National ID or Iqama number, which must be registered to a person who may sign in.
- * 2. Where this device already has Face ID / Touch ID for that number, it is asked for at once, and that is all.
+ * 1. One button. Where this device has Face ID / Touch ID saved for an account, it is asked for at once and signs that
+ *    account in: nothing is typed.
+ * 2. Otherwise the National ID or Iqama number, which must be registered to a person who may sign in. Where the device
+ *    has Face ID / Touch ID for that number, it is asked for then.
  * 3. Otherwise (the first time on this device), the person types the mobile number on their profile; a code goes to it, and
  *    once it is entered (with the authenticator code where the role needs one) the device saves their Face ID / Touch ID,
  *    so next time step 2 is all they need. Another device starts at step 3 again.
@@ -68,7 +75,9 @@ export function PasswordlessSignIn({
   const codeSave = useSaveAction(describeCode);
   useFocusFirstError(formRef, save.fieldErrors);
   const unlock = deviceUnlock();
-  const [stage, setStage] = useState<Stage>('nationalId');
+  const [stage, setStage] = useState<Stage>('start');
+  /** Face ID / Touch ID was just tried and did not sign in: do not ask for it again before the code. */
+  const [deviceUnlockFailed, setDeviceUnlockFailed] = useState(false);
   const [nationalId, setNationalId] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [code, setCode] = useState('');
@@ -89,6 +98,13 @@ export function PasswordlessSignIn({
       current = false;
     };
   }, []);
+
+  // The National ID field takes the focus when it appears, so the person can type at once.
+  useEffect(() => {
+    if (stage === 'nationalId') {
+      formRef.current?.querySelector<HTMLInputElement>('input[name="nationalId"]')?.focus();
+    }
+  }, [stage]);
 
   useEffect(() => {
     if (resendIn <= 0) {
@@ -129,6 +145,17 @@ export function PasswordlessSignIn({
     return false;
   };
 
+  /** The one button: Face ID / Touch ID at once where this device has it, the National ID otherwise. */
+  const start = async () => {
+    if (canSetUp && hasAnyDeviceUnlock()) {
+      if (await signInWithDeviceUnlock(null)) {
+        return;
+      }
+      setDeviceUnlockFailed(true);
+    }
+    setStage('nationalId');
+  };
+
   const checkId = async () => {
     if (!save.validate({ nationalId: checkNationalId(nationalId) })) {
       return;
@@ -141,7 +168,12 @@ export function PasswordlessSignIn({
       save.validate({ nationalId: 'NOT_REGISTERED' });
       return;
     }
-    if (canSetUp && (await hasDeviceUnlock(id)) && (await signInWithDeviceUnlock(id))) {
+    if (
+      canSetUp &&
+      !deviceUnlockFailed &&
+      (await hasDeviceUnlock(id)) &&
+      (await signInWithDeviceUnlock(id))
+    ) {
       return;
     }
     setStage('mobileNumber');
@@ -167,6 +199,10 @@ export function PasswordlessSignIn({
 
   const submit = async (event: SyntheticEvent) => {
     event.preventDefault();
+    if (stage === 'start') {
+      await start();
+      return;
+    }
     if (stage === 'nationalId') {
       await checkId();
       return;
@@ -217,6 +253,25 @@ export function PasswordlessSignIn({
         message={stage === 'smsCode' ? (codeSave.formError ?? save.formError) : save.formError}
       />
 
+      {stage === 'start' && (
+        <>
+          <button
+            type="submit"
+            className="button button--primary sign-in__wide"
+            disabled={!available || deviceReady === null || save.saving}
+          >
+            {save.saving
+              ? t('identityAccess.signIn.signingIn')
+              : t('identityAccess.signIn.passwordless.submit')}
+          </button>
+          {passkeyAvailable && deviceReady === false && (
+            <p className="sign-in__note">
+              {t('identityAccess.signIn.passwordless.noDeviceUnlock')}
+            </p>
+          )}
+        </>
+      )}
+
       {stage === 'nationalId' && (
         <>
           <TextField
@@ -228,32 +283,14 @@ export function PasswordlessSignIn({
             value={nationalId}
             onChange={setNationalId}
             error={save.fieldErrors.nationalId}
-            disabled={!available}
           />
           <button
             type="submit"
-            className="button sign-in__wide"
-            disabled={!available || save.saving}
+            className="button button--primary sign-in__wide"
+            disabled={save.saving}
           >
-            {t('identityAccess.signIn.passwordless.submit')}
+            {t('identityAccess.signIn.passwordless.continue')}
           </button>
-          {passkeyAvailable && (
-            <>
-              <button
-                type="button"
-                className="button button--primary sign-in__wide"
-                disabled={deviceReady !== true || save.saving}
-                onClick={() => void signInWithDeviceUnlock(null)}
-              >
-                {t(`identityAccess.signIn.passwordless.direct.${unlock}`)}
-              </button>
-              {deviceReady === false && (
-                <p className="sign-in__note">
-                  {t('identityAccess.signIn.passwordless.noDeviceUnlock')}
-                </p>
-              )}
-            </>
-          )}
         </>
       )}
 
