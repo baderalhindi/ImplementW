@@ -222,6 +222,30 @@ describe('sign-in with biometrics', () => {
     expect(credentials.get).toHaveBeenCalledTimes(1);
   });
 
+  test('when the key on this device was removed from the account, says so and asks for the National ID', async () => {
+    await rememberDeviceUnlock(NATIONAL_ID);
+    credentials.get.mockResolvedValue(deviceAnswer);
+    offerPasswordless(mockApi())
+      .on('POST', /^\/sessions\/passkey-challenge$/, {
+        body: { options: { challenge: 'AQID' }, transaction: 'sealed' },
+      })
+      .on('POST', /^\/sessions\/passkey$/, problem(401, 'AUTHENTICATION_REQUIRED'));
+    const user = userEvent.setup();
+    renderApp({ path: '/sign-in' });
+    await deviceChecked();
+
+    await user.click(await startButton());
+
+    expect(await screen.findByLabelText(/^National ID \/ Iqama number/)).toBeTruthy();
+    expect(
+      await screen.findByText(
+        /^(Face ID|Touch ID|Windows Hello|your fingerprint|this device's unlock) on this device is no longer linked to an account/,
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(en('identityAccess.signIn.passwordless.refused'))).toBeNull();
+    expect(await hasDeviceUnlock(NATIONAL_ID)).toBe(false);
+  });
+
   test('without Face ID / Touch ID saved here, the one button asks for the National ID first', async () => {
     const api = offerPasswordless(mockApi());
     const user = userEvent.setup();

@@ -8,6 +8,7 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 import { checkNationalId, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { type ProblemDescriber, problemMessage } from '../problems.ts';
 import {
+  forgetAllDeviceUnlocks,
   forgetDeviceUnlock,
   hasAnyDeviceUnlock,
   hasDeviceUnlock,
@@ -78,6 +79,8 @@ export function PasswordlessSignIn({
   const [stage, setStage] = useState<Stage>('start');
   /** Face ID / Touch ID was just tried and did not sign in: do not ask for it again before the code. */
   const [deviceUnlockFailed, setDeviceUnlockFailed] = useState(false);
+  /** Why the National ID is asked for after the one button tried Face ID / Touch ID. */
+  const [startNotice, setStartNotice] = useState<string | null>(null);
   const [nationalId, setNationalId] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [code, setCode] = useState('');
@@ -121,7 +124,9 @@ export function PasswordlessSignIn({
   const id = nationalId.trim();
 
   /** With the National ID, only its owner's Face ID / Touch ID verifies; without it, whoever the device's belongs to signs in. */
-  const signInWithDeviceUnlock = async (forNationalId: string | null): Promise<boolean> => {
+  const signInWithDeviceUnlock = async (
+    forNationalId: string | null,
+  ): Promise<'signedIn' | 'refused' | 'failed'> => {
     const result = await save.run(async () => {
       const { options, transaction } = await sessionApi.beginPasskeySignIn(forNationalId);
       const credential = (await navigator.credentials.get({
@@ -137,26 +142,35 @@ export function PasswordlessSignIn({
         await rememberDeviceUnlock(forNationalId);
       }
       onSignedIn(result.value, null);
-      return true;
+      return 'signedIn';
     }
     if (forNationalId !== null) {
       await forgetDeviceUnlock(forNationalId);
     }
-    return false;
+    return result.error instanceof ApiError && result.error.code === 'AUTHENTICATION_REQUIRED'
+      ? 'refused'
+      : 'failed';
   };
 
   /** The one button: Face ID / Touch ID at once where this device has it, the National ID otherwise. */
   const start = async () => {
     if (canSetUp && hasAnyDeviceUnlock()) {
-      if (await signInWithDeviceUnlock(null)) {
+      const outcome = await signInWithDeviceUnlock(null);
+      if (outcome === 'signedIn') {
         return;
       }
       setDeviceUnlockFailed(true);
+      if (outcome === 'refused') {
+        // The key this device offered is no longer on any account (it was removed): set it up again from the National ID.
+        forgetAllDeviceUnlocks();
+        setStartNotice(t(`identityAccess.signIn.passwordless.notRecognised.${unlock}`));
+      }
     }
     setStage('nationalId');
   };
 
   const checkId = async () => {
+    setStartNotice(null);
     if (!save.validate({ nationalId: checkNationalId(nationalId) })) {
       return;
     }
@@ -172,7 +186,7 @@ export function PasswordlessSignIn({
       canSetUp &&
       !deviceUnlockFailed &&
       (await hasDeviceUnlock(id)) &&
-      (await signInWithDeviceUnlock(id))
+      (await signInWithDeviceUnlock(id)) === 'signedIn'
     ) {
       return;
     }
@@ -250,7 +264,11 @@ export function PasswordlessSignIn({
         <p className="badge sign-in__soon">{t('identityAccess.signIn.comingSoon')}</p>
       )}
       <FormAlert
-        message={stage === 'smsCode' ? (codeSave.formError ?? save.formError) : save.formError}
+        message={
+          stage === 'smsCode'
+            ? (codeSave.formError ?? save.formError)
+            : (startNotice ?? save.formError)
+        }
       />
 
       {stage === 'start' && (
@@ -330,7 +348,9 @@ export function PasswordlessSignIn({
               type="button"
               className="button button--quiet sign-in__wide"
               disabled={save.saving}
-              onClick={() => void signInWithDeviceUnlock(id)}
+              onClick={() => {
+                void signInWithDeviceUnlock(id);
+              }}
             >
               {t(`identityAccess.signIn.passwordless.already.${unlock}`)}
             </button>

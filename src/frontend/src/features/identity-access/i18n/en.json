@@ -556,6 +556,13 @@
         },
         "notNow": "Not now",
         "cancelled": "Nothing was saved: the prompt was closed. Try again, or choose Not now."
+      },
+      "notRecognised": {
+        "faceId": "Face ID on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again.",
+        "touchId": "Touch ID on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again.",
+        "windowsHello": "Windows Hello on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again.",
+        "fingerprint": "your fingerprint on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again.",
+        "deviceUnlock": "this device's unlock on this device is no longer linked to an account. Enter your National ID / Iqama number to set it up again."
       }
     },
     "copyright": "© {year} Al Ahsa Development Authority. All rights reserved.",

@@ -53,6 +53,11 @@ export async function rememberDeviceUnlock(nationalId: string): Promise<void> {
   }
 }
 
+/** The server did not know the key this device offered (it was removed): nothing here is set up any more. */
+export function forgetAllDeviceUnlocks(): void {
+  write([]);
+}
+
 export async function forgetDeviceUnlock(nationalId: string): Promise<void> {
   const hash = await digest(nationalId);
   if (hash !== null) {
