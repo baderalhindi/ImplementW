@@ -164,9 +164,9 @@ internal sealed partial class AuthenticationService(
 
     public bool IsSingleSignOnAvailable => singleSignOn.IsConfigured;
 
-    public Task<SsoAuthorizationResult> BeginSsoSignInAsync(CancellationToken cancellationToken) =>
+    public Task<SsoAuthorizationResult> BeginSsoSignInAsync(SsoAuthorizationRequest request, CancellationToken cancellationToken) =>
         singleSignOn.IsConfigured
-            ? singleSignOn.BeginAsync(cancellationToken)
+            ? singleSignOn.BeginAsync(request, cancellationToken)
             : Task.FromResult(new SsoAuthorizationResult(null, null, AuthenticationFailure.NotConfigured));
 
     public async Task<AuthenticationResult> CompleteSsoSignInAsync(string code, string state, string transaction, CancellationToken cancellationToken)

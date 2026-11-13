@@ -7,7 +7,7 @@ public interface ISingleSignOnProvider
 {
     public bool IsConfigured { get; }
 
-    public Task<SsoAuthorizationResult> BeginAsync(CancellationToken cancellationToken);
+    public Task<SsoAuthorizationResult> BeginAsync(SsoAuthorizationRequest request, CancellationToken cancellationToken);
 
     /// <summary>Redeems the code and validates the ID token (signature, issuer, audience, lifetime, nonce); returns its subject.</summary>
     public Task<SingleSignOnResult> CompleteAsync(string code, string state, string transaction, CancellationToken cancellationToken);

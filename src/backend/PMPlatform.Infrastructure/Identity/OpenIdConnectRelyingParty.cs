@@ -35,10 +35,11 @@ internal sealed partial class OpenIdConnectRelyingParty(
 
     /// <summary>
     /// The provider's authorization URL and the sealed transaction the client returns with the code. <paramref name="binding"/>
-    /// is sealed into the transaction and must be presented again to complete it.
+    /// is sealed into the transaction and must be presented again to complete it. <paramref name="parameters"/> are optional
+    /// request parameters (OIDC Core §3.1.2.1, such as <c>login_hint</c> and <c>prompt</c>); they cannot replace the flow's own.
     /// </summary>
     public async Task<(Uri? AuthorizationUrl, string? Transaction, AuthenticationFailure? Failure)> BeginAsync(
-        OpenIdConnectClient client, string? binding, CancellationToken cancellationToken)
+        OpenIdConnectClient client, string? binding, IReadOnlyDictionary<string, string>? parameters, CancellationToken cancellationToken)
     {
         OpenIdConnectConfiguration? metadata = await MetadataAsync(client, refresh: false, cancellationToken).ConfigureAwait(false);
         if (metadata is null)
@@ -48,7 +49,8 @@ internal sealed partial class OpenIdConnectRelyingParty(
 
         AuthorizationTransaction transaction = new(RandomValue(), RandomValue(), RandomValue(), timeProvider.GetUtcNow() + settings.TransactionLifetime, binding);
         string challenge = Base64Url.EncodeToString(SHA256.HashData(Encoding.ASCII.GetBytes(transaction.CodeVerifier)));
-        string query = string.Join('&', new Dictionary<string, string>
+        Dictionary<string, string> request = new(parameters ?? new Dictionary<string, string>(), StringComparer.Ordinal);
+        foreach ((string name, string value) in new Dictionary<string, string>
         {
             ["response_type"] = "code",
             ["client_id"] = client.ClientId,
@@ -58,7 +60,12 @@ internal sealed partial class OpenIdConnectRelyingParty(
             ["nonce"] = transaction.Nonce,
             ["code_challenge"] = challenge,
             ["code_challenge_method"] = "S256",
-        }.Select(p => $"{p.Key}={Uri.EscapeDataString(p.Value)}"));
+        })
+        {
+            request[name] = value;
+        }
+
+        string query = string.Join('&', request.Select(p => $"{p.Key}={Uri.EscapeDataString(p.Value)}"));
 
         string endpoint = metadata.AuthorizationEndpoint;
         Uri authorizationUrl = new($"{endpoint}{(endpoint.Contains('?', StringComparison.Ordinal) ? '&' : '?')}{query}");

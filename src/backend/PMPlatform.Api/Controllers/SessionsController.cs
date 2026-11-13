@@ -147,15 +147,30 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
         return Ok(new SignInOptionsDetail(authentication.IsSingleSignOnAvailable, authentication.IsPasswordResetAvailable));
     }
 
-    /// <summary>Starts an SSO sign-in. Nothing is stored server-side; the transaction travels with the client.</summary>
+    /// <summary>
+    /// Starts an SSO sign-in. Nothing is stored server-side; the transaction travels with the client. The biometric sign-in
+    /// names the account (<c>loginHint</c>, an e-mail address) and asks the provider to authenticate afresh (<c>reauthenticate</c>).
+    /// </summary>
     [HttpGet("sso-authorization")]
     [AllowAnonymous]
     [RateLimited(RateLimitPolicy.SignIn)]
     [EndpointName("IdentityAccess_GetSsoAuthorization")]
     [ProducesResponseType<SsoAuthorizationDetail>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> GetSsoAuthorization(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetSsoAuthorization([FromQuery] string? loginHint, [FromQuery] bool? reauthenticate, CancellationToken cancellationToken)
     {
-        SsoAuthorizationResult result = await authentication.BeginSsoSignInAsync(cancellationToken);
+        List<FieldError> errors = [];
+        if (loginHint is not null)
+        {
+            RequestValidation.Email(loginHint, "loginHint", errors);
+        }
+
+        if (errors.Count > 0)
+        {
+            return ValidationFailed(errors);
+        }
+
+        SsoAuthorizationResult result = await authentication.BeginSsoSignInAsync(
+            new SsoAuthorizationRequest(loginHint?.Trim(), reauthenticate == true), cancellationToken);
         NoStore();
         return result is { AuthorizationUrl: { } url, Transaction: { } transaction }
             ? Ok(new SsoAuthorizationDetail(url, transaction))

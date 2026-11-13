@@ -80,6 +80,66 @@ describe('the Microsoft button', () => {
   });
 });
 
+describe('the Face ID / Touch ID sign-in through Microsoft', () => {
+  let redirect: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    redirect = vi.spyOn(identityProviderRedirect, 'go').mockImplementation(() => undefined);
+  });
+  const biometricButton = () =>
+    screen.findByRole('button', { name: en('identityAccess.signIn.biometric.submit') });
+  const emailField = () => screen.findByLabelText(en('identityAccess.signIn.biometric.email'));
+
+  test('stays disabled where single sign-on is not configured', async () => {
+    const api = mockApi();
+    renderApp({ path: '/sign-in' });
+
+    expect(((await biometricButton()) as HTMLButtonElement).disabled).toBe(true);
+    expect(((await emailField()) as HTMLInputElement).disabled).toBe(true);
+    expect(api.requestsTo('GET', /sso-authorization/)).toHaveLength(0);
+  });
+
+  test('sends the account to Microsoft and asks it to authenticate afresh', async () => {
+    const api = offerSingleSignOn(mockApi()).on('GET', /^\/sessions\/sso-authorization$/, {
+      body: { authorizationUrl: 'https://idp.example.test/authorize?y=1', transaction: 'sealed' },
+    });
+    renderApp({ path: '/sign-in' });
+    const button = await biometricButton();
+    await waitFor(() => {
+      expect((button as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    await userEvent.type(await emailField(), ' person@ahda.gov.sa ');
+    await userEvent.click(button);
+
+    await waitFor(() => {
+      expect(redirect).toHaveBeenCalledWith('https://idp.example.test/authorize?y=1');
+    });
+    const [started] = api.requestsTo('GET', /sso-authorization/);
+    expect(started?.query.get('loginHint')).toBe('person@ahda.gov.sa');
+    expect(started?.query.get('reauthenticate')).toBe('true');
+    expect(ssoTransaction.read()).toEqual({ transaction: 'sealed', returnTo: '/' });
+  });
+
+  test('asks for a valid e-mail before leaving the page', async () => {
+    const api = offerSingleSignOn(mockApi());
+    renderApp({ path: '/sign-in' });
+    const button = await biometricButton();
+    await waitFor(() => {
+      expect((button as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    await userEvent.type(await emailField(), 'not-an-email');
+    await userEvent.click(button);
+
+    const field = await emailField();
+    await waitFor(() => {
+      expect(field.getAttribute('aria-invalid')).toBe('true');
+    });
+    expect(api.requestsTo('GET', /sso-authorization/)).toHaveLength(0);
+    expect(redirect).not.toHaveBeenCalled();
+  });
+});
+
 describe('the return from the identity provider', () => {
   beforeEach(() => {
     ssoTransaction.save({ transaction: 'sealed', returnTo: '/admin/users' });

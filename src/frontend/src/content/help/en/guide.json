@@ -6,7 +6,7 @@
       {
         "heading": "Sign in",
         "paragraphs": [
-          "Sign in with your AHDA username and password. The form appears under the Microsoft tab and the [[identityAccess.signIn.tabs.directory]] tab alike. The other sign-in options are marked [[identityAccess.signIn.comingSoon]] and cannot be used yet.",
+          "Sign in with your AHDA username and password. The form appears under the Microsoft tab and the [[identityAccess.signIn.tabs.directory]] tab alike. With a Microsoft account, [[identityAccess.signIn.biometric.submit]] takes your account e-mail and sends you to Microsoft, which checks the passkey (Face ID or Touch ID) saved in your Microsoft account. Options marked [[identityAccess.signIn.comingSoon]] cannot be used yet.",
           "The platform does not reset passwords itself. If you have forgotten yours, use the link or the contact shown under the password field."
         ],
         "note": "If your account needs a verification code, the platform asks for it from your authenticator app each time you sign in; the first time, it shows a key to add to the app."
