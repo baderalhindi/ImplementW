@@ -506,7 +506,6 @@
     "passwordless": {
       "instructions": "If you cannot use the Nafath app, you can sign in with biometric verification",
       "nationalId": "National ID / Iqama number",
-      "nationalIdHint": "Ten digits, starting with 1 or 2.",
       "submit": "Sign in with biometrics",
       "choose": "How do you want to verify it is you?",
       "passkey": {

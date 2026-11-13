@@ -164,7 +164,6 @@ export function PasswordlessSignIn({
         <>
           <TextField
             label={t('identityAccess.signIn.passwordless.nationalId')}
-            hint={t('identityAccess.signIn.passwordless.nationalIdHint')}
             name="nationalId"
             inputMode="numeric"
             dir="ltr"
