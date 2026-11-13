@@ -535,7 +535,7 @@
       "mobileOnly": "Enter the mobile number registered on your account, and we will send it a verification code.",
       "mobileNumber": "Mobile number",
       "sendCode": "Send verification code",
-      "codeSent": "A verification code was sent to {number}. Enter it below.",
+      "codeSent": "A verification code was sent to {number}. Enter it below; if you asked for more than one, only the newest works.",
       "verifyCode": "Verify and sign in",
       "already": {
         "faceId": "Face ID is already set up on this device",

@@ -304,6 +304,24 @@ describe('sign-in with biometrics', () => {
     expect(screen.queryByLabelText(/^Verification code/)).toBeNull();
   });
 
+  test('a wrong code says the code is wrong, not the National ID', async () => {
+    offerPasswordless(mockApi())
+      .on('POST', /^\/sessions\/national-id-check$/, { body: { registered: true } })
+      .on('POST', /^\/sessions\/sms-code-challenge$/, {
+        body: { challengeId: 'challenge-1', expiresAt: '2099-01-01T00:00:00Z' },
+      })
+      .on('POST', /^\/sessions\/sms$/, problem(401, 'AUTHENTICATION_REQUIRED'));
+    const user = userEvent.setup();
+    renderApp({ path: '/sign-in' });
+    await deviceChecked();
+
+    await giveNationalId(user);
+    await verifyByMobile(user);
+
+    expect(await screen.findByText(en('identityAccess.signIn.wrongCode'))).toBeTruthy();
+    expect(screen.queryByText(en('identityAccess.signIn.passwordless.refused'))).toBeNull();
+  });
+
   test('a person who requires MFA gives the authenticator code after the SMS code', async () => {
     offerPasswordless(withIdentityAccessData(mockApi()))
       .on('POST', /^\/sessions\/national-id-check$/, { body: { registered: true } })

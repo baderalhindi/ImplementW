@@ -31,6 +31,12 @@ const describe: ProblemDescriber = (error, t) =>
       ? t('identityAccess.signIn.passwordless.refused')
       : problemMessage(error, t);
 
+/** At the code step, a refusal is about the code. */
+const describeCode: ProblemDescriber = (error, t) =>
+  error instanceof ApiError && error.code === 'AUTHENTICATION_REQUIRED'
+    ? t('identityAccess.signIn.wrongCode')
+    : problemMessage(error, t);
+
 type Stage = 'nationalId' | 'mobileNumber' | 'smsCode';
 
 /**
@@ -59,6 +65,7 @@ export function PasswordlessSignIn({
   const { t } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const save = useSaveAction(describe);
+  const codeSave = useSaveAction(describeCode);
   useFocusFirstError(formRef, save.fieldErrors);
   const unlock = deviceUnlock();
   const [stage, setStage] = useState<Stage>('nationalId');
@@ -173,13 +180,13 @@ export function PasswordlessSignIn({
     }
     const entered = code.trim();
     if (
-      !save.validate({
+      !codeSave.validate({
         code: /^[0-9]{6}$/.test(entered) ? null : entered === '' ? 'REQUIRED' : 'MALFORMED',
       })
     ) {
       return;
     }
-    const result = await save.run(async () =>
+    const result = await codeSave.run(async () =>
       nextStep(await sessionApi.signInWithSmsCode(challenge.challengeId, entered)),
     );
     if (result.ok) {
@@ -206,7 +213,9 @@ export function PasswordlessSignIn({
       {!available && !loading && (
         <p className="badge sign-in__soon">{t('identityAccess.signIn.comingSoon')}</p>
       )}
-      <FormAlert message={save.formError} />
+      <FormAlert
+        message={stage === 'smsCode' ? (codeSave.formError ?? save.formError) : save.formError}
+      />
 
       {stage === 'nationalId' && (
         <>
@@ -313,14 +322,14 @@ export function PasswordlessSignIn({
             autoComplete="one-time-code"
             value={code}
             onChange={setCode}
-            error={save.fieldErrors.code}
+            error={codeSave.fieldErrors.code}
           />
           <button
             type="submit"
             className="button button--primary sign-in__wide"
-            disabled={save.saving}
+            disabled={save.saving || codeSave.saving}
           >
-            {save.saving
+            {codeSave.saving
               ? t('identityAccess.signIn.signingIn')
               : t('identityAccess.signIn.passwordless.verifyCode')}
           </button>
@@ -338,7 +347,7 @@ export function PasswordlessSignIn({
             <button
               type="button"
               className="button button--quiet"
-              disabled={save.saving}
+              disabled={save.saving || codeSave.saving}
               onClick={startOver}
             >
               {t('identityAccess.signIn.passwordless.changeNationalId')}
