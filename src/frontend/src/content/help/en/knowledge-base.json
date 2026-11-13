@@ -41,7 +41,7 @@
   },
   "owning-sector": {
     "term": "[[projects.fields.department]]",
-    "definition": "The AHDA sector a project belongs to. Sector Managers see and follow the projects of their sectors."
+    "definition": "The AHDA sector a project belongs to."
   },
   "project-workspace": {
     "term": "Project workspace",

@@ -41,7 +41,7 @@
   },
   "owning-sector": {
     "term": "[[projects.fields.department]]",
-    "definition": "قطاع الهيئة الذي يتبعه المشروع، ويطّلع مديرو القطاعات على مشاريع قطاعاتهم ويتابعونها."
+    "definition": "قطاع الهيئة الذي يتبعه المشروع."
   },
   "project-workspace": {
     "term": "مساحة عمل المشروع",

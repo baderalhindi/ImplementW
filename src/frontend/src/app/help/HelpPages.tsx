@@ -2,6 +2,7 @@ import { Fragment, type ReactElement, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 
 import {
+  FAQ_PERMISSIONS,
   type GuideArticleMeta,
   GUIDE_ARTICLES,
   helpContent,
@@ -37,20 +38,19 @@ function HelpText({ text }: { text: string }): ReactElement {
   return <>{parts}</>;
 }
 
-/** The articles a person is offered: external users see only what is written for them (ADR-013, least disclosure). */
-function useGuideArticles(): { forYou: GuideArticleMeta[]; others: GuideArticleMeta[] } {
+/**
+ * The articles written for the reader's own roles, and only those (13 Nov 2026 review): the guide speaks to its reader, never about
+ * the others' work. An article for another role reads as not found, as for an external user before (ADR-013).
+ */
+function useGuideArticles(): GuideArticleMeta[] {
   const { session } = useSession();
   const roleCodes = session?.user.roleAssignments.map((assignment) => assignment.roleCode) ?? [];
   const { can, loaded } = usePermissions();
-  const offered = GUIDE_ARTICLES.filter(
-    (article) => article.permission === undefined || !loaded || can(article.permission),
+  return GUIDE_ARTICLES.filter(
+    (article) =>
+      (article.permission === undefined || !loaded || can(article.permission)) &&
+      isForRoles(article, roleCodes),
   );
-  const forYou = offered.filter((article) => isForRoles(article, roleCodes));
-  const others =
-    session?.user.userType === 'EXTERNAL'
-      ? []
-      : offered.filter((article) => !isForRoles(article, roleCodes));
-  return { forYou, others };
 }
 
 function ArticleList({ articles }: { articles: GuideArticleMeta[] }): ReactElement {
@@ -77,7 +77,7 @@ function ArticleList({ articles }: { articles: GuideArticleMeta[] }): ReactEleme
 /** SCR-011: the User Guide's index, the reader's own role first. */
 export function UserGuidePage(): ReactElement {
   const { t } = useI18n();
-  const { forYou, others } = useGuideArticles();
+  const articles = useGuideArticles();
   return (
     <>
       <PageHeader
@@ -86,14 +86,8 @@ export function UserGuidePage(): ReactElement {
       />
       <section className="section" aria-labelledby="help-for-you">
         <h2 id="help-for-you">{t('common.help.guide.forYou')}</h2>
-        <ArticleList articles={forYou} />
+        <ArticleList articles={articles} />
       </section>
-      {others.length > 0 && (
-        <section className="section" aria-labelledby="help-others">
-          <h2 id="help-others">{t('common.help.guide.others')}</h2>
-          <ArticleList articles={others} />
-        </section>
-      )}
     </>
   );
 }
@@ -102,8 +96,7 @@ export function UserGuidePage(): ReactElement {
 export function UserGuideArticlePage(): ReactElement {
   const { t, language } = useI18n();
   const { articleId } = useParams();
-  const { forYou, others } = useGuideArticles();
-  const meta = [...forYou, ...others].find((article) => article.id === articleId);
+  const meta = useGuideArticles().find((article) => article.id === articleId);
   const content = meta === undefined ? undefined : helpContent[language].guide[meta.id];
   if (meta === undefined || content === undefined) {
     return <NotFoundPage />;
@@ -160,17 +153,27 @@ export function UserGuideArticlePage(): ReactElement {
 /** SCR-012 and SCR-126: frequently asked questions, grouped; each answer opens in place. */
 export function FaqPage(): ReactElement {
   const { t, language } = useI18n();
-  const groups = Object.entries(helpContent[language].faq);
+  const { can, loaded } = usePermissions();
+  // An entry only a holder of its permission would ask is left out for everyone else; a group left empty, too.
+  const groups = Object.entries(helpContent[language].faq)
+    .map(([groupId, group]) => {
+      const entries = Object.entries(group.entries).filter(([entryId]) => {
+        const permission = FAQ_PERMISSIONS[entryId];
+        return permission === undefined || !loaded || can(permission);
+      });
+      return { groupId, heading: group.heading, entries };
+    })
+    .filter((group) => group.entries.length > 0);
   return (
     <>
       <PageHeader
         title={t('common.help.faq.title')}
         description={t('common.help.faq.description')}
       />
-      {groups.map(([groupId, group]) => (
+      {groups.map(({ groupId, heading, entries }) => (
         <section key={groupId} className="section" aria-labelledby={`faq-${groupId}`}>
-          <h2 id={`faq-${groupId}`}>{group.heading}</h2>
-          {Object.entries(group.entries).map(([entryId, entry]) => (
+          <h2 id={`faq-${groupId}`}>{heading}</h2>
+          {entries.map(([entryId, entry]) => (
             <details key={entryId} className="help-faq">
               <summary>
                 <HelpText text={entry.question} />

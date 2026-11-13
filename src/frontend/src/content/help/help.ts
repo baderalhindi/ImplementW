@@ -174,6 +174,14 @@ export const LANDING_ARTICLE: Readonly<Record<RoleCode, string>> = {
   R08: 'external-contributor-home',
 };
 
+/**
+ * FAQ entries that only someone who holds the permission would ask (13 Nov 2026 review: help speaks to its reader alone). An entry
+ * not listed is for everyone.
+ */
+export const FAQ_PERMISSIONS: Readonly<Partial<Record<string, PermissionCode>>> = {
+  'no-progress-button': 'PROGRESS_SUBMIT',
+};
+
 export function isForRoles(article: GuideArticleMeta, roleCodes: readonly string[]): boolean {
   return article.audience === 'ALL' || article.audience.some((code) => roleCodes.includes(code));
 }
