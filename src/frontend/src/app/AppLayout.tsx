@@ -289,6 +289,15 @@ function AccountMenu({ user }: { user: SessionUser }): ReactElement {
         >
           {t('identityAccess.passwordSelfService.changeMenu')}
         </Link>
+        <Link
+          className="popover__option"
+          to="/account/sign-in-methods"
+          onClick={() => {
+            setOpen(false);
+          }}
+        >
+          {t('identityAccess.signInMethods.menu')}
+        </Link>
         <button
           type="button"
           className="popover__option"

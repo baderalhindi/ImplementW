@@ -50,6 +50,10 @@ const PROBLEM_MESSAGES: Record<string, TranslationKey> = {
   IDENTITY_ACCESS_ROLE_IN_USE: 'identityAccess.problems.roleInUse',
   IDENTITY_ACCESS_ROLE_INACTIVE: 'identityAccess.problems.roleInactive',
   IDENTITY_ACCESS_ROLE_SYSTEM: 'identityAccess.problems.roleSystem',
+  IDENTITY_ACCESS_RECENT_SIGN_IN_REQUIRED: 'identityAccess.problems.recentSignInRequired',
+  IDENTITY_ACCESS_PASSKEY_REJECTED: 'identityAccess.problems.passkeyRejected',
+  IDENTITY_ACCESS_MOBILE_NUMBER_MISSING: 'identityAccess.problems.mobileNumberMissing',
+  IDENTITY_ACCESS_MOBILE_VERIFICATION_FAILED: 'identityAccess.problems.mobileVerificationFailed',
 };
 
 const FIELD_MESSAGES: Record<string, TranslationKey> = {

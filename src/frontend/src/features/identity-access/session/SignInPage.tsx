@@ -17,6 +17,7 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 
 import { checkText, useFocusFirstError, useSaveAction } from '../forms.ts';
 import { DirectoryPasswordHelp, NewPasswordFields } from './passwordSelfService.tsx';
+import { PasswordlessSignIn } from './PasswordlessSignIn.tsx';
 import { checkNewPassword } from './passwordUpdate.ts';
 import { SecondFactorForm } from './SecondFactorForm.tsx';
 import {
@@ -150,12 +151,11 @@ function CredentialField({
 }
 
 /**
- * National single sign-on as the mockup lays it out. Nafath and its biometric fallback have no API yet, so every
- * control here is disabled and the panel says so.
+ * National single sign-on as the mockup lays it out. Nafath has no API yet, so its button is disabled and the panel says
+ * so. Below it, sign-in without a password: the device's passkey (Face ID, Touch ID) or a code by SMS (13 Nov 2026 review).
  */
-function NafathPanel(): ReactElement {
+function NafathPanel({ passwordless }: { passwordless: ReactNode }): ReactElement {
   const { t } = useI18n();
-  const idFieldId = useId();
   return (
     <section
       className="sign-in__panel sign-in__nafath"
@@ -180,31 +180,15 @@ function NafathPanel(): ReactElement {
         {t('identityAccess.signIn.nafath.submit')}
       </button>
       <p className="sign-in__divider">{t('identityAccess.signIn.or')}</p>
-      <p className="sign-in__note">{t('identityAccess.signIn.biometric.instructions')}</p>
-      <div className="field">
-        <label className="field__label" htmlFor={idFieldId}>
-          {t('identityAccess.signIn.biometric.nationalId')}
-        </label>
-        <input
-          id={idFieldId}
-          name="nationalId"
-          className="field__input"
-          inputMode="numeric"
-          placeholder={t('identityAccess.signIn.biometric.nationalIdPlaceholder')}
-          disabled
-        />
-      </div>
-      <button type="button" className="button sign-in__wide" disabled>
-        {t('identityAccess.signIn.biometric.submit')}
-      </button>
+      {passwordless}
     </section>
   );
 }
 
 /**
- * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Nafath and biometric
- * sign-in are shown disabled until their integrations exist; Microsoft is offered where the API says single sign-on is
- * configured. Every method keeps its second factor (TASK-028, TASK-029); R01 always requires MFA. A local account on a temporary
+ * Sign-in as the AHDA mockup lays it out: national single sign-on (Nafath) beside the account card. Nafath is shown
+ * disabled until its integration exists; Microsoft, the device's passkey and the SMS code are offered where the API says
+ * they are configured. A passkey passes both factors; every other method keeps its second factor. Every method keeps its second factor (TASK-028, TASK-029); R01 always requires MFA. A local account on a temporary
  * password sets a new one first (the 5 Nov 2026 review §6.1), then continues to its second factor or its session.
  */
 export function SignInPage(): ReactElement {
@@ -504,7 +488,24 @@ export function SignInPage(): ReactElement {
             <SecondFactorForm secondFactor={secondFactor} onSession={finish} />
           )}
         </section>
-        <NafathPanel />
+        <NafathPanel
+          passwordless={
+            secondFactor === null && passwordChange === null ? (
+              <PasswordlessSignIn
+                passkeyAvailable={signInOptions.data?.passkeySignInAvailable === true}
+                smsAvailable={signInOptions.data?.smsSignInAvailable === true}
+                loading={signInOptions.loading}
+                onSignedIn={(step) => {
+                  if ('session' in step) {
+                    finish(step.session);
+                  } else {
+                    setSecondFactor(step.secondFactor);
+                  }
+                }}
+              />
+            ) : null
+          }
+        />
       </div>
       <footer className="sign-in__footer">
         {t('identityAccess.signIn.copyright', { year: new Date().getFullYear() })}

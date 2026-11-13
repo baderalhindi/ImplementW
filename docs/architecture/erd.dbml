@@ -2899,7 +2899,7 @@ Table identity_access.user_passkey {
   updated_at timestamptz [not null, note: 'Audit column (D-2)']
   updated_by uuid [not null, note: 'Audit column (D-2)']
 
-  Note: 'A passkey (Face ID, Touch ID, device unlock) a person registered for passwordless sign-in (13 Nov 2026 review). Delete policy: HARD_DELETE by its owner; the removal is audited.'
+  Note: 'A passkey (Face ID, Touch ID, device unlock) a person registered for passwordless sign-in (13 Nov 2026 review). Its removal is audited. Delete policy: HARD_OWNER.'
 }
 
 Table identity_access.sms_code {

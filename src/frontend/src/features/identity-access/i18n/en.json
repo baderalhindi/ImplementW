@@ -90,7 +90,11 @@
     "roleInactive": "This role is deactivated and cannot be assigned.",
     "roleSystem": "A built-in role cannot be deactivated or deleted.",
     "userHasNoRole": "This user holds no role. Assign a role first, then adjust its permissions.",
-    "departmentInUse": "This department still has users, sub-departments, open projects or role assignments. Move or end them first, then delete it."
+    "departmentInUse": "This department still has users, sub-departments, open projects or role assignments. Move or end them first, then delete it.",
+    "recentSignInRequired": "For your security, add a passkey within 15 minutes of signing in. Sign out, sign in again, then add it.",
+    "passkeyRejected": "The device did not create a passkey for this site, or it is already added. Try again on this device.",
+    "mobileNumberMissing": "There is no mobile number on your profile. Ask your administrator to add it.",
+    "mobileVerificationFailed": "The code is wrong or has expired. Send a new code and try again."
   },
   "userPicker": {
     "searchLabel": "Search by name, username or email",
@@ -499,11 +503,28 @@
       "instructions": "Users inside the Kingdom of Saudi Arabia sign in through the National Single Sign-On (Nafath)",
       "submit": "Sign in with Nafath"
     },
-    "biometric": {
-      "instructions": "If you cannot use the Nafath app, you can sign in with biometric verification",
-      "nationalId": "National ID / Iqama number",
-      "nationalIdPlaceholder": "Enter your national ID or Iqama number",
-      "submit": "Sign in with biometrics"
+    "passwordless": {
+      "title": "Sign in without a password",
+      "passkey": {
+        "faceId": "Sign in with Face ID",
+        "touchId": "Sign in with Touch ID",
+        "windowsHello": "Sign in with Windows Hello",
+        "fingerprint": "Sign in with your fingerprint",
+        "deviceUnlock": "Sign in with this device"
+      },
+      "passkeyHint": "Uses the passkey you added to your account on this device.",
+      "noDeviceUnlock": "This device or browser cannot use a passkey. Use the code by SMS or your password.",
+      "passkeyCancelled": "The sign-in was cancelled, or this device has no passkey for your account. Sign in another way, then add one from Sign-in methods.",
+      "passkeyRefused": "This passkey could not sign you in. Sign in another way, then add it again from Sign-in methods.",
+      "smsTitle": "Sign in with a code by SMS",
+      "mobileNumber": "Mobile number",
+      "mobileNumberHint": "The number verified on your account, such as 05XXXXXXXX or +9665XXXXXXXX.",
+      "sendCode": "Send code by SMS",
+      "signInWithCode": "Sign in with the code",
+      "codeSent": "If {number} is verified on an account, a code is on its way. Enter it below.",
+      "resend": "Send a new code",
+      "resendIn": "Send a new code in {seconds} s",
+      "changeNumber": "Use another number"
     },
     "copyright": "© {year} Al Ahsa Development Authority. All rights reserved.",
     "wrongCredentials": "The username or password is wrong.",
@@ -515,6 +536,39 @@
     "confirmPassword": "Confirm the new password",
     "setNewPassword": "Set password and continue",
     "backToSignIn": "Back to sign-in"
+  },
+  "signInMethods": {
+    "menu": "Sign-in methods",
+    "title": "Sign-in methods",
+    "description": "Ways to sign in without your password: Face ID or Touch ID on your devices, and a code by SMS to your verified mobile number.",
+    "passkeysTitle": "Face ID and Touch ID",
+    "passkeysDescription": "Add a passkey on each device you use. It stays on the device and is unlocked by your face, fingerprint or device PIN; the platform never sees them. Signing in with it needs no other code.",
+    "noPasskeys": "You have not added a passkey yet.",
+    "added": "Added {date}",
+    "lastUsed": "last used {date}",
+    "neverUsed": "not used yet",
+    "remove": "Remove",
+    "removeTitle": "Remove passkey",
+    "removeBody": "\"{name}\" will no longer sign you in. You can add it again later.",
+    "deviceName": "Device name",
+    "deviceNameHint": "So you can tell your passkeys apart.",
+    "add": {
+      "faceId": "Add Face ID for this device",
+      "touchId": "Add Touch ID for this device",
+      "windowsHello": "Add Windows Hello for this device",
+      "fingerprint": "Add fingerprint for this device",
+      "deviceUnlock": "Add a passkey for this device"
+    },
+    "passkeyCancelled": "No passkey was added: the device prompt was closed.",
+    "noDeviceUnlock": "This device or browser cannot create a passkey. Open this page on a phone or computer with Face ID, Touch ID or Windows Hello.",
+    "mobileTitle": "Code by SMS",
+    "mobileDescription": "Sign-in codes go only to a mobile number you have verified. An administrator records the number; you verify it here.",
+    "noMobileNumber": "There is no mobile number on your profile. Ask your administrator to add it.",
+    "notVerified": "not verified",
+    "verifiedOn": "verified {date}",
+    "sendVerificationCode": "Send verification code",
+    "verify": "Verify",
+    "smsUnavailable": "SMS is not available in this environment yet."
   },
   "stepUp": {
     "title": "Confirm it is you",

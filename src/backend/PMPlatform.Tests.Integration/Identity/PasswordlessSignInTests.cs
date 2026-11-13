@@ -24,6 +24,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
     private const string PasskeySessions = "/api/v1/sessions/passkey";
     private const string SmsChallenge = "/api/v1/sessions/sms-code-challenge";
     private const string SmsSessions = "/api/v1/sessions/sms";
+    private const string OwnMobileNumber = "/api/v1/users/current/mobile-number";
     private const string Mobile = "+966500000003";
 
     private readonly TestSmsCodeSender _sms = new();
@@ -248,6 +249,7 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
         await host.Database.ExecuteAsync($"UPDATE identity_access.\"user\" SET mobile_number = '{Mobile}', mobile_verified_at = NULL WHERE id = '{IdentityDatabase.UserId(6)}'");
         using HttpClient client = _api.CreateClient();
         string accessToken = (await client.SignInOrFailAsync(6)).AccessToken;
+        JsonObject before = await (await client.GetAsync(OwnMobileNumber, accessToken)).ReadObjectAsync();
 
         JsonObject challenge = await (await client.PostAsync(AdministrationApi.MobileVerificationChallenge, accessToken)).ReadObjectAsync();
         using HttpResponseMessage verified = await client.PostAsync(
@@ -255,6 +257,11 @@ public sealed class PasswordlessSignInTests(IdentityTestHost host) : IAsyncLifet
 
         Assert.Equal(HttpStatusCode.OK, verified.StatusCode);
         Assert.Equal(Mobile, (string?)(await verified.ReadObjectAsync())["mobileNumber"]);
+        JsonObject after = await (await client.GetAsync(OwnMobileNumber, accessToken)).ReadObjectAsync();
+        Assert.Equal(Mobile, (string?)before["mobileNumber"]);
+        Assert.Null(before["verifiedAt"]);
+        Assert.True((bool)before["verificationAvailable"]!);
+        Assert.NotNull(after["verifiedAt"]);
         await RequestCodeAsync(client, Mobile);
         Assert.Equal(2, _sms.Sent.Count);
     }

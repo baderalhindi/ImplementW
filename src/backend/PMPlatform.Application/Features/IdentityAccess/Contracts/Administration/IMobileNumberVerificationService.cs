@@ -6,6 +6,9 @@ namespace PMPlatform.Application.Features.IdentityAccess.Contracts.Administratio
 /// </summary>
 public interface IMobileNumberVerificationService
 {
+    /// <summary>The person's own number and whether it is verified (13 Nov 2026 review: the account page's sign-in methods).</summary>
+    public Task<AdministrationResult<MobileNumberStatus>> GetAsync(Guid userId, CancellationToken cancellationToken);
+
     public Task<AdministrationResult<MobileVerificationChallenge>> StartAsync(Guid userId, CancellationToken cancellationToken);
 
     public Task<AdministrationResult<MobileVerificationResult>> CompleteAsync(Guid userId, string challengeId, string code, CancellationToken cancellationToken);

@@ -134,7 +134,19 @@ erDiagram
         uuid id PK
         uuid user_id FK
     }
+    UserPasskey {
+        uuid id PK
+        uuid user_id FK
+        bytea credential_id UK
+    }
+    SmsCode {
+        uuid id PK
+        uuid user_id FK
+        varchar purpose
+    }
     User ||--o{ UserPasswordHistory : "user_id"
+    User ||--o{ UserPasskey : "user_id"
+    User ||--o{ SmsCode : "user_id"
     User {
         uuid id PK
         varchar directory_subject_id UK
@@ -207,6 +219,8 @@ erDiagram
 | **ExternalEntity** | `identity_access.external_entity` | An organisation delivering a regional project: government entity, public authority or private company (ADR-013, ADM-013). | `status` → ACTIVE · SUSPENDED · RETIRED | RETAIN | referenceable |
 | **User** | `identity_access.user` | Platform user. Deactivation never rewrites historical attribution (Appendix A.1, TASK-031). | `status` → ACTIVE · DISABLED · DELETED (client review, item 5: leaves administration for good; the row stays) | RETAIN | referenceable |
 | **UserPasswordHistory** | `identity_access.user_password_history` | The hashes a local account has used, so none of the last five comes back (5 Nov 2026 review, R4-6). | — | RETAIN | — |
+| **UserPasskey** | `identity_access.user_passkey` | A passkey (Face ID, Touch ID, device unlock) a person registered for sign-in without a password (13 Nov 2026 review). Its public key only; the private key stays on the device. | — | HARD_OWNER | — |
+| **SmsCode** | `identity_access.sms_code` | A one-time code sent by SMS for sign-in or mobile verification (13 Nov 2026 review); only its hash is kept. | — | RETAIN | — |
 | **Role** | `identity_access.role` | Canonical role R01–R08: shipped, undeletable, referenced by routing, landing dashboards and notification matrices. | — | RETAIN | referenceable |
 | **Permission** | `identity_access.permission` | Protected permission catalogue (Appendix A). A profile may only select from it (TASK-110). | — | RETAIN | referenceable |
 | **PermissionProfile** | `identity_access.permission_profile` | A named composition of catalogue permissions rooted at a canonical role. R01–R08 defaults are profiles with is_shipped_default (ADR-018, TASK-110). | — | RETAIN | referenceable |
@@ -1849,3 +1863,4 @@ On Q1 and Q6, the E-1 reconciliation is run, the crosswalk's Appendix D columns 
 | 2026-10-13 | §5.21, `erd.dbml`: the `integration_monitoring` schema built by TASK-075 (`integration-monitoring.md` D-1), migrations `TASK-075_CreateIntegrationMonitoringTables`, `…_AddIntegrationMonitoringCrossModuleForeignKeys`, `…_AddAuditForwardingInvocationForeignKey` and `…_GuardIntegrationMonitoringHistory`. Added: `invocation.failure_category` (technical, business or security: only technical counts against availability, FG-05 DC-INT-04), `invocation.next_attempt_at` (a scheduled retry), the unique key `(integration_instance_id, operation_code, idempotency_key, attempt_no)` (one attempt per number in a lineage), `operational_alert.acknowledged_at` (FG-05 §13.3 records who and when) and the partial unique index of one live alert per instance and type. Renamed: `integration_instance.health_evaluated_at` → `evaluated_at` (a column named for health is WF-02's or WF-03's alone, M-12). `audit_forwarding_record.invocation_id` now references `invocation` (TASK-033 F-3). Table count unchanged (124). | Backend (TASK-075) |
 | 2026-10-21 | §5.21, `erd.dbml`: `integration_monitoring.integration_instance.availability_changed_at` (since when the current availability has held, so an availability alert can wait for a configured delay, TBC-INT-08) and the `operational_alert.alert_type` value `QUEUE_BACKLOG` (FG-05 §10.1's backlog family, TBC-INT-11), migration `TASK-092_AddIntegrationQueueStateAndAlertThresholds`, which also adds the worker-owned partial index `ix_invocation_queue_state` behind ADM-047's queue state (`docs/operations/operational-dashboards.md`). Table count unchanged (124). | Observability (TASK-092) |
 | 2026-11-05 | §5.16, §5.1, `erd.dbml`: the 5 Nov 2026 review (R4-2, R4-4, R4-5, R4-6): `update_request_batch` and `user_password_history`; local account columns on `user`; a role's allowed scopes, landing and activation; `project.title_en`, `is_strategic`, `entity_contact_user_id`, `seed_source`; `audit_event.scope_project_id` loses its foreign key, as the trail outlives a removed project. |
+| 2026-11-13 | §5.1, `erd.dbml`: `user_passkey` and `sms_code` for sign-in without a password (`client-review-changes.md` §8), migration `TASK-112_AddPasskeysAndSmsCodes`. |

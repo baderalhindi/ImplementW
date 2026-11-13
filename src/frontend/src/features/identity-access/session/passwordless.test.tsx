@@ -1,0 +1,375 @@
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+
+import { translate } from '@/shared/i18n/i18n.ts';
+import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixtures.ts';
+import { type MockApi, mockApi } from '@/test/mockApi.ts';
+import { renderApp } from '@/test/renderApp.tsx';
+
+import { toE164 } from './mobileNumber.ts';
+import { deviceUnlock } from './webAuthn.ts';
+
+// Sign-in without a password (13 Nov 2026 review): the passkey on this device, or a code by SMS. The device is a stub;
+// what is checked is what the page asks of it and what it sends the API.
+
+const en = (key: string, values?: Record<string, string | number>) => translate('en', key, values);
+const bytes = (...values: number[]) => new Uint8Array(values).buffer;
+
+const offerPasswordless = (api: MockApi, options: { passkey?: boolean; sms?: boolean } = {}) =>
+  api.on('GET', /^\/sessions\/sign-in-options$/, {
+    body: {
+      singleSignOnAvailable: false,
+      passwordResetAvailable: false,
+      passkeySignInAvailable: options.passkey ?? true,
+      smsSignInAvailable: options.sms ?? true,
+    },
+  });
+
+const credentials = { get: vi.fn(), create: vi.fn() };
+
+beforeEach(() => {
+  Object.defineProperty(window, 'isSecureContext', { value: true, configurable: true });
+  Object.defineProperty(navigator, 'credentials', { value: credentials, configurable: true });
+  vi.stubGlobal('PublicKeyCredential', {
+    isUserVerifyingPlatformAuthenticatorAvailable: () => Promise.resolve(true),
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  credentials.get.mockReset();
+  credentials.create.mockReset();
+});
+
+describe('signing in with Face ID / Touch ID', () => {
+  const passkeyButton = () =>
+    screen.findByRole('button', {
+      name: /^Sign in with (Face ID|Touch ID|Windows Hello|your fingerprint|this device)$/,
+    });
+
+  test('asks the device for a passkey and signs in with its answer', async () => {
+    credentials.get.mockResolvedValue({
+      id: 'cred',
+      rawId: bytes(1, 2, 3),
+      type: 'public-key',
+      response: {
+        clientDataJSON: bytes(4),
+        authenticatorData: bytes(5),
+        signature: bytes(6, 7),
+        userHandle: bytes(8),
+      },
+    });
+    const api = offerPasswordless(withIdentityAccessData(mockApi()))
+      .on('GET', /^\/sessions\/passkey-options$/, {
+        body: {
+          options: {
+            challenge: 'AQID',
+            allowCredentials: [],
+            userVerification: 'required',
+            extensions: null,
+          },
+          transaction: 'sealed',
+        },
+      })
+      .on('POST', /^\/sessions\/passkey$/, { status: 201, body: sessionFor(['R01']) });
+    const user = userEvent.setup();
+    const { router } = renderApp({ path: '/sign-in' });
+    const button = await passkeyButton();
+    await waitFor(() => {
+      expect((button as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/');
+    });
+    const asked = credentials.get.mock.calls[0]?.[0] as {
+      publicKey: PublicKeyCredentialRequestOptions;
+    };
+    expect(new Uint8Array(asked.publicKey.challenge as ArrayBuffer)).toEqual(
+      new Uint8Array([1, 2, 3]),
+    );
+    expect('extensions' in asked.publicKey).toBe(false);
+    expect(api.requestsTo('POST', /^\/sessions\/passkey$/)[0]?.body).toEqual({
+      transaction: 'sealed',
+      credential: {
+        id: 'cred',
+        rawId: 'AQID',
+        type: 'public-key',
+        response: {
+          clientDataJson: 'BA',
+          authenticatorData: 'BQ',
+          signature: 'Bgc',
+          userHandle: 'CA',
+        },
+      },
+    });
+  });
+
+  test('says how to go on when the person closes the device prompt', async () => {
+    credentials.get.mockRejectedValue(new DOMException('cancelled', 'NotAllowedError'));
+    const api = offerPasswordless(mockApi()).on('GET', /^\/sessions\/passkey-options$/, {
+      body: { options: { challenge: 'AQID' }, transaction: 'sealed' },
+    });
+    const user = userEvent.setup();
+    renderApp({ path: '/sign-in' });
+    const button = await passkeyButton();
+    await waitFor(() => {
+      expect((button as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    await user.click(button);
+
+    expect(
+      await screen.findByText(en('identityAccess.signIn.passwordless.passkeyCancelled')),
+    ).toBeTruthy();
+    expect(api.requestsTo('POST', /^\/sessions\/passkey$/)).toHaveLength(0);
+  });
+
+  test('stays disabled on a device without Face ID, Touch ID or a device unlock', async () => {
+    vi.stubGlobal('PublicKeyCredential', {
+      isUserVerifyingPlatformAuthenticatorAvailable: () => Promise.resolve(false),
+    });
+    offerPasswordless(mockApi());
+    renderApp({ path: '/sign-in' });
+
+    expect(
+      await screen.findByText(en('identityAccess.signIn.passwordless.noDeviceUnlock')),
+    ).toBeTruthy();
+    expect(((await passkeyButton()) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  test('is not offered where the environment has no passkeys, and neither is SMS', async () => {
+    offerPasswordless(mockApi(), { passkey: false, sms: false });
+    renderApp({ path: '/sign-in' });
+
+    expect(await screen.findAllByText(en('identityAccess.signIn.comingSoon'))).not.toHaveLength(0);
+    expect(screen.queryByRole('button', { name: /^Sign in with (Face ID|Touch ID)/ })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: en('identityAccess.signIn.passwordless.sendCode') }),
+    ).toBeNull();
+  });
+});
+
+describe('signing in with a code by SMS', () => {
+  test('sends the code to the number in E.164 and signs in with it', async () => {
+    const api = offerPasswordless(withIdentityAccessData(mockApi()), { passkey: false })
+      .on('POST', /^\/sessions\/sms-code-challenge$/, {
+        body: { challengeId: 'challenge-1', expiresAt: '2099-01-01T00:00:00Z' },
+      })
+      .on('POST', /^\/sessions\/sms$/, { status: 201, body: sessionFor(['R03']) });
+    const user = userEvent.setup();
+    const { router } = renderApp({ path: '/sign-in' });
+
+    await user.type(await screen.findByLabelText(/^Mobile number/), '050 123 4567');
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.sendCode') }),
+    );
+    await user.type(await screen.findByLabelText(/^Verification code/), '123456');
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.signInWithCode') }),
+    );
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/');
+    });
+    expect(api.requestsTo('POST', /^\/sessions\/sms-code-challenge$/)[0]?.body).toEqual({
+      mobileNumber: '+966501234567',
+    });
+    expect(api.requestsTo('POST', /^\/sessions\/sms$/)[0]?.body).toEqual({
+      challengeId: 'challenge-1',
+      code: '123456',
+    });
+    expect(
+      screen.queryByRole('button', { name: en('identityAccess.signIn.passwordless.resend') }),
+    ).toBeNull();
+  });
+
+  test('refuses a number that is not one before asking the API', async () => {
+    const api = offerPasswordless(mockApi(), { passkey: false });
+    const user = userEvent.setup();
+    renderApp({ path: '/sign-in' });
+
+    await user.type(await screen.findByLabelText(/^Mobile number/), '12345');
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.sendCode') }),
+    );
+
+    expect((await screen.findByLabelText(/^Mobile number/)).getAttribute('aria-invalid')).toBe(
+      'true',
+    );
+    expect(api.requestsTo('POST', /sms-code-challenge/)).toHaveLength(0);
+  });
+
+  test('a person who requires MFA continues to their authenticator code', async () => {
+    offerPasswordless(withIdentityAccessData(mockApi()), { passkey: false })
+      .on('POST', /^\/sessions\/sms-code-challenge$/, {
+        body: { challengeId: 'challenge-1', expiresAt: '2099-01-01T00:00:00Z' },
+      })
+      .on('POST', /^\/sessions\/sms$/, {
+        body: {
+          mfaToken: 'mfa',
+          mfaTokenExpiresAt: '2099-01-01T00:00:00Z',
+          enrolmentRequired: false,
+        },
+      })
+      .on('POST', /^\/sessions\/mfa-challenge$/, {
+        body: { challengeId: 'mfa-challenge', expiresAt: null, provisioningUri: null },
+      });
+    const user = userEvent.setup();
+    renderApp({ path: '/sign-in' });
+
+    await user.type(await screen.findByLabelText(/^Mobile number/), '+966501234567');
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.sendCode') }),
+    );
+    await user.type(await screen.findByLabelText(/^Verification code/), '123456');
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.signIn.passwordless.signInWithCode') }),
+    );
+
+    expect(await screen.findByText(en('identityAccess.signIn.codeInstructions'))).toBeTruthy();
+  });
+});
+
+describe('the sign-in methods page', () => {
+  test('adds a passkey for this device and lists it', async () => {
+    credentials.create.mockResolvedValue({
+      id: 'new',
+      rawId: bytes(9),
+      type: 'public-key',
+      response: {
+        clientDataJSON: bytes(1),
+        attestationObject: bytes(2),
+        getTransports: () => ['internal'],
+      },
+    });
+    let added = false;
+    const passkey = {
+      id: 'p1',
+      name: 'My phone',
+      createdAt: '2026-11-13T10:00:00Z',
+      lastUsedAt: null,
+    };
+    const api = mockApi()
+      .on('GET', /^\/users\/current\/passkeys$/, () => ({
+        body: { items: added ? [passkey] : [] },
+      }))
+      .on('GET', /^\/users\/current\/passkeys\/registration-options$/, {
+        body: {
+          options: {
+            challenge: 'AQ',
+            user: { id: 'Ag', name: 'local.r03', displayName: 'Local R03' },
+            excludeCredentials: [{ id: 'Aw', type: 'public-key' }],
+          },
+          transaction: 'sealed',
+        },
+      })
+      .on('POST', /^\/users\/current\/passkeys$/, () => {
+        added = true;
+        return { status: 201, body: passkey };
+      })
+      .on('GET', /^\/users\/current\/mobile-number$/, {
+        body: { mobileNumber: null, verifiedAt: null, verificationAvailable: true },
+      });
+    const user = userEvent.setup();
+    renderApp({ path: '/account/sign-in-methods', session: sessionFor(['R03']) });
+    expect(await screen.findByText(en('identityAccess.signInMethods.noPasskeys'))).toBeTruthy();
+
+    const name = await screen.findByLabelText(/^Device name/);
+    await user.clear(name);
+    await user.type(name, 'My phone');
+    const add = await screen.findByRole('button', {
+      name: /^Add (Face ID|Touch ID|Windows Hello|fingerprint|a passkey) for this device$/,
+    });
+    await waitFor(() => {
+      expect((add as HTMLButtonElement).disabled).toBe(false);
+    });
+    await user.click(add);
+
+    expect(await screen.findByText('My phone')).toBeTruthy();
+    const asked = credentials.create.mock.calls[0]?.[0] as {
+      publicKey: PublicKeyCredentialCreationOptions;
+    };
+    expect(new Uint8Array(asked.publicKey.user.id as ArrayBuffer)).toEqual(new Uint8Array([2]));
+    expect(asked.publicKey.excludeCredentials?.[0]?.type).toBe('public-key');
+    expect(api.requestsTo('POST', /^\/users\/current\/passkeys$/)[0]?.body).toEqual({
+      transaction: 'sealed',
+      name: 'My phone',
+      credential: {
+        id: 'new',
+        rawId: 'CQ',
+        type: 'public-key',
+        response: { clientDataJson: 'AQ', attestationObject: 'Ag', transports: ['internal'] },
+      },
+    });
+  });
+
+  test('verifies the mobile number with the code sent to it', async () => {
+    let verified = false;
+    const api = mockApi()
+      .on('GET', /^\/users\/current\/passkeys$/, { body: { items: [] } })
+      .on('GET', /^\/users\/current\/mobile-number$/, () => ({
+        body: {
+          mobileNumber: '+966501234567',
+          verifiedAt: verified ? '2026-11-13T10:00:00Z' : null,
+          verificationAvailable: true,
+        },
+      }))
+      .on('POST', /^\/users\/current\/mobile-verification-challenge$/, {
+        body: { challengeId: 'c1', expiresAt: null },
+      })
+      .on('POST', /^\/users\/current\/mobile-verification$/, () => {
+        verified = true;
+        return {
+          body: { mobileNumber: '+966501234567', mobileVerifiedAt: '2026-11-13T10:00:00Z' },
+        };
+      });
+    const user = userEvent.setup();
+    renderApp({ path: '/account/sign-in-methods', session: sessionFor(['R03']) });
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: en('identityAccess.signInMethods.sendVerificationCode'),
+      }),
+    );
+    await user.type(await screen.findByLabelText(/^Verification code/), '654321');
+    await user.click(
+      screen.getByRole('button', { name: en('identityAccess.signInMethods.verify') }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText(en('identityAccess.signInMethods.notVerified'), { exact: false }),
+      ).toBeNull();
+    });
+    expect(
+      screen.queryByRole('button', { name: en('identityAccess.signInMethods.verify') }),
+    ).toBeNull();
+    expect(api.requestsTo('POST', /mobile-verification$/)[0]?.body).toEqual({
+      challengeId: 'c1',
+      code: '654321',
+    });
+  });
+});
+
+describe('the helpers', () => {
+  test('a Saudi number in local form becomes E.164; others are sent as typed', () => {
+    expect(toE164('0501234567')).toBe('+966501234567');
+    expect(toE164('+966 50-123-4567')).toBe('+966501234567');
+    expect(toE164('+447700900123')).toBe('+447700900123');
+  });
+
+  test('the button names what unlocks a passkey on the device', () => {
+    expect(deviceUnlock('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', 5)).toBe(
+      'faceId',
+    );
+    expect(deviceUnlock('Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0)', 0)).toBe('touchId');
+    expect(deviceUnlock('Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0)', 5)).toBe('faceId');
+    expect(deviceUnlock('Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 0)).toBe('windowsHello');
+    expect(deviceUnlock('Mozilla/5.0 (Linux; Android 15)', 5)).toBe('fingerprint');
+    expect(deviceUnlock('Mozilla/5.0 (X11; Linux x86_64)', 0)).toBe('deviceUnlock');
+  });
+});

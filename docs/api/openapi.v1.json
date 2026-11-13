@@ -20566,12 +20566,33 @@
         }
       }
     },
+    "/api/v1/users/current/mobile-number": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The caller's own mobile number and whether it is verified, for the account page's sign-in methods (13 Nov 2026 review).",
+        "operationId": "IdentityAccess_GetOwnMobileNumber",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileNumberStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/current/mobile-verification-challenge": {
       "post": {
         "tags": [
           "IdentityAccess"
         ],
-        "summary": "ADR-004: sends a code to the caller's own mobile number. 503 until the SMS provider exists (TASK-103).",
+        "summary": "ADR-004: sends a code to the caller's own mobile number. 503 where no SMS gateway is configured.",
         "operationId": "IdentityAccess_CreateMobileVerificationChallenge",
         "responses": {
           "200": {
@@ -33630,6 +33651,33 @@
           }
         },
         "description": "A document to attach as evidence: the document, the version of it to pin, and the EVIDENCE_TYPE item it is evidence of."
+      },
+      "MobileNumberStatus": {
+        "required": [
+          "mobileNumber",
+          "verifiedAt",
+          "verificationAvailable"
+        ],
+        "type": "object",
+        "properties": {
+          "mobileNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "verifiedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "verificationAvailable": {
+            "type": "boolean"
+          }
+        },
+        "description": "The signed-in person's own mobile number as their account page shows it: the number an administrator recorded, when its\nholder verified it (ADR-004), and whether this environment can send the code to verify it."
       },
       "MobileVerificationChallenge": {
         "required": [

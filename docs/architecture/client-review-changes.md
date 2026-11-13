@@ -4,7 +4,7 @@
 | --- | --- |
 | Source | The client's numbered change list, received in parts from 7 Nov 2026 |
 | Status | **In progress**: items 1, 2 and 4–8 built; item 3 not received; item 8 covers the project registers, not yet the admin lists |
-| Migrations | `TASK-112_DeleteProjectsAndUsersUserPermissions`, `TASK-112_UserNationalIdAndDeletedDepartments`, `TASK-112_DeleteRegisterRecords` |
+| Migrations | `TASK-112_DeleteProjectsAndUsersUserPermissions`, `TASK-112_UserNationalIdAndDeletedDepartments`, `TASK-112_DeleteRegisterRecords`, `TASK-112_AddPasskeysAndSmsCodes` |
 
 ## 1. Done
 
@@ -18,6 +18,7 @@
 | 8 | Edit and Delete in the rows of the project registers, for every role that manages them; the Viewer (R06) and the Executive (R07) see neither (§7). |
 | 7 | National ID or Iqama number on the user, masked, with Nafath bound to it; a Microsoft sign-in only with the profile's e-mail (§6). |
 | Follow-up, 13 Nov 2026 | Each language's field in its own language: an Arabic name (or description) has an Arabic letter and may still name a product in Latin letters; an English one has an English letter and no Arabic one. One check (`TextShape.IsInScript`) serves the API's `RequestValidation.Label` (every bilingual name and description: departments, entities, roles, profiles, master data, KPIs, stages, dashboards, reports) and the imports' text columns (`ImportColumn.Script`: departments, entities, master data, KPIs, project names), answering `NOT_ARABIC` or `NOT_ENGLISH`; the administration forms check the same while typing. Data already stored is not changed: the 52 RPMO list values whose English label is their Arabic text must be corrected before they can be saved again. |
+| Follow-up, 13 Nov 2026 | Sign-in without a password: Face ID / Touch ID passkeys kept by the platform, and a code by SMS to a verified mobile number (§8). |
 | Follow-up, 10 Nov 2026 | No verification code after sign-in: `Identity:StepUp:MaxAge` is the 8-hour session, so the code an administrator passes at sign-in covers the step-up operations. The list and the mechanism stay; AHDA Cybersecurity's acceptance is open (SR-14, `mfa-privileged-access.md`). |
 | Follow-up, 10 Nov 2026 | The client removed ADM-011 Organization Structure: it repeated the Departments and External entities pages. Its address redirects to Departments, whose Parent department column keeps the hierarchy; the tab, page and help mention are gone. The spec's screen catalogue still names ADM-011, so a check of delivered screens against it should note this decision. |
 
@@ -158,7 +159,33 @@ The approval's outcome handlers would otherwise fail on a missing record, and th
 
 **Not done:** the admin and other lists, such as roles, import batches, external requests and the follow-up list.
 
-## 8. Not done
+## 8. Sign-in without a password (13 Nov 2026, decided by the client)
+
+The client first asked for Face ID / Touch ID through Microsoft (`login_hint` and `prompt=login` on the Microsoft sign-in), then replaced it: the platform keeps its own passkeys, and offers a code by SMS as the second way. The Microsoft version is reverted (`778f3ab`). The client chose:
+
+- **SMS:** the person types only their mobile number. A code goes only to a number its holder has verified (ADR-004) and that exactly one active person holds; the answer is the same either way.
+- **SMS is a first factor.** A role that needs MFA (R01) still gives its authenticator code after it.
+- **A passkey counts as both factors.** It is the device in hand plus its biometric or PIN, and it is phishing-resistant, so no authenticator code follows.
+- **Until AHDA selects an SMS provider (OQ-012)**, a stand-in sends each SMS as an e-mail to a test mailbox (`Notifications:Sms:StandIn:Enabled`, mailpit locally). Real phones receive nothing.
+
+**Passkeys.** WebAuthn, verified by Fido2 4.3.3 (passwordless-lib, MIT): discoverable, user-verified passkeys on the device's own authenticator (Face ID, Touch ID, Windows Hello, Android fingerprint), attestation "none". `identity_access.user_passkey` keeps the credential id, the COSE public key, the counter and the device name; the private key and the biometric never leave the device. The relying party id and origins are `Identity:Passkeys` (`RelyingPartyId`, `Origins`), or by default the host and origin of `APP_BASE_URL`. A passkey belongs to that domain, so a passkey made on the tunnel's domain or on localhost does not work elsewhere, and moving the platform to AHDA's domain means registering again. A ceremony's options travel sealed with the client (AES-GCM under a key of its own, 5 minutes), so nothing is stored between its two calls.
+
+| Endpoint | What |
+| --- | --- |
+| `GET /sessions/passkey-options`, `POST /sessions/passkey` | Anonymous passkey sign-in, under the `SignIn` rate limit |
+| `POST /sessions/sms-code-challenge`, `POST /sessions/sms` | Anonymous SMS sign-in, under the `SignIn` rate limit |
+| `GET /users/current/passkeys`, `GET …/registration-options`, `POST /users/current/passkeys`, `POST …/{id}/delete` | The person's own passkeys. Adding one needs a sign-in within 15 minutes (`IDENTITY_ACCESS_RECENT_SIGN_IN_REQUIRED`) |
+| `GET /users/current/mobile-number` | The person's own number, whether it is verified, and whether a code can be sent |
+
+**SMS codes.** Six digits drawn by the platform, kept only as a hash in `identity_access.sms_code`, five tries, five minutes, used once. A person gets one code per purpose a minute (`Identity:SmsCodes`). The same codes now back ADR-004's mobile verification, which until now had no sender (`UnconfiguredMobileNumberVerifier` is gone). The text is in the person's language.
+
+**Screens.** The sign-in page's Nafath panel replaces the disabled National ID field with the two options. The device button is named for the device (Face ID on iPhone and iPad, Touch ID on a Mac, Windows Hello, fingerprint on Android) and stays disabled where the browser has no device unlock. The account menu gains **Sign-in methods** (`/account/sign-in-methods`): add a passkey for this device, list and remove passkeys, and verify the mobile number. Change password now treats a passkey or SMS session like a password one.
+
+**Security.** AUTH-T35 to AUTH-T37 and SR-87 to SR-89 in `docs/security`: SR-87 (SMS as a sign-in factor) needs AHDA's acceptance, and SR-89 (no guard against the stand-in in UAT or PROD) is open.
+
+**Verified.** 13 integration tests drive real WebAuthn messages from a software authenticator and the SMS flows. 11 SPA tests cover both sign-in options and the account page. In Chromium with a virtual platform authenticator, on the preview: a passkey added from Sign-in methods; the number verified with the code from mailpit; a passkey sign-in (method `PASSKEY`); an SMS sign-in. Not tried on a physical iPhone or Mac.
+
+## 9. Not done
 
 - Item 3 has not been received.
 - The showcase is not deployed: it needs migrate and seed.

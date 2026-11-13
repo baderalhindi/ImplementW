@@ -240,7 +240,15 @@ public sealed class UsersController(IUserAdministrationService users, IUserPermi
             ? Respond(await users.DisableAsync(CallerId, userId, version, cancellationToken))
             : problem!;
 
-    /// <summary>ADR-004: sends a code to the caller's own mobile number. 503 until the SMS provider exists (TASK-103).</summary>
+    /// <summary>The caller's own mobile number and whether it is verified, for the account page's sign-in methods (13 Nov 2026 review).</summary>
+    [HttpGet("current/mobile-number")]
+    [AllowAnyAuthenticatedUser]
+    [ProducesResponseType<MobileNumberStatus>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_GetOwnMobileNumber")]
+    public async Task<IActionResult> GetOwnMobileNumber(CancellationToken cancellationToken) =>
+        Respond(await mobileVerification.GetAsync(CallerId, cancellationToken));
+
+    /// <summary>ADR-004: sends a code to the caller's own mobile number. 503 where no SMS gateway is configured.</summary>
     [HttpPost("current/mobile-verification-challenge")]
     [AllowAnyAuthenticatedUser]
     [SensitiveWrite]

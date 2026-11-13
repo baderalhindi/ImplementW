@@ -15,6 +15,11 @@ internal sealed partial class MobileNumberVerificationService(
     TimeProvider timeProvider,
     ILogger<MobileNumberVerificationService> logger) : IMobileNumberVerificationService
 {
+    public async Task<AdministrationResult<MobileNumberStatus>> GetAsync(Guid userId, CancellationToken cancellationToken) =>
+        (await users.FindDetailAsync(userId, cancellationToken).ConfigureAwait(false))?.Value is { } user
+            ? new MobileNumberStatus(user.MobileNumber, user.MobileVerifiedAt, verifier.IsConfigured)
+            : AdministrationError.NotFound;
+
     public async Task<AdministrationResult<MobileVerificationChallenge>> StartAsync(Guid userId, CancellationToken cancellationToken)
     {
         UserDetail? user = (await users.FindDetailAsync(userId, cancellationToken).ConfigureAwait(false))?.Value;
