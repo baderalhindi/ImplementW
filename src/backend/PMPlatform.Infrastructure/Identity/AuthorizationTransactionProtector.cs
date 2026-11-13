@@ -20,13 +20,21 @@ internal sealed class AuthorizationTransactionProtector(IConfiguration configura
     /// <summary>The label of Nafath identity verification transactions (TASK-068).</summary>
     public const string NafathLabel = "PMPlatform Nafath transaction v1";
 
+    /// <summary>The label of passkey ceremonies (13 Nov 2026 review).</summary>
+    public const string PasskeyLabel = "PMPlatform passkey ceremony v1";
+
     private const int NonceSize = 12;
     private const int TagSize = 16;
     private readonly byte[] _keyLabel = Encoding.ASCII.GetBytes(label);
 
-    public string Protect(AuthorizationTransaction transaction)
+    public string Protect(AuthorizationTransaction transaction) => Protect<AuthorizationTransaction>(transaction);
+
+    /// <summary>The transaction, or null if the value was not sealed under this label by this platform's current key, or was altered.</summary>
+    public AuthorizationTransaction? Unprotect(string value) => Unprotect<AuthorizationTransaction>(value);
+
+    public string Protect<T>(T value)
     {
-        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(transaction);
+        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(value);
         byte[] sealedBytes = new byte[NonceSize + TagSize + plaintext.Length];
         Span<byte> nonce = sealedBytes.AsSpan(0, NonceSize);
         RandomNumberGenerator.Fill(nonce);
@@ -36,8 +44,9 @@ internal sealed class AuthorizationTransactionProtector(IConfiguration configura
         return Base64Url.EncodeToString(sealedBytes);
     }
 
-    /// <summary>The transaction, or null if the value was not sealed under this label by this platform's current key, or was altered.</summary>
-    public AuthorizationTransaction? Unprotect(string value)
+    /// <summary>The value, or null if it was not sealed under this label by this platform's current key, or was altered.</summary>
+    public T? Unprotect<T>(string value)
+        where T : class
     {
         try
         {
@@ -50,7 +59,7 @@ internal sealed class AuthorizationTransactionProtector(IConfiguration configura
             byte[] plaintext = new byte[sealedBytes.Length - NonceSize - TagSize];
             using AesGcm aes = new(Key(), TagSize);
             aes.Decrypt(sealedBytes.AsSpan(0, NonceSize), sealedBytes.AsSpan(NonceSize + TagSize), sealedBytes.AsSpan(NonceSize, TagSize), plaintext);
-            return JsonSerializer.Deserialize<AuthorizationTransaction>(plaintext);
+            return JsonSerializer.Deserialize<T>(plaintext);
         }
         catch (Exception exception) when (exception is FormatException or CryptographicException or JsonException)
         {

@@ -25,6 +25,12 @@ public static class IdentityServiceCollectionExtensions
         services.AddOptions<SessionTokenOptions>().Bind(configuration.GetSection(SessionTokenOptions.Section));
         services.AddOptions<MultiFactorProviderOptions>().Bind(configuration.GetSection(MultiFactorProviderOptions.Section));
         services.AddOptions<NafathOptions>().Bind(configuration.GetSection(NafathOptions.Section));
+        services.AddOptions<PasskeyOptions>().Bind(configuration.GetSection(PasskeyOptions.Section));
+        services.AddOptions<SmsCodeOptions>()
+            .Bind(configuration.GetSection(SmsCodeOptions.Section))
+            .Validate(o => o.Lifetime > TimeSpan.Zero && o.MaxAttempts > 0 && o.ResendCooldown >= TimeSpan.Zero, $"{SmsCodeOptions.Section}: Lifetime and MaxAttempts must be positive.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<SmsCodeOptions>>().Value);
         services.AddOptions<IdentityVerificationPolicy>().Bind(configuration.GetSection(IdentityVerificationPolicy.Section));
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<IdentityVerificationPolicy>>().Value);
 
@@ -63,6 +69,8 @@ public static class IdentityServiceCollectionExtensions
         services.AddSingleton<IMultiFactorProvider, HttpMultiFactorProvider>();
         services.AddSingleton<IIdentityVerificationProvider, NafathIdentityVerifier>();
         services.AddSingleton<INationalIdProtector, NationalIdProtector>();
+        services.AddScoped<IPasskeyRelyingParty, FidoPasskeyRelyingParty>();
+        services.AddSingleton<ISmsCodeSender, SmsGatewayCodeSender>();
 
         // TASK-075: every call to these providers is FG-05 telemetry.
         services.ObserveIdentityIntegrations();

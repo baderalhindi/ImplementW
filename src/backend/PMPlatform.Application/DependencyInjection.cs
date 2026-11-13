@@ -109,6 +109,12 @@ public static class DependencyInjection
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();
         services.AddScoped<IUserPermissionOverrideService, UserPermissionOverrideService>();
         services.AddScoped<IMobileNumberVerificationService, MobileNumberVerificationService>();
+
+        // 13 Nov 2026 review: SMS codes (sign-in and ADR-004 verification) and passkeys. Their stores, the SMS gateway and the
+        // WebAuthn relying party are Infrastructure's.
+        services.AddScoped<SmsOneTimeCodes>();
+        services.AddScoped<IMobileNumberVerifier, SmsCodeMobileNumberVerifier>();
+        services.AddScoped<IPasskeyService, PasskeyService>();
         services.AddScoped<IUserContactDirectory, UserContactDirectory>();
         services.AddScoped<AccessRelationshipService>();
         services.AddScoped<IAccessRelationshipService>(provider => provider.GetRequiredService<AccessRelationshipService>());

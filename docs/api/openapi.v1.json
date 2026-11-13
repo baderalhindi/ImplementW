@@ -3283,6 +3283,118 @@
         }
       }
     },
+    "/api/v1/users/current/passkeys": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "operationId": "IdentityAccess_ListPasskeys",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Stores the passkey the device created, once its answer verifies for this person's ceremony.",
+        "operationId": "IdentityAccess_CreatePasskey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeySummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/current/passkeys/registration-options": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "The options for `navigator.credentials.create` on the device in hand. Nothing is stored until the device answers.",
+        "operationId": "IdentityAccess_GetPasskeyRegistrationOptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOptionsDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/current/passkeys/{passkeyId}/delete": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Removes one of the person's passkeys; the device can no longer sign them in. Answers the passkeys left.",
+        "operationId": "IdentityAccess_DeletePasskey",
+        "parameters": [
+          {
+            "name": "passkeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/dashboard-definitions": {
       "get": {
         "tags": [
@@ -18058,6 +18170,170 @@
         }
       }
     },
+    "/api/v1/sessions/passkey-options": {
+      "get": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Starts a passkey sign-in (13 Nov 2026 review): options for `navigator.credentials.get` that let the person pick\nany of their passkeys on the device, so no username is typed. Nothing is stored server-side.",
+        "operationId": "IdentityAccess_GetPasskeySignInOptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOptionsDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/passkey": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Signs in with the passkey the device answered with. A passkey is both factors: no authenticator code follows.",
+        "operationId": "IdentityAccess_CreatePasskeySession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCredentialRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCredentialRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyCredentialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaPendingDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/sms-code-challenge": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Sends a sign-in code by SMS to a verified mobile number. The answer is the same whether or not the number is anyone's,\nso it cannot tell a caller whose number it is; a code goes only to a number exactly one person has verified.",
+        "operationId": "IdentityAccess_CreateSmsCodeChallenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsCodeChallengeCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmsSignInChallenge"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/sms": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Signs in with an SMS code. It proves the phone only: a person who requires MFA continues to their second factor.",
+        "operationId": "IdentityAccess_CreateSmsSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsSessionCreateRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsSessionCreateRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmsSessionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDetail"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaPendingDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sessions/sso-authorization": {
       "get": {
         "tags": [
@@ -22346,7 +22622,9 @@
         "enum": [
           "DIRECTORY",
           "SINGLE_SIGN_ON",
-          "LOCAL_PASSWORD"
+          "LOCAL_PASSWORD",
+          "PASSKEY",
+          "SMS_CODE"
         ],
         "description": "How the session's user proved their identity."
       },
@@ -31127,6 +31405,7 @@
         },
         "description": "One attempt as ADM-048 lists it: codes, times and correlation; never a payload, a secret or a provider's message."
       },
+      "JsonElement": {},
       "KpiAssignmentCreateRequest": {
         "required": [
           "projectId",
@@ -35134,6 +35413,219 @@
             ]
           }
         }
+      },
+      "PasskeyCreateRequest": {
+        "required": [
+          "transaction",
+          "credential",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "credential": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PasskeyCredential"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "A new passkey for the signed-in person: the device's answer, its transaction, and the device's name."
+      },
+      "PasskeyCredential": {
+        "required": [
+          "id",
+          "rawId",
+          "type",
+          "response"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "response": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PasskeyCredentialResponse"
+              }
+            ]
+          }
+        },
+        "description": "A WebAuthn `PublicKeyCredential` as the browser serialises it (`toJSON()`): every binary value base64url. A\nregistration answers with `attestationObject`; a sign-in with `authenticatorData`, `signature` and `userHandle`."
+      },
+      "PasskeyCredentialRequest": {
+        "required": [
+          "transaction",
+          "credential"
+        ],
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "credential": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PasskeyCredential"
+              }
+            ]
+          }
+        },
+        "description": "The device's answer to a passkey sign-in and the transaction it answers."
+      },
+      "PasskeyCredentialResponse": {
+        "required": [
+          "clientDataJson",
+          "attestationObject",
+          "authenticatorData",
+          "signature",
+          "userHandle",
+          "transports"
+        ],
+        "type": "object",
+        "properties": {
+          "clientDataJson": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "attestationObject": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "authenticatorData": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "signature": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "userHandle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "transports": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "The authenticator's response inside a PasskeyCredential."
+      },
+      "PasskeyList": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PasskeySummary"
+            }
+          }
+        },
+        "description": "The signed-in person's passkeys, newest first."
+      },
+      "PasskeyOptionsDetail": {
+        "required": [
+          "options",
+          "transaction"
+        ],
+        "type": "object",
+        "properties": {
+          "options": {
+            "$ref": "#/components/schemas/JsonElement"
+          },
+          "transaction": {
+            "type": "string"
+          }
+        },
+        "description": "The start of a passkey ceremony: `options` for `navigator.credentials.create` or `.get`, binary values\nbase64url-encoded, and the sealed `transaction` to send back with the device's answer."
+      },
+      "PasskeySummary": {
+        "required": [
+          "id",
+          "name",
+          "createdAt",
+          "lastUsedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "One of the signed-in person's passkeys, as their account page lists it. The key material is never shown."
       },
       "PasswordChangeRequest": {
         "required": [
@@ -45577,7 +46069,9 @@
       "SignInOptionsDetail": {
         "required": [
           "singleSignOnAvailable",
-          "passwordResetAvailable"
+          "passwordResetAvailable",
+          "passkeySignInAvailable",
+          "smsSignInAvailable"
         ],
         "type": "object",
         "properties": {
@@ -45586,9 +46080,15 @@
           },
           "passwordResetAvailable": {
             "type": "boolean"
+          },
+          "passkeySignInAvailable": {
+            "type": "boolean"
+          },
+          "smsSignInAvailable": {
+            "type": "boolean"
           }
         },
-        "description": "The sign-in methods this environment offers. Password sign-in is not listed: the sign-in page always offers it."
+        "description": "The sign-in methods this environment offers. Password sign-in is not listed: the sign-in page always offers it. A passkey\nalso needs a device that has one; the page asks the browser for that."
       },
       "SingleSignOnIntegrationStatus": {
         "required": [
@@ -45639,6 +46139,62 @@
           }
         },
         "description": "The OIDC client settings. Authority, client id and callback URL are Public in the Environment and Secrets sheet; the client secret is reduced to whether it is set."
+      },
+      "SmsCodeChallengeCreateRequest": {
+        "required": [
+          "mobileNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "mobileNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Asks for a sign-in code by SMS to a mobile number in E.164 (ADR-004), such as `+966501234567`."
+      },
+      "SmsSessionCreateRequest": {
+        "required": [
+          "challengeId",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "Signs in with the code the SMS carried, for the challenge it was sent under."
+      },
+      "SmsSignInChallenge": {
+        "required": [
+          "challengeId",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The answer to a request for an SMS sign-in code. It is the same whether or not the number belongs to anyone, so it says\nnothing about who holds which number; a code was sent only if it did."
       },
       "SourceApplicationCreateRequest": {
         "required": [

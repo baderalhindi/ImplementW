@@ -32,6 +32,10 @@ internal sealed partial class AuthenticationService(
     IdentityVerificationPolicy identityVerificationPolicy,
     LocalAccountPolicy localAccounts,
     IPasswordResetMailer passwordResetMailer,
+    IPasskeyRelyingParty passkeyRelyingParty,
+    IPasskeyRepository passkeys,
+    SmsOneTimeCodes smsCodes,
+    SmsCodeOptions smsCodeOptions,
     IAuditTrail audit,
     TimeProvider timeProvider,
     ILogger<AuthenticationService> logger) : IAuthenticationService

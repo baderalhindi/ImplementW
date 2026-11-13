@@ -35,6 +35,24 @@ public interface IAuthenticationService
 
     public Task<SsoAuthorizationResult> BeginSsoSignInAsync(CancellationToken cancellationToken);
 
+    /// <summary>Whether this environment knows its WebAuthn relying party, so the sign-in page can offer Face ID / Touch ID.</summary>
+    public bool IsPasskeySignInAvailable { get; }
+
+    /// <summary>The options for a passkey sign-in, or null where passkeys are not configured.</summary>
+    public PasskeyCeremony? BeginPasskeySignIn();
+
+    /// <summary>Signs in with the passkey the device answered with. A passkey passes the second factor too (13 Nov 2026 review).</summary>
+    public Task<AuthenticationResult> SignInWithPasskeyAsync(string transaction, string credentialJson, CancellationToken cancellationToken);
+
+    /// <summary>Whether an SMS gateway is configured, so the sign-in page can offer a code by SMS.</summary>
+    public bool IsSmsSignInAvailable { get; }
+
+    /// <summary>Sends a sign-in code to the number if exactly one person who may sign in has verified it; null where SMS is not configured.</summary>
+    public Task<SmsSignInChallenge?> RequestSmsSignInCodeAsync(string mobileNumber, CancellationToken cancellationToken);
+
+    /// <summary>Signs in with an SMS code. It is a first factor: a person who requires MFA continues to their second factor.</summary>
+    public Task<AuthenticationResult> SignInWithSmsCodeAsync(Guid challengeId, string code, CancellationToken cancellationToken);
+
     /// <summary>Completes an SSO sign-in with the authorization code and state the identity provider redirected with.</summary>
     public Task<AuthenticationResult> CompleteSsoSignInAsync(string code, string state, string transaction, CancellationToken cancellationToken);
 

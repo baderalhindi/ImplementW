@@ -23,6 +23,13 @@ internal sealed partial class UserAccessRepository(PMPlatformDbContext context, 
     public Task<UserAccess?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) =>
         FindAsync(u => u.Id == userId, cancellationToken);
 
+    public async Task<IReadOnlyList<Guid>> FindByVerifiedMobileNumberAsync(string mobileNumber, CancellationToken cancellationToken) =>
+        await context.Set<User>().AsNoTracking()
+            .Where(u => u.MobileNumber == mobileNumber && u.MobileVerifiedAt != null)
+            .Select(u => u.Id)
+            .Take(2)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public Task<LocalCredential?> FindLocalCredentialAsync(string username, CancellationToken cancellationToken) =>
         LocalCredentialAsync(u => u.Username == username, cancellationToken);
 

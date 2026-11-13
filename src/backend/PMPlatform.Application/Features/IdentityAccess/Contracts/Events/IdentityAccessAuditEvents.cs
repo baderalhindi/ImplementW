@@ -46,6 +46,12 @@ public static class IdentityAccessAuditEvents
     /// <summary>AUTHENTICATION: a reset link was queued for a local account. A request naming no such account, or within the cooldown, sends nothing and records nothing.</summary>
     public const string PasswordResetRequested = "IdentityAccess.PasswordResetRequested";
 
+    /// <summary>AUTHENTICATION: a person added a passkey (Face ID, Touch ID or device unlock) to their own account.</summary>
+    public const string PasskeyRegistered = "IdentityAccess.PasskeyRegistered";
+
+    /// <summary>AUTHENTICATION: a person removed one of their own passkeys.</summary>
+    public const string PasskeyRemoved = "IdentityAccess.PasskeyRemoved";
+
     /// <summary>PRIVILEGED_ACTION: an administrator issued a local account a new temporary password.</summary>
     public const string PasswordReset = "IdentityAccess.PasswordReset";
 

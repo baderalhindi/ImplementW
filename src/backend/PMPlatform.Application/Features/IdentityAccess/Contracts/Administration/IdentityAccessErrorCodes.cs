@@ -66,6 +66,15 @@ public static class IdentityAccessErrorCodes
     /// <summary>422: the verification code was not accepted for the user's current number (ADR-004).</summary>
     public const string MobileVerificationFailed = "IDENTITY_ACCESS_MOBILE_VERIFICATION_FAILED";
 
+    /// <summary>422: adding a passkey needs a sign-in within the last few minutes (13 Nov 2026 review): sign in again, then add it.</summary>
+    public const string RecentSignInRequired = "IDENTITY_ACCESS_RECENT_SIGN_IN_REQUIRED";
+
+    /// <summary>422: the device's answer did not verify: wrong origin, expired or altered ceremony, no user verification, or a key already registered.</summary>
+    public const string PasskeyRejected = "IDENTITY_ACCESS_PASSKEY_REJECTED";
+
+    /// <summary>422: the number already has a code on its way: a new one can be sent once the resend wait is over.</summary>
+    public const string SmsCodeRecentlySent = "IDENTITY_ACCESS_SMS_CODE_RECENTLY_SENT";
+
     /// <summary>
     /// 422: a profile version's grants break a rule — a permission outside the catalogue, a permission twice, or one the profile's base
     /// role may never hold (GrantPolicy); <c>errors[]</c> names each grant and the rule (TASK-110).

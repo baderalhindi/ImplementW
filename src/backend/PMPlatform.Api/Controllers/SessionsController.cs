@@ -144,7 +144,83 @@ public sealed class SessionsController(IAuthenticationService authentication, Id
     public IActionResult GetSignInOptions()
     {
         NoStore();
-        return Ok(new SignInOptionsDetail(authentication.IsSingleSignOnAvailable, authentication.IsPasswordResetAvailable));
+        return Ok(new SignInOptionsDetail(
+            authentication.IsSingleSignOnAvailable, authentication.IsPasswordResetAvailable, authentication.IsPasskeySignInAvailable, authentication.IsSmsSignInAvailable));
+    }
+
+    /// <summary>
+    /// Starts a passkey sign-in (13 Nov 2026 review): options for <c>navigator.credentials.get</c> that let the person pick
+    /// any of their passkeys on the device, so no username is typed. Nothing is stored server-side.
+    /// </summary>
+    [HttpGet("passkey-options")]
+    [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
+    [EndpointName("IdentityAccess_GetPasskeySignInOptions")]
+    [ProducesResponseType<PasskeyOptionsDetail>(StatusCodes.Status200OK, "application/json")]
+    public IActionResult GetPasskeySignInOptions()
+    {
+        NoStore();
+        return authentication.BeginPasskeySignIn() is { } ceremony ? Ok(PasskeyOptionsDetail.From(ceremony)) : Unavailable();
+    }
+
+    /// <summary>Signs in with the passkey the device answered with. A passkey is both factors: no authenticator code follows.</summary>
+    [HttpPost("passkey")]
+    [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
+    [EndpointName("IdentityAccess_CreatePasskeySession")]
+    [ProducesResponseType<SessionDetail>(StatusCodes.Status201Created, "application/json")]
+    [ProducesResponseType<MfaPendingDetail>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> CreatePasskeySession(PasskeyCredentialRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Validate() is { Count: > 0 } errors)
+        {
+            return ValidationFailed(errors);
+        }
+
+        AuthenticationResult result = await authentication.SignInWithPasskeyAsync(request.Transaction!, request.Credential!.ToJson(), cancellationToken);
+        return SessionResponse(result, StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    /// Sends a sign-in code by SMS to a verified mobile number. The answer is the same whether or not the number is anyone's,
+    /// so it cannot tell a caller whose number it is; a code goes only to a number exactly one person has verified.
+    /// </summary>
+    [HttpPost("sms-code-challenge")]
+    [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
+    [EndpointName("IdentityAccess_CreateSmsCodeChallenge")]
+    [ProducesResponseType<SmsSignInChallenge>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> CreateSmsCodeChallenge(SmsCodeChallengeCreateRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Validate() is { Count: > 0 } errors)
+        {
+            return ValidationFailed(errors);
+        }
+
+        SmsSignInChallenge? challenge = await authentication.RequestSmsSignInCodeAsync(request.MobileNumber!, cancellationToken);
+        NoStore();
+        return challenge is null ? Unavailable() : Ok(challenge);
+    }
+
+    /// <summary>Signs in with an SMS code. It proves the phone only: a person who requires MFA continues to their second factor.</summary>
+    [HttpPost("sms")]
+    [AllowAnonymous]
+    [RateLimited(RateLimitPolicy.SignIn)]
+    [EndpointName("IdentityAccess_CreateSmsSession")]
+    [ProducesResponseType<SessionDetail>(StatusCodes.Status201Created, "application/json")]
+    [ProducesResponseType<MfaPendingDetail>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> CreateSmsSession(SmsSessionCreateRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Validate() is { Count: > 0 } errors)
+        {
+            return ValidationFailed(errors);
+        }
+
+        AuthenticationResult result = await authentication.SignInWithSmsCodeAsync(request.ChallengeId!.Value, request.Code!, cancellationToken);
+        return SessionResponse(result, StatusCodes.Status201Created);
     }
 
     /// <summary>Starts an SSO sign-in. Nothing is stored server-side; the transaction travels with the client.</summary>

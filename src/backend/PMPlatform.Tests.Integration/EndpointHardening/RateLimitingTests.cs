@@ -175,7 +175,7 @@ public sealed class RateLimitingTests(IdentityTestHost host)
         static string Name(Endpoint endpoint) => endpoint.Metadata.GetMetadata<IEndpointNameMetadata>()!.EndpointName;
 
         Endpoint[] anonymous = [.. actions.Where(endpoint => endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null)];
-        Assert.Equal(15, anonymous.Length);
+        Assert.Equal(19, anonymous.Length);
         Assert.All(anonymous, endpoint => Assert.Equal(
             Name(endpoint) switch
             {

@@ -2885,3 +2885,36 @@ Table identity_access.user_password_history {
 
   Note: 'The hashes a local account has used (R4-6). Delete policy: RETAIN.'
 }
+
+Table identity_access.user_passkey {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  credential_id bytea [unique, not null, note: 'The authenticator credential id (WebAuthn)']
+  public_key bytea [not null, note: 'COSE public key; the private key never leaves the device']
+  signature_counter bigint [not null]
+  name varchar(100) [not null, note: 'The device name the person gave']
+  last_used_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'A passkey (Face ID, Touch ID, device unlock) a person registered for passwordless sign-in (13 Nov 2026 review). Delete policy: HARD_DELETE by its owner; the removal is audited.'
+}
+
+Table identity_access.sms_code {
+  id uuid [pk, not null, note: 'Primary key (D-1); the challenge id']
+  user_id uuid [not null, ref: > identity_access.user.id]
+  purpose varchar(50) [not null, note: 'SIGN_IN | MOBILE_VERIFICATION']
+  mobile_number varchar(20) [not null, note: 'E.164 (ADR-004): the number the code was sent to']
+  code_hash varchar(64) [not null, note: 'SHA-256 of the challenge id and code; the code itself is not kept']
+  expires_at timestamptz [not null]
+  failed_attempts integer [not null]
+  consumed_at timestamptz
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'One-time codes sent by SMS for sign-in and mobile verification (13 Nov 2026 review). Delete policy: RETAIN.'
+}
