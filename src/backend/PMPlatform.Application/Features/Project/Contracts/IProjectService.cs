@@ -42,4 +42,11 @@ public interface IProjectService
     /// external user is refused (ADR-013).
     /// </summary>
     public Task<AdministrationResult<Versioned<ProjectDetail>>> ActivateAsync(Guid callerId, Guid projectId, uint? expectedVersion, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Review round 7, item 2: assigns or changes the Project Manager at any state but CLOSED, with a reason. The new manager holds R04 over the
+    /// project; the project's open tasks and update requests the outgoing manager holds pass to them, and both are told. Requires the caller's version (R-21).
+    /// </summary>
+    public Task<AdministrationResult<Versioned<ProjectDetail>>> ChangeManagerAsync(
+        Guid callerId, Guid projectId, ProjectManagerChange change, uint expectedVersion, CancellationToken cancellationToken);
 }

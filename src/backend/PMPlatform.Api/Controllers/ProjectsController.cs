@@ -202,4 +202,21 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
             : request.Validate(out ProjectFollowUpChanges? changes) is { Count: > 0 } errors ? ValidationFailed(errors)
             : Respond(await followUps.UpdateAsync(CallerId, projectId, changes!, version!.Value, cancellationToken));
     }
+
+    /// <summary>
+    /// Review round 7, item 2: assigns or changes the Project Manager, at any state but CLOSED, with a reason. The new manager must hold R04 over the
+    /// project; its open tasks and update requests pass to them and both managers are told. Requires <c>If-Match</c> (R-21).
+    /// </summary>
+    [HttpPost("{projectId:guid}/change-manager")]
+    [RequirePermission(PermissionCatalogue.ProjectManagerChange)]
+    [SensitiveWrite]
+    [ProducesResponseType<ProjectDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Project_ChangeProjectManager")]
+    public async Task<IActionResult> ChangeManager(Guid projectId, ProjectManagerChangeRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return !TryReadIfMatch(required: true, out uint? version, out IActionResult? problem) ? problem!
+            : request.Validate(out ProjectManagerChange? change) is { Count: > 0 } errors ? ValidationFailed(errors)
+            : Respond(await projects.ChangeManagerAsync(CallerId, projectId, change!, version!.Value, cancellationToken));
+    }
 }

@@ -190,6 +190,8 @@ export interface ProjectDetail extends ProjectSummary {
   updatedBy: string;
   fundingSource?: FundingSource | null;
   followUpOwnerUserId?: string | null;
+  /** Review round 7, item 2: the Project Manager the registration form names; the submission proposes them. */
+  proposedProjectManagerUserId?: string | null;
   followUp?: ProjectFollowUp;
 }
 
@@ -215,6 +217,7 @@ export interface ProjectRequest {
   fundingSource: FundingSource | null;
   legacyReference: string | null;
   followUpOwnerUserId: string | null;
+  proposedProjectManagerUserId: string | null;
 }
 
 export interface ProjectQuery {

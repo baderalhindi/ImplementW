@@ -36,6 +36,8 @@ export interface RegistrationValues {
   fundingSource: FundingSource | '';
   legacyReference: string;
   followUpOwnerUserId: string;
+  /** Review round 7, item 2: the Project Manager the submission proposes. */
+  proposedProjectManagerUserId: string;
 }
 
 export type RegistrationField = keyof RegistrationValues;
@@ -62,6 +64,7 @@ export const FIELD_LABELS: Record<RegistrationField, TranslationKey> = {
   fundingSource: 'projects.fields.fundingSource',
   legacyReference: 'projects.fields.legacyReference',
   followUpOwnerUserId: 'projects.fields.followUpOwner',
+  proposedProjectManagerUserId: 'projects.fields.projectManager',
 };
 
 export const EMPTY_REGISTRATION: RegistrationValues = {
@@ -85,6 +88,7 @@ export const EMPTY_REGISTRATION: RegistrationValues = {
   fundingSource: '',
   legacyReference: '',
   followUpOwnerUserId: '',
+  proposedProjectManagerUserId: '',
 };
 
 /** ProjectRequest's legacy reference length. */
@@ -203,6 +207,7 @@ export function valuesOf(project: ProjectDetail): RegistrationValues {
     fundingSource: project.fundingSource ?? '',
     legacyReference: project.legacyReference ?? '',
     followUpOwnerUserId: project.followUpOwnerUserId ?? '',
+    proposedProjectManagerUserId: project.proposedProjectManagerUserId ?? '',
   };
 }
 
@@ -264,5 +269,6 @@ export function toRequest(
     fundingSource: values.fundingSource === '' ? null : values.fundingSource,
     legacyReference: optional(values.legacyReference),
     followUpOwnerUserId: optional(values.followUpOwnerUserId),
+    proposedProjectManagerUserId: optional(values.proposedProjectManagerUserId),
   };
 }

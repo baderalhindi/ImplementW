@@ -1,5 +1,6 @@
 using PMPlatform.Application.Common.Auditing;
 using PMPlatform.Application.Common.Authorization;
+using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.Project.Contracts;
@@ -24,6 +25,8 @@ internal sealed class ProjectService(
     IAuthorizationEngine engine,
     ProjectIndicatorReader indicators,
     ProjectStagePlanService stagePlans,
+    IEnumerable<IProjectManagerHandover> handovers,
+    IOutbox outbox,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProjectService
 {
@@ -84,6 +87,11 @@ internal sealed class ProjectService(
             UpdatedBy = callerId,
         };
         ProjectMapping.Apply(draft, project);
+        if (await ProposedManagerInvalidAsync(project, cancellationToken).ConfigureAwait(false) is { } notEligible)
+        {
+            return notEligible;
+        }
+
         repository.Add(project);
         audit.Stage(ProjectAudit.Created(callerId, project));
         // A new row with a new id: no conflict is expected, so any is a fault.
@@ -134,10 +142,22 @@ internal sealed class ProjectService(
 
         ProjectDraft before = ProjectMapping.ToDraft(project);
         ProjectMapping.Apply(draft, project);
+        if (draft.ProposedProjectManagerUserId != before.ProposedProjectManagerUserId
+            && await ProposedManagerInvalidAsync(project, cancellationToken).ConfigureAwait(false) is { } notEligible)
+        {
+            return notEligible;
+        }
+
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Changed(callerId, before, project));
         return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>A proposed Project Manager holds R04 over the project's anchors, as the one a submission names must (review round 7, item 2).</summary>
+    private async Task<AdministrationError?> ProposedManagerInvalidAsync(ProjectEntity project, CancellationToken cancellationToken) =>
+        project.ProposedProjectManagerUserId is { } proposed && !await managers.IsEligibleAsync(proposed, project, cancellationToken).ConfigureAwait(false)
+            ? AdministrationError.Rule(ProjectErrorCodes.ManagerInvalid, new FieldIssue("proposedProjectManagerUserId", FieldIssue.NotAllowed))
+            : null;
 
     public async Task<AdministrationError?> DeleteAsync(Guid callerId, Guid projectId, uint? expectedVersion, CancellationToken cancellationToken)
     {
@@ -245,6 +265,65 @@ internal sealed class ProjectService(
         project.SubmittedByUserId = callerId;
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Submitted(callerId, project, from, fromRevisionNo, fromManagerId));
+        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<Versioned<ProjectDetail>>> ChangeManagerAsync(
+        Guid callerId, Guid projectId, ProjectManagerChange change, uint expectedVersion, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+
+        ProjectEntity? project = await repository.FindAsync(projectId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (project is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (await access.CheckAsync(callerId, PermissionCatalogue.ProjectManagerChange, project, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (project.LifecycleState == ProjectLifecycleState.Closed)
+        {
+            return AdministrationError.TerminalState;
+        }
+
+        if (!await managers.IsEligibleAsync(change.ProjectManagerUserId, project, cancellationToken).ConfigureAwait(false))
+        {
+            return AdministrationError.Rule(ProjectErrorCodes.ManagerInvalid, new FieldIssue("projectManagerUserId", FieldIssue.NotAllowed));
+        }
+
+        Guid? from = project.ProjectManagerUserId;
+        if (from == change.ProjectManagerUserId)
+        {
+            return AdministrationError.Conflict(ProjectErrorCodes.ManagerUnchanged, new FieldIssue("projectManagerUserId", FieldIssue.Duplicate));
+        }
+
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        Guid to = change.ProjectManagerUserId;
+        project.ProjectManagerUserId = to;
+
+        // Whoever answered the project's update requests as its manager hands that over too.
+        if (from is { } outgoing && project.EntityContactUserId == outgoing)
+        {
+            project.EntityContactUserId = to;
+        }
+
+        Dictionary<string, int> moved = new(StringComparer.Ordinal);
+        if (from is { } previous)
+        {
+            foreach (IProjectManagerHandover handover in handovers)
+            {
+                moved[handover.Records] = await handover.HandOverAsync(project.Id, previous, to, callerId, now, cancellationToken).ConfigureAwait(false);
+            }
+
+            outbox.Stage(ProjectManagerNotifications.Changed(project, callerId, previous, "OUTGOING", now));
+        }
+
+        outbox.Stage(ProjectManagerNotifications.Changed(project, callerId, to, "INCOMING", now));
+        Touch(project, callerId);
+        audit.Stage(ProjectAudit.ManagerChanged(callerId, project, from, change.Reason, moved));
         return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
     }
 

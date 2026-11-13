@@ -75,6 +75,12 @@ public static class ProjectAuditEvents
     /// </summary>
     public const string StagePlanChanged = "Project.StagePlanChanged";
 
+    /// <summary>
+    /// DATA_CHANGE: a project's Project Manager was assigned or changed (review round 7, item 2): from whom, to whom, why, and how many open tasks and
+    /// update requests passed to the new manager.
+    /// </summary>
+    public const string ManagerChanged = "Project.ManagerChanged";
+
     /// <summary>DATA_CHANGE: an approved import batch updated an existing project, matched by its legacy reference or Formal Project ID (R3-4).</summary>
     public const string ProjectUpdatedByImport = "Project.ProjectUpdatedByImport";
 

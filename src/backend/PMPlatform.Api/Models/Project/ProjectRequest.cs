@@ -32,7 +32,8 @@ public sealed record ProjectRequest(
     Guid? PriorityItemId = null,
     string? FundingSource = null,
     string? LegacyReference = null,
-    Guid? FollowUpOwnerUserId = null)
+    Guid? FollowUpOwnerUserId = null,
+    Guid? ProposedProjectManagerUserId = null)
 {
     private const int LegacyReferenceLength = 100;
 
@@ -79,7 +80,7 @@ public sealed record ProjectRequest(
                 title!, description, ClassificationItemId!.Value, DepartmentId!.Value, ExternalEntityId, mode!.Value, GovernanceProfileItemId!.Value, budget,
                 PlannedStartDate, PlannedEndDate, RegionItemId, CityItemId, Latitude, Longitude,
                 StrategicPortfolioItemId, StrategicInitiativeItemId, PriorityItemId, funding.Count == 1 ? funding.First() : null, LegacyReference?.Trim(),
-                FollowUpOwnerUserId)
+                FollowUpOwnerUserId, ProposedProjectManagerUserId)
             : null;
         return errors;
     }

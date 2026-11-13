@@ -14445,6 +14445,58 @@
         }
       }
     },
+    "/api/v1/projects/{projectId}/change-manager": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Review round 7, item 2: assigns or changes the Project Manager, at any state but CLOSED, with a reason. The new manager must hold R04 over the\nproject; its open tasks and update requests pass to them and both managers are told. Requires `If-Match` (R-21).",
+        "operationId": "Project_ChangeProjectManager",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectManagerChangeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectManagerChangeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectManagerChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/project-stage-plans/{projectId}": {
       "get": {
         "tags": [
@@ -38678,6 +38730,14 @@
           "isCanceled": {
             "type": "boolean",
             "default": false
+          },
+          "proposedProjectManagerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The Project Manager the registration form names (review round 7, item 2); the submission proposes them.",
+            "format": "uuid"
           }
         },
         "description": "A project as SCR-026 shows it. string? ProjectDetail.FormalProjectId is null until AHDA approves the registration.\nDateOnly? ProjectDetail.LegacyIntakeDate is set only on a project that entered by the legacy intake path (ADR-014, TASK-104): its\nbaseline is a Declared Baseline, never an Approved one, so every display can tell the two apart. DateTimeOffset? ProjectDetail.ClosedAt is when WF-10's\nclosure took effect (TASK-063); a closed project's completion date, or its having been terminated without one, is its closure cases'."
@@ -40097,6 +40157,33 @@
         ],
         "description": "TASK-041 (Draft → Submitted → Under Review → Returned / Approved-Planned; Planned → Active), TASK-062\n(Active ↔ Suspended), TASK-063 (Completed → Closed; Closed is terminal)."
       },
+      "ProjectManagerChangeRequest": {
+        "required": [
+          "projectManagerUserId",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "projectManagerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "The new Project Manager and why the project changes hands (review round 7, item 2). Both are required."
+      },
       "ProjectMilestoneCreateRequest": {
         "required": [
           "projectId",
@@ -40609,6 +40696,13 @@
             ]
           },
           "followUpOwnerUserId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "proposedProjectManagerUserId": {
             "type": [
               "null",
               "string"

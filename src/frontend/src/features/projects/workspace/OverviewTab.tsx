@@ -1,12 +1,14 @@
 import { Link } from 'react-router';
-import { type ReactElement } from 'react';
+import { type ReactElement, useState } from 'react';
 
 import { ProjectDashboard } from '@/features/dashboards/ProjectDashboard.tsx';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 
 import { type ProjectStatus } from '../api/types.ts';
 import { Detail } from '../components/Detail.tsx';
+import { ChangeManagerDialog } from '../dialogs/ChangeManagerDialog.tsx';
 import { profileMandatoryFields } from '../governance.ts';
 import { formatSar } from '../presentation.ts';
 import {
@@ -41,7 +43,10 @@ const NEXT_STEPS: Record<ProjectStatus, TranslationKey> = {
  */
 export function OverviewTab(): ReactElement {
   const { t, formatDateTime } = useI18n();
-  const { project, lookups, access, user, reload } = useWorkspace();
+  const { project, lookups, access, user, reload, etag, notify } = useWorkspace();
+  const [changingManager, setChangingManager] = useState(false);
+  // Review round 7, item 2: R02 over every project, a department's manager over its own; never a closed project.
+  const canChangeManager = useCan('PROJECT_MANAGER_CHANGE') && project.status !== 'CLOSED';
   const managerName = usePersonNames([project.projectManagerUserId]);
   const missing =
     access.reached && (project.status === 'DRAFT' || project.status === 'RETURNED')
@@ -97,6 +102,17 @@ export function OverviewTab(): ReactElement {
           {project.projectManagerUserId === null
             ? t('projects.projectManager.notNamed')
             : managerName(project.projectManagerUserId)}
+          {canChangeManager && (
+            <button
+              type="button"
+              className="button button--quiet"
+              onClick={() => {
+                setChangingManager(true);
+              }}
+            >
+              {t('projects.changeManager.action')}
+            </button>
+          )}
         </Detail>
         <Detail term={t('projects.fields.governanceProfile')}>
           {lookups.itemLabel(project.governanceProfileItemId)}
@@ -134,6 +150,19 @@ export function OverviewTab(): ReactElement {
       <StageProgressPanel project={project} onChanged={reload} />
       <FollowUpPanel />
       <ProjectDashboard key={project.id} projectId={project.id} user={user} />
+      <ChangeManagerDialog
+        open={changingManager}
+        project={project}
+        etag={etag}
+        onClose={() => {
+          setChangingManager(false);
+        }}
+        onChanged={() => {
+          setChangingManager(false);
+          notify({ tone: 'success', message: t('projects.changeManager.done') });
+          reload();
+        }}
+      />
     </>
   );
 }

@@ -34,6 +34,12 @@ public sealed class Project : AuditedEntity, IDeletable
     /// <summary>The R04 holder, employer-neutral (ADR-013); absent while DRAFT.</summary>
     public Guid? ProjectManagerUserId { get; set; }
 
+    /// <summary>
+    /// The Project Manager the registration form names (review round 7, item 2), which submitting the registration proposes. It grants nothing: the
+    /// manager of record is <see cref="ProjectManagerUserId"/>, set on submission and changed afterwards by the change of manager.
+    /// </summary>
+    public Guid? ProposedProjectManagerUserId { get; set; }
+
     /// <summary>Who last submitted the registration: the requester of its approval run, so they alone may not decide it (WF-11).</summary>
     public Guid? SubmittedByUserId { get; set; }
 

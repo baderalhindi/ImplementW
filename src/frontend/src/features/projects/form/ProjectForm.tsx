@@ -343,7 +343,10 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
             onChange={setter('legacyReference')}
             error={errorOf('legacyReference')}
           />
-          <FollowUpOwnerField
+          <PersonField
+            label={t('projects.fields.followUpOwner')}
+            hint={t('projects.form.followUpOwnerHint')}
+            userType="INTERNAL"
             value={values.followUpOwnerUserId}
             onChange={setter('followUpOwnerUserId')}
             error={errorOf('followUpOwnerUserId')}
@@ -397,6 +400,13 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
             error={errorOf('externalEntityId')}
           />
         )}
+        <PersonField
+          label={t('projects.fields.projectManager')}
+          hint={t('projects.form.projectManagerHint')}
+          value={values.proposedProjectManagerUserId}
+          onChange={setter('proposedProjectManagerUserId')}
+          error={errorOf('proposedProjectManagerUserId')}
+        />
       </fieldset>
 
       <fieldset className="form__section">
@@ -485,12 +495,21 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
   );
 }
 
-/** The RPMO staff member who follows the project up: an active internal user, found by name, or none. */
-function FollowUpOwnerField({
+/**
+ * A person the registration names, found by name, or none: the RPMO staff member who follows the project up (an internal user), or the Project
+ * Manager the submission will propose (review round 7, item 2), whom the API checks holds R04 over the project.
+ */
+function PersonField({
+  label,
+  hint,
+  userType,
   value,
   onChange,
   error,
 }: {
+  label: string;
+  hint: string;
+  userType?: 'INTERNAL';
   value: string;
   onChange: (value: string) => void;
   error: string | undefined;
@@ -501,7 +520,7 @@ function FollowUpOwnerField({
   if (value !== '' && !changing) {
     return (
       <p className="form__readonly">
-        <span className="field__label">{t('projects.fields.followUpOwner')}</span>
+        <span className="field__label">{label}</span>
         {personName(value)}{' '}
         <button
           type="button"
@@ -526,10 +545,10 @@ function FollowUpOwnerField({
   }
   return (
     <UserPicker
-      label={t('projects.fields.followUpOwner')}
+      label={label}
       value={null}
-      userType="INTERNAL"
-      hint={t('projects.form.followUpOwnerHint')}
+      {...(userType === undefined ? {} : { userType })}
+      hint={hint}
       error={error}
       onChange={(user) => {
         onChange(user?.id ?? '');

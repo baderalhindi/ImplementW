@@ -7,7 +7,8 @@ namespace PMPlatform.Application.Features.Project.Contracts;
 /// The registration fields of a project, the whole set (R-5): what MOD-001 Create sends and what an edit of a DRAFT or
 /// RETURNED project replaces. The Formal Project ID is not among them: AHDA issues it on approval (ADR-013). The strategy classification —
 /// strategic portfolio, then one of its initiatives — priority, funding source, legacy reference and follow-up owner came with the 2 Nov 2026
-/// review (R3-3); a portfolio and an initiative are a view of the project, never a scope.
+/// review (R3-3); a portfolio and an initiative are a view of the project, never a scope. The proposed Project Manager came with review round 7
+/// (item 2): submitting proposes them, and it grants nothing until then.
 /// </summary>
 public sealed record ProjectDraft(
     NarrativeText Title,
@@ -29,4 +30,5 @@ public sealed record ProjectDraft(
     Guid? PriorityItemId = null,
     FundingSource? FundingSource = null,
     string? LegacyReference = null,
-    Guid? FollowUpOwnerUserId = null);
+    Guid? FollowUpOwnerUserId = null,
+    Guid? ProposedProjectManagerUserId = null);

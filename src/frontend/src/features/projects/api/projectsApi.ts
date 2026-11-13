@@ -4,6 +4,7 @@ import { readAllPages } from '@/shared/api/paging.ts';
 
 import {
   type GovernanceProfileResolution,
+  type NarrativeTextRequest,
   type Page,
   type ProjectDetail,
   type ProjectQuery,
@@ -53,6 +54,13 @@ export const projectsApi = {
   startReview: (id: string, etag: string | null) => command(id, 'start-review', etag),
   /** MOD-003: APPROVED_PLANNED → ACTIVE, by AHDA only; the one way a project becomes ACTIVE. */
   activate: (id: string, etag: string | null) => command(id, 'activate', etag),
+  /** Review round 7, item 2: assign or change the Project Manager, with the reason. */
+  changeManager: (
+    id: string,
+    projectManagerUserId: string,
+    reason: NarrativeTextRequest,
+    etag: string | null,
+  ) => command(id, 'change-manager', etag, { projectManagerUserId, reason }),
   /** SCR-042: the project's review runs (TASK-035), newest first. */
   reviews: (projectId: string, signal?: AbortSignal) =>
     data(

@@ -21,6 +21,9 @@ public static class ProjectErrorCodes
     /// </summary>
     public const string ManagerInvalid = "PROJECT_MANAGER_INVALID";
 
+    /// <summary>409: the person named already manages the project (review round 7, item 2).</summary>
+    public const string ManagerUnchanged = "PROJECT_MANAGER_UNCHANGED";
+
     /// <summary>409: only a DRAFT or RETURNED project is edited, and only a DRAFT one deleted.</summary>
     public const string NotEditable = "PROJECT_NOT_EDITABLE";
 

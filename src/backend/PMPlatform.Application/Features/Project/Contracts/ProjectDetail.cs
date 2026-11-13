@@ -48,4 +48,8 @@ public sealed record ProjectDetail(
     string? TitleEn = null,
     bool? IsStrategic = null,
     Guid? EntityContactUserId = null,
-    bool IsCanceled = false);
+    bool IsCanceled = false)
+{
+    /// <summary>The Project Manager the registration form names (review round 7, item 2); the submission proposes them.</summary>
+    public Guid? ProposedProjectManagerUserId { get; init; }
+}

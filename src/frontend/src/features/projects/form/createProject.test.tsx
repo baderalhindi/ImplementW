@@ -141,6 +141,7 @@ describe('SCR-033 Create Project', () => {
       fundingSource: null,
       legacyReference: null,
       followUpOwnerUserId: null,
+      proposedProjectManagerUserId: null,
     });
     // No Formal Project ID is ever sent: AHDA issues it (ADR-013).
     expect(request?.body).not.toHaveProperty('formalProjectId');

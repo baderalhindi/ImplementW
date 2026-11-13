@@ -59,7 +59,8 @@ function AssignManagerBody({
 }: AssignManagerDialogProps): ReactElement {
   const { t } = useI18n();
   const save = useSaveAction(projectProblemMessage);
-  const current = project.projectManagerUserId;
+  // The manager named before, or the one the registration form proposes (review round 7, item 2).
+  const current = project.projectManagerUserId ?? project.proposedProjectManagerUserId ?? null;
   const [choice, setChoice] = useState<ManagerChoice>(
     current !== null && current !== user.id ? 'current' : 'self',
   );

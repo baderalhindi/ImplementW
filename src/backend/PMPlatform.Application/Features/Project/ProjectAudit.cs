@@ -190,6 +190,7 @@ internal static class ProjectAudit
             AuditAttribute.Change(ProjectAuditAttributes.FundingSource, before?.FundingSource, after.FundingSource),
             AuditAttribute.Change(ProjectAuditAttributes.LegacyReference, before?.LegacyReference, after.LegacyReference),
             AuditAttribute.Change(ProjectAuditAttributes.FollowUpOwnerUserId, before?.FollowUpOwnerUserId, after.FollowUpOwnerUserId),
+            AuditAttribute.Change(ProjectAuditAttributes.ProposedProjectManagerUserId, before?.ProposedProjectManagerUserId, after.ProposedProjectManagerUserId),
         }.OfType<AuditAttribute>();
 
     /// <summary>R3-3: the follow-up fields that changed. The obstacle and next action are free text and are not copied.</summary>
@@ -198,6 +199,16 @@ internal static class ProjectAudit
 
     public static AuditEntry FollowUpNoteAdded(Guid actorId, ProjectEntity project, ProjectFollowUpNote note) =>
         Entry(AuditEventClass.DataChange, ProjectAuditEvents.FollowUpNoteAdded, actorId, project, [AuditAttribute.Of(ProjectAuditAttributes.FollowUpNoteId, note.Id)]);
+
+    /// <summary>Review round 7, item 2: the manager before and after, the reason (withheld text), and the open records that changed hands, by kind.</summary>
+    public static AuditEntry ManagerChanged(Guid actorId, ProjectEntity project, Guid? fromManagerId, NarrativeText reason, IReadOnlyDictionary<string, int> moved) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.ManagerChanged, actorId, project, new[]
+        {
+            AuditAttribute.Change(ProjectAuditAttributes.ProjectManagerUserId, fromManagerId, project.ProjectManagerUserId),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.ReasonText, null, reason.Text),
+        }
+        .Concat(moved.OrderBy(m => m.Key, StringComparer.Ordinal).Select(m => AuditAttribute.Of($"moved_{m.Key}", m.Value)))
+        .OfType<AuditAttribute>());
 
     /// <summary>Review round 7, item 1: each stage whose plan changed, the plan's revision, and the authorisation and reason of a change after approval.</summary>
     public static AuditEntry StagePlanChanged(

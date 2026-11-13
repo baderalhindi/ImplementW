@@ -133,7 +133,8 @@
     "legacyReferenceHint": "The project's number in RPMO's register, such as AHP-000001. A re-import matches on it.",
     "followUpOwnerHint": "The RPMO staff member who follows the project up.",
     "changeOwner": "Change",
-    "clearOwner": "Remove"
+    "clearOwner": "Remove",
+    "projectManagerHint": "The R04 holder who will manage the project. Submitting the registration proposes them; AHDA can change the manager later."
   },
   "workspace": {
     "revision": "Revision {revision}",
@@ -259,7 +260,8 @@
     "stagesNotConfigured": "No project stages are published, so there is no stage plan to set. Ask an administrator to publish the project stages.",
     "stagePlanInvalid": "Check the stage plan: each stage that applies needs dates within the project’s planned dates, and at least one stage must apply.",
     "stagePlanUnderReview": "The registration is under review, and the stage plan is reviewed with it. It can change again only if AHDA returns the registration.",
-    "stagePlanChangeRequired": "The registration is approved, so changing the stage plan needs an approved schedule change request. Choose the change it implements."
+    "stagePlanChangeRequired": "The registration is approved, so changing the stage plan needs an approved schedule change request. Choose the change it implements.",
+    "managerUnchanged": "This person already manages the project."
   },
   "fundingSource": {
     "STRATEGY_BUDGET_FULL": "Yes, in full",
@@ -547,5 +549,17 @@
     "gap": "Gap",
     "points": "{points} points",
     "versionUsed": "Weighed by stage version {version}"
+  },
+  "changeManager": {
+    "action": "Assign / change Project Manager",
+    "title": "Assign or change the Project Manager",
+    "none": "No Project Manager is named yet.",
+    "current": "Current Project Manager: {name}.",
+    "handover": "The project’s open tasks and update requests held by the current manager pass to the new one, and both are told.",
+    "newManager": "New Project Manager",
+    "newManagerHint": "Someone who holds the Project Manager role over this project.",
+    "reason": "Reason for the change",
+    "confirm": "Change the Project Manager",
+    "done": "The Project Manager was changed."
   }
 }

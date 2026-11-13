@@ -23,7 +23,7 @@ function request(withStages: boolean): MyUpdateRequest {
     projectTitle: { text: 'Project', language: 'EN' },
     dueDate: null,
     overdue: false,
-    status: 'SENT',
+    status: 'ISSUED',
     instructions: { text: '', language: 'EN' },
     contributionId: null,
     contributionVersion: null,

@@ -728,6 +728,7 @@ Table project.project {
   declared_as_of date [note: 'The date the declared values hold for']
   declared_source varchar(50) [note: 'IMPORT | MANUAL | ENTITY_UPDATE | PROGRESS_UPDATE']
   entity_update_compliant boolean [note: 'Whether the entity keeps to its periodic updates, as RPMO records it']
+  proposed_project_manager_user_id uuid [ref: > identity_access.user.id, note: 'The Project Manager the registration form names; the submission proposes them, and it grants nothing (review round 7)']
   stage_plan_revision_no integer [not null, default: 0, note: 'Stage plan revision: 0 until a plan is saved; a change after approval claims a STAGE_PLAN_CHANGE authorisation of it (review round 7)']
   current_stage_code varchar(50) [note: 'PROJECT_STAGE code of the latest published stage-based period, or as imported (review round 7)']
   current_stage_percent numeric(5,2) [note: '% complete of current_stage_code, 0-100']

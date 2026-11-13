@@ -97,6 +97,12 @@ internal sealed class ProjectTaskRepository(PMPlatformDbContext context) : IProj
 
     public uint RowVersionOf(TaskDependency dependency) => RowVersion(dependency);
 
+    public async Task<IReadOnlyList<ProjectTaskEntity>> ListOpenTasksOfAsync(Guid projectId, Guid assigneeUserId, CancellationToken cancellationToken) =>
+        await context.Set<ProjectTaskEntity>()
+            .Where(t => t.ProjectId == projectId && t.AssigneeUserId == assigneeUserId && t.DeletedAt == null
+                        && t.Status != ProjectTaskStatus.Completed && t.Status != ProjectTaskStatus.Cancelled)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public void Add(ProjectTaskEntity task) => context.Add(task);
 
     public void Add(TaskDependency dependency) => context.Add(dependency);

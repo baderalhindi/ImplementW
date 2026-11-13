@@ -10,7 +10,10 @@ internal static class ProjectMapping
         p.LifecycleState, p.RevisionNo, p.GovernanceProfileItemId, p.ParticipationMode, p.RegistrationBudgetSar, p.PlannedStartDate, p.PlannedEndDate,
         p.RegionItemId, p.CityItemId, p.Latitude, p.Longitude, p.LegacyIntakeDate, p.ActivatedAt, p.ClosedAt, p.CreatedAt, p.CreatedBy, p.UpdatedAt, p.UpdatedBy,
         p.StrategicPortfolioItemId, p.StrategicInitiativeItemId, p.PriorityItemId, p.FundingSource, p.LegacyReference, p.FollowUpOwnerUserId,
-        p.ProjectImportBatchId, ToFollowUp(p), indicators, p.TitleEn, p.IsStrategic, p.EntityContactUserId, p.IsCanceled);
+        p.ProjectImportBatchId, ToFollowUp(p), indicators, p.TitleEn, p.IsStrategic, p.EntityContactUserId, p.IsCanceled)
+    {
+        ProposedProjectManagerUserId = p.ProposedProjectManagerUserId,
+    };
 
     public static ProjectSummary ToSummary(ProjectEntity p, ProjectIndicators indicators) => new(
         p.Id, p.FormalProjectId, p.Title, p.ClassificationItemId, p.DepartmentId, p.ExternalEntityId, p.ProjectManagerUserId, p.LifecycleState,
@@ -26,7 +29,8 @@ internal static class ProjectMapping
     public static ProjectDraft ToDraft(ProjectEntity p) => new(
         p.Title, p.Description, p.ClassificationItemId, p.DepartmentId, p.ExternalEntityId, p.ParticipationMode, p.GovernanceProfileItemId,
         p.RegistrationBudgetSar, p.PlannedStartDate, p.PlannedEndDate, p.RegionItemId, p.CityItemId, p.Latitude, p.Longitude,
-        p.StrategicPortfolioItemId, p.StrategicInitiativeItemId, p.PriorityItemId, p.FundingSource, p.LegacyReference, p.FollowUpOwnerUserId);
+        p.StrategicPortfolioItemId, p.StrategicInitiativeItemId, p.PriorityItemId, p.FundingSource, p.LegacyReference, p.FollowUpOwnerUserId,
+        p.ProposedProjectManagerUserId);
 
     /// <summary>Writes the registration fields of <paramref name="draft"/> onto the project.</summary>
     public static void Apply(ProjectDraft draft, ProjectEntity p)
@@ -51,5 +55,6 @@ internal static class ProjectMapping
         p.FundingSource = draft.FundingSource;
         p.LegacyReference = draft.LegacyReference;
         p.FollowUpOwnerUserId = draft.FollowUpOwnerUserId;
+        p.ProposedProjectManagerUserId = draft.ProposedProjectManagerUserId;
     }
 }

@@ -43,6 +43,7 @@ public static class ProjectAuditAttributes
     public const string FundingSource = "funding_source";
     public const string LegacyReference = "legacy_reference";
     public const string FollowUpOwnerUserId = "follow_up_owner_user_id";
+    public const string ProposedProjectManagerUserId = "proposed_project_manager_user_id";
     public const string CurrentObstacleText = "current_obstacle_text";
     public const string NextActionText = "next_action_text";
     public const string NextActionOwner = "next_action_owner";

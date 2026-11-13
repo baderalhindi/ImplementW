@@ -110,6 +110,18 @@ public sealed class PermissionCatalogue
     public const string ProjectFollowUp = "PROJECT_FOLLOW_UP";
 
     /// <summary>
+    /// Review round 7, item 2: assign or change a project's Project Manager at any state but CLOSED, with a reason; the project's open tasks and update
+    /// requests move to the new manager. R02 over every project, a department's manager over its own (R03, DEPT).
+    /// </summary>
+    public const string ProjectManagerChange = "PROJECT_MANAGER_CHANGE";
+
+    /// <summary>
+    /// Review round 7, item 4: edit the registration fields of a project past its review, at any state but CLOSED, with a reason and an audit of old and
+    /// new values. The budget, the planned dates and the governance profile still change only through a change request. R02, over every project.
+    /// </summary>
+    public const string ProjectRegistrationEdit = "PROJECT_REGISTRATION_EDIT";
+
+    /// <summary>
     /// WF-02: a project's reporting periods, progress submissions, published snapshots and Overall Project Health (SCR-048,
     /// SCR-070), on the projects the grant's scope covers (TASK-044).
     /// </summary>
@@ -456,6 +468,8 @@ public sealed class PermissionCatalogue
             new(ProjectImportApprove, "PROJECT", AccessMode.Write),
             new(ProjectDelete, "PROJECT", AccessMode.Write),
             new(ProjectFollowUp, "PROJECT", AccessMode.Write),
+            new(ProjectManagerChange, "PROJECT", AccessMode.Write),
+            new(ProjectRegistrationEdit, "PROJECT", AccessMode.Write),
             new(ProgressView, "PROGRESS", AccessMode.Read),
             new(ProgressSubmit, "PROGRESS", AccessMode.Write),
             new(ProgressReview, "PROGRESS", AccessMode.Write),
@@ -540,7 +554,7 @@ public sealed class PermissionCatalogue
     /// </summary>
     private static readonly string[] ManagerPermissions =
     [
-        ApprovalView, ApprovalDecide, ReportExport, ProjectView, ProjectRegister, ProjectReview, ProjectActivate, ProjectImport, ProjectFollowUp,
+        ApprovalView, ApprovalDecide, ReportExport, ProjectView, ProjectRegister, ProjectReview, ProjectActivate, ProjectImport, ProjectFollowUp, ProjectManagerChange,
         ProgressView, ProgressReview, ScheduleView, TaskView, MilestoneView, RiskView, RiskManage, RiskAssess, RiskAccept, RiskReopen,
         ConcernView, ConcernRaise, ConcernEscalationResolve, ChangeRequestView, ChangeRequestRaise, ChangeRequestReview,
         SuspensionView, SuspensionRaise, SuspensionReview, CloseoutView, CloseoutRaise, CloseoutReview, CloseoutWaive,
@@ -596,6 +610,7 @@ public sealed class PermissionCatalogue
         .. Role("R02", DataScope.All, ManagerPermissions),
         new("R02", ProjectImportApprove, DataScope.All),
         new("R02", ProjectDelete, DataScope.All),
+        new("R02", ProjectRegistrationEdit, DataScope.All),
 
         // R03 Department Manager: the same authority over its own department.
         new("R03", MasterDataView, DataScope.All),

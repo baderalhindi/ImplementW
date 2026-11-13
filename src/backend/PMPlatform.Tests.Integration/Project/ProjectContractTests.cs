@@ -51,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(33, built["paths"]!.AsObject().Count);
+        Assert.Equal(34, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -138,6 +138,12 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         {
             await StageFixture.WithdrawAsync(host.Database);
         }
+
+        // Review round 7, item 2: local.r02 hands the project from local.r08 to local.r05, an internal Project Manager.
+        using HttpResponseMessage beforeChange = await client.GetAsync(path, sessions.Approver);
+        using HttpResponseMessage managerChanged = await client.PostAsync($"{path}/change-manager", sessions.Approver,
+            new { projectManagerUserId = ProjectDriver.Person(5), reason = new { text = "تغيير مدير المشروع", language = "ar" } }, AdministrationApi.ETagOf(beforeChange));
+        Assert.Equal(ProjectDriver.Person(5).ToString(), (await responses.CheckAsync("POST", $"{item}/change-manager", managerChanged))!["projectManagerUserId"]!.GetValue<string>());
 
         // R3-4: a batch from RPMO's workbook, validated, submitted by local.r03, approved and rolled back by local.r02; a second one returned.
         const string batches = "/api/v1/project-import-batches";

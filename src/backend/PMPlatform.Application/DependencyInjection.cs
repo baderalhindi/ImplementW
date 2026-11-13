@@ -200,6 +200,8 @@ public static class DependencyInjection
         services.AddScoped<IProjectStagePlanService>(provider => provider.GetRequiredService<ProjectStagePlanService>());
         services.AddScoped<IProjectStagePlans>(provider => provider.GetRequiredService<ProjectStagePlanService>());
         services.AddScoped<IStagePlanChangeAuthorization, StagePlanChangeAuthorization>();
+        services.AddScoped<IProjectManagerHandover, ProjectTaskManagerHandover>();
+        services.AddScoped<IProjectManagerHandover, UpdateRequestManagerHandover>();
         services.AddScoped<ProjectImportService>();
         services.AddScoped<IProjectImportService>(sp => sp.GetRequiredService<ProjectImportService>());
         services.AddScoped<IProjectImportValidationRunner>(sp => sp.GetRequiredService<ProjectImportService>());

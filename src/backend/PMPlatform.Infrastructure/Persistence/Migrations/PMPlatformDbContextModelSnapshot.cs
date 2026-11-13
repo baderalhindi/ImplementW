@@ -9463,6 +9463,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("project_manager_user_id");
 
+                    b.Property<Guid?>("ProposedProjectManagerUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("proposed_project_manager_user_id");
+
                     b.Property<Guid?>("RegionItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("region_item_id");
@@ -9619,6 +9623,9 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ProjectImportBatchId")
                         .HasDatabaseName("ix_project_project_import_batch_id");
+
+                    b.HasIndex("ProposedProjectManagerUserId")
+                        .HasDatabaseName("ix_project_proposed_project_manager_user_id");
 
                     b.HasIndex("RegionItemId")
                         .HasDatabaseName("ix_project_region_item_id");
@@ -15117,6 +15124,12 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ProjectManagerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_project_user_project_manager_user_id");
+
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("ProposedProjectManagerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_project_user_proposed_project_manager_user_id");
 
                     b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
                         .WithMany()
