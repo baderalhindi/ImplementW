@@ -3967,17 +3967,16 @@ select.field__input {
 }
 
 .widget__footer {
-  display: grid;
-  gap: var(--space-1);
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
   margin-block-start: auto;
   padding-block-start: var(--space-2);
 }
 
 .widget__coverage,
 .widget__origin {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-3);
+  display: inline;
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.78rem;
@@ -6095,6 +6094,24 @@ tr[data-flagged='true'] {
   font-size: 0.85rem;
 }
 
+/* Notes about one figure share a line, "·" between them, and wrap only when the space runs out (13 Nov 2026 review). */
+.insights__notes {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+/* Running text, so the notes fill the line before any of them wraps. */
+.insights__notes > * {
+  display: inline;
+}
+
+.insights__notes > * + *::before,
+.widget__footer > * + *::before,
+.widget__origin > * + *::before {
+  content: ' · ';
+}
+
 .insights__group th {
   background: var(--chart-track);
   font-weight: 600;
@@ -6162,6 +6179,12 @@ tr[data-flagged='true'] {
   padding: 0;
   list-style: none;
   font-size: 0.85rem;
+}
+
+.distribution--donut > .grouped-columns__legend {
+  flex-direction: column;
+  align-self: center;
+  font-size: 1rem;
 }
 
 .grouped-columns__legend li {

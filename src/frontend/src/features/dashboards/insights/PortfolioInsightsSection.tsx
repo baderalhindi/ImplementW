@@ -264,15 +264,19 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
           <span className="home__tile-value">
             <Percent value={headline.averagePlannedPercent} />
           </span>
-          <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
-          {measured}
+          <span className="insights__notes">
+            <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
+            {measured}
+          </span>
         </Card>
         <Card label={t('dashboards.insights.averageActual')}>
           <span className="home__tile-value">
             <Percent value={headline.averageActualPercent} />
           </span>
-          <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
-          {measured}
+          <span className="insights__notes">
+            <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
+            {measured}
+          </span>
         </Card>
         <Card
           label={t('dashboards.insights.gap')}
@@ -422,10 +426,10 @@ function BreakdownTable({
           </tr>
         </tfoot>
       </TableContainer>
-      <p className="insights__coverage">
-        {showValue && <Coverage kind="value" count={total.valueEntered} of={total.projects} />}{' '}
-        <Coverage kind="progress" count={total.measured} of={total.projects} />{' '}
-        <span>{t('dashboards.insights.simpleAverage')}</span>
+      <p className="insights__notes">
+        {showValue && <Coverage kind="value" count={total.valueEntered} of={total.projects} />}
+        <Coverage kind="progress" count={total.measured} of={total.projects} />
+        <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
       </p>
     </>
   );
@@ -813,7 +817,7 @@ function InsightCharts({
       {onPlanBuckets !== null && (
         <ChartCard title={t('dashboards.insights.onPlan')}>
           {(active, onActive) => (
-            <>
+            <div className="distribution distribution--donut">
               <DonutChart
                 buckets={onPlanBuckets}
                 active={active}
@@ -821,7 +825,7 @@ function InsightCharts({
                 totalLabel={t('dashboards.insights.projects')}
               />
               <BucketLegend buckets={onPlanBuckets} />
-            </>
+            </div>
           )}
         </ChartCard>
       )}
