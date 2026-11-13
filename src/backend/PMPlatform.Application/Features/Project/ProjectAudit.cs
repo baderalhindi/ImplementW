@@ -200,6 +200,14 @@ internal static class ProjectAudit
     public static AuditEntry FollowUpNoteAdded(Guid actorId, ProjectEntity project, ProjectFollowUpNote note) =>
         Entry(AuditEventClass.DataChange, ProjectAuditEvents.FollowUpNoteAdded, actorId, project, [AuditAttribute.Of(ProjectAuditAttributes.FollowUpNoteId, note.Id)]);
 
+    /// <summary>Review round 7, item 4: each registration field that changed, old and new, and the reason (withheld text).</summary>
+    public static AuditEntry RegistrationEdited(Guid actorId, ProjectDraft before, ProjectEntity project, NarrativeText reason) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.RegistrationEdited, actorId, project,
+        [
+            .. Changes(before, project),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.ReasonText, null, reason.Text)!,
+        ]);
+
     /// <summary>Review round 7, item 2: the manager before and after, the reason (withheld text), and the open records that changed hands, by kind.</summary>
     public static AuditEntry ManagerChanged(Guid actorId, ProjectEntity project, Guid? fromManagerId, NarrativeText reason, IReadOnlyDictionary<string, int> moved) =>
         Entry(AuditEventClass.DataChange, ProjectAuditEvents.ManagerChanged, actorId, project, new[]

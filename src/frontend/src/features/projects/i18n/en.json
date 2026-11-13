@@ -134,7 +134,10 @@
     "followUpOwnerHint": "The RPMO staff member who follows the project up.",
     "changeOwner": "Change",
     "clearOwner": "Remove",
-    "projectManagerHint": "The R04 holder who will manage the project. Submitting the registration proposes them; AHDA can change the manager later."
+    "projectManagerHint": "The R04 holder who will manage the project. Submitting the registration proposes them; AHDA can change the manager later.",
+    "viaChangeRequest": "Approved: changes only through a change request.",
+    "editReason": "Reason for the change",
+    "editReasonHint": "Recorded with the change, beside each field’s old and new value."
   },
   "workspace": {
     "revision": "Revision {revision}",
@@ -261,7 +264,9 @@
     "stagePlanInvalid": "Check the stage plan: each stage that applies needs dates within the project’s planned dates, and at least one stage must apply.",
     "stagePlanUnderReview": "The registration is under review, and the stage plan is reviewed with it. It can change again only if AHDA returns the registration.",
     "stagePlanChangeRequired": "The registration is approved, so changing the stage plan needs an approved schedule change request. Choose the change it implements.",
-    "managerUnchanged": "This person already manages the project."
+    "managerUnchanged": "This person already manages the project.",
+    "changeRequestRequired": "The budget, the planned dates and the governance profile of an approved project change only through a change request.",
+    "editAsDraft": "This registration is a draft: edit it as a draft."
   },
   "fundingSource": {
     "STRATEGY_BUDGET_FULL": "Yes, in full",

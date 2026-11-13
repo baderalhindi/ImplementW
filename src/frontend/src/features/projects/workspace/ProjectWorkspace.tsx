@@ -143,7 +143,7 @@ export function ProjectWorkspace(): ReactElement | null {
         }
         actions={
           <>
-            {editable && (
+            {(editable || (access.permissions.can('PROJECT_REGISTRATION_EDIT') && !closed)) && (
               <Link className="button" to={`/projects/${detail.id}/edit`}>
                 {t('projects.actions.edit')}
               </Link>

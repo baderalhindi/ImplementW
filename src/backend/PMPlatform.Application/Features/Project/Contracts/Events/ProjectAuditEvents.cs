@@ -75,6 +75,9 @@ public static class ProjectAuditEvents
     /// </summary>
     public const string StagePlanChanged = "Project.StagePlanChanged";
 
+    /// <summary>DATA_CHANGE: the registration of a project past its first submission was edited (review round 7, item 4): each field, old and new, and why.</summary>
+    public const string RegistrationEdited = "Project.RegistrationEdited";
+
     /// <summary>
     /// DATA_CHANGE: a project's Project Manager was assigned or changed (review round 7, item 2): from whom, to whom, why, and how many open tasks and
     /// update requests passed to the new manager.

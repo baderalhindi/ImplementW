@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router';
 
-import { useFocusFirstError, useSaveAction } from '@/features/identity-access/forms.ts';
+import { checkText, useFocusFirstError, useSaveAction } from '@/features/identity-access/forms.ts';
 import { fieldMessage } from '@/features/identity-access/problems.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -23,6 +23,7 @@ import { FormAlert } from '@/shared/ui/States.tsx';
 import { CancelLink } from '@/shared/ui/CancelLink.tsx';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
 import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx';
 
 import { isInternal, ownEntityId } from '../access.ts';
@@ -65,7 +66,13 @@ function serverError(
   fieldErrors: Partial<Record<string, string>>,
   field: RegistrationField,
 ): string | undefined {
-  return fieldErrors[field] ?? fieldErrors[`${field}.text`];
+  // An approved registration's edit nests the registration under `registration` (review round 7, item 4).
+  return (
+    fieldErrors[field] ??
+    fieldErrors[`${field}.text`] ??
+    fieldErrors[`registration.${field}`] ??
+    fieldErrors[`registration.${field}.text`]
+  );
 }
 
 /** An external user registers for their own entity (ADR-013), so a new form starts with it. */
@@ -104,6 +111,11 @@ interface ProjectFormProps {
   user: SessionUser;
   /** Absent on SCR-033 Create; the project and its ETag on SCR-034 Edit. */
   existing?: { project: ProjectDetail; etag: string | null };
+  /**
+   * Review round 7, item 4: the registration of a project past review, edited by R02 with a reason. Its budget, planned dates and governance profile
+   * are shown but change only through a change request; the manager and the stage plan have their own actions.
+   */
+  registered?: boolean;
 }
 
 /**
@@ -112,7 +124,11 @@ interface ProjectFormProps {
  * themselves and its refusals land on the same inputs. What submission adds — the budget, the planned dates and the
  * governance profile's mandatory fields (ADR-015) — is marked here and enforced by MOD-002.
  */
-export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement {
+export function ProjectForm({
+  user,
+  existing,
+  registered = false,
+}: ProjectFormProps): ReactElement {
   const { t, language } = useI18n();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
@@ -156,7 +172,13 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
   ];
   const codes = checkRegistration(values, required);
   const missing = missingFields(values, required);
-  const ready = !hasErrors(codes) && !hasStagePlanErrors(stageCodes);
+  const [reason, setReason] = useState('');
+  const reasonCode = registered
+    ? checkText(reason, { required: true, maxLength: TEXT_LENGTH })
+    : null;
+  const ready =
+    !hasErrors(codes) && (registered || !hasStagePlanErrors(stageCodes)) && reasonCode === null;
+  const viaChangeRequest = registered ? t('projects.form.viaChangeRequest') : undefined;
 
   const set = (field: RegistrationField, value: string) => {
     // An initiative belongs to one portfolio: another portfolio drops the initiative chosen under the last one.
@@ -189,6 +211,20 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
       return;
     }
     const request = toRequest(values, language, existing?.project);
+    if (registered && existing !== undefined) {
+      const edited = await save.run(() =>
+        projectsApi.editRegistration(
+          existing.project.id,
+          request,
+          narrativeRequest(reason, language),
+          existing.etag,
+        ),
+      );
+      if (edited.ok) {
+        void navigate(`/projects/${existing.project.id}`, { state: { notice: 'updated' } });
+      }
+      return;
+    }
     const result = await save.run(() =>
       existing === undefined
         ? projectsApi.create(request)
@@ -269,10 +305,11 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           label={t('projects.fields.governanceProfile')}
           name="governanceProfileItemId"
           required
+          disabled={registered}
           value={values.governanceProfileItemId}
           placeholder={lookups.loading ? t('common.states.loading') : t('common.form.choose')}
           options={lookups.options('GOVERNANCE_PROFILE')}
-          hint={t('projects.form.governanceProfileHint')}
+          hint={viaChangeRequest ?? t('projects.form.governanceProfileHint')}
           onChange={setter('governanceProfileItemId')}
           error={errorOf('governanceProfileItemId')}
         />
@@ -400,13 +437,15 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
             error={errorOf('externalEntityId')}
           />
         )}
-        <PersonField
-          label={t('projects.fields.projectManager')}
-          hint={t('projects.form.projectManagerHint')}
-          value={values.proposedProjectManagerUserId}
-          onChange={setter('proposedProjectManagerUserId')}
-          error={errorOf('proposedProjectManagerUserId')}
-        />
+        {!registered && (
+          <PersonField
+            label={t('projects.fields.projectManager')}
+            hint={t('projects.form.projectManagerHint')}
+            value={values.proposedProjectManagerUserId}
+            onChange={setter('proposedProjectManagerUserId')}
+            error={errorOf('proposedProjectManagerUserId')}
+          />
+        )}
       </fieldset>
 
       <fieldset className="form__section">
@@ -414,8 +453,12 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
         <AmountField
           label={t('projects.fields.registrationBudget')}
           name="registrationBudgetSar"
+          disabled={registered}
           value={values.registrationBudgetSar}
-          hint={`${t('projects.form.budgetHint')} ${t('projects.form.neededToSubmit')}`}
+          hint={
+            viaChangeRequest ??
+            `${t('projects.form.budgetHint')} ${t('projects.form.neededToSubmit')}`
+          }
           onChange={setter('registrationBudgetSar')}
           error={errorOf('registrationBudgetSar')}
         />
@@ -424,8 +467,9 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           name="plannedStartDate"
           type="date"
           dir="ltr"
+          disabled={registered}
           value={values.plannedStartDate}
-          hint={t('projects.form.neededToSubmit')}
+          hint={viaChangeRequest ?? t('projects.form.neededToSubmit')}
           onChange={setter('plannedStartDate')}
           error={errorOf('plannedStartDate')}
         />
@@ -434,14 +478,15 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           name="plannedEndDate"
           type="date"
           dir="ltr"
+          disabled={registered}
           value={values.plannedEndDate}
-          hint={t('projects.form.neededToSubmit')}
+          hint={viaChangeRequest ?? t('projects.form.neededToSubmit')}
           onChange={setter('plannedEndDate')}
           error={errorOf('plannedEndDate')}
         />
       </fieldset>
 
-      {stageRows !== null && stageRows.length > 0 && (
+      {!registered && stageRows !== null && stageRows.length > 0 && (
         <fieldset className="form__section">
           <legend>{t('projects.form.sections.stagePlan')}</legend>
           <p className="form__note">{t('projects.stagePlan.intro')}</p>
@@ -464,6 +509,20 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           neededToSubmit={neededToSubmit}
         />
       </fieldset>
+
+      {registered && (
+        <TextAreaField
+          label={t('projects.form.editReason')}
+          name="reason"
+          required
+          rows={3}
+          maxLength={TEXT_LENGTH}
+          value={reason}
+          onChange={setReason}
+          hint={t('projects.form.editReasonHint')}
+          error={save.fieldErrors['reason.text']}
+        />
+      )}
 
       <div className="form__actions">
         <button

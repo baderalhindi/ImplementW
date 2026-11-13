@@ -5,6 +5,7 @@ using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.FollowUp;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.Project;
 using ProjectEntity = PMPlatform.Domain.Project.Project;
 
@@ -265,6 +266,73 @@ internal sealed class ProjectService(
         project.SubmittedByUserId = callerId;
         Touch(project, callerId);
         audit.Stage(ProjectAudit.Submitted(callerId, project, from, fromRevisionNo, fromManagerId));
+        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<Versioned<ProjectDetail>>> EditRegistrationAsync(
+        Guid callerId, Guid projectId, ProjectDraft draft, NarrativeText reason, uint expectedVersion, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+        ArgumentNullException.ThrowIfNull(reason);
+
+        ProjectEntity? project = await repository.FindAsync(projectId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (project is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (await access.CheckAsync(callerId, PermissionCatalogue.ProjectRegistrationEdit, project, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (project.LifecycleState == ProjectLifecycleState.Closed)
+        {
+            return AdministrationError.TerminalState;
+        }
+
+        if (ProjectLifecycle.IsEditable(project.LifecycleState))
+        {
+            return AdministrationError.Conflict(ProjectErrorCodes.EditAsDraft);
+        }
+
+        // A commitment of the approved registration changes through a change request (WF-08), never an edit.
+        FieldIssue[] governed =
+        [
+            .. new (string Field, bool Changed)[]
+            {
+                ("registrationBudgetSar", draft.RegistrationBudgetSar != project.RegistrationBudgetSar),
+                ("plannedStartDate", draft.PlannedStartDate != project.PlannedStartDate),
+                ("plannedEndDate", draft.PlannedEndDate != project.PlannedEndDate),
+                ("governanceProfileItemId", draft.GovernanceProfileItemId != project.GovernanceProfileItemId),
+            }.Where(f => f.Changed).Select(f => new FieldIssue(f.Field, FieldIssue.NotAllowed)),
+        ];
+        if (governed.Length > 0)
+        {
+            return AdministrationError.Rule(ProjectErrorCodes.ChangeRequestRequired, governed);
+        }
+
+        if (await references.CheckAsync(draft, cancellationToken).ConfigureAwait(false) is { } invalid)
+        {
+            return invalid;
+        }
+
+        if (await LegacyReferenceTakenAsync(draft, project.Id, cancellationToken).ConfigureAwait(false) is { } taken)
+        {
+            return taken;
+        }
+
+        if ((draft.DepartmentId, draft.ExternalEntityId) != (project.DepartmentId, project.ExternalEntityId)
+            && await access.CheckAnchorsAsync(callerId, PermissionCatalogue.ProjectRegistrationEdit, project.Id, draft, ProjectAccess.OwnerOf(project), cancellationToken)
+                .ConfigureAwait(false) is { } moveRefused)
+        {
+            return moveRefused;
+        }
+
+        ProjectDraft before = ProjectMapping.ToDraft(project);
+        ProjectMapping.Apply(draft with { ProposedProjectManagerUserId = before.ProposedProjectManagerUserId }, project);
+        Touch(project, callerId);
+        audit.Stage(ProjectAudit.RegistrationEdited(callerId, before, project, reason));
         return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
     }
 

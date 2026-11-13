@@ -11,6 +11,8 @@ const PROJECT_PROBLEMS: Record<string, TranslationKey> = {
   PROJECT_INCOMPLETE: 'projects.problems.incomplete',
   PROJECT_MANAGER_INVALID: 'projects.problems.managerInvalid',
   PROJECT_MANAGER_UNCHANGED: 'projects.problems.managerUnchanged',
+  PROJECT_CHANGE_REQUEST_REQUIRED: 'projects.problems.changeRequestRequired',
+  PROJECT_EDIT_AS_DRAFT: 'projects.problems.editAsDraft',
   PROJECT_NOT_EDITABLE: 'projects.problems.notEditable',
   PROJECT_IN_USE: 'projects.problems.inUse',
   PROJECT_STAGES_NOT_CONFIGURED: 'projects.problems.stagesNotConfigured',

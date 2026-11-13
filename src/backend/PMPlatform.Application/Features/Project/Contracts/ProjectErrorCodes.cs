@@ -21,6 +21,15 @@ public static class ProjectErrorCodes
     /// </summary>
     public const string ManagerInvalid = "PROJECT_MANAGER_INVALID";
 
+    /// <summary>
+    /// 422: the edit of an approved registration changes its budget, planned dates or governance profile, which change only through a change request
+    /// (review round 7, item 4).
+    /// </summary>
+    public const string ChangeRequestRequired = "PROJECT_CHANGE_REQUEST_REQUIRED";
+
+    /// <summary>409: a DRAFT or RETURNED registration is edited as a draft, by its registrant (review round 7, item 4).</summary>
+    public const string EditAsDraft = "PROJECT_EDIT_AS_DRAFT";
+
     /// <summary>409: the person named already manages the project (review round 7, item 2).</summary>
     public const string ManagerUnchanged = "PROJECT_MANAGER_UNCHANGED";
 

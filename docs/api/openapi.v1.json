@@ -14497,6 +14497,58 @@
         }
       }
     },
+    "/api/v1/projects/{projectId}/edit-registration": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Review round 7, item 4: edits the registration of a project past its first submission, at any state but CLOSED, with a reason. The budget, the\nplanned dates and the governance profile must stay as they are: they change through a change request. Requires `If-Match` (R-21).",
+        "operationId": "Project_EditProjectRegistration",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectRegistrationEditRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectRegistrationEditRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectRegistrationEditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/project-stage-plans/{projectId}": {
       "get": {
         "tags": [
@@ -40535,6 +40587,36 @@
           }
         },
         "description": "One page of projects (R-29)."
+      },
+      "ProjectRegistrationEditRequest": {
+        "required": [
+          "registration",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "registration": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectRequest"
+              }
+            ]
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "The whole registration, as a draft's edit sends it, and why it changes after review (review round 7, item 4). Both are required."
       },
       "ProjectRequest": {
         "required": [

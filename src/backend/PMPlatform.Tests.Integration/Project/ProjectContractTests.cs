@@ -51,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(34, built["paths"]!.AsObject().Count);
+        Assert.Equal(35, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -138,6 +138,15 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         {
             await StageFixture.WithdrawAsync(host.Database);
         }
+
+        // Review round 7, item 4: local.r02 saves the approved registration as it stands, with a reason.
+        using HttpResponseMessage beforeEdit = await client.GetAsync(path, sessions.Approver);
+        using HttpResponseMessage registrationEdited = await client.PostAsync($"{path}/edit-registration", sessions.Approver, new
+        {
+            registration = host.Registration(change: r => r["latitude"] = 24.7136),
+            reason = new { text = "تصحيح العنوان", language = "ar" },
+        }, AdministrationApi.ETagOf(beforeEdit));
+        await responses.CheckAsync("POST", $"{item}/edit-registration", registrationEdited);
 
         // Review round 7, item 2: local.r02 hands the project from local.r08 to local.r05, an internal Project Manager.
         using HttpResponseMessage beforeChange = await client.GetAsync(path, sessions.Approver);

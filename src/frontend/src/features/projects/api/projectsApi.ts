@@ -54,6 +54,13 @@ export const projectsApi = {
   startReview: (id: string, etag: string | null) => command(id, 'start-review', etag),
   /** MOD-003: APPROVED_PLANNED → ACTIVE, by AHDA only; the one way a project becomes ACTIVE. */
   activate: (id: string, etag: string | null) => command(id, 'activate', etag),
+  /** Review round 7, item 4: the whole registration of a project past review, with the reason; its commitments stay as they are. */
+  editRegistration: (
+    id: string,
+    registration: ProjectRequest,
+    reason: NarrativeTextRequest,
+    etag: string | null,
+  ) => command(id, 'edit-registration', etag, { registration, reason }),
   /** Review round 7, item 2: assign or change the Project Manager, with the reason. */
   changeManager: (
     id: string,

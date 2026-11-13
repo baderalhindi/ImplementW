@@ -1,3 +1,4 @@
+using PMPlatform.Domain.Common;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
 namespace PMPlatform.Application.Features.Project.Contracts;
@@ -47,6 +48,14 @@ public interface IProjectService
     /// Review round 7, item 2: assigns or changes the Project Manager at any state but CLOSED, with a reason. The new manager holds R04 over the
     /// project; the project's open tasks and update requests the outgoing manager holds pass to them, and both are told. Requires the caller's version (R-21).
     /// </summary>
+    /// <summary>
+    /// Review round 7, item 4: edits the registration fields of a project past its first submission, at any state but CLOSED, with a reason; DRAFT and
+    /// RETURNED are edited as before. The budget, the planned dates and the governance profile change only through a change request, so they must stay
+    /// as they are; the proposed manager is not changed here. Audited field by field, old and new. Requires the caller's version (R-21).
+    /// </summary>
+    public Task<AdministrationResult<Versioned<ProjectDetail>>> EditRegistrationAsync(
+        Guid callerId, Guid projectId, ProjectDraft draft, NarrativeText reason, uint expectedVersion, CancellationToken cancellationToken);
+
     public Task<AdministrationResult<Versioned<ProjectDetail>>> ChangeManagerAsync(
         Guid callerId, Guid projectId, ProjectManagerChange change, uint expectedVersion, CancellationToken cancellationToken);
 }

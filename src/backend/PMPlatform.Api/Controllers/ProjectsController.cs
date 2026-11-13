@@ -8,6 +8,7 @@ using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.DataImport;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.Project.Contracts;
+using PMPlatform.Domain.Common;
 using PMPlatform.Domain.Project;
 
 namespace PMPlatform.Api.Controllers;
@@ -218,5 +219,22 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
         return !TryReadIfMatch(required: true, out uint? version, out IActionResult? problem) ? problem!
             : request.Validate(out ProjectManagerChange? change) is { Count: > 0 } errors ? ValidationFailed(errors)
             : Respond(await projects.ChangeManagerAsync(CallerId, projectId, change!, version!.Value, cancellationToken));
+    }
+
+    /// <summary>
+    /// Review round 7, item 4: edits the registration of a project past its first submission, at any state but CLOSED, with a reason. The budget, the
+    /// planned dates and the governance profile must stay as they are: they change through a change request. Requires <c>If-Match</c> (R-21).
+    /// </summary>
+    [HttpPost("{projectId:guid}/edit-registration")]
+    [RequirePermission(PermissionCatalogue.ProjectRegistrationEdit)]
+    [SensitiveWrite]
+    [ProducesResponseType<ProjectDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Project_EditProjectRegistration")]
+    public async Task<IActionResult> EditRegistration(Guid projectId, ProjectRegistrationEditRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return !TryReadIfMatch(required: true, out uint? version, out IActionResult? problem) ? problem!
+            : request.Validate(out ProjectDraft? draft, out NarrativeText? reason) is { Count: > 0 } errors ? ValidationFailed(errors)
+            : Respond(await projects.EditRegistrationAsync(CallerId, projectId, draft!, reason!, version!.Value, cancellationToken));
     }
 }
