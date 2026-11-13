@@ -6,6 +6,8 @@ import { varianceLabel } from '@/features/schedule/presentation.ts';
 import { OverdueFlag } from '@/features/tasks/components/TaskBadges.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { achievementState, type MilestoneEntry, overdueDays } from '../milestoneRules.ts';
 
@@ -39,11 +41,21 @@ export function MilestoneTable({
   onOpen,
 }: MilestoneTableProps): ReactElement {
   const { t } = useI18n();
+  const selection = useRowSelection();
+  const ids = entries.map(({ milestone }) => milestone.id);
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer
+        caption={caption}
+        selection={{
+          selection,
+          exportName: 'milestones',
+          actions: actions?.bulk(entries, selection, ({ milestone }) => milestone.id),
+        }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={ids} selection={selection} />
             <th scope="col">{t('milestones.table.milestone')}</th>
             {showProject && <th scope="col">{t('milestones.table.project')}</th>}
             <th scope="col">{t('milestones.table.category')}</th>
@@ -68,6 +80,11 @@ export function MilestoneTable({
                     : undefined;
             return (
               <tr key={milestone.id} className={rowClass}>
+                <SelectRowCell
+                  id={milestone.id}
+                  name={milestone.title.text}
+                  selection={selection}
+                />
                 <td>
                   <button
                     type="button"

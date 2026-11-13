@@ -343,6 +343,25 @@ describe('the batch page', () => {
     ).toBeTruthy();
   });
 
+  test('select all takes every project row of the batch and counts them', async () => {
+    batchApi();
+    renderApp({ path: `/external-requests/batches/${BATCH_ID}`, session: reviewerSession() });
+    const user = userEvent.setup();
+    const table = await screen.findByRole('table', {
+      name: en('externalParticipation.batch.rowsCaption'),
+    });
+    const rows = within(table).getAllByRole('row').length - 1;
+
+    await user.click(within(table).getByRole('checkbox', { name: en('common.table.selectAll') }));
+
+    expect(screen.getByText(en('common.table.selected', { count: rows }))).toBeTruthy();
+    expect(
+      screen.getByRole('checkbox', {
+        name: en('common.table.selectRow', { name: 'Coastal road upgrade' }),
+      }),
+    ).toHaveProperty('checked', true);
+  });
+
   test('reminds the late ones after a confirmation', async () => {
     const api = batchApi();
     api.on('POST', /remind-late$/, { body: batchDetail() });

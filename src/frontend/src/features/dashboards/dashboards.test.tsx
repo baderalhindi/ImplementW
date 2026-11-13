@@ -557,6 +557,26 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
     expect(api.requestsTo('GET', /^\/dashboards\/.+$/)).toHaveLength(0);
   });
 
+  test('R08 selects all of its projects for Export selected', async () => {
+    const second = projectSummary({
+      id: '4d4d4d4d-0000-4000-8000-000000000105',
+      title: { text: 'Harbour dredging', language: 'EN' },
+    });
+    const api = withDashboards(mockApi(), { catalogue: catalogueFor(['R08'], true) });
+    api.on('GET', /^\/projects$/, { body: page([projectSummary(), second]) });
+    renderApp({ path: '/dashboards', session: entitySession() });
+
+    await userEvent.click(
+      await screen.findByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    expect(screen.getByText(en('common.table.selected', { count: 2 }))).toBeTruthy();
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', {
+        name: en('common.table.selectRow', { name: 'Harbour dredging' }),
+      }).checked,
+    ).toBe(true);
+  });
+
   test("an entity's person sees the Project Dashboard in SCR-040 read only, in their entity's scope", async () => {
     overviewAs(entitySession(), {
       catalogue: catalogueFor(['R08'], true),

@@ -6218,6 +6218,14 @@ tr[data-flagged='true'] {
 
 /* --------------------------------------------------------------------------------------------- printing a card */
 
+/* Choosing rows is for the screen: a printed table has no checkbox column and no selection bar. */
+@media print {
+  .cell--select,
+  .selection-bar {
+    display: none;
+  }
+}
+
 @media print {
   .rail,
   .rail__backdrop,

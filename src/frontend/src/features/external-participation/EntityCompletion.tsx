@@ -7,7 +7,9 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { SelectField } from '@/shared/ui/FormFields.tsx';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { PARTICIPATION_MONITOR_PATH } from './paths.ts';
 import { participationProblemMessage } from './problems.ts';
@@ -166,6 +168,7 @@ function EntityCompletionTable(): ReactElement {
     [period],
   );
   const rates = useApiResource(load);
+  const selection = useRowSelection();
   return (
     <section className="completion" aria-label={t('externalParticipation.completion.title')}>
       <div className="section__header">
@@ -193,9 +196,16 @@ function EntityCompletionTable(): ReactElement {
               })}
             </p>
           )}
-          <TableContainer caption={t('externalParticipation.completion.title')}>
+          <TableContainer
+            caption={t('externalParticipation.completion.title')}
+            selection={{ selection, exportName: 'entity-completion' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={rates.data.items.map((row) => row.externalEntityId)}
+                  selection={selection}
+                />
                 <th scope="col">{t('externalParticipation.table.entity')}</th>
                 <th scope="col">{t('externalParticipation.completion.issued')}</th>
                 <th scope="col">{t('externalParticipation.completion.submitted')}</th>
@@ -207,6 +217,11 @@ function EntityCompletionTable(): ReactElement {
             <tbody>
               {rates.data.items.map((row) => (
                 <tr key={row.externalEntityId}>
+                  <SelectRowCell
+                    id={row.externalEntityId}
+                    name={entityName(row.externalEntityId)}
+                    selection={selection}
+                  />
                   <td>
                     <Link
                       to={`${PARTICIPATION_MONITOR_PATH}?externalEntityId=${row.externalEntityId}`}

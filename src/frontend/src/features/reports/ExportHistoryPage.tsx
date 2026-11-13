@@ -8,8 +8,10 @@ import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { reportsApi } from './api/reportsApi.ts';
 import { type ReportCatalogueEntry, type ReportJobSummary } from './api/types.ts';
@@ -29,6 +31,7 @@ export function ExportHistoryPage(): ReactElement {
   const { session } = useSession();
   const { page, goToPage } = useListParams();
   const [notice, setNotice] = useState<Notice | null>(null);
+  const selection = useRowSelection();
 
   const load = useCallback(
     async (signal: AbortSignal) => {
@@ -67,6 +70,25 @@ export function ExportHistoryPage(): ReactElement {
       ? t('reports.history.you', { name: session.user.displayName })
       : nameOf(userId);
 
+  /** The chosen jobs on this page that may still be cancelled. */
+  const chosenCancellable = (data?.jobs.items ?? []).filter(
+    (job) => selection.selected.has(job.id) && isJobCancellable(job.status),
+  );
+  /** Cancel, as on each row, for every chosen job that allows it. */
+  const cancelChosen = async (catalogue: ReportCatalogueEntry[]) => {
+    const names = chosenCancellable.map((job) => outputName(job, catalogue)).join('، ');
+    try {
+      for (const job of chosenCancellable) {
+        await reportsApi.cancelJob(job.id);
+      }
+      setNotice({ tone: 'success', message: t('reports.history.cancelledMany', { names }) });
+      selection.clear();
+    } catch (failure: unknown) {
+      setNotice({ tone: 'warning', message: reportProblemMessage(failure, t) });
+    }
+    reload();
+  };
+
   return (
     <>
       <PageHeader title={title} description={t('reports.history.description')} />
@@ -79,9 +101,25 @@ export function ExportHistoryPage(): ReactElement {
         <EmptyState title={t('reports.history.empty')} />
       ) : (
         <>
-          <TableContainer caption={title}>
+          <TableContainer
+            caption={title}
+            selection={{
+              selection,
+              exportName: 'export-history',
+              actions: chosenCancellable.length > 0 && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => void cancelChosen(data.catalogue)}
+                >
+                  {t('reports.history.cancel')}
+                </button>
+              ),
+            }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader ids={data.jobs.items.map((job) => job.id)} selection={selection} />
                 <th scope="col">{t('reports.history.output')}</th>
                 <th scope="col">{t('reports.history.format')}</th>
                 <th scope="col">{t('reports.history.status')}</th>
@@ -98,6 +136,7 @@ export function ExportHistoryPage(): ReactElement {
                 const name = outputName(job, data.catalogue);
                 return (
                   <tr key={job.id} data-job={job.id} data-job-status={job.status}>
+                    <SelectRowCell id={job.id} name={name} selection={selection} />
                     <td>{name}</td>
                     <td>{t(`reports.formats.${job.exportFormat}`)}</td>
                     <td>

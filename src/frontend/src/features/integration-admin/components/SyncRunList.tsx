@@ -5,8 +5,10 @@ import { PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { integrationAdminApi } from '../api/integrationAdminApi.ts';
 import { logsFilteredBy } from '../catalogue.ts';
@@ -42,6 +44,7 @@ export function SyncRunList({
   );
   const runs = useApiResource(load, { keepWhileReloading: true });
   useRefresh(runs.reload, refreshEvery);
+  const selection = useRowSelection();
 
   // A refresh keeps the rows shown until the next read lands; only a first read shows the loading state.
   if (runs.data === undefined && runs.error === null) {
@@ -61,9 +64,10 @@ export function SyncRunList({
   }
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer caption={caption} selection={{ selection, exportName: 'sync-runs' }}>
         <thead>
           <tr>
+            <SelectAllHeader ids={runs.data.items.map((run) => run.id)} selection={selection} />
             <th scope="col">{t('integrationAdmin.fields.startedAt')}</th>
             <th scope="col">{t('integrationAdmin.fields.integration')}</th>
             <th scope="col">{t('integrationAdmin.fields.runType')}</th>
@@ -78,6 +82,11 @@ export function SyncRunList({
         <tbody>
           {runs.data.items.map((run) => (
             <tr key={run.id} data-sync-run={run.id}>
+              <SelectRowCell
+                id={run.id}
+                name={`${run.integrationCode} ${formatDateTime(run.startedAt)}`}
+                selection={selection}
+              />
               <td>
                 <Moment value={run.startedAt} />
               </td>

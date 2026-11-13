@@ -3,11 +3,13 @@ import { Link, useSearchParams } from 'react-router';
 
 import { pageFrom, PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
-import { useI18n } from '@/shared/i18n/i18n.ts';
+import { isTranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { PageNotice, type Notice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { approvalTasksApi } from '../api/approvalsApi.ts';
 import { type ApprovalDecision } from '../api/types.ts';
@@ -36,6 +38,7 @@ export function ApprovalInboxPage(): ReactElement {
   const inbox = useApiResource(load);
   const [target, setTarget] = useState<TaskActionTarget | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const selection = useRowSelection();
   const names = useApprovalNames(
     inbox.data?.items.flatMap((item) => [item.instance.requestedByUserId, item.onBehalfOfUserId]) ??
       [],
@@ -75,9 +78,16 @@ export function ApprovalInboxPage(): ReactElement {
           </EmptyState>
         ) : (
           <>
-            <TableContainer caption={t('approvals.inbox.caption')}>
+            <TableContainer
+              caption={t('approvals.inbox.caption')}
+              selection={{ selection, exportName: 'approval-inbox' }}
+            >
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={inbox.data.items.map((item) => item.taskId)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('approvals.fields.request')}</th>
                   <th scope="col">{t('approvals.fields.requestedBy')}</th>
                   <th scope="col">{t('approvals.fields.stage')}</th>
@@ -89,8 +99,15 @@ export function ApprovalInboxPage(): ReactElement {
               <tbody>
                 {inbox.data.items.map((item) => {
                   const subjectId = `subject-${item.taskId}`;
+                  const kindKey = `approvals.routing.${item.instance.routingKey}`;
+                  const kind = isTranslationKey(kindKey) ? t(kindKey) : item.instance.routingKey;
                   return (
                     <tr key={item.taskId}>
+                      <SelectRowCell
+                        id={item.taskId}
+                        name={`${kind} (${t('approvals.subject.revision', { revision: item.instance.subject.revisionNo })})`}
+                        selection={selection}
+                      />
                       <td id={subjectId}>
                         <SubjectSummary
                           subject={item.instance.subject}

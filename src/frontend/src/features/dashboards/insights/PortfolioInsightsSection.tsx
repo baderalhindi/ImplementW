@@ -15,8 +15,10 @@ import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { dashboardsApi, type PortfolioFilters } from '../api/dashboardsApi.ts';
 import {
@@ -359,13 +361,16 @@ function BreakdownTable({
 }): ReactElement {
   const { t } = useI18n();
   const mayOpenCards = useCan('PORTFOLIO_BREAKDOWN_VIEW');
+  const selection = useRowSelection();
   const { rows, total } = breakdown;
   const showValue = total.valueSar !== null;
-  const columns = 8 + (showValue ? 1 : 0);
+  const columns = 9 + (showValue ? 1 : 0);
+  const rowId = (row: PortfolioBreakdownRow) => row.itemId ?? 'none';
   const parents = grouped ? [...new Set(rows.map((row) => row.parentItemId))] : [null];
 
   const line = (row: PortfolioBreakdownRow) => (
-    <tr key={row.itemId ?? 'none'}>
+    <tr key={rowId(row)}>
+      <SelectRowCell id={rowId(row)} name={itemName(row.itemId)} selection={selection} />
       <th scope="row">
         {row.itemId !== null && mayOpenCards ? (
           <Link to={portfolioCardPath(dimension, row.itemId)}>{itemName(row.itemId)}</Link>
@@ -379,9 +384,13 @@ function BreakdownTable({
 
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer
+        caption={caption}
+        selection={{ selection, exportName: `projects-by-${dimension}` }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={rows.map(rowId)} selection={selection} />
             <th scope="col">{nameHeader}</th>
             <th scope="col">{t('dashboards.insights.projects')}</th>
             {showValue && <th scope="col">{t('dashboards.insights.value')}</th>}
@@ -407,6 +416,7 @@ function BreakdownTable({
         ))}
         <tfoot>
           <tr data-row="total">
+            <td className="cell--select" />
             <th scope="row">{t('dashboards.insights.total')}</th>
             <RowFigures row={total} showValue={showValue} />
           </tr>
@@ -430,12 +440,17 @@ function SectorSpend({
   itemName: ItemName;
 }): ReactElement {
   const { t } = useI18n();
+  const selection = useRowSelection();
   const { rows, total } = breakdown;
   return (
     <>
-      <TableContainer caption={t('dashboards.insights.sectorSpend')}>
+      <TableContainer
+        caption={t('dashboards.insights.sectorSpend')}
+        selection={{ selection, exportName: 'sector-spend' }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={rows.map((row) => row.itemId ?? 'none')} selection={selection} />
             <th scope="col">{t('dashboards.insights.sector')}</th>
             <th scope="col">{t('dashboards.insights.plannedSpend')}</th>
             <th scope="col">{t('dashboards.insights.actualSpend')}</th>
@@ -445,6 +460,11 @@ function SectorSpend({
         <tbody>
           {rows.map((row) => (
             <tr key={row.itemId ?? 'none'}>
+              <SelectRowCell
+                id={row.itemId ?? 'none'}
+                name={itemName(row.itemId)}
+                selection={selection}
+              />
               <th scope="row">{itemName(row.itemId)}</th>
               <td>
                 <Percent value={row.averagePlannedSpendPercent} />
@@ -477,11 +497,16 @@ function SectorSpend({
 
 function Stages({ stages }: { stages: PortfolioStageCount[] }): ReactElement {
   const { t } = useI18n();
+  const selection = useRowSelection();
   return (
     <InsightSection id="stages" title={t('dashboards.insights.stages')}>
-      <TableContainer caption={t('dashboards.insights.stages')}>
+      <TableContainer
+        caption={t('dashboards.insights.stages')}
+        selection={{ selection, exportName: 'projects-by-stage' }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={stages.map((stage) => stage.status)} selection={selection} />
             <th scope="col">{t('projects.fields.status')}</th>
             <th scope="col">{t('dashboards.insights.projects')}</th>
             <th scope="col">{t('dashboards.insights.percent')}</th>
@@ -490,6 +515,11 @@ function Stages({ stages }: { stages: PortfolioStageCount[] }): ReactElement {
         <tbody>
           {stages.map((stage) => (
             <tr key={stage.status}>
+              <SelectRowCell
+                id={stage.status}
+                name={t(`projects.status.${stage.status}`)}
+                selection={selection}
+              />
               <th scope="row">{t(`projects.status.${stage.status}`)}</th>
               <td dir="ltr" className="cell--ltr">
                 {stage.projects}
@@ -585,11 +615,19 @@ function TopProjects({
 }): ReactElement {
   const { t } = useI18n();
   const notAvailable = t('dashboards.insights.notAvailable');
+  const selection = useRowSelection();
   return (
     <InsightSection id="top" title={t('dashboards.insights.top')}>
-      <TableContainer caption={t('dashboards.insights.top')}>
+      <TableContainer
+        caption={t('dashboards.insights.top')}
+        selection={{ selection, exportName: 'projects-needing-follow-up' }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader
+              ids={projects.map((project) => project.projectId)}
+              selection={selection}
+            />
             <th scope="col">{t('projects.fields.formalProjectId')}</th>
             <th scope="col">{t('projects.fields.title')}</th>
             <th scope="col">{t('dashboards.insights.portfolio')}</th>
@@ -601,6 +639,11 @@ function TopProjects({
         <tbody>
           {projects.map((project) => (
             <tr key={project.projectId}>
+              <SelectRowCell
+                id={project.projectId}
+                name={project.title.text}
+                selection={selection}
+              />
               <td dir="ltr" className="cell--ltr">
                 {project.formalProjectId ?? project.legacyReference ?? '—'}
               </td>

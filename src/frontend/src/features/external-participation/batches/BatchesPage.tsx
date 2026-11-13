@@ -7,8 +7,10 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { updateRequestBatchesApi } from '../api/monthlyUpdatesApi.ts';
 import { NEW_UPDATE_BATCH_PATH, updateBatchPath } from '../paths.ts';
@@ -19,6 +21,7 @@ export function BatchesPage(): ReactElement {
   const { t, formatDateTime } = useI18n();
   const { page, goToPage } = useListParams();
   const maySend = useCan('UPDATE_REQUEST_SEND');
+  const selection = useRowSelection();
   const batches = useApiResource(
     useCallback(
       (signal: AbortSignal) => updateRequestBatchesApi.list(page, PAGE_SIZE, signal),
@@ -53,9 +56,16 @@ export function BatchesPage(): ReactElement {
         <EmptyState title={t('externalParticipation.batch.empty')} />
       ) : (
         <>
-          <TableContainer caption={t('externalParticipation.nav.batches')}>
+          <TableContainer
+            caption={t('externalParticipation.nav.batches')}
+            selection={{ selection, exportName: 'update-batches' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={batches.data.items.map((batch) => batch.id)}
+                  selection={selection}
+                />
                 <th scope="col">{t('externalParticipation.batch.sentAt')}</th>
                 <th scope="col">{t('externalParticipation.fields.dueDate')}</th>
                 <th scope="col">{t('externalParticipation.batch.projects')}</th>
@@ -67,6 +77,11 @@ export function BatchesPage(): ReactElement {
             <tbody>
               {batches.data.items.map((batch) => (
                 <tr key={batch.id}>
+                  <SelectRowCell
+                    id={batch.id}
+                    name={formatDateTime(batch.createdAt)}
+                    selection={selection}
+                  />
                   <td>
                     <Link to={updateBatchPath(batch.id)}>{formatDateTime(batch.createdAt)}</Link>
                     {batch.withdrawnAt !== null && (

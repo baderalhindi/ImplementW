@@ -5,6 +5,8 @@ import { Link } from 'react-router';
 import { formatSar, languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type ChangeRequestDetail } from '../api/types.ts';
 import { changeRequestPath } from '../paths.ts';
@@ -48,11 +50,20 @@ export function ChangeRequestTable({
   caption,
 }: ChangeRequestTableProps): ReactElement {
   const { t, formatDateTime } = useI18n();
+  const selection = useRowSelection();
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer
+        caption={caption}
+        selection={{
+          selection,
+          exportName: 'change-requests',
+          actions: actions?.bulk(entries, selection, ({ request }) => request.id),
+        }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={entries.map(({ request }) => request.id)} selection={selection} />
             <th scope="col">{t('changeRequests.table.title')}</th>
             {showProject && <th scope="col">{t('changeRequests.table.project')}</th>}
             <th scope="col">{t('changeRequests.table.type')}</th>
@@ -66,6 +77,7 @@ export function ChangeRequestTable({
         <tbody>
           {entries.map(({ request, project }) => (
             <tr key={request.id}>
+              <SelectRowCell id={request.id} name={request.title.text} selection={selection} />
               <td>
                 <Link
                   className="cell__link"

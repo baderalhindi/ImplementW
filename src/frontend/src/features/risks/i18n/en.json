@@ -233,7 +233,8 @@
       "confirm": "Cancel action",
       "named": "Cancel {action}",
       "done": "The action was canceled."
-    }
+    },
+    "chosen": "Actions: {names}"
   },
   "actions": {
     "create": "Register risk",

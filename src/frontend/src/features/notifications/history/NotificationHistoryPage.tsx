@@ -6,8 +6,10 @@ import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { notificationsApi } from '../api/notificationsApi.ts';
 import { type NotificationHistoryItem } from '../api/types.ts';
@@ -38,6 +40,7 @@ export function NotificationHistoryPage(): ReactElement {
   );
   const history = useApiResource(load);
   const families = useNotificationFamilies();
+  const selection = useRowSelection();
 
   const outcomeNote = (item: NotificationHistoryItem): string | null => {
     if (item.suppressionReason !== null) {
@@ -108,9 +111,16 @@ export function NotificationHistoryPage(): ReactElement {
           />
         ) : (
           <>
-            <TableContainer caption={t('notifications.history.title')}>
+            <TableContainer
+              caption={t('notifications.history.title')}
+              selection={{ selection, exportName: 'notification-history' }}
+            >
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={history.data.items.map((item) => item.id)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('notifications.fields.notification')}</th>
                   <th scope="col">{t('notifications.fields.channel')}</th>
                   <th scope="col">{t('notifications.fields.family')}</th>
@@ -122,9 +132,11 @@ export function NotificationHistoryPage(): ReactElement {
               <tbody>
                 {history.data.items.map((item) => {
                   const note = outcomeNote(item);
+                  const name = item.subject ?? item.eventType;
                   return (
                     <tr key={item.id}>
-                      <td dir="auto">{item.subject ?? item.eventType}</td>
+                      <SelectRowCell id={item.id} name={name} selection={selection} />
+                      <td dir="auto">{name}</td>
                       <td>{t(`notifications.channel.${item.channel}`)}</td>
                       <td>{familyLabel(families.data, item.eventFamilyCode, language)}</td>
                       <td>

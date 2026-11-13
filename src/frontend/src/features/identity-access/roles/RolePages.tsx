@@ -6,9 +6,11 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { CheckboxField, SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { CancelLink } from '@/shared/ui/CancelLink.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { rolesApi } from '../api/identityAccessApi.ts';
 import {
@@ -155,6 +157,29 @@ export function RoleListPage(): ReactElement {
       roles.reload();
     },
   });
+  const selection = useRowSelection();
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const chosenDeletable = (roles.data ?? []).filter(
+    (role) => selection.selected.has(role.id) && !role.isSystem,
+  );
+  /** Deletes every chosen role that is not built in, confirmed by naming them. */
+  const confirmDeleteMany = () => {
+    const chosen = chosenDeletable;
+    setConfirmation({
+      title: t('common.rowActions.deleteTitle'),
+      body: t('common.rowActions.deleteBody', {
+        name: chosen.map((role) => labelOf(role.name, language)).join('، '),
+      }),
+      confirmLabel: t('common.rowActions.delete'),
+      destructive: true,
+      action: async () => {
+        for (const role of chosen) {
+          await rolesApi.delete(role.id, null);
+        }
+        selection.clear();
+      },
+    });
+  };
 
   return (
     <>
@@ -186,9 +211,26 @@ export function RoleListPage(): ReactElement {
         (roles.data.length === 0 ? (
           <EmptyState title={t('identityAccess.roles.list.empty')} />
         ) : (
-          <TableContainer caption={t('identityAccess.roles.list.title')}>
+          <TableContainer
+            caption={t('identityAccess.roles.list.title')}
+            selection={{
+              selection,
+              exportName: 'roles',
+              actions:
+                rowActions !== undefined && chosenDeletable.length > 0 ? (
+                  <button
+                    type="button"
+                    className="button button--danger"
+                    onClick={confirmDeleteMany}
+                  >
+                    {t('common.rowActions.delete')}
+                  </button>
+                ) : undefined,
+            }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader ids={roles.data.map((role) => role.id)} selection={selection} />
                 <th scope="col">{t('identityAccess.roles.fields.code')}</th>
                 <th scope="col">{t('identityAccess.roles.fields.name')}</th>
                 <th scope="col">{t('identityAccess.roles.fields.externalEligible')}</th>
@@ -201,6 +243,11 @@ export function RoleListPage(): ReactElement {
             <tbody>
               {roles.data.map((role) => (
                 <tr key={role.id}>
+                  <SelectRowCell
+                    id={role.id}
+                    name={labelOf(role.name, language)}
+                    selection={selection}
+                  />
                   <td>{role.code}</td>
                   <td>
                     <Link to={`/admin/roles/${role.id}`}>{labelOf(role.name, language)}</Link>
@@ -224,6 +271,16 @@ export function RoleListPage(): ReactElement {
           </TableContainer>
         ))}
       {rowActions?.dialog}
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
+          roles.reload();
+        }}
+      />
     </>
   );
 }

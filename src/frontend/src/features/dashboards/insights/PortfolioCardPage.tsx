@@ -9,7 +9,9 @@ import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { dashboardsApi } from '../api/dashboardsApi.ts';
 import { type PortfolioCard, type PortfolioCardDimension } from '../api/insightTypes.ts';
@@ -64,6 +66,7 @@ export function PortfolioCardPage(): ReactElement {
 function CardView({ card }: { card: PortfolioCard }): ReactElement {
   const { t } = useI18n();
   const lookups = useProjectLookups();
+  const selection = useRowSelection();
   const { summary, projects } = card;
   const name = lookups.itemLabel(card.itemId) ?? '';
   const showValue = summary.valueSar !== null;
@@ -124,9 +127,16 @@ function CardView({ card }: { card: PortfolioCard }): ReactElement {
       {projects.length === 0 ? (
         <p className="state">{t('dashboards.noData')}</p>
       ) : (
-        <TableContainer caption={t('dashboards.insights.card.projects')}>
+        <TableContainer
+          caption={t('dashboards.insights.card.projects')}
+          selection={{ selection, exportName: 'portfolio-card-projects' }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader
+                ids={projects.map((project) => project.projectId)}
+                selection={selection}
+              />
               <th scope="col">{t('projects.fields.formalProjectId')}</th>
               <th scope="col">{t('projects.fields.title')}</th>
               <th scope="col">{t('projects.fields.status')}</th>
@@ -143,6 +153,11 @@ function CardView({ card }: { card: PortfolioCard }): ReactElement {
           <tbody>
             {projects.map((project) => (
               <tr key={project.projectId}>
+                <SelectRowCell
+                  id={project.projectId}
+                  name={project.title.text}
+                  selection={selection}
+                />
                 <td dir="ltr" className="cell--ltr">
                   {project.formalProjectId ?? project.legacyReference ?? '—'}
                 </td>

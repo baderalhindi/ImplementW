@@ -6,6 +6,8 @@ import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { canManageRisk } from '../access.ts';
 import { type BilingualLabel, type RiskOpenTreatmentAction } from '../api/types.ts';
@@ -129,11 +131,20 @@ export function RiskTable({
 }: RiskTableProps): ReactElement {
   const { t } = useI18n();
   const { session } = useSession();
+  const selection = useRowSelection();
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer
+        caption={caption}
+        selection={{
+          selection,
+          exportName: 'risks',
+          actions: actions?.bulk(entries, selection, ({ risk }) => risk.id),
+        }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={entries.map(({ risk }) => risk.id)} selection={selection} />
             <th scope="col">{t('risks.table.risk')}</th>
             {showProject && <th scope="col">{t('risks.table.project')}</th>}
             <th scope="col">{t('risks.table.category')}</th>
@@ -160,6 +171,7 @@ export function RiskTable({
                   due ? 'row--overdue' : risk.status === 'CLOSED' ? 'row--muted' : undefined
                 }
               >
+                <SelectRowCell id={risk.id} name={risk.title.text} selection={selection} />
                 <td>
                   <Link to={detailPath} lang={languageTag(risk.title.language)} dir="auto">
                     {risk.title.text}

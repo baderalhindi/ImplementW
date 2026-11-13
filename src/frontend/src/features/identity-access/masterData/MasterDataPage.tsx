@@ -10,10 +10,13 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { usePersonNames } from '../assignments/useUserNames.ts';
+import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useCan } from '../permissions/permissions.ts';
 import { problemMessage } from '../problems.ts';
 
@@ -29,6 +32,30 @@ interface Catalogue {
 }
 
 type Command = 'validate' | 'publish' | 'retire';
+
+const COMMANDS: readonly Command[] = ['validate', 'publish', 'retire'];
+
+/** Whether an item's state offers the command. */
+function allows(item: MasterDataItemSummary, command: Command): boolean {
+  switch (command) {
+    case 'validate':
+      return item.lifecycleState === 'DRAFT';
+    case 'publish':
+      return item.lifecycleState === 'VALIDATED';
+    case 'retire':
+      return item.lifecycleState === 'PUBLISHED' && !item.isSystem;
+  }
+}
+
+/** A command sent with the item's current ETag. */
+async function sendCommand(item: MasterDataItemSummary, command: Command): Promise<void> {
+  const current = await apiRequest<MasterDataItemSummary>(`/master-data-items/${item.id}`);
+  await apiRequest(`/master-data-items/${item.id}/${command}`, {
+    method: 'POST',
+    body: {},
+    ifMatch: current.etag,
+  });
+}
 
 const STATE_TONES: Record<string, StatusTone> = {
   DRAFT: 'neutral',
@@ -148,6 +175,8 @@ function CatalogueItems({
   const parents = useApiResource(loadParents);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const selection = useRowSelection();
 
   const parentName = (id: string | null) =>
     id === null
@@ -157,16 +186,31 @@ function CatalogueItems({
   const run = async (item: MasterDataItemSummary, command: Command) => {
     setError(null);
     try {
-      const current = await apiRequest<MasterDataItemSummary>(`/master-data-items/${item.id}`);
-      await apiRequest(`/master-data-items/${item.id}/${command}`, {
-        method: 'POST',
-        body: {},
-        ifMatch: current.etag,
-      });
+      await sendCommand(item, command);
       items.reload();
     } catch (caught) {
       setError(problemMessage(caught, t));
     }
+  };
+
+  const chosenFor = (command: Command) =>
+    (items.data ?? []).filter((item) => selection.selected.has(item.id) && allows(item, command));
+
+  /** The same command on every chosen item that allows it, confirmed by naming them. */
+  const confirmMany = (command: Command) => {
+    const chosen = chosenFor(command);
+    setConfirmation({
+      title: t(`identityAccess.masterData.${command}`),
+      body: chosen.map((item) => item.code).join('، '),
+      confirmLabel: t(`identityAccess.masterData.${command}`),
+      destructive: command === 'retire',
+      action: async () => {
+        for (const item of chosen) {
+          await sendCommand(item, command);
+        }
+        selection.clear();
+      },
+    });
   };
 
   return (
@@ -202,9 +246,30 @@ function CatalogueItems({
         (items.data.length === 0 ? (
           <EmptyState title={t('identityAccess.masterData.empty')} />
         ) : (
-          <TableContainer caption={catalogue.name[language]}>
+          <TableContainer
+            caption={catalogue.name[language]}
+            selection={{
+              selection,
+              exportName: `master-data-${catalogue.code.toLowerCase()}`,
+              actions: mayManage
+                ? COMMANDS.filter((command) => chosenFor(command).length > 0).map((command) => (
+                    <button
+                      key={command}
+                      type="button"
+                      className={command === 'retire' ? 'button button--danger' : 'button'}
+                      onClick={() => {
+                        confirmMany(command);
+                      }}
+                    >
+                      {t(`identityAccess.masterData.${command}`)}
+                    </button>
+                  ))
+                : undefined,
+            }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader ids={items.data.map((item) => item.id)} selection={selection} />
                 <th scope="col">{t('identityAccess.masterData.code')}</th>
                 <th scope="col">{t('identityAccess.masterData.labelAr')}</th>
                 <th scope="col">{t('identityAccess.masterData.labelEn')}</th>
@@ -218,6 +283,7 @@ function CatalogueItems({
             <tbody>
               {items.data.map((item) => (
                 <tr key={item.id}>
+                  <SelectRowCell id={item.id} name={item.code} selection={selection} />
                   <td dir="ltr" className="cell--ltr">
                     {item.code}
                   </td>
@@ -238,33 +304,16 @@ function CatalogueItems({
                   </td>
                   {mayManage && (
                     <td>
-                      {item.lifecycleState === 'DRAFT' && (
+                      {COMMANDS.filter((command) => allows(item, command)).map((command) => (
                         <button
+                          key={command}
                           type="button"
                           className="button button--quiet"
-                          onClick={() => void run(item, 'validate')}
+                          onClick={() => void run(item, command)}
                         >
-                          {t('identityAccess.masterData.validate')}
+                          {t(`identityAccess.masterData.${command}`)}
                         </button>
-                      )}
-                      {item.lifecycleState === 'VALIDATED' && (
-                        <button
-                          type="button"
-                          className="button button--quiet"
-                          onClick={() => void run(item, 'publish')}
-                        >
-                          {t('identityAccess.masterData.publish')}
-                        </button>
-                      )}
-                      {item.lifecycleState === 'PUBLISHED' && !item.isSystem && (
-                        <button
-                          type="button"
-                          className="button button--quiet"
-                          onClick={() => void run(item, 'retire')}
-                        >
-                          {t('identityAccess.masterData.retire')}
-                        </button>
-                      )}
+                      ))}
                     </td>
                   )}
                 </tr>
@@ -272,6 +321,16 @@ function CatalogueItems({
             </tbody>
           </TableContainer>
         ))}
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
+          items.reload();
+        }}
+      />
       <CreateItemDialog
         open={creating}
         catalogue={catalogue}
@@ -432,6 +491,7 @@ function RequestedValues(): ReactElement | null {
   const requester = usePersonNames((requests.data ?? []).map((r) => r.requestedBy));
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const selection = useRowSelection();
   if (!mayResolve || requests.data === undefined || requests.data.length === 0) {
     return null;
   }
@@ -449,9 +509,16 @@ function RequestedValues(): ReactElement | null {
       <h2 id="requested-values-heading">{t('identityAccess.masterData.requested.title')}</h2>
       <p>{t('identityAccess.masterData.requested.description')}</p>
       <FormAlert message={error} />
-      <TableContainer caption={t('identityAccess.masterData.requested.title')}>
+      <TableContainer
+        caption={t('identityAccess.masterData.requested.title')}
+        selection={{ selection, exportName: 'requested-values' }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader
+              ids={requests.data.map((request) => request.id)}
+              selection={selection}
+            />
             <th scope="col">{t('identityAccess.masterData.requested.list')}</th>
             <th scope="col">{t('identityAccess.masterData.requested.value')}</th>
             <th scope="col">{t('identityAccess.masterData.requested.by')}</th>
@@ -462,6 +529,7 @@ function RequestedValues(): ReactElement | null {
         <tbody>
           {requests.data.map((request) => (
             <tr key={request.id}>
+              <SelectRowCell id={request.id} name={request.sourceText} selection={selection} />
               <td>{t(`projects.import.dimensionName.${request.dimension}`)}</td>
               <td dir="auto">{request.sourceText}</td>
               <td>

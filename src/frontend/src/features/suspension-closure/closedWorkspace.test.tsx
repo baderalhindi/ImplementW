@@ -89,12 +89,18 @@ async function settledPanel(): Promise<HTMLElement> {
   return panel;
 }
 
+/** A row's title: in its first cell, or the first after the row's selection checkbox. */
+const ROW_OPENER = [
+  'tbody tr > td:first-child > button.button--link',
+  'tbody tr > td.cell--select + td > button.button--link',
+].join(', ');
+
 /**
  * A record's title: in the first cell of its row, or a parent's or subtask's in a detail. It opens that record's
  * detail, which is swept in turn.
  */
 const OPENERS = [
-  'tbody tr > td:first-child > button.button--link',
+  ROW_OPENER,
   '.task-detail__list > li > button.button--link',
   '.details__row dd > button.button--link',
 ].join(', ');
@@ -138,9 +144,7 @@ function writeControls(container: HTMLElement): string[] {
 async function sweep(): Promise<string[]> {
   const panel = await settledPanel();
   const found = writeControls(panel);
-  const opener = panel.querySelector<HTMLButtonElement>(
-    'tbody tr > td:first-child > button.button--link',
-  );
+  const opener = panel.querySelector<HTMLButtonElement>(ROW_OPENER);
   if (opener !== null) {
     await userEvent.setup().click(opener);
     const dialog = await screen.findByRole('dialog');

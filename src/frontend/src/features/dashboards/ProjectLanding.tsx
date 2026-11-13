@@ -8,7 +8,9 @@ import { pageFrom, PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { dashboardProblemMessage } from './problems.ts';
 
@@ -27,6 +29,7 @@ export function ProjectLanding(): ReactElement {
     [page],
   );
   const projects = useApiResource(load);
+  const selection = useRowSelection();
 
   if (projects.data === undefined) {
     return projects.loading ? (
@@ -45,9 +48,16 @@ export function ProjectLanding(): ReactElement {
   return (
     <>
       <p>{t('dashboards.projectLanding.intro')}</p>
-      <TableContainer caption={t('dashboards.projectLanding.caption')}>
+      <TableContainer
+        caption={t('dashboards.projectLanding.caption')}
+        selection={{ selection, exportName: 'projects' }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader
+              ids={projects.data.items.map((project) => project.id)}
+              selection={selection}
+            />
             <th scope="col">{t('dashboards.projectLanding.project')}</th>
             <th scope="col">{t('dashboards.projectLanding.formalId')}</th>
             <th scope="col">{t('dashboards.projectLanding.status')}</th>
@@ -56,6 +66,7 @@ export function ProjectLanding(): ReactElement {
         <tbody>
           {projects.data.items.map((project) => (
             <tr key={project.id}>
+              <SelectRowCell id={project.id} name={project.title.text} selection={selection} />
               <td>
                 <Link to={`/projects/${project.id}`} lang={languageTag(project.title.language)}>
                   {project.title.text}

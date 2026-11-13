@@ -574,6 +574,19 @@ describe('acceptance criterion 2: SCR-070 paginates and badges each semantic sta
     expect(reads.at(-1)?.query.get('projectId')).toBe(PROJECT_ID);
   });
 
+  test('select all chooses every revision on the page', async () => {
+    open(
+      entitySession(),
+      { submissions: revisions(3), snapshots: [snapshot()], live: [liveHealth()] },
+      { path: HISTORY_PATH },
+    );
+    const table = await screen.findByRole('table', { name: en('progress.history.caption') });
+    await userEvent.click(
+      within(table).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    expect(screen.getByText(en('common.table.selected', { count: 3 }))).toBeTruthy();
+  });
+
   test('Published/official and current/live head the history with distinct badges, and a published row is badged official', async () => {
     open(
       entitySession(),

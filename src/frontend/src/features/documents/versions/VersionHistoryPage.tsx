@@ -6,7 +6,9 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { documentsApi } from '../api/documentsApi.ts';
 import { type DocumentVersionDetail } from '../api/types.ts';
@@ -85,10 +87,30 @@ function VersionTable({
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
   const person = usePersonNames(versions.map((version) => version.uploadedByUserId));
+  const selection = useRowSelection();
+  const chosenFailed = versions.filter(
+    (version) => selection.selected.has(version.id) && version.scanState === 'SCAN_FAILED',
+  );
   return (
-    <TableContainer caption={t('documents.versions.caption')}>
+    <TableContainer
+      caption={t('documents.versions.caption')}
+      selection={{
+        selection,
+        exportName: 'document-versions',
+        actions: chosenFailed.length > 0 && (
+          <RescanButton
+            versions={chosenFailed}
+            onDone={() => {
+              selection.clear();
+              onRescanned();
+            }}
+          />
+        ),
+      }}
+    >
       <thead>
         <tr>
+          <SelectAllHeader ids={versions.map((version) => version.id)} selection={selection} />
           <th scope="col">{t('documents.fields.version')}</th>
           <th scope="col">{t('documents.fields.fileName')}</th>
           <th scope="col">{t('documents.fields.size')}</th>
@@ -102,13 +124,15 @@ function VersionTable({
       <tbody>
         {versions.map((version) => {
           const versionId = `version-${version.id}`;
+          const name = t('documents.fields.versionNo', { number: version.versionNo });
           return (
             <tr
               key={version.id}
               className={version.scanState === 'QUARANTINED' ? 'row--flagged' : undefined}
             >
+              <SelectRowCell id={version.id} name={name} selection={selection} />
               <th scope="row" id={versionId}>
-                {t('documents.fields.versionNo', { number: version.versionNo })}
+                {name}
               </th>
               <td dir="auto" className="break-all">
                 {version.fileName}
@@ -134,7 +158,7 @@ function VersionTable({
                   describedBy={versionId}
                 />
                 {version.scanState === 'SCAN_FAILED' && (
-                  <RescanButton version={version} describedBy={versionId} onDone={onRescanned} />
+                  <RescanButton versions={[version]} describedBy={versionId} onDone={onRescanned} />
                 )}
               </td>
             </tr>
@@ -145,13 +169,14 @@ function VersionTable({
   );
 }
 
+/** Queues the given versions for scanning again, one request each; on a row it is that row's version, on the selection bar the chosen ones. */
 function RescanButton({
-  version,
+  versions,
   describedBy,
   onDone,
 }: {
-  version: DocumentVersionDetail;
-  describedBy: string;
+  versions: DocumentVersionDetail[];
+  describedBy?: string;
   onDone: () => void;
 }): ReactElement {
   const { t } = useI18n();
@@ -161,7 +186,9 @@ function RescanButton({
     setBusy(true);
     setProblem(null);
     try {
-      await documentsApi.rescan(version.documentId, version.id);
+      for (const version of versions) {
+        await documentsApi.rescan(version.documentId, version.id);
+      }
       onDone();
     } catch (error) {
       setProblem(documentProblemMessage(error, t));

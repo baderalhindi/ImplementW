@@ -4,8 +4,10 @@ import { usePersonNames } from '@/features/identity-access/assignments/useUserNa
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { documentsApi, evidenceApi } from '../api/documentsApi.ts';
 import { type BusinessLinkDetail } from '../api/types.ts';
@@ -62,10 +64,15 @@ function LinkTable({
 }): ReactElement {
   const { t, formatDateTime } = useI18n();
   const person = usePersonNames(links.map((link) => link.linkedByUserId));
+  const selection = useRowSelection();
   return (
-    <TableContainer caption={t('documents.links.title')}>
+    <TableContainer
+      caption={t('documents.links.title')}
+      selection={{ selection, exportName: 'document-links' }}
+    >
       <thead>
         <tr>
+          <SelectAllHeader ids={links.map((link) => link.id)} selection={selection} />
           <th scope="col">{t('documents.links.target')}</th>
           <th scope="col">{t('documents.links.role')}</th>
           <th scope="col">{t('documents.links.linked')}</th>
@@ -76,10 +83,12 @@ function LinkTable({
       <tbody>
         {links.map((link) => {
           const targetId = `link-${link.id}`;
+          const target = `${link.target.module} · ${link.target.type} · ${shortId(link.target.id)}`;
           return (
             <tr key={link.id}>
+              <SelectRowCell id={link.id} name={target} selection={selection} />
               <td id={targetId} dir="ltr">
-                {link.target.module} · {link.target.type} · {shortId(link.target.id)}
+                {target}
               </td>
               <td>{t(`documents.linkRole.${link.linkRole}`)}</td>
               <td>

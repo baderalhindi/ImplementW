@@ -5,8 +5,10 @@ import { ProjectStatusBadge } from '@/features/projects/components/ProjectStatus
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type CloseoutStage } from '../api/closeoutApi.ts';
 import { type ReadinessStatus } from '../api/types.ts';
@@ -41,6 +43,7 @@ export function CloseoutRegisterView({
   const { t, formatDateTime } = useI18n();
   const [stage, setStage] = useState<CloseoutStage | ''>('');
   const [readiness, setReadiness] = useState<ReadinessStatus | ''>('');
+  const selection = useRowSelection();
   const shown = entries.filter(
     (entry) =>
       (stage === '' || entry.stage === stage) &&
@@ -98,9 +101,13 @@ export function CloseoutRegisterView({
       {shown.length === 0 ? (
         <EmptyState title={t('suspensionClosure.closeout.filter.noMatch')} />
       ) : (
-        <TableContainer caption={caption}>
+        <TableContainer caption={caption} selection={{ selection, exportName: 'closeout-cases' }}>
           <thead>
             <tr>
+              <SelectAllHeader
+                ids={shown.map((entry) => entry.closeoutCase.id)}
+                selection={selection}
+              />
               <th scope="col">{t('suspensionClosure.closeout.table.stage')}</th>
               {showProject && <th scope="col">{t('suspensionClosure.table.project')}</th>}
               {showProject && (
@@ -117,17 +124,23 @@ export function CloseoutRegisterView({
               const failing = closeoutCase.readiness.checks.filter(
                 (check) => check.result === 'FAIL',
               ).length;
+              const stageName = t('suspensionClosure.stages.numbered', {
+                number: entry.stage === 'completion' ? 1 : 2,
+                name: t(`suspensionClosure.stages.name.${entry.stage}`),
+              });
               return (
                 <tr key={closeoutCase.id} data-stage={entry.stage}>
+                  <SelectRowCell
+                    id={closeoutCase.id}
+                    name={`${stageName} — ${project.title.text}`}
+                    selection={selection}
+                  />
                   <td>
                     <Link
                       className="cell__link"
                       to={closeoutCasePath(entry.stage, closeoutCase.id)}
                     >
-                      {t('suspensionClosure.stages.numbered', {
-                        number: entry.stage === 'completion' ? 1 : 2,
-                        name: t(`suspensionClosure.stages.name.${entry.stage}`),
-                      })}
+                      {stageName}
                     </Link>
                     <span className="cell__aside">
                       {t('suspensionClosure.table.revision', { revision: closeoutCase.revisionNo })}

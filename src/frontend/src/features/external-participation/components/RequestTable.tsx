@@ -4,6 +4,8 @@ import { Link } from 'react-router';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type ExternalUpdateRequestDetail } from '../api/types.ts';
 import { usePurpose } from '../labels.ts';
@@ -37,10 +39,15 @@ export function RequestTable({
   const personName = usePersonNames(
     shown.flatMap((request) => [request.responsibleUserId, request.reviewerUserId ?? null]),
   );
+  const selection = useRowSelection();
   return (
-    <TableContainer caption={caption}>
+    <TableContainer
+      caption={caption}
+      selection={{ selection, exportName: 'external-update-requests' }}
+    >
       <thead>
         <tr>
+          <SelectAllHeader ids={shown.map((request) => request.id)} selection={selection} />
           <th scope="col">{t('externalParticipation.table.request')}</th>
           {showProject && <th scope="col">{t('externalParticipation.table.project')}</th>}
           {internal && <th scope="col">{t('externalParticipation.table.entity')}</th>}
@@ -54,6 +61,15 @@ export function RequestTable({
       <tbody>
         {shown.map((request) => (
           <tr key={request.id}>
+            <SelectRowCell
+              id={request.id}
+              name={
+                request.targetLabel === null
+                  ? purpose(request)
+                  : `${purpose(request)} · ${request.targetLabel.text}`
+              }
+              selection={selection}
+            />
             <td>
               <Link className="cell__link" to={externalRequestPath(request.id)}>
                 {purpose(request)}

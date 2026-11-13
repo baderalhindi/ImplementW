@@ -5,7 +5,9 @@ import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { DueBadge, OutcomeBadge } from './components/Badges.tsx';
 import { ProjectReference } from './components/RequestTable.tsx';
@@ -25,6 +27,7 @@ export function MyContributionsPage(): ReactElement | null {
   const { session } = useSession();
   const purpose = usePurpose();
   const mine = useMyContributions(session?.user.id ?? '');
+  const selection = useRowSelection();
 
   if (session === null) {
     return null;
@@ -81,9 +84,16 @@ export function MyContributionsPage(): ReactElement | null {
             {mine.data.entries.length === 0 ? (
               <EmptyState title={t('externalParticipation.contributions.emptyTitle')} />
             ) : (
-              <TableContainer caption={t('externalParticipation.contributions.caption')}>
+              <TableContainer
+                caption={t('externalParticipation.contributions.caption')}
+                selection={{ selection, exportName: 'my-contributions' }}
+              >
                 <thead>
                   <tr>
+                    <SelectAllHeader
+                      ids={mine.data.entries.map((entry) => entry.revision.id)}
+                      selection={selection}
+                    />
                     <th scope="col">{t('externalParticipation.table.request')}</th>
                     <th scope="col">{t('externalParticipation.table.project')}</th>
                     <th scope="col">{t('externalParticipation.table.revision')}</th>
@@ -98,6 +108,11 @@ export function MyContributionsPage(): ReactElement | null {
                     const revision = disclosedContribution(entry.revision);
                     return (
                       <tr key={revision.id}>
+                        <SelectRowCell
+                          id={revision.id}
+                          name={`${purpose(request)} · ${String(revision.revisionNo)}`}
+                          selection={selection}
+                        />
                         <td>
                           <Link className="cell__link" to={externalRequestPath(request.id)}>
                             {purpose(request)}

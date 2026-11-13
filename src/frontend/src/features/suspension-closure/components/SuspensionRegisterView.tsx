@@ -4,7 +4,9 @@ import { Link } from 'react-router';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type SuspensionRequestType } from '../api/types.ts';
 import { suspensionRequestPath } from '../paths.ts';
@@ -34,6 +36,7 @@ export function SuspensionRegisterView({
   const { t, formatDateTime } = useI18n();
   const [view, setView] = useState<SuspensionView | ''>('');
   const [type, setType] = useState<SuspensionRequestType | ''>('');
+  const selection = useRowSelection();
   const shown = entries.filter(
     ({ request }) =>
       (view === '' || suspensionViewOf(request) === view) &&
@@ -88,9 +91,13 @@ export function SuspensionRegisterView({
       {shown.length === 0 ? (
         <EmptyState title={t('suspensionClosure.suspension.filter.noMatch')} />
       ) : (
-        <TableContainer caption={caption}>
+        <TableContainer
+          caption={caption}
+          selection={{ selection, exportName: 'suspension-requests' }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader ids={shown.map(({ request }) => request.id)} selection={selection} />
               <th scope="col">{t('suspensionClosure.suspension.table.request')}</th>
               {showProject && <th scope="col">{t('suspensionClosure.table.project')}</th>}
               <th scope="col">{t('suspensionClosure.suspension.table.status')}</th>
@@ -100,46 +107,54 @@ export function SuspensionRegisterView({
             </tr>
           </thead>
           <tbody>
-            {shown.map(({ request, project }) => (
-              <tr key={request.id}>
-                <td>
-                  <Link className="cell__link" to={suspensionRequestPath(request.id)}>
-                    {t(`suspensionClosure.suspension.type.${request.requestType}`)}
-                  </Link>
-                  <span className="cell__aside">
-                    {t('suspensionClosure.table.revision', { revision: request.revisionNo })}
-                  </span>
-                </td>
-                {showProject && (
+            {shown.map(({ request, project }) => {
+              const typeName = t(`suspensionClosure.suspension.type.${request.requestType}`);
+              return (
+                <tr key={request.id}>
+                  <SelectRowCell
+                    id={request.id}
+                    name={`${typeName} — ${project.title.text}`}
+                    selection={selection}
+                  />
                   <td>
-                    <span dir="auto">{project.title.text}</span>
-                  </td>
-                )}
-                <td>
-                  <GovernedStatusBadge status={request.status} />
-                  {suspensionViewOf(request) === 'IN_EFFECT' && (
+                    <Link className="cell__link" to={suspensionRequestPath(request.id)}>
+                      {typeName}
+                    </Link>
                     <span className="cell__aside">
-                      {t('suspensionClosure.suspension.view.IN_EFFECT')}
+                      {t('suspensionClosure.table.revision', { revision: request.revisionNo })}
                     </span>
+                  </td>
+                  {showProject && (
+                    <td>
+                      <span dir="auto">{project.title.text}</span>
+                    </td>
                   )}
-                </td>
-                <td>
-                  {request.requestedEffectiveDate === null ? (
-                    t('suspensionClosure.notStated')
-                  ) : (
-                    <span dir="ltr">{request.requestedEffectiveDate}</span>
-                  )}
-                </td>
-                <td>
-                  {request.plannedResumptionDate === null ? (
-                    t('suspensionClosure.notStated')
-                  ) : (
-                    <span dir="ltr">{request.plannedResumptionDate}</span>
-                  )}
-                </td>
-                <td>{formatDateTime(request.updatedAt)}</td>
-              </tr>
-            ))}
+                  <td>
+                    <GovernedStatusBadge status={request.status} />
+                    {suspensionViewOf(request) === 'IN_EFFECT' && (
+                      <span className="cell__aside">
+                        {t('suspensionClosure.suspension.view.IN_EFFECT')}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    {request.requestedEffectiveDate === null ? (
+                      t('suspensionClosure.notStated')
+                    ) : (
+                      <span dir="ltr">{request.requestedEffectiveDate}</span>
+                    )}
+                  </td>
+                  <td>
+                    {request.plannedResumptionDate === null ? (
+                      t('suspensionClosure.notStated')
+                    ) : (
+                      <span dir="ltr">{request.plannedResumptionDate}</span>
+                    )}
+                  </td>
+                  <td>{formatDateTime(request.updatedAt)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </TableContainer>
       )}

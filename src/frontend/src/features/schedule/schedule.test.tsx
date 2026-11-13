@@ -96,6 +96,15 @@ function rowAt(table: HTMLElement, index: number) {
   return within(row);
 }
 
+/** The bar above a table, once `count` of its rows are chosen. */
+function selectionBar(count: number): HTMLElement {
+  const bar = screen.getByText(en('common.table.selected', { count })).closest('.selection-bar');
+  if (!(bar instanceof HTMLElement)) {
+    throw new Error('No selection bar.');
+  }
+  return bar;
+}
+
 function escape(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -115,7 +124,8 @@ describe('SCR-060 Schedule Manager', () => {
 
     const table = await screen.findByRole('region', { name: en('schedule.activities.caption') });
     const rows = within(table).getAllByRole('row');
-    expect(rows.map((row) => within(row).queryAllByRole('cell')[0]?.textContent)).toEqual([
+    // Cell 0 is the row's selection checkbox.
+    expect(rows.map((row) => within(row).queryAllByRole('cell')[1]?.textContent)).toEqual([
       undefined,
       '1',
       '1.1',
@@ -230,6 +240,63 @@ describe('SCR-060 Schedule Manager', () => {
     const sent = api.requestsTo('PUT', /^\/schedule-activities\/[^/]+$/)[0];
     expect(sent?.path).toBe(`/schedule-activities/${SURVEY_ID}`);
     expect(sent?.headers.get('If-Match')).toBe(ACTIVITY_ETAG);
+  });
+
+  test('select all on the activities, then one cancellation for every chosen activity that is free', async () => {
+    const api = open(entityManagerSession(), { ...PLANNING, dependencies: [] });
+    api.on('POST', /^\/schedule-activities\/[^/]+\/cancel$/, { body: activity() });
+    const table = await screen.findByRole('region', { name: en('schedule.activities.caption') });
+
+    await userEvent.click(
+      within(table).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    const bar = selectionBar(4);
+    await userEvent.click(within(bar).getByRole('button', { name: en('schedule.actions.cancel') }));
+    const dialog = await screen.findByRole('dialog', {
+      name: en('schedule.cancelActivities.title'),
+    });
+    // The summary still has live children, so it is not cancelled.
+    expect(dialog.textContent).toContain('1.1 · Survey');
+    expect(dialog.textContent).not.toContain('1 · Earthworks');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: en('schedule.cancelActivity.confirm') }),
+    );
+
+    expect(await screen.findByText(en('schedule.done.activityCancelled'))).toBeTruthy();
+    expect(api.requestsTo('POST', /\/cancel$/).map((request) => request.path)).toEqual([
+      `/schedule-activities/${SURVEY_ID}/cancel`,
+      `/schedule-activities/${EXCAVATION_ID}/cancel`,
+      `/schedule-activities/${PAVING_ID}/cancel`,
+    ]);
+  });
+
+  test('select all on the dependencies, then one removal for each', async () => {
+    const api = open(entityManagerSession(), PLANNING);
+    api.on('DELETE', /^\/schedule-dependencies\/[^/]+$/, { status: 204 });
+    const table = await screen.findByRole('region', { name: en('schedule.dependencies.caption') });
+
+    await userEvent.click(
+      within(table).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    await userEvent.click(
+      within(selectionBar(2)).getByRole('button', {
+        name: en('schedule.actions.removeDependency'),
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: en('schedule.removeDependencies.title'),
+    });
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: en('schedule.actions.removeDependency') }),
+    );
+
+    expect(await screen.findByText(en('schedule.done.dependencyRemoved'))).toBeTruthy();
+    expect(
+      api.requestsTo('DELETE', /^\/schedule-dependencies\//).map((request) => request.path),
+    ).toEqual([
+      '/schedule-dependencies/af000000-0000-4000-8000-000000000f01',
+      '/schedule-dependencies/af000000-0000-4000-8000-000000000f02',
+    ]);
   });
 
   test('a reforecast before the predecessor’s forecast allows is refused on the field and not sent', async () => {

@@ -8,9 +8,11 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FileField, SelectField, TextAreaField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { projectImportApi } from '../api/followUpApi.ts';
 import {
@@ -342,6 +344,7 @@ function BatchList(): ReactElement {
     [],
   );
   const batches = useApiResource(load);
+  const selection = useRowSelection();
   const submitter = usePersonNames((batches.data?.items ?? []).map((batch) => batch.submittedBy));
   return (
     <section className="section" aria-labelledby="batches-heading">
@@ -358,9 +361,16 @@ function BatchList(): ReactElement {
         (batches.data.items.length === 0 ? (
           <EmptyState title={t('projects.import.noBatches')} />
         ) : (
-          <TableContainer caption={t('projects.import.batchesCaption')}>
+          <TableContainer
+            caption={t('projects.import.batchesCaption')}
+            selection={{ selection, exportName: 'project-import-batches' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={batches.data.items.map((batch) => batch.id)}
+                  selection={selection}
+                />
                 <th scope="col">{t('projects.import.batch')}</th>
                 <th scope="col">{t('projects.import.status')}</th>
                 <th scope="col">{t('projects.import.fileName')}</th>
@@ -370,28 +380,30 @@ function BatchList(): ReactElement {
               </tr>
             </thead>
             <tbody>
-              {batches.data.items.map((batch) => (
-                <tr key={batch.id}>
-                  <td>
-                    <Link to={`/projects/import/${batch.id}`}>
-                      {t('projects.import.batchNo', { batchNo: batch.batchNo })}
-                    </Link>
-                  </td>
-                  <td>
-                    <BatchStatus batch={batch} />
-                  </td>
-                  <td dir="auto">{batch.fileName}</td>
-                  <td>
-                    {t('projects.import.countsValue', {
-                      create: batch.createCount,
-                      update: batch.updateCount,
-                      skip: batch.skipCount,
-                    })}
-                  </td>
-                  <td>{submitter(batch.submittedBy)}</td>
-                  <td>{formatDateTime(batch.submittedAt)}</td>
-                </tr>
-              ))}
+              {batches.data.items.map((batch) => {
+                const name = t('projects.import.batchNo', { batchNo: batch.batchNo });
+                return (
+                  <tr key={batch.id}>
+                    <SelectRowCell id={batch.id} name={name} selection={selection} />
+                    <td>
+                      <Link to={`/projects/import/${batch.id}`}>{name}</Link>
+                    </td>
+                    <td>
+                      <BatchStatus batch={batch} />
+                    </td>
+                    <td dir="auto">{batch.fileName}</td>
+                    <td>
+                      {t('projects.import.countsValue', {
+                        create: batch.createCount,
+                        update: batch.updateCount,
+                        skip: batch.skipCount,
+                      })}
+                    </td>
+                    <td>{submitter(batch.submittedBy)}</td>
+                    <td>{formatDateTime(batch.submittedAt)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </TableContainer>
         ))}

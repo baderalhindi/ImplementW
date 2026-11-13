@@ -4,6 +4,8 @@ import { Link } from 'react-router';
 import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type ConcernEscalationDetail } from '../api/types.ts';
 import { escalationAgeDays, type EscalationEntry } from '../concernRules.ts';
@@ -21,6 +23,10 @@ interface EscalationTableProps {
   personName: (id: string | null) => string;
   /** The commands offered on a row (a concern's own list); none on SCR-087, where SCR-088 offers them. */
   actions?: (escalation: ConcernEscalationDetail) => ReactNode;
+  /** The chosen rows, when the screen acts on them; the table keeps its own otherwise. */
+  selection?: RowSelection;
+  /** The commands on the chosen rows. */
+  bulkActions?: ReactNode;
 }
 
 /**
@@ -36,13 +42,24 @@ export function EscalationTable({
   itemLabel,
   personName,
   actions,
+  selection: givenSelection,
+  bulkActions,
 }: EscalationTableProps): ReactElement {
   const { t, formatDateTime } = useI18n();
+  const ownSelection = useRowSelection();
+  const selection = givenSelection ?? ownSelection;
   const showSource = entries.some((entry) => entry.concern !== undefined);
   return (
-    <TableContainer caption={caption}>
+    <TableContainer
+      caption={caption}
+      selection={{ selection, exportName: 'escalations', actions: bulkActions }}
+    >
       <thead>
         <tr>
+          <SelectAllHeader
+            ids={entries.map(({ escalation }) => escalation.id)}
+            selection={selection}
+          />
           <th scope="col">{t('issuesChallenges.escalations.table.escalation')}</th>
           {showSource && (
             <>
@@ -70,6 +87,11 @@ export function EscalationTable({
               data-status={escalation.status}
               className={open ? undefined : 'row--muted'}
             >
+              <SelectRowCell
+                id={escalation.id}
+                name={t('issuesChallenges.escalations.number', { number: escalation.escalationNo })}
+                selection={selection}
+              />
               <td>
                 <Link to={escalationPath(escalation.id)}>
                   {t('issuesChallenges.escalations.number', { number: escalation.escalationNo })}

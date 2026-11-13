@@ -8,6 +8,8 @@ import { usePeriods } from '@/features/progress/usePeriods.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import {
@@ -33,6 +35,9 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
   const overview = useFinancialOverview(project.id);
   const period = usePeriods(project.id);
   const personName = usePersonNames(peopleOf(overview.data));
+  const snapshotSelection = useRowSelection();
+  const updateSelection = useRowSelection();
+  const budgetSelection = useRowSelection();
   const labelOf = (cycleId: string) => periodLabel(period(cycleId), cycleId, t);
   const when = (at: string | null, by: string | null) =>
     at === null ? t('common.values.none') : `${formatDateTime(at)} · ${personName(by)}`;
@@ -76,9 +81,16 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
         {data.snapshots.length === 0 ? (
           <EmptyState title={t('financialKpi.financials.official.none')} />
         ) : (
-          <TableContainer caption={t('financialKpi.history.snapshotsCaption')}>
+          <TableContainer
+            caption={t('financialKpi.history.snapshotsCaption')}
+            selection={{ selection: snapshotSelection, exportName: 'financial-snapshots' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={data.snapshots.map((snapshot) => snapshot.id)}
+                  selection={snapshotSelection}
+                />
                 <th scope="col">{t('financialKpi.figures.period')}</th>
                 <th scope="col">{t('financialKpi.figures.financialStatus')}</th>
                 <th scope="col">{t('financialKpi.figures.approvedBudget')}</th>
@@ -91,6 +103,11 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
             <tbody>
               {data.snapshots.map((snapshot) => (
                 <tr key={snapshot.id}>
+                  <SelectRowCell
+                    id={snapshot.id}
+                    name={labelOf(snapshot.reportingCycleId)}
+                    selection={snapshotSelection}
+                  />
                   <td>
                     <span className="progress__period" dir="ltr">
                       {labelOf(snapshot.reportingCycleId)}
@@ -140,9 +157,16 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
         {data.updates.length === 0 ? (
           <EmptyState title={t('financialKpi.history.noUpdates')} />
         ) : (
-          <TableContainer caption={t('financialKpi.history.updatesCaption')}>
+          <TableContainer
+            caption={t('financialKpi.history.updatesCaption')}
+            selection={{ selection: updateSelection, exportName: 'financial-updates' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={data.updates.map((update) => update.id)}
+                  selection={updateSelection}
+                />
                 <th scope="col">{t('financialKpi.figures.period')}</th>
                 <th scope="col">{t('financialKpi.history.revision')}</th>
                 <th scope="col">{t('financialKpi.history.status')}</th>
@@ -157,6 +181,11 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
             <tbody>
               {data.updates.map((update) => (
                 <tr key={update.id}>
+                  <SelectRowCell
+                    id={update.id}
+                    name={`${labelOf(update.reportingCycleId)} · ${String(update.revisionNo)}`}
+                    selection={updateSelection}
+                  />
                   <td>
                     <span className="progress__period" dir="ltr">
                       {labelOf(update.reportingCycleId)}
@@ -213,9 +242,16 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
         {budgets.length === 0 ? (
           <EmptyState title={t('financialKpi.value.noBudget')} />
         ) : (
-          <TableContainer caption={t('financialKpi.history.budgetsCaption')}>
+          <TableContainer
+            caption={t('financialKpi.history.budgetsCaption')}
+            selection={{ selection: budgetSelection, exportName: 'budget-versions' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={budgets.map((commitment) => commitment.id)}
+                  selection={budgetSelection}
+                />
                 <th scope="col">{t('financialKpi.history.version')}</th>
                 <th scope="col">{t('financialKpi.history.status')}</th>
                 <th scope="col">{t('financialKpi.figures.approvedBudget')}</th>
@@ -225,41 +261,45 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
               </tr>
             </thead>
             <tbody>
-              {budgets.map((commitment) => (
-                <tr key={commitment.id}>
-                  <td>
-                    {t('financialKpi.history.versionRevision', {
-                      version: commitment.versionNo,
-                      revision: commitment.revisionNo,
-                    })}
-                    {commitment.commitmentType === 'DECLARED_BUDGET' && (
-                      <span className="details__aside">{t('financialKpi.history.declared')}</span>
-                    )}
-                  </td>
-                  <td>
-                    <VersionStatusBadge status={commitment.status} />
-                  </td>
-                  <td>
-                    <AmountFigure
-                      state={figureOf(commitment, 'amountSar', null)}
-                      absent="financialKpi.value.noBudget"
-                    />
-                  </td>
-                  <td>{commitment.effectiveFrom ?? t('common.values.none')}</td>
-                  <td>
-                    <ProvenanceLine
-                      provenance={commitment}
-                      maskedFields={commitment.maskedFields}
-                      personName={personName}
-                    />
-                  </td>
-                  <td>
-                    {commitment.activatedAt === null
-                      ? t('common.values.none')
-                      : formatDateTime(commitment.activatedAt)}
-                  </td>
-                </tr>
-              ))}
+              {budgets.map((commitment) => {
+                const label = t('financialKpi.history.versionRevision', {
+                  version: commitment.versionNo,
+                  revision: commitment.revisionNo,
+                });
+                return (
+                  <tr key={commitment.id}>
+                    <SelectRowCell id={commitment.id} name={label} selection={budgetSelection} />
+                    <td>
+                      {label}
+                      {commitment.commitmentType === 'DECLARED_BUDGET' && (
+                        <span className="details__aside">{t('financialKpi.history.declared')}</span>
+                      )}
+                    </td>
+                    <td>
+                      <VersionStatusBadge status={commitment.status} />
+                    </td>
+                    <td>
+                      <AmountFigure
+                        state={figureOf(commitment, 'amountSar', null)}
+                        absent="financialKpi.value.noBudget"
+                      />
+                    </td>
+                    <td>{commitment.effectiveFrom ?? t('common.values.none')}</td>
+                    <td>
+                      <ProvenanceLine
+                        provenance={commitment}
+                        maskedFields={commitment.maskedFields}
+                        personName={personName}
+                      />
+                    </td>
+                    <td>
+                      {commitment.activatedAt === null
+                        ? t('common.values.none')
+                        : formatDateTime(commitment.activatedAt)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </TableContainer>
         )}

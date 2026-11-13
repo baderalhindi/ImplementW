@@ -8,6 +8,8 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { auditActivityApi } from '../api/auditActivityApi.ts';
 import { type AuditEventQuery, type AuditEventSummary } from '../api/types.ts';
@@ -49,6 +51,7 @@ export function AuditEventList({
     [key, page],
   );
   const events = useApiResource(load);
+  const selection = useRowSelection();
 
   if (events.loading) {
     return <LoadingState />;
@@ -67,9 +70,13 @@ export function AuditEventList({
   }
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer caption={caption} selection={{ selection, exportName: 'audit-events' }}>
         <thead>
           <tr>
+            <SelectAllHeader
+              ids={events.data.items.map((event) => event.id)}
+              selection={selection}
+            />
             <th scope="col">{t('auditActivity.fields.occurredAt')}</th>
             <th scope="col">{t('auditActivity.fields.category')}</th>
             <th scope="col">{t('auditActivity.fields.event')}</th>
@@ -81,6 +88,11 @@ export function AuditEventList({
         <tbody>
           {events.data.items.map((event) => (
             <tr key={event.id} data-audit-event={event.id} data-category={event.category}>
+              <SelectRowCell
+                id={event.id}
+                name={`${event.eventType} ${formatDateTime(event.occurredAt)}`}
+                selection={selection}
+              />
               <td>
                 <time dateTime={event.occurredAt}>{formatDateTime(event.occurredAt)}</time>
               </td>

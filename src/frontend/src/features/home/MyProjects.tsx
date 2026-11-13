@@ -18,7 +18,9 @@ import { readInBatches } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 /** How many projects a Home view lists; each costs a read for its follow-up. */
 const SHOWN = 25;
@@ -67,6 +69,7 @@ export function ManagedProjects({ userId }: { userId: string }): ReactElement | 
       [userId],
     ),
   );
+  const selection = useRowSelection();
   if (managed.data === undefined || managed.data.rows.length === 0) {
     return null;
   }
@@ -74,9 +77,16 @@ export function ManagedProjects({ userId }: { userId: string }): ReactElement | 
   return (
     <section className="home__work">
       <h2>{t('home.managed.title')}</h2>
-      <TableContainer caption={t('home.managed.title')}>
+      <TableContainer
+        caption={t('home.managed.title')}
+        selection={{ selection, exportName: 'managed-projects' }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader
+              ids={managed.data.rows.map(({ project }) => project.id)}
+              selection={selection}
+            />
             <th scope="col">{t('projects.fields.title')}</th>
             <th scope="col">{t('projects.followUp.onPlan')}</th>
             <th scope="col">{t('projects.followUp.daysRemaining')}</th>
@@ -92,6 +102,7 @@ export function ManagedProjects({ userId }: { userId: string }): ReactElement | 
             ).length;
             return (
               <tr key={project.id}>
+                <SelectRowCell id={project.id} name={project.title.text} selection={selection} />
                 <td>
                   <ProjectLink project={project} />
                 </td>
@@ -142,6 +153,7 @@ export function EntityProjects(): ReactElement | null {
   const { page } = useMyUpdates();
   const counted = useCounted();
   const own = useApiResource(readOwnProjects);
+  const selection = useRowSelection();
   const due = page?.totalCount ?? 0;
   if (own.data === undefined) {
     return null;
@@ -166,9 +178,16 @@ export function EntityProjects(): ReactElement | null {
       {own.data.rows.length === 0 ? (
         <p className="home__empty">{t('home.entity.noProjects')}</p>
       ) : (
-        <TableContainer caption={t('home.entity.title')}>
+        <TableContainer
+          caption={t('home.entity.title')}
+          selection={{ selection, exportName: 'my-projects' }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader
+                ids={own.data.rows.map(({ project }) => project.id)}
+                selection={selection}
+              />
               <th scope="col">{t('projects.fields.title')}</th>
               <th scope="col">{t('home.entity.lastUpdate')}</th>
               <th scope="col">{t('home.entity.nextDue')}</th>
@@ -183,6 +202,7 @@ export function EntityProjects(): ReactElement | null {
               );
               return (
                 <tr key={project.id}>
+                  <SelectRowCell id={project.id} name={project.title.text} selection={selection} />
                   <td>
                     <ProjectLink project={project} />
                   </td>

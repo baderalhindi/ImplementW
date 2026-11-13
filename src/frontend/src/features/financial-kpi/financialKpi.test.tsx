@@ -463,11 +463,11 @@ describe('criterion 1 and the workbook check on SCR-050: no measurement this per
       'badge badge--neutral',
     );
     expectNoGreen(kpi);
-    // The "This period" cell holds no figure at all.
-    expect(cells[2]?.querySelector('[data-value-state="MEASURED"]')).toBeNull();
-    expectNoZero(nth(cells, 2));
+    // The "This period" cell holds no figure at all (the first cell is the row's checkbox).
+    expect(cells[3]?.querySelector('[data-value-state="MEASURED"]')).toBeNull();
+    expectNoZero(nth(cells, 3));
     // The last published value is two months ago's, which was itself Unknown: said so, not 0.
-    expect(within(nth(cells, 5)).getByText(en('financialKpi.value.MISSING'))).toBeTruthy();
+    expect(within(nth(cells, 6)).getByText(en('financialKpi.value.MISSING'))).toBeTruthy();
     // The target in force is version 2.
     expect(
       within(kpi).getByText(en('financialKpi.kpis.targetVersion', { version: 2, target: '80' })),
@@ -711,7 +711,8 @@ describe('criterion 2 on SCR-073: a target change never back-edits older points'
       name: en('financialKpi.trend.valuesCaption'),
     });
     const rows = within(values).getAllByRole('row').slice(1);
-    expect(rows.map((row) => within(row).getAllByRole('cell')[2]?.textContent)).toEqual([
+    // The first cell is the row's checkbox.
+    expect(rows.map((row) => within(row).getAllByRole('cell')[3]?.textContent)).toEqual([
       en('financialKpi.kpis.targetVersion', { version: 2, target: '80' }),
       en('financialKpi.kpis.targetVersion', { version: 1, target: '95' }),
       en('financialKpi.kpis.targetVersion', { version: 1, target: '95' }),
@@ -722,6 +723,25 @@ describe('criterion 2 on SCR-073: a target change never back-edits older points'
     const targets = screen.getByRole('region', { name: en('financialKpi.trend.targetsCaption') });
     expect(within(targets).getByText(en('financialKpi.versionStatus.SUPERSEDED'))).toBeTruthy();
     expect(within(targets).getByText('95')).toBeTruthy();
+  });
+
+  test('select all values, and the bar says how many are chosen', async () => {
+    open(TREND, entitySession());
+    const values = await screen.findByRole('region', {
+      name: en('financialKpi.trend.valuesCaption'),
+    });
+    await userEvent.click(
+      within(values).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    const bar = screen
+      .getByText(en('common.table.selected', { count: 3 }))
+      .closest<HTMLElement>('.selection-bar');
+    if (bar === null) {
+      throw new Error('No selection bar.');
+    }
+    expect(
+      within(bar).getByRole('button', { name: en('common.table.exportSelected') }),
+    ).toBeTruthy();
   });
 
   test('SCR-073 has no accessibility violations', async () => {

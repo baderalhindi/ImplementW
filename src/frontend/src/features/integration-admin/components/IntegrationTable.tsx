@@ -3,7 +3,9 @@ import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
+import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { ValueStateFlag } from '@/shared/ui/ValueState.tsx';
 
@@ -31,13 +33,22 @@ export function IntegrationTable({
   emptyTitle,
 }: IntegrationTableProps): ReactElement {
   const { t } = useI18n();
+  const selection = useRowSelection();
   if (items.length === 0) {
     return <EmptyState title={emptyTitle} />;
   }
   return (
-    <TableContainer caption={caption}>
+    <TableContainer caption={caption} selection={{ selection, exportName: 'integrations' }}>
       <thead>
         <tr>
+          <SelectAllHeader
+            ids={items.flatMap((item) =>
+              item.instances.length === 0
+                ? [item.id]
+                : item.instances.map((instance) => instance.id),
+            )}
+            selection={selection}
+          />
           <th scope="col">{t('integrationAdmin.fields.integration')}</th>
           <th scope="col">{t('integrationAdmin.fields.activation')}</th>
           <th scope="col">{t('integrationAdmin.indicators.availability')}</th>
@@ -52,10 +63,15 @@ export function IntegrationTable({
       <tbody>
         {items.flatMap((item) =>
           item.instances.length === 0 ? (
-            <IntegrationRow key={item.id} item={item} instance={null} />
+            <IntegrationRow key={item.id} item={item} instance={null} selection={selection} />
           ) : (
             item.instances.map((instance) => (
-              <IntegrationRow key={instance.id} item={item} instance={instance} />
+              <IntegrationRow
+                key={instance.id}
+                item={item}
+                instance={instance}
+                selection={selection}
+              />
             ))
           ),
         )}
@@ -67,14 +83,17 @@ export function IntegrationTable({
 function IntegrationRow({
   item,
   instance,
+  selection,
 }: {
   item: IntegrationSummary;
   instance: IntegrationInstanceView | null;
+  selection: RowSelection;
 }): ReactElement {
   const { t, language } = useI18n();
   const name = labelIn(item.name, language);
   return (
     <tr data-integration={item.code}>
+      <SelectRowCell id={instance?.id ?? item.id} name={name} selection={selection} />
       <th scope="row">
         {name}
         <span className="cell__aside">

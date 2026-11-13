@@ -590,7 +590,9 @@ describe('SCR-166: conflict and retry are explicit states, never a generic error
 
     const row = conflict.querySelector<HTMLElement>('tr[data-attempt="1"]');
     expect(row).not.toBeNull();
-    const cells = [...(row?.querySelectorAll('td') ?? [])].map((cell) => plain(cell.textContent));
+    const cells = [...(row?.querySelectorAll('td:not(.cell--select)') ?? [])].map((cell) =>
+      plain(cell.textContent),
+    );
     expect(cells[1]).toBe(en('externalParticipation.attemptStatus.CONFLICT'));
     expect(cells[2]).toBe(String(TASK_VERSION_ANSWERED));
     expect(cells[3]).toBe(String(TASK_VERSION_CHANGED));
@@ -1041,9 +1043,9 @@ describe('SCR-163, SCR-164 and SCR-167', () => {
       ],
     });
     const table = await screen.findByRole('table');
-    const cells = [...(within(table).getAllByRole('row')[1]?.querySelectorAll('td') ?? [])].map(
-      (cell) => plain(cell.textContent),
-    );
+    const cells = [
+      ...(within(table).getAllByRole('row')[1]?.querySelectorAll('td:not(.cell--select)') ?? []),
+    ].map((cell) => plain(cell.textContent));
 
     expect(cells[0]).toBe(FORMAL_PROJECT_ID);
     // Not started 1 (the issued survey), drafting 0, with AHDA 1, one overdue, one responder, one AHDA draft.

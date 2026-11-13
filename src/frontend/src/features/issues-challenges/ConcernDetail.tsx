@@ -2,10 +2,12 @@ import { type ReactElement, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { keepChosen, runForEach } from '@/features/identity-access/components/RowActions.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { isClosed } from '@/features/projects/access.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
+import { ConfirmCommandDialog } from '@/features/risks/dialogs/ConfirmCommandDialog.tsx';
 import { isForbidden } from '@/features/risks/problems.ts';
 import { useRiskMatrix } from '@/features/risks/useRiskData.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
@@ -13,6 +15,7 @@ import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import {
   canCloseConcern,
@@ -24,12 +27,13 @@ import {
   canSubmitResolution,
   canWithdrawEscalation,
 } from './access.ts';
-import { type ConcernCommand } from './api/concernsApi.ts';
+import { type ConcernCommand, concernsApi } from './api/concernsApi.ts';
+import { type ConcernEscalationDetail } from './api/types.ts';
 import { ConcernStatusBadge, DueFlag, SeverityBadge } from './components/ConcernBadges.tsx';
 import { EscalationTable } from './components/EscalationTable.tsx';
 import { isOverdue, isReturned, isReviewDue } from './concernRules.ts';
 import { type ConcernDialog, ConcernDialogs } from './dialogs/ConcernDialogs.tsx';
-import { concernProblemMessage } from './problems.ts';
+import { concernProblemMessage, isStale } from './problems.ts';
 import { useConcernLookups, useConcernRecord, useRoleNames } from './useConcernData.ts';
 
 /** The notice a screen hands over when it navigates here (MOD-036 and MOD-038 land on the new concern). */
@@ -66,6 +70,9 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
   const [dialog, setDialog] = useState<ConcernDialog | null>(() =>
     params.get('edit') === '1' ? { kind: 'edit' } : null,
   );
+  const escalationSelection = useRowSelection();
+  /** The chosen escalations a Withdraw on them would end, while it is being confirmed. */
+  const [withdrawing, setWithdrawing] = useState<ConcernEscalationDetail[] | null>(null);
   const data = record.data;
   const personName = usePersonNames([
     data?.concern.data.assigneeUserId ?? null,
@@ -129,6 +136,12 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
   const commands: { label: string; dialog: ConcernDialog; primary?: boolean }[] = [];
   // A closed project's escalations are history: neither resolved nor withdrawn (TASK-063 D-8).
   const closed = isClosed(project.status);
+  const withdrawable = data.escalations.filter(
+    (escalation) =>
+      escalationSelection.selected.has(escalation.id) &&
+      !closed &&
+      canWithdrawEscalation(user, escalation),
+  );
   if (canEditConcern(user, project, concern)) {
     commands.push(
       {
@@ -356,6 +369,20 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
             roles={roles}
             itemLabel={lookups.itemLabel}
             personName={personName}
+            selection={escalationSelection}
+            bulkActions={
+              withdrawable.length > 0 && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => {
+                    setWithdrawing(withdrawable);
+                  }}
+                >
+                  {t('issuesChallenges.withdrawEscalation.confirm')}
+                </button>
+              )
+            }
             actions={(escalation) => (
               <span className="figure-group">
                 {!closed &&
@@ -397,6 +424,43 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
         )}
       </section>
 
+      {withdrawing !== null && (
+        <ConfirmCommandDialog
+          title={t('issuesChallenges.withdrawEscalation.title', {
+            number: withdrawing.map((escalation) => escalation.escalationNo).join('، '),
+          })}
+          consequence={t('issuesChallenges.withdrawEscalation.consequence')}
+          confirmLabel={t('issuesChallenges.withdrawEscalation.confirm')}
+          run={() =>
+            runForEach(
+              withdrawing,
+              (escalation) => concernsApi.withdrawEscalation(escalation.id),
+              (refused) => {
+                keepChosen(
+                  escalationSelection,
+                  refused.map((escalation) => escalation.id),
+                );
+                if (refused.length > 0) {
+                  record.reload();
+                }
+              },
+            )
+          }
+          describe={concernProblemMessage}
+          isStale={isStale}
+          onClose={() => {
+            setWithdrawing(null);
+          }}
+          onDone={() => {
+            setWithdrawing(null);
+            changed('issuesChallenges.done.escalationWithdrawn');
+          }}
+          onStale={() => {
+            setWithdrawing(null);
+            changed('issuesChallenges.done.stale', 'warning');
+          }}
+        />
+      )}
       <ConcernDialogs
         dialog={dialog}
         onDialogChange={setDialog}

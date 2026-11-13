@@ -189,6 +189,7 @@ export function KpiRegisterPage(): ReactElement {
                   lookups={lookups}
                   showTarget={false}
                   actions={kpiRows?.render}
+                  rowActions={kpiRows}
                 />
                 {kpiRows?.dialog}
               </>

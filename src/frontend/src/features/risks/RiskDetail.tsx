@@ -2,12 +2,15 @@ import { type ReactElement, useEffect, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
+import { keepChosen, runForEach } from '@/features/identity-access/components/RowActions.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { todayUtc } from '@/features/tasks/taskRules.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
@@ -20,7 +23,7 @@ import {
   canRevokeAcceptance,
   canStartTreatment,
 } from './access.ts';
-import { type RiskCommand } from './api/risksApi.ts';
+import { type RiskActionCommand, type RiskCommand, risksApi } from './api/risksApi.ts';
 import {
   type RiskDetail as RiskDetailRecord,
   type RiskTreatmentActionDetail,
@@ -33,9 +36,10 @@ import {
   UnratedBadge,
 } from './components/RiskBadges.tsx';
 import { MatrixUnavailable, RiskHeatMap } from './components/RiskHeatMap.tsx';
+import { ConfirmCommandDialog } from './dialogs/ConfirmCommandDialog.tsx';
 import { type RiskDialog } from './dialogs/riskDialog.ts';
 import { RiskDialogs } from './dialogs/RiskDialogs.tsx';
-import { isForbidden, riskProblemMessage } from './problems.ts';
+import { isForbidden, isStale, riskProblemMessage } from './problems.ts';
 import { ADD_ACTION_PARAM } from './riskLinks.ts';
 import { isLiveAction, isReviewDue } from './riskRules.ts';
 import { useRiskLookups, useRiskMatrix, useRiskRecord } from './useRiskData.ts';
@@ -44,6 +48,16 @@ import { useRiskLookups, useRiskMatrix, useRiskRecord } from './useRiskData.ts';
 const ARRIVAL_NOTICES: Record<string, TranslationKey> = {
   riskCreated: 'risks.done.created',
 };
+
+const ACTION_COMMANDS: RiskActionCommand[] = ['start', 'complete', 'cancel'];
+
+/** The commands a corrective action's status allows: a live one is started or completed, and cancelled. */
+function actionCommandsOf(action: Pick<RiskTreatmentActionDetail, 'status'>): RiskActionCommand[] {
+  if (!isLiveAction(action)) {
+    return [];
+  }
+  return action.status === 'PLANNED' ? ['start', 'cancel'] : ['complete', 'cancel'];
+}
 
 interface RiskDetailProps {
   project: ProjectDetail;
@@ -75,6 +89,14 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
   const [chosenDialog, setChosenDialog] = useState<RiskDialog | null>(() =>
     params.get('edit') === '1' ? { kind: 'edit' } : null,
   );
+  const assessmentSelection = useRowSelection();
+  const actionSelection = useRowSelection();
+  const acceptanceSelection = useRowSelection();
+  /** A command on the chosen corrective actions that allow it, while it is being confirmed. */
+  const [bulkCommand, setBulkCommand] = useState<{
+    command: RiskActionCommand;
+    actions: RiskTreatmentActionDetail[];
+  } | null>(null);
   const data = record.data;
   const personName = usePersonNames([
     data?.risk.data.ownerUserId ?? null,
@@ -287,9 +309,16 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
         {data.assessments.length === 0 ? (
           <EmptyState title={t('risks.detail.noAssessments')} />
         ) : (
-          <TableContainer caption={t('risks.detail.assessmentsCaption')}>
+          <TableContainer
+            caption={t('risks.detail.assessmentsCaption')}
+            selection={{ selection: assessmentSelection, exportName: 'risk-assessments' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={data.assessments.map((entry) => entry.id)}
+                  selection={assessmentSelection}
+                />
                 <th scope="col">{t('risks.detail.version')}</th>
                 <th scope="col">{t('risks.detail.assessed')}</th>
                 <th scope="col">{t('risks.table.rating')}</th>
@@ -300,6 +329,11 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
             <tbody>
               {data.assessments.map((entry) => (
                 <tr key={entry.id} data-assessment={entry.versionNo}>
+                  <SelectRowCell
+                    id={entry.id}
+                    name={`${t('risks.detail.version')} ${String(entry.versionNo)}`}
+                    selection={assessmentSelection}
+                  />
                   <td>
                     <span dir="ltr">{entry.versionNo}</span>
                   </td>
@@ -362,6 +396,10 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
             manager={manager}
             personName={personName}
             onOpen={setDialog}
+            selection={actionSelection}
+            onBulkCommand={(command, actions) => {
+              setBulkCommand({ command, actions });
+            }}
           />
         )}
       </section>
@@ -369,9 +407,16 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
       {data.acceptances.length > 0 && (
         <section className="section" aria-labelledby="risk-acceptances">
           <h3 id="risk-acceptances">{t('risks.detail.acceptancesTitle')}</h3>
-          <TableContainer caption={t('risks.detail.acceptancesCaption')}>
+          <TableContainer
+            caption={t('risks.detail.acceptancesCaption')}
+            selection={{ selection: acceptanceSelection, exportName: 'risk-acceptances' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={data.acceptances.map((acceptance) => acceptance.id)}
+                  selection={acceptanceSelection}
+                />
                 <th scope="col">{t('risks.detail.accepted')}</th>
                 <th scope="col">{t('risks.fields.expiresOn')}</th>
                 <th scope="col">{t('risks.table.status')}</th>
@@ -381,6 +426,11 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
             <tbody>
               {data.acceptances.map((acceptance) => (
                 <tr key={acceptance.id}>
+                  <SelectRowCell
+                    id={acceptance.id}
+                    name={formatDateTime(acceptance.acceptedAt)}
+                    selection={acceptanceSelection}
+                  />
                   <td>
                     {formatDateTime(acceptance.acceptedAt)}
                     <span className="cell__aside">{personName(acceptance.acceptedByUserId)}</span>
@@ -399,6 +449,47 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
         </section>
       )}
 
+      {bulkCommand !== null && (
+        <ConfirmCommandDialog
+          title={t(`risks.actionCommand.${bulkCommand.command}.title`)}
+          consequence={`${t(`risks.actionCommand.${bulkCommand.command}.consequence`)} ${t(
+            'risks.actionCommand.chosen',
+            { names: bulkCommand.actions.map((action) => action.title.text).join('، ') },
+          )}`}
+          confirmLabel={t(`risks.actionCommand.${bulkCommand.command}.confirm`)}
+          run={() =>
+            runForEach(
+              bulkCommand.actions,
+              async (action) => {
+                // An action's ETag is its own, read now: the list carries none.
+                const { etag } = await risksApi.action(action.id);
+                return risksApi.actionCommand(action.id, bulkCommand.command, etag);
+              },
+              (refused) => {
+                keepChosen(
+                  actionSelection,
+                  refused.map((action) => action.id),
+                );
+                if (refused.length > 0) {
+                  record.reload();
+                }
+              },
+            )
+          }
+          isStale={isStale}
+          onClose={() => {
+            setBulkCommand(null);
+          }}
+          onDone={() => {
+            changed(`risks.actionCommand.${bulkCommand.command}.done`);
+            setBulkCommand(null);
+          }}
+          onStale={() => {
+            changed('risks.done.stale', 'warning');
+            setBulkCommand(null);
+          }}
+        />
+      )}
       <RiskDialogs
         dialog={dialog}
         onDialogChange={setDialog}
@@ -457,17 +548,53 @@ function ActionTable({
   manager,
   personName,
   onOpen,
+  selection,
+  onBulkCommand,
 }: {
   actions: RiskTreatmentActionDetail[];
   manager: boolean;
   personName: (id: string | null) => string;
   onOpen: (dialog: RiskDialog) => void;
+  selection: RowSelection;
+  /** A command on the chosen actions whose status allows it. */
+  onBulkCommand: (command: RiskActionCommand, actions: RiskTreatmentActionDetail[]) => void;
 }): ReactElement {
   const { t } = useI18n();
+  const chosenAllowing = (command: RiskActionCommand) =>
+    manager
+      ? actions.filter(
+          (action) =>
+            selection.selected.has(action.id) && actionCommandsOf(action).includes(command),
+        )
+      : [];
   return (
-    <TableContainer caption={t('risks.detail.actionsCaption')}>
+    <TableContainer
+      caption={t('risks.detail.actionsCaption')}
+      selection={{
+        selection,
+        exportName: 'corrective-actions',
+        actions: ACTION_COMMANDS.map((command) => {
+          const allowing = chosenAllowing(command);
+          return (
+            allowing.length > 0 && (
+              <button
+                key={command}
+                type="button"
+                className="button"
+                onClick={() => {
+                  onBulkCommand(command, allowing);
+                }}
+              >
+                {t(`risks.actionCommand.${command}.confirm`)}
+              </button>
+            )
+          );
+        }),
+      }}
+    >
       <thead>
         <tr>
+          <SelectAllHeader ids={actions.map((action) => action.id)} selection={selection} />
           <th scope="col">{t('risks.fields.actionTitle')}</th>
           <th scope="col">{t('risks.fields.actionType')}</th>
           <th scope="col">{t('risks.table.owner')}</th>
@@ -479,6 +606,7 @@ function ActionTable({
       <tbody>
         {actions.map((action) => (
           <tr key={action.id} className={isLiveAction(action) ? undefined : 'row--muted'}>
+            <SelectRowCell id={action.id} name={action.title.text} selection={selection} />
             <td dir="auto">
               {action.title.text}
               {action.description !== null && (
@@ -509,10 +637,7 @@ function ActionTable({
                     >
                       {t('risks.actions.edit')}
                     </button>
-                    {(action.status === 'PLANNED'
-                      ? (['start', 'cancel'] as const)
-                      : (['complete', 'cancel'] as const)
-                    ).map((command) => (
+                    {actionCommandsOf(action).map((command) => (
                       <button
                         key={command}
                         type="button"

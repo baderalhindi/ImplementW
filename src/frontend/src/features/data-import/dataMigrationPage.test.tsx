@@ -55,6 +55,32 @@ describe('Data migration access', () => {
     ).toBeTruthy();
   });
 
+  test('select all takes every register, with no command but Export selected', async () => {
+    withIdentityAccessData(mockApi());
+    renderApp({ path: '/admin/data-migration', session: sessionFor(['R01']) });
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('checkbox', { name: translate('en', 'common.table.selectAll') }),
+    );
+
+    const count = screen.getByText(
+      translate('en', 'common.table.selected', { count: IMPORT_REGISTERS.length }),
+    );
+    const bar = count.closest<HTMLElement>('.selection-bar');
+    if (bar === null) {
+      throw new Error('No selection bar.');
+    }
+    expect(
+      within(bar)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual([
+      translate('en', 'common.table.exportSelected'),
+      translate('en', 'common.table.clearSelection'),
+    ]);
+  });
+
   test('another role is refused the page', async () => {
     withIdentityAccessData(mockApi());
     renderApp({ path: '/admin/data-migration', session: sessionFor(['R02']) });

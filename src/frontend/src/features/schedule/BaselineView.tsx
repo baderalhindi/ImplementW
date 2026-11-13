@@ -10,7 +10,9 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { candidateOf, canDecideBaseline, canEditSchedule } from './access.ts';
 import { scheduleApi } from './api/scheduleApi.ts';
@@ -23,7 +25,7 @@ import { ApproveBaselineDialog } from './dialogs/ApproveBaselineDialog.tsx';
 import { ConfirmDialog } from './dialogs/ConfirmDialog.tsx';
 import { SubmitBaselineDialog } from './dialogs/SubmitBaselineDialog.tsx';
 import { activityTree } from './gantt.ts';
-import { activityCode, baselineName, daysLabel } from './presentation.ts';
+import { activityCode, activityLabel, baselineName, daysLabel } from './presentation.ts';
 import { isForbidden, isRefusal, scheduleProblemMessage } from './problems.ts';
 import { useBaselineReview } from './useBaselineReview.ts';
 import { activeBaselineOf, useScheduleView } from './useScheduleView.ts';
@@ -57,6 +59,7 @@ export function BaselineView({
   const [createError, setCreateError] = useState<string | null>(null);
   const candidate = view.data === undefined ? null : candidateOf(view.data.baselines);
   const review = useBaselineReview(candidate);
+  const selection = useRowSelection();
 
   const reload = () => {
     view.reload();
@@ -138,9 +141,16 @@ export function BaselineView({
             <p>{t('schedule.baselines.emptyHint')}</p>
           </EmptyState>
         ) : (
-          <TableContainer caption={t('schedule.baselines.caption')}>
+          <TableContainer
+            caption={t('schedule.baselines.caption')}
+            selection={{ selection, exportName: 'baselines' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={data.baselines.map((baseline) => baseline.id)}
+                  selection={selection}
+                />
                 <th scope="col">{t('schedule.baselines.baseline')}</th>
                 <th scope="col">{t('schedule.baselines.status')}</th>
                 <th scope="col">{t('schedule.baselines.finish')}</th>
@@ -151,13 +161,15 @@ export function BaselineView({
             <tbody>
               {data.baselines.map((baseline) => {
                 const isCandidate = baseline.id === candidate?.id;
+                const name = baselineName(baseline, t);
                 return (
                   <tr
                     key={baseline.id}
                     aria-current={baseline.id === selectedId ? 'true' : undefined}
                   >
+                    <SelectRowCell id={baseline.id} name={name} selection={selection} />
                     <td>
-                      <Link to={`?baselineId=${baseline.id}`}>{baselineName(baseline, t)}</Link>
+                      <Link to={`?baselineId=${baseline.id}`}>{name}</Link>
                     </td>
                     <td>
                       <BaselineStatusBadge baseline={baseline} />
@@ -320,6 +332,7 @@ function SelectedBaseline({
     [baseline.id, hasCopy],
   );
   const copy = useApiResource(load);
+  const selection = useRowSelection();
   const byId = new Map(activities.map((activity) => [activity.id, activity]));
   // The copy in work-breakdown order, as the working schedule lists the same activities.
   const order = new Map(activityTree(activities).map((row, index) => [row.activity.id, index]));
@@ -377,9 +390,16 @@ function SelectedBaseline({
       ) : (
         <>
           <h3>{t('schedule.baselines.copyTitle')}</h3>
-          <TableContainer caption={t('schedule.baselines.copyCaption')}>
+          <TableContainer
+            caption={t('schedule.baselines.copyCaption')}
+            selection={{ selection, exportName: 'baseline-activities' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={copy.data[0].map((entry) => entry.scheduleActivityId)}
+                  selection={selection}
+                />
                 <th scope="col">{t('schedule.activities.wbs')}</th>
                 <th scope="col">{t('schedule.activities.activity')}</th>
                 <th scope="col">{t('schedule.legend.baseline')}</th>
@@ -399,6 +419,15 @@ function SelectedBaseline({
                   const working = byId.get(entry.scheduleActivityId);
                   return (
                     <tr key={entry.scheduleActivityId}>
+                      <SelectRowCell
+                        id={entry.scheduleActivityId}
+                        name={
+                          working === undefined
+                            ? activityCode(entry.scheduleActivityId, byId)
+                            : activityLabel(working)
+                        }
+                        selection={selection}
+                      />
                       <td className="cell--ltr">{activityCode(entry.scheduleActivityId, byId)}</td>
                       <td dir="auto">
                         {working?.name.text ?? t('common.values.none')}

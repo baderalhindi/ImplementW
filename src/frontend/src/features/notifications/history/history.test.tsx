@@ -90,6 +90,17 @@ describe('SCR-153 Notification History', () => {
     expect(describeViolations(await accessibilityViolations())).toBe('');
   });
 
+  test('select all chooses every delivery shown, for Export selected', async () => {
+    openHistory();
+    const table = await screen.findByRole('table', { name: en('notifications.history.title') });
+
+    await userEvent.click(
+      within(table).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    expect(screen.getByText(en('common.table.selected', { count: 4 }))).toBeTruthy();
+    expect(screen.getByRole('button', { name: en('common.table.exportSelected') })).toBeTruthy();
+  });
+
   test('channel and status filters are sent to the API and kept in the URL', async () => {
     const api = openHistory();
     const user = userEvent.setup();

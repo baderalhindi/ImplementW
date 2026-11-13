@@ -180,6 +180,7 @@ export function ProjectKpis({
           showTarget
           personName={personName}
           actions={actions}
+          rowActions={kpiRows}
         />
       )}
 

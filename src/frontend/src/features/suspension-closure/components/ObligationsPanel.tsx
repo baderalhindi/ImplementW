@@ -5,8 +5,10 @@ import { type SessionUser } from '@/features/identity-access/session/sessionApi.
 import { ConfirmCommandDialog } from '@/features/risks/dialogs/ConfirmCommandDialog.tsx';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, FormAlert } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type ObligationCommand, obligationsApi } from '../api/closeoutApi.ts';
 import {
@@ -22,7 +24,10 @@ import { isStale, suspensionClosureProblemMessage } from '../problems.ts';
 type OpenDialog =
   | { kind: 'add' }
   | { kind: 'edit'; obligation: PostProjectObligationDetail; etag: string | null }
-  | { kind: 'command'; obligation: PostProjectObligationDetail; command: ObligationCommand };
+  | { kind: 'command'; obligation: PostProjectObligationDetail; command: ObligationCommand }
+  | { kind: 'commandMany'; obligations: PostProjectObligationDetail[]; command: ObligationCommand };
+
+const COMMANDS: ObligationCommand[] = ['start', 'satisfy', 'cancel', 'waive'];
 
 const COMMAND_DONE: Record<ObligationCommand, TranslationKey> = {
   start: 'suspensionClosure.done.obligationStarted',
@@ -59,6 +64,16 @@ export function ObligationsPanel({
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
   const adds = project !== null && target !== null && managesProject(user, project);
   const open = obligations.filter((obligation) => !isSettled(obligation.status)).length;
+  const selection = useRowSelection();
+  /** The chosen obligations the command applies to. */
+  const chosenFor = (command: ObligationCommand) =>
+    project === null
+      ? []
+      : obligations.filter(
+          (obligation) =>
+            selection.selected.has(obligation.id) &&
+            obligationCommands(user, project, obligation).includes(command),
+        );
 
   const done = (message: TranslationKey) => {
     setDialog(null);
@@ -101,9 +116,31 @@ export function ObligationsPanel({
       {obligations.length === 0 ? (
         <EmptyState title={t('suspensionClosure.obligations.none')} />
       ) : (
-        <TableContainer caption={t('suspensionClosure.obligations.caption')}>
+        <TableContainer
+          caption={t('suspensionClosure.obligations.caption')}
+          selection={{
+            selection,
+            exportName: 'post-project-obligations',
+            actions: COMMANDS.filter((command) => chosenFor(command).length > 0).map((command) => (
+              <button
+                key={command}
+                type="button"
+                className="button"
+                onClick={() => {
+                  setDialog({ kind: 'commandMany', obligations: chosenFor(command), command });
+                }}
+              >
+                {t(`suspensionClosure.obligations.command.${command}.action`)}
+              </button>
+            )),
+          }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader
+                ids={obligations.map((obligation) => obligation.id)}
+                selection={selection}
+              />
               <th scope="col">{t('suspensionClosure.obligations.fields.title')}</th>
               <th scope="col">{t('suspensionClosure.obligations.fields.owner')}</th>
               <th scope="col">{t('suspensionClosure.obligations.fields.dueDate')}</th>
@@ -120,6 +157,7 @@ export function ObligationsPanel({
               const name = obligation.title.text;
               return (
                 <tr key={obligation.id}>
+                  <SelectRowCell id={obligation.id} name={name} selection={selection} />
                   <td>
                     <span dir="auto">{name}</span>
                     {obligation.description !== null && (
@@ -219,6 +257,30 @@ export function ObligationsPanel({
             setDialog(null);
           }}
           onDone={() => {
+            done(COMMAND_DONE[dialog.command]);
+          }}
+          onStale={stale}
+        />
+      )}
+      {dialog?.kind === 'commandMany' && (
+        <ConfirmCommandDialog
+          title={t(`suspensionClosure.obligations.command.${dialog.command}.title`, {
+            name: dialog.obligations.map((obligation) => obligation.title.text).join('، '),
+          })}
+          consequence={t(`suspensionClosure.obligations.command.${dialog.command}.consequence`)}
+          confirmLabel={t(`suspensionClosure.obligations.command.${dialog.command}.action`)}
+          run={async () => {
+            for (const obligation of dialog.obligations) {
+              await obligationsApi.command(obligation.id, dialog.command, null);
+            }
+          }}
+          describe={suspensionClosureProblemMessage}
+          isStale={isStale}
+          onClose={() => {
+            setDialog(null);
+          }}
+          onDone={() => {
+            selection.clear();
             done(COMMAND_DONE[dialog.command]);
           }}
           onStale={stale}

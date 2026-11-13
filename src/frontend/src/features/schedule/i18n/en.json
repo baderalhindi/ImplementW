@@ -141,6 +141,14 @@
     "title": "Remove dependency",
     "body": "Remove this dependency? The successor's planned dates are calculated again without it."
   },
+  "cancelActivities": {
+    "title": "Cancel activities",
+    "body": "Cancel {list}? They leave the plan and cannot be restored. Their records are kept."
+  },
+  "removeDependencies": {
+    "title": "Remove dependencies",
+    "body": "Remove {list}? The successors' planned dates are calculated again without them."
+  },
   "gantt": {
     "title": "Gantt",
     "empty": "No activity to show yet.",

@@ -7,7 +7,9 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { RadioGroupField, SelectField, TextAreaField } from '@/shared/ui/FormFields.tsx';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { usersApi } from '../api/identityAccessApi.ts';
 import { type DataScope, type UserPermissionEntry } from '../api/types.ts';
@@ -39,6 +41,7 @@ export function UserPermissionsSection({
   const [saved, setSaved] = useState(false);
   const load = useCallback((signal: AbortSignal) => usersApi.permissions(userId, signal), [userId]);
   const permissions = useApiResource(load);
+  const selection = useRowSelection();
 
   if (!mayRead) {
     return null;
@@ -94,9 +97,14 @@ export function UserPermissionsSection({
         ) : (
           <TableContainer
             caption={t('identityAccess.users.permissions.caption', { name: displayName })}
+            selection={{ selection, exportName: 'user-permissions' }}
           >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={adjusted.map((item) => item.permissionCode)}
+                  selection={selection}
+                />
                 <th scope="col">{t('identityAccess.users.permissions.permission')}</th>
                 <th scope="col">{t('identityAccess.users.permissions.fromRole')}</th>
                 <th scope="col">{t('identityAccess.users.permissions.adjustment')}</th>
@@ -107,6 +115,7 @@ export function UserPermissionsSection({
             <tbody>
               {adjusted.map((item) => (
                 <tr key={item.permissionCode}>
+                  <SelectRowCell id={item.permissionCode} name={name(item)} selection={selection} />
                   <th scope="row">{name(item)}</th>
                   <td>{fromRoles(item)}</td>
                   <td>

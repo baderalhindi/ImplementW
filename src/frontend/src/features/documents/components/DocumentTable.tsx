@@ -5,7 +5,9 @@ import { Link } from 'react-router';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type DocumentSummary } from '../api/types.ts';
 import { documentTone, languageTag, shortId } from '../presentation.ts';
@@ -33,11 +35,20 @@ export function DocumentTable({
 }: DocumentTableProps): ReactElement {
   const { t, formatDateTime } = useI18n();
   const person = usePersonNames(documents.map((document) => document.ownerUserId));
+  const selection = useRowSelection();
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer
+        caption={caption}
+        selection={{
+          selection,
+          exportName: 'documents',
+          actions: actions?.bulk(documents, selection, (document) => document.id),
+        }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={documents.map((document) => document.id)} selection={selection} />
             <th scope="col">{t('documents.fields.title')}</th>
             <th scope="col">{t('documents.fields.documentType')}</th>
             <th scope="col">{t('documents.fields.classification')}</th>
@@ -55,6 +66,7 @@ export function DocumentTable({
               key={document.id}
               className={document.latestScanState === 'QUARANTINED' ? 'row--flagged' : undefined}
             >
+              <SelectRowCell id={document.id} name={document.title.text} selection={selection} />
               <td>
                 <Link
                   to={`/documents/${document.id}`}

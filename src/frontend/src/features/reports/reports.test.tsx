@@ -661,3 +661,66 @@ describe('navigation, accessibility and language', () => {
     expect(violations, describeViolations(violations)).toHaveLength(0);
   });
 });
+
+describe('select, select all and the commands on the chosen rows', () => {
+  /** The selection bar, found by its count. */
+  function selectionBar(count: number): HTMLElement {
+    const bar = screen.getByText(en('common.table.selected', { count })).closest('.selection-bar');
+    if (!(bar instanceof HTMLElement)) {
+      throw new Error('No selection bar.');
+    }
+    return bar;
+  }
+
+  test('saved views: select all, then Delete removes only the chosen views the person owns', async () => {
+    const api = at('/reports/saved-views');
+    await userEvent.click(
+      await screen.findByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    await userEvent.click(
+      within(selectionBar(2)).getByRole('button', { name: en('reports.savedViews.delete') }),
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent).toContain('Red projects');
+    expect(dialog.textContent).not.toContain('المشاريع المعلقة');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: en('reports.savedViews.delete') }),
+    );
+    await waitFor(() => {
+      expect(api.requestsTo('DELETE', /^\/saved-views\//)).toHaveLength(1);
+    });
+    expect(api.requestsTo('DELETE', /^\/saved-views\//)[0]?.path).toBe('/saved-views/view-own');
+  });
+
+  test('export history: select all, then Cancel for every chosen job that may still be cancelled', async () => {
+    const queued = {
+      status: 'QUEUED' as const,
+      completedAt: null,
+      sensitivity: null,
+      expiresAt: null,
+    };
+    const api = at('/reports/exports', composerSession(), {
+      jobs: [
+        jobSummary(),
+        jobSummary({ ...queued, id: 'job-2' }),
+        jobSummary({ ...queued, id: 'job-3' }),
+      ],
+    });
+    api.on('POST', /^\/report-jobs\/[^/]+\/cancel$/, {
+      body: jobDetail({ id: 'job-2', status: 'CANCELLED' }),
+    });
+    await userEvent.click(
+      await screen.findByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    await userEvent.click(
+      within(selectionBar(3)).getByRole('button', { name: en('reports.history.cancel') }),
+    );
+    await waitFor(() => {
+      expect(api.requestsTo('POST', /\/cancel$/)).toHaveLength(2);
+    });
+    expect(api.requestsTo('POST', /\/cancel$/).map((request) => request.path)).toEqual([
+      '/report-jobs/job-2/cancel',
+      '/report-jobs/job-3/cancel',
+    ]);
+  });
+});

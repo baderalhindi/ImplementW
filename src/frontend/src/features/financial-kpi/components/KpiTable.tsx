@@ -1,9 +1,12 @@
 import { type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
+import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 import { type ProjectSummary } from '@/features/projects/api/types.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import {
   activeTarget,
@@ -36,6 +39,7 @@ export function KpiTable({
   showTarget,
   personName,
   actions,
+  rowActions,
 }: {
   caption: string;
   rows: KpiRow[];
@@ -45,13 +49,28 @@ export function KpiTable({
   showTarget: boolean;
   personName?: (id: string | null) => string;
   actions?: ((entry: KpiEntry) => ReactNode) | undefined;
+  /** The Edit and Delete the rows carry, for Delete on the chosen rows. */
+  rowActions?: RowActionsColumn<KpiEntry> | undefined;
 }): ReactElement {
   const { t } = useI18n();
+  const selection = useRowSelection();
   const showProject = rows.some((row) => row.project !== undefined);
   return (
-    <TableContainer caption={caption}>
+    <TableContainer
+      caption={caption}
+      selection={{
+        selection,
+        exportName: 'kpis',
+        actions: rowActions?.bulk(
+          rows.map((row) => row.entry),
+          selection,
+          (entry) => entry.assignment.id,
+        ),
+      }}
+    >
       <thead>
         <tr>
+          <SelectAllHeader ids={rows.map((row) => row.entry.assignment.id)} selection={selection} />
           <th scope="col">{t('financialKpi.kpis.kpi')}</th>
           {showProject && <th scope="col">{t('financialKpi.kpis.project')}</th>}
           {showTarget && <th scope="col">{t('financialKpi.kpis.target')}</th>}
@@ -70,6 +89,11 @@ export function KpiTable({
           const target = activeTarget(targets);
           return (
             <tr key={assignment.id} data-kpi-assignment={assignment.id}>
+              <SelectRowCell
+                id={assignment.id}
+                name={lookups.kpiName(assignment.kpiDefinitionId)}
+                selection={selection}
+              />
               <td>
                 <Link to={`/projects/${assignment.projectId}/kpis/${assignment.id}`}>
                   {lookups.kpiName(assignment.kpiDefinitionId)}

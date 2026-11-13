@@ -144,3 +144,30 @@ describe('SCR-101 My Requests', () => {
     expect(link.getAttribute('href')).toBe(`/approvals/instances/${approved.id}`);
   });
 });
+
+describe('SCR-101 selection', () => {
+  test('select all, then one Withdraw for every chosen request still pending', async () => {
+    const pending = [summary('PENDING', 1), summary('PENDING', 2)];
+    const api = openRequests([...pending, summary('APPROVED', 3)]);
+    api.on('POST', /\/withdraw$/, { body: approvalRun({ status: 'WITHDRAWN' }) });
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('checkbox', { name: en('common.table.selectAll') }));
+    const bar = screen
+      .getByText(translate('en', 'common.table.selected', { count: 3 }))
+      .closest('.selection-bar');
+    if (!(bar instanceof HTMLElement)) {
+      throw new Error('No selection bar.');
+    }
+    await user.click(within(bar).getByRole('button', { name: en('approvals.withdraw.action') }));
+    const dialog = screen.getByRole('dialog', { name: en('approvals.withdraw.title') });
+    await user.click(
+      within(dialog).getByRole('button', { name: en('approvals.withdraw.confirm') }),
+    );
+
+    expect(await screen.findByText(en('approvals.done.withdraw'))).toBeTruthy();
+    expect(api.requestsTo('POST', /\/withdraw$/).map((request) => request.path)).toEqual(
+      pending.map((request) => `/approval-instances/${request.id}/withdraw`),
+    );
+  });
+});

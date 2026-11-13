@@ -3,14 +3,21 @@ import { Link, useSearchParams } from 'react-router';
 
 import { pageFrom, PAGE_SIZE } from '@/shared/api/paging.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
-import { useI18n } from '@/shared/i18n/i18n.ts';
+import {
+  ConfirmDialog,
+  type Confirmation,
+} from '@/features/identity-access/components/ConfirmDialog.tsx';
+import { isTranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { PageNotice, type Notice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { approvalInstancesApi } from '../api/approvalsApi.ts';
+import { type ApprovalInstanceSummary } from '../api/types.ts';
 import { SubjectSummary } from '../components/SubjectSummary.tsx';
 import { WithdrawDialog } from '../dialogs/WithdrawDialog.tsx';
 import { INSTANCE_STATUSES, instanceTone } from '../presentation.ts';
@@ -33,6 +40,38 @@ export function MyRequestsPage(): ReactElement {
   const requests = useApiResource(load);
   const [withdrawing, setWithdrawing] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const selection = useRowSelection();
+
+  /** A request as its subject reads: the kind of request and its revision. */
+  const requestName = (request: ApprovalInstanceSummary) => {
+    const key = `approvals.routing.${request.routingKey}`;
+    const kind = isTranslationKey(key) ? t(key) : request.routingKey;
+    return `${kind} (${t('approvals.subject.revision', { revision: request.subject.revisionNo })})`;
+  };
+
+  /** The chosen requests on this page still PENDING, the only ones Withdraw applies to. */
+  const chosenWithdrawable = (requests.data?.items ?? []).filter(
+    (request) => selection.selected.has(request.id) && request.status === 'PENDING',
+  );
+  const withdrawMany = () => {
+    setNotice(null);
+    setConfirmation({
+      title: t('approvals.withdraw.title'),
+      body: t('approvals.withdraw.bodyMany', {
+        names: chosenWithdrawable.map(requestName).join('، '),
+      }),
+      confirmLabel: t('approvals.withdraw.confirm'),
+      destructive: true,
+      action: async () => {
+        for (const request of chosenWithdrawable) {
+          await approvalInstancesApi.withdraw(request.id);
+        }
+        selection.clear();
+      },
+      describeProblem: approvalProblemMessage,
+    });
+  };
 
   const goToPage = (next: number) => {
     const updated = new URLSearchParams(params);
@@ -88,9 +127,24 @@ export function MyRequestsPage(): ReactElement {
           />
         ) : (
           <>
-            <TableContainer caption={t('approvals.requests.caption')}>
+            <TableContainer
+              caption={t('approvals.requests.caption')}
+              selection={{
+                selection,
+                exportName: 'my-requests',
+                actions: chosenWithdrawable.length > 0 && (
+                  <button type="button" className="button" onClick={withdrawMany}>
+                    {t('approvals.withdraw.action')}
+                  </button>
+                ),
+              }}
+            >
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={requests.data.items.map((request) => request.id)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('approvals.fields.request')}</th>
                   <th scope="col">{t('approvals.fields.requestedAt')}</th>
                   <th scope="col">{t('approvals.fields.status')}</th>
@@ -103,6 +157,11 @@ export function MyRequestsPage(): ReactElement {
                   const subjectId = `subject-${request.id}`;
                   return (
                     <tr key={request.id}>
+                      <SelectRowCell
+                        id={request.id}
+                        name={requestName(request)}
+                        selection={selection}
+                      />
                       <td id={subjectId}>
                         <SubjectSummary subject={request.subject} routingKey={request.routingKey} />
                       </td>
@@ -159,6 +218,17 @@ export function MyRequestsPage(): ReactElement {
         }}
         onDone={() => {
           setWithdrawing(null);
+          setNotice({ tone: 'success', message: t('approvals.done.withdraw') });
+          requests.reload();
+        }}
+      />
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
           setNotice({ tone: 'success', message: t('approvals.done.withdraw') });
           requests.reload();
         }}

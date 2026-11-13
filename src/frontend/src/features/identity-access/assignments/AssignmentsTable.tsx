@@ -4,11 +4,14 @@ import { Link } from 'react-router';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { FormAlert } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { accessRelationshipsApi } from '../api/identityAccessApi.ts';
 import { type AccessRelationshipSummary } from '../api/types.ts';
+import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useSaveAction } from '../forms.ts';
 import { type OrganizationLookups } from '../lookups.ts';
 
@@ -33,6 +36,33 @@ export function AssignmentsTable({
 }: AssignmentsTableProps): ReactElement {
   const { t, formatDateTime } = useI18n();
   const [ending, setEnding] = useState<AccessRelationshipSummary | null>(null);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const selection = useRowSelection();
+
+  const nameOf = (assignment: AccessRelationshipSummary) =>
+    showUser
+      ? `${userNames.get(assignment.userId) ?? t('identityAccess.assignments.unknownUser')} — ${assignment.roleCode}`
+      : assignment.roleCode;
+  const chosenActive = assignments.filter(
+    (assignment) => selection.selected.has(assignment.id) && assignment.status === 'ACTIVE',
+  );
+
+  /** Ends every chosen assignment on this page that is still active. */
+  const confirmEndMany = () => {
+    const chosen = chosenActive;
+    setConfirmation({
+      title: t('identityAccess.assignments.endTitle'),
+      body: t('identityAccess.assignments.endBody', { role: chosen.map(nameOf).join('، ') }),
+      confirmLabel: t('identityAccess.assignments.end'),
+      destructive: true,
+      action: async () => {
+        for (const assignment of chosen) {
+          await accessRelationshipsApi.end(assignment.id);
+        }
+        selection.clear();
+      },
+    });
+  };
 
   const scopeOf = (assignment: AccessRelationshipSummary) => {
     const parts = [
@@ -47,9 +77,25 @@ export function AssignmentsTable({
 
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer
+        caption={caption}
+        selection={{
+          selection,
+          exportName: 'assignments',
+          actions:
+            chosenActive.length > 0 ? (
+              <button type="button" className="button button--danger" onClick={confirmEndMany}>
+                {t('identityAccess.assignments.end')}
+              </button>
+            ) : undefined,
+        }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader
+              ids={assignments.map((assignment) => assignment.id)}
+              selection={selection}
+            />
             {showUser && <th scope="col">{t('identityAccess.assignments.user')}</th>}
             <th scope="col">{t('identityAccess.assignments.role')}</th>
             <th scope="col">{t('identityAccess.assignments.scope')}</th>
@@ -62,6 +108,7 @@ export function AssignmentsTable({
         <tbody>
           {assignments.map((assignment) => (
             <tr key={assignment.id}>
+              <SelectRowCell id={assignment.id} name={nameOf(assignment)} selection={selection} />
               {showUser && (
                 <td>
                   <Link to={`/admin/users/${assignment.userId}`}>
@@ -117,6 +164,16 @@ export function AssignmentsTable({
           ))}
         </tbody>
       </TableContainer>
+      <ConfirmDialog
+        confirmation={confirmation}
+        onClose={() => {
+          setConfirmation(null);
+        }}
+        onDone={() => {
+          setConfirmation(null);
+          onEnded();
+        }}
+      />
       <EndAssignmentDialog
         assignment={ending}
         onClose={() => {

@@ -3,8 +3,10 @@ import { Link, useSearchParams } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { ProjectReference } from './components/RequestTable.tsx';
 import { registerOfPath } from './paths.ts';
@@ -25,6 +27,9 @@ export function ParticipationMonitorPage(): ReactElement {
   const externalEntityId = params.get('externalEntityId') ?? undefined;
   const requests = useRequestList({ externalEntityId });
   const entityName = useEntityNames();
+  const selection = useRowSelection();
+  const rows = requests.data === undefined ? [] : participationRows(requests.data);
+  const rowId = (row: (typeof rows)[number]) => `${row.projectId}|${row.externalEntityId}`;
 
   return (
     <>
@@ -48,9 +53,13 @@ export function ParticipationMonitorPage(): ReactElement {
       ) : requests.data.length === 0 ? (
         <EmptyState title={t('externalParticipation.monitor.emptyTitle')} />
       ) : (
-        <TableContainer caption={t('externalParticipation.monitor.caption')}>
+        <TableContainer
+          caption={t('externalParticipation.monitor.caption')}
+          selection={{ selection, exportName: 'participation-monitor' }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader ids={rows.map(rowId)} selection={selection} />
               <th scope="col">{t('externalParticipation.table.project')}</th>
               <th scope="col">{t('externalParticipation.table.entity')}</th>
               <th scope="col">{t('externalParticipation.monitor.notStarted')}</th>
@@ -64,8 +73,13 @@ export function ParticipationMonitorPage(): ReactElement {
             </tr>
           </thead>
           <tbody>
-            {participationRows(requests.data).map((row) => (
-              <tr key={`${row.projectId}|${row.externalEntityId}`}>
+            {rows.map((row) => (
+              <tr key={rowId(row)}>
+                <SelectRowCell
+                  id={rowId(row)}
+                  name={`${row.formalProjectId ?? t('externalParticipation.project.noFormalId')} · ${entityName(row.externalEntityId)}`}
+                  selection={selection}
+                />
                 <td>
                   <Link
                     className="cell__link"

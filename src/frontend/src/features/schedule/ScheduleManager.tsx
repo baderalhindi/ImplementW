@@ -6,8 +6,10 @@ import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { type TranslationKey, type TranslationParams, useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { canEditSchedule, isPlanFrozen } from './access.ts';
 import { scheduleApi } from './api/scheduleApi.ts';
@@ -30,8 +32,10 @@ type OpenDialog =
   | { kind: 'activity'; activityId: string | null }
   | { kind: 'reforecast'; activityId: string }
   | { kind: 'cancel'; activity: ScheduleActivityDetail }
+  | { kind: 'cancelMany'; activities: ScheduleActivityDetail[] }
   | { kind: 'dependency' }
   | { kind: 'removeDependency'; dependency: ScheduleDependencyDetail }
+  | { kind: 'removeDependencies'; dependencies: ScheduleDependencyDetail[] }
   | null;
 
 function today(): string {
@@ -57,6 +61,8 @@ export function ScheduleManager({
   const [dialog, setDialog] = useState<OpenDialog>(null);
   const [initializing, setInitializing] = useState(false);
   const [initializeError, setInitializeError] = useState<string | null>(null);
+  const activitySelection = useRowSelection();
+  const dependencySelection = useRowSelection();
 
   const close = () => {
     setDialog(null);
@@ -111,6 +117,13 @@ export function ScheduleManager({
   const planEditable = editor && !frozen;
   const forecasting = data.schedule?.activeBaselineId != null;
   const byId = new Map(data.activities.map((activity) => [activity.id, activity]));
+  const dependencyLabel = (dependency: ScheduleDependencyDetail) =>
+    [dependency.predecessorActivityId, dependency.successorActivityId]
+      .map((id) => {
+        const activity = byId.get(id);
+        return activity === undefined ? activityCode(id, byId) : activityLabel(activity);
+      })
+      .join(' → ');
   const leaves = data.activities.filter(isLiveLeaf);
 
   if (data.schedule === null) {
@@ -159,6 +172,18 @@ export function ScheduleManager({
         dependency.predecessorActivityId === activity.id ||
         dependency.successorActivityId === activity.id,
     );
+  const cancellable = editor
+    ? data.activities.filter(
+        (activity) =>
+          activitySelection.selected.has(activity.id) &&
+          !frozen &&
+          activity.status !== 'CANCELLED' &&
+          isFree(activity),
+      )
+    : [];
+  const removable = planEditable
+    ? data.dependencies.filter((dependency) => dependencySelection.selected.has(dependency.id))
+    : [];
 
   return (
     <div className="schedule">
@@ -192,9 +217,30 @@ export function ScheduleManager({
         {data.activities.length === 0 ? (
           <EmptyState title={t('schedule.activities.empty')} />
         ) : (
-          <TableContainer caption={t('schedule.activities.caption')}>
+          <TableContainer
+            caption={t('schedule.activities.caption')}
+            selection={{
+              selection: activitySelection,
+              exportName: 'schedule-activities',
+              actions: cancellable.length > 0 && (
+                <button
+                  type="button"
+                  className="button button--danger"
+                  onClick={() => {
+                    setDialog({ kind: 'cancelMany', activities: cancellable });
+                  }}
+                >
+                  {t('schedule.actions.cancel')}
+                </button>
+              ),
+            }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={data.activities.map((activity) => activity.id)}
+                  selection={activitySelection}
+                />
                 <th scope="col">{t('schedule.activities.wbs')}</th>
                 <th scope="col">{t('schedule.activities.activity')}</th>
                 <th scope="col">{t('schedule.activities.planned')}</th>
@@ -211,6 +257,11 @@ export function ScheduleManager({
                 const predecessors = predecessorsOf(activity);
                 return (
                   <tr key={activity.id} className={cancelled ? 'row--muted' : undefined}>
+                    <SelectRowCell
+                      id={activity.id}
+                      name={activityLabel(activity)}
+                      selection={activitySelection}
+                    />
                     <td className="cell--ltr">{activity.wbsCode}</td>
                     <td style={{ paddingInlineStart: `${String(0.75 + depth * 1.25)}rem` }}>
                       <span className="subject__name" dir="auto">
@@ -330,9 +381,30 @@ export function ScheduleManager({
         {data.dependencies.length === 0 ? (
           <EmptyState title={t('schedule.dependencies.empty')} />
         ) : (
-          <TableContainer caption={t('schedule.dependencies.caption')}>
+          <TableContainer
+            caption={t('schedule.dependencies.caption')}
+            selection={{
+              selection: dependencySelection,
+              exportName: 'schedule-dependencies',
+              actions: removable.length > 0 && (
+                <button
+                  type="button"
+                  className="button button--danger"
+                  onClick={() => {
+                    setDialog({ kind: 'removeDependencies', dependencies: removable });
+                  }}
+                >
+                  {t('schedule.actions.removeDependency')}
+                </button>
+              ),
+            }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={data.dependencies.map((dependency) => dependency.id)}
+                  selection={dependencySelection}
+                />
                 <th scope="col">{t('schedule.dependency.predecessor')}</th>
                 <th scope="col">{t('schedule.dependency.successor')}</th>
                 <th scope="col">{t('schedule.dependency.type')}</th>
@@ -346,6 +418,11 @@ export function ScheduleManager({
                 const successor = byId.get(dependency.successorActivityId);
                 return (
                   <tr key={dependency.id}>
+                    <SelectRowCell
+                      id={dependency.id}
+                      name={dependencyLabel(dependency)}
+                      selection={dependencySelection}
+                    />
                     <td dir="auto">
                       {predecessor === undefined
                         ? activityCode(dependency.predecessorActivityId, byId)
@@ -446,6 +523,58 @@ export function ScheduleManager({
         }
         onClose={close}
         onDone={() => {
+          done('schedule.done.dependencyRemoved');
+        }}
+        onStale={stale}
+      />
+      <ConfirmDialog
+        open={dialog?.kind === 'cancelMany'}
+        title={t('schedule.cancelActivities.title')}
+        body={
+          dialog?.kind === 'cancelMany'
+            ? t('schedule.cancelActivities.body', {
+                list: dialog.activities.map(activityLabel).join('، '),
+              })
+            : ''
+        }
+        confirmLabel={t('schedule.cancelActivity.confirm')}
+        danger
+        action={async () => {
+          if (dialog?.kind === 'cancelMany') {
+            for (const activity of dialog.activities) {
+              await scheduleApi.cancelActivity(activity.id, null);
+            }
+          }
+        }}
+        onClose={close}
+        onDone={() => {
+          activitySelection.clear();
+          done('schedule.done.activityCancelled');
+        }}
+        onStale={stale}
+      />
+      <ConfirmDialog
+        open={dialog?.kind === 'removeDependencies'}
+        title={t('schedule.removeDependencies.title')}
+        body={
+          dialog?.kind === 'removeDependencies'
+            ? t('schedule.removeDependencies.body', {
+                list: dialog.dependencies.map(dependencyLabel).join('، '),
+              })
+            : ''
+        }
+        confirmLabel={t('schedule.actions.removeDependency')}
+        danger
+        action={async () => {
+          if (dialog?.kind === 'removeDependencies') {
+            for (const dependency of dialog.dependencies) {
+              await scheduleApi.deleteDependency(dependency.id);
+            }
+          }
+        }}
+        onClose={close}
+        onDone={() => {
+          dependencySelection.clear();
           done('schedule.done.dependencyRemoved');
         }}
         onStale={stale}

@@ -33,6 +33,7 @@ import {
   withProject,
   withProjectLookups,
 } from '@/test/projectFixtures.ts';
+import { sessionFor } from '@/test/identityAccessFixtures.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
 import { EXCAVATION_ID } from '@/test/scheduleFixtures.ts';
 import { day } from '@/test/taskFixtures.ts';
@@ -523,6 +524,31 @@ describe('MOD-019 Milestone Achievement', () => {
     await within(drawer).findByText(en('milestones.evidence.required.title'));
     const violations = await accessibilityViolations();
     expect(violations, describeViolations(violations)).toEqual([]);
+  });
+});
+
+describe('choosing rows', () => {
+  test('select all on the project’s milestones, then Delete for every chosen one', async () => {
+    const api = open(MILESTONES_PATH, {}, { session: sessionFor(['R04']) });
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('checkbox', { name: en('common.table.selectAll') }));
+    const bar = screen
+      .getByText(en('common.table.selected', { count: 4 }))
+      .closest<HTMLElement>('.selection-bar');
+    if (bar === null) {
+      throw new Error('No selection bar.');
+    }
+    await user.click(within(bar).getByRole('button', { name: en('common.rowActions.delete') }));
+    const dialog = await screen.findByRole('dialog', { name: en('common.rowActions.deleteTitle') });
+    expect(within(dialog).getByText(/Site handover.*Temporary access road/)).toBeTruthy();
+    api.on('DELETE', /^\/project-milestones\//, { status: 204 });
+    await user.click(within(dialog).getByRole('button', { name: en('common.rowActions.delete') }));
+
+    await waitFor(() => {
+      expect(api.requestsTo('DELETE', /^\/project-milestones\//)).toHaveLength(4);
+    });
+    expect(screen.queryByText(en('common.table.selected', { count: 4 }))).toBeNull();
   });
 });
 

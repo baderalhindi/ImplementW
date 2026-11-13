@@ -8,8 +8,10 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { integrationAdminApi, type Versioned } from './api/integrationAdminApi.ts';
 import { type IntegrationDetail, type InvocationDetail } from './api/types.ts';
@@ -125,6 +127,7 @@ function DetailContent({
   const [dialog, setDialog] = useState<OpenDialog>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const started = useRef<InvocationDetail | null>(null);
+  const instanceSelection = useRowSelection();
   const { data: detail, etag } = versioned;
   const { integration } = detail;
   const name = labelIn(integration.name, language);
@@ -209,9 +212,19 @@ function DetailContent({
       </Section>
 
       <Section title={t('integrationAdmin.detail.instances')}>
-        <TableContainer caption={t('integrationAdmin.detail.instances')}>
+        <TableContainer
+          caption={t('integrationAdmin.detail.instances')}
+          selection={{
+            selection: instanceSelection,
+            exportName: `${integration.code.toLowerCase()}-instances`,
+          }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader
+                ids={integration.instances.map((instance) => instance.id)}
+                selection={instanceSelection}
+              />
               <th scope="col">{t('integrationAdmin.fields.instance')}</th>
               <th scope="col">{t('integrationAdmin.fields.endpointKey')}</th>
               <th scope="col">{t('integrationAdmin.indicators.availability')}</th>
@@ -225,6 +238,11 @@ function DetailContent({
           <tbody>
             {integration.instances.map((instance) => (
               <tr key={instance.id} data-instance={instance.code}>
+                <SelectRowCell
+                  id={instance.id}
+                  name={instance.code}
+                  selection={instanceSelection}
+                />
                 <th scope="row">
                   <Code>{instance.code}</Code>
                 </th>

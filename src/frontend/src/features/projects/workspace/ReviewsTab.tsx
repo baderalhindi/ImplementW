@@ -5,8 +5,10 @@ import { instanceTone } from '@/features/approvals/presentation.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { projectsApi } from '../api/projectsApi.ts';
 import { isForbidden, projectProblemMessage } from '../problems.ts';
@@ -25,6 +27,7 @@ export function ReviewsTab(): ReactElement {
     [project.id],
   );
   const reviews = useApiResource(load);
+  const selection = useRowSelection();
 
   if (reviews.loading) {
     return <LoadingState />;
@@ -45,9 +48,13 @@ export function ReviewsTab(): ReactElement {
     return <EmptyState title={t('projects.reviews.empty')} />;
   }
   return (
-    <TableContainer caption={t('projects.reviews.caption')}>
+    <TableContainer
+      caption={t('projects.reviews.caption')}
+      selection={{ selection, exportName: 'project-reviews' }}
+    >
       <thead>
         <tr>
+          <SelectAllHeader ids={runs.map((run) => run.id)} selection={selection} />
           <th scope="col">{t('projects.fields.revision')}</th>
           <th scope="col">{t('projects.reviews.requestedAt')}</th>
           <th scope="col">{t('projects.reviews.outcome')}</th>
@@ -55,25 +62,29 @@ export function ReviewsTab(): ReactElement {
         </tr>
       </thead>
       <tbody>
-        {runs.map((run) => (
-          <tr key={run.id}>
-            <td>
-              <Link to={`/approvals/instances/${run.id}`}>
-                {t('projects.reviews.revision', { revision: run.subject.revisionNo })}
-              </Link>
-            </td>
-            <td>{formatDateTime(run.requestedAt)}</td>
-            <td>
-              <StatusBadge
-                label={t(`approvals.instanceStatus.${run.status}`)}
-                tone={instanceTone(run.status)}
-              />
-            </td>
-            <td>
-              {run.completedAt === null ? t('common.values.none') : formatDateTime(run.completedAt)}
-            </td>
-          </tr>
-        ))}
+        {runs.map((run) => {
+          const name = t('projects.reviews.revision', { revision: run.subject.revisionNo });
+          return (
+            <tr key={run.id}>
+              <SelectRowCell id={run.id} name={name} selection={selection} />
+              <td>
+                <Link to={`/approvals/instances/${run.id}`}>{name}</Link>
+              </td>
+              <td>{formatDateTime(run.requestedAt)}</td>
+              <td>
+                <StatusBadge
+                  label={t(`approvals.instanceStatus.${run.status}`)}
+                  tone={instanceTone(run.status)}
+                />
+              </td>
+              <td>
+                {run.completedAt === null
+                  ? t('common.values.none')
+                  : formatDateTime(run.completedAt)}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </TableContainer>
   );

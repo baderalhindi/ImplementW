@@ -52,4 +52,40 @@ describe('role rows', () => {
       ]).toHaveLength(1);
     });
   });
+
+  test('select all, then Delete removes every chosen role that is not built in, after one confirmation naming them', async () => {
+    const second: RoleSummary = {
+      ...created,
+      id: 'role-TEMP2',
+      code: 'TEMP2',
+      name: { ar: 'دور مؤقت ثان', en: 'Second temporary role' },
+    };
+    const api = withIdentityAccessData(mockApi())
+      .on('GET', /^\/roles$/, { body: [...roles, created, second] })
+      .on('POST', /^\/roles\/role-TEMP2?(\/delete)?$/, { status: 204 })
+      .on('DELETE', /^\/roles\/role-TEMP2?$/, { status: 204 });
+    renderApp({ path: '/admin/roles', session: sessionFor(['R01']) });
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('checkbox', { name: en('common.table.selectAll') }));
+    const count = translate('en', 'common.table.selected', { count: roles.length + 2 });
+    const bar = screen.getByText(count).closest('.selection-bar');
+    if (!(bar instanceof HTMLElement)) {
+      throw new Error('No selection bar.');
+    }
+    await user.click(within(bar).getByRole('button', { name: en('common.rowActions.delete') }));
+    const dialog = await screen.findByRole('dialog', { name: en('common.rowActions.deleteTitle') });
+    expect(dialog.textContent).toContain('Temporary role');
+    expect(dialog.textContent).toContain('Second temporary role');
+    expect(dialog.textContent).not.toContain('System Administrator');
+    await user.click(within(dialog).getByRole('button', { name: en('common.rowActions.delete') }));
+    const sent = () =>
+      [...api.requestsTo('DELETE', /^\/roles\//), ...api.requestsTo('POST', /^\/roles\//)].map(
+        (request) => request.path.split('/')[2],
+      );
+    await waitFor(() => {
+      expect(sent().sort()).toEqual(['role-TEMP', 'role-TEMP2']);
+    });
+    expect(screen.queryByText(count)).toBeNull();
+  });
 });

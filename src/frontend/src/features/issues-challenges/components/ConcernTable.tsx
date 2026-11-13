@@ -5,6 +5,8 @@ import { Link } from 'react-router';
 import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type ConcernEntry, isOverdue, isReturned, isReviewDue } from '../concernRules.ts';
 import { concernPath } from '../paths.ts';
@@ -38,11 +40,20 @@ export function ConcernTable({
   personName,
 }: ConcernTableProps): ReactElement {
   const { t } = useI18n();
+  const selection = useRowSelection();
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer
+        caption={caption}
+        selection={{
+          selection,
+          exportName: 'issues-challenges',
+          actions: actions?.bulk(entries, selection, ({ concern }) => concern.id),
+        }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={entries.map(({ concern }) => concern.id)} selection={selection} />
             <th scope="col">{t('issuesChallenges.table.title')}</th>
             {showProject && <th scope="col">{t('issuesChallenges.table.project')}</th>}
             <th scope="col">{t('issuesChallenges.table.assignee')}</th>
@@ -65,6 +76,7 @@ export function ConcernTable({
                   overdue ? 'row--overdue' : concern.status === 'CLOSED' ? 'row--muted' : undefined
                 }
               >
+                <SelectRowCell id={concern.id} name={concern.title.text} selection={selection} />
                 <td>
                   <Link
                     to={concernPath(project.id, concern.id)}

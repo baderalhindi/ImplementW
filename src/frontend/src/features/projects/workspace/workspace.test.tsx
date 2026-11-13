@@ -190,6 +190,21 @@ describe('SCR-040 workspace tabs follow the RBAC scope', () => {
     );
   });
 
+  test('SCR-042: select all chooses every review run, for Export selected', async () => {
+    openWorkspace(
+      projectDetail({ status: 'RETURNED' }),
+      reviewerSession(),
+      `/projects/${PROJECT_ID}/reviews`,
+    );
+
+    const table = await screen.findByRole('table', { name: en('projects.reviews.caption') });
+    await userEvent.click(
+      within(table).getByRole('checkbox', { name: en('common.table.selectAll') }),
+    );
+    expect(screen.getByText(en('common.table.selected', { count: 1 }))).toBeTruthy();
+    expect(screen.getByRole('button', { name: en('common.table.exportSelected') })).toBeTruthy();
+  });
+
   test('SCR-043 lists the project’s documents inside the workspace', async () => {
     const api = openWorkspace(
       projectDetail(),

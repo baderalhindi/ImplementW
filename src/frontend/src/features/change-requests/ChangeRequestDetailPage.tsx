@@ -17,6 +17,8 @@ import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import {
   canCloseChangeRequest,
@@ -142,6 +144,7 @@ export function ChangeRequestDetailPage(): ReactElement | null {
     request?.requestedByUserId ?? null,
     ...(request?.authorizations ?? []).map((authorization) => authorization.appliedByUserId),
   ]);
+  const authorizationSelection = useRowSelection();
 
   if (session === null) {
     return null;
@@ -482,9 +485,19 @@ export function ChangeRequestDetailPage(): ReactElement | null {
         ) : (
           <>
             <p className="form__note">{t('changeRequests.detail.authorizationsNote')}</p>
-            <TableContainer caption={t('changeRequests.detail.authorizationsCaption')}>
+            <TableContainer
+              caption={t('changeRequests.detail.authorizationsCaption')}
+              selection={{
+                selection: authorizationSelection,
+                exportName: 'change-request-authorizations',
+              }}
+            >
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={request.authorizations.map((authorization) => authorization.id)}
+                    selection={authorizationSelection}
+                  />
                   <th scope="col">{t('changeRequests.authorization.scope')}</th>
                   <th scope="col">{t('changeRequests.authorization.target')}</th>
                   <th scope="col">{t('changeRequests.authorization.status')}</th>
@@ -497,6 +510,11 @@ export function ChangeRequestDetailPage(): ReactElement | null {
                   const screen = TARGET_SCREENS[authorization.authorizationScope];
                   return (
                     <tr key={authorization.id}>
+                      <SelectRowCell
+                        id={authorization.id}
+                        name={`${t(`changeRequests.authorization.scopes.${authorization.authorizationScope}`)} ${t('changeRequests.authorization.targetVersion', { version: authorization.targetRevisionNo })}`}
+                        selection={authorizationSelection}
+                      />
                       <td>
                         {t(
                           `changeRequests.authorization.scopes.${authorization.authorizationScope}`,

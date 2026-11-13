@@ -146,7 +146,7 @@ describe('the sections', () => {
     const table = present(section('portfolio'));
     const total = present(table.querySelector<HTMLElement>('tr[data-row="total"]'));
     expect(within(total).getByRole('rowheader').textContent).toBe(en('dashboards.insights.total'));
-    expect(within(total).getAllByRole('cell')[0]?.textContent).toBe('200');
+    expect(within(total).getAllByRole('cell')[1]?.textContent).toBe('200');
     expect(within(table).getAllByRole('link')[0]?.getAttribute('href')).toBe(
       `/reports/cards/portfolio/${PORTFOLIO_A}`,
     );

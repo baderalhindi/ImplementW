@@ -5,8 +5,10 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { AmountField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge, type StatusTone } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useCan } from '../permissions/permissions.ts';
@@ -162,6 +164,7 @@ function StagesEditor({
   const [effective, setEffective] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const selection = useRowSelection();
   const total = totalOf(rows) / 100;
   const pending =
     loaded.latest !== null && loaded.latest.lifecycleState !== 'PUBLISHED' ? loaded.latest : null;
@@ -260,6 +263,30 @@ function StagesEditor({
     } finally {
       setSaving(false);
     }
+  };
+
+  const chosenVersions = loaded.versions.filter((version) => selection.selected.has(version.id));
+  /** Deletes every chosen version, confirmed by naming them. */
+  const confirmDeleteMany = () => {
+    const chosen = chosenVersions;
+    setConfirmation({
+      title: t('identityAccess.projectStages.deleteVersionTitle', {
+        version: chosen.map((version) => version.versionNo).join('، '),
+      }),
+      body: t(
+        chosen.some((version) => version.lifecycleState === 'PUBLISHED')
+          ? 'identityAccess.projectStages.deleteVersionPublished'
+          : 'identityAccess.projectStages.deleteVersionDraft',
+      ),
+      confirmLabel: t('identityAccess.projectStages.deleteVersion'),
+      destructive: true,
+      action: async () => {
+        for (const version of chosen) {
+          await apiRequest(`${VERSIONS}/${version.id}/retire`, { method: 'POST' });
+        }
+        selection.clear();
+      },
+    });
   };
 
   return (
@@ -431,9 +458,25 @@ function StagesEditor({
       )}
       <section aria-labelledby="stage-versions-heading">
         <h2 id="stage-versions-heading">{t('identityAccess.projectStages.history')}</h2>
-        <TableContainer caption={t('identityAccess.projectStages.history')}>
+        <TableContainer
+          caption={t('identityAccess.projectStages.history')}
+          selection={{
+            selection,
+            exportName: 'project-stage-versions',
+            actions:
+              mayManage && chosenVersions.length > 0 ? (
+                <button type="button" className="button button--danger" onClick={confirmDeleteMany}>
+                  {t('identityAccess.projectStages.deleteVersion')}
+                </button>
+              ) : undefined,
+          }}
+        >
           <thead>
             <tr>
+              <SelectAllHeader
+                ids={loaded.versions.map((version) => version.id)}
+                selection={selection}
+              />
               <th scope="col">{t('identityAccess.projectStages.version')}</th>
               <th scope="col">{t('identityAccess.projectStages.state')}</th>
               <th scope="col">{t('identityAccess.projectStages.effective')}</th>
@@ -448,13 +491,20 @@ function StagesEditor({
           <tbody>
             {loaded.versions.length === 0 && (
               <tr>
-                <td colSpan={mayManage ? 5 : 4} className="stage-editor__empty">
+                <td colSpan={mayManage ? 6 : 5} className="stage-editor__empty">
                   {t('identityAccess.projectStages.noVersions')}
                 </td>
               </tr>
             )}
             {loaded.versions.map((version) => (
               <tr key={version.id}>
+                <SelectRowCell
+                  id={version.id}
+                  name={t('identityAccess.projectStages.versionNumber', {
+                    version: version.versionNo,
+                  })}
+                  selection={selection}
+                />
                 <td dir="ltr">{version.versionNo}</td>
                 <td>
                   <StatusBadge

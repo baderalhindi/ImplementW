@@ -467,3 +467,23 @@ describe('the sidebar', () => {
     expect(menuLink('common.menu.administration')).toBeNull();
   });
 });
+
+describe('selection', () => {
+  test('SCR-058: select all chooses every event shown and counts them', async () => {
+    open(workspace('audit-history'), reviewer(), { access: AUDIT_REVIEWER_ACCESS });
+    const user = userEvent.setup();
+
+    const table = await screen.findByRole('table', {
+      name: en('auditActivity.projectAudit.caption'),
+    });
+    const events = within(table).getAllByRole('row').length - 1;
+    await user.click(within(table).getByRole('checkbox', { name: en('common.table.selectAll') }));
+
+    expect(screen.getByText(en('common.table.selected', { count: events }))).toBeTruthy();
+    expect(
+      within(table)
+        .getAllByRole('checkbox')
+        .every((checkbox) => (checkbox as HTMLInputElement).checked),
+    ).toBe(true);
+  });
+});

@@ -6,6 +6,8 @@ import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import {
@@ -36,6 +38,8 @@ export function KpiHistory({
   const { t, formatDateTime } = useI18n();
   const entry = useKpiEntry(assignmentId);
   const lookups = useKpiLookups();
+  const valueSelection = useRowSelection();
+  const targetSelection = useRowSelection();
   const personName = usePersonNames([
     entry.data?.assignment.ownerUserId ?? null,
     ...(entry.data?.measurements ?? []).flatMap((m) => [m.recordedByUserId, m.publishedByUserId]),
@@ -121,9 +125,16 @@ export function KpiHistory({
       {measurements.length > 0 && (
         <section className="section" aria-labelledby="kpi-values">
           <h3 id="kpi-values">{t('financialKpi.trend.valuesTitle')}</h3>
-          <TableContainer caption={t('financialKpi.trend.valuesCaption')}>
+          <TableContainer
+            caption={t('financialKpi.trend.valuesCaption')}
+            selection={{ selection: valueSelection, exportName: 'kpi-values' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={measurements.map((measurement) => measurement.id)}
+                  selection={valueSelection}
+                />
                 <th scope="col">{t('financialKpi.kpis.period')}</th>
                 <th scope="col">{t('financialKpi.kpis.value', { unit })}</th>
                 <th scope="col">{t('financialKpi.kpis.pinnedTarget')}</th>
@@ -134,43 +145,47 @@ export function KpiHistory({
               </tr>
             </thead>
             <tbody>
-              {byPeriodDescending(measurements).map((measurement) => (
-                <tr key={measurement.id} data-measurement={measurement.id}>
-                  <td>
-                    <span className="progress__period" dir="ltr">
-                      {t('financialKpi.kpiValue.period', {
-                        start: measurement.periodStart,
-                        end: measurement.periodEnd,
+              {byPeriodDescending(measurements).map((measurement) => {
+                const period = t('financialKpi.kpiValue.period', {
+                  start: measurement.periodStart,
+                  end: measurement.periodEnd,
+                });
+                return (
+                  <tr key={measurement.id} data-measurement={measurement.id}>
+                    <SelectRowCell id={measurement.id} name={period} selection={valueSelection} />
+                    <td>
+                      <span className="progress__period" dir="ltr">
+                        {period}
+                      </span>
+                    </td>
+                    <td>
+                      <KpiFigure
+                        state={figureOf(measurement, 'measuredValue', measurement.valueStatus)}
+                        absent="financialKpi.value.MISSING"
+                      />
+                    </td>
+                    <td>
+                      {t('financialKpi.kpis.targetVersion', {
+                        version: measurement.targetVersionNo,
+                        target: formatKpiValue(measurement.targetValue),
                       })}
-                    </span>
-                  </td>
-                  <td>
-                    <KpiFigure
-                      state={figureOf(measurement, 'measuredValue', measurement.valueStatus)}
-                      absent="financialKpi.value.MISSING"
-                    />
-                  </td>
-                  <td>
-                    {t('financialKpi.kpis.targetVersion', {
-                      version: measurement.targetVersionNo,
-                      target: formatKpiValue(measurement.targetValue),
-                    })}
-                  </td>
-                  <td>
-                    <RagBadge rag={measurement.ragStatus} />
-                  </td>
-                  <td>
-                    <MeasurementStatusBadge status={measurement.status} />
-                  </td>
-                  <td>
-                    {t('financialKpi.kpis.recordedBy', {
-                      name: personName(measurement.recordedByUserId),
-                      date: measurement.asOfDate,
-                    })}
-                  </td>
-                  <td>{when(measurement.publishedAt, measurement.publishedByUserId)}</td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      <RagBadge rag={measurement.ragStatus} />
+                    </td>
+                    <td>
+                      <MeasurementStatusBadge status={measurement.status} />
+                    </td>
+                    <td>
+                      {t('financialKpi.kpis.recordedBy', {
+                        name: personName(measurement.recordedByUserId),
+                        date: measurement.asOfDate,
+                      })}
+                    </td>
+                    <td>{when(measurement.publishedAt, measurement.publishedByUserId)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </TableContainer>
         </section>
@@ -181,9 +196,16 @@ export function KpiHistory({
         {targets.length === 0 ? (
           <EmptyState title={t('financialKpi.kpis.noTarget')} />
         ) : (
-          <TableContainer caption={t('financialKpi.trend.targetsCaption')}>
+          <TableContainer
+            caption={t('financialKpi.trend.targetsCaption')}
+            selection={{ selection: targetSelection, exportName: 'kpi-targets' }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={targets.map((version) => version.id)}
+                  selection={targetSelection}
+                />
                 <th scope="col">{t('financialKpi.history.version')}</th>
                 <th scope="col">{t('financialKpi.history.status')}</th>
                 <th scope="col">{t('financialKpi.trend.targetValue', { unit })}</th>
@@ -193,38 +215,40 @@ export function KpiHistory({
               </tr>
             </thead>
             <tbody>
-              {targets.map((version) => (
-                <tr key={version.id}>
-                  <td>
-                    {t('financialKpi.history.versionRevision', {
-                      version: version.versionNo,
-                      revision: version.revisionNo,
-                    })}
-                  </td>
-                  <td>
-                    <VersionStatusBadge status={version.status} />
-                  </td>
-                  <td>
-                    <span className="figure" dir="ltr">
-                      {formatKpiValue(version.targetValue)}
-                    </span>
-                  </td>
-                  <td>
-                    {version.greenThreshold === null || version.amberThreshold === null
-                      ? t('financialKpi.trend.noThresholds')
-                      : t('financialKpi.trend.thresholdValues', {
-                          green: formatKpiValue(version.greenThreshold),
-                          amber: formatKpiValue(version.amberThreshold),
-                        })}
-                  </td>
-                  <td>{version.effectiveFrom ?? t('common.values.none')}</td>
-                  <td>
-                    {version.activatedAt === null
-                      ? t('common.values.none')
-                      : formatDateTime(version.activatedAt)}
-                  </td>
-                </tr>
-              ))}
+              {targets.map((version) => {
+                const label = t('financialKpi.history.versionRevision', {
+                  version: version.versionNo,
+                  revision: version.revisionNo,
+                });
+                return (
+                  <tr key={version.id}>
+                    <SelectRowCell id={version.id} name={label} selection={targetSelection} />
+                    <td>{label}</td>
+                    <td>
+                      <VersionStatusBadge status={version.status} />
+                    </td>
+                    <td>
+                      <span className="figure" dir="ltr">
+                        {formatKpiValue(version.targetValue)}
+                      </span>
+                    </td>
+                    <td>
+                      {version.greenThreshold === null || version.amberThreshold === null
+                        ? t('financialKpi.trend.noThresholds')
+                        : t('financialKpi.trend.thresholdValues', {
+                            green: formatKpiValue(version.greenThreshold),
+                            amber: formatKpiValue(version.amberThreshold),
+                          })}
+                    </td>
+                    <td>{version.effectiveFrom ?? t('common.values.none')}</td>
+                    <td>
+                      {version.activatedAt === null
+                        ? t('common.values.none')
+                        : formatDateTime(version.activatedAt)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </TableContainer>
         )}

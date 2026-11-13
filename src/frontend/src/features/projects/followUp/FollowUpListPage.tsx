@@ -7,8 +7,10 @@ import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { followUpApi } from '../api/followUpApi.ts';
 import { FOLLOW_UP_REASONS, type FollowUpReason } from '../api/types.ts';
@@ -39,6 +41,7 @@ export function FollowUpListPage(): ReactElement {
     [reason, departmentId, page],
   );
   const items = useApiResource(load);
+  const selection = useRowSelection();
 
   return (
     <>
@@ -89,9 +92,16 @@ export function FollowUpListPage(): ReactElement {
           <EmptyState title={t('projects.followUpList.empty')} />
         ) : (
           <>
-            <TableContainer caption={t('projects.followUpList.caption')}>
+            <TableContainer
+              caption={t('projects.followUpList.caption')}
+              selection={{ selection, exportName: 'follow-up-list' }}
+            >
               <thead>
                 <tr>
+                  <SelectAllHeader
+                    ids={items.data.items.map((item) => item.projectId)}
+                    selection={selection}
+                  />
                   <th scope="col">{t('projects.followUpList.project')}</th>
                   <th scope="col">{t('projects.followUpList.reason')}</th>
                   <th scope="col">{t('projects.followUpList.onPlan')}</th>
@@ -105,6 +115,11 @@ export function FollowUpListPage(): ReactElement {
               <tbody>
                 {items.data.items.map((item) => (
                   <tr key={item.projectId}>
+                    <SelectRowCell
+                      id={item.projectId}
+                      name={item.title.text}
+                      selection={selection}
+                    />
                     <td>
                       <Link to={`/projects/${item.projectId}`} dir="auto">
                         {item.title.text}

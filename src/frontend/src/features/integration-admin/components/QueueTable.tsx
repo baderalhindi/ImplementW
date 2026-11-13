@@ -3,7 +3,9 @@ import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type IntegrationSummary } from '../api/types.ts';
 import { integrationDetailPath } from '../catalogue.ts';
@@ -26,13 +28,15 @@ interface QueueTableProps {
 export function QueueTable({ items, caption, emptyTitle }: QueueTableProps): ReactElement {
   const { t, language } = useI18n();
   const rows = items.flatMap((item) => item.instances.map((instance) => ({ item, instance })));
+  const selection = useRowSelection();
   if (rows.length === 0) {
     return <EmptyState title={emptyTitle} />;
   }
   return (
-    <TableContainer caption={caption}>
+    <TableContainer caption={caption} selection={{ selection, exportName: 'integration-queues' }}>
       <thead>
         <tr>
+          <SelectAllHeader ids={rows.map(({ instance }) => instance.id)} selection={selection} />
           <th scope="col">{t('integrationAdmin.fields.integration')}</th>
           <th scope="col">{t('integrationAdmin.queue.depth')}</th>
           <th scope="col">{t('integrationAdmin.queue.inFlight')}</th>
@@ -47,6 +51,7 @@ export function QueueTable({ items, caption, emptyTitle }: QueueTableProps): Rea
           const name = labelIn(item.name, language);
           return (
             <tr key={instance.id} data-queue={item.code}>
+              <SelectRowCell id={instance.id} name={name} selection={selection} />
               <th scope="row">
                 {name}
                 <span className="cell__aside">

@@ -10,8 +10,10 @@ import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { reportsApi } from './api/reportsApi.ts';
 import { type SavedViewSummary } from './api/types.ts';
@@ -31,7 +33,9 @@ export function SavedViewsPage(): ReactElement {
   const { page, goToPage } = useListParams();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [sharing, setSharing] = useState<SavedViewSummary | null>(null);
-  const [deleting, setDeleting] = useState<SavedViewSummary | null>(null);
+  /** The views a Delete is being confirmed for: one row's, or every chosen view the person owns. */
+  const [deleting, setDeleting] = useState<SavedViewSummary[] | null>(null);
+  const selection = useRowSelection();
 
   const load = useCallback(
     async (signal: AbortSignal) => {
@@ -46,6 +50,10 @@ export function SavedViewsPage(): ReactElement {
   const { data, error, loading, reload } = useApiResource(load, { keepWhileReloading: true });
   const nameOf = usePersonNames(data?.views.items.map((view) => view.ownerUserId) ?? []);
   const title = t('reports.savedViews.title');
+  const chosenOwn = (data?.views.items ?? []).filter(
+    (view) => selection.selected.has(view.id) && view.ownerUserId === session?.user.id,
+  );
+  const deletingNames = (deleting ?? []).map((view) => view.name.text).join('، ');
 
   if (isProblem(error, 'PERMISSION_DENIED')) {
     return (
@@ -107,9 +115,30 @@ export function SavedViewsPage(): ReactElement {
         <EmptyState title={t('reports.savedViews.empty')} />
       ) : (
         <>
-          <TableContainer caption={title}>
+          <TableContainer
+            caption={title}
+            selection={{
+              selection,
+              exportName: 'saved-views',
+              actions: chosenOwn.length > 0 && (
+                <button
+                  type="button"
+                  className="button button--danger"
+                  onClick={() => {
+                    setDeleting(chosenOwn);
+                  }}
+                >
+                  {t('reports.savedViews.delete')}
+                </button>
+              ),
+            }}
+          >
             <thead>
               <tr>
+                <SelectAllHeader
+                  ids={data.views.items.map((view) => view.id)}
+                  selection={selection}
+                />
                 <th scope="col">{t('reports.savedViews.name')}</th>
                 <th scope="col">{t('reports.savedViews.runs')}</th>
                 <th scope="col">{t('reports.savedViews.owner')}</th>
@@ -130,6 +159,7 @@ export function SavedViewsPage(): ReactElement {
                 );
                 return (
                   <tr key={view.id} data-saved-view={view.id}>
+                    <SelectRowCell id={view.id} name={view.name.text} selection={selection} />
                     <td>
                       {name}
                       {entryLanguage(view.name.language) !== language && (
@@ -184,7 +214,7 @@ export function SavedViewsPage(): ReactElement {
                           type="button"
                           className="button button--danger"
                           onClick={() => {
-                            setDeleting(view);
+                            setDeleting([view]);
                           }}
                         >
                           {t('reports.savedViews.delete')}{' '}
@@ -226,10 +256,17 @@ export function SavedViewsPage(): ReactElement {
             ? null
             : {
                 title: t('reports.savedViews.deleteTitle'),
-                body: t('reports.savedViews.deleteMessage', { name: deleting.name.text }),
+                body:
+                  deleting.length === 1
+                    ? t('reports.savedViews.deleteMessage', { name: deletingNames })
+                    : t('reports.savedViews.deleteManyMessage', { names: deletingNames }),
                 confirmLabel: t('reports.savedViews.delete'),
                 destructive: true,
-                action: () => reportsApi.deleteSavedView(deleting.id),
+                action: async () => {
+                  for (const view of deleting) {
+                    await reportsApi.deleteSavedView(view.id);
+                  }
+                },
                 describeProblem: reportProblemMessage,
               }
         }
@@ -239,9 +276,13 @@ export function SavedViewsPage(): ReactElement {
         onDone={() => {
           setNotice({
             tone: 'success',
-            message: t('reports.savedViews.deleted', { name: deleting?.name.text ?? '' }),
+            message:
+              deleting?.length === 1
+                ? t('reports.savedViews.deleted', { name: deletingNames })
+                : t('reports.savedViews.deletedMany', { names: deletingNames }),
           });
           setDeleting(null);
+          selection.clear();
           reload();
         }}
       />

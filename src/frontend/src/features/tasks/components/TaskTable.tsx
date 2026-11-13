@@ -6,6 +6,8 @@ import { usePersonNames } from '@/features/identity-access/assignments/useUserNa
 import { DateRange } from '@/features/schedule/components/DateRange.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
+import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type ProjectTaskDetail } from '../api/types.ts';
 import { overdueDays, type TaskEntry } from '../taskRules.ts';
@@ -46,12 +48,21 @@ export function TaskTable({
 }: TaskTableProps): ReactElement {
   const { t } = useI18n();
   const personName = usePersonNames(entries.map((entry) => entry.task.assigneeUserId));
+  const selection = useRowSelection();
 
   return (
     <>
-      <TableContainer caption={caption}>
+      <TableContainer
+        caption={caption}
+        selection={{
+          selection,
+          exportName: 'tasks',
+          actions: actions?.bulk(entries, selection, ({ task }) => task.id),
+        }}
+      >
         <thead>
           <tr>
+            <SelectAllHeader ids={entries.map(({ task }) => task.id)} selection={selection} />
             <th scope="col">{t('tasks.table.task')}</th>
             {showProject && <th scope="col">{t('tasks.table.project')}</th>}
             <th scope="col">{t('tasks.table.status')}</th>
@@ -74,6 +85,7 @@ export function TaskTable({
                   : undefined;
             return (
               <tr key={task.id} className={rowClass} data-overdue={overdue !== null || undefined}>
+                <SelectRowCell id={task.id} name={task.title.text} selection={selection} />
                 <td
                   style={
                     nested && task.parentTaskId !== null

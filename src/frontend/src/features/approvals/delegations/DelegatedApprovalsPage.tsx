@@ -1,4 +1,4 @@
-import { type ReactElement, useCallback, useState } from 'react';
+import { type ReactElement, type ReactNode, useCallback, useState } from 'react';
 
 import {
   type Confirmation,
@@ -7,9 +7,11 @@ import {
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader, TableContainer } from '@/shared/ui/Layout.tsx';
+import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { PageNotice, type Notice } from '@/shared/ui/PageNotice.tsx';
+import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { approvalDelegationsApi } from '../api/approvalsApi.ts';
 import { type ApprovalDelegationDetail } from '../api/types.ts';
@@ -25,6 +27,10 @@ interface DelegationTableProps {
   person: (delegation: ApprovalDelegationDetail) => string;
   delegations: ApprovalDelegationDetail[];
   names: ApprovalNames;
+  selection: RowSelection;
+  exportName: string;
+  /** The commands on the chosen delegations, shown in the selection bar. */
+  bulkActions?: ReactNode;
   onRevoke?: (delegation: ApprovalDelegationDetail) => void;
 }
 
@@ -34,13 +40,17 @@ function DelegationTable({
   person,
   delegations,
   names,
+  selection,
+  exportName,
+  bulkActions,
   onRevoke,
 }: DelegationTableProps): ReactElement {
   const { t, formatDateTime } = useI18n();
   return (
-    <TableContainer caption={caption}>
+    <TableContainer caption={caption} selection={{ selection, exportName, actions: bulkActions }}>
       <thead>
         <tr>
+          <SelectAllHeader ids={delegations.map((d) => d.id)} selection={selection} />
           <th scope="col">{personLabel}</th>
           <th scope="col">{t('approvals.fields.routingKey')}</th>
           <th scope="col">{t('approvals.fields.validFrom')}</th>
@@ -52,6 +62,11 @@ function DelegationTable({
       <tbody>
         {delegations.map((delegation) => (
           <tr key={delegation.id}>
+            <SelectRowCell
+              id={delegation.id}
+              name={names.user(person(delegation))}
+              selection={selection}
+            />
             <td>{names.user(person(delegation))}</td>
             <td>
               {delegation.routingKey === null ? (
@@ -107,6 +122,8 @@ export function DelegatedApprovalsPage(): ReactElement {
   const [delegating, setDelegating] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const givenSelection = useRowSelection();
+  const receivedSelection = useRowSelection();
 
   const settle = (message: string) => {
     setDelegating(false);
@@ -123,6 +140,29 @@ export function DelegatedApprovalsPage(): ReactElement {
       confirmLabel: t('approvals.revoke.confirm'),
       destructive: true,
       action: () => approvalDelegationsApi.revoke(delegation.id),
+      describeProblem: approvalProblemMessage,
+    });
+  };
+
+  /** The given delegations chosen that are still ACTIVE, the only ones Revoke applies to. */
+  const chosenRevocable = (delegations.data?.given ?? []).filter(
+    (delegation) => givenSelection.selected.has(delegation.id) && delegation.status === 'ACTIVE',
+  );
+  const revokeMany = () => {
+    setNotice(null);
+    setConfirmation({
+      title: t('approvals.revoke.title'),
+      body: t('approvals.revoke.body', {
+        name: chosenRevocable.map((d) => names.user(d.delegateUserId)).join('، '),
+      }),
+      confirmLabel: t('approvals.revoke.confirm'),
+      destructive: true,
+      action: async () => {
+        for (const delegation of chosenRevocable) {
+          await approvalDelegationsApi.revoke(delegation.id);
+        }
+        givenSelection.clear();
+      },
       describeProblem: approvalProblemMessage,
     });
   };
@@ -168,6 +208,15 @@ export function DelegatedApprovalsPage(): ReactElement {
                 person={(d) => d.delegateUserId}
                 delegations={delegations.data.given}
                 names={names}
+                selection={givenSelection}
+                exportName="delegations-given"
+                bulkActions={
+                  chosenRevocable.length > 0 && (
+                    <button type="button" className="button" onClick={revokeMany}>
+                      {t('approvals.revoke.action')}
+                    </button>
+                  )
+                }
                 onRevoke={revoke}
               />
             )}
@@ -183,6 +232,8 @@ export function DelegatedApprovalsPage(): ReactElement {
                 person={(d) => d.delegatorUserId}
                 delegations={delegations.data.received}
                 names={names}
+                selection={receivedSelection}
+                exportName="delegations-received"
               />
             )}
           </section>
