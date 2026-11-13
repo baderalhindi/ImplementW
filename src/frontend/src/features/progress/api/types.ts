@@ -1,3 +1,4 @@
+import { type BilingualLabel } from '@/features/identity-access/api/types.ts';
 import { type NarrativeText, type NarrativeTextRequest } from '@/features/projects/api/types.ts';
 
 // The WF-02 representations (TASK-044, progress-update.md §4) as the API serialises them: enums in
@@ -37,8 +38,11 @@ export interface ProgressSubmissionDetail {
   status: ProgressSubmissionStatus;
   actualPercent: Decimal;
   actualPercentCalculated: Decimal;
-  /** Where the calculated figure comes from; NOT_AVAILABLE means there is none and the person submitting enters one. */
-  actualSource: 'WORK_BREAKDOWN' | 'DECLARED' | 'NOT_AVAILABLE';
+  /**
+   * Where the calculated figure comes from; NOT_AVAILABLE means there is none and the person submitting enters one. STAGE_WEIGHTED: the period's
+   * stages, weighed (review round 7, item 1).
+   */
+  actualSource: 'WORK_BREAKDOWN' | 'DECLARED' | 'NOT_AVAILABLE' | 'STAGE_WEIGHTED';
   actualPercentOverride: Decimal | null;
   overrideReason: NarrativeText | null;
   isOverridden: boolean;
@@ -55,6 +59,41 @@ export interface ProgressSubmissionDetail {
   createdBy: string;
   updatedAt: string;
   updatedBy: string;
+  /** A stage-based period: the PROJECT_STAGE version it weighs by, the current stage, and its stages; null and empty otherwise. */
+  stageConfigurationVersionId?: string | null;
+  stageVersionNo?: number | null;
+  currentStageCode?: string | null;
+  stages?: ProgressStageDetail[];
+}
+
+/**
+ * One stage of a period: its weight in the version the period weighs by, whether it applies, the planned % on the period's date, the % complete and
+ * the last published period's, below which a decrease needs a reason, and whether the schedule measures it (Execution, with an active baseline).
+ */
+export interface ProgressStageDetail {
+  stageCode: string;
+  name: BilingualLabel | null;
+  sortOrder: number;
+  weightPercent: Decimal;
+  applies: boolean;
+  plannedPercent: Decimal | null;
+  percentComplete: Decimal | null;
+  previousPercent: Decimal | null;
+  isFromSchedule: boolean;
+  actualStartDate: string | null;
+  actualFinishDate: string | null;
+  note: string | null;
+  decreaseReason: NarrativeText | null;
+}
+
+/** One stage as entered on a DRAFT. A stage the schedule measures takes no %. */
+export interface ProgressStageRequest {
+  stageCode: string;
+  percentComplete: number | null;
+  actualStartDate: string | null;
+  actualFinishDate: string | null;
+  note: string | null;
+  decreaseReason: NarrativeTextRequest | null;
 }
 
 /** PUBLISHED/OFFICIAL: a period's record as it was published; nothing changes it afterwards. */
@@ -95,4 +134,6 @@ export interface ProgressOverrideRequest {
 export interface ProgressSubmissionRequest {
   narrative: NarrativeTextRequest | null;
   override: ProgressOverrideRequest | null;
+  /** On a stage-based period, every stage; omitted, they stay as they are. */
+  stages?: ProgressStageRequest[];
 }

@@ -109,7 +109,8 @@
       "organization": "Ownership and participation",
       "budgetSchedule": "Budget and schedule",
       "location": "Location",
-      "strategy": "Strategy and follow-up"
+      "strategy": "Strategy and follow-up",
+      "stagePlan": "Stage plan"
     },
     "neededToSubmit": "Needed before submitting for review.",
     "stillNeeded": "To save, fill in: {fields}.",
@@ -241,19 +242,24 @@
     "submitted": "The project was submitted for review.",
     "withdrawn": "The submission was withdrawn; the project is a draft again.",
     "reviewStarted": "AHDA's review has started.",
-    "activated": "The project is now active."
+    "activated": "The project is now active.",
+    "stagePlanNotSaved": "The registration was saved, but its stage plan was not. Open the stage plan and save it again."
   },
   "problems": {
     "referenceInvalid": "One of the chosen values is no longer available: a classification, profile, region or city that is not published, an inactive sector or entity, or a city outside the chosen region. Choose again.",
     "participationInvalid": "An entity-managed project must name its external entity.",
-    "incomplete": "The registration budget and both planned dates are needed before the project can be submitted.",
+    "incomplete": "The registration budget, both planned dates and a complete stage plan are needed before the project can be submitted.",
     "managerInvalid": "This person cannot be the Project Manager: they must hold the Project Manager role over this project now.",
     "notEditable": "The project can no longer be changed in its current state. Reload the page to see it.",
     "inUse": "This draft is referenced by another record and cannot be deleted.",
     "invalidTransition": "The project is no longer in a state that allows this. Reload the page to see its current state.",
     "reviewRouteMissing": "No approval route is configured for project registration yet, so the review cannot start. Ask an administrator.",
     "permissionDenied": "Your role does not allow this for this project.",
-    "notFound": "The project was not found, or you do not have access to it."
+    "notFound": "The project was not found, or you do not have access to it.",
+    "stagesNotConfigured": "No project stages are published, so there is no stage plan to set. Ask an administrator to publish the project stages.",
+    "stagePlanInvalid": "Check the stage plan: each stage that applies needs dates within the project’s planned dates, and at least one stage must apply.",
+    "stagePlanUnderReview": "The registration is under review, and the stage plan is reviewed with it. It can change again only if AHDA returns the registration.",
+    "stagePlanChangeRequired": "The registration is approved, so changing the stage plan needs an approved schedule change request. Choose the change it implements."
   },
   "fundingSource": {
     "STRATEGY_BUDGET_FULL": "Yes, in full",
@@ -497,5 +503,49 @@
       "deleteTitle": "Delete the selected projects?",
       "deleteBody": "These projects and their records will leave every list, dashboard and report: {names}. Their data stays on file, and bringing it back needs a technical request."
     }
+  },
+  "stagePlan": {
+    "intro": "Each stage is pre-filled from the project stages AHDA publishes, with its weight. Untick a stage that does not apply; give each stage that applies its planned dates within the project’s. AHDA reviews the plan with the registration.",
+    "weight": "Weight {weight}%",
+    "applies": "Applies to this project",
+    "plannedStart": "Planned start",
+    "plannedEnd": "Planned end",
+    "startingPercent": "Starting point %",
+    "startingPercentHint": "How far this stage had come when the project entered the platform.",
+    "errors": {
+      "required": "Enter the date.",
+      "beforeProject": "The stage cannot start before the project’s planned start.",
+      "outsideProject": "The stage must end on or after its start and by the project’s planned end.",
+      "percent": "Enter a percentage from 0 to 100, with at most two decimal places.",
+      "notAllowed": "This value is not allowed here.",
+      "noneApplies": "At least one stage must apply."
+    },
+    "title": "Stage plan",
+    "notSet": "This project has no stage plan yet. Set it once; after that, a change to it needs an approved schedule change request.",
+    "revision": "Stage plan revision {revision}.",
+    "version": "Stages and weights of version {version}.",
+    "changeNeedsRequest": "The registration is approved, so changing a stage’s dates or whether it applies implements an approved schedule change request.",
+    "changeAuthorization": "Approved schedule change",
+    "authorizationOption": "{title} (approved {date})",
+    "changeAuthorizationHint": "The change request this change implements.",
+    "noAuthorization": "No approved schedule change request is waiting to be applied to this plan. Raise a schedule change request first.",
+    "reason": "Reason for the change",
+    "save": "Save the stage plan"
+  },
+  "stageProgress": {
+    "title": "Stage progress",
+    "setPlan": "Set the stage plan",
+    "openPlan": "Stage plan",
+    "noPlan": "The stage plan is not set yet. Progress is weighed by stage once it is.",
+    "current": "Current stage",
+    "planned": "Planned",
+    "actual": "Actual",
+    "notApplicable": "Does not apply to this project.",
+    "notRecorded": "Not recorded",
+    "plannedOverall": "Planned progress today",
+    "actualOverall": "Actual progress (latest published update)",
+    "gap": "Gap",
+    "points": "{points} points",
+    "versionUsed": "Weighed by stage version {version}"
   }
 }

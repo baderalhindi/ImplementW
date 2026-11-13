@@ -16,6 +16,8 @@ import {
   valuesOf,
 } from '../registration.ts';
 
+import { StageProgressPanel } from '../stagePlan/StageProgressPanel.tsx';
+
 import { FollowUpPanel } from './FollowUpPanel.tsx';
 import { useWorkspace } from './workspaceContext.ts';
 
@@ -39,7 +41,7 @@ const NEXT_STEPS: Record<ProjectStatus, TranslationKey> = {
  */
 export function OverviewTab(): ReactElement {
   const { t, formatDateTime } = useI18n();
-  const { project, lookups, access, user } = useWorkspace();
+  const { project, lookups, access, user, reload } = useWorkspace();
   const managerName = usePersonNames([project.projectManagerUserId]);
   const missing =
     access.reached && (project.status === 'DRAFT' || project.status === 'RETURNED')
@@ -129,6 +131,7 @@ export function OverviewTab(): ReactElement {
           </Detail>
         )}
       </dl>
+      <StageProgressPanel project={project} onChanged={reload} />
       <FollowUpPanel />
       <ProjectDashboard key={project.id} projectId={project.id} user={user} />
     </>

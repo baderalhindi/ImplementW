@@ -6527,3 +6527,123 @@ tr[data-flagged='true'] {
   border-radius: 0.5rem;
   background: var(--color-primary-tint);
 }
+
+/* Review round 7, item 1: the stage plan, the Overview's stage bar and the monthly stage step. */
+.stage-plan__list,
+.stage-progress__stages,
+.stage-entries__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stage-plan__stage,
+.stage-progress__stage,
+.stage-entries__stage {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.stage-progress__stage.is-current,
+.stage-entries__stage.is-current {
+  border-color: var(--color-info);
+  background: var(--color-info-surface);
+}
+
+.stage-progress__stage.is-skipped {
+  color: var(--color-text-muted);
+}
+
+.stage-plan__name,
+.stage-progress__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-weight: 600;
+}
+
+.stage-plan__weight,
+.stage-progress__weight {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.stage-plan__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-2) var(--space-3);
+  align-items: start;
+}
+
+.stage-progress {
+  margin-block: var(--space-6);
+}
+
+.stage-progress__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.stage-progress__figures {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.stage-progress__bar {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stage-progress__bar dt {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.stage-progress__bar dd {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.stage-progress__track {
+  display: block;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-neutral-surface);
+  overflow: hidden;
+}
+
+.stage-progress__fill {
+  display: block;
+  block-size: 100%;
+  border-radius: 999px;
+  background: var(--chart-category-2);
+}
+
+.stage-progress__bar--actual .stage-progress__fill {
+  background: var(--chart-category-1);
+}
+
+.stage-history {
+  margin-block: var(--space-3);
+}
+
+.stage-history > summary {
+  cursor: pointer;
+  font-weight: 600;
+}

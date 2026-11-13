@@ -15,6 +15,7 @@ import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.
 import { progressApi } from './api/progressApi.ts';
 import { type ProgressSubmissionDetail } from './api/types.ts';
 import { ActualValue, PercentValue, VarianceValue } from './components/Figures.tsx';
+import { StageTable } from './components/StageTable.tsx';
 import { HealthComparison } from './components/HealthComparison.tsx';
 import { periodLabel } from './components/Period.tsx';
 import {
@@ -136,6 +137,31 @@ export function ProgressHistory({ project }: { project: ProjectDetail }): ReactE
             totalCount={result.totalCount}
             onPageChange={goToPage}
           />
+          {result.items.some(
+            (item) => item.status === 'PUBLISHED' && (item.stages?.length ?? 0) > 0,
+          ) && (
+            <section className="section" aria-labelledby="progress-stage-history">
+              <h3 id="progress-stage-history">{t('progress.stages.history')}</h3>
+              {result.items
+                .filter((item) => item.status === 'PUBLISHED' && (item.stages?.length ?? 0) > 0)
+                .map((item) => {
+                  const label = periodLabel(
+                    period(item.reportingCycleId),
+                    item.reportingCycleId,
+                    t,
+                  );
+                  return (
+                    <details key={item.id} className="stage-history">
+                      <summary dir="auto">{label}</summary>
+                      <StageTable
+                        submission={item}
+                        caption={t('progress.stages.periodCaption', { period: label })}
+                      />
+                    </details>
+                  );
+                })}
+            </section>
+          )}
         </>
       )}
     </div>

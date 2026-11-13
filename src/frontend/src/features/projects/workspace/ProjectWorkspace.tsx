@@ -58,6 +58,7 @@ const TAB_LABELS: Record<WorkspaceTabKey, TranslationKey> = {
 const ARRIVAL_NOTICES: Record<string, TranslationKey> = {
   created: 'projects.done.created',
   updated: 'projects.done.updated',
+  stagePlanNotSaved: 'projects.done.stagePlanNotSaved',
   changeRequestDeleted: 'changeRequests.done.deleted',
 };
 

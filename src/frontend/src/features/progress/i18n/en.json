@@ -101,7 +101,8 @@
     "declared": "This project has no work breakdown yet, so this is the last figure declared on it. Confirm it, or enter a new one with the reason.",
     "noFigure": "This project has no work breakdown and no declared figure yet. Enter its progress and say where the figure comes from.",
     "enteredPercent": "Actual progress (%)",
-    "enteredReason": "Where the figure comes from"
+    "enteredReason": "Where the figure comes from",
+    "stageWeighted": "Overall progress is weighed from the stages below: each stage’s weight times its % complete, over the stages that apply."
   },
   "review": {
     "title": "Review progress update",
@@ -136,6 +137,31 @@
     "notEditable": "Only a draft can be changed.",
     "configurationMissing": "AHDA has not yet configured the reporting cadence or the health thresholds for this project.",
     "invalidTransition": "The update is no longer in a state that allows this.",
-    "permissionDenied": "You do not have permission to do this. AHDA reviews progress, and no one reviews an update they submitted."
+    "permissionDenied": "You do not have permission to do this. AHDA reviews progress, and no one reviews an update they submitted.",
+    "stagePlanRequired": "Set the project’s stage plan first: progress is reported by stage.",
+    "stageEntryInvalid": "Check the stage progress: each stage that has started needs its actual start, a complete stage its finish, and a lower % than last time its reason."
+  },
+  "stages": {
+    "title": "Stage progress",
+    "overall": "Overall progress {actual} (planned {planned}).",
+    "current": "Current stage: {stage}.",
+    "notKnown": "not yet known",
+    "stage": "Stage",
+    "weight": "Weight",
+    "planned": "Planned %",
+    "percentComplete": "% complete",
+    "previous": "Last published: {percent}. A lower figure needs a reason.",
+    "fromSchedule": "From the schedule’s active baseline",
+    "actualStart": "Actual start",
+    "actualFinish": "Actual finish",
+    "actualFinishHint": "Once the stage reaches 100%.",
+    "note": "Note (one line)",
+    "decreaseReason": "Why is it lower than last period?",
+    "decreasedBecause": "Lower than last period: {reason}",
+    "measuredGenerally": "Progress is reported by stage. Execution is measured by the schedule once the project has an active baseline; until then it is entered each month.",
+    "measuredBySchedule": "Execution is measured by the schedule’s active baseline; the other stages are entered each month.",
+    "measuredByEntry": "Execution is entered each month until the project has an active baseline; then the schedule measures it.",
+    "history": "Stage progress of each published update",
+    "periodCaption": "Stage progress, {period}"
   }
 }

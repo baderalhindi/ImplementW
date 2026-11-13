@@ -1,4 +1,11 @@
-import { type ReactElement, type SyntheticEvent, useId, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  type SyntheticEvent,
+  useCallback,
+  useId,
+  useRef,
+  useState,
+} from 'react';
 import { useNavigate } from 'react-router';
 
 import { useFocusFirstError, useSaveAction } from '@/features/identity-access/forms.ts';
@@ -39,6 +46,17 @@ import {
   valuesOf,
 } from '../registration.ts';
 import { type ProjectLookups, useProjectLookups } from '../useProjectLookups.ts';
+import {
+  checkStagePlan,
+  hasStagePlanErrors,
+  rowsOf,
+  stagePlanChanged,
+  type StagePlanRow,
+  toEntries,
+} from '../stagePlan/stagePlan.ts';
+import { stagePlanApi, type StagePlanStage } from '../stagePlan/stagePlanApi.ts';
+import { StagePlanFields } from '../stagePlan/StagePlanFields.tsx';
+import { useApiResource } from '@/shared/api/useApiResource.ts';
 
 const PARTICIPATION_MODES: ParticipationMode[] = ['AHDA_MANAGED', 'ENTITY_MANAGED'];
 
@@ -106,6 +124,29 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
     existing === undefined ? initialValues(user) : valuesOf(existing.project),
   );
 
+  // Review round 7, item 1: the stage plan, pre-filled from the stages in force, saved with the registration.
+  const projectId = existing?.project.id;
+  const loadPlan = useCallback(
+    async (
+      signal: AbortSignal,
+    ): Promise<{ stages: StagePlanStage[]; acceptsStartingPercent: boolean }> =>
+      projectId === undefined
+        ? { stages: await stagePlanApi.stages(signal), acceptsStartingPercent: false }
+        : (await stagePlanApi.get(projectId, signal)).data,
+    [projectId],
+  );
+  const plan = useApiResource(loadPlan);
+  // The rows as edited; until the first edit, the plan as read.
+  const [editedRows, setStageRows] = useState<StagePlanRow[] | null>(null);
+  const stageRows = editedRows ?? (plan.data === undefined ? null : rowsOf(plan.data.stages));
+  const acceptsStartingPercent = plan.data?.acceptsStartingPercent ?? false;
+  const stageCodes = checkStagePlan(stageRows ?? [], {
+    projectStart: values.plannedStartDate,
+    projectEnd: values.plannedEndDate,
+    requireDates: false,
+    acceptsStartingPercent,
+  });
+
   const internal = isInternal(user);
   const entityFixed = !internal && ownEntityId(user) !== null;
   const required = draftRequiredFields(values);
@@ -115,7 +156,7 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
   ];
   const codes = checkRegistration(values, required);
   const missing = missingFields(values, required);
-  const ready = !hasErrors(codes);
+  const ready = !hasErrors(codes) && !hasStagePlanErrors(stageCodes);
 
   const set = (field: RegistrationField, value: string) => {
     // An initiative belongs to one portfolio: another portfolio drops the initiative chosen under the last one.
@@ -153,11 +194,33 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
         ? projectsApi.create(request)
         : projectsApi.update(existing.project.id, request, existing.etag),
     );
-    if (result.ok) {
-      void navigate(`/projects/${result.value.data.id}`, {
-        state: { notice: existing === undefined ? 'created' : 'updated' },
-      });
+    if (!result.ok) {
+      return;
     }
+    const saved = result.value;
+    let notice = existing === undefined ? 'created' : 'updated';
+    if (
+      stageRows !== null &&
+      stageRows.length > 0 &&
+      (existing === undefined ||
+        stagePlanChanged(stageRows, plan.data?.stages ?? [], acceptsStartingPercent))
+    ) {
+      // The registration is saved; a plan the API refuses is said so on the project, where it is set again.
+      try {
+        await stagePlanApi.update(
+          saved.data.id,
+          {
+            stages: toEntries(stageRows, acceptsStartingPercent),
+            changeAuthorizationId: null,
+            reason: null,
+          },
+          saved.etag,
+        );
+      } catch {
+        notice = 'stagePlanNotSaved';
+      }
+    }
+    void navigate(`/projects/${saved.data.id}`, { state: { notice } });
   };
 
   return (
@@ -367,6 +430,19 @@ export function ProjectForm({ user, existing }: ProjectFormProps): ReactElement 
           error={errorOf('plannedEndDate')}
         />
       </fieldset>
+
+      {stageRows !== null && stageRows.length > 0 && (
+        <fieldset className="form__section">
+          <legend>{t('projects.form.sections.stagePlan')}</legend>
+          <p className="form__note">{t('projects.stagePlan.intro')}</p>
+          <StagePlanFields
+            rows={stageRows}
+            onChange={setStageRows}
+            codes={stageCodes}
+            acceptsStartingPercent={acceptsStartingPercent}
+          />
+        </fieldset>
+      )}
 
       <fieldset className="form__section">
         <legend>{t('projects.form.sections.location')}</legend>

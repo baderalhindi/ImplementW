@@ -16,7 +16,8 @@
     "next": "Next",
     "back": "Back",
     "retry": "Try again",
-    "search": "Search"
+    "search": "Search",
+    "close": "Close"
   },
   "globalSearch": {
     "label": "Search the platform",

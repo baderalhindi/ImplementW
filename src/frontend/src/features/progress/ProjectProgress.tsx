@@ -5,6 +5,8 @@ import { usePermissions } from '@/features/identity-access/permissions/permissio
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
+import { StagePlanDialog } from '@/features/projects/stagePlan/StagePlanDialog.tsx';
+import { ApiError } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
@@ -19,6 +21,7 @@ import { periodLabel } from './components/Period.tsx';
 import { IntakeMarker, SubmissionStatusBadge } from './components/ProgressBadges.tsx';
 import { ProgressUpdateDialog, type ProgressUpdateMode } from './dialogs/ProgressUpdateDialog.tsx';
 import { ReviewProgressDialog } from './dialogs/ReviewProgressDialog.tsx';
+import { StageTable } from './components/StageTable.tsx';
 import { isInProgress } from './presentation.ts';
 import { isExistingSubmission, isForbidden, progressProblemMessage } from './problems.ts';
 import { useHealthView } from './useHealthView.ts';
@@ -58,7 +61,20 @@ async function loadCurrent(projectId: string, signal: AbortSignal): Promise<Curr
   return { submission: detail.data, etag: detail.etag, returnReason: returned };
 }
 
-type OpenDialog = ProgressUpdateMode | 'review' | null;
+type OpenDialog = ProgressUpdateMode | 'review' | 'stagePlan' | null;
+
+/**
+ * How Execution is measured (review round 7, item 1): by the schedule once the project has an active baseline and a work breakdown that gives a
+ * figure, entered each month until then. A period that is not stage-based weighs no stages.
+ */
+function executionNote(submission: ProgressSubmissionDetail | null): TranslationKey {
+  const execution = submission?.stages?.find((stage) => stage.stageCode === 'EXECUTION');
+  return execution === undefined
+    ? 'progress.stages.measuredGenerally'
+    : execution.isFromSchedule
+      ? 'progress.stages.measuredBySchedule'
+      : 'progress.stages.measuredByEntry';
+}
 
 /**
  * SCR-048 Project Progress tab: the official and the live value side by side, each badged (M-12), and the period
@@ -108,6 +124,9 @@ export function ProjectProgress({
     } catch (error) {
       if (isExistingSubmission(error)) {
         setNotice({ tone: 'warning', message: t('progress.problems.submissionExists') });
+      } else if (error instanceof ApiError && error.code === 'PROGRESS_STAGE_PLAN_REQUIRED') {
+        // Review round 7, item 1: a project with no stage plan sets it first, then the update starts.
+        setDialog('stagePlan');
       } else {
         setStartError(progressProblemMessage(error, t));
       }
@@ -152,6 +171,7 @@ export function ProjectProgress({
         </p>
       )}
       <HealthComparison view={health.data} intakeDate={intakeDate} />
+      <p className="form__note">{t(executionNote(update?.submission ?? null))}</p>
 
       <section className="section" aria-labelledby="progress-current">
         <h2 id="progress-current">{t('progress.current.title')}</h2>
@@ -207,6 +227,7 @@ export function ProjectProgress({
                 </Detail>
               )}
             </dl>
+            <StageTable submission={update.submission} caption={t('progress.stages.title')} />
             <div className="form__actions">
               {reporter && update.submission.status === 'DRAFT' && (
                 <>
@@ -250,6 +271,18 @@ export function ProjectProgress({
         <Link to={`/projects/${project.id}/progress/history`}>{t('progress.actions.history')}</Link>
       </p>
 
+      <StagePlanDialog
+        open={dialog === 'stagePlan'}
+        project={project}
+        canChange={reporter}
+        onClose={() => {
+          setDialog(null);
+        }}
+        onSaved={() => {
+          setDialog(null);
+          void start();
+        }}
+      />
       {update !== null && (
         <>
           <ProgressUpdateDialog
