@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Deletion;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
@@ -38,12 +39,18 @@ public interface IMasterDataRepository
     public void AddItem(MasterDataItem item);
 
     /// <summary>
-    /// Review round 7, item 3: how many rows anywhere reference the item, through every foreign key to it — a project, a configuration row, a child
-    /// item. Read from the database's own constraints, so a reference added later is counted too.
+    /// Every place a row references the item, through every foreign key to it, with how many rows: read from the database's own constraints, so a
+    /// reference added later is found too. A closed project's rows are their own use, as a closed project takes no change.
     /// </summary>
-    public Task<int> CountReferencesAsync(Guid itemId, CancellationToken cancellationToken);
+    public Task<IReadOnlyList<RecordUse>> ListUsesAsync(Guid itemId, CancellationToken cancellationToken);
+
+    /// <summary>Sets the reference to null in each of <paramref name="uses"/>, stamping who and when, in the caller's unit of work; how many rows changed.</summary>
+    public Task<int> ClearUsesAsync(Guid itemId, IReadOnlyList<RecordUse> uses, Guid actorId, DateTimeOffset now, CancellationToken cancellationToken);
 
     public void RemoveItem(MasterDataItem item);
+
+    /// <summary>A transaction, so a deletion's cleared references and its removal commit together; none is begun inside another.</summary>
+    public Task<IMasterDataWork> BeginAsync(CancellationToken cancellationToken);
 
     public Task<KpiDefinitionPage> ListKpiDefinitionsAsync(KpiDefinitionQuery query, CancellationToken cancellationToken);
 
@@ -61,4 +68,9 @@ public interface IMasterDataRepository
     public void AddKpiDefinition(KpiDefinition definition);
 
     public Task<SaveResult> SaveAsync(CancellationToken cancellationToken);
+}
+
+public interface IMasterDataWork : IAsyncDisposable
+{
+    public Task CommitAsync(CancellationToken cancellationToken);
 }

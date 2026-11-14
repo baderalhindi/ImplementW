@@ -89,5 +89,8 @@ public static class IdentityAccessAuditEvents
     public const string ExternalEntitySuspended = "IdentityAccess.ExternalEntitySuspended";
     public const string ExternalEntityActivated = "IdentityAccess.ExternalEntityActivated";
     public const string ExternalEntityRetired = "IdentityAccess.ExternalEntityRetired";
+
+    /// <summary>PRIVILEGED_ACTION: an external entity nothing referenced was erased.</summary>
+    public const string ExternalEntityDeleted = "IdentityAccess.ExternalEntityDeleted";
     public const string IdentityIntegrationTested = "IdentityAccess.IdentityIntegrationTested";
 }

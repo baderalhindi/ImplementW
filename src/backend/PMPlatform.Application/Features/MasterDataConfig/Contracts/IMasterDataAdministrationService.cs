@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Deletion;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Domain.Common;
 
@@ -32,11 +33,9 @@ public interface IMasterDataAdministrationService
     public Task<AdministrationResult<Versioned<MasterDataItemDetail>>> RetireItemAsync(Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Review round 7, item 3: deletes an item nothing references, in any state; an item something references is retired instead, and the answer says
-    /// how many records reference it. A shipped item is neither.
+    /// Deletes an item, in any state (the client asked for no "retire"): it is cleared from every record that names it optionally, then erased. A record
+    /// that cannot exist without it, a closed project, a published configuration or the audit trail keeps it, and then nothing is deleted and the
+    /// answer lists those uses. A shipped item is never deleted.
     /// </summary>
-    public Task<AdministrationResult<MasterDataItemRemoval>> RemoveItemAsync(Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken);
+    public Task<AdministrationResult<DeletionOutcome>> RemoveItemAsync(Guid actorId, Guid itemId, uint? expectedVersion, CancellationToken cancellationToken);
 }
-
-/// <summary>What removing an item did: deleted it, or, because <see cref="UsageCount"/> records reference it, retired it (<see cref="Item"/> as it now stands).</summary>
-public sealed record MasterDataItemRemoval(bool Deleted, int UsageCount, MasterDataItemDetail? Item);

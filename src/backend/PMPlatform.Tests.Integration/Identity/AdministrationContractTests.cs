@@ -285,6 +285,42 @@ public sealed class AdministrationContractTests(IdentityTestHost host)
         await AssertProblemAsync(reactivate, HttpStatusCode.Conflict, "TERMINAL_STATE");
     }
 
+    /// <summary>The client wants Delete, not Retire: an entity nothing uses is erased; one a person belongs to is kept, and the answer says so.</summary>
+    [Fact]
+    public async Task AnEntityNothingUsesIsDeletedAndOneWithPeopleIsKept()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        string token = (await client.SignInOrFailAsync(1)).AccessToken;
+        string entityType = (await host.Database.QueryAsync("""
+            SELECT i.id::text FROM master_data_config.master_data_item i
+            JOIN master_data_config.master_data_catalogue c ON c.id = i.catalogue_id AND c.code = 'EXTERNAL_ENTITY_TYPE' ORDER BY i.code LIMIT 1
+            """))[0];
+        using HttpResponseMessage created = await client.PostAsync(AdministrationApi.ExternalEntities, token, new
+        {
+            code = $"ENT-{Suffix().ToUpperInvariant()}",
+            name = new { ar = "جهة", en = "Entity" },
+            entityTypeItemId = entityType,
+            sponsorUserId = IdentityDatabase.UserId(2),
+        });
+        Guid unused = AdministrationApi.IdOf(await created.ReadObjectAsync());
+        using (HttpResponseMessage deleted = await client.PostAsync($"{AdministrationApi.ExternalEntities}/{unused}/remove", token))
+        {
+            Assert.Equal((HttpStatusCode.OK, true), (deleted.StatusCode, (await deleted.ReadObjectAsync())["deleted"]!.GetValue<bool>()));
+        }
+
+        using (HttpResponseMessage gone = await client.GetAsync($"{AdministrationApi.ExternalEntities}/{unused}", token))
+        {
+            Assert.Equal(HttpStatusCode.NotFound, gone.StatusCode);
+        }
+
+        // The active test entity has people and their role assignments: it stays.
+        using HttpResponseMessage kept = await client.PostAsync($"{AdministrationApi.ExternalEntities}/{IdentityDatabase.ActiveEntityId}/remove", token);
+        JsonObject answer = await kept.ReadObjectAsync();
+        Assert.False(answer["deleted"]!.GetValue<bool>());
+        Assert.Contains(answer["blockedBy"]!.AsArray(), use => use!["record"]!.GetValue<string>() == "identity_access.user");
+        Assert.Single(await host.Database.QueryAsync($"SELECT id::text FROM identity_access.external_entity WHERE id = '{IdentityDatabase.ActiveEntityId}'"));
+    }
+
     [Fact]
     public async Task RolesPermissionsAndProfilesAreReadAndARoleIsRenamed()
     {

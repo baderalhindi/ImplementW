@@ -193,7 +193,7 @@ public sealed partial class SeedDataTests(SeededDatabase database) : IClassFixtu
             .ToDictionary(m => $"{m.Groups["schema"].Value}.{m.Groups["table"].Value}.{m.Groups["column"].Value}", m => m.Groups["catalogue"].Value);
         IReadOnlyList<string> seeded = await database.QueryAsync("SELECT code FROM master_data_config.master_data_catalogue WHERE is_system");
 
-        Assert.Equal(40, erdReferences.Length);
+        Assert.Equal(39, erdReferences.Length);
         Assert.Equal(erdReferences.Order(StringComparer.Ordinal), map.Keys.Order(StringComparer.Ordinal));
         Assert.Empty(map.Values.Distinct().Except(seeded));
         Assert.Empty(seeded.Except(map.Values));

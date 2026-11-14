@@ -13298,18 +13298,6 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ActorUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_audit_event_user_actor_user_id");
-
-                    b.HasOne("PMPlatform.Domain.MasterDataConfig.MasterDataItem", null)
-                        .WithMany()
-                        .HasForeignKey("DataClassificationItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_audit_event_master_data_item_data_classification_item_id");
-
-                    b.HasOne("PMPlatform.Domain.IdentityAccess.ExternalEntity", null)
-                        .WithMany()
-                        .HasForeignKey("ScopeExternalEntityId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_audit_event_external_entity_scope_external_entity_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.AuditActivity.AuditEventAttribute", b =>

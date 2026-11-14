@@ -5693,6 +5693,38 @@
         }
       }
     },
+    "/api/v1/external-entities/{externalEntityId}/remove": {
+      "post": {
+        "tags": [
+          "IdentityAccess"
+        ],
+        "summary": "Erases an entity nothing references; otherwise nothing is deleted and the answer lists what uses it.",
+        "operationId": "IdentityAccess_DeleteExternalEntity",
+        "parameters": [
+          {
+            "name": "externalEntityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionOutcome"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/external-update-requests": {
       "get": {
         "tags": [
@@ -9764,7 +9796,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MasterDataItemRemoval"
+                  "$ref": "#/components/schemas/DeletionOutcome"
                 }
               }
             }
@@ -27266,6 +27298,34 @@
           null
         ]
       },
+      "DeletionOutcome": {
+        "required": [
+          "deleted",
+          "clearedCount",
+          "blockedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          },
+          "clearedCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "blockedBy": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecordUse"
+            }
+          }
+        },
+        "description": "What deleting a record did: deleted it after clearing it from int DeletionOutcome.ClearedCount rows, or nothing, because of IReadOnlyList&lt;RecordUse&gt; DeletionOutcome.BlockedBy."
+      },
       "DepartmentCreateRequest": {
         "required": [
           "code",
@@ -33216,38 +33276,6 @@
             "format": "int32"
           }
         }
-      },
-      "MasterDataItemRemoval": {
-        "required": [
-          "deleted",
-          "usageCount",
-          "item"
-        ],
-        "type": "object",
-        "properties": {
-          "deleted": {
-            "type": "boolean"
-          },
-          "usageCount": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "item": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/MasterDataItemDetail"
-              }
-            ]
-          }
-        },
-        "description": "What removing an item did: deleted it, or, because int MasterDataItemRemoval.UsageCount records reference it, retired it (<see cref=\"P:PMPlatform.Application.Features.MasterDataConfig.Contracts.MasterDataItemRemoval.Item\" /> as it now stands)."
       },
       "MasterDataItemSummary": {
         "required": [
@@ -42386,6 +42414,35 @@
           "INCOMPLETE"
         ],
         "description": "WF-10 §6.3's roll-up statuses."
+      },
+      "RecordUse": {
+        "required": [
+          "record",
+          "field",
+          "required",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "record": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "Rows that reference a record about to be deleted: string RecordUse.Record is the referencing table (`project.project`, or `project.project.closed`\nfor closed projects, which take no change), string RecordUse.Field its column, bool RecordUse.Required whether those rows need a value there."
       },
       "ReportAllowlistEntryPage": {
         "required": [

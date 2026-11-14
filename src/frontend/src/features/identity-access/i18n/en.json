@@ -464,12 +464,14 @@
         "title": "Activate entity",
         "body": "Users of {name} will be able to sign in and act again.",
         "action": "Activate"
-      },
-      "retire": {
-        "title": "Retire entity",
-        "body": "{name} will be retired permanently. Its users will not be able to sign in, and it cannot be activated again.",
-        "action": "Retire"
       }
+    },
+    "delete": {
+      "title": "Delete entity",
+      "body": "Delete {name}? It is erased only if nothing uses it: no project, person, role assignment, update request or audit entry.",
+      "action": "Delete",
+      "done": "{name} was deleted.",
+      "blocked": "{name} was not deleted: it is used by {uses}. Move or remove those first."
     }
   },
   "signIn": {
@@ -676,7 +678,6 @@
     "codeInvalid": "Use capital letters, digits, hyphens and underscores.",
     "validate": "Validate",
     "publish": "Publish",
-    "retire": "Retire",
     "lifecycleNote": "The value is saved as a draft, then validated and published before forms offer it. How many administrators that takes is set per environment: one where there is only one, otherwise the author, a reviewer and a publisher.",
     "states": {
       "DRAFT": "Draft",
@@ -695,11 +696,12 @@
       "declined": "Decline"
     },
     "delete": "Delete",
-    "deleteConfirm": "Delete {code}? If records use it, it is retired instead and stays on those records.",
+    "deleteConfirm": "Delete {code}? It is removed from the records that use it optionally and erased; this cannot be undone.",
     "deleted": "{code} was deleted.",
-    "retiredInstead": "{code} is used by {count} records, so it was retired instead: those records keep it and no new record can choose it.",
     "editTitle": "Edit value",
-    "sortOrderInvalid": "Enter a whole number from 0."
+    "sortOrderInvalid": "Enter a whole number from 0.",
+    "deletedAndCleared": "{code} was deleted and removed from {count} records that used it.",
+    "deleteBlocked": "{code} was not deleted: {uses} cannot be without it. Change those records first."
   },
   "passwordSelfService": {
     "changeMenu": "Change password",
@@ -769,5 +771,23 @@
     "versionDeleted": "The version is deleted.",
     "noVersions": "No versions yet.",
     "namesLanguage": "Write each stage's Arabic name in Arabic and its English name in English."
+  },
+  "deletion": {
+    "use": "{count} {record}",
+    "records": {
+      "projects": "projects",
+      "closedProjects": "closed projects",
+      "entities": "external entities",
+      "people": "people",
+      "assignments": "role assignments",
+      "updateRequests": "update requests",
+      "contributions": "entity answers",
+      "risks": "risks",
+      "concerns": "issues and challenges",
+      "documents": "documents",
+      "milestones": "milestones",
+      "audit": "audit trail entries",
+      "settings": "published settings"
+    }
   }
 }

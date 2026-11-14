@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PMPlatform.Application.Common.Deletion;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.MasterDataConfig;
 using PMPlatform.Application.Features.MasterDataConfig.Contracts;
@@ -144,31 +145,29 @@ internal sealed class MasterDataRepository(PMPlatformDbContext context) : IMaste
 
     public void AddItem(MasterDataItem item) => context.Set<MasterDataItem>().Add(item);
 
-    public async Task<int> CountReferencesAsync(Guid itemId, CancellationToken cancellationToken)
-    {
-        // Every single-column foreign key to master_data_item(id), from the catalog; the identifiers are the database's own, quoted.
-        List<ReferenceColumn> columns = await context.Database.SqlQuery<ReferenceColumn>($"""
-            SELECT quote_ident(n.nspname) || '.' || quote_ident(t.relname) AS "Table", quote_ident(a.attname) AS "Column"
-            FROM pg_constraint c
-            JOIN pg_class t ON t.oid = c.conrelid JOIN pg_namespace n ON n.oid = t.relnamespace
-            JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
-            WHERE c.contype = 'f' AND c.confrelid = 'master_data_config.master_data_item'::regclass AND array_length(c.conkey, 1) = 1
-            """).ToListAsync(cancellationToken).ConfigureAwait(false);
-        if (columns.Count == 0)
-        {
-            return 0;
-        }
+    private const string ItemTable = "master_data_config.master_data_item";
 
-        string union = string.Join(" UNION ALL ", columns.Select(c => $"SELECT count(*) AS n FROM {c.Table} WHERE {c.Column} = @item"));
-#pragma warning disable EF1002 // The table and column names come from pg_constraint, quoted by quote_ident; the item is a parameter.
-        return await context.Database.SqlQueryRaw<int>(
-            $"SELECT coalesce(sum(n), 0)::int AS \"Value\" FROM ({union}) r", new Npgsql.NpgsqlParameter("item", itemId)).SingleAsync(cancellationToken).ConfigureAwait(false);
-#pragma warning restore EF1002
-    }
+    public Task<IReadOnlyList<RecordUse>> ListUsesAsync(Guid itemId, CancellationToken cancellationToken) =>
+        ForeignKeyUses.ListAsync(context, ItemTable, itemId, cancellationToken);
+
+    public Task<int> ClearUsesAsync(Guid itemId, IReadOnlyList<RecordUse> uses, Guid actorId, DateTimeOffset now, CancellationToken cancellationToken) =>
+        ForeignKeyUses.ClearAsync(context, ItemTable, itemId, uses, actorId, now, cancellationToken);
 
     public void RemoveItem(MasterDataItem item) => context.Set<MasterDataItem>().Remove(item);
 
-    private sealed record ReferenceColumn(string Table, string Column);
+    public async Task<IMasterDataWork> BeginAsync(CancellationToken cancellationToken) =>
+        context.Database.CurrentTransaction is null
+            ? new MasterDataWork(await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false))
+            : new MasterDataWork(null);
+
+    private sealed class MasterDataWork(Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? transaction) : IMasterDataWork
+    {
+        public Task CommitAsync(CancellationToken cancellationToken) => transaction?.CommitAsync(cancellationToken) ?? Task.CompletedTask;
+
+        public ValueTask DisposeAsync() => transaction?.DisposeAsync() ?? ValueTask.CompletedTask;
+    }
+
+
 
     public async Task<KpiDefinitionPage> ListKpiDefinitionsAsync(KpiDefinitionQuery query, CancellationToken cancellationToken)
     {

@@ -20,6 +20,7 @@ import { usePersonNames } from '../assignments/useUserNames.ts';
 import { type Confirmation, ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { useCan } from '../permissions/permissions.ts';
 import { checkScript } from '../forms.ts';
+import { type DeletionOutcome, usesText } from '../deletion.ts';
 import { fieldMessage, problemMessage } from '../problems.ts';
 
 /** A catalogue as GET /master-data-catalogues lists it (FG-04). */
@@ -33,9 +34,9 @@ interface Catalogue {
   parentCatalogueId: string | null;
 }
 
-type Command = 'validate' | 'publish' | 'retire';
+type Command = 'validate' | 'publish';
 
-const COMMANDS: readonly Command[] = ['validate', 'publish', 'retire'];
+const COMMANDS: readonly Command[] = ['validate', 'publish'];
 
 /** Whether an item's state offers the command. */
 function allows(item: MasterDataItemSummary, command: Command): boolean {
@@ -44,8 +45,6 @@ function allows(item: MasterDataItemSummary, command: Command): boolean {
       return item.lifecycleState === 'DRAFT';
     case 'publish':
       return item.lifecycleState === 'VALIDATED';
-    case 'retire':
-      return item.lifecycleState === 'PUBLISHED' && !item.isSystem;
   }
 }
 
@@ -187,7 +186,10 @@ function CatalogueItems({
       ? t('common.values.none')
       : (parents.data?.find((p) => p.id === id)?.label[language] ?? id.slice(0, 8));
 
-  /** Review round 7, item 3: deletes an unused value; a used one is retired instead and the person is told how many records use it. */
+  /**
+   * Deletes a value (the client wants no "retire"): it is cleared from the records that name it optionally, then erased. While a record needs it,
+   * nothing is deleted and the person is told where it is used.
+   */
   const remove = (item: MasterDataItemSummary) => {
     setNotice(null);
     setConfirmation({
@@ -197,21 +199,28 @@ function CatalogueItems({
       destructive: true,
       action: async () => {
         const current = await apiRequest<MasterDataItemSummary>(`/master-data-items/${item.id}`);
-        const { data } = await apiRequest<{ deleted: boolean; usageCount: number }>(
-          `/master-data-items/${item.id}/remove`,
-          { method: 'POST', body: {}, ifMatch: current.etag },
-        );
+        const { data } = await apiRequest<DeletionOutcome>(`/master-data-items/${item.id}/remove`, {
+          method: 'POST',
+          body: {},
+          ifMatch: current.etag,
+        });
         setNotice(
           data.deleted
             ? {
                 tone: 'success',
-                message: t('identityAccess.masterData.deleted', { code: item.code }),
+                message:
+                  data.clearedCount === 0
+                    ? t('identityAccess.masterData.deleted', { code: item.code })
+                    : t('identityAccess.masterData.deletedAndCleared', {
+                        code: item.code,
+                        count: data.clearedCount,
+                      }),
               }
             : {
                 tone: 'warning',
-                message: t('identityAccess.masterData.retiredInstead', {
+                message: t('identityAccess.masterData.deleteBlocked', {
                   code: item.code,
-                  count: data.usageCount,
+                  uses: usesText(data.blockedBy, t),
                 }),
               },
         );
@@ -239,7 +248,7 @@ function CatalogueItems({
       title: t(`identityAccess.masterData.${command}`),
       body: chosen.map((item) => item.code).join('، '),
       confirmLabel: t(`identityAccess.masterData.${command}`),
-      destructive: command === 'retire',
+      destructive: false,
       action: async () => {
         for (const item of chosen) {
           await sendCommand(item, command);
@@ -293,7 +302,7 @@ function CatalogueItems({
                     <button
                       key={command}
                       type="button"
-                      className={command === 'retire' ? 'button button--danger' : 'button'}
+                      className="button"
                       onClick={() => {
                         confirmMany(command);
                       }}

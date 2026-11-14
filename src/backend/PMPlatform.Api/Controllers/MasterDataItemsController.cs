@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Deletion;
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
@@ -126,7 +127,7 @@ public sealed class MasterDataItemsController(IMasterDataAdministrationService m
     [HttpPost("{itemId:guid}/remove")]
     [RequirePermission(PermissionCatalogue.MasterDataManage)]
     [SensitiveWrite]
-    [ProducesResponseType<MasterDataItemRemoval>(StatusCodes.Status200OK, "application/json")]
+    [ProducesResponseType<DeletionOutcome>(StatusCodes.Status200OK, "application/json")]
     [EndpointName("MasterDataConfig_RemoveMasterDataItem")]
     public async Task<IActionResult> Remove(Guid itemId, CancellationToken cancellationToken) =>
         TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)

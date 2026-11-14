@@ -8,6 +8,7 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
@@ -35,6 +36,7 @@ import {
   useSaveAction,
   UUID_PATTERN,
 } from '../forms.ts';
+import { usesText } from '../deletion.ts';
 import { labelOf } from '../lookups.ts';
 import { problemMessage } from '../problems.ts';
 
@@ -43,8 +45,8 @@ const STATUSES: ExternalEntityStatus[] = ['ACTIVE', 'SUSPENDED', 'RETIRED'];
 
 /** The commands each status allows; RETIRED is terminal (record §3). */
 const TRANSITIONS: Record<ExternalEntityStatus, ExternalEntityTransition[]> = {
-  ACTIVE: ['suspend', 'retire'],
-  SUSPENDED: ['activate', 'retire'],
+  ACTIVE: ['suspend'],
+  SUSPENDED: ['activate'],
   RETIRED: [],
 };
 
@@ -59,6 +61,7 @@ export function ExternalEntityListPage(): ReactElement {
   const { params, page, setFilter, setFilters, goToPage } = useListParams();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const selection = useRowSelection();
 
   const q = params.get('q') ?? undefined;
@@ -84,6 +87,32 @@ export function ExternalEntityListPage(): ReactElement {
       confirmLabel: t(`identityAccess.entities.transitions.${transition}.action`),
       destructive: transition !== 'activate',
       action: () => externalEntitiesApi.transition(entity.id, transition),
+    });
+  };
+
+  /** Deletes an entity (the client wants no "retire"): erased when nothing uses it; otherwise the person is told what does. */
+  const remove = (entity: ExternalEntitySummary) => {
+    const name = labelOf(entity.name, language);
+    setNotice(null);
+    setConfirmation({
+      title: t('identityAccess.entities.delete.title'),
+      body: t('identityAccess.entities.delete.body', { name }),
+      confirmLabel: t('identityAccess.entities.delete.action'),
+      destructive: true,
+      action: async () => {
+        const { data } = await externalEntitiesApi.remove(entity.id);
+        setNotice(
+          data.deleted
+            ? { tone: 'success', message: t('identityAccess.entities.delete.done', { name }) }
+            : {
+                tone: 'warning',
+                message: t('identityAccess.entities.delete.blocked', {
+                  name,
+                  uses: usesText(data.blockedBy, t),
+                }),
+              },
+        );
+      },
     });
   };
 
@@ -136,6 +165,7 @@ export function ExternalEntityListPage(): ReactElement {
           </>
         }
       />
+      <PageNotice notice={notice} />
 
       <FilterBar
         onClearAll={() => {
@@ -227,20 +257,18 @@ export function ExternalEntityListPage(): ReactElement {
                 exportName: 'external-entities',
                 actions: (
                   <>
-                    {(['activate', 'suspend', 'retire'] as const)
-                      .filter(chosenAllow)
-                      .map((transition) => (
-                        <button
-                          key={transition}
-                          type="button"
-                          className={transition === 'retire' ? 'button button--danger' : 'button'}
-                          onClick={() => {
-                            confirmMany(transition);
-                          }}
-                        >
-                          {t(`identityAccess.entities.transitions.${transition}.action`)}
-                        </button>
-                      ))}
+                    {(['activate', 'suspend'] as const).filter(chosenAllow).map((transition) => (
+                      <button
+                        key={transition}
+                        type="button"
+                        className="button"
+                        onClick={() => {
+                          confirmMany(transition);
+                        }}
+                      >
+                        {t(`identityAccess.entities.transitions.${transition}.action`)}
+                      </button>
+                    ))}
                   </>
                 ),
               }}
@@ -298,7 +326,7 @@ export function ExternalEntityListPage(): ReactElement {
                           <button
                             key={transition}
                             type="button"
-                            className={transition === 'retire' ? 'button button--danger' : 'button'}
+                            className="button"
                             onClick={() => {
                               confirm(entity, transition);
                             }}
@@ -307,6 +335,16 @@ export function ExternalEntityListPage(): ReactElement {
                             <span className="visually-hidden">{name}</span>
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          className="button button--danger"
+                          onClick={() => {
+                            remove(entity);
+                          }}
+                        >
+                          {t('identityAccess.entities.delete.action')}{' '}
+                          <span className="visually-hidden">{name}</span>
+                        </button>
                       </td>
                     </tr>
                   );

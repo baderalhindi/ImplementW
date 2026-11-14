@@ -1,3 +1,4 @@
+using PMPlatform.Application.Common.Deletion;
 using Microsoft.AspNetCore.Mvc;
 using PMPlatform.Api.Authorization;
 using PMPlatform.Api.Errors;
@@ -115,5 +116,16 @@ public sealed class ExternalEntitiesController(IExternalEntityAdministrationServ
     public async Task<IActionResult> Retire(Guid externalEntityId, CancellationToken cancellationToken) =>
         TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
             ? Respond(await entities.RetireAsync(CallerId, externalEntityId, version, cancellationToken))
+            : problem!;
+
+    /// <summary>Erases an entity nothing references; otherwise nothing is deleted and the answer lists what uses it.</summary>
+    [HttpPost("{externalEntityId:guid}/remove")]
+    [RequirePermission(PermissionCatalogue.OrganizationManage)]
+    [SensitiveWrite]
+    [ProducesResponseType<DeletionOutcome>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_DeleteExternalEntity")]
+    public async Task<IActionResult> Delete(Guid externalEntityId, CancellationToken cancellationToken) =>
+        TryReadIfMatch(required: false, out uint? version, out IActionResult? problem)
+            ? Respond(await entities.DeleteAsync(CallerId, externalEntityId, version, cancellationToken))
             : problem!;
 }

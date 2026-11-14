@@ -2641,10 +2641,10 @@ Table audit_activity.audit_event {
   subject_type varchar(100)
   subject_id uuid [note: 'Identifier only']
   scope_project_id uuid [note: 'Scope anchor for audit authorisation. No foreign key: the append-only trail outlives a removed project (R4-5)']
-  scope_external_entity_id uuid [ref: > identity_access.external_entity.id]
+  scope_external_entity_id uuid [note: 'No foreign key: the append-only trail outlives a deleted entity (2026-11-14)']
   correlation_id uuid [not null]
   outcome varchar(50) [not null, note: 'SUCCESS | DENIED | FAILED']
-  data_classification_item_id uuid [ref: > master_data_config.master_data_item.id, note: 'Audit access is authorised by category/scope/sensitivity']
+  data_classification_item_id uuid [note: 'Audit access is authorised by category/scope/sensitivity. No foreign key: the trail outlives a deleted master data value (2026-11-14)']
   previous_event_hash char(64) [note: 'Hash chain']
   event_hash char(64) [not null]
   attribute_digest char(64) [note: 'SHA-256 over the event\'s attributes, covered by event_hash (TASK-073); null for events stored before it']

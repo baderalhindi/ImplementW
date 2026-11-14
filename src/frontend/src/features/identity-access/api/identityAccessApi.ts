@@ -1,3 +1,4 @@
+import { type DeletionOutcome } from '../deletion.ts';
 import { apiRequest, type ApiResponse, type QueryValue } from '@/shared/api/httpClient.ts';
 
 import {
@@ -232,7 +233,7 @@ export const departmentsApi = {
   remove: (id: string) => command<undefined>(`/departments/${id}/delete`),
 };
 
-export type ExternalEntityTransition = 'suspend' | 'activate' | 'retire';
+export type ExternalEntityTransition = 'suspend' | 'activate';
 
 // ADM-013
 export const externalEntitiesApi = {
@@ -257,4 +258,6 @@ export const externalEntitiesApi = {
     }),
   transition: (id: string, transition: ExternalEntityTransition) =>
     command<ExternalEntityDetail>(`/external-entities/${id}/${transition}`),
+  /** Erases an entity nothing uses; otherwise nothing is deleted and the answer says what uses it. */
+  remove: (id: string) => command<DeletionOutcome>(`/external-entities/${id}/remove`),
 };

@@ -83,12 +83,23 @@ The registration form names the Project Manager. This is kept as `proposed_proje
 
 Administration › Master data now:
 - shows each value's display order;
-- edits its Arabic and English names and its order (the code stays fixed): a draft by its author, a published value as an audited correction;
-- deletes a value nothing references, drafts included.
+- edits its Arabic and English names and its order (the code stays fixed): a draft by its author, a published value as an audited correction.
 
-A value that records reference is retired instead, and the answer says how many records use it. The count reads every foreign key to `master_data_item` from the database's own constraints.
+**Delete, not retire (2026-11-14).** The client asked for no "retire" in the administration, and chose that a deletion clears the value from the records that used it.
+- **Clears and erases:** Delete clears the value from every record that names it optionally (a project's region, city, priority, strategic portfolio or initiative, a task's priority, a child value's parent), then erases it, in one transaction. The answer says how many records it was cleared from.
+- **Refuses:** when a record cannot be without the value (a project's sector, a risk's category), a closed project uses it, or a published configuration uses it. Nothing is deleted, and the answer lists those uses so the person can change them first.
+- **Where uses come from:** they are read from every foreign key to `master_data_item`.
+- **Screen:** the Retire action is gone from the screen.
 
-Validating and publishing take `Identity:ProfileApproval:RequiredAdministrators` people, as permission profiles and project stages already do. Set it to 1 on an environment with one administrator; the default is 3.
+**Entities.** Administration › Entities replaces Retire with Delete (`POST /external-entities/{id}/remove`).
+- **Erases** an entity nothing uses.
+- **Refuses** while projects, people, role assignments or update requests reference it, listing them. It is not cleared from them: a project would lose who delivers it, a person the entity they belong to, and a role assignment the entity it is limited to, which would widen what that person reaches.
+
+**Audit trail.** The append-only trail keeps entity and data classification ids without a foreign key (migration `TASK-112_DeleteEntitiesAndMasterData`), as it already did for projects (R4-5), so it never blocks a deletion.
+
+**Other screens.** Permission profiles keep Withdraw and Abandon on a version. Records retired before this change still show the status Retired.
+
+**Approvers.** Validating and publishing take `Identity:ProfileApproval:RequiredAdministrators` people, as permission profiles and project stages do. Set it to 1 on an environment with one administrator; the default is 3.
 
 ## Item 4: R02 edits an approved registration
 
@@ -103,6 +114,6 @@ A donut on the Portfolio dashboard shows the entities' update completion, banded
 
 ## Data
 
-- **Migrations.** `TASK-112_AddStagePlansAndStageProgress` and `TASK-112_AddProposedProjectManager`, both forward-only. Three enum CHECKs are widened with the reviewed DROP CONSTRAINT marker.
+- **Migrations.** `TASK-112_AddStagePlansAndStageProgress`, `TASK-112_AddProposedProjectManager` and `TASK-112_DeleteEntitiesAndMasterData`, all forward-only. Three enum CHECKs are widened with the reviewed DROP CONSTRAINT marker.
 - **Seed.** After migrating, run the seed: it brings the two new permissions and the stage version.
 - **The 167 imported projects.** They have no stage plan. Each one sets its plan once from the Overview or when its next update starts.
