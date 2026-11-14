@@ -83,7 +83,8 @@
     "description": "Every project your role can see, at any stage.",
     "emptyForRole": "Your role does not give you access to any project yet.",
     "emptyForRoleDescription": "You see the projects your role assignments reach: those of your sector, your entity or the projects you are assigned to. When a project in that scope is registered, it appears here. If you expected to see projects, ask your administrator to check your role assignments.",
-    "empty": "No projects yet"
+    "empty": "No projects yet",
+    "emptyHint": "Use Import or Create project above to add the first one."
   },
   "mine": {
     "title": "My projects",

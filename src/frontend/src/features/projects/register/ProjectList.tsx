@@ -24,7 +24,6 @@ import { GapValue, ImportedLabel, OnPlanBadge } from '../components/FollowUpBadg
 import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
 import { isForbidden, projectProblemMessage } from '../problems.ts';
 import { type ProjectLookups, useProjectLookups } from '../useProjectLookups.ts';
-import { CreateProjectLink, ImportProjectsLink } from './ProjectActions.tsx';
 import { ProjectFilters } from './ProjectFilters.tsx';
 import { useProjectFilterValues } from './projectFilterValues.ts';
 
@@ -238,11 +237,9 @@ function ProjectListEmpty({
   }
   return (
     <EmptyState title={t('projects.register.empty')}>
+      {/* The page header already offers Import and Create project: the empty list points to them rather than repeating them. */}
       {mayAdd ? (
-        <div className="form__actions">
-          <ImportProjectsLink />
-          <CreateProjectLink />
-        </div>
+        <p>{t('projects.register.emptyHint')}</p>
       ) : (
         <p>{t('projects.register.emptyForRoleDescription')}</p>
       )}

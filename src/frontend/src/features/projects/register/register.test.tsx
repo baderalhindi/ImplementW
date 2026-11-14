@@ -196,16 +196,20 @@ describe('SCR-025 Project Register', () => {
     expect(screen.queryByRole('link', { name: en('projects.create.action') })).toBeNull();
   });
 
-  test('an empty register offers Import and Create to a role that has them', async () => {
+  test('an empty register offers Import and Create once, in the header, and the empty list points to them', async () => {
     openRegister('/projects', sessionFor(['R02']), []);
 
-    const empty = (await screen.findByText(en('projects.register.empty'))).parentElement;
-    const actions = within(empty ?? document.body);
+    const hint = await screen.findByText(en('projects.register.emptyHint'));
+    // The empty list repeats neither button: they are in the page header only.
+    expect(within(hint.parentElement ?? document.body).queryAllByRole('link')).toHaveLength(0);
+    const header = within(
+      screen.getByRole('heading', { level: 1 }).closest('.page-header') ?? document.body,
+    );
     expect(
-      actions.getByRole('link', { name: en('projects.import.open') }).getAttribute('href'),
+      header.getByRole('link', { name: en('projects.import.open') }).getAttribute('href'),
     ).toBe('/projects/import');
     expect(
-      actions.getByRole('link', { name: en('projects.create.action') }).getAttribute('href'),
+      header.getByRole('link', { name: en('projects.create.action') }).getAttribute('href'),
     ).toBe('/projects/new');
   });
 
@@ -330,7 +334,7 @@ describe('SCR-025 Project Register', () => {
     renderApp({ path: '/projects', session: sessionFor(['R09']) });
 
     expect(await screen.findAllByRole('link', { name: en('projects.import.open') })).toHaveLength(
-      2,
+      1,
     );
     expect(screen.queryByRole('link', { name: en('projects.create.action') })).toBeNull();
   });
