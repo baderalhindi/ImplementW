@@ -169,7 +169,7 @@ internal sealed class PortfolioInsightsService(
             .OrderBy(r => r.Project.LegacyReference ?? r.Project.FormalProjectId, StringComparer.Ordinal)
             .Select(r => new PortfolioCardProject(
                 r.Project.Id, r.Project.FormalProjectId, r.Project.LegacyReference, r.Project.Title, r.Project.LifecycleState, r.Project.DepartmentId, r.Project.ExternalEntityId,
-                amounts ? Sar(r.Project.RegistrationBudgetSar) : null, r.Project.PlannedStartDate, r.Project.PlannedEndDate, r.Project.DeclaredPlannedPercent, r.Project.DeclaredActualPercent,
+                amounts ? Sar(r.Project.RegistrationBudgetSar) : null, r.Project.PlannedStartDate, r.Project.PlannedEndDate, r.Indicators.Progress?.PlannedPercent, r.Indicators.Progress?.ActualPercent,
                 r.Indicators.GapPoints, r.Indicators.OnPlan, r.Project.CurrentObstacle, r.Project.NextAction, r.Project.NextActionOwner, r.Project.NextActionDueDate))]);
     }
 
@@ -197,8 +197,9 @@ internal sealed class PortfolioInsightsService(
     private static PortfolioBreakdownRow RowOf(Guid? item, Guid? parentItem, IReadOnlyList<Row> rows, bool amounts, OnPlanThresholds thresholds, bool sector)
     {
         List<Row> measured = [.. rows.Where(r => r.Indicators.GapPoints is not null)];
-        decimal? planned = Average(measured.Select(r => r.Project.DeclaredPlannedPercent));
-        decimal? actual = Average(measured.Select(r => r.Project.DeclaredActualPercent));
+        // Each project's one overall figure, by its method (review round 8, point 02): the figure its gap was calculated from.
+        decimal? planned = Average(measured.Select(r => r.Indicators.Progress?.PlannedPercent));
+        decimal? actual = Average(measured.Select(r => r.Indicators.Progress?.ActualPercent));
         decimal? gap = planned is { } p && actual is { } a ? decimal.Round(a - p, 2) : null;
         List<Row> withSpend = [.. rows.Where(r => r.Project.DeclaredPlannedSpendPercent is not null && r.Project.DeclaredActualSpendPercent is not null)];
         return new PortfolioBreakdownRow(

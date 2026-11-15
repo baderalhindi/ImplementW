@@ -24,13 +24,15 @@ internal sealed class ProgressStages(IProgressRepository repository, IConfigurat
 
     /// <summary>
     /// Adds the stages of a new period: the version in force now, the plan's applicability and planned %, each % pre-filled from the last published
-    /// period, else the plan's starting %, else the project's imported current stage. Null when no version is in force (the period is not
+    /// period, else the plan's starting %, else the project's imported current stage. Null when no version is in force or the project is on the schedule method (the period is not
     /// stage-based); <see cref="ProgressErrorCodes.StagePlanRequired"/> when one is and the project has no plan.
     /// </summary>
     public async Task<AdministrationError?> StartAsync(
         ProgressSubmission submission, ProjectFacts project, ProgressInputs read, DateOnly asOf, DateTimeOffset now, Guid actorId, CancellationToken cancellationToken)
     {
-        if (await resolver.ResolveStagesAsync(now, cancellationToken).ConfigureAwait(false) is not { } stages)
+        // Review round 8, point 02: a project on the schedule method reports from its schedule; its periods weigh no stages.
+        if (project.ProgressMethod == Domain.Project.ProjectProgressMethod.Schedule
+            || await resolver.ResolveStagesAsync(now, cancellationToken).ConfigureAwait(false) is not { } stages)
         {
             return null;
         }

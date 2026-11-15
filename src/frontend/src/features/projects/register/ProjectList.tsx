@@ -323,10 +323,10 @@ function ProjectTable({
             {showPercentages && (
               <>
                 <td>
-                  <Percent value={project.declaredPlannedPercent ?? null} />
+                  <Percent value={project.indicators?.progress?.plannedPercent ?? null} />
                 </td>
                 <td>
-                  <Percent value={project.declaredActualPercent ?? null} />
+                  <Percent value={project.indicators?.progress?.actualPercent ?? null} />
                 </td>
               </>
             )}

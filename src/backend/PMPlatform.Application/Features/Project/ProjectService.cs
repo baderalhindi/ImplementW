@@ -28,6 +28,7 @@ internal sealed class ProjectService(
     ProjectIndicatorReader indicators,
     ProjectStagePlanService stagePlans,
     IEnumerable<IProjectManagerHandover> handovers,
+    IProjectProgressSource progress,
     IConfigurationResolver resolver,
     IOutbox outbox,
     IAuditTrail audit,
@@ -115,6 +116,8 @@ internal sealed class ProjectService(
             Title = draft.Title,
             LifecycleState = ProjectLifecycleState.Draft,
             RevisionNo = 1,
+            // Review round 8, point 02: a new registration is measured by its stages unless its writer chooses the schedule.
+            ProgressMethod = ProjectProgressMethod.Stages,
             CreatedAt = now,
             CreatedBy = callerId,
             UpdatedAt = now,
@@ -366,6 +369,50 @@ internal sealed class ProjectService(
         ProjectMapping.Apply(draft with { ProposedProjectManagerUserId = before.ProposedProjectManagerUserId }, project);
         Touch(project, callerId);
         audit.Stage(ProjectAudit.RegistrationEdited(callerId, before, project, reason));
+        return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<AdministrationResult<Versioned<ProjectDetail>>> SetProgressMethodAsync(
+        Guid callerId, Guid projectId, ProjectProgressMethod method, NarrativeText? reason, uint expectedVersion, CancellationToken cancellationToken)
+    {
+        ProjectEntity? project = await repository.FindAsync(projectId, expectedVersion, cancellationToken).ConfigureAwait(false);
+        if (project is null)
+        {
+            return AdministrationError.NotFound;
+        }
+
+        if (await stagePlans.CheckWriterAsync(callerId, project, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (project.LifecycleState == ProjectLifecycleState.Closed)
+        {
+            return AdministrationError.TerminalState;
+        }
+
+        if (project.LifecycleState is ProjectLifecycleState.Submitted or ProjectLifecycleState.UnderReview)
+        {
+            return AdministrationError.Conflict(ProjectErrorCodes.StagePlanUnderReview);
+        }
+
+        if (project.ProgressMethod == method)
+        {
+            return AdministrationError.Conflict(ProjectErrorCodes.ProgressMethodUnchanged, new FieldIssue("progressMethod", FieldIssue.Duplicate));
+        }
+
+        // An approved update, a published one or an accepted entity update, fixes the figures the method produced: changing it now is explained.
+        bool approved = project.DeclaredSource == DeclaredValueSource.EntityUpdate
+                        || (await progress.WithApprovedUpdateAsync([project.Id], cancellationToken).ConfigureAwait(false)).Contains(project.Id);
+        if (approved && reason is null)
+        {
+            return AdministrationError.Rule(ProjectErrorCodes.ProgressMethodReasonRequired, new FieldIssue("reason", FieldIssue.Required));
+        }
+
+        ProjectProgressMethod? from = project.ProgressMethod;
+        project.ProgressMethod = method;
+        Touch(project, callerId);
+        audit.Stage(ProjectAudit.ProgressMethodChanged(callerId, project, from, reason));
         return await SaveAsync(project, cancellationToken).ConfigureAwait(false);
     }
 

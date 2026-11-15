@@ -14621,6 +14621,58 @@
         }
       }
     },
+    "/api/v1/projects/{projectId}/set-progress-method": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Review round 8, point 02: sets how the project's overall progress is calculated, `SCHEDULE` or `STAGES`, by whoever may set its stage\nplan. Once a progress update is approved a reason is required (`PROJECT_PROGRESS_METHOD_REASON_REQUIRED`). Requires `If-Match` (R-21).",
+        "operationId": "Project_SetProgressMethod",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressMethodRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressMethodRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressMethodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{projectId}/change-manager": {
       "post": {
         "tags": [
@@ -37995,6 +38047,39 @@
         ],
         "description": "Where a submission's calculated figure comes from. A project with no work breakdown reports its declared figure until it has one."
       },
+      "ProgressFigureSource": {
+        "enum": [
+          "SCHEDULE",
+          "STAGES",
+          "DECLARED",
+          null
+        ]
+      },
+      "ProgressMethodRequest": {
+        "required": [
+          "progressMethod"
+        ],
+        "type": "object",
+        "properties": {
+          "progressMethod": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NarrativeTextRequest"
+              }
+            ]
+          }
+        },
+        "description": "How a project's overall progress is calculated (review round 8, point 02): `SCHEDULE` or `STAGES`, required. A reason is required\nby the project once a progress update is approved, and kept in its history either way."
+      },
       "ProgressOverrideRequest": {
         "required": [
           "actualPercent",
@@ -40292,9 +40377,19 @@
                 "$ref": "#/components/schemas/EntityUpdateCompliance"
               }
             ]
+          },
+          "progress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectOverallProgress"
+              }
+            ]
           }
         },
-        "description": "The register's calculated columns (R3-3): the gap between actual and planned progress, in points, the on-plan indicator, the days to\nthe planned end, the next action's due status and the follow-up reasons, most urgent first. A value that cannot be calculated is null:\nno gap without both percentages, none for a project not started or closed."
+        "description": "The register's calculated columns (R3-3): the gap between actual and planned progress, in points, the on-plan indicator, the days to\nthe planned end, the next action's due status and the follow-up reasons, most urgent first. A value that cannot be calculated is null:\nno gap without both percentages, none for a project not started or closed. The gap is taken from ProjectOverallProgress? ProjectIndicators.Progress, the project's one\noverall figure (review round 8, point 02)."
       },
       "ProjectionCoverage": {
         "enum": [
@@ -40750,6 +40845,86 @@
         ],
         "description": "How a closed project ended (WF-10 §8 ProjectOutcomeType, BR-CLO-038): through an effected completion, or closed from SUSPENDED without\none. A terminated project is never reported as completed (CLO-CC-27, BR-CLO-039)."
       },
+      "ProjectOverallProgress": {
+        "required": [
+          "method",
+          "source",
+          "actualPercent",
+          "plannedPercent",
+          "asOf",
+          "currentStageCode",
+          "stages",
+          "needsSetup",
+          "methodChangeNeedsReason"
+        ],
+        "type": "object",
+        "properties": {
+          "method": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProjectProgressMethod"
+              }
+            ]
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ProgressFigureSource"
+              }
+            ]
+          },
+          "actualPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "asOf": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "currentStageCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStageFigure"
+            }
+          },
+          "needsSetup": {
+            "type": "boolean"
+          },
+          "methodChangeNeedsReason": {
+            "type": "boolean"
+          }
+        },
+        "description": "            A project's one overall progress figure (review round 8, point 02), the same on the Overview, the register, the dashboards and the cards. The\n            gap and the on-plan label are calculated from decimal? ProjectOverallProgress.ActualPercent and decimal? ProjectOverallProgress.PlannedPercent.\n            * Schedule method: the work breakdown's weighted progress and the baseline's planned % today, while the project has an active baseline.\n* Stage method: Σ weight × % complete over the stages that apply, and the same sum over each stage's planned % today from the plan's dates.\n* No method: the declared figure, as imported or entered, labelled as declared.bool ProjectOverallProgress.NeedsSetup is true while there is no method, or the stage method has no plan. bool ProjectOverallProgress.MethodChangeNeedsReason is true once\n            a progress update was approved."
+      },
       "ProjectPage": {
         "required": [
           "items",
@@ -40791,6 +40966,13 @@
           }
         },
         "description": "One page of projects (R-29)."
+      },
+      "ProjectProgressMethod": {
+        "enum": [
+          "SCHEDULE",
+          "STAGES",
+          null
+        ]
       },
       "ProjectRegistrationEditRequest": {
         "required": [
@@ -41131,6 +41313,55 @@
           }
         },
         "description": "A project stage in a PROJECT_STAGE version: active stages carry the weights, which total 100."
+      },
+      "ProjectStageFigure": {
+        "required": [
+          "stageCode",
+          "name",
+          "weightPercent",
+          "applies",
+          "plannedPercent",
+          "percentComplete"
+        ],
+        "type": "object",
+        "properties": {
+          "stageCode": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/BilingualLabel"
+          },
+          "weightPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "applies": {
+            "type": "boolean"
+          },
+          "plannedPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "percentComplete": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "One stage of a stage-method figure: its weight, whether it applies, its planned % today and its % complete."
       },
       "ProjectStagePage": {
         "required": [

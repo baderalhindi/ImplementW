@@ -18,7 +18,7 @@ import {
   valuesOf,
 } from '../registration.ts';
 
-import { StageProgressPanel } from '../stagePlan/StageProgressPanel.tsx';
+import { OverallProgressPanel } from '../stagePlan/OverallProgressPanel.tsx';
 
 import { FollowUpPanel } from './FollowUpPanel.tsx';
 import { useWorkspace } from './workspaceContext.ts';
@@ -74,6 +74,8 @@ export function OverviewTab(): ReactElement {
           </ul>
         </div>
       )}
+      {/* Review round 8, point 02: the one overall figure comes first; point 05's summary strip will take it from here. */}
+      <OverallProgressPanel project={project} etag={etag} onChanged={reload} />
       <dl className="details">
         <Detail term={t('projects.fields.titleEn')}>
           {project.titleEn == null ? (
@@ -147,7 +149,6 @@ export function OverviewTab(): ReactElement {
           </Detail>
         )}
       </dl>
-      <StageProgressPanel project={project} onChanged={reload} />
       <FollowUpPanel />
       <ProjectDashboard key={project.id} projectId={project.id} user={user} />
       <ChangeManagerDialog

@@ -31,7 +31,8 @@ public enum FollowUpReason
 /// <summary>
 /// The register's calculated columns (R3-3): the gap between actual and planned progress, in points, the on-plan indicator, the days to
 /// the planned end, the next action's due status and the follow-up reasons, most urgent first. A value that cannot be calculated is null:
-/// no gap without both percentages, none for a project not started or closed.
+/// no gap without both percentages, none for a project not started or closed. The gap is taken from <see cref="Progress"/>, the project's one
+/// overall figure (review round 8, point 02).
 /// </summary>
 public sealed record ProjectIndicators(
     decimal? GapPoints,
@@ -39,7 +40,8 @@ public sealed record ProjectIndicators(
     int? DaysRemaining,
     ActionDueStatus? ActionDue,
     IReadOnlyList<FollowUpReason> FollowUpReasons,
-    EntityUpdateCompliance? EntityUpdates = null)
+    EntityUpdateCompliance? EntityUpdates = null,
+    ProjectOverallProgress? Progress = null)
 {
     public static ProjectIndicators None { get; } = new(null, null, null, null, []);
 }

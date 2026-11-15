@@ -28,7 +28,13 @@ import { UserPicker } from '@/features/identity-access/components/UserPicker.tsx
 
 import { isInternal, ownEntityId } from '../access.ts';
 import { projectsApi } from '../api/projectsApi.ts';
-import { FUNDING_SOURCES, type ParticipationMode, type ProjectDetail } from '../api/types.ts';
+import {
+  FUNDING_SOURCES,
+  type ParticipationMode,
+  PROGRESS_METHODS,
+  type ProgressMethod,
+  type ProjectDetail,
+} from '../api/types.ts';
 import { LocationFields } from '../components/LocationFields.tsx';
 import { profileMandatoryFields } from '../governance.ts';
 import { projectProblemMessage } from '../problems.ts';
@@ -156,6 +162,10 @@ export function ProjectForm({
   const [editedRows, setStageRows] = useState<StagePlanRow[] | null>(null);
   const stageRows = editedRows ?? (plan.data === undefined ? null : rowsOf(plan.data.stages));
   const acceptsStartingPercent = plan.data?.acceptsStartingPercent ?? false;
+  // Review round 8, point 02: the registration chooses how progress is calculated; stages unless the schedule is chosen.
+  const initialMethod = existing?.project.indicators?.progress?.method ?? 'STAGES';
+  const [method, setMethod] = useState<ProgressMethod>(initialMethod);
+  const byStages = method === 'STAGES';
   const stageCodes = checkStagePlan(stageRows ?? [], {
     projectStart: values.plannedStartDate,
     projectEnd: values.plannedEndDate,
@@ -177,7 +187,9 @@ export function ProjectForm({
     ? checkText(reason, { required: true, maxLength: TEXT_LENGTH })
     : null;
   const ready =
-    !hasErrors(codes) && (registered || !hasStagePlanErrors(stageCodes)) && reasonCode === null;
+    !hasErrors(codes) &&
+    (registered || !byStages || !hasStagePlanErrors(stageCodes)) &&
+    reasonCode === null;
   const viaChangeRequest = registered ? t('projects.form.viaChangeRequest') : undefined;
 
   const set = (field: RegistrationField, value: string) => {
@@ -235,7 +247,18 @@ export function ProjectForm({
     }
     const saved = result.value;
     let notice = existing === undefined ? 'created' : 'updated';
+    let etag = saved.etag;
+    // A new registration is on the stage method already, and saving its stage plan sets it on one that has none: only a choice the person changed
+    // is sent, before the plan, which only the stage method needs.
+    if (method !== initialMethod) {
+      try {
+        etag = (await projectsApi.setProgressMethod(saved.data.id, method, null, etag)).etag;
+      } catch {
+        notice = 'progressMethodNotSaved';
+      }
+    }
     if (
+      byStages &&
       stageRows !== null &&
       stageRows.length > 0 &&
       (existing === undefined ||
@@ -250,7 +273,7 @@ export function ProjectForm({
             changeAuthorizationId: null,
             reason: null,
           },
-          saved.etag,
+          etag,
         );
       } catch {
         notice = 'stagePlanNotSaved';
@@ -489,13 +512,31 @@ export function ProjectForm({
       {!registered && stageRows !== null && stageRows.length > 0 && (
         <fieldset className="form__section">
           <legend>{t('projects.form.sections.stagePlan')}</legend>
-          <p className="form__note">{t('projects.stagePlan.intro')}</p>
-          <StagePlanFields
-            rows={stageRows}
-            onChange={setStageRows}
-            codes={stageCodes}
-            acceptsStartingPercent={acceptsStartingPercent}
+          <RadioGroupField
+            label={t('projects.progressMethod.label')}
+            name="progressMethod"
+            required
+            value={method}
+            onChange={(value) => {
+              setMethod(value === 'SCHEDULE' ? 'SCHEDULE' : 'STAGES');
+            }}
+            options={PROGRESS_METHODS.map((value) => ({
+              value,
+              label: t(`projects.progressMethod.methods.${value}`),
+            }))}
+            hint={t(`projects.progressMethod.explain.${method}`)}
           />
+          {byStages && (
+            <>
+              <p className="form__note">{t('projects.stagePlan.intro')}</p>
+              <StagePlanFields
+                rows={stageRows}
+                onChange={setStageRows}
+                codes={stageCodes}
+                acceptsStartingPercent={acceptsStartingPercent}
+              />
+            </>
+          )}
         </fieldset>
       )}
 

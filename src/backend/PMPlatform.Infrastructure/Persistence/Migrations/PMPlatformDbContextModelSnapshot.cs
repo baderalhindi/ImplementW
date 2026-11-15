@@ -9455,6 +9455,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("priority_item_id");
 
+                    b.Property<string>("ProgressMethod")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("progress_method");
+
                     b.Property<Guid?>("ProjectImportBatchId")
                         .HasColumnType("uuid")
                         .HasColumnName("project_import_batch_id");
@@ -9687,6 +9692,8 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_project_next_action_pair", "(\"next_action\" IS NULL) = (\"next_action_lang\" IS NULL)");
 
                             t.HasCheckConstraint("ck_project_participation_mode", "\"participation_mode\" IN ('ENTITY_MANAGED', 'AHDA_MANAGED')");
+
+                            t.HasCheckConstraint("ck_project_progress_method", "\"progress_method\" IN ('SCHEDULE', 'STAGES')");
 
                             t.HasCheckConstraint("ck_project_seed_source", "seed_source IS NULL OR seed_source = 'DEMO'");
 

@@ -258,7 +258,8 @@
     "withdrawn": "The submission was withdrawn; the project is a draft again.",
     "reviewStarted": "AHDA's review has started.",
     "activated": "The project is now active.",
-    "stagePlanNotSaved": "The registration was saved, but its stage plan was not. Open the stage plan and save it again."
+    "stagePlanNotSaved": "The registration was saved, but its stage plan was not. Open the stage plan and save it again.",
+    "progressMethodNotSaved": "The registration was saved, but its progress method was not. Set it from the Overview."
   },
   "problems": {
     "referenceInvalid": "One of the chosen values is no longer available: a classification, profile, region or city that is not published, an inactive sector or entity, or a city outside the chosen region. Choose again.",
@@ -277,7 +278,9 @@
     "stagePlanChangeRequired": "The registration is approved, so changing the stage plan needs an approved schedule change request. Choose the change it implements.",
     "managerUnchanged": "This person already manages the project.",
     "changeRequestRequired": "The budget, the planned dates and the governance profile of an approved project change only through a change request.",
-    "editAsDraft": "This registration is a draft: edit it as a draft."
+    "editAsDraft": "This registration is a draft: edit it as a draft.",
+    "progressMethodUnchanged": "The project already uses this progress method.",
+    "progressMethodReasonRequired": "A progress update has been approved: give a reason for changing the method."
   },
   "fundingSource": {
     "STRATEGY_BUDGET_FULL": "Yes, in full",
@@ -553,19 +556,14 @@
     "save": "Save the stage plan"
   },
   "stageProgress": {
-    "title": "Stage progress",
     "setPlan": "Set the stage plan",
     "openPlan": "Stage plan",
-    "noPlan": "The stage plan is not set yet. Progress is weighed by stage once it is.",
     "current": "Current stage",
     "planned": "Planned",
     "actual": "Actual",
     "notApplicable": "Does not apply to this project.",
     "notRecorded": "Not recorded",
-    "plannedOverall": "Planned progress today",
-    "actualOverall": "Actual progress (latest published update)",
     "gap": "Gap",
-    "points": "{points} points",
     "versionUsed": "Weighed by stage version {version}"
   },
   "changeManager": {
@@ -579,5 +577,41 @@
     "reason": "Reason for the change",
     "confirm": "Change the Project Manager",
     "done": "The Project Manager was changed."
+  },
+  "progressMethod": {
+    "title": "Progress method",
+    "label": "Progress method",
+    "methods": {
+      "STAGES": "Project stages",
+      "SCHEDULE": "Schedule"
+    },
+    "explain": {
+      "STAGES": "Overall progress is the sum of each stage's weight × its completion. Execution follows the schedule once there is an approved baseline, and is entered monthly until then.",
+      "SCHEDULE": "Overall progress is the schedule's weighted progress, and planned progress comes from the baseline. It needs an approved baseline."
+    },
+    "none": "Not set",
+    "change": "Change method",
+    "reason": "Reason for the change",
+    "reasonRequired": "A progress update has been approved, so the change needs a reason. It is kept in the project's history.",
+    "reasonOptional": "Optional. The change is kept in the project's history.",
+    "unchanged": "The project already uses this method.",
+    "confirm": "Save method"
+  },
+  "overallProgress": {
+    "title": "Overall progress",
+    "setUp": "Set the progress method.",
+    "setUpMethod": "Choose whether this project's progress is calculated from its schedule or its stages. Until then it shows its declared figure.",
+    "setUpPlan": "This project is measured by its stages but has no stage plan yet.",
+    "chooseMethod": "Choose the progress method",
+    "source": {
+      "SCHEDULE": "Calculated from the schedule",
+      "STAGES": "Calculated from the stages",
+      "DECLARED": "Declared figure — no progress method set"
+    },
+    "asOf": "As of {date}",
+    "declaredFrom": "Source: {source}",
+    "actual": "Actual",
+    "planned": "Planned to date",
+    "noBaseline": "No approved baseline yet: the schedule gives no figure until one is approved."
   }
 }

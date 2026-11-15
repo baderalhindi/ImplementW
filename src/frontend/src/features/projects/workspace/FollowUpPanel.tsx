@@ -100,22 +100,7 @@ export function FollowUpPanel(): ReactElement | null {
             ? none
             : t('projects.followUp.daysValue', { days: indicators.daysRemaining })}
         </Detail>
-        <Detail term={t('projects.followUp.declaredPlanned')}>
-          {percent(followUp?.declaredPlannedPercent)}
-        </Detail>
-        <Detail term={t('projects.followUp.declaredActual')}>
-          {percent(followUp?.declaredActualPercent)}
-          {followUp?.declaredAsOf !== null &&
-            followUp?.declaredAsOf !== undefined &&
-            followUp.declaredSource !== null && (
-              <span className="details__aside">
-                {t('projects.followUp.declaredFrom', {
-                  date: followUp.declaredAsOf,
-                  source: t(`projects.followUp.source.${followUp.declaredSource}`),
-                })}
-              </span>
-            )}
-        </Detail>
+        {/* Review round 8, point 02: progress shows once, as the overall figure at the top; the declared values stand there while no method is set. */}
         <Detail term={t('projects.followUp.declaredPlannedSpend')}>
           {percent(followUp?.declaredPlannedSpendPercent)}
         </Detail>

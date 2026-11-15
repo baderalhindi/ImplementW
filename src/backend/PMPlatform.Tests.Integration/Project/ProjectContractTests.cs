@@ -51,7 +51,7 @@ public sealed class ProjectContractTests(ProjectTestHost host)
             {OpenApiDocument.SnapshotPath} does not describe the Project API as built. Run the Project contract tests with
             {OpenApiDocument.UpdateVariable}=1 and commit the rewritten file with the change.
             """);
-        Assert.Equal(35, built["paths"]!.AsObject().Count);
+        Assert.Equal(36, built["paths"]!.AsObject().Count);
     }
 
     /// <summary>
@@ -153,6 +153,12 @@ public sealed class ProjectContractTests(ProjectTestHost host)
         using HttpResponseMessage managerChanged = await client.PostAsync($"{path}/change-manager", sessions.Approver,
             new { projectManagerUserId = ProjectDriver.Person(5), reason = new { text = "تغيير مدير المشروع", language = "ar" } }, AdministrationApi.ETagOf(beforeChange));
         Assert.Equal(ProjectDriver.Person(5).ToString(), (await responses.CheckAsync("POST", $"{item}/change-manager", managerChanged))!["projectManagerUserId"]!.GetValue<string>());
+
+        // Review round 8, point 02: local.r02 moves the project from its stage method to its schedule; no update was approved, so no reason is needed.
+        using HttpResponseMessage beforeMethod = await client.GetAsync(path, sessions.Approver);
+        using HttpResponseMessage methodSet = await client.PostAsync($"{path}/set-progress-method", sessions.Approver,
+            new { progressMethod = "SCHEDULE" }, AdministrationApi.ETagOf(beforeMethod));
+        Assert.Equal("SCHEDULE", (await responses.CheckAsync("POST", $"{item}/set-progress-method", methodSet))!["indicators"]!["progress"]!["method"]!.GetValue<string>());
 
         // R3-4: a batch from RPMO's workbook, validated, submitted by local.r03, approved and rolled back by local.r02; a second one returned.
         const string batches = "/api/v1/project-import-batches";

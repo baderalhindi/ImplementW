@@ -11,7 +11,8 @@ namespace PMPlatform.Application.Features.Project.Contracts;
 /// by which FG-01's portfolio filters and locates it (the 27 Oct 2026 review); its classification (sector), priority and strategic portfolio and
 /// initiative are the filters the 2 Nov 2026 review added. <see cref="StagePlanRevisionNo"/> is the stage plan revision an approved schedule change
 /// authorises a change of (review round 7, item 1); 0 while the project has no plan. <see cref="CurrentStageCode"/> and <see cref="CurrentStagePercent"/>
-/// are the latest published stage-based period's, or as imported.
+/// are the latest published stage-based period's, or as imported. <see cref="ProgressMethod"/> says whether its periods weigh stages or read the schedule
+/// (review round 8, point 02).
 /// </summary>
 public sealed record ProjectFacts(
     Guid Id,
@@ -35,4 +36,5 @@ public sealed record ProjectFacts(
     DateOnly? PlannedEndDate = null,
     int StagePlanRevisionNo = 0,
     string? CurrentStageCode = null,
-    decimal? CurrentStagePercent = null);
+    decimal? CurrentStagePercent = null,
+    ProjectProgressMethod? ProgressMethod = null);

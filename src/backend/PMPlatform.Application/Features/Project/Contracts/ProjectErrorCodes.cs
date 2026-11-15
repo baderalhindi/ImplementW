@@ -33,6 +33,12 @@ public static class ProjectErrorCodes
     /// <summary>409: the person named already manages the project (review round 7, item 2).</summary>
     public const string ManagerUnchanged = "PROJECT_MANAGER_UNCHANGED";
 
+    /// <summary>409: the project already uses this progress method (review round 8, point 02).</summary>
+    public const string ProgressMethodUnchanged = "PROJECT_PROGRESS_METHOD_UNCHANGED";
+
+    /// <summary>422: once a progress update is approved, changing the progress method needs a reason (review round 8, point 02).</summary>
+    public const string ProgressMethodReasonRequired = "PROJECT_PROGRESS_METHOD_REASON_REQUIRED";
+
     /// <summary>409: only a DRAFT or RETURNED project is edited, and only a DRAFT one deleted.</summary>
     public const string NotEditable = "PROJECT_NOT_EDITABLE";
 

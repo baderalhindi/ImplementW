@@ -6,6 +6,7 @@ import {
   type GovernanceProfileResolution,
   type NarrativeTextRequest,
   type Page,
+  type ProgressMethod,
   type ProjectDetail,
   type ProjectQuery,
   type ProjectRequest,
@@ -68,6 +69,13 @@ export const projectsApi = {
     reason: NarrativeTextRequest,
     etag: string | null,
   ) => command(id, 'change-manager', etag, { projectManagerUserId, reason }),
+  /** Review round 8, point 02: how overall progress is calculated; a reason once a progress update is approved. If-Match is required. */
+  setProgressMethod: (
+    id: string,
+    progressMethod: ProgressMethod,
+    reason: NarrativeTextRequest | null,
+    etag: string | null,
+  ) => command(id, 'set-progress-method', etag, { progressMethod, reason }),
   /** SCR-042: the project's review runs (TASK-035), newest first. */
   reviews: (projectId: string, signal?: AbortSignal) =>
     data(

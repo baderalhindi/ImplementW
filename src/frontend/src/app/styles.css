@@ -6742,3 +6742,32 @@ tr[data-flagged='true'] {
 .home__tile-link:focus-visible {
   outline: none;
 }
+
+/* Review round 8, point 02: the one overall figure at the top of the Overview, then where it comes from. */
+.overall-progress__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.overall-progress__figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin-block: 0 var(--space-3);
+}
+
+.overall-progress__value {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.overall-progress__source {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}

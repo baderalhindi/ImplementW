@@ -218,6 +218,15 @@ internal static class ProjectAudit
         .Concat(moved.OrderBy(m => m.Key, StringComparer.Ordinal).Select(m => AuditAttribute.Of($"moved_{m.Key}", m.Value)))
         .OfType<AuditAttribute>());
 
+    /// <summary>Review round 8, point 02: how overall progress is calculated, from and to, and why when an approved update made a reason necessary.</summary>
+    public static AuditEntry ProgressMethodChanged(Guid actorId, ProjectEntity project, ProjectProgressMethod? from, NarrativeText? reason) =>
+        Entry(AuditEventClass.DataChange, ProjectAuditEvents.ProgressMethodChanged, actorId, project, new[]
+        {
+            AuditAttribute.Change(ProjectAuditAttributes.ProgressMethod, from, project.ProgressMethod),
+            AuditAttribute.WithheldChange(ProjectAuditAttributes.ReasonText, null, reason?.Text),
+        }
+        .OfType<AuditAttribute>());
+
     /// <summary>Review round 7, item 1: each stage whose plan changed, the plan's revision, and the authorisation and reason of a change after approval.</summary>
     public static AuditEntry StagePlanChanged(
         Guid actorId, ProjectEntity project, int fromRevisionNo, IReadOnlyDictionary<string, string?> before, IReadOnlyDictionary<string, string?> after,

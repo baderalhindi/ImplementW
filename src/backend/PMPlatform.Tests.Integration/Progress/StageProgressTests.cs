@@ -143,6 +143,71 @@ public sealed class StageProgressTests(ProgressTestHost host) : IAsyncLifetime
         Assert.Equal("SUBMITTED", (await client.CommandOrFailAsync(sessions.ProjectManager, id, "submit")).Status());
     }
 
+    /// <summary>
+    /// Review round 8, point 02: the project's one overall figure follows its method, the same on its Overview and in the register; a change of method
+    /// after an approved update needs a reason and is in its history; the schedule method then reads the schedule, which this project has none of.
+    /// </summary>
+    [Fact]
+    public async Task TheOverallFigureFollowsTheMethodAndAChangeAfterAnApprovedUpdateIsExplained()
+    {
+        using HttpClient client = host.Api.CreateClient();
+        ProgressSessions sessions = await client.SignInAsync();
+        Guid projectId = await host.ProjectAsync();
+        await PlanAsync(projectId, null);
+        string path = $"/api/v1/projects/{projectId}";
+
+        async Task<HttpResponseMessage> SetMethodAsync(string method, string? reason)
+        {
+            using HttpResponseMessage current = await client.GetAsync(path, sessions.ProjectManager);
+            return await client.PostAsync($"{path}/set-progress-method", sessions.ProjectManager,
+                new { progressMethod = method, reason = reason is null ? null : new { text = reason, language = "en" } }, AdministrationApi.ETagOf(current));
+        }
+
+        async Task<JsonNode> ProgressAsync()
+        {
+            using HttpResponseMessage detail = await client.GetAsync(path, sessions.ProjectManager);
+            return (await detail.ReadObjectAsync())["indicators"]!["progress"]!;
+        }
+
+        // The project came in without a method: the stage-plan writer sets it, with no reason before any approved update.
+        Assert.Null((await ProgressAsync())["method"]?.GetValue<string>());
+        using (HttpResponseMessage set = await SetMethodAsync("STAGES", null))
+        {
+            Assert.Equal(HttpStatusCode.OK, set.StatusCode);
+        }
+
+        await client.PublishedPeriodAsync(sessions.ProjectManager, sessions.Reviewer, projectId, Entries(null, 100, 100, 100, 40, 0, 0));
+
+        // 5 + 15 + 10 + 55 × 40% = 52; planned today: the first three over, execution half way, so 5 + 15 + 10 + 55 × 50% = 57.5.
+        JsonNode progress = await ProgressAsync();
+        Assert.Equal(("STAGES", "STAGES", "EXECUTION"), (progress["method"]!.GetValue<string>(), progress["source"]!.GetValue<string>(), progress["currentStageCode"]!.GetValue<string>()));
+        Assert.Equal((52m, 57.5m), (progress.Percent("actualPercent"), decimal.Round(progress.Percent("plannedPercent"), 1)));
+        Assert.Equal(6, progress["stages"]!.AsArray().Count);
+
+        using (HttpResponseMessage register = await client.GetAsync("/api/v1/projects?pageSize=100", sessions.ProjectManager))
+        {
+            JsonNode row = (await register.ReadObjectAsync())["items"]!.AsArray().Single(i => i!["id"]!.GetValue<string>() == projectId.ToString())!;
+            Assert.Equal(52m, row["indicators"]!["progress"]!.Percent("actualPercent"));
+            Assert.Equal(-5.5m, decimal.Round(row["indicators"]!.Percent("gapPoints"), 1));
+        }
+
+        using (HttpResponseMessage unexplained = await SetMethodAsync("SCHEDULE", null))
+        {
+            Assert.Equal((HttpStatusCode.UnprocessableEntity, "PROJECT_PROGRESS_METHOD_REASON_REQUIRED"), await unexplained.RefusalAsync());
+        }
+
+        using (HttpResponseMessage explained = await SetMethodAsync("SCHEDULE", "The work breakdown is now baselined"))
+        {
+            Assert.Equal(HttpStatusCode.OK, explained.StatusCode);
+        }
+
+        JsonNode scheduled = await ProgressAsync();
+        Assert.Equal(("SCHEDULE", "SCHEDULE"), (scheduled["method"]!.GetValue<string>(), scheduled["source"]!.GetValue<string>()));
+        Assert.Null(scheduled["actualPercent"]?.GetValue<decimal>());
+        Assert.Equal(2, (await host.Database.QueryAsync(
+            $"SELECT event_type FROM audit_activity.audit_event WHERE event_type = 'Project.ProgressMethodChanged' AND subject_id = '{projectId}'")).Count);
+    }
+
     /// <summary>With stages configured and no stage plan the update asks for the plan first.</summary>
     [Fact]
     public async Task WithoutAStagePlanTheUpdateAsksForItFirst()

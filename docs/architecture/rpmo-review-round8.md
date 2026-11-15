@@ -70,3 +70,81 @@ A count opens a list of the same records, so the list's total equals the number 
 
 - **Scope.** The dashboard counts with the portfolio permissions' scope (PORTFOLIO_SUMMARY_VIEW and the others). The register and the Follow-up list read with PROJECT_VIEW's scope. For R02, R03 and R07 on localhost they reach the same projects. A role whose two scopes differ would see different totals. That is a permissions question, held back for the RACI matrix.
 - **Not walked for every role.** The browser walk was run as local.r02 only. The other dashboards (Sector, Project Manager, Liaison, Viewer, Executive and the external user's) were checked by API counts and tests, not clicked through.
+
+## Point 02: each project's overall progress from its schedule or its stages
+
+### The method
+
+`project.progress_method` is `STAGES`, `SCHEDULE` or null. The migration is `TASK-112_AddProjectProgressMethod`, and it sets `STAGES` on projects that already had a stage plan.
+
+| How the method is set | What happens |
+|---|---|
+| A new registration | Starts on `STAGES`. The form's stage-plan section offers the choice, and choosing the schedule hides the stage plan. |
+| Saving a stage plan | Sets `STAGES` on a project that has no method. |
+| `POST /projects/{id}/set-progress-method` (`progressMethod`, optional `reason`, If-Match) | Allowed for the stage-plan writers: the registration's writer, the Project Manager (PROGRESS_SUBMIT), and R02/R03 (PROJECT_REGISTER). Not allowed while the registration is under review, or once the project is closed. |
+
+**Changing the method:**
+- **Before an approved update:** the change is free.
+- **After one:** an update is approved once one is published or an entity update is accepted. From then on a change needs a reason (`PROJECT_PROGRESS_METHOD_REASON_REQUIRED`).
+- **History:** every change is audited as `Project.ProgressMethodChanged`, with from, to and the reason. It shows in the project's history.
+- **Updates:** a project on the schedule method reports without stages, and its registration needs no stage plan.
+
+### The one figure
+
+The figure is `ProjectOverallProgress`, and it lives in the project's indicators. The Overview, the register, the follow-up list, the portfolio dashboard's averages, gap and on-plan counts, and the report cards all read it. The gap and the on-plan label are calculated from it, not from the declared values.
+
+| Method | Actual | Planned |
+|---|---|---|
+| Stages | Σ weight × % complete over the stages that apply | The same sum over each stage's planned % today, from the plan's dates |
+| Schedule | The work breakdown's weighted progress (WF-02's roll-up) while there is an active baseline | The baseline's planned % today |
+| None | The declared figure, labelled "رقم معلن — لم تُحدد طريقة الاحتساب" with its source | The declared figure |
+
+**Where the stage method's % complete comes from,** newest first:
+1. The latest published stage-based update, with the weights it recorded.
+2. An accepted entity update: its current stage and its %.
+3. The plan's starting %. Saving it also sets the project's current stage, so the stage chart and the register filter count the project where its figure puts it.
+4. The imported current stage.
+
+With a current stage and its %, the stages before it count as complete and those after it as not started.
+
+**Arithmetic:** `ProjectOverallProgressTests` checks the client's worked example. With weights 10/15/10/50/10/5 and completions 100/100/100/40/0/0, the figure is 55%.
+
+**The weights in force are 5/15/10/55/10/5,** as published in round 7. With those weights the same completions give 52%. Localhost shows 52% for that reason.
+
+**Without a PROJECT_STAGE version in force,** the stage method shows the declared figure, because there is nothing to weigh.
+
+### Screens
+
+- **Overview.** "الإنجاز الكلي" comes first, showing:
+  - actual, with its as-of date;
+  - planned to date;
+  - the gap;
+  - the method and the current stage;
+  - on the stage method, a bar per stage with its weight, planned % and % complete.
+
+  Someone who may set the method sees "حدد طريقة احتساب الإنجاز" while there is no method, or no plan on the stage method. A schedule-method project without an approved baseline says so. The follow-up panel no longer repeats the declared progress.
+- **Progress tab.** Shows the method.
+
+### Test data on localhost
+
+`artifacts/round8/seed_methods.py`, as local.r04, set up these projects:
+- **Stage method:** projects 1, 2 and 3 got stage plans with starting %. They show 52.0%, 26.0% and 9.5%, and the stage chart counts them under Execution, Tendering and Design.
+- **Schedule method:** project 4 shows no figure, because no baseline could be approved. The pmplatform_demo database has no published GOVERNANCE_PROFILE version (`CONFIGURATION_MISSING` on submit).
+
+The script left a schedule with two activities on project 4. It deleted the draft baseline it had created.
+
+### Not done
+
+- **FG-02 report exports.** They read the published snapshots through the governed REPORT_RULES configuration, the same blocker as round 7's stage columns.
+- **Schedule figure on localhost.** It can't be shown until GOVERNANCE_PROFILE is published there.
+
+### Noticed, not changed
+
+Four external update requests in pmplatform_demo name the contribution schema `PROGRESS_V1`, which the platform does not define. Listing them answers 500 (`ContributionSchemas.Of`).
+
+### Tests
+
+- Unit tests: 2,378 pass.
+- `StageProgressTests` adds the method rules, the shared figure and the reason.
+- Project, Progress, stage, ExternalParticipation, Dashboards and Reports integration suites: 232 of 234 pass when run together. `ReportSavedViewTests` and `MasterDataConfig.ProjectStageTests` failed only when run with the others, and pass alone.
+- Frontend: 1,416 tests pass.

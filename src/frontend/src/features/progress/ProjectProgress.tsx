@@ -171,7 +171,16 @@ export function ProjectProgress({
         </p>
       )}
       <HealthComparison view={health.data} intakeDate={intakeDate} />
-      <p className="form__note">{t(executionNote(update?.submission ?? null))}</p>
+      {/* Review round 8, point 02: the method the project's overall figure is calculated by. */}
+      <p className="progress__method">
+        <strong>{t('projects.progressMethod.label')}:</strong>{' '}
+        {project.indicators?.progress?.method == null
+          ? t('projects.progressMethod.none')
+          : t(`projects.progressMethod.methods.${project.indicators.progress.method}`)}
+      </p>
+      {project.indicators?.progress?.method !== 'SCHEDULE' && (
+        <p className="form__note">{t(executionNote(update?.submission ?? null))}</p>
+      )}
 
       <section className="section" aria-labelledby="progress-current">
         <h2 id="progress-current">{t('progress.current.title')}</h2>

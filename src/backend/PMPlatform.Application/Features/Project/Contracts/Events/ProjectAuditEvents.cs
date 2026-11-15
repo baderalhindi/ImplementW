@@ -84,6 +84,9 @@ public static class ProjectAuditEvents
     /// </summary>
     public const string ManagerChanged = "Project.ManagerChanged";
 
+    /// <summary>DATA_CHANGE: how a project's overall progress is calculated was set or changed (review round 8, point 02): from, to, and why.</summary>
+    public const string ProgressMethodChanged = "Project.ProgressMethodChanged";
+
     /// <summary>DATA_CHANGE: an approved import batch updated an existing project, matched by its legacy reference or Formal Project ID (R3-4).</summary>
     public const string ProjectUpdatedByImport = "Project.ProjectUpdatedByImport";
 

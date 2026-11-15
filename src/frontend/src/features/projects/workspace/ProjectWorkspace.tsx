@@ -59,6 +59,7 @@ const ARRIVAL_NOTICES: Record<string, TranslationKey> = {
   created: 'projects.done.created',
   updated: 'projects.done.updated',
   stagePlanNotSaved: 'projects.done.stagePlanNotSaved',
+  progressMethodNotSaved: 'projects.done.progressMethodNotSaved',
   changeRequestDeleted: 'changeRequests.done.deleted',
 };
 

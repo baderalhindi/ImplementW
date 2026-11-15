@@ -216,6 +216,23 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
     }
 
     /// <summary>
+    /// Review round 8, point 02: sets how the project's overall progress is calculated, <c>SCHEDULE</c> or <c>STAGES</c>, by whoever may set its stage
+    /// plan. Once a progress update is approved a reason is required (<c>PROJECT_PROGRESS_METHOD_REASON_REQUIRED</c>). Requires <c>If-Match</c> (R-21).
+    /// </summary>
+    [HttpPost("{projectId:guid}/set-progress-method")]
+    [AllowAnyAuthenticatedUser]
+    [SensitiveWrite]
+    [ProducesResponseType<ProjectDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Project_SetProgressMethod")]
+    public async Task<IActionResult> SetProgressMethod(Guid projectId, ProgressMethodRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return !TryReadIfMatch(required: true, out uint? version, out IActionResult? problem) ? problem!
+            : request.Validate(out ProjectProgressMethod? method, out NarrativeText? reason) is { Count: > 0 } errors ? ValidationFailed(errors)
+            : Respond(await projects.SetProgressMethodAsync(CallerId, projectId, method!.Value, reason, version!.Value, cancellationToken));
+    }
+
+    /// <summary>
     /// Review round 7, item 2: assigns or changes the Project Manager, at any state but CLOSED, with a reason. The new manager must hold R04 over the
     /// project; its open tasks and update requests pass to them and both managers are told. Requires <c>If-Match</c> (R-21).
     /// </summary>

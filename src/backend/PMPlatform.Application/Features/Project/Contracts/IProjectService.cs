@@ -1,4 +1,5 @@
 using PMPlatform.Domain.Common;
+using PMPlatform.Domain.Project;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 
 namespace PMPlatform.Application.Features.Project.Contracts;
@@ -55,6 +56,13 @@ public interface IProjectService
     /// </summary>
     public Task<AdministrationResult<Versioned<ProjectDetail>>> EditRegistrationAsync(
         Guid callerId, Guid projectId, ProjectDraft draft, NarrativeText reason, uint expectedVersion, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Review round 8, point 02: sets how the project's overall progress is calculated. Its stage-plan writers may, at any state but CLOSED and not
+    /// while under review; once a progress update is approved, a change needs a reason. Requires <c>If-Match</c> (R-21).
+    /// </summary>
+    public Task<AdministrationResult<Versioned<ProjectDetail>>> SetProgressMethodAsync(
+        Guid callerId, Guid projectId, ProjectProgressMethod method, NarrativeText? reason, uint expectedVersion, CancellationToken cancellationToken);
 
     public Task<AdministrationResult<Versioned<ProjectDetail>>> ChangeManagerAsync(
         Guid callerId, Guid projectId, ProjectManagerChange change, uint expectedVersion, CancellationToken cancellationToken);

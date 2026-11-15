@@ -128,6 +128,23 @@ internal sealed class ProjectStagePlanService(
             entry.UpdatedBy = callerId;
         }
 
+        // Review round 8, point 02: the stage-plan step sets the stage method on a project that has none. A plan's starting % is where the project
+        // stands until its first stage figure from an update, so its current stage is the dashboard's too.
+        project.ProgressMethod ??= ProjectProgressMethod.Stages;
+        if (project.DeclaredSource is not (DeclaredValueSource.ProgressUpdate or DeclaredValueSource.EntityUpdate)
+            && changes.Stages.Any(c => c.StartingPercent is not null))
+        {
+            StartingStage? current = StageProgress.Current(
+                [.. stages.Stages
+                    .Select(s => changes.Stages.FirstOrDefault(c => c.StageCode == s.Code))
+                    .OfType<ProjectStagePlanEntryChange>()
+                    .Where(c => c.Applies)
+                    .Select(c => new StartingStage(c.StageCode, c.StartingPercent ?? 0m))],
+                s => s.Percent);
+            project.CurrentStageCode = current?.Code;
+            project.CurrentStagePercent = current?.Percent;
+        }
+
         int fromRevisionNo = project.StagePlanRevisionNo;
         project.StagePlanRevisionNo++;
         project.UpdatedAt = now;
@@ -160,11 +177,13 @@ internal sealed class ProjectStagePlanService(
 
     /// <summary>
     /// What submitting the registration needs of the plan: when stages are configured, every one of them planned, at least one applying, each that
-    /// applies dated within the project's dates. Null when it is complete or there are no stages to plan.
+    /// applies dated within the project's dates. Null when it is complete, there are no stages to plan, or the project is on the schedule method.
     /// </summary>
     internal async Task<AdministrationError?> IncompleteAsync(ProjectEntity project, CancellationToken cancellationToken)
     {
-        if (await resolver.ResolveStagesAsync(timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false) is not { } stages)
+        // Review round 8, point 02: a project measured by its schedule needs no stage plan.
+        if (project.ProgressMethod == ProjectProgressMethod.Schedule
+            || await resolver.ResolveStagesAsync(timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false) is not { } stages)
         {
             return null;
         }
@@ -179,7 +198,7 @@ internal sealed class ProjectStagePlanService(
     }
 
     /// <summary>The registration's writer while it is DRAFT or RETURNED; from approval on, whoever records the project's progress may set it too.</summary>
-    private async Task<AdministrationError?> CheckWriterAsync(Guid callerId, ProjectEntity project, CancellationToken cancellationToken) =>
+    internal async Task<AdministrationError?> CheckWriterAsync(Guid callerId, ProjectEntity project, CancellationToken cancellationToken) =>
         !ProjectLifecycle.IsEditable(project.LifecycleState)
         && await access.HoldsAsync(callerId, PermissionCatalogue.ProgressSubmit, project, cancellationToken).ConfigureAwait(false)
             ? null
@@ -288,4 +307,7 @@ internal sealed class ProjectStagePlanService(
                 : [.. stages.Stages.Select(s => entries.FirstOrDefault(e => e.StageCode == s.Code) is { } e
                     ? new ProjectStagePlanStage(s.Code, s.Name, s.SortOrder, s.WeightPercent, e.Applies, e.PlannedStartDate, e.PlannedEndDate, e.StartingPercent)
                     : new ProjectStagePlanStage(s.Code, s.Name, s.SortOrder, s.WeightPercent, true, null, null, null))]);
+
+    /// <summary>A stage and its starting %, in stage order, to find the current one.</summary>
+    private sealed record StartingStage(string Code, decimal Percent);
 }

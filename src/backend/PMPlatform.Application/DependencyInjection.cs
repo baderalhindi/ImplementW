@@ -194,6 +194,7 @@ public static class DependencyInjection
         // from RPMO's workbook, approved by a second person (R3-4).
         services.AddScoped<OnPlanPolicy>();
         services.AddScoped<ProjectIndicatorReader>();
+        services.AddScoped<ProjectOverallProgressReader>();
         services.TryAddScoped<IProjectUpdateComplianceSource, NoUpdateComplianceSource>();
         services.AddScoped<IProjectFollowUpService, ProjectFollowUpService>();
         services.AddScoped<ProjectStagePlanService>();
@@ -224,6 +225,7 @@ public static class DependencyInjection
         services.AddScoped<ReportingPeriods>();
         services.AddScoped<IReportingPeriodSource, ReportingPeriodSource>();
         services.AddScoped<ProgressStages>();
+        services.AddScoped<IProjectProgressSource, ProjectProgressSource>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<ProgressOpeningPosition>();
         services.AddScoped<IProjectIntakeHandler, ProgressIntakeHandler>();

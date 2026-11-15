@@ -5,20 +5,24 @@ using ProjectEntity = PMPlatform.Domain.Project.Project;
 namespace PMPlatform.Application.Features.Project.FollowUp;
 
 /// <summary>
-/// RPMO's calculated columns (the 2 Nov 2026 review §2), on the declared progress a project carries until it has a schedule. The gap is
-/// actual minus planned, in points; it is not calculated for a project not yet started (registration, APPROVED_PLANNED) or closed, nor when
-/// either percentage is missing.
+/// RPMO's calculated columns (the 2 Nov 2026 review §2), on the project's overall progress figure: by its method, or as declared while it has
+/// none (review round 8, point 02). The gap is actual minus planned, in points; it is not calculated for a project not yet started (registration,
+/// APPROVED_PLANNED) or closed, nor when either percentage is missing.
 /// </summary>
 internal static class ProjectIndicatorCalculator
 {
-    public static ProjectIndicators Of(ProjectEntity project, OnPlanThresholds thresholds, DateOnly today, UpdateComplianceCounts? updates = null)
+    public static ProjectIndicators Of(
+        ProjectEntity project, OnPlanThresholds thresholds, DateOnly today, UpdateComplianceCounts? updates = null, ProjectOverallProgress? progress = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(thresholds);
+        // Without a figure read (a caller that has none), the declared values stand, as they did before the methods.
+        progress ??= new ProjectOverallProgress(
+            project.ProgressMethod, null, project.DeclaredActualPercent, project.DeclaredPlannedPercent, project.DeclaredAsOf, project.CurrentStageCode, [], project.ProgressMethod is null, false);
 
         bool running = project.LifecycleState is ProjectLifecycleState.Active or ProjectLifecycleState.Suspended;
         bool measured = running || project.LifecycleState == ProjectLifecycleState.Completed;
-        decimal? gap = measured && project.DeclaredActualPercent is { } actual && project.DeclaredPlannedPercent is { } planned ? actual - planned : null;
+        decimal? gap = measured && progress.ActualPercent is { } actual && progress.PlannedPercent is { } planned ? actual - planned : null;
         OnPlanStatus? onPlan = gap is not { } points ? null
             : points <= -thresholds.StalledPoints ? OnPlanStatus.Stalled
             : points <= -thresholds.LatePoints ? OnPlanStatus.Late
@@ -57,7 +61,7 @@ internal static class ProjectIndicatorCalculator
             }
         }
 
-        return new ProjectIndicators(gap, onPlan, daysRemaining, actionDue, reasons, Compliance(project, thresholds, updates));
+        return new ProjectIndicators(gap, onPlan, daysRemaining, actionDue, reasons, Compliance(project, thresholds, updates), progress);
     }
 
     /// <summary>RPMO's recorded value overrides the calculation; with neither, compliance is not known.</summary>

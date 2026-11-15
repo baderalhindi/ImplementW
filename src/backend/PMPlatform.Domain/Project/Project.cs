@@ -160,6 +160,9 @@ public sealed class Project : AuditedEntity, IDeletable
     /// </summary>
     public int StagePlanRevisionNo { get; set; }
 
+    /// <summary>How the overall progress is calculated (review round 8, point 02); null until set, while the declared figure stands.</summary>
+    public ProjectProgressMethod? ProgressMethod { get; set; }
+
     /// <summary>The first applicable stage below 100% in the latest published stage-based period, or as imported; null before either.</summary>
     public string? CurrentStageCode { get; set; }
 
