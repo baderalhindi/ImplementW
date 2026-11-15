@@ -1,6 +1,6 @@
 {
   "title": "Welcome, {name}",
-  "description": "Start something new, see where the portfolio stands, and pick up what is waiting for you.",
+  "description": "Follow what awaits you, and open what you need from the menu.",
   "menus": {
     "title": "Browse the platform"
   },
@@ -141,5 +141,15 @@
       "tasks": "Tasks",
       "notifications": "Notifications"
     }
+  },
+  "roleLines": {
+    "R01": "Keep the platform ready and its integrations running well, and manage users, permissions and reference data with confidence.",
+    "R02": "Stay on top of the portfolio’s performance, take the decisions awaiting your approval, and send update requests to the entities.",
+    "R03": "Follow your department’s projects, review the updates and requests that reach you, and take the decisions that move the work forward.",
+    "R04": "Lead your projects to completion, follow their progress, update their monthly achievements, and complete the tasks and requests due from you.",
+    "R05": "Stay on top of the entities’ responses on the projects assigned to you, and follow up late responses so the work keeps moving.",
+    "R06": "Stay informed about your department’s projects, and review their published data and figures for a clear picture of their performance.",
+    "R07": "See the full picture of the portfolio’s performance, and focus on the main risks and the decisions that need your attention.",
+    "R08": "Contribute to your entity’s projects, respond to AHDA’s update requests, and stay informed about your projects."
   }
 }

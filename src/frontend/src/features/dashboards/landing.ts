@@ -13,18 +13,62 @@ export interface RoleLanding {
   dashboardId: string;
   /** Blueprint §20.2's name for the landing page. */
   name: TranslationKey;
+  /** The Home's line under the welcome for the role (review round 8, point 10, agreed 15 Nov 2026). */
+  homeLine: TranslationKey;
+  /** The landing dashboard's line under its title; null where the dashboard's own description is kept (the administrator's). */
+  dashboardLine: TranslationKey | null;
 }
 
 /** Blueprint §20.2, role for role: the landing pages, each the role dashboard of the same audience (§21). */
 export const ROLE_LANDINGS: Readonly<Record<string, RoleLanding>> = {
-  R01: { dashboardId: 'DSH-001', name: 'dashboards.landing.R01' },
-  R02: { dashboardId: 'DSH-002', name: 'dashboards.landing.R02' },
-  R03: { dashboardId: 'DSH-003', name: 'dashboards.landing.R03' },
-  R04: { dashboardId: 'DSH-004', name: 'dashboards.landing.R04' },
-  R05: { dashboardId: 'DSH-005', name: 'dashboards.landing.R05' },
-  R06: { dashboardId: 'DSH-006', name: 'dashboards.landing.R06' },
-  R07: { dashboardId: 'DSH-007', name: 'dashboards.landing.R07' },
-  R08: { dashboardId: 'DSH-008', name: 'dashboards.landing.R08' },
+  R01: {
+    dashboardId: 'DSH-001',
+    name: 'dashboards.landing.R01',
+    homeLine: 'home.roleLines.R01',
+    dashboardLine: null,
+  },
+  R02: {
+    dashboardId: 'DSH-002',
+    name: 'dashboards.landing.R02',
+    homeLine: 'home.roleLines.R02',
+    dashboardLine: 'dashboards.roleLines.R02',
+  },
+  R03: {
+    dashboardId: 'DSH-003',
+    name: 'dashboards.landing.R03',
+    homeLine: 'home.roleLines.R03',
+    dashboardLine: 'dashboards.roleLines.R03',
+  },
+  R04: {
+    dashboardId: 'DSH-004',
+    name: 'dashboards.landing.R04',
+    homeLine: 'home.roleLines.R04',
+    dashboardLine: 'dashboards.roleLines.R04',
+  },
+  R05: {
+    dashboardId: 'DSH-005',
+    name: 'dashboards.landing.R05',
+    homeLine: 'home.roleLines.R05',
+    dashboardLine: 'dashboards.roleLines.R05',
+  },
+  R06: {
+    dashboardId: 'DSH-006',
+    name: 'dashboards.landing.R06',
+    homeLine: 'home.roleLines.R06',
+    dashboardLine: 'dashboards.roleLines.R06',
+  },
+  R07: {
+    dashboardId: 'DSH-007',
+    name: 'dashboards.landing.R07',
+    homeLine: 'home.roleLines.R07',
+    dashboardLine: 'dashboards.roleLines.R07',
+  },
+  R08: {
+    dashboardId: 'DSH-008',
+    name: 'dashboards.landing.R08',
+    homeLine: 'home.roleLines.R08',
+    dashboardLine: 'dashboards.roleLines.R08',
+  },
 };
 
 /**

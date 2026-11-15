@@ -1,6 +1,7 @@
 import { type ReactElement, type ReactNode, useRef } from 'react';
 import { Navigate } from 'react-router';
 
+import { landingRole, ROLE_LANDINGS } from '@/features/dashboards/landing.ts';
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { DATE_LOCALES, useI18n } from '@/shared/i18n/i18n.ts';
@@ -48,6 +49,14 @@ export function HomePage({ menuOverview }: { menuOverview: ReactNode }): ReactEl
 
   const administers =
     permissions.can('USER_VIEW', 'INTEGRATION_VIEW') && !permissions.can('PROJECT_VIEW');
+  // Review round 8, point 10: the line under the welcome is the person's main role's — the role they land as.
+  const role = landingRole(session.user);
+  const roleLine =
+    role === null
+      ? administers
+        ? 'home.health.description'
+        : 'home.description'
+      : (ROLE_LANDINGS[role]?.homeLine ?? 'home.description');
   return (
     <div className="home">
       <header
@@ -66,9 +75,7 @@ export function HomePage({ menuOverview }: { menuOverview: ReactNode }): ReactEl
         )}
         <p className="home__date">{today.format(new Date())}</p>
         <h1 className="home__title">{t('home.title', { name: session.user.displayName })}</h1>
-        <p className="home__intro">
-          {t(administers ? 'home.health.description' : 'home.description')}
-        </p>
+        <p className="home__intro">{t(roleLine)}</p>
         {administers ? <AdministrationActions /> : <QuickActions user={session.user} />}
         <BannerCustomizer
           images={banner.images}

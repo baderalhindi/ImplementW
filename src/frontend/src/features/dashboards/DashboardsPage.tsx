@@ -172,9 +172,12 @@ export function DashboardsPage(): ReactElement {
       <PageHeader
         title={rendering === undefined ? entry.name[language] : t(rendering.name)}
         description={
-          rendering === undefined
-            ? entry.description?.[language]
-            : t('dashboards.home.rendering', { dashboard: entry.name[language] })
+          // Review round 8, point 10: the landing names the role's line; the Portfolio Dashboard opened from its menu has its own.
+          rendering?.dashboardLine != null
+            ? t(rendering.dashboardLine)
+            : entry.code === 'PORTFOLIO'
+              ? t('dashboards.portfolioLine')
+              : entry.description?.[language]
         }
       />
       {others.length > 1 && <DashboardSwitch entries={others} current={entry} />}

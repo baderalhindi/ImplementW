@@ -527,13 +527,10 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
       await screen.findByRole('heading', { level: 1, name: en(`dashboards.landing.${role}`) }),
     ).toBeTruthy();
     const dsh = `DSH-00${role.slice(2)}`;
-    expect(
-      screen.getByText(
-        en('dashboards.home.rendering', {
-          dashboard: catalogueFor([role]).find((entry) => entry.isDefaultLanding)?.name.en ?? '',
-        }),
-      ),
-    ).toBeTruthy();
+    // Review round 8, point 10: the role's own line under the title (the administrator keeps the dashboard's description).
+    if (role !== 'R01') {
+      expect(screen.getByText(en(`dashboards.roleLines.${role}`))).toBeTruthy();
+    }
     // The review, M-4: no specification code is shown to the person.
     expect(screen.queryByText(new RegExp(dsh))).toBeNull();
     await waitFor(() => {

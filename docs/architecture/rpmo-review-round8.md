@@ -390,3 +390,16 @@ local.r02 already had a saved order (the user's own). The API check reset it, an
   - local.r02's dashboard showed both hints; the stage hint opened 164 projects with the "لم تُرفع مرحلة بعد" chip.
   - A status with no projects gave the filter reason and "مسح التصفية"; year 2001 gave the period reason.
   - local.r05's empty dashboard and register gave the scope reason.
+
+## Point 10: Home and dashboard text for each role
+
+- **The lines.** The 15 Nov lines are in the translation files (`home.roleLines.R01–R08`, `dashboards.roleLines.R02–R08`), not in components.
+- **Where each is chosen.** Each role's entry in `ROLE_LANDINGS` (`dashboards/landing.ts`) names its Home line and its dashboard line, beside its dashboard name.
+- **Main role.** A person with several roles gets the line of their main role: the role they land as (`landingRole`, the API's own rule — the first standard role in code order).
+- **Dashboard subtitle.**
+  - The landing dashboard shows its role's line.
+  - The Portfolio Dashboard opened from its menu shows the Portfolio line.
+  - The administrator's dashboard (R01, not in the PDF) keeps its own description.
+- **Old lines removed.** "كل المشاريع في نطاقك، حسب القطاع والجهة والموقع" is removed. The generic Home line, now used only by someone with no standard role, no longer reads "ابدأ عملًا جديدًا…".
+- **Checked on localhost.** local.r01–r08 each showed their Home and dashboard lines, and neither old line appeared anywhere.
+- **For the client: local.r07.** On localhost local.r07 holds R02 as well as R07, so it lands as the Portfolio Manager and sees R02's lines and "لوحة المحفظة". Someone holding only R07 sees the Executive lines. If the main role should be chosen otherwise (for example R07 before R02), that is a rule to agree.
