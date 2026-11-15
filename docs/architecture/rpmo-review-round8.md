@@ -148,3 +148,27 @@ Four external update requests in pmplatform_demo name the contribution schema `P
 - `StageProgressTests` adds the method rules, the shared figure and the reason.
 - Project, Progress, stage, ExternalParticipation, Dashboards and Reports integration suites: 232 of 234 pass when run together. `ReportSavedViewTests` and `MasterDataConfig.ProjectStageTests` failed only when run with the others, and pass alone.
 - Frontend: 1,416 tests pass.
+
+## Point 03: entity update donut, average, top five, "see more"
+
+The card is on the Portfolio dashboard, for AHDA's people who hold EXTERNAL_REQUEST_VIEW. It shares its period with the entity table under it.
+
+- **Title.** The title carries the period: "نسبة إنجاز التحديثات حسب الجهة · نوفمبر 2026". The last three months read "سبتمبر – نوفمبر 2026", and this year reads "2026". These match the API's period: the month start, two months back.
+- **Centre.**
+  - Shows "متوسط الجهات": the API's `averagePercent`, the simple average of each entity's rate over the entities that had requests in the period.
+  - Each entity counts once. Rounding up accepted over issued is no longer used.
+  - A tooltip gives the definition.
+  - It reads "—" when no entity had requests.
+- **Ring.**
+  - Only the entities with requests, in four bands: 90% or more, 70–89%, 50–69%, below 50%.
+  - The "no requests" slice is gone. Two lines under the ring say "من N جهة لديها طلبات في الفترة" and "N جهة بلا طلبات في الفترة". The second counts active entities only.
+- **Beside the ring.**
+  - Five entities, the lowest first. A toggle switches between "الأدنى" and "الأعلى".
+  - Each entity shows its name, linked to its request monitor (`/external-requests/monitor?externalEntityId=`), a % bar, and "accepted من issued".
+- **Links.**
+  - A band (segment or legend) opens `?completionBand=<band>#entity-completion` on the same dashboard, keeping its filters. "عرض المزيد" opens the same address without a band.
+  - The page scrolls to the table.
+  - With a band in the address, the table shows that band's entities and a "عرض كل الجهات" link. Its columns and its order (lowest % first) are unchanged.
+  - This also completes point 01's "donut band → entity list".
+
+**Localhost data, as of 15 Nov.** No entity had requests this month. Over the last three months, one entity (هيئة التراث) had 4 requests and none accepted. Those are the same 4 requests whose undefined `PROGRESS_V1` schema breaks their list.

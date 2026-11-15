@@ -281,26 +281,36 @@
     },
     "sectorSpend": "الصرف والتوزيع على المحافظ حسب القطاع",
     "completion": "نسبة إنجاز التحديثات حسب الجهة",
-    "completionOverall": "جميع الجهات",
     "completionEntities": "جهة",
     "completionBands": {
       "from90": "٩٠٪ فأكثر",
       "from70": "٧٠–٨٩٪",
       "from50": "٥٠–٦٩٪",
-      "below50": "أقل من ٥٠٪",
-      "noRequests": "لا طلبات في الفترة"
+      "below50": "أقل من ٥٠٪"
     },
-    "completionBandEmpty": "لا توجد جهة في هذه الفئة.",
     "completionUnavailable": "تعذّر تحميل نسب الإنجاز.",
     "byStatus": "المشاريع حسب الحالة",
     "byCurrentStage": "المشاريع حسب المرحلة",
     "currentStage": "المرحلة الحالية",
-    "noCurrentStage": "لم تُرفع مرحلة بعد"
+    "noCurrentStage": "لم تُرفع مرحلة بعد",
+    "completionAverage": "متوسط الجهات",
+    "completionAverageHint": "المتوسط البسيط لنسبة إنجاز كل جهة (الطلبات المقبولة ÷ الطلبات الصادرة)، على الجهات التي لديها طلبات في الفترة. تُحسب كل جهة مرة واحدة.",
+    "completionWithRequests": "من {count} جهة لديها طلبات في الفترة",
+    "completionNoRequests": "{count} جهة بلا طلبات في الفترة",
+    "completionOrder": "ترتيب الجهات",
+    "completionOrders": {
+      "lowest": "الأدنى",
+      "highest": "الأعلى"
+    },
+    "completionNone": "لا توجد جهة لديها طلبات في الفترة.",
+    "completionCounts": "{accepted} من {issued}",
+    "completionSeeMore": "عرض المزيد"
   },
   "drill": {
     "projects": "عرض المشاريع ({count})",
     "followUp": "عرض في قائمة المتابعة ({count})",
     "risks": "عرض المخاطر ({count})",
-    "reportCard": "بطاقة التقرير"
+    "reportCard": "بطاقة التقرير",
+    "entities": "عرض الجهات ({count})"
   }
 }

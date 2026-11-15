@@ -648,6 +648,8 @@
     "submitted": "Submitted",
     "accepted": "Accepted",
     "overdue": "Overdue",
-    "percent": "Completion"
+    "percent": "Completion",
+    "bandFilter": "Showing the {count} entities at {band}.",
+    "showAll": "Show all entities"
   }
 }

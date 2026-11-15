@@ -648,6 +648,8 @@
     "submitted": "المقدَّمة",
     "accepted": "المقبولة",
     "overdue": "المتأخرة",
-    "percent": "نسبة الإنجاز"
+    "percent": "نسبة الإنجاز",
+    "bandFilter": "تُعرض {count} جهة في نطاق {band}.",
+    "showAll": "عرض كل الجهات"
   }
 }

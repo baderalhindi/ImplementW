@@ -548,55 +548,99 @@ describe('the entity completion donut (round 7, item 5)', () => {
 
   const card = async () =>
     around(
-      await screen.findByRole('heading', { name: en('dashboards.insights.completion'), level: 3 }),
+      await screen.findByRole('heading', {
+        name: new RegExp(`^${en('dashboards.insights.completion')} · `),
+        level: 3,
+      }),
       '.insights__chart',
     );
 
-  test('shows all entities together in the centre and how many entities are in each band', async () => {
+  test('round 8, point 03: the centre is the average of the entities with requests; the ring holds only them, the rest are counted under it', async () => {
     completionApi();
     renderApp({ path: DASHBOARD, session: session() });
 
     const chart = await card();
-    // (10 + 8 + 5 + 2 + 9) accepted of 50 issued: accepted over issued, not the mean of the rates.
+    // The API's simple average: each entity with requests counts once.
     await waitFor(() => {
       expect(plain(chart.querySelector('.donut__value')?.textContent)).toBe('68%');
     });
-    const legend = within(chart)
-      .getAllByRole('button')
-      .map((button) => plain(button.textContent));
+    expect(plain(chart.querySelector('.donut__label')?.textContent)).toBe(
+      en('dashboards.insights.completionAverage'),
+    );
+    const legend = [...chart.querySelectorAll('.grouped-columns__legend a')].map((link) =>
+      plain(link.textContent),
+    );
     expect(legend).toEqual([
       `${en('dashboards.insights.completionBands.from90')} (2)`,
       `${en('dashboards.insights.completionBands.from70')} (1)`,
       `${en('dashboards.insights.completionBands.from50')} (1)`,
       `${en('dashboards.insights.completionBands.below50')} (1)`,
-      `${en('dashboards.insights.completionBands.noRequests')} (1)`,
     ]);
+    // Entity 6 had no request; Entity 7 is inactive and not counted.
+    expect(chart.textContent).toContain(
+      en('dashboards.insights.completionWithRequests', { count: 5 }),
+    );
+    expect(chart.textContent).toContain(
+      en('dashboards.insights.completionNoRequests', { count: 1 }),
+    );
   });
 
-  test('choosing a band lists its entities, lowest rate first; an entity with no requests is listed by name', async () => {
+  test('five entities beside the chart, lowest first, each opening its monitor; a toggle shows the highest', async () => {
     completionApi();
     const user = userEvent.setup();
     renderApp({ path: DASHBOARD, session: session() });
     const chart = await card();
 
-    await user.click(
-      await within(chart).findByRole('button', {
-        name: new RegExp(en('dashboards.insights.completionBands.from90')),
-      }),
+    const names = () =>
+      [...chart.querySelectorAll('.completion-donut__entities li a')].map(
+        (link) => link.textContent,
+      );
+    await waitFor(() => {
+      expect(names()).toEqual(['Entity 4', 'Entity 3', 'Entity 2', 'Entity 5', 'Entity 1']);
+    });
+    expect(within(chart).getByRole('link', { name: 'Entity 4' }).getAttribute('href')).toBe(
+      `/external-requests/monitor?externalEntityId=${entity(4).id}`,
     );
-    const listed = within(chart)
-      .getAllByRole('listitem')
-      .filter((item) => item.closest('.completion-band__list') !== null)
-      .map((item) => plain(item.textContent));
-    expect(listed).toEqual(['Entity 590%', 'Entity 1100%']);
+    expect(chart.querySelector('.completion-donut__entities li')?.textContent).toContain(
+      en('dashboards.insights.completionCounts', { accepted: 2, issued: 10 }),
+    );
 
     await user.click(
       within(chart).getByRole('button', {
-        name: new RegExp(en('dashboards.insights.completionBands.noRequests')),
+        name: en('dashboards.insights.completionOrders.highest'),
       }),
     );
-    expect(within(chart).getByText('Entity 6')).toBeTruthy();
-    expect(within(chart).queryByText('Entity 7')).toBeNull();
+    expect(names()[0]).toBe('Entity 1');
+  });
+
+  test('a band and "see more" open the entity table, filtered when a band was chosen', async () => {
+    completionApi();
+    renderApp({ path: `${DASHBOARD}&completionBand=from90`, session: session() });
+    const chart = await card();
+
+    const band = await within(chart).findByRole('link', {
+      name: new RegExp(en('dashboards.insights.completionBands.from90')),
+    });
+    expect(band.getAttribute('href')).toMatch(/completionBand=from90#entity-completion$/);
+    const more = within(chart).getByRole('link', {
+      name: en('dashboards.insights.completionSeeMore'),
+    });
+    expect(more.getAttribute('href')).not.toContain('completionBand');
+    expect(more.getAttribute('href')).toMatch(/#entity-completion$/);
+
+    const table = await screen.findByRole('table', {
+      name: en('externalParticipation.completion.title'),
+    });
+    await waitFor(() => {
+      expect(
+        within(table)
+          .getAllByRole('link')
+          .map((link) => link.textContent),
+      ).toEqual(['Entity 5', 'Entity 1']);
+    });
+    expect(
+      screen.getByRole('link', { name: en('externalParticipation.completion.showAll') }),
+    ).toBeTruthy();
   });
 
   test('covers the period chosen on the table, which stays as it was', async () => {

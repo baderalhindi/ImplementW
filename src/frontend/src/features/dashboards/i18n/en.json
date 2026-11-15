@@ -281,26 +281,36 @@
     },
     "sectorSpend": "Spend and portfolio split by sector",
     "completion": "Update completion by entity",
-    "completionOverall": "all entities",
     "completionEntities": "entities",
     "completionBands": {
       "from90": "90% or more",
       "from70": "70–89%",
       "from50": "50–69%",
-      "below50": "Below 50%",
-      "noRequests": "No requests in the period"
+      "below50": "Below 50%"
     },
-    "completionBandEmpty": "No entity is in this band.",
     "completionUnavailable": "The completion rates could not be loaded.",
     "byStatus": "Projects by status",
     "byCurrentStage": "Projects by stage",
     "currentStage": "Current stage",
-    "noCurrentStage": "No stage reported yet"
+    "noCurrentStage": "No stage reported yet",
+    "completionAverage": "Entity average",
+    "completionAverageHint": "The simple average of each entity's completion rate (requests accepted ÷ requests issued), over the entities that had requests in the period. Each entity counts once.",
+    "completionWithRequests": "of {count} entities with requests in the period",
+    "completionNoRequests": "{count} entities with no requests in the period",
+    "completionOrder": "Order of the entities",
+    "completionOrders": {
+      "lowest": "Lowest",
+      "highest": "Highest"
+    },
+    "completionNone": "No entity had requests in the period.",
+    "completionCounts": "{accepted} of {issued}",
+    "completionSeeMore": "See more"
   },
   "drill": {
     "projects": "View projects ({count})",
     "followUp": "View in the follow-up list ({count})",
     "risks": "View risks ({count})",
-    "reportCard": "Report card"
+    "reportCard": "Report card",
+    "entities": "View entities ({count})"
   }
 }
