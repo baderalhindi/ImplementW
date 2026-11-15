@@ -6999,3 +6999,22 @@ tr[data-flagged='true'] {
 .value--nowrap {
   white-space: nowrap;
 }
+
+/* Review round 8, point 06: a record's "More" menu; its destructive actions in red after a divider. */
+.more-menu .popover__menu {
+  min-inline-size: 13rem;
+}
+
+.popover__divider {
+  margin-block: var(--space-1);
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.popover__option--danger,
+.popover__option--danger:hover {
+  color: var(--color-danger);
+}
+
+.popover__option--danger:hover {
+  background: var(--color-danger-surface);
+}

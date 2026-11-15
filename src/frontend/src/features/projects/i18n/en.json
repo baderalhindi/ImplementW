@@ -230,7 +230,8 @@
     "confirm": "Delete draft",
     "anyTitle": "Delete project",
     "anyBody": "Delete the project “{title}”? It and its records leave every list, dashboard and report. Their data stays on file, and bringing it back needs a technical request.",
-    "anyConfirm": "Delete project"
+    "anyConfirm": "Delete project",
+    "typeToConfirm": "Type {text} to confirm"
   },
   "submit": {
     "title": "Submit for review",

@@ -235,3 +235,22 @@ The client asked for the Overview to read as a dashboard, not as rows of records
 - **Follow-up.** It is a card of tiles too. It no longer repeats the on-plan label, the gap and the days remaining, which the tiles above show.
 - **Project Dashboard.** It stays below them.
 - **The numbers.** None changed: the tiles read the same figures as before (point 02).
+
+## Point 06: "Edit" and "Delete project" in a "More" menu
+
+- **The menu.** The project header's "تعديل التسجيل" and "حذف المشروع" buttons are replaced by one "⋯ المزيد" menu at the end of the header (`shared/ui/MoreMenu.tsx`). It holds:
+  - "تعديل التسجيل";
+  - a divider;
+  - "حذف المشروع" (or "حذف المسودة"), in red, last.
+- **Who sees what.** Each item shows only to someone allowed it, by the same rules as the buttons. With neither, there is no menu.
+- **Submit and Change status.** These stay as buttons: they are the project's next workflow step, not occasional actions.
+- **Later actions.** Any later project-level action is an item in the same menu.
+- **Shared popover.** The menu reuses the shell's popover behaviour, now `shared/ui/usePopover.ts`: a click elsewhere or Escape closes it, and Escape returns focus to the button.
+- **The delete dialog** (`DeleteProjectDialog`, replacing `DeleteDraftDialog`):
+  - It names the project and its number, and says what is removed.
+  - Its delete button stays disabled until the person types the project's number.
+  - A draft has no number, so its title is typed instead.
+- **Checked in a browser.**
+  - local.r02 sees only "⋯ المزيد", with edit, the divider and delete in that order.
+  - The dialog named "مشروع رقم 2" and PRJ-000002, and its button enabled only after "PRJ-000002" was typed. It was cancelled, and no DELETE was sent.
+  - local.r04, who can neither edit nor delete that active project, sees no menu.

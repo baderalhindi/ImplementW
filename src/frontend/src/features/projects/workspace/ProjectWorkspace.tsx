@@ -1,5 +1,5 @@
 import { type ReactElement, type ReactNode, useCallback, useEffect, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router';
 
 import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
@@ -8,6 +8,7 @@ import { LifecycleBanner } from '@/features/suspension-closure/components/Lifecy
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
+import { MoreMenu } from '@/shared/ui/MoreMenu.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
@@ -25,7 +26,7 @@ import { projectsApi } from '../api/projectsApi.ts';
 import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
 import { AssignManagerDialog } from '../dialogs/AssignManagerDialog.tsx';
 import { ChangeStatusDialog } from '../dialogs/ChangeStatusDialog.tsx';
-import { DeleteDraftDialog } from '../dialogs/DeleteDraftDialog.tsx';
+import { DeleteProjectDialog } from '../dialogs/DeleteProjectDialog.tsx';
 import { languageTag } from '../presentation.ts';
 import { projectProblemMessage } from '../problems.ts';
 import { useProjectLookups } from '../useProjectLookups.ts';
@@ -178,11 +179,6 @@ export function ProjectWorkspace(): ReactElement | null {
         }
         actions={
           <>
-            {(editable || (access.permissions.can('PROJECT_REGISTRATION_EDIT') && !closed)) && (
-              <Link className="button" to={`/projects/${detail.id}/edit`}>
-                {t('projects.actions.edit')}
-              </Link>
-            )}
             {editable && (
               <ActionButton
                 primary
@@ -202,21 +198,37 @@ export function ProjectWorkspace(): ReactElement | null {
                 {t('projects.actions.changeStatus')}
               </ActionButton>
             )}
-            {(access.permissions.can('PROJECT_DELETE') ||
-              (access.creator && detail.status === 'DRAFT')) && (
-              <ActionButton
-                danger
-                onClick={() => {
-                  setDialog('delete');
-                }}
-              >
-                {t(
-                  access.permissions.can('PROJECT_DELETE')
-                    ? 'projects.delete.anyConfirm'
-                    : 'projects.actions.delete',
-                )}
-              </ActionButton>
-            )}
+            {/* Review round 8, point 06: editing and deleting, and any project-level action added later, are under "More", delete last. */}
+            <MoreMenu
+              items={[
+                ...(editable || (access.permissions.can('PROJECT_REGISTRATION_EDIT') && !closed)
+                  ? [
+                      {
+                        key: 'edit',
+                        label: t('projects.actions.edit'),
+                        to: `/projects/${detail.id}/edit`,
+                      },
+                    ]
+                  : []),
+                ...(access.permissions.can('PROJECT_DELETE') ||
+                (access.creator && detail.status === 'DRAFT')
+                  ? [
+                      {
+                        key: 'delete',
+                        label: t(
+                          access.permissions.can('PROJECT_DELETE')
+                            ? 'projects.delete.anyConfirm'
+                            : 'projects.actions.delete',
+                        ),
+                        danger: true,
+                        onSelect: () => {
+                          setDialog('delete');
+                        },
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           </>
         }
       />
@@ -245,7 +257,7 @@ export function ProjectWorkspace(): ReactElement | null {
         <Outlet context={context} />
       </div>
 
-      <DeleteDraftDialog
+      <DeleteProjectDialog
         open={dialog === 'delete'}
         project={detail}
         anyState={access.permissions.can('PROJECT_DELETE')}
