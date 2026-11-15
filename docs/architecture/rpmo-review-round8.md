@@ -451,3 +451,29 @@ local.r02 already had a saved order (the user's own). The API check reset it, an
   - local.r04 saw 167 projects in 9 pages of 20, with chip counts 0, 42 and 164. "PRJ-000010" found exactly "مشروع رقم 10", and a row opened its project.
   - The demo database has no reporting periods, tasks or milestones, so "يحتاج إجراء هذا الشهر" is 0 there. A test task dated in the past, created through the API on one of r04's projects, made that project's count 1, and 0 again once deleted (the task is left soft-deleted).
 - **Unit tests:** `managedProjects.test.ts` (6 tests).
+
+## Point 14: one executive dashboard
+
+- **One entry.** For the Executive (main role R07), "اللوحة التنفيذية" and "لوحة المحفظة" opened the same Portfolio Dashboard. Now:
+  - the Portfolio menu has one entry, named "اللوحة التنفيذية";
+  - the Dashboards menu's "اللوحات" is not offered to them;
+  - on the Home's quick actions (point 08), "اللوحات" is hidden and the portfolio action reads "اللوحة التنفيذية".
+  - Both addresses show the same page, under that title.
+- **The page opens on five headline figures**, compact (point 11), each opening its list (point 01):
+  - total value;
+  - average actual against average planned, with the gap;
+  - stalled projects (`onPlan=STALLED`);
+  - critical risks (the Critical Risks page, read the same way so the count and the page agree);
+  - decisions waiting (the approvals inbox). R07 holds APPROVAL_DECIDE.
+- **Then the top risks and the decisions waiting**, before any chart or table.
+  - The five most exposed open risks across the portfolio, each opening its risk, with "كل المخاطر الحرجة" and the risk register.
+  - The first five approval tasks, each with its subject and due date.
+- **Then the charts, and the tables last**, as before.
+- **The data is read once for both parts** (`ExecutiveSections.tsx`).
+- **Other roles are unchanged.** local.r02 still sees its six cards and "لوحة المحفظة".
+- **Checked by a component test.** localhost has no account holding only R07 — local.r07 also holds R02, so it lands as the Portfolio Manager (see point 10). The test (`insights.test.tsx`, "one dashboard for the Executive") renders the dashboard as R07 and checks:
+  - five headline cards and their links;
+  - the order headline, then attention, then charts and tables;
+  - the title;
+  - that neither "لوحة المحفظة" nor "اللوحات" is in the menu.
+- **Insights tests.** The 25 tests pass; the value card's test now expects "1.5 million SAR" with "1,500,000 SAR" on hover (point 11).

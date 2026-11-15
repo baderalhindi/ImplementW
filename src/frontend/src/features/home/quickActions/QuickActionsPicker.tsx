@@ -12,6 +12,7 @@ import {
   type QuickActionContext,
   availableQuickActions,
   defaultQuickActionCodes,
+  quickActionLabel,
 } from './quickActions.ts';
 
 interface QuickActionsPickerProps {
@@ -121,7 +122,7 @@ function PickerBody({
               if (entry === undefined) {
                 return null;
               }
-              const name = t(entry.label);
+              const name = t(quickActionLabel(entry, context));
               return (
                 <li
                   key={code}
@@ -199,7 +200,7 @@ function PickerBody({
                 <CheckboxField
                   key={entry.code}
                   name={`quick-action-${entry.code}`}
-                  label={t(entry.label)}
+                  label={t(quickActionLabel(entry, context))}
                   checked={picked}
                   disabled={full && !picked}
                   onChange={() => {

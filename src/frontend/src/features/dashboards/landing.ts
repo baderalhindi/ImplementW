@@ -19,6 +19,9 @@ export interface RoleLanding {
   dashboardLine: TranslationKey | null;
 }
 
+/** The Executive (R07): one dashboard, laid out for them (review round 8, point 14). */
+export const EXECUTIVE_ROLE = 'R07';
+
 /** Blueprint §20.2, role for role: the landing pages, each the role dashboard of the same audience (§21). */
 export const ROLE_LANDINGS: Readonly<Record<string, RoleLanding>> = {
   R01: {

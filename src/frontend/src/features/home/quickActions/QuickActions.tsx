@@ -1,13 +1,19 @@
 import { type ReactElement, useState } from 'react';
 import { Link } from 'react-router';
 
+import { EXECUTIVE_ROLE, landingRole } from '@/features/dashboards/landing.ts';
 import { useDashboardCatalogue } from '@/features/dashboards/useDashboardCatalogue.ts';
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
 import { ProjectActionDialog } from './ProjectActionDialog.tsx';
-import { type QuickAction, type QuickActionContext, shownQuickActions } from './quickActions.ts';
+import {
+  type QuickAction,
+  type QuickActionContext,
+  quickActionLabel,
+  shownQuickActions,
+} from './quickActions.ts';
 import { QuickActionsPicker } from './QuickActionsPicker.tsx';
 import { useQuickActions } from './useQuickActions.ts';
 
@@ -45,6 +51,7 @@ export function QuickActions({ user }: { user: SessionUser }): ReactElement | nu
     can,
     external: user.userType === 'EXTERNAL',
     portfolioDashboard: (dashboards.data ?? []).some((entry) => entry.code === 'PORTFOLIO'),
+    executive: landingRole(user) === EXECUTIVE_ROLE,
   };
   const shown = shownQuickActions(quick.saved, context);
 
@@ -54,7 +61,7 @@ export function QuickActions({ user }: { user: SessionUser }): ReactElement | nu
         {shown.map((entry) => (
           <li key={entry.code}>
             {'to' in entry.target ? (
-              <Link to={entry.target.to}>{t(entry.label)}</Link>
+              <Link to={entry.target.to}>{t(quickActionLabel(entry, context))}</Link>
             ) : (
               <button
                 type="button"
@@ -62,7 +69,7 @@ export function QuickActions({ user }: { user: SessionUser }): ReactElement | nu
                   setInProject(entry);
                 }}
               >
-                {t(entry.label)}
+                {t(quickActionLabel(entry, context))}
               </button>
             )}
           </li>

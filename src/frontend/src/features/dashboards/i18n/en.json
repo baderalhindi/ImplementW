@@ -322,5 +322,26 @@
     "R07": "The portfolio’s headline indicators: value and progress, stalled projects and critical risks.",
     "R08": "Your entity’s projects, the updates requested from it, and your response rate against the entities’ average."
   },
-  "portfolioLine": "The performance of the projects in your scope: progress against plan and what needs follow-up, by portfolio, sector and entity."
+  "portfolioLine": "The performance of the projects in your scope: progress against plan and what needs follow-up, by portfolio, sector and entity.",
+  "executive": {
+    "actualVsPlanned": "Actual against planned",
+    "actualThenPlanned": "Actual / planned",
+    "stalled": "Stalled projects",
+    "criticalRisks": "Critical risks",
+    "noMatrix": "No published risk matrix",
+    "wholePortfolio": "Across the whole portfolio",
+    "waitingDecision": "Waiting for your decision",
+    "waitingDecisionNote": "In your approvals inbox",
+    "topRisks": "Top risks",
+    "allCritical": "All critical risks",
+    "risksUnavailable": "The risks could not be shown now.",
+    "noOpenRisks": "No open risks",
+    "notAssessed": "Not assessed yet",
+    "riskRegister": "Risk register",
+    "decisions": "Waiting for your decision",
+    "allDecisions": "Approvals inbox",
+    "decisionsUnavailable": "The approvals could not be shown now.",
+    "noDecisions": "Nothing waits for your decision",
+    "noDecisionsHint": "When a request is sent to you for approval, it shows here."
+  }
 }

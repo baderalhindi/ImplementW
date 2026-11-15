@@ -64,7 +64,10 @@ export function HostedDashboard({
   filters,
   onFilterChange,
   onClearFilters,
+  executive = false,
 }: {
+  /** Review round 8, point 14: the Executive's one dashboard, laid out for them. */
+  executive?: boolean;
   entry: DashboardCatalogueEntry;
   filters: PortfolioFilters;
   onFilterChange: (name: FilterName, value: string | undefined) => void;
@@ -167,6 +170,7 @@ export function HostedDashboard({
           filters={filters}
           emptySaidElsewhere={view.data !== undefined && hasNoData(view.data)}
           onClearFilters={onClearFilters}
+          executive={executive}
         />
       )}
       {view.data === undefined ? (

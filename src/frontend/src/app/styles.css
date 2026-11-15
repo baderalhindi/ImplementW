@@ -7447,3 +7447,35 @@ tr[data-flagged='true'] {
   color: var(--color-text-muted);
   font-size: 0.8rem;
 }
+
+/* Review round 8, point 14: the Executive's dashboard — five headline figures, then the top risks beside the decisions waiting. */
+.executive__pair {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.executive__versus {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.executive__attention {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: var(--space-4);
+}
+
+.executive__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+.executive__list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  align-items: baseline;
+}

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 
 import { translate } from '@/shared/i18n/i18n.ts';
-import { dashboardView, withDashboards } from '@/test/dashboardFixtures.ts';
+import { catalogueFor, dashboardView, withDashboards } from '@/test/dashboardFixtures.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
 import { type MockApi, mockApi, page } from '@/test/mockApi.ts';
 import {
@@ -174,7 +174,11 @@ describe('the sections', () => {
       expect(section('headline')).not.toBeNull();
     });
     const headline = present(section('headline'));
-    expect(plain(headline.textContent)).toContain('1,500,000 SAR');
+    // Review round 8, point 11: a card's amount is compact, with the full figure on hover.
+    expect(plain(headline.textContent)).toContain('1.5 million SAR');
+    expect(plain(headline.querySelector('[title*="SAR"]')?.getAttribute('title'))).toBe(
+      '1,500,000 SAR',
+    );
     expect(plain(headline.textContent)).toContain('Value entered for 167 of 167');
     expect(plain(headline.textContent)).toContain('Overdue actions: 4');
   });
@@ -647,5 +651,61 @@ describe('the entity completion donut (round 7, item 5)', () => {
     expect(
       screen.getByRole('table', { name: en('externalParticipation.completion.title') }),
     ).toBeTruthy();
+  });
+});
+
+describe('review round 8, point 14: one dashboard for the Executive', () => {
+  test('the Executive opens on five headline figures, then the top risks and the decisions waiting, before any chart or table', async () => {
+    const api = dashboardApi(fullInsights());
+    withDashboards(api, {
+      catalogue: catalogueFor(['R07']),
+      views: { PORTFOLIO: dashboardView('PORTFOLIO') },
+    });
+    api.on('GET', /^\/approval-tasks$/, { body: page([]) });
+    renderApp({ path: DASHBOARD, session: sessionFor(['R07']) });
+
+    const headline = present(await waitFor(() => present(section('executive-headline'))));
+    const cards = within(headline).getAllByRole('listitem');
+    expect(cards).toHaveLength(5);
+    expect(
+      within(headline)
+        .getByRole('link', { name: en('dashboards.executive.stalled') })
+        .getAttribute('href'),
+    ).toContain('onPlan=STALLED');
+    expect(
+      within(headline)
+        .getByRole('link', { name: en('dashboards.executive.criticalRisks') })
+        .getAttribute('href'),
+    ).toBe('/risks/critical');
+    expect(
+      within(headline)
+        .getByRole('link', { name: en('dashboards.executive.waitingDecision') })
+        .getAttribute('href'),
+    ).toBe('/approvals/inbox');
+
+    const attention = present(section('executive-attention'));
+    const firstTable = document.querySelector('main table');
+    const firstChart = screen.getByRole('heading', {
+      level: 2,
+      name: en('dashboards.insights.byStatus'),
+    });
+    // The headline, then the attention, then the charts and the tables, in the page's order.
+    expect(
+      headline.compareDocumentPosition(attention) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      attention.compareDocumentPosition(firstChart) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    if (firstTable !== null) {
+      expect(
+        attention.compareDocumentPosition(firstTable) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+    // One dashboard: the page and the menu call it "the Executive dashboard", and the menu has no second dashboard.
+    expect(
+      screen.getByRole('heading', { level: 1, name: en('dashboards.landing.R07') }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('link', { name: en('common.menu.portfolioDashboard') })).toBeNull();
+    expect(screen.queryByRole('link', { name: en('common.menu.dashboards') })).toBeNull();
   });
 });

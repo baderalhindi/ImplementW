@@ -17,7 +17,13 @@ import { type DashboardCatalogueEntry } from './api/types.ts';
 import { type PortfolioFilters } from './api/dashboardsApi.ts';
 import { type FilterName } from './components/PortfolioFilterBar.tsx';
 import { HostedDashboard } from './HostedDashboard.tsx';
-import { hostedEntries, landingRole, ROLE_LANDINGS, selectedEntry } from './landing.ts';
+import {
+  EXECUTIVE_ROLE,
+  hostedEntries,
+  landingRole,
+  ROLE_LANDINGS,
+  selectedEntry,
+} from './landing.ts';
 import { DASHBOARDS_PATH } from './paths.ts';
 import { dashboardProblemMessage } from './problems.ts';
 import { ProjectLanding } from './ProjectLanding.tsx';
@@ -194,6 +200,7 @@ export function DashboardsPage(): ReactElement {
               filters={filters}
               onFilterChange={setFilter}
               onClearFilters={clearFilters}
+              executive={role === EXECUTIVE_ROLE && rendering !== undefined}
             />
             {/* The 13 Nov 2026 review: the dashboard's cards come first; this table joins its tables below them. */}
             {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && (

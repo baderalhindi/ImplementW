@@ -20,12 +20,16 @@ export interface QuickActionContext {
   external: boolean;
   /** Whether the dashboard catalogue offers this person the Portfolio Dashboard (its audience is its roles, ADR-006). */
   portfolioDashboard: boolean;
+  /** The Executive has one dashboard, the Portfolio Dashboard named "اللوحة التنفيذية" (review round 8, point 14). */
+  executive: boolean;
 }
 
 export interface QuickAction {
   code: string;
   group: QuickActionGroup;
   label: TranslationKey;
+  /** A name that depends on who looks: the Executive's dashboard (point 14). */
+  labelFor?: (context: QuickActionContext) => TranslationKey;
   /** A page to open; or, for an action done inside one project, the project's tab, opened after the person picks the project. */
   target:
     { to: string } | { projectTab: 'progress' | 'financials' | 'risks' | 'issues-challenges' };
@@ -44,17 +48,21 @@ const action = (
 /** The catalogue, in the order the picker lists it. */
 export const QUICK_ACTIONS: readonly QuickAction[] = [
   action('projectRegister', 'open', { to: '/projects' }, ({ can }) => can('PROJECT_VIEW')),
-  action(
-    'portfolioDashboard',
-    'open',
-    { to: PORTFOLIO_DASHBOARD_PATH },
-    (c) => c.portfolioDashboard,
-  ),
+  {
+    ...action(
+      'portfolioDashboard',
+      'open',
+      { to: PORTFOLIO_DASHBOARD_PATH },
+      (c) => c.portfolioDashboard,
+    ),
+    labelFor: (c) => (c.executive ? 'dashboards.landing.R07' : label('portfolioDashboard')),
+  },
+  // The Executive's one dashboard is the one above (point 14).
   action(
     'dashboards',
     'open',
     { to: DASHBOARDS_PATH },
-    (c) => !c.external && c.can('PROJECT_VIEW'),
+    (c) => !c.external && !c.executive && c.can('PROJECT_VIEW'),
   ),
   action('reports', 'open', { to: '/reports' }, ({ can }) => can('PROJECT_VIEW')),
   action('notificationPreferences', 'open', { to: '/notifications/preferences' }, () => true),
@@ -120,4 +128,9 @@ export function shownQuickActions(
     .map((code) => BY_CODE.get(code))
     .filter((entry): entry is QuickAction => entry?.allowed(context) === true)
     .slice(0, MAX_QUICK_ACTIONS);
+}
+
+/** The action's name for this person. */
+export function quickActionLabel(entry: QuickAction, context: QuickActionContext): TranslationKey {
+  return entry.labelFor?.(context) ?? entry.label;
 }

@@ -17,6 +17,7 @@ import {
 } from '@/features/external-participation/paths.ts';
 import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
 import { type DashboardCatalogueEntry } from '@/features/dashboards/api/types.ts';
+import { EXECUTIVE_ROLE, landingRole } from '@/features/dashboards/landing.ts';
 import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
 import { dashboardNavigation } from '@/features/dashboards/routes.tsx';
 import { dataImportNavigation } from '@/features/data-import/routes.tsx';
@@ -102,10 +103,18 @@ export function isCurrent(to: string, pathname: string, search: string): boolean
  * audience is its roles (ADR-006), not a permission, and only the API knows a created role's: whoever its catalogue offers
  * the Portfolio Dashboard (dashboards.md D-2).
  */
-function portfolioNavigation(dashboards: readonly DashboardCatalogueEntry[]): NavigationItem[] {
+function portfolioNavigation(
+  dashboards: readonly DashboardCatalogueEntry[],
+  executive: boolean,
+): NavigationItem[] {
   return dashboards.some((entry) => entry.code === 'PORTFOLIO')
     ? [
-        { to: PORTFOLIO_DASHBOARD_PATH, label: 'common.menu.portfolioDashboard', end: true },
+        {
+          to: PORTFOLIO_DASHBOARD_PATH,
+          // Review round 8, point 14: the Executive's one dashboard goes by its name, "اللوحة التنفيذية".
+          label: executive ? 'dashboards.landing.R07' : 'common.menu.portfolioDashboard',
+          end: true,
+        },
         {
           to: '/reports/portfolio',
           label: 'common.menu.portfolioReports',
@@ -201,6 +210,8 @@ export function menusFor(
   dashboards: readonly DashboardCatalogueEntry[],
 ): Menu[] {
   const auditItems = auditNavigation(audit);
+  const executive =
+    landingRole(user) === EXECUTIVE_ROLE && dashboards.some((entry) => entry.code === 'PORTFOLIO');
   const administrative =
     audit?.categories.some((category) => ADMINISTRATIVE_AUDIT.includes(category)) ?? false;
   const businessAudit = administrative
@@ -216,7 +227,7 @@ export function menusFor(
       'portfolio',
       'common.menu.portfolio',
       ['/kpis', '/reports/portfolio'],
-      portfolioNavigation(dashboards),
+      portfolioNavigation(dashboards, executive),
     ),
     menu(
       'projects',
@@ -262,7 +273,11 @@ export function menusFor(
       'dashboardsReports',
       'common.menu.dashboardsReports',
       ['/dashboards', '/reports'],
-      [...(user.userType === 'EXTERNAL' ? [] : dashboardNavigation), ...reportNavigation(user)],
+      // Review round 8, point 14: the Executive's dashboard is the Portfolio menu's, not a second one here.
+      [
+        ...(user.userType === 'EXTERNAL' || executive ? [] : dashboardNavigation),
+        ...reportNavigation(user),
+      ],
     ),
     menu('notifications', 'common.menu.notifications', ['/notifications'], notificationNavigation),
     menu('administration', 'common.menu.administration', ['/admin'], administration),

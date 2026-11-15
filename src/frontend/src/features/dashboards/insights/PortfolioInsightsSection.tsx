@@ -8,7 +8,7 @@ import {
 import { Link, useLocation } from 'react-router';
 
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
-import { type FollowUpReason, type OnPlanStatus } from '@/features/projects/api/types.ts';
+import { type FollowUpReason } from '@/features/projects/api/types.ts';
 import { GapValue, OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
 import { languageTag } from '@/features/projects/presentation.ts';
 import { sarWhole } from '@/shared/format/money.ts';
@@ -56,6 +56,9 @@ import { BarChart, DonutChart, GroupedColumnChart } from '../components/Charts.t
 import { followUpPath, registerPath } from '../drillLinks.ts';
 import { portfolioCardPath } from '../paths.ts';
 import { emptyPortfolioReason } from '../presentation.ts';
+import { Card } from './Card.tsx';
+import { ON_PLAN_TONES } from './onPlanTones.ts';
+import { ExecutiveTop } from './ExecutiveSections.tsx';
 
 import { Coverage, Percent } from './figures.tsx';
 
@@ -107,8 +110,11 @@ export function PortfolioInsightsSection({
   filters,
   emptySaidElsewhere,
   onClearFilters,
+  executive = false,
 }: {
   filters: PortfolioFilters;
+  /** Review round 8, point 14: the Executive's one dashboard, headline figures then top risks and decisions before any chart or table. */
+  executive?: boolean;
   /** Clears the dashboard's filters: offered when they are why nothing shows (review round 8, point 09). */
   onClearFilters: () => void;
   /** The dashboard under this section already says there is no data. */
@@ -182,15 +188,19 @@ export function PortfolioInsightsSection({
   }
   const { followUpReasons, topFollowUp } = insights.data;
   const anything = count !== null || followUpReasons !== null || topFollowUp !== null;
-  return anything ? <Sections insights={insights.data} filters={filters} /> : null;
+  return anything ? (
+    <Sections insights={insights.data} filters={filters} executive={executive} />
+  ) : null;
 }
 
 function Sections({
   insights,
   filters,
+  executive,
 }: {
   insights: PortfolioInsights;
   filters: PortfolioFilters;
+  executive: boolean;
 }): ReactElement {
   const { t } = useI18n();
   const lookups = useProjectLookups();
@@ -209,7 +219,11 @@ function Sections({
 
   return (
     <div className="insights">
-      {headline !== null && <Headline headline={headline} filters={filters} />}
+      {executive ? (
+        <ExecutiveTop headline={headline} onPlan={onPlan} filters={filters} />
+      ) : (
+        headline !== null && <Headline headline={headline} filters={filters} />
+      )}
       <InsightCharts
         filters={filters}
         byPortfolio={byPortfolio}
@@ -287,43 +301,6 @@ function InsightSection({
 }
 
 /** A headline card; with `to`, its whole surface opens the records it counts. */
-function Card({
-  label,
-  children,
-  tone,
-  to,
-  hint,
-}: {
-  label: string;
-  children: ReactNode;
-  tone?: StatusTone | undefined;
-  to?: string | undefined;
-  hint?: string | undefined;
-}): ReactElement {
-  return (
-    <li
-      className={`home__tile insights__card${to === undefined ? '' : ' home__tile--linked'}`}
-      data-tone={tone}
-      title={hint}
-    >
-      {to === undefined ? (
-        <span className="home__tile-label">{label}</span>
-      ) : (
-        <Link className="home__tile-label home__tile-link" to={to}>
-          {label}
-        </Link>
-      )}
-      {children}
-    </li>
-  );
-}
-
-const ON_PLAN_TONES: Record<OnPlanStatus, StatusTone> = {
-  ON_TRACK: 'positive',
-  LATE: 'warning',
-  STALLED: 'negative',
-};
-
 function Headline({
   headline,
   filters,
