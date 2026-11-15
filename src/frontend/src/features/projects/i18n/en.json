@@ -623,6 +623,7 @@
     "actual": "Actual",
     "planned": "Planned to date",
     "noBaseline": "No approved baseline yet: the schedule gives no figure until one is approved.",
-    "cardTitle": "How progress is calculated"
+    "cardTitle": "How progress is calculated",
+    "setUpPlanTitle": "Set the stage plan."
   }
 }

@@ -6951,3 +6951,27 @@ tr[data-flagged='true'] {
 .overview-card h3 {
   margin-block: var(--space-4) var(--space-2);
 }
+
+/* The progress card: its header, the set-up notice and the source line, each with room around it. */
+.overview-card .stage-progress__header {
+  margin-block-end: var(--space-3);
+}
+
+.overview-card .stage-progress__header h2 {
+  margin: 0;
+}
+
+.overview-card .notice {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.overview-card .notice p {
+  margin: 0;
+}
+
+.overview-card .overall-progress__source {
+  margin-block-start: var(--space-3);
+}

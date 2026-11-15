@@ -61,7 +61,8 @@ export function OverallProgressPanel({
               {t('projects.progressMethod.change')}
             </button>
           )}
-          {progress.method === 'STAGES' && (
+          {/* While the plan is missing, the notice below offers setting it; the header does not repeat it. */}
+          {progress.method === 'STAGES' && !(progress.needsSetup && settable) && (
             <button
               type="button"
               className="button"
@@ -69,9 +70,7 @@ export function OverallProgressPanel({
                 setDialog('plan');
               }}
             >
-              {progress.needsSetup && settable
-                ? t('projects.stageProgress.setPlan')
-                : t('projects.stageProgress.openPlan')}
+              {t('projects.stageProgress.openPlan')}
             </button>
           )}
         </p>
@@ -79,7 +78,13 @@ export function OverallProgressPanel({
       {progress.needsSetup && settable && (
         <div className="notice notice--warning" role="status">
           <p>
-            <strong>{t('projects.overallProgress.setUp')}</strong>{' '}
+            <strong>
+              {t(
+                progress.method === null
+                  ? 'projects.overallProgress.setUp'
+                  : 'projects.overallProgress.setUpPlanTitle',
+              )}
+            </strong>{' '}
             {t(
               progress.method === null
                 ? 'projects.overallProgress.setUpMethod'
