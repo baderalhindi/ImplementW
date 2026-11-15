@@ -6484,66 +6484,30 @@ tr[data-flagged='true'] {
   font-size: 0.85rem;
 }
 
-/* Review round 8, point 03: the completion donut beside five entities with their rate, then how many entities each figure covers. */
+/* Review round 8, point 03, and the user's change of 16 Nov 2026: the completion donut with every entity in it beside it, then how many entities
+   each figure covers. A long legend scrolls beside the ring rather than stretching the card. */
 .completion-donut {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-2);
   align-items: start;
 }
 
-.completion-donut__list {
-  display: grid;
-  gap: var(--space-2);
+.distribution--donut > .grouped-columns__legend.completion-donut__legend {
+  align-self: start;
+  max-block-size: 16rem;
+  overflow-y: auto;
+  font-size: 0.9375rem;
 }
 
-.completion-donut__order {
+.grouped-columns__legend.completion-donut__legend li {
   display: flex;
-  gap: var(--space-1);
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
-.completion-donut__order [aria-pressed='true'] {
-  border-color: var(--color-primary);
-  background: var(--color-primary-tint);
+.completion-donut__rate {
   font-weight: 600;
-}
-
-.completion-donut__entities {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 0.875rem;
-}
-
-.completion-donut__entities li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-1) var(--space-3);
-}
-
-.completion-donut__track {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  block-size: 0.5rem;
-  border-radius: 999px;
-  background: var(--color-neutral-surface);
-  overflow: hidden;
-}
-
-.completion-donut__fill {
-  display: block;
-  block-size: 100%;
-  border-radius: inherit;
-  background: var(--chart-single);
-}
-
-.completion-donut__figures {
-  display: inline-flex;
-  gap: var(--space-2);
-  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .completion-donut__more {

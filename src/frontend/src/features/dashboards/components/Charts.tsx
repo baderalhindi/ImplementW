@@ -118,7 +118,7 @@ export function DonutChart({
         }
       >
         <span className="donut__value" dir="ltr">
-          {hovered === undefined ? (summary?.value ?? total) : hovered.count}
+          {hovered === undefined ? (summary?.value ?? total) : (hovered.value ?? hovered.count)}
         </span>
         <span className="donut__label">
           {hovered !== undefined && <span className="distribution__key" />}

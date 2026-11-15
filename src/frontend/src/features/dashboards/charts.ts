@@ -10,6 +10,8 @@ import { type DashboardWidgetType } from './api/types.ts';
 export interface ChartBucket {
   key: string;
   count: number;
+  /** What the donut's centre shows for it when hovered, in place of its count, such as an entity's rate. */
+  value?: string | undefined;
   text: string;
   color: string;
   href?: string | undefined;

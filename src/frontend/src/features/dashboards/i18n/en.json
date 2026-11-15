@@ -296,11 +296,6 @@
     "completionAverageHint": "The simple average of each entity's completion rate (requests accepted ÷ requests issued), over the entities that had requests in the period. Each entity counts once.",
     "completionWithRequests": "of {count} entities with requests in the period",
     "completionNoRequests": "{count} entities with no requests in the period",
-    "completionOrder": "Order of the entities",
-    "completionOrders": {
-      "lowest": "Lowest",
-      "highest": "Highest"
-    },
     "completionNone": "No entity had requests in the period.",
     "completionCounts": "{accepted} of {issued}",
     "completionSeeMore": "See more",

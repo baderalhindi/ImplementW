@@ -20,8 +20,9 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import {
+  bandOf,
   COMPLETION_BAND_PARAM,
-  type CompletionBandKey,
+  COMPLETION_BANDS,
   ENTITY_COMPLETION_ANCHOR,
   percent,
   periodLabel,
@@ -1054,35 +1055,47 @@ function BucketLegend({ buckets }: { buckets: ChartBucket[] }): ReactElement {
   );
 }
 
-/** Each band's fill, highest band first. Entities with no request in the period are not in the ring (review round 8, point 03). */
+/** Each band's fill, highest band first: an entity's slice takes the colour of the band its rate falls in. */
 const COMPLETION_BAND_TONES: StatusTone[] = ['positive', 'info', 'warning', 'negative'];
 
-/** How many entities the list beside the donut shows. */
-const COMPLETION_LIST_SIZE = 5;
+/** The legend beside the completion donut: every entity in the ring with its rate, each opening its request monitor. */
+function EntityCompletionLegend({ buckets }: { buckets: ChartBucket[] }): ReactElement {
+  return (
+    <ul className="grouped-columns__legend completion-donut__legend">
+      {buckets.map((bucket) => (
+        <li key={bucket.key}>
+          <Link className="drill-link" to={bucket.href ?? ''} title={bucket.hint} dir="auto">
+            <span
+              className="distribution__key"
+              style={{ '--chart-color': bucket.color } as CSSProperties}
+            />
+            {bucket.text}
+          </Link>
+          <span className="completion-donut__rate" dir="ltr">
+            {bucket.value}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /**
- * The update completion of the entities, at a glance (round 7, item 5; review round 8, point 03). The centre is the simple average of the entities that
- * had requests in the period, each counted once; the ring splits only those entities into the four bands, and those with no request are counted on a
- * line under it. Beside it, five entities with their rate, lowest first by default, each opening its request monitor. A band and "see more" open the
- * entity table below, filtered to the band when one was clicked (point 01). The card title names the period the table shows.
+ * The update completion of the entities, at a glance (round 7, item 5; review round 8, point 03; the user's change of 16 Nov 2026): the ring is the
+ * entities that had requests in the period, one equal slice each in the colour of its rate's band, and the centre their simple average, each entity
+ * counted once. The legend names each with its rate, lowest first, and opens its request monitor; those with no request are counted on a line under
+ * the ring. "See more" opens the entity table below. The card title names the period the table shows.
  */
 function EntityCompletionChart(): ReactElement {
   const { t, language } = useI18n();
   const location = useLocation();
   const { period } = useCompletionPeriod();
   const completion = useEntityCompletionBands();
-  const [order, setOrder] = useState<'lowest' | 'highest'>('lowest');
   // Review round 8, point 09: whoever sends the monthly update requests is offered to, where entities had none in the period.
   const sendsRequests = useCan('UPDATE_REQUEST_SEND');
-  const tableLink = (band: CompletionBandKey | null) => {
-    const query = new URLSearchParams(location.search);
-    if (band === null) {
-      query.delete(COMPLETION_BAND_PARAM);
-    } else {
-      query.set(COMPLETION_BAND_PARAM, band);
-    }
-    return `${location.pathname}?${query.toString()}#${ENTITY_COMPLETION_ANCHOR}`;
-  };
+  const tableQuery = new URLSearchParams(location.search);
+  tableQuery.delete(COMPLETION_BAND_PARAM);
+  const tableLink = `${location.pathname}?${tableQuery.toString()}#${ENTITY_COMPLETION_ANCHOR}`;
   return (
     <ChartCard title={`${t('dashboards.insights.completion')} · ${periodLabel(period, language)}`}>
       {(active, onActive) => {
@@ -1097,120 +1110,73 @@ function EntityCompletionChart(): ReactElement {
             />
           );
         }
-        const { averagePercent, entities, bands, noRequests } = completion.data;
+        const { averagePercent, entities, noRequests } = completion.data;
         const colors = bucketColors(COMPLETION_BAND_TONES, true);
-        const buckets: ChartBucket[] = bands.map((band, index) => ({
-          key: band.key,
-          count: band.entities.length,
-          text: t(`dashboards.insights.completionBands.${band.key}`),
-          color: colors[index] ?? 'var(--chart-single)',
-          href: tableLink(band.key),
-          hint: t('dashboards.drill.entities', { count: band.entities.length }),
-        }));
-        const listed = (order === 'lowest' ? entities : [...entities].reverse()).slice(
-          0,
-          COMPLETION_LIST_SIZE,
-        );
+        const buckets: ChartBucket[] = entities.map((entity) => {
+          const band = bandOf(entity.percent);
+          return {
+            key: entity.id,
+            count: 1,
+            value: percent(entity.percent),
+            text: entity.name,
+            color:
+              colors[COMPLETION_BANDS.findIndex((candidate) => candidate.key === band)] ??
+              'var(--chart-single)',
+            href: `${PARTICIPATION_MONITOR_PATH}?externalEntityId=${entity.id}`,
+            hint: t('dashboards.insights.completionCounts', {
+              accepted: entity.accepted,
+              issued: entity.issued,
+            }),
+          };
+        });
         return (
-          <>
-            <div className="completion-donut">
-              <div className="completion-donut__chart">
-                <div
-                  className="distribution distribution--donut"
-                  title={t('dashboards.insights.completionAverageHint')}
-                >
-                  <DonutChart
-                    buckets={buckets}
-                    active={active}
-                    onActive={onActive}
-                    totalLabel={t('dashboards.insights.completionEntities')}
-                    summary={{
-                      value: averagePercent === null ? '—' : percent(averagePercent),
-                      label: t('dashboards.insights.completionAverage'),
-                    }}
-                  />
-                  <BucketLegend buckets={buckets} />
-                </div>
-                <p className="insights__coverage">
-                  {t('dashboards.insights.completionWithRequests', { count: entities.length })}
+          <div className="completion-donut">
+            <div
+              className="distribution distribution--donut"
+              title={t('dashboards.insights.completionAverageHint')}
+            >
+              <DonutChart
+                buckets={buckets}
+                active={active}
+                onActive={onActive}
+                totalLabel={t('dashboards.insights.completionEntities')}
+                summary={{
+                  value: averagePercent === null ? '—' : percent(averagePercent),
+                  label: t('dashboards.insights.completionAverage'),
+                }}
+              />
+              {buckets.length === 0 ? (
+                <p className="form__note">
+                  {t('dashboards.insights.completionNone')} {t('common.empty.period')}
                 </p>
-                <p className="insights__coverage">
-                  {t('dashboards.insights.completionNoRequests', { count: noRequests })}
-                </p>
-                {noRequests > 0 && (
-                  <div className="insights__empty-hint" role="note">
-                    <p>
-                      {t('dashboards.insights.completionNoRequestsHint', {
-                        period: periodLabel(period, language),
-                      })}
-                    </p>
-                    {sendsRequests && (
-                      <Link className="button" to={NEW_UPDATE_BATCH_PATH}>
-                        {t('dashboards.insights.sendUpdateRequests')}
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="completion-donut__list">
-                <div
-                  className="completion-donut__order"
-                  role="group"
-                  aria-label={t('dashboards.insights.completionOrder')}
-                >
-                  {(['lowest', 'highest'] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      className="button button--quiet"
-                      aria-pressed={order === value}
-                      onClick={() => {
-                        setOrder(value);
-                      }}
-                    >
-                      {t(`dashboards.insights.completionOrders.${value}`)}
-                    </button>
-                  ))}
-                </div>
-                {listed.length === 0 ? (
-                  <p className="form__note">
-                    {t('dashboards.insights.completionNone')} {t('common.empty.period')}
-                  </p>
-                ) : (
-                  <ol className="completion-donut__entities">
-                    {listed.map((entity) => (
-                      <li key={entity.id}>
-                        <Link
-                          to={`${PARTICIPATION_MONITOR_PATH}?externalEntityId=${entity.id}`}
-                          dir="auto"
-                        >
-                          {entity.name}
-                        </Link>
-                        <span className="completion-donut__track" aria-hidden="true">
-                          <span
-                            className="completion-donut__fill"
-                            style={{ inlineSize: `${String(Math.min(100, entity.percent))}%` }}
-                          />
-                        </span>
-                        <span className="completion-donut__figures">
-                          <span dir="ltr">{percent(entity.percent)}</span>
-                          <span className="cell__aside">
-                            {t('dashboards.insights.completionCounts', {
-                              accepted: entity.accepted,
-                              issued: entity.issued,
-                            })}
-                          </span>
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-                <Link className="completion-donut__more" to={tableLink(null)}>
-                  {t('dashboards.insights.completionSeeMore')}
-                </Link>
-              </div>
+              ) : (
+                <EntityCompletionLegend buckets={buckets} />
+              )}
             </div>
-          </>
+            <p className="insights__coverage">
+              {t('dashboards.insights.completionWithRequests', { count: entities.length })}
+            </p>
+            <p className="insights__coverage">
+              {t('dashboards.insights.completionNoRequests', { count: noRequests })}
+            </p>
+            {noRequests > 0 && (
+              <div className="insights__empty-hint" role="note">
+                <p>
+                  {t('dashboards.insights.completionNoRequestsHint', {
+                    period: periodLabel(period, language),
+                  })}
+                </p>
+                {sendsRequests && (
+                  <Link className="button" to={NEW_UPDATE_BATCH_PATH}>
+                    {t('dashboards.insights.sendUpdateRequests')}
+                  </Link>
+                )}
+              </div>
+            )}
+            <Link className="completion-donut__more" to={tableLink}>
+              {t('dashboards.insights.completionSeeMore')}
+            </Link>
+          </div>
         );
       }}
     </ChartCard>

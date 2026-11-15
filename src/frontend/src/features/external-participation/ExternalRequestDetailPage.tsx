@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { usePersonNames } from '@/features/identity-access/assignments/useUserNames.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
+import { isInternal } from '@/features/projects/access.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { languageTag } from '@/features/projects/presentation.ts';
 import { ConfirmCommandDialog } from '@/features/risks/dialogs/ConfirmCommandDialog.tsx';
@@ -526,11 +527,19 @@ function responseStateText(
   }
   // RESPONDED: the answer is with AHDA, under review or accepted and not yet applied (AHDA's to finish).
   if (request.status === 'RESPONDED' || (current !== null && awaitsReview(current.status))) {
-    return t('externalParticipation.response.withAhda');
+    return t(
+      isInternal(user)
+        ? 'externalParticipation.response.withAhdaInternal'
+        : 'externalParticipation.response.withAhda',
+    );
   }
   return request.responsibleUserId === user.id
     ? t('externalParticipation.response.notOpen')
-    : t('externalParticipation.response.otherResponder');
+    : t(
+        isInternal(user)
+          ? 'externalParticipation.response.otherResponderInternal'
+          : 'externalParticipation.response.otherResponder',
+      );
 }
 
 /**

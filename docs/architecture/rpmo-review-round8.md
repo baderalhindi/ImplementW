@@ -416,3 +416,17 @@ local.r02 already had a saved order (the user's own). The API check reset it, an
   - The total-value card read "64.6 مليار ريال", with "64,553,236,526.17 ريال" on hover.
   - The tables showed whole riyals (37,995,405,870; 187,950,656), and no table cell had halalas.
   - Every note read "القيمة مدخلة لـ 167 من 167 · الإنجاز مقيس لـ 97 من 167 · متوسط بسيط".
+
+## Point 12: one word for each thing
+
+- **Documents.** "المستندات" everywhere: the project tab, its page title ("مستندات المشروع") and the permission matrix group, matching the menu.
+- **Closure.** "الإغلاق" everywhere: the project tab (English "Closure"), its requests title, the banners, the stage panel and the menu group ("التعليق والإغلاق").
+  - The two steps are "الإكمال" and "الإغلاق النهائي". The sentences that set the second step against the whole now say "الإغلاق النهائي", so no sentence reads "الإغلاق is the second step of الإغلاق".
+- **Internal users never see "جهتك".**
+  - A Project Manager's "طلبات التحديث الخاصة بي" reads "الطلبات الموجهة إليك لتحديث بيانات المشاريع المكلَّف بها." Its empty hint and the response states have internal versions too.
+  - The project register's scope sentence says "مشاريع نطاقك" instead of "قطاعك أو جهتك".
+  - Entity users keep "جهتك".
+- **Checked on localhost.**
+  - local.r04 and local.r02 saw no "جهتك", "الوثائق" or "الإقفال" on Home, the register, their requests, documents, closure and suspension.
+  - local.r04's project tabs read "الإغلاق" ("مراحل الإغلاق") and "المستندات" ("مستندات المشروع").
+  - local.r08 still reads "طلبات الهيئة إلى جهتك…".

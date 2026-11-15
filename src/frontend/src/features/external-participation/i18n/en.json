@@ -186,7 +186,9 @@
     "description": "AHDA's requests for updates to your entity, on the projects you are assigned to.",
     "caption": "Update requests to my entity",
     "emptyTitle": "No update requests",
-    "emptyHint": "When AHDA asks your entity for an update, it appears here."
+    "emptyHint": "When AHDA asks your entity for an update, it appears here.",
+    "descriptionInternal": "The requests addressed to you for updates to the projects you are assigned to.",
+    "emptyHintInternal": "When an update request is addressed to you, it appears here."
   },
   "contributions": {
     "title": "My contributions",
@@ -229,7 +231,9 @@
     "cancelled": "AHDA canceled this request.",
     "closed": "This request is closed.",
     "numberHint": "A number, with up to 4 decimal places.",
-    "rangeHint": "A number from {min} to {max}, with up to 4 decimal places."
+    "rangeHint": "A number from {min} to {max}, with up to 4 decimal places.",
+    "withAhdaInternal": "The response is with AHDA for review.",
+    "otherResponderInternal": "Another user answers this request."
   },
   "revision": {
     "number": "Revision {revision}",

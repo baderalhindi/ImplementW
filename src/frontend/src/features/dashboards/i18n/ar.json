@@ -296,11 +296,6 @@
     "completionAverageHint": "المتوسط البسيط لنسبة إنجاز كل جهة (الطلبات المقبولة ÷ الطلبات الصادرة)، على الجهات التي لديها طلبات في الفترة. تُحسب كل جهة مرة واحدة.",
     "completionWithRequests": "من {count} جهة لديها طلبات في الفترة",
     "completionNoRequests": "{count} جهة بلا طلبات في الفترة",
-    "completionOrder": "ترتيب الجهات",
-    "completionOrders": {
-      "lowest": "الأدنى",
-      "highest": "الأعلى"
-    },
     "completionNone": "لا توجد جهة لديها طلبات في الفترة.",
     "completionCounts": "{accepted} من {issued}",
     "completionSeeMore": "عرض المزيد",
