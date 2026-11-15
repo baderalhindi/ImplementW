@@ -142,7 +142,7 @@ export function ConcernRegisterView({
         }}
       />
       {shown.length === 0 ? (
-        <EmptyState title={t('issuesChallenges.empty.filtered')} />
+        <EmptyState title={t('issuesChallenges.empty.filtered')} reason="filter" />
       ) : (
         <ConcernTable
           actions={actions}

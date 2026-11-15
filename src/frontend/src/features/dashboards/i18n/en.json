@@ -304,7 +304,13 @@
     },
     "completionNone": "No entity had requests in the period.",
     "completionCounts": "{accepted} of {issued}",
-    "completionSeeMore": "See more"
+    "completionSeeMore": "See more",
+    "stagePlanNone": "No project has a stage plan yet. Set it up from the project’s Overview.",
+    "stagePlanSome": "{count} projects have no stage plan yet, so they have no current stage. Set it up from the project’s Overview.",
+    "setUpStagePlans": "Set up stage plans",
+    "viewWithoutStagePlan": "View projects without a stage plan",
+    "completionNoRequestsHint": "An entity with no requests was sent no update request in {period}, so it has no completion rate. Choose another period, or send the update requests.",
+    "sendUpdateRequests": "Send update requests"
   },
   "drill": {
     "projects": "View projects ({count})",

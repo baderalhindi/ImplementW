@@ -108,7 +108,7 @@ export function PortfolioSnapshot(): ReactElement | null {
         <div className="section__header">
           <h2 id="home-portfolio">{t('home.portfolio.title')}</h2>
         </div>
-        <EmptyState title={t('dashboards.noData')} />
+        <EmptyState title={t('dashboards.noData')} reason="scope" />
       </section>
     );
   }

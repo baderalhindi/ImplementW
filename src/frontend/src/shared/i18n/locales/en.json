@@ -187,5 +187,13 @@
     "delete": "Delete",
     "deleteTitle": "Delete this record?",
     "deleteBody": "Delete “{name}”? It and what belongs to it leave every list. Its data and history stay on file."
+  },
+  "empty": {
+    "scope": "What shows here follows your role assignments, and none of it is in your scope yet. If you expect to see data here, ask the system administrator to review your role assignments.",
+    "period": "There is nothing in this period. Choose another period to see what it holds.",
+    "setup": "This has not been set up yet. It shows here once it is.",
+    "filter": "Nothing matches the current filters. Change or clear them to see everything.",
+    "notYet": "Nothing has been recorded here yet. It shows here once it is.",
+    "role": "Your current role does not offer this page. If you need it, ask the system administrator to review your role assignments."
   }
 }

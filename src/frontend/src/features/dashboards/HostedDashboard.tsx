@@ -18,7 +18,7 @@ import {
 import { ProjectLocations } from './components/ProjectLocations.tsx';
 import { mayPersonalize } from './landing.ts';
 import { PortfolioInsightsSection } from './insights/PortfolioInsightsSection.tsx';
-import { hasNoData } from './presentation.ts';
+import { emptyPortfolioReason, hasNoData } from './presentation.ts';
 import { PersonalizeDialog } from './PersonalizeDialog.tsx';
 import { dashboardProblemMessage } from './problems.ts';
 
@@ -166,6 +166,7 @@ export function HostedDashboard({
         <PortfolioInsightsSection
           filters={filters}
           emptySaidElsewhere={view.data !== undefined && hasNoData(view.data)}
+          onClearFilters={onClearFilters}
         />
       )}
       {view.data === undefined ? (
@@ -179,7 +180,15 @@ export function HostedDashboard({
           />
         )
       ) : hasNoData(view.data) ? (
-        <EmptyState title={t('dashboards.noData')} />
+        <EmptyState
+          title={t('dashboards.noData')}
+          reason={emptyPortfolioReason(filters)}
+          action={
+            emptyPortfolioReason(filters) === 'scope'
+              ? undefined
+              : { label: t('common.filters.clear'), onClick: onClearFilters }
+          }
+        />
       ) : (
         <>
           {entry.code === 'PORTFOLIO' && (

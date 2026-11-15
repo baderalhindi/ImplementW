@@ -51,7 +51,7 @@ export function ParticipationMonitorPage(): ReactElement {
           />
         )
       ) : requests.data.length === 0 ? (
-        <EmptyState title={t('externalParticipation.monitor.emptyTitle')} />
+        <EmptyState title={t('externalParticipation.monitor.emptyTitle')} reason="notYet" />
       ) : (
         <TableContainer
           caption={t('externalParticipation.monitor.caption')}

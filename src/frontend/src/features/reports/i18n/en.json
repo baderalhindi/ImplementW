@@ -81,7 +81,8 @@
     "running": "Running the report…",
     "empty": "No project in your scope matches.",
     "generatedAt": "Run at {date}. This is when the report ran, not when its sources were current.",
-    "rowCount": "{count} rows"
+    "rowCount": "{count} rows",
+    "chooseParametersHint": "Choose the report’s parameters above and run it; its result shows here."
   },
   "banner": {
     "label": "Coverage and freshness",

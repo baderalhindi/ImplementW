@@ -72,7 +72,7 @@ export function RiskRegisterPage(): ReactElement {
     <>
       {header}
       {entries.length === 0 && carried.chips.length > 0 ? (
-        <EmptyState title={t('risks.empty.filtered')}>
+        <EmptyState title={t('risks.empty.filtered')} reason="filter">
           <Link to="/risks">{t('common.filters.clear')}</Link>
         </EmptyState>
       ) : entries.length === 0 ? (

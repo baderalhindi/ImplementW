@@ -99,6 +99,7 @@ export function IntegrationMonitoringPage(): ReactElement {
               items={catalogue.items}
               caption={t('integrationAdmin.monitoring.health')}
               emptyTitle={t('integrationAdmin.overview.empty')}
+              emptyReason="setup"
             />
           </Section>
           <Section
@@ -109,6 +110,7 @@ export function IntegrationMonitoringPage(): ReactElement {
               items={catalogue.items}
               caption={t('integrationAdmin.queue.title')}
               emptyTitle={t('integrationAdmin.overview.empty')}
+              emptyReason="setup"
             />
           </Section>
           <Section title={t('integrationAdmin.alerts.title')}>
@@ -137,6 +139,7 @@ export function IntegrationMonitoringPage(): ReactElement {
               query={{ statuses: alertStatusesFrom(params) }}
               caption={t('integrationAdmin.alerts.title')}
               emptyTitle={t('integrationAdmin.alerts.none')}
+              emptyReason="notYet"
               refreshEvery={MONITORING_REFRESH_MS}
             />
           </Section>
@@ -148,6 +151,7 @@ export function IntegrationMonitoringPage(): ReactElement {
               query={DEAD_LETTERS}
               caption={t('integrationAdmin.monitoring.deadLetters')}
               emptyTitle={t('integrationAdmin.monitoring.noDeadLetters')}
+              emptyReason="notYet"
               page={deadLetterPage}
               onPageChange={setDeadLetterPage}
               refreshEvery={MONITORING_REFRESH_MS}

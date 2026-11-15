@@ -45,7 +45,7 @@ export function ReviewsTab(): ReactElement {
   }
   const runs = reviews.data?.items ?? [];
   if (runs.length === 0) {
-    return <EmptyState title={t('projects.reviews.empty')} />;
+    return <EmptyState title={t('projects.reviews.empty')} reason="notYet" />;
   }
   return (
     <TableContainer

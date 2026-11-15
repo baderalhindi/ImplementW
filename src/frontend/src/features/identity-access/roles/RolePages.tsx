@@ -209,7 +209,7 @@ export function RoleListPage(): ReactElement {
       )}
       {roles.data !== undefined &&
         (roles.data.length === 0 ? (
-          <EmptyState title={t('identityAccess.roles.list.empty')} />
+          <EmptyState title={t('identityAccess.roles.list.empty')} reason="setup" />
         ) : (
           <TableContainer
             caption={t('identityAccess.roles.list.title')}
@@ -696,7 +696,7 @@ export function RoleDetailPage(): ReactElement {
         <h2 id="profiles-heading">{t('identityAccess.roles.detail.profiles')}</h2>
         <p className="form__note">{t('identityAccess.roles.detail.profilesNote')}</p>
         {detail.profiles.length === 0 ? (
-          <EmptyState title={t('identityAccess.roles.detail.noProfiles')} />
+          <EmptyState title={t('identityAccess.roles.detail.noProfiles')} reason="setup" />
         ) : (
           <ul className="link-list">
             {detail.profiles.map((profile) => (

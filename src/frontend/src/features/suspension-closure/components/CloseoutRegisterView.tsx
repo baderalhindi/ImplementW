@@ -99,7 +99,7 @@ export function CloseoutRegisterView({
         })}
       </p>
       {shown.length === 0 ? (
-        <EmptyState title={t('suspensionClosure.closeout.filter.noMatch')} />
+        <EmptyState title={t('suspensionClosure.closeout.filter.noMatch')} reason="filter" />
       ) : (
         <TableContainer caption={caption} selection={{ selection, exportName: 'closeout-cases' }}>
           <thead>

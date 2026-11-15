@@ -59,7 +59,7 @@ export function SavedViewsPage(): ReactElement {
     return (
       <>
         <PageHeader title={title} />
-        <EmptyState title={t('reports.savedViews.notForRole')} />
+        <EmptyState title={t('reports.savedViews.notForRole')} reason="role" />
       </>
     );
   }
@@ -112,7 +112,7 @@ export function SavedViewsPage(): ReactElement {
       ) : error !== null || data === undefined ? (
         <ErrorState error={error} message={reportProblemMessage(error, t)} onRetry={reload} />
       ) : data.views.items.length === 0 ? (
-        <EmptyState title={t('reports.savedViews.empty')} />
+        <EmptyState title={t('reports.savedViews.empty')} reason="notYet" />
       ) : (
         <>
           <TableContainer

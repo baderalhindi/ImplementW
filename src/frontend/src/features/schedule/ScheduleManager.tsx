@@ -215,7 +215,7 @@ export function ScheduleManager({
           )}
         </div>
         {data.activities.length === 0 ? (
-          <EmptyState title={t('schedule.activities.empty')} />
+          <EmptyState title={t('schedule.activities.empty')} reason="notYet" />
         ) : (
           <TableContainer
             caption={t('schedule.activities.caption')}
@@ -379,7 +379,7 @@ export function ScheduleManager({
           )}
         </div>
         {data.dependencies.length === 0 ? (
-          <EmptyState title={t('schedule.dependencies.empty')} />
+          <EmptyState title={t('schedule.dependencies.empty')} reason="notYet" />
         ) : (
           <TableContainer
             caption={t('schedule.dependencies.caption')}

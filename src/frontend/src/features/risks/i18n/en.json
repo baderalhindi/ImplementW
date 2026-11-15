@@ -83,7 +83,8 @@
       "title": "No risks registered",
       "registrar": "Register the first risk with \"Register risk\".",
       "reader": "The Project Manager registers this project's risks."
-    }
+    },
+    "criticalHint": "No open risk in your scope is rated critical now. One shows here when a risk is rated critical."
   },
   "table": {
     "risk": "Risk",

@@ -113,7 +113,7 @@ export function KpiHistory({
       <section className="section" aria-labelledby="kpi-trend">
         <h3 id="kpi-trend">{t('financialKpi.trend.chartTitle')}</h3>
         {points.length === 0 ? (
-          <EmptyState title={t('financialKpi.trend.empty')} />
+          <EmptyState title={t('financialKpi.trend.empty')} reason="notYet" />
         ) : (
           <>
             <p className="form__note">{t('financialKpi.trend.explanation')}</p>
@@ -194,7 +194,7 @@ export function KpiHistory({
       <section className="section" aria-labelledby="kpi-targets">
         <h3 id="kpi-targets">{t('financialKpi.trend.targetsTitle')}</h3>
         {targets.length === 0 ? (
-          <EmptyState title={t('financialKpi.kpis.noTarget')} />
+          <EmptyState title={t('financialKpi.kpis.noTarget')} reason="setup" />
         ) : (
           <TableContainer
             caption={t('financialKpi.trend.targetsCaption')}

@@ -387,7 +387,7 @@ function ChooseProjects({
       )}
       {projects.data !== undefined &&
         (projects.data.items.length === 0 ? (
-          <EmptyState title={t('projects.list.emptyFiltered')} />
+          <EmptyState title={t('projects.list.emptyFiltered')} reason="filter" />
         ) : (
           <>
             <TableContainer caption={t('externalParticipation.batch.step1.title')}>

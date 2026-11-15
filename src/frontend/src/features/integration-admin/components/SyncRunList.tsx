@@ -60,7 +60,7 @@ export function SyncRunList({
     );
   }
   if (runs.data.items.length === 0) {
-    return <EmptyState title={t('integrationAdmin.syncRuns.empty')} />;
+    return <EmptyState title={t('integrationAdmin.syncRuns.empty')} reason="notYet" />;
   }
   return (
     <>

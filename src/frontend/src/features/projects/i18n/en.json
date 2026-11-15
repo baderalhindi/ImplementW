@@ -94,7 +94,8 @@
     "emptyForRole": "Your role does not give you access to any project yet.",
     "emptyForRoleDescription": "You see the projects your role assignments reach: those of your sector, your entity or the projects you are assigned to. When a project in that scope is registered, it appears here. If you expected to see projects, ask your administrator to check your role assignments.",
     "empty": "No projects yet",
-    "emptyHint": "Use Import or Create project above to add the first one."
+    "emptyHint": "Use Import or Create project above to add the first one.",
+    "createFirst": "Register the first project"
   },
   "mine": {
     "title": "My projects",
@@ -377,7 +378,8 @@
     "due": "Due",
     "onPlan": "On plan",
     "gap": "Gap",
-    "mainReason": "Main reason"
+    "mainReason": "Main reason",
+    "emptyHint": "No project in your scope needs follow-up now: none is stalled, late or suspended, and no action is overdue."
   },
   "import": {
     "nav": "Import projects",

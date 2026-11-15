@@ -53,7 +53,7 @@ export function BatchesPage(): ReactElement {
           />
         )
       ) : batches.data.items.length === 0 ? (
-        <EmptyState title={t('externalParticipation.batch.empty')} />
+        <EmptyState title={t('externalParticipation.batch.empty')} reason="notYet" />
       ) : (
         <>
           <TableContainer

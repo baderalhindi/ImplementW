@@ -204,9 +204,10 @@ function ProjectListEmpty({
 }): ReactElement {
   const { t } = useI18n();
   const mayAdd = useCan('PROJECT_REGISTER', 'PROJECT_IMPORT', 'PROJECT_IMPORT_APPROVE');
+  const canRegister = useCan('PROJECT_REGISTER');
   if (filtered) {
     return (
-      <EmptyState title={t('projects.list.emptyFiltered')}>
+      <EmptyState title={t('projects.list.emptyFiltered')} reason="filter">
         <Link to={basePath}>{t('common.filters.clear')}</Link>
       </EmptyState>
     );
@@ -227,13 +228,16 @@ function ProjectListEmpty({
     );
   }
   return (
-    <EmptyState title={t('projects.register.empty')}>
-      {/* The page header already offers Import and Create project: the empty list points to them rather than repeating them. */}
-      {mayAdd ? (
-        <p>{t('projects.register.emptyHint')}</p>
-      ) : (
-        <p>{t('projects.register.emptyForRoleDescription')}</p>
-      )}
+    <EmptyState
+      title={t('projects.register.empty')}
+      // Review round 8, point 09: where the person can act, the empty list offers the first step.
+      action={
+        canRegister ? { label: t('projects.register.createFirst'), to: '/projects/new' } : undefined
+      }
+    >
+      {/* Review round 8, point 09: the reason first (the list follows the person's assignments), then, for whoever can add, how to. */}
+      <p>{t('projects.register.emptyForRoleDescription')}</p>
+      {mayAdd && <p>{t('projects.register.emptyHint')}</p>}
     </EmptyState>
   );
 }

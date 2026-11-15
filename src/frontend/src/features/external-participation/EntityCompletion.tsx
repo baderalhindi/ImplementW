@@ -105,7 +105,7 @@ export function OwnEntityCompletionCard(): ReactElement {
           />
         )
       ) : own === null ? (
-        <EmptyState title={t('externalParticipation.completion.ownEmpty')} />
+        <EmptyState title={t('externalParticipation.completion.ownEmpty')} reason="period" />
       ) : (
         <>
           <p className="completion__figure">
@@ -212,7 +212,7 @@ function EntityCompletionTable(): ReactElement {
           />
         )
       ) : rates.data.items.length === 0 ? (
-        <EmptyState title={t('externalParticipation.completion.empty')} />
+        <EmptyState title={t('externalParticipation.completion.empty')} reason="period" />
       ) : (
         <>
           {band !== null && (

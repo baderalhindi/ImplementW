@@ -93,7 +93,7 @@ export function UserPermissionsSection({
       )}
       {permissions.data !== undefined &&
         (adjusted.length === 0 ? (
-          <EmptyState title={t('identityAccess.users.permissions.none')} />
+          <EmptyState title={t('identityAccess.users.permissions.none')} reason="notYet" />
         ) : (
           <TableContainer
             caption={t('identityAccess.users.permissions.caption', { name: displayName })}

@@ -46,7 +46,7 @@ export function ReportFamilyPage(): ReactElement {
           onRetry={catalogue.reload}
         />
       ) : entries.length === 0 ? (
-        <EmptyState title={t('reports.family.none')} />
+        <EmptyState title={t('reports.family.none')} reason="role" />
       ) : (
         <ReportList entries={entries} />
       )}

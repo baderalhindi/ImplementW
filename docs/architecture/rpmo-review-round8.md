@@ -370,3 +370,23 @@ local.r02 already had a saved order (the user's own). The API check reset it, an
 
 - Which role may have which action waits for the RACI matrix.
 - The API snapshot and the tests are left for the CI step.
+
+## Point 09: empty screens say why
+
+- **One rule for every empty state.** `EmptyState` (`shared/ui/States.tsx`) now needs a reason: TypeScript refuses an empty state that gives neither a standard `reason` nor its own explanation. The reasons each have one sentence (`common.empty.*`):
+  - `scope`: nothing is in the person's scope; ask the administrator to review the role assignments (the Viewer register's pattern);
+  - `period`: nothing is in this period;
+  - `setup`: nothing has been set up yet;
+  - `filter`: nothing matches the filters;
+  - `notYet`: nothing has been recorded yet;
+  - `role`: the role does not offer the page.
+- **Coverage.** About 70 empty lists, panels and dashboards that showed only a title now say why. Lists that can be filtered give `filter` when a filter is on and their own reason otherwise.
+- **Dashboards.** An empty Portfolio, Home snapshot or insights section says `scope`, `period` (only a year chosen) or `filter` (`emptyPortfolioReason`). With filters on, it offers "مسح التصفية".
+- **Buttons where the person can act.**
+  - The empty project register offers "تسجيل أول مشروع" to whoever holds PROJECT_REGISTER, and now gives the scope reason to everyone.
+  - The stage chart says "لم تُعدّ خطة المراحل لأي مشروع بعد. أعدّها من نظرة عامة المشروع." When only some projects have no stage, it gives their count instead. Its button opens the projects without a stage (point 01's `stage=NONE`): "إعداد خطة المراحل" for whoever sets plans, "عرض المشاريع بلا خطة مراحل" for others.
+  - The requests donut explains that an entity with no requests was sent none in the period, and offers "إرسال طلبات التحديث" to UPDATE_REQUEST_SEND holders.
+- **Checked on localhost.**
+  - local.r02's dashboard showed both hints; the stage hint opened 164 projects with the "لم تُرفع مرحلة بعد" chip.
+  - A status with no projects gave the filter reason and "مسح التصفية"; year 2001 gave the period reason.
+  - local.r05's empty dashboard and register gave the scope reason.

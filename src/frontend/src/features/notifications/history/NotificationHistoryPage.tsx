@@ -108,6 +108,7 @@ export function NotificationHistoryPage(): ReactElement {
             title={
               filtered ? t('notifications.history.emptyFiltered') : t('notifications.history.empty')
             }
+            reason={filtered ? 'filter' : 'notYet'}
           />
         ) : (
           <>

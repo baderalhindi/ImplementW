@@ -300,6 +300,7 @@ export function UserListPage(): ReactElement {
                 ? t('identityAccess.users.list.emptyFiltered')
                 : t('identityAccess.users.list.empty')
             }
+            reason={filtered ? 'filter' : 'setup'}
           />
         ) : (
           <>

@@ -11,7 +11,13 @@ import { TextAreaField } from '@/shared/ui/FormFields.tsx';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
-import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
+import {
+  type EmptyReason,
+  EmptyState,
+  ErrorState,
+  FormAlert,
+  LoadingState,
+} from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
@@ -33,6 +39,8 @@ interface AlertListProps {
   query: OperationalAlertQuery;
   caption: string;
   emptyTitle: string;
+  /** Why the list is empty (review round 8, point 09). */
+  emptyReason: EmptyReason;
   /** Read again this often, in milliseconds (ADM-047, TASK-092). */
   refreshEvery?: number;
 }
@@ -47,6 +55,7 @@ export function AlertList({
   query,
   caption,
   emptyTitle,
+  emptyReason,
   refreshEvery,
 }: AlertListProps): ReactElement {
   const { t } = useI18n();
@@ -94,7 +103,7 @@ export function AlertList({
         />
       );
   } else if (alerts.data.items.length === 0) {
-    content = <EmptyState title={emptyTitle} />;
+    content = <EmptyState title={emptyTitle} reason={emptyReason} />;
   } else {
     content = (
       <>

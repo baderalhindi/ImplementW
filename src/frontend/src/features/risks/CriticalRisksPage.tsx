@@ -124,7 +124,9 @@ function CriticalBody({
               })}
         </p>
         {critical.length === 0 ? (
-          <EmptyState title={t('risks.empty.critical')} />
+          <EmptyState title={t('risks.empty.critical')}>
+            <p>{t('risks.empty.criticalHint')}</p>
+          </EmptyState>
         ) : (
           <RiskTable
             caption={t('risks.critical.caption')}

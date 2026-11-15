@@ -48,7 +48,7 @@ export function ResultGrid({ result, caption, onPageChange }: ResultGridProps): 
         {t('reports.result.rowCount', { count: result.totalCount })}
       </p>
       {result.items.length === 0 ? (
-        <EmptyState title={t('reports.result.empty')} />
+        <EmptyState title={t('reports.result.empty')} reason="filter" />
       ) : (
         <TableContainer caption={caption} selection={{ selection, exportName: 'report-result' }}>
           <thead>

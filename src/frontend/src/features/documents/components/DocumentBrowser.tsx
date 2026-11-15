@@ -194,6 +194,7 @@ export function DocumentBrowser({
         (documents.data.items.length === 0 ? (
           <EmptyState
             title={filtered ? t('documents.list.emptyFiltered') : t('documents.list.empty')}
+            reason={filtered ? 'filter' : 'notYet'}
           />
         ) : (
           <>

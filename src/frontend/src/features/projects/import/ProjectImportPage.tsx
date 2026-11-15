@@ -359,7 +359,7 @@ function BatchList(): ReactElement {
       )}
       {batches.data !== undefined &&
         (batches.data.items.length === 0 ? (
-          <EmptyState title={t('projects.import.noBatches')} />
+          <EmptyState title={t('projects.import.noBatches')} reason="notYet" />
         ) : (
           <TableContainer
             caption={t('projects.import.batchesCaption')}

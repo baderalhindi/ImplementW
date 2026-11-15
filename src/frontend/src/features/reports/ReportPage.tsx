@@ -333,7 +333,9 @@ function ReportWorkspace({
       )}
 
       {request === null ? (
-        <EmptyState title={t('reports.result.chooseParameters')} />
+        <EmptyState title={t('reports.result.chooseParameters')}>
+          <p>{t('reports.result.chooseParametersHint')}</p>
+        </EmptyState>
       ) : result.loading && result.data === undefined ? (
         <LoadingState label={t('reports.result.running')} />
       ) : result.error !== null ? (

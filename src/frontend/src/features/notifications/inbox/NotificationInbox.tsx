@@ -95,7 +95,7 @@ export function NotificationInbox({
           {families.loading && <LoadingState label={t('notifications.list.loading')} />}
           {families.error !== null &&
             (isConfigurationMissing(families.error) ? (
-              <EmptyState title={t(`notifications.${kind}.noFamilies`)} />
+              <EmptyState title={t(`notifications.${kind}.noFamilies`)} reason="setup" />
             ) : (
               <ErrorState
                 error={families.error}
@@ -105,7 +105,7 @@ export function NotificationInbox({
             ))}
           {families.data !== undefined &&
             (choosable.length === 0 ? (
-              <EmptyState title={t(`notifications.${kind}.noFamilies`)} />
+              <EmptyState title={t(`notifications.${kind}.noFamilies`)} reason="setup" />
             ) : (
               <NotificationList
                 caption={title}
@@ -235,6 +235,7 @@ function NotificationList({
         (notifications.data.items.length === 0 ? (
           <EmptyState
             title={filtered ? t('notifications.list.emptyFiltered') : t('notifications.list.empty')}
+            reason={filtered ? 'filter' : 'notYet'}
           />
         ) : (
           <>

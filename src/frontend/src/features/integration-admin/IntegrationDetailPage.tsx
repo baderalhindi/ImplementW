@@ -310,6 +310,7 @@ function DetailContent({
           query={{ integrationId: integration.id, statuses: LIVE_ALERT_STATUSES }}
           caption={t('integrationAdmin.alerts.liveTitle')}
           emptyTitle={t('integrationAdmin.alerts.noneLive')}
+          emptyReason="notYet"
         />
       </Section>
 

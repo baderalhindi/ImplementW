@@ -143,7 +143,10 @@ function AttachForm({
       )}
       {candidates.data !== undefined &&
         (candidates.data.items.length === 0 ? (
-          <EmptyState title={t('documents.attach.empty')} />
+          <EmptyState
+            title={t('documents.attach.empty')}
+            reason={query.trim() === '' ? 'notYet' : 'filter'}
+          />
         ) : (
           <fieldset
             className="field field--group"

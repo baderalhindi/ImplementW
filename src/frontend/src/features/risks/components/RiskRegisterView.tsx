@@ -102,7 +102,7 @@ export function RiskRegisterView({
         }}
       />
       {shown.length === 0 ? (
-        <EmptyState title={t('risks.empty.filtered')} />
+        <EmptyState title={t('risks.empty.filtered')} reason="filter" />
       ) : (
         <RiskTable
           actions={actions}

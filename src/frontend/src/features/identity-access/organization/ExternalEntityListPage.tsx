@@ -247,6 +247,7 @@ export function ExternalEntityListPage(): ReactElement {
                 ? t('identityAccess.entities.empty')
                 : t('identityAccess.entities.emptyFiltered')
             }
+            reason={q === undefined && status === undefined ? 'setup' : 'filter'}
           />
         ) : (
           <>

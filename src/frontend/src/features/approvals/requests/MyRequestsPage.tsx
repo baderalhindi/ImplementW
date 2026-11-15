@@ -124,6 +124,7 @@ export function MyRequestsPage(): ReactElement {
                 ? t('approvals.requests.empty')
                 : t('approvals.requests.emptyFiltered')
             }
+            reason={status === undefined ? 'notYet' : 'filter'}
           />
         ) : (
           <>

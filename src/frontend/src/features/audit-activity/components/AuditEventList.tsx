@@ -6,7 +6,7 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
-import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
+import { type EmptyReason, EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
@@ -22,6 +22,8 @@ interface AuditEventListProps {
   query: AuditEventQuery;
   caption: string;
   emptyTitle: string;
+  /** Why the list is empty (review round 8, point 09). */
+  emptyReason: EmptyReason;
   /** Where each event's detail (ADM-051) opens. */
   detailPath: (event: AuditEventSummary) => string;
 }
@@ -35,6 +37,7 @@ export function AuditEventList({
   query,
   caption,
   emptyTitle,
+  emptyReason,
   detailPath,
 }: AuditEventListProps): ReactElement {
   const { t, formatDateTime } = useI18n();
@@ -66,7 +69,7 @@ export function AuditEventList({
     );
   }
   if (events.data.items.length === 0) {
-    return <EmptyState title={emptyTitle} />;
+    return <EmptyState title={emptyTitle} reason={emptyReason} />;
   }
   return (
     <>

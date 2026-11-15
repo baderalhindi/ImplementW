@@ -79,7 +79,7 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
       <section className="section" aria-labelledby="financial-snapshots">
         <h3 id="financial-snapshots">{t('financialKpi.history.snapshots')}</h3>
         {data.snapshots.length === 0 ? (
-          <EmptyState title={t('financialKpi.financials.official.none')} />
+          <EmptyState title={t('financialKpi.financials.official.none')} reason="notYet" />
         ) : (
           <TableContainer
             caption={t('financialKpi.history.snapshotsCaption')}
@@ -155,7 +155,7 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
       <section className="section" aria-labelledby="financial-updates">
         <h3 id="financial-updates">{t('financialKpi.history.updates')}</h3>
         {data.updates.length === 0 ? (
-          <EmptyState title={t('financialKpi.history.noUpdates')} />
+          <EmptyState title={t('financialKpi.history.noUpdates')} reason="notYet" />
         ) : (
           <TableContainer
             caption={t('financialKpi.history.updatesCaption')}
@@ -240,7 +240,7 @@ export function FinancialHistory({ project }: { project: ProjectDetail }): React
       <section className="section" aria-labelledby="financial-budgets">
         <h3 id="financial-budgets">{t('financialKpi.history.budgets')}</h3>
         {budgets.length === 0 ? (
-          <EmptyState title={t('financialKpi.value.noBudget')} />
+          <EmptyState title={t('financialKpi.value.noBudget')} reason="setup" />
         ) : (
           <TableContainer
             caption={t('financialKpi.history.budgetsCaption')}

@@ -89,7 +89,7 @@ export function SuspensionRegisterView({
         })}
       </p>
       {shown.length === 0 ? (
-        <EmptyState title={t('suspensionClosure.suspension.filter.noMatch')} />
+        <EmptyState title={t('suspensionClosure.suspension.filter.noMatch')} reason="filter" />
       ) : (
         <TableContainer
           caption={caption}

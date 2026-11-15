@@ -304,7 +304,13 @@
     },
     "completionNone": "لا توجد جهة لديها طلبات في الفترة.",
     "completionCounts": "{accepted} من {issued}",
-    "completionSeeMore": "عرض المزيد"
+    "completionSeeMore": "عرض المزيد",
+    "stagePlanNone": "لم تُعدّ خطة المراحل لأي مشروع بعد. أعدّها من نظرة عامة المشروع.",
+    "stagePlanSome": "لم تُعدّ خطة المراحل لـ {count} من المشاريع بعد، فلا مرحلة حالية لها. أعدّها من نظرة عامة المشروع.",
+    "setUpStagePlans": "إعداد خطة المراحل",
+    "viewWithoutStagePlan": "عرض المشاريع بلا خطة مراحل",
+    "completionNoRequestsHint": "الجهة بلا طلبات لم يُرسل إليها طلب تحديث في {period}، فلا معدل استجابة لها. اختر فترة أخرى، أو أرسل طلبات التحديث.",
+    "sendUpdateRequests": "إرسال طلبات التحديث"
   },
   "drill": {
     "projects": "عرض المشاريع ({count})",

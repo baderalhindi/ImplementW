@@ -43,7 +43,7 @@ export function ProjectLanding(): ReactElement {
     );
   }
   if (projects.data.totalCount === 0) {
-    return <EmptyState title={t('dashboards.projectLanding.empty')} />;
+    return <EmptyState title={t('dashboards.projectLanding.empty')} reason="scope" />;
   }
   return (
     <>

@@ -121,7 +121,18 @@ export function FollowUpListPage(): ReactElement {
       )}
       {items.data !== undefined &&
         (items.data.items.length === 0 ? (
-          <EmptyState title={t('projects.followUpList.empty')} />
+          <EmptyState
+            title={t('projects.followUpList.empty')}
+            reason={
+              reason !== undefined || departmentId !== undefined || chips.length > 0
+                ? 'filter'
+                : undefined
+            }
+          >
+            {reason === undefined && departmentId === undefined && chips.length === 0 && (
+              <p>{t('projects.followUpList.emptyHint')}</p>
+            )}
+          </EmptyState>
         ) : (
           <>
             <TableContainer

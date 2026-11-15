@@ -198,9 +198,9 @@ export function ReportsCenterPage(): ReactElement {
           onRetry={catalogue.reload}
         />
       ) : (catalogue.data ?? []).length === 0 ? (
-        <EmptyState title={t('reports.center.none')} />
+        <EmptyState title={t('reports.center.none')} reason="role" />
       ) : shown.length === 0 ? (
-        <EmptyState title={t('reports.center.noMatch')} />
+        <EmptyState title={t('reports.center.noMatch')} reason="filter" />
       ) : (
         FAMILY_ORDER.filter((candidate) =>
           shown.some((entry) => entry.audienceFamily === candidate),

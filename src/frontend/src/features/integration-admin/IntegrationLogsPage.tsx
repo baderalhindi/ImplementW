@@ -221,6 +221,7 @@ export function IntegrationLogsPage(): ReactElement {
             query={toInvocationQuery(values)}
             caption={title}
             emptyTitle={t('integrationAdmin.logs.empty')}
+            emptyReason="filter"
             page={page}
             onPageChange={goToPage}
           />

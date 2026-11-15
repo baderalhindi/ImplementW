@@ -361,7 +361,7 @@ export function ConcernDetail({ project, user, concernId }: ConcernDetailProps):
       <section className="section" aria-labelledby="concern-escalations">
         <h3 id="concern-escalations">{t('issuesChallenges.detail.escalationsTitle')}</h3>
         {data.escalations.length === 0 ? (
-          <EmptyState title={t('issuesChallenges.detail.noEscalations')} />
+          <EmptyState title={t('issuesChallenges.detail.noEscalations')} reason="notYet" />
         ) : (
           <EscalationTable
             caption={t('issuesChallenges.detail.escalationsCaption')}

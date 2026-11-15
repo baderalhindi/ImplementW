@@ -64,7 +64,7 @@ export function VersionHistoryPage(): ReactElement {
       )}
       {history.data !== undefined &&
         (history.data.versions.length === 0 ? (
-          <EmptyState title={t('documents.versions.empty')} />
+          <EmptyState title={t('documents.versions.empty')} reason="notYet" />
         ) : (
           <VersionTable
             versions={history.data.versions}

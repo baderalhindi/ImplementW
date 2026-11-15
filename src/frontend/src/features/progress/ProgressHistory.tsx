@@ -98,7 +98,7 @@ export function ProgressHistory({ project }: { project: ProjectDetail }): ReactE
       )}
       <HealthComparison view={health.data} intakeDate={intakeDate} />
       {result.items.length === 0 ? (
-        <EmptyState title={t('progress.history.empty')} />
+        <EmptyState title={t('progress.history.empty')} reason="notYet" />
       ) : (
         <>
           <TableContainer

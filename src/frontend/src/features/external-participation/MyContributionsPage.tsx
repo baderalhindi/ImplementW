@@ -82,7 +82,10 @@ export function MyContributionsPage(): ReactElement | null {
               {t('externalParticipation.contributions.historyTitle')}
             </h2>
             {mine.data.entries.length === 0 ? (
-              <EmptyState title={t('externalParticipation.contributions.emptyTitle')} />
+              <EmptyState
+                title={t('externalParticipation.contributions.emptyTitle')}
+                reason="notYet"
+              />
             ) : (
               <TableContainer
                 caption={t('externalParticipation.contributions.caption')}

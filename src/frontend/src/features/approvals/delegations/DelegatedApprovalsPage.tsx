@@ -200,7 +200,7 @@ export function DelegatedApprovalsPage(): ReactElement {
           <section className="section" aria-labelledby="delegations-given">
             <h2 id="delegations-given">{t('approvals.delegations.given')}</h2>
             {delegations.data.given.length === 0 ? (
-              <EmptyState title={t('approvals.delegations.givenEmpty')} />
+              <EmptyState title={t('approvals.delegations.givenEmpty')} reason="notYet" />
             ) : (
               <DelegationTable
                 caption={t('approvals.delegations.givenCaption')}
@@ -224,7 +224,7 @@ export function DelegatedApprovalsPage(): ReactElement {
           <section className="section" aria-labelledby="delegations-received">
             <h2 id="delegations-received">{t('approvals.delegations.received')}</h2>
             {delegations.data.received.length === 0 ? (
-              <EmptyState title={t('approvals.delegations.receivedEmpty')} />
+              <EmptyState title={t('approvals.delegations.receivedEmpty')} reason="notYet" />
             ) : (
               <DelegationTable
                 caption={t('approvals.delegations.receivedCaption')}

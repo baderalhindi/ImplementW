@@ -114,7 +114,7 @@ export function ObligationsPanel({
       </p>
       <FormAlert message={readError} />
       {obligations.length === 0 ? (
-        <EmptyState title={t('suspensionClosure.obligations.none')} />
+        <EmptyState title={t('suspensionClosure.obligations.none')} reason="notYet" />
       ) : (
         <TableContainer
           caption={t('suspensionClosure.obligations.caption')}

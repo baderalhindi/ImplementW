@@ -206,7 +206,7 @@ export function ProjectActivityTab(): ReactElement {
           onRetry={activity.reload}
         />
       ) : activity.data.items.length === 0 ? (
-        <EmptyState title={t('auditActivity.activity.empty')} />
+        <EmptyState title={t('auditActivity.activity.empty')} reason="notYet" />
       ) : (
         <>
           <ol className="activity-timeline" aria-label={t('auditActivity.activity.title')}>

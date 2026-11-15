@@ -29,6 +29,7 @@ export function IntegrationsOverviewPage(): ReactElement {
           items={catalogue.items}
           caption={title}
           emptyTitle={t('integrationAdmin.overview.empty')}
+          emptyReason="setup"
         />
       )}
     </CataloguePage>
@@ -49,6 +50,7 @@ export function InternalSystemsPage(): ReactElement {
           items={internalSystems(catalogue.items)}
           caption={title}
           emptyTitle={t('integrationAdmin.internalSystems.empty')}
+          emptyReason="setup"
         />
       )}
     </CataloguePage>
@@ -76,7 +78,7 @@ export function ApiCataloguePage(): ReactElement {
     <CataloguePage title={title} description={t('integrationAdmin.apiCatalogue.description')}>
       {(catalogue) =>
         catalogue.items.length === 0 ? (
-          <EmptyState title={t('integrationAdmin.overview.empty')} />
+          <EmptyState title={t('integrationAdmin.overview.empty')} reason="setup" />
         ) : (
           <TableContainer caption={title} selection={{ selection, exportName: 'api-catalogue' }}>
             <thead>

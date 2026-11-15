@@ -1266,6 +1266,16 @@ h3 {
   color: var(--color-text);
 }
 
+/* Review round 8, point 09: the reason an empty state gives, and the step it offers where the person can act. */
+.state--empty p:not(.state__title) {
+  max-inline-size: 42rem;
+  margin: 0 auto var(--space-2);
+}
+
+.state__action {
+  margin-block-start: var(--space-3);
+}
+
 .state--loading {
   border-style: solid;
   border-color: var(--color-border-subtle);
@@ -6367,6 +6377,24 @@ tr[data-flagged='true'] {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.85rem;
+}
+
+/* Review round 8, point 09: under a chart, why part of it is empty and the step to fill it. */
+.insights__empty-hint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  align-items: center;
+  margin-block-start: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--color-sand, var(--color-border));
+  background: var(--color-surface);
+  font-size: 0.875rem;
+}
+
+.insights__empty-hint p {
+  flex: 1 1 16rem;
+  margin: 0;
 }
 
 /* Notes about one figure share a line, "·" between them, and wrap only when the space runs out (13 Nov 2026 review). */

@@ -4,7 +4,7 @@ import { Link } from 'react-router';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
-import { EmptyState } from '@/shared/ui/States.tsx';
+import { type EmptyReason, EmptyState } from '@/shared/ui/States.tsx';
 import { type RowSelection, useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
 import { ValueStateFlag } from '@/shared/ui/ValueState.tsx';
@@ -20,6 +20,8 @@ interface IntegrationTableProps {
   items: readonly IntegrationSummary[];
   caption: string;
   emptyTitle: string;
+  /** Why the list is empty (review round 8, point 09). */
+  emptyReason: EmptyReason;
 }
 
 /**
@@ -31,11 +33,12 @@ export function IntegrationTable({
   items,
   caption,
   emptyTitle,
+  emptyReason,
 }: IntegrationTableProps): ReactElement {
   const { t } = useI18n();
   const selection = useRowSelection();
   if (items.length === 0) {
-    return <EmptyState title={emptyTitle} />;
+    return <EmptyState title={emptyTitle} reason={emptyReason} />;
   }
   return (
     <TableContainer caption={caption} selection={{ selection, exportName: 'integrations' }}>

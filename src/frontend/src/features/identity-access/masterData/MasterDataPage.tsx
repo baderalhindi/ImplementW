@@ -290,7 +290,7 @@ function CatalogueItems({
       )}
       {items.data !== undefined &&
         (items.data.length === 0 ? (
-          <EmptyState title={t('identityAccess.masterData.empty')} />
+          <EmptyState title={t('identityAccess.masterData.empty')} reason="setup" />
         ) : (
           <TableContainer
             caption={catalogue.name[language]}

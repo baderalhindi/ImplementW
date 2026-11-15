@@ -98,7 +98,7 @@ export function ExportHistoryPage(): ReactElement {
       ) : error !== null || data === undefined ? (
         <ErrorState error={error} message={reportProblemMessage(error, t)} onRetry={reload} />
       ) : data.jobs.items.length === 0 ? (
-        <EmptyState title={t('reports.history.empty')} />
+        <EmptyState title={t('reports.history.empty')} reason="notYet" />
       ) : (
         <>
           <TableContainer

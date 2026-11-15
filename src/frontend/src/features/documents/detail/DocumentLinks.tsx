@@ -47,7 +47,7 @@ export function DocumentLinks({
       )}
       {links.data !== undefined &&
         (links.data.length === 0 ? (
-          <EmptyState title={t('documents.links.empty')} />
+          <EmptyState title={t('documents.links.empty')} reason="notYet" />
         ) : (
           <LinkTable links={links.data} lookups={lookups} />
         ))}

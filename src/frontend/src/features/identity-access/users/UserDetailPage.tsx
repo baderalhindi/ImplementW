@@ -235,7 +235,7 @@ export function UserDetailPage(): ReactElement {
         )}
         {assignments.data !== undefined &&
           (assignments.data.items.length === 0 ? (
-            <EmptyState title={t('identityAccess.users.detail.noAssignments')} />
+            <EmptyState title={t('identityAccess.users.detail.noAssignments')} reason="setup" />
           ) : (
             <AssignmentsTable
               caption={t('identityAccess.users.detail.assignmentsCaption', {

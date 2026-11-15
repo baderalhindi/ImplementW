@@ -26,7 +26,10 @@ import {
   useCompletionPeriod,
   useEntityCompletionBands,
 } from '@/features/external-participation/entityCompletion.ts';
-import { PARTICIPATION_MONITOR_PATH } from '@/features/external-participation/paths.ts';
+import {
+  NEW_UPDATE_BATCH_PATH,
+  PARTICIPATION_MONITOR_PATH,
+} from '@/features/external-participation/paths.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
@@ -48,6 +51,7 @@ import { bucketColors, type ChartBucket } from '../charts.ts';
 import { BarChart, DonutChart, GroupedColumnChart } from '../components/Charts.tsx';
 import { followUpPath, registerPath } from '../drillLinks.ts';
 import { portfolioCardPath } from '../paths.ts';
+import { emptyPortfolioReason } from '../presentation.ts';
 
 import { Coverage, Percent } from './figures.tsx';
 
@@ -98,8 +102,11 @@ function projectCountOf(insights: PortfolioInsights): number | null {
 export function PortfolioInsightsSection({
   filters,
   emptySaidElsewhere,
+  onClearFilters,
 }: {
   filters: PortfolioFilters;
+  /** Clears the dashboard's filters: offered when they are why nothing shows (review round 8, point 09). */
+  onClearFilters: () => void;
   /** The dashboard under this section already says there is no data. */
   emptySaidElsewhere: boolean;
 }): ReactElement | null {
@@ -157,7 +164,17 @@ export function PortfolioInsightsSection({
   }
   const count = projectCountOf(insights.data);
   if (count === 0) {
-    return emptySaidElsewhere ? null : <EmptyState title={t('dashboards.noData')} />;
+    return emptySaidElsewhere ? null : (
+      <EmptyState
+        title={t('dashboards.noData')}
+        reason={emptyPortfolioReason(filters)}
+        action={
+          emptyPortfolioReason(filters) === 'scope'
+            ? undefined
+            : { label: t('common.filters.clear'), onClick: onClearFilters }
+        }
+      />
+    );
   }
   const { followUpReasons, topFollowUp } = insights.data;
   const anything = count !== null || followUpReasons !== null || topFollowUp !== null;
@@ -1054,6 +1071,8 @@ function EntityCompletionChart(): ReactElement {
   const { period } = useCompletionPeriod();
   const completion = useEntityCompletionBands();
   const [order, setOrder] = useState<'lowest' | 'highest'>('lowest');
+  // Review round 8, point 09: whoever sends the monthly update requests is offered to, where entities had none in the period.
+  const sendsRequests = useCan('UPDATE_REQUEST_SEND');
   const tableLink = (band: CompletionBandKey | null) => {
     const query = new URLSearchParams(location.search);
     if (band === null) {
@@ -1117,6 +1136,20 @@ function EntityCompletionChart(): ReactElement {
                 <p className="insights__coverage">
                   {t('dashboards.insights.completionNoRequests', { count: noRequests })}
                 </p>
+                {noRequests > 0 && (
+                  <div className="insights__empty-hint" role="note">
+                    <p>
+                      {t('dashboards.insights.completionNoRequestsHint', {
+                        period: periodLabel(period, language),
+                      })}
+                    </p>
+                    {sendsRequests && (
+                      <Link className="button" to={NEW_UPDATE_BATCH_PATH}>
+                        {t('dashboards.insights.sendUpdateRequests')}
+                      </Link>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="completion-donut__list">
                 <div
@@ -1139,7 +1172,9 @@ function EntityCompletionChart(): ReactElement {
                   ))}
                 </div>
                 {listed.length === 0 ? (
-                  <p className="form__note">{t('dashboards.insights.completionNone')}</p>
+                  <p className="form__note">
+                    {t('dashboards.insights.completionNone')} {t('common.empty.period')}
+                  </p>
                 ) : (
                   <ol className="completion-donut__entities">
                     {listed.map((entity) => (
@@ -1200,6 +1235,13 @@ function InsightCharts({
   const { session } = useSession();
   // Beside the on-plan donut, for those who see the entity table at the bottom (AHDA's people with EXTERNAL_REQUEST_VIEW).
   const showsCompletion = useCan('EXTERNAL_REQUEST_VIEW') && session?.user.userType !== 'EXTERNAL';
+  // Review round 8, point 09: whoever sets a project's stage plan is offered to do so from the stage chart.
+  const setsStagePlans = useCan('PROJECT_REGISTER', 'PROGRESS_SUBMIT');
+  const withoutStage = byCurrentStage?.find((stage) => stage.stageCode === null)?.projects ?? 0;
+  const withStage = (byCurrentStage ?? []).reduce(
+    (sum, stage) => sum + (stage.stageCode === null ? 0 : stage.projects),
+    0,
+  );
   const portfolioRows = byPortfolio?.rows ?? [];
   const single = 'var(--chart-single)';
   const projectsHint = (count: number) => t('dashboards.drill.projects', { count });
@@ -1304,18 +1346,37 @@ function InsightCharts({
       {byCurrentStage !== null && byCurrentStage.some((stage) => stage.projects > 0) && (
         <ChartCard title={t('dashboards.insights.byCurrentStage')}>
           {(active, onActive) => (
-            <BarChart
-              buckets={byCurrentStage.map((stage) => ({
-                key: stage.stageCode ?? 'none',
-                count: stage.projects,
-                text: stage.name?.[language] ?? t('dashboards.insights.noCurrentStage'),
-                color: single,
-                href: registerPath(filters, { stage: stage.stageCode ?? NO_STAGE }),
-                hint: projectsHint(stage.projects),
-              }))}
-              active={active}
-              onActive={onActive}
-            />
+            <>
+              <BarChart
+                buckets={byCurrentStage.map((stage) => ({
+                  key: stage.stageCode ?? 'none',
+                  count: stage.projects,
+                  text: stage.name?.[language] ?? t('dashboards.insights.noCurrentStage'),
+                  color: single,
+                  href: registerPath(filters, { stage: stage.stageCode ?? NO_STAGE }),
+                  hint: projectsHint(stage.projects),
+                }))}
+                active={active}
+                onActive={onActive}
+              />
+              {withoutStage > 0 && (
+                // Review round 8, point 09: projects with no stage yet have no plan set up; the chart says where to set it.
+                <div className="insights__empty-hint" role="note">
+                  <p>
+                    {withStage === 0
+                      ? t('dashboards.insights.stagePlanNone')
+                      : t('dashboards.insights.stagePlanSome', { count: withoutStage })}
+                  </p>
+                  <Link className="button" to={registerPath(filters, { stage: NO_STAGE })}>
+                    {t(
+                      setsStagePlans
+                        ? 'dashboards.insights.setUpStagePlans'
+                        : 'dashboards.insights.viewWithoutStagePlan',
+                    )}
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </ChartCard>
       )}

@@ -307,7 +307,7 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
       <section className="section" aria-labelledby="risk-assessments">
         <h3 id="risk-assessments">{t('risks.detail.assessmentsTitle')}</h3>
         {data.assessments.length === 0 ? (
-          <EmptyState title={t('risks.detail.noAssessments')} />
+          <EmptyState title={t('risks.detail.noAssessments')} reason="notYet" />
         ) : (
           <TableContainer
             caption={t('risks.detail.assessmentsCaption')}
@@ -389,7 +389,7 @@ export function RiskDetail({ project, user, riskId }: RiskDetailProps): ReactEle
         </div>
         {!manager && isOpenRisk && <p className="form__note">{t('risks.detail.actionsWho')}</p>}
         {data.actions.length === 0 ? (
-          <EmptyState title={t('risks.detail.noActions')} />
+          <EmptyState title={t('risks.detail.noActions')} reason="notYet" />
         ) : (
           <ActionTable
             actions={data.actions}

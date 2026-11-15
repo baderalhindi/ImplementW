@@ -204,6 +204,7 @@ export function DepartmentListPage(): ReactElement {
                 ? t('identityAccess.departments.empty')
                 : t('identityAccess.departments.emptyFiltered')
             }
+            reason={q === undefined && isActive === undefined ? 'setup' : 'filter'}
           />
         ) : (
           <>

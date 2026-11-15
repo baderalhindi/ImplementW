@@ -57,7 +57,7 @@ export function ChangeRequestRegisterView({
         {t('changeRequests.filter.showing', { shown: shown.length, total: entries.length })}
       </p>
       {shown.length === 0 ? (
-        <EmptyState title={t('changeRequests.filter.noMatch')} />
+        <EmptyState title={t('changeRequests.filter.noMatch')} reason="filter" />
       ) : (
         <ChangeRequestTable
           entries={shown}

@@ -59,6 +59,7 @@ export function ProjectAuditTab(): ReactElement {
         query={toAuditQuery(values, { categories, projectId: project.id })}
         caption={t('auditActivity.projectAudit.caption')}
         emptyTitle={t('auditActivity.projectAudit.empty')}
+        emptyReason="notYet"
         detailPath={(event) => projectAuditEventPath(project.id, event.id)}
       />
     </section>
