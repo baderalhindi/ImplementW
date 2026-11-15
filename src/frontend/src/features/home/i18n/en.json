@@ -83,5 +83,21 @@
     "lastUpdate": "Last update submitted",
     "nextDue": "Next one due",
     "openWindow": "Open the monthly update: {projects}"
+  },
+  "banner": {
+    "customize": "Welcome appearance",
+    "style": "Banner style",
+    "styles": {
+      "DEFAULT": "Default colour",
+      "IMAGE": "One image",
+      "ROTATE": "Image slideshow"
+    },
+    "pickOne": "Choose the image to show.",
+    "pickMany": "Choose the images to show. They take turns every 10 minutes.",
+    "selectAll": "Select all",
+    "clearAll": "Clear all",
+    "needOne": "Keep at least one image, or choose the default colour.",
+    "notSaved": "Your choice could not be saved. Try again.",
+    "position": "Banner images"
   }
 }

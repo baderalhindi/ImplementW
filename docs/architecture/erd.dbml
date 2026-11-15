@@ -2951,6 +2951,42 @@ Table identity_access.user_passkey {
   Note: 'A passkey (Face ID, Touch ID, device unlock) a person registered for passwordless sign-in (13 Nov 2026 review). Its removal is audited. Delete policy: HARD_OWNER.'
 }
 
+Table identity_access.banner_image {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  code varchar(64) [unique, not null, note: 'Stable name; uploading again under it replaces the image']
+  caption_ar varchar(200) [not null, note: 'The place it shows, as the banner names it']
+  caption_en varchar(200) [not null]
+  alt_ar varchar(500) [not null, note: 'What the image shows, for assistive technology']
+  alt_en varchar(500) [not null]
+  focal_x smallint [not null, note: 'Subject position, % from the left (0-100); a crop keeps it']
+  focal_y smallint [not null, note: 'Subject position, % from the top (0-100)']
+  credit varchar(200)
+  content_type varchar(50) [not null, note: 'image/webp']
+  content bytea [not null, note: 'A WebP of at most 300 KB']
+  width integer [not null]
+  height integer [not null]
+  sort_order integer [not null]
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'An image the Home welcome banner can show (review round 8, point 07). Added or replaced by a master data administrator.'
+}
+
+Table identity_access.user_banner_preference {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  user_id uuid [unique, not null, ref: > identity_access.user.id]
+  style varchar(50) [not null, note: 'DEFAULT | IMAGE | ROTATE']
+  image_ids "uuid[]" [not null, note: 'The images chosen, in the order they show']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'Audit column (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'Audit column (D-2)']
+
+  Note: 'The Home banner choice of one person (review round 8, point 07): the green banner, one image, or images that take turns. No row: the green banner. Delete policy: HARD_OWNER.'
+}
+
 Table identity_access.sms_code {
   id uuid [pk, not null, note: 'Primary key (D-1); the challenge id']
   user_id uuid [not null, ref: > identity_access.user.id]

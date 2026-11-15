@@ -1,4 +1,4 @@
-import { type ReactElement, type ReactNode } from 'react';
+import { type ReactElement, type ReactNode, useRef } from 'react';
 import { Navigate } from 'react-router';
 
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
@@ -7,6 +7,9 @@ import { DATE_LOCALES, useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { LoadingState } from '@/shared/ui/States.tsx';
 
+import { BannerBackdrop } from './banner/BannerBackdrop.tsx';
+import { BannerCustomizer } from './banner/BannerCustomizer.tsx';
+import { useBanner } from './banner/useBanner.ts';
 import { EntityProjects, ManagedProjects } from './MyProjects.tsx';
 import { MyWork, StartOrOpen } from './MyWork.tsx';
 import { AdministrationActions, PlatformHealth } from './PlatformHealth.tsx';
@@ -26,6 +29,9 @@ export function HomePage({ menuOverview }: { menuOverview: ReactNode }): ReactEl
   const { session } = useSession();
   const today = new Intl.DateTimeFormat(DATE_LOCALES[language], { dateStyle: 'full' });
   const permissions = usePermissions();
+  // Review round 8, point 07: this person's banner; the turns wait while the pointer is on it.
+  const banner = useBanner(session !== null);
+  const hero = useRef<HTMLElement>(null);
 
   if (session === null) {
     return <Navigate to="/sign-in" replace />;
@@ -43,13 +49,32 @@ export function HomePage({ menuOverview }: { menuOverview: ReactNode }): ReactEl
     permissions.can('USER_VIEW', 'INTEGRATION_VIEW') && !permissions.can('PROJECT_VIEW');
   return (
     <div className="home">
-      <header className="home__hero">
+      <header
+        className={
+          banner.preference.style === 'DEFAULT' ? 'home__hero' : 'home__hero home__hero--image'
+        }
+        ref={hero}
+      >
+        {banner.preference.style !== 'DEFAULT' && (
+          <BannerBackdrop
+            images={banner.preference.imageIds
+              .map((id) => banner.images.find((image) => image.id === id))
+              .filter((image) => image !== undefined)}
+            host={hero}
+          />
+        )}
         <p className="home__date">{today.format(new Date())}</p>
         <h1 className="home__title">{t('home.title', { name: session.user.displayName })}</h1>
         <p className="home__intro">
           {t(administers ? 'home.health.description' : 'home.description')}
         </p>
         {administers ? <AdministrationActions /> : <StartOrOpen user={session.user} />}
+        <BannerCustomizer
+          images={banner.images}
+          preference={banner.preference}
+          onChoose={banner.choose}
+          failed={banner.failed}
+        />
       </header>
       {administers && menuOverview}
       {administers ? (

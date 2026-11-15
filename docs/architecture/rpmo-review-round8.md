@@ -254,3 +254,81 @@ The client asked for the Overview to read as a dashboard, not as rows of records
   - local.r02 sees only "⋯ المزيد", with edit, the divider and delete in that order.
   - The dialog named "مشروع رقم 2" and PRJ-000002, and its button enabled only after "PRJ-000002" was typed. It was cancelled, and no DELETE was sent.
   - local.r04, who can neither edit nor delete that active project, sees no menu.
+
+## Point 07: welcome banner, the default green or images, chosen by each user
+
+The user changed two things from the PDF:
+- **Turns:** images take turns every **10 minutes**, not every 8 seconds.
+- **Storage:** the images are kept **in the database**. They are supplied five at a time.
+
+### The pin
+
+A pin at the banner's bottom corner, like the browser's customise button, opens "مظهر الترحيب".
+- **Where it sits:** in English it is at the bottom right; in Arabic it mirrors to the bottom left, as the browser's button does in right-to-left languages.
+- **Styles:** اللون الافتراضي, صورة ثابتة, عرض الصور.
+- **Choosing images:**
+  - One image: pick a single thumbnail.
+  - Slideshow: tick several, with "اختيار الكل" and "إلغاء الكل". Emptying the choice keeps the last image and says why. Switching to the slideshow with fewer than two images chosen starts it with them all.
+- **Saving:** a choice shows straight away and is saved for the person on the server. There is no settings page and no reload.
+- **Default:** everyone starts on the green banner, and the default style is the green banner exactly as it was.
+
+### Taking turns
+
+- **When:** the turns follow the clock (`ROTATION_MS`, 10 minutes), so a person returning sees the image whose turn it is, not always the first.
+- **Hover:** a turn waits while the pointer is on the banner, then happens when it leaves.
+- **Reduced motion:** with reduced motion the image stays for the visit, with no fade.
+- **Dots:** dots show which image is up and open another.
+- **Loading:** the next image is read 30 seconds before its turn. An image is read once per visit.
+
+### Readability
+
+- **Overlay:** an overlay of the rail's green stays at 88% down to 78% across the greeting (to 72% of the width), then fades.
+- **Contrast:** over a pure white pixel the text keeps 7.9:1 or more. The banner's text colour does not change with the theme, so this holds in light and dark mode.
+- **Cropping:** images are cropped around their focal point.
+- **Caption:** the place name shows small in the top corner.
+
+### Side menu
+
+The side menu shows one fixed image under its green: the banner image with code `qarah-caves` (`SIDE_MENU_IMAGE_CODE`). It is the same for everyone and not in the settings.
+
+### Data
+
+- **Tables:** `identity_access.banner_image` and `identity_access.user_banner_preference` (migration `TASK-112_AddBannerImagesAndPreferences`).
+  - `banner_image` holds the WebP (300 KB at most, checked by the database), the captions, the alt text, the focal point and the credit.
+  - `user_banner_preference` holds the person's style and image ids, and goes when the person is deleted.
+- **API:**
+  - `GET /banner-images` and `GET /banner-images/{id}/content`: anyone signed in.
+  - `POST /banner-images`: multipart, MASTER_DATA_MANAGE. Uploading under the same code replaces the image.
+  - `GET` and `PUT /users/current/banner`.
+  - The page reads the content with the person's session and shows it as a local address, because an image element cannot send the session.
+
+### The five images
+
+- **Preparation:** cut to 1920 px wide, WebP, 283–291 KB each.
+- **Where they are kept:** they and their manifest are in `artifacts/round8/banner-images` (git-ignored: the repository is public and these are the client's photos). `artifacts/round8/upload_banners.py` loads them as local.r01.
+
+| Code | Caption |
+|---|---|
+| alahsa-oasis | واحة الأحساء |
+| qarah-caves | كهوف جبل القارة |
+| qarah-fountain | جبل القارة |
+| qarah-mirrors | جبل القارة |
+| land-of-civilizations | أرض الحضارات، جبل القارة |
+
+The captions and alt texts are our reading of the photos, to be confirmed with the client. There are no credits.
+
+### Checked in a browser on localhost
+
+| Person | What happened |
+|---|---|
+| local.r05 | Started on the green banner, chose one image (caption shown), then the slideshow (5 dots). The choice survived a reload. Switching back gave the original green gradient. |
+| local.r06 | Kept the green banner meanwhile. |
+| Both | Saw the same side-menu image. |
+
+There were no errors.
+
+### Not done
+
+- The choice is not yet also in the person's preferences page; the PDF asks for it there too.
+- Administration has no screen for adding images. They are added through the API.
+- The API snapshot and the tests are left for the CI step.

@@ -4307,6 +4307,110 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.BannerImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AltAr")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("alt_ar");
+
+                    b.Property<string>("AltEn")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("alt_en");
+
+                    b.Property<string>("CaptionAr")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("caption_ar");
+
+                    b.Property<string>("CaptionEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("caption_en");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Credit")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("credit");
+
+                    b.Property<short>("FocalX")
+                        .HasColumnType("smallint")
+                        .HasColumnName("focal_x");
+
+                    b.Property<short>("FocalY")
+                        .HasColumnType("smallint")
+                        .HasColumnName("focal_y");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("integer")
+                        .HasColumnName("height");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("integer")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id")
+                        .HasName("pk_banner_image");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_banner_image_code");
+
+                    b.ToTable("banner_image", "identity_access", t =>
+                        {
+                            t.HasCheckConstraint("ck_banner_image_content_size", "octet_length(content) <= 307200");
+
+                            t.HasCheckConstraint("ck_banner_image_focal_point", "focal_x BETWEEN 0 AND 100 AND focal_y BETWEEN 0 AND 100");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.Department", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5158,6 +5262,57 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_user_status", "\"status\" IN ('ACTIVE', 'DISABLED', 'DELETED')");
 
                             t.HasCheckConstraint("ck_user_user_type", "\"user_type\" IN ('INTERNAL', 'EXTERNAL', 'SERVICE')");
+                        });
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserBannerPreference", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.PrimitiveCollection<List<Guid>>("ImageIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("image_ids");
+
+                    b.Property<string>("Style")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("style");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_banner_preference");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_banner_preference_user_id");
+
+                    b.ToTable("user_banner_preference", "identity_access", t =>
+                        {
+                            t.HasCheckConstraint("ck_user_banner_preference_style", "\"style\" IN ('DEFAULT', 'IMAGE', 'ROTATE')");
                         });
                 });
 
@@ -14253,6 +14408,16 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasForeignKey("ManagerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_user_user_manager_user_id");
+                });
+
+            modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserBannerPreference", b =>
+                {
+                    b.HasOne("PMPlatform.Domain.IdentityAccess.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_banner_preference_user_user_id");
                 });
 
             modelBuilder.Entity("PMPlatform.Domain.IdentityAccess.UserPasskey", b =>

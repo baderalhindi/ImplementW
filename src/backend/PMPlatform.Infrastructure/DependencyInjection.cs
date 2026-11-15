@@ -20,6 +20,7 @@ using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Application.Features.IdentityAccess.Personalization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.IntegrationMonitoring;
 using PMPlatform.Application.Features.FinancialKpi;
@@ -117,6 +118,7 @@ public static class DependencyInjection
 
         // 13 Nov 2026 review: passkeys and SMS codes.
         services.AddScoped<IPasskeyRepository, PasskeyRepository>();
+        services.AddScoped<IBannerRepository, BannerRepository>();
         services.AddScoped<ISmsCodeRepository, SmsCodeRepository>();
 
         // TASK-030: the grants and classifications the authorization engine evaluates.

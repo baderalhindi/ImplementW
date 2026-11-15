@@ -1,6 +1,7 @@
-import { type ReactElement, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type ReactElement, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
+import { useRailImage } from '@/features/home/banner/useRailImage.ts';
 import { usePopover } from '@/shared/ui/usePopover.ts';
 
 import { useInboxCount } from '@/features/approvals/useInboxCount.ts';
@@ -551,6 +552,8 @@ function SignedOutLayout(): ReactElement {
  * account) over the page. On a narrow window the rail is a drawer, closed again by a choice, Escape or the backdrop.
  */
 function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
+  // Review round 8, point 07: the side menu's fixed picture, the same for everyone.
+  const railImage = useRailImage();
   const { t } = useI18n();
   const { pathname, search } = useLocation();
   const menus = menusFor(
@@ -600,7 +603,15 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
       <a className="skip-link" href="#main">
         {t('common.skipToContent')}
       </a>
-      <aside className={railClass} id="main-menu">
+      <aside
+        className={railImage === null ? railClass : `${railClass} rail--image`}
+        id="main-menu"
+        style={
+          railImage === null
+            ? undefined
+            : ({ '--rail-image': `url("${railImage}")` } as CSSProperties)
+        }
+      >
         <Rail
           menus={menus}
           current={current}

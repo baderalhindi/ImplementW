@@ -7018,3 +7018,276 @@ tr[data-flagged='true'] {
 .popover__option--danger:hover {
   background: var(--color-danger-surface);
 }
+
+/*
+ * Review round 8, point 07: the welcome banner on an image. The picture sits under the green banner's content; an overlay of the rail's
+ * green, darkest behind the greeting, keeps the text and the pills at 4.5:1 or better on any picture, in light and dark mode alike (the
+ * banner's text colour does not change with the theme). With the default style none of this is drawn and the banner is as it was.
+ */
+.home__hero {
+  position: relative;
+}
+
+.home__hero--image {
+  min-block-size: 15rem;
+  padding-block-end: var(--space-8, 3rem);
+  background: var(--color-rail);
+}
+
+/* The greeting and the pills above the picture; the caption, the dots and the pin are placed on it. */
+.home__hero > :not(.home__hero-media, .home__hero-caption, .home__hero-dots, .banner-picker) {
+  position: relative;
+}
+
+/* The picture is clipped to the banner's rounded corners; the customise panel is not. */
+.home__hero-media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.home__hero-image {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.home__hero-image--fade {
+  animation: hero-fade 1.2s ease;
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.home__hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgb(8 38 34 / 88%) 0%,
+    rgb(8 38 34 / 78%) 72%,
+    rgb(8 38 34 / 45%) 100%
+  );
+}
+
+[dir='rtl'] .home__hero-overlay {
+  background: linear-gradient(
+    270deg,
+    rgb(8 38 34 / 88%) 0%,
+    rgb(8 38 34 / 78%) 72%,
+    rgb(8 38 34 / 45%) 100%
+  );
+}
+
+.home__hero--image .home__title,
+.home__hero--image .home__intro,
+.home__hero--image .home__date {
+  text-shadow: 0 1px 2px rgb(0 0 0 / 45%);
+}
+
+/* The place the picture shows, small, in the banner's top corner opposite the greeting. */
+.home__hero-caption {
+  position: absolute;
+  inset-block-start: var(--space-3);
+  inset-inline-end: var(--space-4);
+  display: grid;
+  justify-items: end;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 6px;
+  background: rgb(8 38 34 / 70%);
+  color: #fff;
+  font-size: 0.8125rem;
+}
+
+.home__hero-credit {
+  opacity: 0.85;
+  font-size: 0.75rem;
+}
+
+.home__hero-dots {
+  position: absolute;
+  inset-block-end: var(--space-3);
+  inset-inline-start: 50%;
+  display: flex;
+  gap: var(--space-2);
+  transform: translateX(-50%);
+}
+
+[dir='rtl'] .home__hero-dots {
+  transform: translateX(50%);
+}
+
+.home__hero-dot {
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  padding: 0;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.home__hero-dot[aria-pressed='true'] {
+  background: #fff;
+}
+
+/* "مظهر الترحيب": a pin in the banner's bottom corner, like the browser's own customise button, and its panel under it. */
+.banner-picker {
+  position: absolute;
+  inset-block-end: var(--space-3);
+  inset-inline-end: var(--space-3);
+}
+
+.banner-picker__toggle {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 999px;
+  background: rgb(8 38 34 / 55%);
+  color: #fff;
+  cursor: pointer;
+}
+
+.banner-picker__toggle:hover,
+.banner-picker__toggle[aria-expanded='true'] {
+  background: rgb(8 38 34 / 85%);
+}
+
+/* It opens downwards, over the page under the banner: opened upwards it would slide under the sticky top bar. */
+.banner-picker__panel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: 30;
+  display: grid;
+  gap: var(--space-2);
+  inline-size: min(22rem, 85vw);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  color: var(--color-text);
+}
+
+.banner-picker__panel[hidden] {
+  display: none;
+}
+
+.banner-picker__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.banner-picker__styles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-1);
+}
+
+.banner-picker__styles button {
+  padding: var(--space-2) var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.banner-picker__styles button[aria-checked='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.banner-picker__styles button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.banner-picker__all {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.banner-picker__images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.banner-picker__image {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 16 / 10;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--color-neutral-surface);
+  cursor: pointer;
+}
+
+.banner-picker__thumb,
+.banner-picker__placeholder {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.banner-picker__image[aria-pressed='true'] {
+  border-color: var(--color-primary);
+}
+
+.banner-picker__check {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
+  display: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.banner-picker__image[aria-pressed='true'] .banner-picker__check {
+  display: block;
+}
+
+.banner-picker__warning {
+  color: var(--color-warning);
+}
+
+/* Review round 8, point 07: the side menu's fixed picture under the menu's own green, deep enough that its text keeps its contrast. */
+.rail.rail--image {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--color-rail) 88%, transparent),
+      color-mix(in srgb, var(--color-rail) 94%, transparent)
+    ),
+    var(--rail-image) center / cover no-repeat,
+    var(--color-rail);
+}

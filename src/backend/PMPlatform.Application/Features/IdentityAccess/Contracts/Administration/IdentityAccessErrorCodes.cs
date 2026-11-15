@@ -101,4 +101,7 @@ public static class IdentityAccessErrorCodes
 
     /// <summary>422: assignments move only to the newest PUBLISHED version of their own profile (TASK-110).</summary>
     public const string MigrationTargetInvalid = "IDENTITY_ACCESS_MIGRATION_TARGET_INVALID";
+
+    /// <summary>422: a banner image style needs images that exist; one image takes exactly one (review round 8, point 07).</summary>
+    public const string BannerImagesInvalid = "IDENTITY_ACCESS_BANNER_IMAGES_INVALID";
 }

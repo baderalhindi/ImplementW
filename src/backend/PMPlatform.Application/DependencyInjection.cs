@@ -20,6 +20,7 @@ using PMPlatform.Application.Features.DocumentManagement;
 using PMPlatform.Application.Features.DocumentManagement.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Administration;
 using PMPlatform.Application.Features.IdentityAccess.Authentication;
+using PMPlatform.Application.Features.IdentityAccess.Personalization;
 using PMPlatform.Application.Features.IdentityAccess.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
 using PMPlatform.Application.Features.IntegrationMonitoring;
@@ -115,6 +116,7 @@ public static class DependencyInjection
         services.AddScoped<SmsOneTimeCodes>();
         services.AddScoped<IMobileNumberVerifier, SmsCodeMobileNumberVerifier>();
         services.AddScoped<IPasskeyService, PasskeyService>();
+        services.AddScoped<IBannerService, BannerService>();
         services.AddScoped<IUserContactDirectory, UserContactDirectory>();
         services.AddScoped<AccessRelationshipService>();
         services.AddScoped<IAccessRelationshipService>(provider => provider.GetRequiredService<AccessRelationshipService>());
