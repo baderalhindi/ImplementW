@@ -417,6 +417,7 @@ h3 {
 
 .rail__brand {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-block-size: 5.5rem;
@@ -441,7 +442,17 @@ h3 {
   inline-size: 2.75rem;
 }
 
-.rail--collapsed .rail__logo {
+/* The gold divider under the logo, in its own colours; the collapsed rail has only the emblem. */
+.rail__divider {
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 12rem;
+  block-size: auto;
+  margin-block-start: var(--space-1);
+}
+
+.rail--collapsed .rail__logo,
+.rail--collapsed .rail__divider {
   display: none;
 }
 

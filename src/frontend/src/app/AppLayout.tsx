@@ -388,6 +388,14 @@ function Rail({
       {/* The link carries the name, so it has one whichever image the rail's width shows. */}
       <Link className="rail__brand" to="/" aria-label={t('common.organizationName')}>
         <img className="rail__logo" src="/brand/ahda-logo.png" alt="" width="596" height="232" />
+        {/* The client's divider under the logo; only the expanded rail shows it. */}
+        <img
+          className="rail__divider"
+          src="/brand/rail-divider.png"
+          alt=""
+          width="884"
+          height="128"
+        />
         <img
           className="rail__emblem"
           src="/brand/ahda-emblem.png"
