@@ -9,6 +9,29 @@ import { ROTATION_MS, useRotation } from './useRotation.ts';
 /** How long before its turn the next image starts loading: it is read only when it is about to show. */
 const PRELOAD_AHEAD_MS = 30 * 1000;
 
+/** The map pin before the caption: the caption names the place the picture shows. */
+function LocationIcon(): ReactElement {
+  return (
+    <svg
+      className="home__hero-caption-icon"
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="9.5" r="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 function prefersReducedMotion(): boolean {
   return (
     typeof window.matchMedia === 'function' &&
@@ -71,7 +94,10 @@ export function BannerBackdrop({
       </div>
       <p className="home__hero-caption">
         <span className="visually-hidden">{current.alt[language]}</span>
-        <span aria-hidden="true">{current.caption[language]}</span>
+        <span className="home__hero-place" aria-hidden="true">
+          <LocationIcon />
+          {current.caption[language]}
+        </span>
         {current.credit !== null && <span className="home__hero-credit">{current.credit}</span>}
       </p>
       {images.length > 1 && (

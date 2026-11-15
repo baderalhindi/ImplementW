@@ -7225,6 +7225,16 @@ tr[data-flagged='true'] {
   font-size: 0.8125rem;
 }
 
+.home__hero-place {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.home__hero-caption-icon {
+  flex: none;
+}
+
 .home__hero-credit {
   opacity: 0.85;
   font-size: 0.75rem;
