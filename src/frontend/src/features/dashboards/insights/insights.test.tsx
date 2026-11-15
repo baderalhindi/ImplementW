@@ -57,6 +57,12 @@ function around(element: HTMLElement, selector: string): HTMLElement {
 }
 const session = () => sessionFor(['R02']);
 
+/** A link as its path and parameters, in any order. */
+function linkOf(href: string | null | undefined) {
+  const [path, query = ''] = (href ?? '').split('?');
+  return { path, params: Object.fromEntries(new URLSearchParams(query)) };
+}
+
 describe('the sections', () => {
   test('each section shows only when answered, and none of a null one', async () => {
     dashboardApi({ ...NO_SECTIONS, stages: fullInsights().stages, onPlan: fullInsights().onPlan });
@@ -173,7 +179,7 @@ describe('the sections', () => {
     expect(plain(headline.textContent)).toContain('Overdue actions: 4');
   });
 
-  test('a table has its total row from `total`, not from adding the rows, and links to the card', async () => {
+  test('a table has its total row from `total`, not from adding the rows; a name opens its projects, then its card', async () => {
     dashboardApi(fullInsights());
     renderApp({ path: DASHBOARD, session: session() });
     await waitFor(() => {
@@ -183,9 +189,12 @@ describe('the sections', () => {
     const total = present(table.querySelector<HTMLElement>('tr[data-row="total"]'));
     expect(within(total).getByRole('rowheader').textContent).toBe(en('dashboards.insights.total'));
     expect(within(total).getAllByRole('cell')[1]?.textContent).toBe('200');
-    expect(within(table).getAllByRole('link')[0]?.getAttribute('href')).toBe(
-      `/reports/cards/portfolio/${PORTFOLIO_A}`,
-    );
+    const links = within(table).getAllByRole('link');
+    expect(linkOf(links[0]?.getAttribute('href'))).toEqual({
+      path: '/projects',
+      params: { registered: 'true', strategicPortfolioItemId: PORTFOLIO_A },
+    });
+    expect(links[1]?.getAttribute('href')).toBe(`/reports/cards/portfolio/${PORTFOLIO_A}`);
   });
 
   test('initiatives group under their portfolio; a sector shows spend as not available and its split', async () => {
@@ -197,9 +206,12 @@ describe('the sections', () => {
     const initiative = present(section('initiative'));
     const group = initiative.querySelector('.insights__group th');
     expect(group?.getAttribute('scope')).toBe('rowgroup');
-    expect(within(initiative).getAllByRole('link')[0]?.getAttribute('href')).toBe(
-      `/reports/cards/initiative/${INITIATIVE_A}`,
-    );
+    const links = within(initiative).getAllByRole('link');
+    expect(linkOf(links[0]?.getAttribute('href'))).toEqual({
+      path: '/projects',
+      params: { registered: 'true', strategicInitiativeItemId: INITIATIVE_A },
+    });
+    expect(links[1]?.getAttribute('href')).toBe(`/reports/cards/initiative/${INITIATIVE_A}`);
     const sector = present(section('sector'));
     expect(plain(sector.textContent)).toContain('Spend measured for 0 of 167');
     expect(
@@ -239,6 +251,34 @@ describe('the sections', () => {
     });
     const read = api.requestsTo('GET', /^\/portfolio-insights$/)[0];
     expect(read?.query.get('period')).toBe('2026');
+  });
+  test("review round 8, point 01: every count opens its records with the dashboard's filters", async () => {
+    dashboardApi(fullInsights());
+    renderApp({ path: `${DASHBOARD}&period=2026`, session: session() });
+    await waitFor(() => {
+      expect(section('reasons')).not.toBeNull();
+    });
+    const link = (element: Element | null | undefined) => linkOf(element?.getAttribute('href'));
+    expect(link(screen.getByRole('link', { name: en('dashboards.insights.registered') }))).toEqual({
+      path: '/projects',
+      params: { period: '2026', registered: 'true' },
+    });
+    expect(
+      link(screen.getByRole('link', { name: en('dashboards.insights.needingFollowUp') })),
+    ).toEqual({ path: '/projects/follow-up', params: { period: '2026' } });
+    expect(link(section('onPlan')?.querySelector('[data-row="notMeasured"] dd a'))).toEqual({
+      path: '/projects',
+      params: { period: '2026', registered: 'true', onPlan: 'NOT_MEASURED' },
+    });
+    expect(link(section('reasons')?.querySelector('[data-row="stalled"] dd a'))).toEqual({
+      path: '/projects/follow-up',
+      params: { period: '2026', mainReason: 'STALLED' },
+    });
+    expect(link(document.querySelector('.bars__link'))).toEqual({
+      path: '/projects',
+      params: { period: '2026', registered: 'true', strategicPortfolioItemId: PORTFOLIO_A },
+    });
+    expect(describeViolations(await accessibilityViolations())).toBe('');
   });
 });
 

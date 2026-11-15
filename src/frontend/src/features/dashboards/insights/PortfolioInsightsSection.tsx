@@ -8,9 +8,10 @@ import {
 import { Link } from 'react-router';
 
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
-import { type OnPlanStatus } from '@/features/projects/api/types.ts';
+import { type FollowUpReason, type OnPlanStatus } from '@/features/projects/api/types.ts';
 import { GapValue, OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
 import { formatSar, languageTag } from '@/features/projects/presentation.ts';
+import { NO_STAGE, NOT_MEASURED } from '@/features/projects/register/projectFilterValues.ts';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -40,12 +41,39 @@ import {
 } from '../api/insightTypes.ts';
 import { bucketColors, type ChartBucket } from '../charts.ts';
 import { BarChart, DonutChart, GroupedColumnChart } from '../components/Charts.tsx';
+import { followUpPath, registerPath } from '../drillLinks.ts';
 import { portfolioCardPath } from '../paths.ts';
 
 import { Coverage, Percent } from './figures.tsx';
 
 type ItemName = (id: string | null) => string;
 type CardDimension = 'portfolio' | 'initiative' | 'sector';
+
+/** The register's filter for each breakdown's rows. */
+const DIMENSION_FILTERS: Record<CardDimension, keyof PortfolioFilters> = {
+  portfolio: 'strategicPortfolioItemId',
+  initiative: 'strategicInitiativeItemId',
+  sector: 'classificationItemId',
+};
+
+/** A count that opens the records it counts (review round 8, point 01); a count with nowhere to go stays text. */
+function CountLink({
+  count,
+  to,
+  hint,
+}: {
+  count: number;
+  to: string | null;
+  hint: string;
+}): ReactElement {
+  return to === null ? (
+    <>{count}</>
+  ) : (
+    <Link className="drill-link" to={to} title={hint} dir="ltr">
+      {count}
+    </Link>
+  );
+}
 
 /** How many projects the figures cover, or null when the caller may see no section that counts them. */
 function projectCountOf(insights: PortfolioInsights): number | null {
@@ -128,10 +156,16 @@ export function PortfolioInsightsSection({
   }
   const { followUpReasons, topFollowUp } = insights.data;
   const anything = count !== null || followUpReasons !== null || topFollowUp !== null;
-  return anything ? <Sections insights={insights.data} /> : null;
+  return anything ? <Sections insights={insights.data} filters={filters} /> : null;
 }
 
-function Sections({ insights }: { insights: PortfolioInsights }): ReactElement {
+function Sections({
+  insights,
+  filters,
+}: {
+  insights: PortfolioInsights;
+  filters: PortfolioFilters;
+}): ReactElement {
   const { t } = useI18n();
   const lookups = useProjectLookups();
   const itemName: ItemName = (id) => lookups.itemLabel(id) ?? t('dashboards.insights.unclassified');
@@ -149,8 +183,9 @@ function Sections({ insights }: { insights: PortfolioInsights }): ReactElement {
 
   return (
     <div className="insights">
-      {headline !== null && <Headline headline={headline} />}
+      {headline !== null && <Headline headline={headline} filters={filters} />}
       <InsightCharts
+        filters={filters}
         byPortfolio={byPortfolio}
         stages={stages}
         byCurrentStage={byCurrentStage}
@@ -163,6 +198,7 @@ function Sections({ insights }: { insights: PortfolioInsights }): ReactElement {
             caption={t('dashboards.insights.byPortfolio')}
             breakdown={byPortfolio}
             dimension="portfolio"
+            filters={filters}
             nameHeader={t('dashboards.insights.portfolio')}
             itemName={itemName}
           />
@@ -174,6 +210,7 @@ function Sections({ insights }: { insights: PortfolioInsights }): ReactElement {
             caption={t('dashboards.insights.byInitiative')}
             breakdown={byInitiative}
             dimension="initiative"
+            filters={filters}
             nameHeader={t('dashboards.insights.initiative')}
             itemName={itemName}
             grouped
@@ -186,18 +223,19 @@ function Sections({ insights }: { insights: PortfolioInsights }): ReactElement {
             caption={t('dashboards.insights.bySector')}
             breakdown={bySector}
             dimension="sector"
+            filters={filters}
             nameHeader={t('dashboards.insights.sector')}
             itemName={itemName}
           />
-          <SectorSpend breakdown={bySector} itemName={itemName} />
+          <SectorSpend breakdown={bySector} itemName={itemName} filters={filters} />
         </InsightSection>
       )}
-      {stages !== null && stages.length > 0 && <Stages stages={stages} />}
+      {stages !== null && stages.length > 0 && <Stages stages={stages} filters={filters} />}
       {byCurrentStage !== null && byCurrentStage.some((stage) => stage.projects > 0) && (
-        <CurrentStages stages={byCurrentStage} />
+        <CurrentStages stages={byCurrentStage} filters={filters} />
       )}
-      {onPlan !== null && <OnPlanCounts onPlan={onPlan} />}
-      {followUpReasons !== null && <Reasons reasons={followUpReasons} />}
+      {onPlan !== null && <OnPlanCounts onPlan={onPlan} filters={filters} />}
+      {followUpReasons !== null && <Reasons reasons={followUpReasons} filters={filters} />}
       {topFollowUp !== null && topFollowUp.length > 0 && (
         <TopProjects projects={topFollowUp} itemName={itemName} />
       )}
@@ -222,18 +260,33 @@ function InsightSection({
   );
 }
 
+/** A headline card; with `to`, its whole surface opens the records it counts. */
 function Card({
   label,
   children,
   tone,
+  to,
+  hint,
 }: {
   label: string;
   children: ReactNode;
   tone?: StatusTone | undefined;
+  to?: string | undefined;
+  hint?: string | undefined;
 }): ReactElement {
   return (
-    <li className="home__tile insights__card" data-tone={tone}>
-      <span className="home__tile-label">{label}</span>
+    <li
+      className={`home__tile insights__card${to === undefined ? '' : ' home__tile--linked'}`}
+      data-tone={tone}
+      title={hint}
+    >
+      {to === undefined ? (
+        <span className="home__tile-label">{label}</span>
+      ) : (
+        <Link className="home__tile-label home__tile-link" to={to}>
+          {label}
+        </Link>
+      )}
       {children}
     </li>
   );
@@ -245,23 +298,43 @@ const ON_PLAN_TONES: Record<OnPlanStatus, StatusTone> = {
   STALLED: 'negative',
 };
 
-function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
+function Headline({
+  headline,
+  filters,
+}: {
+  headline: PortfolioHeadline;
+  filters: PortfolioFilters;
+}): ReactElement {
   const { t } = useI18n();
   const total = headline.registeredProjects;
+  const projectsHint = (count: number) => t('dashboards.drill.projects', { count });
+  const measuredPath = registerPath(filters, { measured: 'true' });
   const measured = <Coverage kind="progress" count={headline.measured} of={total} />;
   return (
     <section className="insights__section" aria-label={t('dashboards.insights.headlineLabel')}>
       <ul className="home__tiles insights__headline" data-section="headline">
-        <Card label={t('dashboards.insights.registered')}>
+        <Card
+          label={t('dashboards.insights.registered')}
+          to={registerPath(filters)}
+          hint={projectsHint(total)}
+        >
           <span className="home__tile-value" dir="ltr">
             {total}
           </span>
-          <span className="insights__coverage">
+          <Link
+            className="insights__coverage drill-link"
+            to={registerPath(filters, { status: 'ACTIVE' })}
+            title={projectsHint(headline.inProgressProjects)}
+          >
             {t('dashboards.insights.inProgress', { count: headline.inProgressProjects })}
-          </span>
+          </Link>
         </Card>
         {headline.totalValueSar !== null && (
-          <Card label={t('dashboards.insights.totalValue')}>
+          <Card
+            label={t('dashboards.insights.totalValue')}
+            to={registerPath(filters, { sort: 'value:desc' })}
+            hint={projectsHint(total)}
+          >
             {headline.valueEntered === 0 ? (
               <Percent value={null} />
             ) : (
@@ -272,7 +345,11 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
             <Coverage kind="value" count={headline.valueEntered} of={total} />
           </Card>
         )}
-        <Card label={t('dashboards.insights.averagePlanned')}>
+        <Card
+          label={t('dashboards.insights.averagePlanned')}
+          to={measuredPath}
+          hint={projectsHint(headline.measured)}
+        >
           <span className="home__tile-value">
             <Percent value={headline.averagePlannedPercent} />
           </span>
@@ -281,7 +358,11 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
             {measured}
           </span>
         </Card>
-        <Card label={t('dashboards.insights.averageActual')}>
+        <Card
+          label={t('dashboards.insights.averageActual')}
+          to={measuredPath}
+          hint={projectsHint(headline.measured)}
+        >
           <span className="home__tile-value">
             <Percent value={headline.averageActualPercent} />
           </span>
@@ -293,6 +374,8 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
         <Card
           label={t('dashboards.insights.gap')}
           tone={headline.onPlan === null ? undefined : ON_PLAN_TONES[headline.onPlan]}
+          to={measuredPath}
+          hint={projectsHint(headline.measured)}
         >
           <span className="home__tile-value">
             <GapValue points={headline.gapPoints} />
@@ -302,7 +385,11 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
           </span>
           {measured}
         </Card>
-        <Card label={t('dashboards.insights.needingFollowUp')}>
+        <Card
+          label={t('dashboards.insights.needingFollowUp')}
+          to={followUpPath(filters)}
+          hint={t('dashboards.drill.followUp', { count: headline.needingFollowUp })}
+        >
           <span className="home__tile-value" dir="ltr">
             {headline.needingFollowUp}
           </span>
@@ -315,18 +402,25 @@ function Headline({ headline }: { headline: PortfolioHeadline }): ReactElement {
   );
 }
 
-/** The cells of a breakdown row, the same for its total. */
+/** The cells of a breakdown row, the same for its total; `rowFilters` is null for a row with nowhere to open ("unclassified"). */
 function RowFigures({
   row,
   showValue,
+  filters,
+  rowFilters,
 }: {
   row: PortfolioBreakdownRow;
   showValue: boolean;
+  filters: PortfolioFilters;
+  rowFilters: Record<string, string> | null;
 }): ReactElement {
+  const { t } = useI18n();
+  const projects = rowFilters === null ? null : registerPath(filters, rowFilters);
+  const projectsHint = (count: number) => t('dashboards.drill.projects', { count });
   return (
     <>
       <td dir="ltr" className="cell--ltr">
-        {row.projects}
+        <CountLink count={row.projects} to={projects} hint={projectsHint(row.projects)} />
       </td>
       {showValue && (
         <td>
@@ -338,7 +432,13 @@ function RowFigures({
         </td>
       )}
       <td dir="ltr" className="cell--ltr">
-        {row.measured}
+        <CountLink
+          count={row.measured}
+          to={
+            rowFilters === null ? null : registerPath(filters, { ...rowFilters, measured: 'true' })
+          }
+          hint={projectsHint(row.measured)}
+        />
       </td>
       <td>
         <Percent value={row.averagePlannedPercent} />
@@ -353,7 +453,11 @@ function RowFigures({
         <OnPlanBadge status={row.onPlan} />
       </td>
       <td dir="ltr" className="cell--ltr">
-        {row.needingFollowUp}
+        <CountLink
+          count={row.needingFollowUp}
+          to={rowFilters === null ? null : followUpPath(filters, rowFilters)}
+          hint={t('dashboards.drill.followUp', { count: row.needingFollowUp })}
+        />
       </td>
     </>
   );
@@ -365,11 +469,13 @@ function BreakdownTable({
   dimension,
   nameHeader,
   itemName,
+  filters,
   grouped = false,
 }: {
   caption: string;
   breakdown: PortfolioBreakdown;
   dimension: CardDimension;
+  filters: PortfolioFilters;
   nameHeader: string;
   itemName: ItemName;
   /** Under each row's parent: an initiative under its portfolio. */
@@ -384,17 +490,30 @@ function BreakdownTable({
   const rowId = (row: PortfolioBreakdownRow) => row.itemId ?? 'none';
   const parents = grouped ? [...new Set(rows.map((row) => row.parentItemId))] : [null];
 
+  const rowFilters = (row: PortfolioBreakdownRow) =>
+    row.itemId === null ? null : { [DIMENSION_FILTERS[dimension]]: row.itemId };
+  // Review round 8, point 01: the name opens the projects under it; the report card stays, as a second link.
   const line = (row: PortfolioBreakdownRow) => (
     <tr key={rowId(row)}>
       <SelectRowCell id={rowId(row)} name={itemName(row.itemId)} selection={selection} />
       <th scope="row">
-        {row.itemId !== null && mayOpenCards ? (
-          <Link to={portfolioCardPath(dimension, row.itemId)}>{itemName(row.itemId)}</Link>
-        ) : (
+        {row.itemId === null ? (
           itemName(row.itemId)
+        ) : (
+          <Link
+            to={registerPath(filters, { [DIMENSION_FILTERS[dimension]]: row.itemId })}
+            title={t('dashboards.drill.projects', { count: row.projects })}
+          >
+            {itemName(row.itemId)}
+          </Link>
+        )}
+        {row.itemId !== null && mayOpenCards && (
+          <Link className="cell__aside" to={portfolioCardPath(dimension, row.itemId)}>
+            {t('dashboards.drill.reportCard')}
+          </Link>
         )}
       </th>
-      <RowFigures row={row} showValue={showValue} />
+      <RowFigures row={row} showValue={showValue} filters={filters} rowFilters={rowFilters(row)} />
     </tr>
   );
 
@@ -434,7 +553,7 @@ function BreakdownTable({
           <tr data-row="total">
             <td className="cell--select" />
             <th scope="row">{t('dashboards.insights.total')}</th>
-            <RowFigures row={total} showValue={showValue} />
+            <RowFigures row={total} showValue={showValue} filters={filters} rowFilters={{}} />
           </tr>
         </tfoot>
       </TableContainer>
@@ -451,9 +570,11 @@ function BreakdownTable({
 function SectorSpend({
   breakdown,
   itemName,
+  filters,
 }: {
   breakdown: PortfolioBreakdown;
   itemName: ItemName;
+  filters: PortfolioFilters;
 }): ReactElement {
   const { t } = useI18n();
   const selection = useRowSelection();
@@ -481,7 +602,18 @@ function SectorSpend({
                 name={itemName(row.itemId)}
                 selection={selection}
               />
-              <th scope="row">{itemName(row.itemId)}</th>
+              <th scope="row">
+                {row.itemId === null ? (
+                  itemName(row.itemId)
+                ) : (
+                  <Link
+                    to={registerPath(filters, { classificationItemId: row.itemId })}
+                    title={t('dashboards.drill.projects', { count: row.projects })}
+                  >
+                    {itemName(row.itemId)}
+                  </Link>
+                )}
+              </th>
               <td>
                 <Percent value={row.averagePlannedSpendPercent} />
               </td>
@@ -490,14 +622,30 @@ function SectorSpend({
               </td>
               <td>
                 <ul className="insights__split">
-                  {(row.portfolioSplit ?? []).map((split) => (
-                    <li key={split.portfolioItemId ?? 'none'}>
-                      {t('dashboards.insights.splitRow', {
-                        portfolio: itemName(split.portfolioItemId),
-                        count: split.projects,
-                      })}
-                    </li>
-                  ))}
+                  {(row.portfolioSplit ?? []).map((split) => {
+                    const text = t('dashboards.insights.splitRow', {
+                      portfolio: itemName(split.portfolioItemId),
+                      count: split.projects,
+                    });
+                    return (
+                      <li key={split.portfolioItemId ?? 'none'}>
+                        {row.itemId === null || split.portfolioItemId === null ? (
+                          text
+                        ) : (
+                          <Link
+                            className="drill-link"
+                            to={registerPath(filters, {
+                              classificationItemId: row.itemId,
+                              strategicPortfolioItemId: split.portfolioItemId,
+                            })}
+                            title={t('dashboards.drill.projects', { count: split.projects })}
+                          >
+                            {text}
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </td>
             </tr>
@@ -511,7 +659,13 @@ function SectorSpend({
   );
 }
 
-function Stages({ stages }: { stages: PortfolioStageCount[] }): ReactElement {
+function Stages({
+  stages,
+  filters,
+}: {
+  stages: PortfolioStageCount[];
+  filters: PortfolioFilters;
+}): ReactElement {
   const { t } = useI18n();
   const selection = useRowSelection();
   return (
@@ -536,9 +690,20 @@ function Stages({ stages }: { stages: PortfolioStageCount[] }): ReactElement {
                 name={t(`projects.status.${stage.status}`)}
                 selection={selection}
               />
-              <th scope="row">{t(`projects.status.${stage.status}`)}</th>
+              <th scope="row">
+                <Link
+                  to={registerPath(filters, { status: stage.status })}
+                  title={t('dashboards.drill.projects', { count: stage.projects })}
+                >
+                  {t(`projects.status.${stage.status}`)}
+                </Link>
+              </th>
               <td dir="ltr" className="cell--ltr">
-                {stage.projects}
+                <CountLink
+                  count={stage.projects}
+                  to={registerPath(filters, { status: stage.status })}
+                  hint={t('dashboards.drill.projects', { count: stage.projects })}
+                />
               </td>
               <td>
                 <Percent value={stage.percent} />
@@ -552,8 +717,16 @@ function Stages({ stages }: { stages: PortfolioStageCount[] }): ReactElement {
 }
 
 /** Review round 7, item 1: the projects by their current stage, in stage order, with their value; then those with no stage reported yet. */
-function CurrentStages({ stages }: { stages: PortfolioCurrentStage[] }): ReactElement {
+function CurrentStages({
+  stages,
+  filters,
+}: {
+  stages: PortfolioCurrentStage[];
+  filters: PortfolioFilters;
+}): ReactElement {
   const { t, language } = useI18n();
+  const pathOf = (stage: PortfolioCurrentStage) =>
+    registerPath(filters, { stage: stage.stageCode ?? NO_STAGE });
   const selection = useRowSelection();
   const showValue = stages.some((stage) => stage.valueSar !== null);
   const nameOf = (stage: PortfolioCurrentStage) =>
@@ -583,9 +756,20 @@ function CurrentStages({ stages }: { stages: PortfolioCurrentStage[] }): ReactEl
                 name={nameOf(stage)}
                 selection={selection}
               />
-              <th scope="row">{nameOf(stage)}</th>
+              <th scope="row">
+                <Link
+                  to={pathOf(stage)}
+                  title={t('dashboards.drill.projects', { count: stage.projects })}
+                >
+                  {nameOf(stage)}
+                </Link>
+              </th>
               <td dir="ltr" className="cell--ltr">
-                {stage.projects}
+                <CountLink
+                  count={stage.projects}
+                  to={pathOf(stage)}
+                  hint={t('dashboards.drill.projects', { count: stage.projects })}
+                />
               </td>
               {showValue && (
                 <td>
@@ -607,42 +791,90 @@ function CurrentStages({ stages }: { stages: PortfolioCurrentStage[] }): ReactEl
 function CountList({
   rows,
 }: {
-  rows: { key: string; label: string; count: number }[];
+  rows: { key: string; label: string; count: number; to: string; hint: string }[];
 }): ReactElement {
   return (
     <dl className="insights__counts">
       {rows.map((row) => (
         <div key={row.key} data-row={row.key}>
           <dt>{row.label}</dt>
-          <dd>{row.count}</dd>
+          <dd>
+            <CountLink count={row.count} to={row.to} hint={row.hint} />
+          </dd>
         </div>
       ))}
     </dl>
   );
 }
 
-function OnPlanCounts({ onPlan }: { onPlan: PortfolioOnPlan }): ReactElement {
+/** The on-plan counts in the dashboard's words, each with the register filter that lists its projects. */
+function onPlanRows(onPlan: PortfolioOnPlan, t: ReturnType<typeof useI18n>['t']) {
+  return [
+    {
+      key: 'onTrack',
+      filter: 'ON_TRACK',
+      label: t('projects.onPlan.ON_TRACK'),
+      count: onPlan.onTrack,
+    },
+    { key: 'late', filter: 'LATE', label: t('projects.onPlan.LATE'), count: onPlan.late },
+    {
+      key: 'stalled',
+      filter: 'STALLED',
+      label: t('projects.onPlan.STALLED'),
+      count: onPlan.stalled,
+    },
+    {
+      key: 'notMeasured',
+      filter: NOT_MEASURED,
+      label: t('dashboards.insights.notMeasured'),
+      count: onPlan.notMeasured,
+    },
+  ];
+}
+
+function OnPlanCounts({
+  onPlan,
+  filters,
+}: {
+  onPlan: PortfolioOnPlan;
+  filters: PortfolioFilters;
+}): ReactElement {
   const { t } = useI18n();
   return (
     <InsightSection id="onPlan" title={t('dashboards.insights.onPlan')}>
       <CountList
-        rows={[
-          { key: 'onTrack', label: t('projects.onPlan.ON_TRACK'), count: onPlan.onTrack },
-          { key: 'late', label: t('projects.onPlan.LATE'), count: onPlan.late },
-          { key: 'stalled', label: t('projects.onPlan.STALLED'), count: onPlan.stalled },
-          {
-            key: 'notMeasured',
-            label: t('dashboards.insights.notMeasured'),
-            count: onPlan.notMeasured,
-          },
-        ]}
+        rows={onPlanRows(onPlan, t).map((row) => ({
+          ...row,
+          to: registerPath(filters, { onPlan: row.filter }),
+          hint: t('dashboards.drill.projects', { count: row.count }),
+        }))}
       />
     </InsightSection>
   );
 }
 
-function Reasons({ reasons }: { reasons: PortfolioFollowUpReasons }): ReactElement {
+/** Each count's reason: the dashboard counts a project once, under its first reason, so the list filters by the main reason. */
+const REASON_FILTERS: Record<string, FollowUpReason> = {
+  stalled: 'STALLED',
+  suspended: 'SUSPENDED',
+  late: 'LATE',
+  overdueAction: 'ACTION_OVERDUE',
+  openObstacle: 'OPEN_OBSTACLE',
+};
+
+function Reasons({
+  reasons,
+  filters,
+}: {
+  reasons: PortfolioFollowUpReasons;
+  filters: PortfolioFilters;
+}): ReactElement {
   const { t } = useI18n();
+  const linked = (row: { key: string; label: string; count: number }) => ({
+    ...row,
+    to: followUpPath(filters, { mainReason: REASON_FILTERS[row.key] }),
+    hint: t('dashboards.drill.followUp', { count: row.count }),
+  });
   return (
     <InsightSection id="reasons" title={t('dashboards.insights.reasons')}>
       {reasons.total === 0 ? (
@@ -668,7 +900,7 @@ function Reasons({ reasons }: { reasons: PortfolioFollowUpReasons }): ReactEleme
               count: reasons.openObstacle,
             },
             { key: 'total', label: t('dashboards.insights.total'), count: reasons.total },
-          ]}
+          ].map(linked)}
         />
       )}
     </InsightSection>
@@ -769,18 +1001,32 @@ function ChartCard({
   );
 }
 
+/** A donut's legend; a value that links is a link here, so the keyboard reaches every segment the mouse can open. */
 function BucketLegend({ buckets }: { buckets: ChartBucket[] }): ReactElement {
   return (
-    <ul className="grouped-columns__legend" aria-hidden="true">
-      {buckets.map((bucket) => (
-        <li key={bucket.key}>
-          <span
-            className="distribution__key"
-            style={{ '--chart-color': bucket.color } as CSSProperties}
-          />
-          {`${bucket.text} (${String(bucket.count)})`}
-        </li>
-      ))}
+    <ul className="grouped-columns__legend">
+      {buckets.map((bucket) => {
+        const words = (
+          <>
+            <span
+              className="distribution__key"
+              style={{ '--chart-color': bucket.color } as CSSProperties}
+            />
+            {`${bucket.text} (${String(bucket.count)})`}
+          </>
+        );
+        return (
+          <li key={bucket.key}>
+            {bucket.href === undefined ? (
+              words
+            ) : (
+              <Link className="drill-link" to={bucket.href} title={bucket.hint}>
+                {words}
+              </Link>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -893,12 +1139,14 @@ function EntityCompletionChart(): ReactElement {
 }
 
 function InsightCharts({
+  filters,
   byPortfolio,
   stages,
   byCurrentStage,
   onPlan,
   itemName,
 }: {
+  filters: PortfolioFilters;
   byPortfolio: PortfolioBreakdown | null;
   stages: PortfolioStageCount[] | null;
   byCurrentStage: PortfolioCurrentStage[] | null;
@@ -911,21 +1159,20 @@ function InsightCharts({
   const showsCompletion = useCan('EXTERNAL_REQUEST_VIEW') && session?.user.userType !== 'EXTERNAL';
   const portfolioRows = byPortfolio?.rows ?? [];
   const single = 'var(--chart-single)';
+  const projectsHint = (count: number) => t('dashboards.drill.projects', { count });
   const onPlanBuckets: ChartBucket[] | null =
     onPlan === null
       ? null
       : (() => {
           const colors = bucketColors(['positive', 'warning', 'negative', 'neutral'], true);
-          return [
-            { key: 'onTrack', count: onPlan.onTrack, text: t('projects.onPlan.ON_TRACK') },
-            { key: 'late', count: onPlan.late, text: t('projects.onPlan.LATE') },
-            { key: 'stalled', count: onPlan.stalled, text: t('projects.onPlan.STALLED') },
-            {
-              key: 'notMeasured',
-              count: onPlan.notMeasured,
-              text: t('dashboards.insights.notMeasured'),
-            },
-          ].map((bucket, index) => ({ ...bucket, color: colors[index] ?? single }));
+          return onPlanRows(onPlan, t).map((row, index) => ({
+            key: row.key,
+            count: row.count,
+            text: row.label,
+            color: colors[index] ?? single,
+            href: registerPath(filters, { onPlan: row.filter }),
+            hint: projectsHint(row.count),
+          }));
         })();
   if (
     portfolioRows.length === 0 &&
@@ -948,6 +1195,11 @@ function InsightCharts({
                   count: row.projects,
                   text: itemName(row.itemId),
                   color: single,
+                  href:
+                    row.itemId === null
+                      ? undefined
+                      : registerPath(filters, { strategicPortfolioItemId: row.itemId }),
+                  hint: projectsHint(row.projects),
                 }))}
                 active={active}
                 onActive={onActive}
@@ -961,6 +1213,14 @@ function InsightCharts({
                   key: row.itemId ?? 'none',
                   text: itemName(row.itemId),
                   values: [row.averagePlannedPercent, row.averageActualPercent],
+                  href:
+                    row.itemId === null
+                      ? undefined
+                      : registerPath(filters, {
+                          strategicPortfolioItemId: row.itemId,
+                          measured: 'true',
+                        }),
+                  hint: projectsHint(row.measured),
                 }))}
                 series={[
                   {
@@ -989,6 +1249,8 @@ function InsightCharts({
                 count: stage.projects,
                 text: t(`projects.status.${stage.status}`),
                 color: single,
+                href: registerPath(filters, { status: stage.status }),
+                hint: projectsHint(stage.projects),
               }))}
               active={active}
               onActive={onActive}
@@ -1005,6 +1267,8 @@ function InsightCharts({
                 count: stage.projects,
                 text: stage.name?.[language] ?? t('dashboards.insights.noCurrentStage'),
                 color: single,
+                href: registerPath(filters, { stage: stage.stageCode ?? NO_STAGE }),
+                hint: projectsHint(stage.projects),
               }))}
               active={active}
               onActive={onActive}

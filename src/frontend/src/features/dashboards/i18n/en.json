@@ -296,5 +296,11 @@
     "byCurrentStage": "Projects by stage",
     "currentStage": "Current stage",
     "noCurrentStage": "No stage reported yet"
+  },
+  "drill": {
+    "projects": "View projects ({count})",
+    "followUp": "View in the follow-up list ({count})",
+    "risks": "View risks ({count})",
+    "reportCard": "Report card"
   }
 }

@@ -238,6 +238,14 @@ export interface ProjectQuery {
   cityItemId?: string | undefined;
   /** A year the planned period touches. */
   period?: string | undefined;
+  /** Review round 8, point 01: what the portfolio dashboard counts by. `true` keeps projects past registration only. */
+  registered?: string | undefined;
+  /** A current stage's code, or NONE for the projects with no current stage. */
+  stage?: string | undefined;
+  /** ON_TRACK, LATE, STALLED or NOT_MEASURED. */
+  onPlan?: string | undefined;
+  /** `true` keeps the projects with both a planned and an actual percentage. */
+  measured?: string | undefined;
   page?: number | undefined;
   pageSize?: number | undefined;
 }

@@ -10,17 +10,12 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { canManageTasks } from './access.ts';
 import { StatusFilterField } from './components/StatusFilterField.tsx';
+import { useTaskStatusFilter } from './useTaskStatusFilter.ts';
 import { TaskTable } from './components/TaskTable.tsx';
 import { type TaskDialog } from './dialogs/taskDialog.ts';
 import { TaskDialogs } from './dialogs/TaskDialogs.tsx';
 import { isForbidden, taskProblemMessage } from './problems.ts';
-import {
-  isLiveLeaf,
-  matchesStatus,
-  type StatusFilter,
-  todayUtc,
-  type TaskEntry,
-} from './taskRules.ts';
+import { isLiveLeaf, matchesStatus, todayUtc, type TaskEntry } from './taskRules.ts';
 import { useProjectBoard, useTaskLookups } from './useTaskData.ts';
 import { useSearchParams } from 'react-router';
 import { tasksApi } from './api/tasksApi.ts';
@@ -40,7 +35,7 @@ export function ProjectTasks({
   const { t } = useI18n();
   const board = useProjectBoard(project.id);
   const lookups = useTaskLookups();
-  const [filter, setFilter] = useState<StatusFilter>('open');
+  const [filter, setFilter] = useTaskStatusFilter();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [params] = useSearchParams();
   // A register elsewhere sends Edit here with the task's id: its edit form opens on arrival.

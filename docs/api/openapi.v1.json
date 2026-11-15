@@ -12954,7 +12954,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "Filters: `departmentId`, `reason` (one follow-up reason), `followUpOwnerUserId`.",
+        "summary": "Filters: `departmentId`, `reason` (one follow-up reason), `followUpOwnerUserId`; and, from a dashboard count (review round 8,\npoint 01), `mainReason` (the first reason only, as the dashboard counts) and the dashboard's filter bar.",
         "operationId": "Project_ListProjectFollowUps",
         "parameters": [
           {
@@ -12994,6 +12994,88 @@
           },
           {
             "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "mainReason",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "externalEntityId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "classificationItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "regionItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priorityItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicPortfolioItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "strategicInitiativeItemId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "period",
             "in": "query",
             "schema": {
               "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -13967,7 +14049,7 @@
         "tags": [
           "Project"
         ],
-        "summary": "SCR-025: only projects the caller may see. Filters: `status` (a set), `departmentId`, `externalEntityId`,\n`projectManagerUserId` (SCR-026 My Projects), `q` (title, Formal Project ID or legacy reference), and the filter bar's\n`classificationItemId`, `strategicPortfolioItemId`, `strategicInitiativeItemId`, `priorityItemId`,\n`regionItemId`, `cityItemId` and `period`, a year the planned period touches (the 2 Nov 2026 review). Most recently changed\nfirst.",
+        "summary": "SCR-025: only projects the caller may see. Filters: `status` (a set), `departmentId`, `externalEntityId`,\n`projectManagerUserId` (SCR-026 My Projects), `q` (title, Formal Project ID or legacy reference), and the filter bar's\n`classificationItemId`, `strategicPortfolioItemId`, `strategicInitiativeItemId`, `priorityItemId`,\n`regionItemId`, `cityItemId` and `period`, a year the planned period touches (the 2 Nov 2026 review). Review round 8, point 01,\nadds what the portfolio dashboard counts by: `registered` (past registration), `stage` (a current stage's code, or `NONE`),\n`onPlan` (ON_TRACK, LATE, STALLED or NOT_MEASURED), `measured`, and the sort `value:desc`. Most recently changed first.",
         "operationId": "Project_ListProjects",
         "parameters": [
           {
@@ -14097,6 +14179,36 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "registered",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "onPlan",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "measured",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],

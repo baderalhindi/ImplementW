@@ -296,5 +296,11 @@
     "byCurrentStage": "المشاريع حسب المرحلة",
     "currentStage": "المرحلة الحالية",
     "noCurrentStage": "لم تُرفع مرحلة بعد"
+  },
+  "drill": {
+    "projects": "عرض المشاريع ({count})",
+    "followUp": "عرض في قائمة المتابعة ({count})",
+    "risks": "عرض المخاطر ({count})",
+    "reportCard": "بطاقة التقرير"
   }
 }

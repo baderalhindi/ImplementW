@@ -20,6 +20,9 @@ public interface IProjectRepository
     /// <summary>The projects <paramref name="scope"/> reaches that match the query, most recently changed first, one page, with the total. Not tracked.</summary>
     public Task<(IReadOnlyList<ProjectEntity> Items, int TotalCount)> ListAsync(RecordScope scope, ProjectQuery query, CancellationToken cancellationToken);
 
+    /// <summary>Every project <paramref name="scope"/> reaches that matches <paramref name="query"/>'s stored filters, unpaged, in its order. Not tracked.</summary>
+    public Task<IReadOnlyList<ProjectEntity>> ListMatchingAsync(RecordScope scope, ProjectQuery query, CancellationToken cancellationToken);
+
     /// <summary>Every project <paramref name="scope"/> reaches, unpaged, in id order. Not tracked.</summary>
     public Task<IReadOnlyList<ProjectEntity>> ListReachedAsync(RecordScope scope, CancellationToken cancellationToken);
 

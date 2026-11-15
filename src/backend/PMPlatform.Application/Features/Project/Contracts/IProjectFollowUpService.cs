@@ -1,4 +1,5 @@
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.Project.Insights;
 
 namespace PMPlatform.Application.Features.Project.Contracts;
 
@@ -30,4 +31,14 @@ public sealed record ProjectFollowUpNotePage(IReadOnlyList<ProjectFollowUpNoteDe
 public sealed record ProjectFollowUpPage(IReadOnlyList<ProjectFollowUpItem> Items, int Page, int PageSize, int TotalCount);
 
 /// <summary>The Follow-up list's filters, each narrowing the caller's scope: a department, a reason, a follow-up owner.</summary>
-public sealed record ProjectFollowUpQuery(Guid? DepartmentId, FollowUpReason? Reason, Guid? FollowUpOwnerUserId, PageRequest Page);
+public sealed record ProjectFollowUpQuery(Guid? DepartmentId, FollowUpReason? Reason, Guid? FollowUpOwnerUserId, PageRequest Page)
+{
+    /// <summary>The dashboard's filter bar, carried over when a dashboard count opens the list (review round 8, point 01).</summary>
+    public PortfolioInsightFilters Filters { get; init; } = new();
+
+    /// <summary>
+    /// The projects whose first reason is this one. The dashboard counts each project once, under its first reason; <see cref="Reason"/> keeps
+    /// every project that has the reason at all.
+    /// </summary>
+    public FollowUpReason? MainReason { get; init; }
+}

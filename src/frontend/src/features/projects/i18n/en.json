@@ -71,7 +71,17 @@
     "isStrategic": "Strategic project"
   },
   "filters": {
-    "q": "Title or Formal Project ID"
+    "q": "Title or Formal Project ID",
+    "registered": "Registration",
+    "allRegistered": "All projects",
+    "registeredOnly": "Registered projects only",
+    "stage": "Current stage",
+    "allStages": "All stages",
+    "onPlan": "On plan",
+    "allOnPlan": "Any on-plan state",
+    "measured": "Progress measured",
+    "allMeasured": "All projects",
+    "measuredOnly": "Measured projects only"
   },
   "list": {
     "order": "Most recently changed first.",
@@ -352,7 +362,8 @@
     "owner": "Action owner",
     "due": "Due",
     "onPlan": "On plan",
-    "gap": "Gap"
+    "gap": "Gap",
+    "mainReason": "Main reason"
   },
   "import": {
     "nav": "Import projects",
@@ -499,7 +510,8 @@
     "TitleAscending": "Title, A to Z",
     "TitleDescending": "Title, Z to A",
     "FormalIdAscending": "Project ID, lowest first",
-    "FormalIdDescending": "Project ID, highest first"
+    "FormalIdDescending": "Project ID, highest first",
+    "ValueDescending": "Value, highest first"
   },
   "bulk": {
     "delete": "Delete {count} drafts",

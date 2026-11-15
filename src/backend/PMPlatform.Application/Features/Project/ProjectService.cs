@@ -3,6 +3,7 @@ using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Application.Common.Events;
 using PMPlatform.Application.Features.Approval.Contracts;
 using PMPlatform.Application.Features.IdentityAccess.Contracts.Administration;
+using PMPlatform.Application.Features.MasterDataConfig.Contracts.Resolution;
 using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.FollowUp;
 using PMPlatform.Domain.Common;
@@ -27,6 +28,7 @@ internal sealed class ProjectService(
     ProjectIndicatorReader indicators,
     ProjectStagePlanService stagePlans,
     IEnumerable<IProjectManagerHandover> handovers,
+    IConfigurationResolver resolver,
     IOutbox outbox,
     IAuditTrail audit,
     TimeProvider timeProvider) : IProjectService
@@ -41,10 +43,41 @@ internal sealed class ProjectService(
             return new ProjectPage([], query.Page.Page, query.Page.PageSize, 0);
         }
 
+        if (query.CurrentStage == ProjectQuery.NoStage)
+        {
+            ProjectStageSet? stages = await resolver.ResolveStagesAsync(timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            query = query with { KnownStageCodes = [.. stages?.Stages.Select(s => s.Code) ?? []] };
+        }
+
+        if (query.FiltersByIndicators)
+        {
+            // On-plan and measured are calculated per project, as the dashboard calculates them: read every match, keep those, then page.
+            IReadOnlyList<ProjectEntity> matching = await repository.ListMatchingAsync(scope, query, cancellationToken).ConfigureAwait(false);
+            Func<ProjectEntity, ProjectIndicators> indicatorsOfAll = await indicators.ForAsync(matching, cancellationToken).ConfigureAwait(false);
+            List<ProjectSummary> kept = [.. matching
+                .Select(p => (Project: p, Indicators: indicatorsOfAll(p)))
+                .Where(r => MatchesIndicators(r.Indicators, query))
+                .Select(r => ProjectMapping.ToSummary(r.Project, r.Indicators))];
+            return new ProjectPage([.. kept.Skip(query.Page.Skip).Take(query.Page.PageSize)], query.Page.Page, query.Page.PageSize, kept.Count);
+        }
+
         (IReadOnlyList<ProjectEntity> items, int total) = await repository.ListAsync(scope, query, cancellationToken).ConfigureAwait(false);
         Func<ProjectEntity, ProjectIndicators> indicatorsOf = await indicators.ForAsync(items, cancellationToken).ConfigureAwait(false);
         return new ProjectPage([.. items.Select(p => ProjectMapping.ToSummary(p, indicatorsOf(p)))], query.Page.Page, query.Page.PageSize, total);
     }
+
+    /// <summary>The portfolio dashboard's rules: measured when the gap is calculated; not measured exactly when there is no on-plan label.</summary>
+    private static bool MatchesIndicators(ProjectIndicators indicators, ProjectQuery query) =>
+        (!query.Measured || indicators.GapPoints is not null)
+        && query.OnPlan switch
+        {
+            null => true,
+            ProjectOnPlanFilter.OnTrack => indicators.OnPlan == OnPlanStatus.OnTrack,
+            ProjectOnPlanFilter.Late => indicators.OnPlan == OnPlanStatus.Late,
+            ProjectOnPlanFilter.Stalled => indicators.OnPlan == OnPlanStatus.Stalled,
+            ProjectOnPlanFilter.NotMeasured => indicators.OnPlan is null,
+            _ => throw new ArgumentOutOfRangeException(nameof(query), query.OnPlan, "Unknown on-plan filter."),
+        };
 
     public async Task<AdministrationResult<Versioned<ProjectDetail>>> GetAsync(Guid callerId, Guid projectId, CancellationToken cancellationToken)
     {

@@ -17,6 +17,7 @@ import { FOLLOW_UP_REASONS, type FollowUpReason } from '../api/types.ts';
 import { GapValue, OnPlanBadge } from '../components/FollowUpBadges.tsx';
 import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
 import { projectProblemMessage } from '../problems.ts';
+import { useCarriedFilters } from '../register/carriedFilters.ts';
 import { useProjectLookups } from '../useProjectLookups.ts';
 
 function isReason(value: string | null): value is FollowUpReason {
@@ -34,12 +35,37 @@ export function FollowUpListPage(): ReactElement {
   const lookups = useProjectLookups();
   const reasonParam = params.get('reason');
   const reason = isReason(reasonParam) ? reasonParam : undefined;
+  const mainReasonParam = params.get('mainReason');
+  const mainReason = isReason(mainReasonParam) ? mainReasonParam : undefined;
   const departmentId = params.get('departmentId') ?? undefined;
+  const carried = useCarriedFilters();
   const load = useCallback(
     (signal: AbortSignal) =>
-      followUpApi.list({ reason, departmentId, page, pageSize: PAGE_SIZE }, signal),
-    [reason, departmentId, page],
+      followUpApi.list(
+        { reason, mainReason, departmentId, ...carried.values, page, pageSize: PAGE_SIZE },
+        signal,
+      ),
+    // carried.key stands for carried.values, rebuilt on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [reason, mainReason, departmentId, carried.key, page],
   );
+  const chips = [
+    ...(mainReason === undefined
+      ? []
+      : [
+          {
+            name: 'mainReason',
+            text: t('common.filters.inline', {
+              label: t('projects.followUpList.mainReason'),
+              value: t(`projects.followUpReason.${mainReason}`),
+            }),
+            onRemove: () => {
+              setFilter('mainReason', '');
+            },
+          },
+        ]),
+    ...carried.chips,
+  ];
   const items = useApiResource(load);
   const selection = useRowSelection();
 
@@ -72,11 +98,17 @@ export function FollowUpListPage(): ReactElement {
             : []),
         ]}
         values={{ reason, departmentId }}
+        chips={chips}
         onChange={(name, value) => {
           setFilter(name, value ?? '');
         }}
         onClearAll={() => {
-          setFilters({ reason: '', departmentId: '' });
+          setFilters({
+            reason: '',
+            mainReason: '',
+            departmentId: '',
+            ...carried.cleared,
+          });
         }}
       />
       {items.loading && <LoadingState />}

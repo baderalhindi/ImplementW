@@ -1,7 +1,9 @@
 import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
 import { type ReactElement } from 'react';
+import { Link } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
+import { useCarriedFilters } from '@/features/projects/register/carriedFilters.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
@@ -19,7 +21,8 @@ import { risksApi } from './api/risksApi.ts';
  */
 export function RiskRegisterPage(): ReactElement {
   const { t } = useI18n();
-  const portfolio = useRiskPortfolio();
+  const carried = useCarriedFilters();
+  const portfolio = useRiskPortfolio(carried.values, carried.key);
   const rowActions = useRowActions<RiskEntry>({
     permission: 'RISK_MANAGE',
     changeable: ({ project: owner }) => owner.status !== 'CLOSED',
@@ -68,13 +71,19 @@ export function RiskRegisterPage(): ReactElement {
   return (
     <>
       {header}
-      {entries.length === 0 ? (
+      {entries.length === 0 && carried.chips.length > 0 ? (
+        <EmptyState title={t('risks.empty.filtered')}>
+          <Link to="/risks">{t('common.filters.clear')}</Link>
+        </EmptyState>
+      ) : entries.length === 0 ? (
         <EmptyState title={t('risks.empty.register.title')}>
           <p>{t('risks.empty.register.body')}</p>
         </EmptyState>
       ) : (
         <RiskRegisterView
           actions={rowActions}
+          chips={carried.chips}
+          clearedChips={carried.cleared}
           entries={entries}
           matrix={matrixOf(matrixState)}
           lookups={lookups}

@@ -20,27 +20,17 @@ import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { isInternal } from '../access.ts';
 import { projectsApi } from '../api/projectsApi.ts';
 import { type ProjectSummary } from '../api/types.ts';
+import { Percent } from '@/features/dashboards/insights/figures.tsx';
+
 import { GapValue, ImportedLabel, OnPlanBadge } from '../components/FollowUpBadges.tsx';
 import { ProjectStatusBadge } from '../components/ProjectStatusBadge.tsx';
 import { isForbidden, projectProblemMessage } from '../problems.ts';
 import { type ProjectLookups, useProjectLookups } from '../useProjectLookups.ts';
 import { ProjectFilters } from './ProjectFilters.tsx';
-import { useProjectFilterValues } from './projectFilterValues.ts';
+import { ITEM_FILTERS, useProjectFilterValues } from './projectFilterValues.ts';
 
 /** The filters each list offers; `q` and `status` everywhere, the rest of the filter bar on the Register only. */
-const FILTERS = [
-  'q',
-  'status',
-  'departmentId',
-  'externalEntityId',
-  'classificationItemId',
-  'strategicPortfolioItemId',
-  'strategicInitiativeItemId',
-  'priorityItemId',
-  'regionItemId',
-  'cityItemId',
-  'period',
-] as const;
+const FILTERS = ['q', 'status', 'departmentId', 'externalEntityId', ...ITEM_FILTERS] as const;
 
 interface ProjectListProps {
   user: SessionUser;
@@ -172,6 +162,7 @@ export function ProjectList({ user, mine, basePath }: ProjectListProps): ReactEl
               projects={projects.data.items}
               lookups={lookups}
               managerName={managerName}
+              showPercentages={itemFilters.measured === 'true'}
             />
             <Pagination
               page={projects.data.page}
@@ -255,11 +246,14 @@ function ProjectTable({
   projects,
   lookups,
   managerName,
+  showPercentages,
 }: {
   caption: string;
   projects: ProjectSummary[];
   lookups: ProjectLookups;
   managerName: (id: string | null) => string;
+  /** The planned and actual percentages beside the gap: the register opened from the dashboard's averages (review round 8, point 01). */
+  showPercentages: boolean;
   selection: RowSelection;
   mayEdit: boolean;
   /** The register's commands for the chosen projects, beside Export selected. */
@@ -278,6 +272,12 @@ function ProjectTable({
           <th scope="col">{t('projects.fields.formalProjectId')}</th>
           <th scope="col">{t('projects.fields.status')}</th>
           <th scope="col">{t('projects.followUpList.onPlan')}</th>
+          {showPercentages && (
+            <>
+              <th scope="col">{t('projects.followUp.declaredPlanned')}</th>
+              <th scope="col">{t('projects.followUp.declaredActual')}</th>
+            </>
+          )}
           <th scope="col">{t('projects.followUpList.gap')}</th>
           <th scope="col">{t('projects.fields.department')}</th>
           <th scope="col">{t('projects.fields.participation')}</th>
@@ -320,6 +320,16 @@ function ProjectTable({
             <td>
               <OnPlanBadge status={project.indicators?.onPlan} />
             </td>
+            {showPercentages && (
+              <>
+                <td>
+                  <Percent value={project.declaredPlannedPercent ?? null} />
+                </td>
+                <td>
+                  <Percent value={project.declaredActualPercent ?? null} />
+                </td>
+              </>
+            )}
             <td>
               <GapValue points={project.indicators?.gapPoints} />
             </td>

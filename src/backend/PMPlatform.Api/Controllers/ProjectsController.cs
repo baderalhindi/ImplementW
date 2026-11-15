@@ -30,8 +30,9 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
     /// SCR-025: only projects the caller may see. Filters: <c>status</c> (a set), <c>departmentId</c>, <c>externalEntityId</c>,
     /// <c>projectManagerUserId</c> (SCR-026 My Projects), <c>q</c> (title, Formal Project ID or legacy reference), and the filter bar's
     /// <c>classificationItemId</c>, <c>strategicPortfolioItemId</c>, <c>strategicInitiativeItemId</c>, <c>priorityItemId</c>,
-    /// <c>regionItemId</c>, <c>cityItemId</c> and <c>period</c>, a year the planned period touches (the 2 Nov 2026 review). Most recently changed
-    /// first.
+    /// <c>regionItemId</c>, <c>cityItemId</c> and <c>period</c>, a year the planned period touches (the 2 Nov 2026 review). Review round 8, point 01,
+    /// adds what the portfolio dashboard counts by: <c>registered</c> (past registration), <c>stage</c> (a current stage's code, or <c>NONE</c>),
+    /// <c>onPlan</c> (ON_TRACK, LATE, STALLED or NOT_MEASURED), <c>measured</c>, and the sort <c>value:desc</c>. Most recently changed first.
     /// </summary>
     [HttpGet]
     [RequirePermission(PermissionCatalogue.ProjectView)]
@@ -43,10 +44,16 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
         [FromQuery] Guid? classificationItemId = null, [FromQuery] Guid? strategicPortfolioItemId = null, [FromQuery] Guid? strategicInitiativeItemId = null,
         [FromQuery] Guid? priorityItemId = null, [FromQuery] Guid? regionItemId = null, [FromQuery] Guid? cityItemId = null,
         [FromQuery] int? period = null,
-        [FromQuery] string? sort = null)
+        [FromQuery] string? sort = null,
+        [FromQuery] bool registered = false, [FromQuery] string? stage = null, [FromQuery] string? onPlan = null, [FromQuery] bool measured = false)
     {
         List<FieldError> errors = [];
         RequestValidation.Optional(q, "q", QueryTextLength, errors);
+        if (stage is not null)
+        {
+            RequestValidation.Code(stage, "stage", errors);
+        }
+
         if (period is < 1900 or > 2200)
         {
             errors.Add(new FieldError("period", FieldError.OutOfRange));
@@ -64,6 +71,10 @@ public sealed class ProjectsController(IProjectService projects, IProjectFollowU
             CityItemId = cityItemId,
             PeriodYear = period,
             Sort = QueryParameters.ProjectSortOf(sort, errors),
+            Registered = registered,
+            CurrentStage = stage,
+            OnPlan = QueryParameters.OneEnum<ProjectOnPlanFilter>(onPlan, "onPlan", errors),
+            Measured = measured,
         };
         return errors.Count > 0 ? ValidationFailed(errors) : Ok(await projects.ListAsync(CallerId, query, cancellationToken));
     }

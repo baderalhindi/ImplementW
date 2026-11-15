@@ -11,6 +11,7 @@ import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { StatusFilterField } from './components/StatusFilterField.tsx';
+import { useTaskStatusFilter } from './useTaskStatusFilter.ts';
 import { TaskTable } from './components/TaskTable.tsx';
 import { type TaskDialog } from './dialogs/taskDialog.ts';
 import { TaskDialogs } from './dialogs/TaskDialogs.tsx';
@@ -20,7 +21,6 @@ import {
   listEntries,
   managesAny,
   matchesStatus,
-  type StatusFilter,
   type TaskListKind,
   todayUtc,
   updateReasons,
@@ -94,7 +94,7 @@ export function TaskListPage({ list }: { list: TaskListKind }): ReactElement | n
     remove: ({ task }) => tasksApi.remove(task.id),
     onDeleted: portfolio.reload,
   });
-  const [filter, setFilter] = useState<StatusFilter>('open');
+  const [filter, setFilter] = useTaskStatusFilter();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [open, setOpen] = useState<{ project: ProjectSummary; dialog: TaskDialog } | null>(null);
   const copy = COPY[list];

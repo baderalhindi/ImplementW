@@ -198,7 +198,7 @@ export function HostedDashboard({
               }}
             />
           )}
-          <DashboardCanvas view={view.data} headingLevel={2} />
+          <DashboardCanvas view={view.data} headingLevel={2} filters={filters} />
           <PersonalizeDialog
             open={personalizing}
             view={view.data}

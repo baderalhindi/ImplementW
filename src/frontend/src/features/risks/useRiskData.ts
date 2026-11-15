@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 import { projectsApi } from '@/features/projects/api/projectsApi.ts';
-import { type ProjectSummary } from '@/features/projects/api/types.ts';
+import { type ProjectQuery, type ProjectSummary } from '@/features/projects/api/types.ts';
 import { shortId } from '@/features/projects/presentation.ts';
 import { type ApiResponse } from '@/shared/api/httpClient.ts';
 import {
@@ -45,8 +45,21 @@ export interface RiskPortfolio {
  * caller may see are read first, then each one's risks. A project whose risks the caller may not see answers an empty
  * page.
  */
-async function readPortfolio(signal: AbortSignal): Promise<RiskPortfolio> {
-  const projects = await projectsApi.listAll({ status: RISK_PROJECT_STATUSES }, signal);
+async function readPortfolio(
+  filters: ProjectFilterQuery,
+  signal: AbortSignal,
+): Promise<RiskPortfolio> {
+  // A dashboard's status narrows the states whose risks are read; it never adds a state outside them.
+  const status =
+    filters.status === undefined
+      ? RISK_PROJECT_STATUSES
+      : RISK_PROJECT_STATUSES.split(',').includes(filters.status)
+        ? filters.status
+        : null;
+  if (status === null) {
+    return { projects: [], entries: [] };
+  }
+  const projects = await projectsApi.listAll({ ...filters, status }, signal);
   const entries: RiskEntry[] = [];
   for (let index = 0; index < projects.length; index += PARALLEL_READS) {
     const batch = projects.slice(index, index + PARALLEL_READS);
@@ -60,8 +73,19 @@ async function readPortfolio(signal: AbortSignal): Promise<RiskPortfolio> {
   return { projects, entries };
 }
 
-export function useRiskPortfolio(): ApiResource<RiskPortfolio> {
-  return useApiResource(readPortfolio, { keepWhileReloading: true });
+/** The project filters a dashboard carries into the register (review round 8, point 01); none reads every project the person may see. */
+export type ProjectFilterQuery = Omit<ProjectQuery, 'page' | 'pageSize' | 'sort' | 'q'>;
+
+export function useRiskPortfolio(
+  filters: ProjectFilterQuery = {},
+  filtersKey = '',
+): ApiResource<RiskPortfolio> {
+  return useApiResource(
+    // filtersKey stands for filters, rebuilt on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useCallback((signal: AbortSignal) => readPortfolio(filters, signal), [filtersKey]),
+    { keepWhileReloading: true },
+  );
 }
 
 /** The matrix in force, or why it cannot be drawn: not readable (RISK_VIEW) or none published. */

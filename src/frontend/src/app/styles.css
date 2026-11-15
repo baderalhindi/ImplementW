@@ -6647,3 +6647,98 @@ tr[data-flagged='true'] {
   cursor: pointer;
   font-weight: 600;
 }
+
+/* Review round 8, point 01: a dashboard value that opens the records it counts. A pointer, a tint on hover and the global focus ring say so. */
+.bars__link {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin: calc(-1 * var(--space-1));
+  padding: var(--space-1);
+  border-radius: var(--radius-card);
+  color: inherit;
+  text-decoration: none;
+}
+
+.column-chart__link {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  border-radius: var(--radius-card);
+  color: inherit;
+  text-decoration: none;
+}
+
+/* A portfolio's planned and actual columns as one link: the group's own grid, full width, so the columns keep their size. */
+.grouped-columns__link {
+  display: grid;
+  gap: var(--space-1);
+  border-radius: var(--radius-card);
+  color: inherit;
+  text-decoration: none;
+}
+
+.bars__link:hover,
+.column-chart__link:hover,
+.grouped-columns__link:hover,
+.drill-link:hover {
+  background: var(--color-primary-tint);
+  color: inherit;
+}
+
+.donut__segment.is-linked {
+  cursor: pointer;
+}
+
+/* A count in a table or a list that opens its records: the number, underlined only on hover so a table of them stays quiet. */
+.drill-link {
+  border-radius: 4px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.drill-link:hover {
+  text-decoration: underline;
+}
+
+/* A card whose whole surface opens its records; a link inside it stays its own. */
+.home__tile--linked {
+  position: relative;
+}
+
+.home__tile--linked:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.home__tile-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.home__tile-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.home__tile--linked a:not(.home__tile-link) {
+  position: relative;
+  z-index: 1;
+}
+
+.home__tile--linked:has(.home__tile-link:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.home__tile-link:focus-visible {
+  outline: none;
+}

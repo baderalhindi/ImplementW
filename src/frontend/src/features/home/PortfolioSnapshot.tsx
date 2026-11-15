@@ -8,6 +8,7 @@ import {
   type WidgetFigure,
 } from '@/features/dashboards/api/types.ts';
 import { ProjectLocations } from '@/features/dashboards/components/ProjectLocations.tsx';
+import { lifecycleRegisterPath } from '@/features/dashboards/drillLinks.ts';
 import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
 import { formatFigure, hasNoData, labelOfValue } from '@/features/dashboards/presentation.ts';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
@@ -42,6 +43,9 @@ interface Tile {
   label: string;
   value: string;
   tone?: StatusTone;
+  /** The records it counts (review round 8, point 01); a figure no list filters by has none. */
+  to?: string;
+  hint?: string;
 }
 
 function TileRow({
@@ -57,11 +61,22 @@ function TileRow({
   return (
     <ul className={`home__tiles home__tiles--${kind}`}>
       {tiles.map((tile) => (
-        <li key={tile.key} className="home__tile" data-tone={tile.tone}>
+        <li
+          key={tile.key}
+          className={tile.to === undefined ? 'home__tile' : 'home__tile home__tile--linked'}
+          data-tone={tile.tone}
+          title={tile.hint}
+        >
           <span className="home__tile-value" dir="ltr">
             {tile.value}
           </span>
-          <span className="home__tile-label">{tile.label}</span>
+          {tile.to === undefined ? (
+            <span className="home__tile-label">{tile.label}</span>
+          ) : (
+            <Link className="home__tile-label home__tile-link" to={tile.to}>
+              {tile.label}
+            </Link>
+          )}
         </li>
       ))}
     </ul>
@@ -103,15 +118,22 @@ export function PortfolioSnapshot(): ReactElement | null {
   const lifecycle = widgetOf(view, 'PROJECTS_BY_LIFECYCLE');
   if (lifecycle?.data != null) {
     const buckets = lifecycle.data.distribution;
+    const projects = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
+    const active = buckets.find((bucket) => bucket.key === 'ACTIVE')?.count ?? 0;
+    // The lifecycle widget counts every state, so the register opens unfiltered (all) or on ACTIVE.
     counts.push({
       key: 'projects',
       label: t('home.portfolio.projects'),
-      value: String(buckets.reduce((sum, bucket) => sum + bucket.count, 0)),
+      value: String(projects),
+      to: '/projects',
+      hint: t('dashboards.drill.projects', { count: projects }),
     });
     counts.push({
       key: 'active',
       label: t('home.portfolio.active'),
-      value: String(buckets.find((bucket) => bucket.key === 'ACTIVE')?.count ?? 0),
+      value: String(active),
+      to: lifecycleRegisterPath({}, 'ACTIVE'),
+      hint: t('dashboards.drill.projects', { count: active }),
     });
   }
   const health = widgetOf(view, 'PUBLISHED_HEALTH') ?? widgetOf(view, 'CURRENT_HEALTH');
@@ -135,7 +157,14 @@ export function PortfolioSnapshot(): ReactElement | null {
   const openRisks = figureOf(widgetOf(view, 'RISK_EXPOSURE'), 'OPEN_RISKS');
   const openRiskValue = openRisks === undefined ? null : formatFigure(openRisks, t);
   if (openRiskValue !== null) {
-    counts.push({ key: 'risks', label: t('home.portfolio.openRisks'), value: openRiskValue });
+    // The risk register opens on the open risks.
+    counts.push({
+      key: 'risks',
+      label: t('home.portfolio.openRisks'),
+      value: openRiskValue,
+      to: '/risks',
+      hint: t('dashboards.drill.risks', { count: openRiskValue }),
+    });
   }
   const financials = widgetOf(view, 'PUBLISHED_FINANCIALS') ?? widgetOf(view, 'CURRENT_FINANCIALS');
   for (const measure of ['APPROVED_BUDGET', 'ACTUAL_EXPENDITURE_TO_DATE'] as const) {

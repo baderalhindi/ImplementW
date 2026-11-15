@@ -2,7 +2,10 @@ import { useListParams } from '@/shared/api/useListParams.ts';
 
 import { isProjectStatus } from '../presentation.ts';
 
-/** The register's filter bar parameters besides `q`, `status` and the two organization ones (the 2 Nov 2026 review, R3-1). */
+/**
+ * The register's filter bar parameters besides `q`, `status` and the two organization ones (the 2 Nov 2026 review, R3-1), then those a dashboard
+ * count opens the register with (review round 8, point 01).
+ */
 export const ITEM_FILTERS = [
   'classificationItemId',
   'strategicPortfolioItemId',
@@ -11,7 +14,17 @@ export const ITEM_FILTERS = [
   'regionItemId',
   'cityItemId',
   'period',
+  'registered',
+  'stage',
+  'onPlan',
+  'measured',
 ] as const;
+
+/** The stage filter's value for the projects with no current stage, as the dashboard counts them. */
+export const NO_STAGE = 'NONE';
+
+/** The on-plan filter's value for the projects with no label: not both percentages, or not running. */
+export const NOT_MEASURED = 'NOT_MEASURED';
 
 export interface ProjectFilterValues {
   q: string;

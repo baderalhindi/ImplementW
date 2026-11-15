@@ -3,7 +3,9 @@ import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
 
+import { type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { type DashboardView, type DashboardWidgetResult } from '../api/types.ts';
+import { widgetValuePath } from '../drillLinks.ts';
 import { drillPath } from '../drill.ts';
 import { drawnSpan, filledSpans, visibleWidgets } from '../layout.ts';
 
@@ -24,18 +26,34 @@ import { DistributionBody, MetricBody, ProgressBody } from './WidgetBodies.tsx';
 function WidgetBody({
   widget,
   title,
+  filters,
+  projectId,
 }: {
   widget: DashboardWidgetResult;
   title: string;
+  filters: PortfolioFilters;
+  projectId: string | null;
 }): ReactElement {
+  const { t } = useI18n();
   if (widget.data === null) {
     return <UnknownValue reason={widget.unknownReason ?? 'MISSING'} />;
   }
+  // A value opens its records only where the widget may drill at all (a restricted widget has no drill target).
+  const linkOf =
+    widget.drillTargetScreenId === null
+      ? undefined
+      : (key: string, count: number) => {
+          const path = widgetValuePath(widget.projectionCode, key, filters, projectId);
+          return path === null
+            ? null
+            : { href: path.href, hint: t(`dashboards.drill.${path.kind}`, { count }) };
+        };
   const props = {
     projectionCode: widget.projectionCode,
     widgetType: widget.widgetType,
     data: widget.data,
     title,
+    linkOf,
   };
   switch (widget.widgetType) {
     case 'METRIC_CARD':
@@ -56,12 +74,14 @@ function WidgetCard({
   span,
   projectId,
   headingLevel,
+  filters,
 }: {
   widget: DashboardWidgetResult;
   /** Columns it takes in the drawn order (`filledSpans`). */
   span: number;
   projectId: string | null;
   headingLevel: 2 | 3;
+  filters: PortfolioFilters;
 }): ReactElement {
   const { t, language } = useI18n();
   const titleId = useId();
@@ -100,7 +120,7 @@ function WidgetCard({
           </p>
         )}
       </div>
-      <WidgetBody widget={widget} title={title} />
+      <WidgetBody widget={widget} title={title} filters={filters} projectId={projectId} />
       <div className="widget__footer">
         {widget.coverageDetail !== null && <CoverageLine coverage={widget.coverageDetail} />}
         <ProjectionOrigin widget={widget} />
@@ -112,9 +132,12 @@ function WidgetCard({
 export function DashboardCanvas({
   view,
   headingLevel,
+  filters = {},
 }: {
   view: DashboardView;
   headingLevel: 2 | 3;
+  /** The dashboard's filters, which a value's link carries to the list it opens. */
+  filters?: PortfolioFilters;
 }): ReactElement {
   const widgets = visibleWidgets(view.widgets);
   const spans = filledSpans(widgets.map(drawnSpan));
@@ -127,6 +150,7 @@ export function DashboardCanvas({
           span={spans[index] ?? widget.layoutSpan}
           projectId={view.projectId}
           headingLevel={headingLevel}
+          filters={filters}
         />
       ))}
     </div>

@@ -268,6 +268,61 @@ describe('SCR-025 Project Register', () => {
     });
   });
 
+  test('a dashboard count opens the register on its filters, each a chip; measured adds the percentages (review round 8, point 01)', async () => {
+    const api = withProjectLookups(mockApi())
+      .on('GET', /^\/project-stages$/, { body: page([]) })
+      .on('GET', /^\/projects$/, { body: page([PROJECTS[1]]) });
+    renderApp({
+      path: '/projects?registered=true&onPlan=LATE&measured=true&stage=NONE&sort=value:desc',
+      session: sessionFor(['R04']),
+    });
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/projects$/).length).toBeGreaterThan(0);
+    });
+    const query = api.requestsTo('GET', /^\/projects$/)[0]?.query;
+    expect(query?.get('registered')).toBe('true');
+    expect(query?.get('onPlan')).toBe('LATE');
+    expect(query?.get('measured')).toBe('true');
+    expect(query?.get('stage')).toBe('NONE');
+    expect(query?.get('sort')).toBe('value:desc');
+    const chips = await screen.findByRole('list', { name: en('common.filters.active') });
+    const text = chips.textContent;
+    for (const value of [
+      en('projects.filters.registeredOnly'),
+      en('projects.onPlan.LATE'),
+      en('projects.filters.measuredOnly'),
+      en('dashboards.insights.noCurrentStage'),
+    ]) {
+      expect(text).toContain(value);
+    }
+    expect(
+      await screen.findByRole('columnheader', { name: en('projects.followUp.declaredPlanned') }),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('columnheader', { name: en('projects.followUp.declaredActual') }),
+    ).not.toBeNull();
+  });
+
+  test("the Follow-up list takes the dashboard's filters and the main reason, each a chip (review round 8, point 01)", async () => {
+    const api = withProjectLookups(mockApi()).on('GET', /^\/project-follow-ups$/, {
+      body: page([]),
+    });
+    renderApp({
+      path: '/projects/follow-up?mainReason=STALLED&period=2026&status=ACTIVE',
+      session: sessionFor(['R04']),
+    });
+    await waitFor(() => {
+      expect(api.requestsTo('GET', /^\/project-follow-ups$/).length).toBeGreaterThan(0);
+    });
+    const query = api.requestsTo('GET', /^\/project-follow-ups$/)[0]?.query;
+    expect(query?.get('mainReason')).toBe('STALLED');
+    expect(query?.get('period')).toBe('2026');
+    expect(query?.get('status')).toBe('ACTIVE');
+    const chips = await screen.findByRole('list', { name: en('common.filters.active') });
+    expect(within(chips).getAllByRole('button')).toHaveLength(3);
+    expect(chips.textContent).toContain(en('projects.followUpReason.STALLED'));
+  });
+
   test('the Viewer (R06) reads the register and is offered no Import', async () => {
     openRegister('/projects', sessionFor(['R06']));
 

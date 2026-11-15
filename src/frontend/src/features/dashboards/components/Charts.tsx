@@ -1,9 +1,33 @@
-import { type CSSProperties, type ReactElement } from 'react';
+import { type CSSProperties, type ReactElement, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router';
 
-import { type ChartBucket } from '../charts.ts';
+import { anyLinked, type ChartBucket } from '../charts.ts';
 
 // The drawn half of a widget: every chart here only repeats values the widget's table states in words, so each is
-// hidden from assistive technology and the table stays the text alternative.
+// hidden from assistive technology and the table stays the text alternative — unless its values link to the records
+// they count (review round 8, point 01). Then each bar or column is a link named by its words and count, reached by
+// Tab and opened by Enter; a donut's segments open on click, and its legend or table carries the same links.
+
+/** A value's marks, as a link to its records when it has one. */
+function Marks({
+  href,
+  hint,
+  className,
+  children,
+}: {
+  href: string | undefined;
+  hint: string | undefined;
+  className: string;
+  children: ReactNode;
+}): ReactElement {
+  return href === undefined ? (
+    <>{children}</>
+  ) : (
+    <Link className={className} to={href} title={hint}>
+      {children}
+    </Link>
+  );
+}
 
 const SIZE = 168;
 const RADIUS = 66;
@@ -31,6 +55,7 @@ export function DonutChart({
   /** What the centre shows while nothing is hovered, in place of the total, such as an overall rate. */
   summary?: { value: string; label: string };
 }): ReactElement {
+  const navigate = useNavigate();
   const drawn = buckets.filter((bucket) => bucket.count > 0);
   const total = drawn.reduce((sum, bucket) => sum + bucket.count, 0);
   const hovered = buckets.find((bucket) => bucket.key === active);
@@ -55,7 +80,7 @@ export function DonutChart({
             return (
               <circle
                 key={bucket.key}
-                className={`donut__segment${state}`}
+                className={`donut__segment${state}${bucket.href === undefined ? '' : ' is-linked'}`}
                 cx={centre}
                 cy={centre}
                 r={RADIUS}
@@ -70,7 +95,16 @@ export function DonutChart({
                 onPointerLeave={() => {
                   onActive(null);
                 }}
-              />
+                onClick={
+                  bucket.href === undefined
+                    ? undefined
+                    : () => {
+                        void navigate(bucket.href ?? '');
+                      }
+                }
+              >
+                {bucket.hint !== undefined && <title>{bucket.hint}</title>}
+              </circle>
             );
           })}
         </g>
@@ -105,7 +139,7 @@ export function ColumnChart({
 }): ReactElement {
   const largest = Math.max(1, ...buckets.map((bucket) => bucket.count));
   return (
-    <div className="column-chart" aria-hidden="true">
+    <div className="column-chart" aria-hidden={anyLinked(buckets) ? undefined : true}>
       {buckets.map((bucket) => (
         <div
           key={bucket.key}
@@ -117,21 +151,23 @@ export function ColumnChart({
             onActive(null);
           }}
         >
-          <div className="column-chart__track">
-            <span className="column-chart__value" dir="ltr">
-              {bucket.count}
-            </span>
-            <span
-              className="column-chart__bar"
-              style={
-                {
-                  blockSize: `${String((bucket.count / largest) * 100)}%`,
-                  '--chart-color': bucket.color,
-                } as CSSProperties
-              }
-            />
-          </div>
-          <span className="column-chart__label">{bucket.text}</span>
+          <Marks href={bucket.href} hint={bucket.hint} className="column-chart__link">
+            <div className="column-chart__track">
+              <span className="column-chart__value" dir="ltr">
+                {bucket.count}
+              </span>
+              <span
+                className="column-chart__bar"
+                style={
+                  {
+                    blockSize: `${String((bucket.count / largest) * 100)}%`,
+                    '--chart-color': bucket.color,
+                  } as CSSProperties
+                }
+              />
+            </div>
+            <span className="column-chart__label">{bucket.text}</span>
+          </Marks>
         </div>
       ))}
     </div>
@@ -150,7 +186,7 @@ export function BarChart({
 }): ReactElement {
   const largest = Math.max(1, ...buckets.map((bucket) => bucket.count));
   return (
-    <ul className="bars" aria-hidden="true">
+    <ul className="bars" aria-hidden={anyLinked(buckets) ? undefined : true}>
       {buckets.map((bucket) => (
         <li
           key={bucket.key}
@@ -162,21 +198,23 @@ export function BarChart({
             onActive(null);
           }}
         >
-          <span className="bars__label">{bucket.text}</span>
-          <span className="bars__value" dir="ltr">
-            {bucket.count}
-          </span>
-          <span className="widget__bar-track">
-            <span
-              className="widget__bar"
-              style={
-                {
-                  inlineSize: `${String((bucket.count / largest) * 100)}%`,
-                  '--chart-color': bucket.color,
-                } as CSSProperties
-              }
-            />
-          </span>
+          <Marks href={bucket.href} hint={bucket.hint} className="bars__link">
+            <span className="bars__label">{bucket.text}</span>
+            <span className="bars__value" dir="ltr">
+              {bucket.count}
+            </span>
+            <span className="widget__bar-track">
+              <span
+                className="widget__bar"
+                style={
+                  {
+                    inlineSize: `${String((bucket.count / largest) * 100)}%`,
+                    '--chart-color': bucket.color,
+                  } as CSSProperties
+                }
+              />
+            </span>
+          </Marks>
         </li>
       ))}
     </ul>
@@ -189,12 +227,20 @@ export function GroupedColumnChart({
   series,
   missing,
 }: {
-  groups: { key: string; text: string; values: (number | null)[] }[];
+  groups: {
+    key: string;
+    text: string;
+    values: (number | null)[];
+    /** The group's records (review round 8, point 01). */
+    href?: string | undefined;
+    hint?: string | undefined;
+  }[];
   series: { key: string; text: string; color: string }[];
   missing: string;
 }): ReactElement {
+  const linked = groups.some((group) => group.href !== undefined);
   return (
-    <div className="grouped-columns" aria-hidden="true">
+    <div className="grouped-columns" aria-hidden={linked ? undefined : true}>
       <ul className="grouped-columns__legend">
         {series.map((entry) => (
           <li key={entry.key}>
@@ -209,30 +255,32 @@ export function GroupedColumnChart({
       <div className="grouped-columns__plot">
         {groups.map((group) => (
           <div key={group.key} className="grouped-columns__group">
-            <div className="grouped-columns__bars">
-              {series.map((entry, index) => {
-                const value = group.values[index] ?? null;
-                return (
-                  <div key={entry.key} className="grouped-columns__track">
-                    <span className="grouped-columns__value" dir="ltr">
-                      {value === null ? missing : `${String(Math.round(value * 10) / 10)}%`}
-                    </span>
-                    {value !== null && (
-                      <span
-                        className="grouped-columns__bar"
-                        style={
-                          {
-                            blockSize: `${String(Math.min(100, Math.max(0, value)))}%`,
-                            '--chart-color': entry.color,
-                          } as CSSProperties
-                        }
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <span className="column-chart__label">{group.text}</span>
+            <Marks href={group.href} hint={group.hint} className="grouped-columns__link">
+              <div className="grouped-columns__bars">
+                {series.map((entry, index) => {
+                  const value = group.values[index] ?? null;
+                  return (
+                    <div key={entry.key} className="grouped-columns__track">
+                      <span className="grouped-columns__value" dir="ltr">
+                        {value === null ? missing : `${String(Math.round(value * 10) / 10)}%`}
+                      </span>
+                      {value !== null && (
+                        <span
+                          className="grouped-columns__bar"
+                          style={
+                            {
+                              blockSize: `${String(Math.min(100, Math.max(0, value)))}%`,
+                              '--chart-color': entry.color,
+                            } as CSSProperties
+                          }
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <span className="column-chart__label">{group.text}</span>
+            </Marks>
           </div>
         ))}
       </div>

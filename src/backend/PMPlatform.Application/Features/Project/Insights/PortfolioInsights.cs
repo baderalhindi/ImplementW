@@ -9,10 +9,35 @@ using ProjectEntity = PMPlatform.Domain.Project.Project;
 
 namespace PMPlatform.Application.Features.Project.Insights;
 
-/// <summary>Narrows the projects as the one filter bar does. Filters narrow a scope; they never widen it.</summary>
+/// <summary>
+/// Narrows the projects as the one filter bar does. Filters narrow a scope; they never widen it. The Follow-up list narrows by the same rule, so a count on the dashboard
+/// opens a list of the same projects (review round 8, point 01).
+/// </summary>
 public sealed record PortfolioInsightFilters(
     Guid? DepartmentId = null, Guid? ExternalEntityId = null, Guid? ClassificationItemId = null, Guid? RegionItemId = null, Guid? CityItemId = null, ProjectLifecycleState? Status = null,
-    Guid? PriorityItemId = null, Guid? StrategicPortfolioItemId = null, Guid? StrategicInitiativeItemId = null, int? Period = null);
+    Guid? PriorityItemId = null, Guid? StrategicPortfolioItemId = null, Guid? StrategicInitiativeItemId = null, int? Period = null)
+{
+    public bool Matches(ProjectEntity project)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        return (DepartmentId is not { } department || project.DepartmentId == department)
+               && (ExternalEntityId is not { } entity || project.ExternalEntityId == entity)
+               && (ClassificationItemId is not { } sector || project.ClassificationItemId == sector)
+               && (RegionItemId is not { } region || project.RegionItemId == region)
+               && (CityItemId is not { } city || project.CityItemId == city)
+               && (Status is not { } status || project.LifecycleState == status)
+               && (PriorityItemId is not { } priority || project.PriorityItemId == priority)
+               && (StrategicPortfolioItemId is not { } portfolio || project.StrategicPortfolioItemId == portfolio)
+               && (StrategicInitiativeItemId is not { } initiative || project.StrategicInitiativeItemId == initiative)
+               && (Period is not { } year || TouchesYear(project, year));
+    }
+
+    private static bool TouchesYear(ProjectEntity p, int year)
+    {
+        (DateOnly? start, DateOnly? end) = (p.PlannedStartDate ?? p.PlannedEndDate, p.PlannedEndDate ?? p.PlannedStartDate);
+        return start is { } s && end is { } e && s.Year <= year && e.Year >= year;
+    }
+}
 
 /// <summary>RPMO's six headline cards (the 5 Nov 2026 review §3 row 1). A value is null when the caller may not see amounts; an average is null when nothing is measured.</summary>
 public sealed record PortfolioHeadline(
@@ -83,12 +108,6 @@ internal sealed class PortfolioInsightsService(
 {
     private const int TopCount = 10;
 
-    /// <summary>What counts on these figures: a project past registration. A draft or a request under review is not yet the register's.</summary>
-    private static readonly ProjectLifecycleState[] Registering =
-    [
-        ProjectLifecycleState.Draft, ProjectLifecycleState.Submitted, ProjectLifecycleState.UnderReview, ProjectLifecycleState.Returned,
-    ];
-
     public async Task<PortfolioInsights> GetAsync(Guid callerId, PortfolioInsightFilters filters, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(filters);
@@ -156,27 +175,9 @@ internal sealed class PortfolioInsightsService(
 
     private async Task<IReadOnlyList<Row>> RowsAsync(RecordScope scope, PortfolioInsightFilters filters, CancellationToken cancellationToken)
     {
-        List<ProjectEntity> reached = [.. (await repository.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false)).Where(p => !Registering.Contains(p.LifecycleState) && Matches(p, filters))];
+        List<ProjectEntity> reached = [.. (await repository.ListReachedAsync(scope, cancellationToken).ConfigureAwait(false)).Where(p => !ProjectLifecycleStates.Registering.Contains(p.LifecycleState) && filters.Matches(p))];
         Func<ProjectEntity, ProjectIndicators> indicatorsOf = await indicators.ForAsync(reached, cancellationToken).ConfigureAwait(false);
         return [.. reached.Select(p => new Row(p, indicatorsOf(p)))];
-    }
-
-    private static bool Matches(ProjectEntity p, PortfolioInsightFilters f) =>
-        (f.DepartmentId is not { } department || p.DepartmentId == department)
-        && (f.ExternalEntityId is not { } entity || p.ExternalEntityId == entity)
-        && (f.ClassificationItemId is not { } sector || p.ClassificationItemId == sector)
-        && (f.RegionItemId is not { } region || p.RegionItemId == region)
-        && (f.CityItemId is not { } city || p.CityItemId == city)
-        && (f.Status is not { } status || p.LifecycleState == status)
-        && (f.PriorityItemId is not { } priority || p.PriorityItemId == priority)
-        && (f.StrategicPortfolioItemId is not { } portfolio || p.StrategicPortfolioItemId == portfolio)
-        && (f.StrategicInitiativeItemId is not { } initiative || p.StrategicInitiativeItemId == initiative)
-        && (f.Period is not { } year || TouchesYear(p, year));
-
-    private static bool TouchesYear(ProjectEntity p, int year)
-    {
-        (DateOnly? start, DateOnly? end) = (p.PlannedStartDate ?? p.PlannedEndDate, p.PlannedEndDate ?? p.PlannedStartDate);
-        return start is { } s && end is { } e && s.Year <= year && e.Year >= year;
     }
 
     private static PortfolioHeadline Headline(IReadOnlyList<Row> rows, bool amounts, OnPlanThresholds thresholds)

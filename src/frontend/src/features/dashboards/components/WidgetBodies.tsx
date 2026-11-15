@@ -1,4 +1,5 @@
 import { type CSSProperties, type ReactElement, useState } from 'react';
+import { Link } from 'react-router';
 
 import { OverriddenBadge } from '@/features/progress/components/ProgressBadges.tsx';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -28,6 +29,8 @@ interface BodyProps {
   widgetType: DashboardWidgetType;
   data: WidgetData;
   title: string;
+  /** Where a value opens the records it counts, if anywhere (review round 8, point 01). */
+  linkOf?: ((key: string, count: number) => { href: string; hint: string } | null) | undefined;
 }
 
 /** One figure's value, or its state in words. */
@@ -131,6 +134,7 @@ export function DistributionBody({
   widgetType,
   data,
   title,
+  linkOf,
 }: BodyProps): ReactElement {
   const { t, language } = useI18n();
   const [active, setActive] = useState<string | null>(null);
@@ -141,12 +145,17 @@ export function DistributionBody({
     labels.map((label) => label.tone),
     isStatusScale(projectionCode),
   );
-  const buckets: ChartBucket[] = data.distribution.map((bucket, index) => ({
-    key: bucket.key,
-    count: bucket.count,
-    text: labels[index]?.text ?? bucket.key,
-    color: colors[index] ?? 'var(--chart-single)',
-  }));
+  const buckets: ChartBucket[] = data.distribution.map((bucket, index) => {
+    const link = linkOf?.(bucket.key, bucket.count) ?? null;
+    return {
+      key: bucket.key,
+      count: bucket.count,
+      text: labels[index]?.text ?? bucket.key,
+      color: colors[index] ?? 'var(--chart-single)',
+      href: link?.href,
+      hint: link?.hint,
+    };
+  });
   const form = chartForm(widgetType, buckets.length);
   const lift = (key: string) => (active === null ? '' : active === key ? 'is-active' : 'is-dimmed');
   return (
@@ -193,7 +202,14 @@ export function DistributionBody({
                 >
                   <th scope="row">
                     <span className="distribution__key" aria-hidden="true" />
-                    {bucket.text}
+                    {/* The donut's table is its visible legend: there a value links. Under bars and columns the table is hidden and they link. */}
+                    {form === 'donut' && bucket.href !== undefined ? (
+                      <Link className="drill-link" to={bucket.href} title={bucket.hint}>
+                        {bucket.text}
+                      </Link>
+                    ) : (
+                      bucket.text
+                    )}
                   </th>
                   <td>
                     <span className="widget__count figure" dir="ltr">

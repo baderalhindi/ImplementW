@@ -46,6 +46,18 @@ export const followUpApi = {
     query: {
       departmentId?: string | undefined;
       reason?: FollowUpReason | undefined;
+      /** The first reason only, as the dashboard counts each project once (review round 8, point 01). */
+      mainReason?: FollowUpReason | undefined;
+      /** The dashboard's filter bar, carried over from the count that opened the list. */
+      externalEntityId?: string | undefined;
+      classificationItemId?: string | undefined;
+      regionItemId?: string | undefined;
+      cityItemId?: string | undefined;
+      status?: string | undefined;
+      priorityItemId?: string | undefined;
+      strategicPortfolioItemId?: string | undefined;
+      strategicInitiativeItemId?: string | undefined;
+      period?: string | undefined;
       page?: number;
       pageSize?: number;
     },
