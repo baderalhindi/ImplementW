@@ -1,5 +1,10 @@
 import { approvalNavigation } from '@/features/approvals/routes.tsx';
-import { AUDIT_TRAIL_PATH, auditNavigation } from '@/features/audit-activity/access.ts';
+import {
+  AUDIT_TRAIL_PATH,
+  auditNavigation,
+  INTEGRATION_AUDIT_PATH,
+  SYSTEM_EVENT_LOGS_PATH,
+} from '@/features/audit-activity/access.ts';
 import { type AuditAccessView } from '@/features/audit-activity/api/types.ts';
 import { changeRequestNavigation } from '@/features/change-requests/routes.tsx';
 import { documentNavigation } from '@/features/documents/routes.tsx';
@@ -21,7 +26,17 @@ import {
   type NavigationItem,
 } from '@/features/identity-access/routes.tsx';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
-import { integrationAdminNavigation } from '@/features/integration-admin/catalogue.ts';
+import {
+  API_CATALOGUE_PATH,
+  EMAIL_EXCHANGE_PATH,
+  INTEGRATION_LOGS_PATH,
+  INTEGRATION_MONITORING_PATH,
+  integrationAdminNavigation,
+  INTEGRATIONS_OVERVIEW_PATH,
+  INTERNAL_SYSTEMS_PATH,
+  NAFATH_PATH,
+  SSO_DIRECTORY_PATH,
+} from '@/features/integration-admin/catalogue.ts';
 import { issuesChallengesNavigation } from '@/features/issues-challenges/routes.tsx';
 import { milestoneNavigation } from '@/features/milestones/routes.tsx';
 import { notificationNavigation } from '@/features/notifications/routes.tsx';
@@ -52,9 +67,17 @@ export type MenuId =
   | 'administration'
   | 'help';
 
+/** A heading of a menu's screens and the screens under it. */
+export interface MenuGroup {
+  label: TranslationKey;
+  items: NavigationItem[];
+}
+
 export interface Menu {
   id: MenuId;
   label: TranslationKey;
+  /** The screens under headings, when the menu has too many for one row (Administration). */
+  groups?: MenuGroup[];
   /** Where the menu itself leads: its first screen. */
   to: string;
   /** The path prefixes whose screens belong to the menu, so a record's page keeps its menu open. */
@@ -95,6 +118,59 @@ function portfolioNavigation(dashboards: readonly DashboardCatalogueEntry[]): Na
 
 /** The audit categories that are platform evidence (FG-06 §7.2): their holders read the audit trail under Administration. */
 const ADMINISTRATIVE_AUDIT: readonly string[] = ['ADMINISTRATION', 'SECURITY', 'INTEGRATION'];
+
+/**
+ * Administration's screens under six headings, so its tabs keep to one row (the 15 Nov 2026 request, after review round 8, point 04). A screen not
+ * named here goes under the last heading.
+ */
+const ADMINISTRATION_GROUPS: { label: TranslationKey; paths: readonly string[] }[] = [
+  {
+    label: 'common.menu.adminGroups.access',
+    paths: ['/admin/users', '/admin/roles', '/admin/permission-matrix', '/admin/role-assignments'],
+  },
+  {
+    label: 'common.menu.adminGroups.organization',
+    paths: ['/admin/organization/departments', '/admin/organization/entities'],
+  },
+  {
+    label: 'common.menu.adminGroups.referenceData',
+    paths: ['/admin/master-data', '/admin/project-stages'],
+  },
+  {
+    label: 'common.menu.adminGroups.integrations',
+    paths: [
+      INTEGRATIONS_OVERVIEW_PATH,
+      INTEGRATION_MONITORING_PATH,
+      INTEGRATION_LOGS_PATH,
+      API_CATALOGUE_PATH,
+    ],
+  },
+  {
+    label: 'common.menu.adminGroups.connectedSystems',
+    paths: [SSO_DIRECTORY_PATH, EMAIL_EXCHANGE_PATH, NAFATH_PATH, INTERNAL_SYSTEMS_PATH],
+  },
+  {
+    label: 'common.menu.adminGroups.dataAndAudit',
+    paths: [
+      '/admin/data-migration',
+      AUDIT_TRAIL_PATH,
+      INTEGRATION_AUDIT_PATH,
+      SYSTEM_EVENT_LOGS_PATH,
+    ],
+  },
+];
+
+/** The offered screens under their headings, a heading with none left out; a screen no heading names joins the last heading. */
+function groupedAdministration(items: NavigationItem[]): MenuGroup[] {
+  const named = new Set(ADMINISTRATION_GROUPS.flatMap((group) => group.paths));
+  const last = ADMINISTRATION_GROUPS.length - 1;
+  return ADMINISTRATION_GROUPS.map((group, index) => ({
+    label: group.label,
+    items: items.filter(
+      (item) => group.paths.includes(item.to) || (index === last && !named.has(item.to)),
+    ),
+  })).filter((group) => group.items.length > 0);
+}
 
 /** The screens under /admin's guard, each offered on its own permission: holding any of them is what makes an administrator. */
 export const administrationNavigation: readonly NavigationItem[] = [
@@ -193,7 +269,12 @@ export function menusFor(
     menu('help', 'common.menu.help', ['/help'], helpNavigation),
   ].map((candidate) => {
     const items = candidate.items.filter((item) => permissions.can(...(item.permissions ?? [])));
-    return { ...candidate, to: items[0]?.to ?? candidate.to, items };
+    return {
+      ...candidate,
+      to: items[0]?.to ?? candidate.to,
+      items,
+      ...(candidate.id === 'administration' ? { groups: groupedAdministration(items) } : {}),
+    };
   });
   return menus.filter((candidate) => candidate.id === 'home' || candidate.items.length > 0);
 }

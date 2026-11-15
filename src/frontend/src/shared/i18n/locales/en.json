@@ -144,7 +144,15 @@
     "expand": "Expand menu",
     "open": "Open menu",
     "close": "Close menu",
-    "help": "Help and Knowledge"
+    "help": "Help and Knowledge",
+    "adminGroups": {
+      "access": "Users and access",
+      "organization": "Organization",
+      "referenceData": "Reference data",
+      "integrations": "Integrations",
+      "connectedSystems": "Connected systems",
+      "dataAndAudit": "Data and audit"
+    }
   },
   "shell": {
     "breadcrumb": "Breadcrumb",

@@ -200,3 +200,22 @@ The card is on the Portfolio dashboard, for AHDA's people who hold EXTERNAL_REQU
   - After Financials, leaving and reopening the project returns to Financials.
   - `/projects/{id}/progress` opens Progress.
 - **Tests not yet updated.** The workspace tests that list every tab in one row describe the old single row. They are updated in the CI step.
+
+## Administration tabs on one row (15 Nov request, beside point 04)
+
+The client asked for this outside the PDFs. Administration's 19 screens wrapped onto two rows. They now sit under six headings on one row, and the open heading's screens show on a second row, as on the project page:
+
+| Heading | Screens |
+|---|---|
+| المستخدمون والصلاحيات | Users, Roles, Permission matrix, Role assignments |
+| الهيكل التنظيمي | Departments, External entities |
+| البيانات المرجعية | Master data, Project stages |
+| التكاملات | Integrations overview, Integration monitoring, Integration logs, API integration catalogue |
+| الأنظمة المرتبطة | SSO and directory, E-mail and Exchange, Nafath, Internal systems |
+| البيانات والتدقيق | Data migration, Audit trail, Integration audit logs, System event logs |
+
+- **Where it lives.** `ADMINISTRATION_GROUPS` in `app/menus.ts`. A screen not named there joins the last heading.
+- **What each person sees.** Each screen keeps its permission and its address. A heading shows only when the person is offered one of its screens, and it opens the first of those.
+- **Other menus.** They keep their single row.
+- **Checked in a browser at 1280 px, as local.r01.** The six headings fit on one row, and each heading's screens fit on one row.
+- **Point 15.** This does not cover the admin side menu.

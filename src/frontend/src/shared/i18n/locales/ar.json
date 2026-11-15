@@ -144,7 +144,15 @@
     "expand": "توسيع القائمة",
     "open": "فتح القائمة",
     "close": "إغلاق القائمة",
-    "help": "المساعدة والمعرفة"
+    "help": "المساعدة والمعرفة",
+    "adminGroups": {
+      "access": "المستخدمون والصلاحيات",
+      "organization": "الهيكل التنظيمي",
+      "referenceData": "البيانات المرجعية",
+      "integrations": "التكاملات",
+      "connectedSystems": "الأنظمة المرتبطة",
+      "dataAndAudit": "البيانات والتدقيق"
+    }
   },
   "shell": {
     "breadcrumb": "مسار التنقل",

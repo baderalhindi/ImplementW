@@ -18,6 +18,8 @@ import { useI18n } from '@/shared/i18n/i18n.ts';
 import { useTheme } from '@/shared/theme/theme.ts';
 
 import { GlobalSearch } from './search/GlobalSearch.tsx';
+import { type NavigationItem } from '@/features/identity-access/routes.tsx';
+
 import { activeItem, activeMenu, isCurrent, type Menu, type MenuId, menusFor } from './menus.ts';
 import { ShellIcon } from './ShellIcon.tsx';
 
@@ -476,7 +478,8 @@ function Rail({
 
 /**
  * The open menu's screens as tabs, so a person moves between them without going back to the Home. Shown on those screens only: a
- * record's page has its own heading and tabs, and its breadcrumb leads back.
+ * record's page has its own heading and tabs, and its breadcrumb leads back. A menu with headings (Administration) shows them on one row,
+ * each opening its first screen, then the open heading's screens.
  */
 function SectionTabs({ menu }: { menu: Menu | undefined }): ReactElement | null {
   const { t } = useI18n();
@@ -488,18 +491,50 @@ function SectionTabs({ menu }: { menu: Menu | undefined }): ReactElement | null 
   ) {
     return null;
   }
+  const row = (items: NavigationItem[], label: string, className = '') => (
+    <ul aria-label={label} className={className === '' ? undefined : className}>
+      {items.map((item) => (
+        <li key={item.to}>
+          <NavLink to={item.to} end={item.end ?? false}>
+            {t(item.label)}
+          </NavLink>
+        </li>
+      ))}
+    </ul>
+  );
+  const groups = menu.groups ?? [];
+  if (groups.length < 2) {
+    return (
+      <nav className="tabs section-tabs print-hide" aria-label={t('common.menu.sections')}>
+        {row(menu.items, t(menu.label))}
+      </nav>
+    );
+  }
+  const open = groups.find((group) =>
+    group.items.some((item) => isCurrent(item.to, pathname, search)),
+  );
   return (
-    <nav className="tabs section-tabs print-hide" aria-label={t('common.menu.sections')}>
-      <ul aria-label={t(menu.label)}>
-        {menu.items.map((item) => (
-          <li key={item.to}>
-            <NavLink to={item.to} end={item.end ?? false}>
-              {t(item.label)}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <div className="section-tabs print-hide">
+      <nav className="tabs tabs--groups" aria-label={t('common.menu.sections')}>
+        <ul aria-label={t(menu.label)}>
+          {groups.map((group) => (
+            <li key={group.label}>
+              <Link
+                to={group.items[0]?.to ?? menu.to}
+                aria-current={group === open ? 'page' : undefined}
+              >
+                {t(group.label)}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      {open !== undefined && open.items.length > 1 && (
+        <nav className="tabs tabs--sub" aria-label={t(open.label)}>
+          {row(open.items, t(open.label))}
+        </nav>
+      )}
+    </div>
   );
 }
 
