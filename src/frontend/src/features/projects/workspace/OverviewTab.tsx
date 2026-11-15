@@ -149,7 +149,8 @@ export function OverviewTab(): ReactElement {
                 none
               ) : (
                 <span dir="ltr">
-                  {project.plannedStartDate ?? none} – {project.plannedEndDate ?? none}
+                  <span className="value--nowrap">{project.plannedStartDate ?? none}</span> –{' '}
+                  <span className="value--nowrap">{project.plannedEndDate ?? none}</span>
                 </span>
               )}
             </Detail>

@@ -6906,8 +6906,8 @@ tr[data-flagged='true'] {
 }
 
 .details--tiles {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
-  align-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  align-items: stretch;
   gap: var(--space-2);
 }
 
@@ -6929,9 +6929,15 @@ tr[data-flagged='true'] {
   font-size: 0.8125rem;
 }
 
+/* A tile's second line (an entity, an owner, a date) under its value, not run into it. */
 .details--tiles .details__aside {
+  display: block;
   margin-inline-start: 0;
   font-size: 0.8125rem;
+}
+
+.details--tiles dd {
+  overflow-wrap: anywhere;
 }
 
 .overview-card .stage-progress {
@@ -6942,10 +6948,24 @@ tr[data-flagged='true'] {
   font-size: 0.9375rem;
 }
 
+/* An action inside a tile reads as a link, so the tile keeps the height of its neighbours. */
 .details--tiles .button {
   align-self: flex-start;
-  padding: var(--space-1) var(--space-2);
+  min-block-size: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
   font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.details--tiles .button:hover {
+  background: none;
+  color: var(--color-primary-hover);
 }
 
 .overview-card h3 {
@@ -6974,4 +6994,8 @@ tr[data-flagged='true'] {
 
 .overview-card .overall-progress__source {
   margin-block-start: var(--space-3);
+}
+
+.value--nowrap {
+  white-space: nowrap;
 }
