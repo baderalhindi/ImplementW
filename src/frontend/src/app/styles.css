@@ -2599,6 +2599,35 @@ select.field__input {
   padding-block-start: var(--space-4);
 }
 
+/* Review round 8, point 04: the project page's six headings on one row, then the tabs of the open heading, lighter and smaller. */
+.tabs--groups ul {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.tabs--groups a {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.tabs--sub ul {
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-block-end: 0;
+}
+
+.tabs--sub a {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
+
+.tabs--sub a[aria-current='page'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
 /* A menu's screens over the page, the same distance above its heading as the workspace's panel. */
 .section-tabs {
   margin-block-end: var(--space-4);

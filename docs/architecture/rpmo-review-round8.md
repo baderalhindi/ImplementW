@@ -172,3 +172,31 @@ The card is on the Portfolio dashboard, for AHDA's people who hold EXTERNAL_REQU
   - This also completes point 01's "donut band → entity list".
 
 **Localhost data, as of 15 Nov.** No entity had requests this month. Over the last three months, one entity (هيئة التراث) had 4 requests and none accepted. Those are the same 4 requests whose undefined `PROGRESS_V1` schema breaks their list.
+
+## Point 04: group the project page's 19 tabs
+
+- **Headings.** The project page shows six headings on one row: نظرة عامة, التخطيط, الأداء, المخاطر, الطلبات, السجلات. Under them, a second row shows only the open heading's tabs, as smaller pills. Overview has no second row.
+
+  | Heading | Tabs |
+  |---|---|
+  | نظرة عامة | Overview |
+  | التخطيط | Schedule, tasks, milestones |
+  | الأداء | Progress, financials, KPIs |
+  | المخاطر | Risks, issues and challenges |
+  | الطلبات | Change requests, suspension, closeout, external update requests |
+  | السجلات | Registration, location, documents, review history, activity history, audit history |
+
+  Groups are defined in `workspace/tabGroups.ts`.
+- **What each person sees.** A heading shows only when the person is offered at least one of its tabs, by the same rules as before (`visibleTabs`).
+- **Addresses unchanged.** Every tab keeps its address, so `/projects/{id}/progress` opens Progress under الأداء, and old links keep working.
+- **Last tab, remembered.**
+  - The last tab a person opens on a project is kept in their browser, per person and per project.
+  - Opening the project at its plain address returns to that tab, when it is still offered.
+  - Choosing Overview on the page keeps Overview.
+  - A heading opens the remembered tab when it is under that heading, otherwise its first tab.
+- **Checked in a browser at 1280 px, as local.r02.**
+  - The six headings stay on one row.
+  - Every tab opens through its heading.
+  - After Financials, leaving and reopening the project returns to Financials.
+  - `/projects/{id}/progress` opens Progress.
+- **Tests not yet updated.** The workspace tests that list every tab in one row describe the old single row. They are updated in the CI step.

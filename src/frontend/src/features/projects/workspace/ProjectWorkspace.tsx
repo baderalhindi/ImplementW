@@ -1,5 +1,5 @@
-import { type ReactElement, type ReactNode, useCallback, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router';
+import { type ReactElement, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 
 import { useAuditAccess } from '@/features/audit-activity/useAuditAccess.ts';
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
@@ -30,7 +30,9 @@ import { languageTag } from '../presentation.ts';
 import { projectProblemMessage } from '../problems.ts';
 import { useProjectLookups } from '../useProjectLookups.ts';
 
+import { rememberedTab, rememberTab, tabOfPath } from './tabGroups.ts';
 import { useWorkspace, type WorkspaceContext } from './workspaceContext.ts';
+import { WorkspaceTabs } from './WorkspaceTabs.tsx';
 
 const TAB_LABELS: Record<WorkspaceTabKey, TranslationKey> = {
   overview: 'projects.workspace.tabs.overview',
@@ -90,6 +92,38 @@ export function ProjectWorkspace(): ReactElement | null {
     arrivalKey === undefined ? null : { tone: 'success', message: t(arrivalKey) },
   );
   const [dialog, setDialog] = useState<OpenDialog>(null);
+
+  // Review round 8, point 04: a project opened at its address returns to the tab this person last used on it, when it is still offered; a tab
+  // opened is remembered. A tab chosen on the page (CHOSEN_TAB), the overview among them, is kept as chosen.
+  const loaded = project.data?.data;
+  const auditReady = !auditAccess.loading;
+  useEffect(() => {
+    if (session === null || loaded === undefined || !auditReady) {
+      return;
+    }
+    const tab = tabOfPath(location.pathname, projectId, WORKSPACE_TABS);
+    const chosen = (location.state as { chosenTab?: boolean } | null)?.chosenTab === true;
+    if (tab?.key === 'overview' && !chosen) {
+      const offered = visibleTabs(
+        projectAccess(session.user, loaded, auditAccess.data ?? null, permissions),
+      );
+      const last = offered.find(
+        (candidate) => candidate.key === rememberedTab(session.user.id, projectId),
+      );
+      if (last !== undefined && last.key !== 'overview') {
+        void navigate(`/projects/${projectId}/${last.path}`, {
+          replace: true,
+          state: location.state as unknown,
+        });
+        return;
+      }
+    }
+    if (tab !== undefined) {
+      rememberTab(session.user.id, projectId, tab.key);
+    }
+    // permissions and auditAccess.data are read when the page opens a tab; the address decides when this runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.state, projectId, loaded, auditReady]);
 
   if (session === null) {
     return null;
@@ -199,21 +233,13 @@ export function ProjectWorkspace(): ReactElement | null {
       <LifecycleBanner project={detail} />
       <PageNotice notice={notice} />
 
-      <nav className="tabs" aria-label={t('projects.workspace.tabs.label')}>
-        <ul>
-          {visibleTabs(access).map((tab) => (
-            <li key={tab.key}>
-              {/* Only the overview matches exactly: a tab with pages of its own (progress history) stays current. */}
-              <NavLink
-                to={`/projects/${detail.id}${tab.path === '' ? '' : `/${tab.path}`}`}
-                end={tab.path === ''}
-              >
-                {t(TAB_LABELS[tab.key])}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <WorkspaceTabs
+        projectId={detail.id}
+        userId={session.user.id}
+        tabs={visibleTabs(access)}
+        current={tabOfPath(location.pathname, detail.id, WORKSPACE_TABS)?.key ?? 'overview'}
+        labels={TAB_LABELS}
+      />
 
       <div className="tabs__panel">
         <Outlet context={context} />
