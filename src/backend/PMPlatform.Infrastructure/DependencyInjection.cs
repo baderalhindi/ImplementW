@@ -33,8 +33,10 @@ using PMPlatform.Application.Features.Progress;
 using PMPlatform.Application.Features.Project;
 using PMPlatform.Application.Features.Project.Import;
 using PMPlatform.Application.Features.ProjectTask;
+using PMPlatform.Application.Features.ProjectTask.Contracts;
 using PMPlatform.Application.Features.Risk;
 using PMPlatform.Application.Features.Schedule;
+using PMPlatform.Application.Features.Schedule.Contracts;
 using PMPlatform.Application.Features.Suspension;
 using PMPlatform.Application.Features.Closure;
 using PMPlatform.Infrastructure.Approval;
@@ -164,6 +166,8 @@ public static class DependencyInjection
 
         // TASK-046: WF-03's schedule schema.
         services.AddScoped<IScheduleRepository, ScheduleRepository>();
+        services.AddScoped<IOverdueTaskCounter, OverdueTaskCounter>();
+        services.AddScoped<IOverdueMilestoneCounter, OverdueMilestoneCounter>();
 
         // TASK-048: WF-04's project_task schema.
         services.AddScoped<IProjectTaskRepository, ProjectTaskRepository>();

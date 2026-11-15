@@ -199,6 +199,7 @@ public static class DependencyInjection
         services.AddScoped<ProjectOverallProgressReader>();
         services.TryAddScoped<IProjectUpdateComplianceSource, NoUpdateComplianceSource>();
         services.AddScoped<IProjectFollowUpService, ProjectFollowUpService>();
+        services.AddScoped<IManagedProjectAttentionService, ManagedProjectAttentionService>();
         services.AddScoped<ProjectStagePlanService>();
         services.AddScoped<IProjectStagePlanService>(provider => provider.GetRequiredService<ProjectStagePlanService>());
         services.AddScoped<IProjectStagePlans>(provider => provider.GetRequiredService<ProjectStagePlanService>());

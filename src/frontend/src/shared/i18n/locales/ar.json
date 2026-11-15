@@ -56,7 +56,11 @@
     "selectRow": "تحديد {name}",
     "selected": "تم تحديد {count}",
     "clearSelection": "إلغاء التحديد",
-    "exportSelected": "تصدير المحدد"
+    "exportSelected": "تصدير المحدد",
+    "sort": {
+      "ascending": "ترتيب تصاعدي",
+      "descending": "ترتيب تنازلي"
+    }
   },
   "filters": {
     "label": "عوامل التصفية",

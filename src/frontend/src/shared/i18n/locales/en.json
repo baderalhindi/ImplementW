@@ -56,7 +56,11 @@
     "selectRow": "Select {name}",
     "selected": "{count} selected",
     "clearSelection": "Clear selection",
-    "exportSelected": "Export selected"
+    "exportSelected": "Export selected",
+    "sort": {
+      "ascending": "Sort ascending",
+      "descending": "Sort descending"
+    }
   },
   "filters": {
     "label": "Filters",

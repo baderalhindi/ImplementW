@@ -74,7 +74,25 @@
     "title": "المشاريع التي تديرها",
     "nextActionDue": "موعد الإجراء التالي",
     "requestsWaiting": "طلبات التحديث المنتظرة",
-    "all": "عرض الكل ({count})"
+    "all": "عرض الكل ({count})",
+    "needsAction": "يحتاج إجراء",
+    "attentionUnknown": "غير متاح",
+    "updateDue": "تحديث مستحق {date}",
+    "overdueTasks": "{count} مهام متأخرة",
+    "overdueMilestones": "{count} معالم متأخرة",
+    "nothingDue": "لا شيء هذا الشهر",
+    "chipsLabel": "تصفية المشاريع",
+    "chips": {
+      "needsAction": "يحتاج إجراء هذا الشهر",
+      "lateOrStalled": "متأخر / متعثر",
+      "noStagePlan": "بدون خطة مراحل"
+    },
+    "searchLabel": "البحث في مشاريعك",
+    "searchPlaceholder": "ابحث باسم المشروع أو رقمه",
+    "attentionUnavailable": "تعذّر قراءة ما يحتاج إجراءً لكل مشروع، فلا تعمل تصفية «يحتاج إجراء هذا الشهر» الآن. حدّث الصفحة لاحقًا.",
+    "showing": "يعرض {shown} من {total}",
+    "noMatch": "لا يوجد مشروع يطابق التصفية أو البحث.",
+    "requestsWaitingHint": "طلبات التحديث المنتظرة منك على هذا المشروع"
   },
   "entity": {
     "title": "مشاريع جهتك",

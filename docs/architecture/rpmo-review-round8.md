@@ -430,3 +430,24 @@ local.r02 already had a saved order (the user's own). The API check reset it, an
   - local.r04 and local.r02 saw no "جهتك", "الوثائق" or "الإقفال" on Home, the register, their requests, documents, closure and suspension.
   - local.r04's project tabs read "الإغلاق" ("مراحل الإغلاق") and "المستندات" ("مستندات المشروع").
   - local.r08 still reads "طلبات الهيئة إلى جهتك…".
+
+## Point 13: the Project Manager's Home
+
+- **"المشاريع التي تديرها" lists every project the person manages** (167 for local.r04), in pages of 20.
+  - It has a search by name or number (the formal number, or RPMO's earlier reference), ignoring case.
+  - Every column sorts both ways (`SortHeader`, with `aria-sort`). The default is "needs action first", then the worst on-plan, then the fewest days left. Names with numbers sort as read ("مشروع رقم 2" before "مشروع رقم 10").
+- **Chips**, which combine and show their counts:
+  - "يحتاج إجراء هذا الشهر": an update due, a task or milestone overdue, or an update request waiting;
+  - "متأخر / متعثر";
+  - "بدون خطة مراحل" (point 02's set-up still needed).
+- **New column "يحتاج إجراء".** It lists what waits, each item opening its list: "تحديث مستحق" (the Progress tab), "n مهام متأخرة" (Tasks) and "n معالم متأخرة" (Milestones). The waiting-requests count opens the project's update requests. The next-action date is read only for the 20 rows shown.
+- **One server read for what waits:** `GET /users/current/managed-project-attention`. It covers every project PROJECT_VIEW reaches that names the caller as manager, read with the authorization engine's scope, in four queries whatever the number of projects:
+  - the earliest open reporting period due by the last day of this month;
+  - open tasks past their planned finish;
+  - planned milestones past their forecast date.
+  - The task and milestone rules match the task and milestone lists' "overdue". The counters are `IOverdueTaskCounter` and `IOverdueMilestoneCounter`, implemented in `OverdueWorkCounters.cs`.
+- **What "update due" can and cannot see.** A reporting period exists only once an update has started, so a project that never started one has none and is not counted — the same rule as the Governance dashboard's reporting completeness. The progress and financial updates share the period.
+- **Checked on localhost.**
+  - local.r04 saw 167 projects in 9 pages of 20, with chip counts 0, 42 and 164. "PRJ-000010" found exactly "مشروع رقم 10", and a row opened its project.
+  - The demo database has no reporting periods, tasks or milestones, so "يحتاج إجراء هذا الشهر" is 0 there. A test task dated in the past, created through the API on one of r04's projects, made that project's count 1, and 0 again once deleted (the task is left soft-deleted).
+- **Unit tests:** `managedProjects.test.ts` (6 tests).

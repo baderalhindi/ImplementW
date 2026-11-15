@@ -7362,3 +7362,88 @@ tr[data-flagged='true'] {
     var(--rail-image) center bottom / auto 55% no-repeat,
     var(--color-rail);
 }
+
+/* Review round 8, point 13: a sortable column's header is a button that fills it; the arrow shows the order. */
+.sort-header {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.sort-header:hover {
+  text-decoration: underline;
+}
+
+.sort-header__arrow {
+  color: var(--color-text-muted);
+  font-size: 0.75em;
+}
+
+[aria-sort='ascending'] .sort-header__arrow,
+[aria-sort='descending'] .sort-header__arrow {
+  color: var(--color-primary, currentColor);
+}
+
+/* The Project Manager's projects: the chips and the search above the table, wrapping on a narrow window. */
+.managed__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: var(--space-3);
+}
+
+.managed__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip-toggle {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
+  min-block-size: 2.25rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.chip-toggle[aria-pressed='true'] {
+  border-color: var(--color-primary, var(--color-border));
+  background: var(--color-primary, var(--color-surface));
+  color: var(--color-on-primary, #fff);
+}
+
+.chip-toggle__count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.managed__search {
+  flex: 0 1 20rem;
+}
+
+.home__actions-due a {
+  white-space: nowrap;
+}
+
+/* The project's number under its name, so the two never run together. */
+.managed__number {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}

@@ -74,7 +74,25 @@
     "title": "Projects you manage",
     "nextActionDue": "Next action due",
     "requestsWaiting": "Update requests waiting",
-    "all": "See all {count}"
+    "all": "See all {count}",
+    "needsAction": "Needs action",
+    "attentionUnknown": "Not available",
+    "updateDue": "Update due {date}",
+    "overdueTasks": "{count} overdue tasks",
+    "overdueMilestones": "{count} overdue milestones",
+    "nothingDue": "Nothing this month",
+    "chipsLabel": "Filter the projects",
+    "chips": {
+      "needsAction": "Needs action this month",
+      "lateOrStalled": "Late / stalled",
+      "noStagePlan": "No stage plan"
+    },
+    "searchLabel": "Search your projects",
+    "searchPlaceholder": "Search by project name or number",
+    "attentionUnavailable": "What needs action on each project could not be read, so \"Needs action this month\" does not work now. Reload the page later.",
+    "showing": "Showing {shown} of {total}",
+    "noMatch": "No project matches the filters or the search.",
+    "requestsWaitingHint": "The update requests waiting on you for this project"
   },
   "entity": {
     "title": "Your entity's projects",
