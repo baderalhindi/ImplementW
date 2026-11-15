@@ -6335,49 +6335,70 @@ tr[data-flagged='true'] {
   font-size: 0.85rem;
 }
 
-/* Round 7, item 5: the completion donut's legend chooses a band, whose entities are listed under the chart. */
-.completion-band__toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
+/* Review round 8, point 03: the completion donut beside five entities with their rate, then how many entities each figure covers. */
+.completion-donut {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-4);
+  align-items: start;
 }
 
-.completion-band__toggle[aria-pressed='true'] {
+.completion-donut__list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.completion-donut__order {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.completion-donut__order [aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
   font-weight: 600;
 }
 
-.completion-band {
-  margin-block-start: var(--space-3);
-  padding-block-start: var(--space-3);
-  border-block-start: 1px solid var(--color-border-subtle);
-}
-
-.completion-band__title {
-  margin: 0 0 var(--space-2);
-  font-size: 0.875rem;
-}
-
-.completion-band__list {
+.completion-donut__entities {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-2);
   margin: 0;
-  padding-inline-start: var(--space-4);
-  max-block-size: 12rem;
-  overflow-y: auto;
+  padding: 0;
+  list-style: none;
   font-size: 0.875rem;
 }
 
-.completion-band__list li {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
+.completion-donut__entities li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+
+.completion-donut__track {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-neutral-surface);
+  overflow: hidden;
+}
+
+.completion-donut__fill {
+  display: block;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--chart-single);
+}
+
+.completion-donut__figures {
+  display: inline-flex;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.completion-donut__more {
+  justify-self: start;
 }
 
 .distribution--donut > .grouped-columns__legend {
@@ -6386,10 +6407,11 @@ tr[data-flagged='true'] {
   font-size: 1rem;
 }
 
-.grouped-columns__legend li {
+.grouped-columns__legend li,
+.grouped-columns__legend li > a {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .grouped-columns__plot {

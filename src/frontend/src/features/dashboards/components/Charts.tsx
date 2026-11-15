@@ -32,12 +32,15 @@ function Marks({
 const SIZE = 168;
 const RADIUS = 66;
 const STROKE = 20;
-/** The surface between two segments, beyond their round caps. */
-const GAP = 4;
+/** The surface between two segments, along the ring. */
+const GAP = 3;
+/** The shortest arc drawn, so a very small value stays visible. */
+const MIN_ARC = 1;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 /**
- * A donut with round-ended segments and a gap between them, from twelve o'clock clockwise in the source's order. The
+ * A donut with flat-ended segments and a gap between them, from twelve o'clock clockwise in the source's order. Each
+ * segment stays inside its own share of the ring (round caps spread a small value over its neighbours). The
  * centre shows the total of the counts drawn; hovering a value (on the ring or in its legend) shows that value's count
  * and words instead, on a tint of its colour. The number stays in text colour: amber and orange fail contrast as text.
  */
@@ -72,9 +75,9 @@ export function DonutChart({
         <g transform={`rotate(-90 ${String(centre)} ${String(centre)})`}>
           {drawn.map((bucket, index) => {
             const length = lengths[index] ?? 0;
-            // A lone value is the whole ring; otherwise each round cap reaches half the stroke past its dash.
-            const dash = drawn.length === 1 ? CIRCUMFERENCE : Math.max(0.01, length - STROKE - GAP);
-            const offset = drawn.length === 1 ? 0 : -((starts[index] ?? 0) + (STROKE + GAP) / 2);
+            // A lone value is the whole ring; otherwise half the gap is taken from each end of its share.
+            const dash = drawn.length === 1 ? CIRCUMFERENCE : Math.max(MIN_ARC, length - GAP);
+            const offset = drawn.length === 1 ? 0 : -((starts[index] ?? 0) + GAP / 2);
             const state =
               active === null ? '' : active === bucket.key ? ' is-active' : ' is-dimmed';
             return (
@@ -85,7 +88,6 @@ export function DonutChart({
                 cy={centre}
                 r={RADIUS}
                 strokeWidth={STROKE}
-                strokeLinecap={drawn.length === 1 ? 'butt' : 'round'}
                 strokeDasharray={`${String(dash)} ${String(CIRCUMFERENCE)}`}
                 strokeDashoffset={offset}
                 style={{ stroke: bucket.color, '--dash-total': CIRCUMFERENCE } as CSSProperties}
