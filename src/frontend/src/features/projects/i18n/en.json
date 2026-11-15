@@ -198,7 +198,9 @@
       "SUSPENDED": "Suspended. Work is on hold until an approved resumption takes effect; the Project Manager requests it from the Suspension tab, or closes the project without completion from the Closeout tab.",
       "COMPLETED": "Completed. Delivery has ended; Stage 2, Closure, follows once every post-project obligation is settled.",
       "CLOSED": "Closed. The project is terminal and read-only: its records are kept as history and nothing can be changed."
-    }
+    },
+    "facts": "Project details",
+    "kpis": "Project at a glance"
   },
   "location": {
     "edit": "Change location",
@@ -621,6 +623,7 @@
     "declaredFrom": "Source: {source}",
     "actual": "Actual",
     "planned": "Planned to date",
-    "noBaseline": "No approved baseline yet: the schedule gives no figure until one is approved."
+    "noBaseline": "No approved baseline yet: the schedule gives no figure until one is approved.",
+    "cardTitle": "How progress is calculated"
   }
 }

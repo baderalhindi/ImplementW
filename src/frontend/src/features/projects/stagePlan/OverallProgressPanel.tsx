@@ -9,8 +9,6 @@ import {
   type ProjectDetail,
   type ProjectOverallProgress,
 } from '../api/types.ts';
-import { Detail } from '../components/Detail.tsx';
-import { GapValue } from '../components/FollowUpBadges.tsx';
 import { ProgressMethodDialog } from '../progressMethod/ProgressMethodDialog.tsx';
 
 import { StagePlanDialog } from './StagePlanDialog.tsx';
@@ -46,15 +44,11 @@ export function OverallProgressPanel({
     setDialog(null);
     onChanged();
   };
-  const stageName = (code: string | null) =>
-    code === null
-      ? null
-      : (progress.stages.find((stage) => stage.stageCode === code)?.name ?? null);
 
   return (
     <section className="stage-progress overall-progress" aria-labelledby="overall-progress-title">
       <div className="stage-progress__header">
-        <h2 id="overall-progress-title">{t('projects.overallProgress.title')}</h2>
+        <h2 id="overall-progress-title">{t('projects.overallProgress.cardTitle')}</h2>
         <p className="overall-progress__actions">
           {settable && progress.method !== null && (
             <button
@@ -107,12 +101,7 @@ export function OverallProgressPanel({
           </button>
         </div>
       )}
-      <Figures
-        progress={progress}
-        gapPoints={project.indicators?.gapPoints ?? null}
-        stage={stageName(progress.currentStageCode)}
-        declaredSource={project.followUp?.declaredSource ?? null}
-      />
+      <Source progress={progress} declaredSource={project.followUp?.declaredSource ?? null} />
       {progress.method === 'STAGES' && progress.stages.length > 0 && !progress.needsSetup && (
         <StageBars progress={progress} />
       )}
@@ -134,78 +123,51 @@ export function OverallProgressPanel({
   );
 }
 
-/** The figure, its source in words, the date it holds for, the method and the current stage. */
-function Figures({
+/** Where the figure comes from, the date it holds for and the method: the tiles above show the figures themselves. */
+function Source({
   progress,
-  gapPoints,
-  stage,
   declaredSource,
 }: {
   progress: ProjectOverallProgress;
-  gapPoints: number | null;
-  stage: { ar: string; en: string } | null;
   /** Where a declared figure came from: the import, a person, an entity update. */
   declaredSource: DeclaredSource | null;
 }): ReactElement {
-  const { t, language } = useI18n();
-  const none = t('projects.stageProgress.notRecorded');
-  const percent = (value: number | null) => (value === null ? none : `${oneDecimal(value)}%`);
-  const source =
-    progress.method === null || progress.source === 'DECLARED'
-      ? 'projects.overallProgress.source.DECLARED'
-      : progress.source === 'SCHEDULE'
-        ? 'projects.overallProgress.source.SCHEDULE'
-        : 'projects.overallProgress.source.STAGES';
+  const { t } = useI18n();
+  const declared = progress.method === null || progress.source === 'DECLARED';
   return (
     <>
-      <p className="overall-progress__figure">
-        <span className="overall-progress__value" dir="ltr">
-          {percent(progress.actualPercent)}
-        </span>
-        <span className="overall-progress__source">
-          {t(source)}
-          {source === 'projects.overallProgress.source.DECLARED' && declaredSource !== null && (
-            <span className="details__aside">
-              {t('projects.overallProgress.declaredFrom', {
-                source: t(`projects.followUp.source.${declaredSource}`),
-              })}
-            </span>
+      <p className="overall-progress__source">
+        <StatusBadge
+          label={
+            progress.method === null
+              ? t('projects.progressMethod.none')
+              : t(`projects.progressMethod.methods.${progress.method}`)
+          }
+          tone={progress.method === null ? 'warning' : 'info'}
+        />
+        <span>
+          {t(
+            declared
+              ? 'projects.overallProgress.source.DECLARED'
+              : progress.source === 'SCHEDULE'
+                ? 'projects.overallProgress.source.SCHEDULE'
+                : 'projects.overallProgress.source.STAGES',
           )}
         </span>
+        {declared && declaredSource !== null && (
+          <span>
+            {t('projects.overallProgress.declaredFrom', {
+              source: t(`projects.followUp.source.${declaredSource}`),
+            })}
+          </span>
+        )}
+        {progress.asOf !== null && (
+          <span>{t('projects.overallProgress.asOf', { date: progress.asOf })}</span>
+        )}
       </p>
       {progress.method === 'SCHEDULE' && progress.actualPercent === null && (
         <p className="form__note">{t('projects.overallProgress.noBaseline')}</p>
       )}
-      <dl className="details stage-progress__overall">
-        <Detail term={t('projects.overallProgress.actual')}>
-          <span dir="ltr">{percent(progress.actualPercent)}</span>
-          {progress.asOf !== null && (
-            <span className="details__aside">
-              {t('projects.overallProgress.asOf', { date: progress.asOf })}
-            </span>
-          )}
-        </Detail>
-        <Detail
-          term={t(
-            source === 'projects.overallProgress.source.DECLARED'
-              ? 'projects.stageProgress.planned'
-              : 'projects.overallProgress.planned',
-          )}
-        >
-          <span dir="ltr">{percent(progress.plannedPercent)}</span>
-        </Detail>
-        <Detail term={t('projects.stageProgress.gap')}>
-          <GapValue points={gapPoints} />
-        </Detail>
-        <Detail term={t('projects.progressMethod.label')}>
-          {progress.method === null
-            ? t('projects.progressMethod.none')
-            : t(`projects.progressMethod.methods.${progress.method}`)}
-        </Detail>
-        <Detail term={t('projects.stageProgress.current')}>
-          {stage?.[language] ?? progress.currentStageCode ?? none}
-        </Detail>
-      </dl>
     </>
   );
 }

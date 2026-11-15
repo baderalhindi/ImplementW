@@ -21,6 +21,7 @@ import {
 import { OverallProgressPanel } from '../stagePlan/OverallProgressPanel.tsx';
 
 import { FollowUpPanel } from './FollowUpPanel.tsx';
+import { OverviewKpis } from './OverviewKpis.tsx';
 import { useWorkspace } from './workspaceContext.ts';
 
 /** What comes next from each state, and whose move it is (TASK-041 §3). */
@@ -74,81 +75,91 @@ export function OverviewTab(): ReactElement {
           </ul>
         </div>
       )}
-      {/* Review round 8, point 02: the one overall figure comes first; point 05's summary strip will take it from here. */}
-      <OverallProgressPanel project={project} etag={etag} onChanged={reload} />
-      <dl className="details">
-        <Detail term={t('projects.fields.titleEn')}>
-          {project.titleEn == null ? (
-            notAvailable
-          ) : (
-            <span lang="en" dir="ltr">
-              {project.titleEn}
-            </span>
-          )}
-        </Detail>
-        <Detail term={t('projects.fields.isStrategic')}>
-          {project.isStrategic == null
-            ? notAvailable
-            : t(project.isStrategic ? 'common.values.yes' : 'common.values.no')}
-        </Detail>
-        <Detail term={t('projects.fields.participation')}>
-          {t(`projects.participationMode.${project.participationMode}`)}
-          {project.externalEntityId !== null && (
-            <span className="details__aside">{lookups.entityName(project.externalEntityId)}</span>
-          )}
-        </Detail>
-        <Detail term={t('projects.fields.department')}>
-          {lookups.departmentName(project.departmentId)}
-        </Detail>
-        <Detail term={t('projects.fields.projectManager')}>
-          {project.projectManagerUserId === null
-            ? t('projects.projectManager.notNamed')
-            : managerName(project.projectManagerUserId)}
-          {canChangeManager && (
-            <button
-              type="button"
-              className="button button--quiet"
-              onClick={() => {
-                setChangingManager(true);
-              }}
-            >
-              {t('projects.changeManager.action')}
-            </button>
-          )}
-        </Detail>
-        <Detail term={t('projects.fields.governanceProfile')}>
-          {lookups.itemLabel(project.governanceProfileItemId)}
-        </Detail>
-        <Detail term={t('projects.fields.registrationBudget')}>
-          {project.registrationBudgetSar === null ? (
-            none
-          ) : (
-            <span dir="ltr">
-              {t('projects.money.sar', { amount: formatSar(project.registrationBudgetSar) })}
-            </span>
-          )}
-        </Detail>
-        <Detail term={t('projects.fields.plannedPeriod')}>
-          {project.plannedStartDate === null && project.plannedEndDate === null ? (
-            none
-          ) : (
-            <span dir="ltr">
-              {project.plannedStartDate ?? none} – {project.plannedEndDate ?? none}
-            </span>
-          )}
-        </Detail>
-        {project.activatedAt !== null && (
-          <Detail term={t('projects.fields.activatedAt')}>
-            {formatDateTime(project.activatedAt)}
-          </Detail>
-        )}
-        {project.legacyIntakeDate !== null && (
-          <Detail term={t('projects.fields.legacyIntakeDate')}>
-            <span dir="ltr">{project.legacyIntakeDate}</span>
-            <span className="details__aside">{t('projects.overview.declaredBaseline')}</span>
-          </Detail>
-        )}
-      </dl>
+      {/* The 15 Nov 2026 request: the Overview reads as a dashboard. Headline tiles first, then cards. */}
+      <OverviewKpis project={project} />
+      <div className="overview-board">
+        <div className="overview-card">
+          <OverallProgressPanel project={project} etag={etag} onChanged={reload} />
+        </div>
+        <section className="overview-card" aria-labelledby="project-facts-title">
+          <h2 id="project-facts-title">{t('projects.overview.facts')}</h2>
+          <dl className="details details--tiles">
+            <Detail term={t('projects.fields.titleEn')}>
+              {project.titleEn == null ? (
+                notAvailable
+              ) : (
+                <span lang="en" dir="ltr">
+                  {project.titleEn}
+                </span>
+              )}
+            </Detail>
+            <Detail term={t('projects.fields.isStrategic')}>
+              {project.isStrategic == null
+                ? notAvailable
+                : t(project.isStrategic ? 'common.values.yes' : 'common.values.no')}
+            </Detail>
+            <Detail term={t('projects.fields.participation')}>
+              {t(`projects.participationMode.${project.participationMode}`)}
+              {project.externalEntityId !== null && (
+                <span className="details__aside">
+                  {lookups.entityName(project.externalEntityId)}
+                </span>
+              )}
+            </Detail>
+            <Detail term={t('projects.fields.department')}>
+              {lookups.departmentName(project.departmentId)}
+            </Detail>
+            <Detail term={t('projects.fields.projectManager')}>
+              {project.projectManagerUserId === null
+                ? t('projects.projectManager.notNamed')
+                : managerName(project.projectManagerUserId)}
+              {canChangeManager && (
+                <button
+                  type="button"
+                  className="button button--quiet"
+                  onClick={() => {
+                    setChangingManager(true);
+                  }}
+                >
+                  {t('projects.changeManager.action')}
+                </button>
+              )}
+            </Detail>
+            <Detail term={t('projects.fields.governanceProfile')}>
+              {lookups.itemLabel(project.governanceProfileItemId)}
+            </Detail>
+            <Detail term={t('projects.fields.registrationBudget')}>
+              {project.registrationBudgetSar === null ? (
+                none
+              ) : (
+                <span dir="ltr">
+                  {t('projects.money.sar', { amount: formatSar(project.registrationBudgetSar) })}
+                </span>
+              )}
+            </Detail>
+            <Detail term={t('projects.fields.plannedPeriod')}>
+              {project.plannedStartDate === null && project.plannedEndDate === null ? (
+                none
+              ) : (
+                <span dir="ltr">
+                  {project.plannedStartDate ?? none} – {project.plannedEndDate ?? none}
+                </span>
+              )}
+            </Detail>
+            {project.activatedAt !== null && (
+              <Detail term={t('projects.fields.activatedAt')}>
+                {formatDateTime(project.activatedAt)}
+              </Detail>
+            )}
+            {project.legacyIntakeDate !== null && (
+              <Detail term={t('projects.fields.legacyIntakeDate')}>
+                <span dir="ltr">{project.legacyIntakeDate}</span>
+                <span className="details__aside">{t('projects.overview.declaredBaseline')}</span>
+              </Detail>
+            )}
+          </dl>
+        </section>
+      </div>
       <FollowUpPanel />
       <ProjectDashboard key={project.id} projectId={project.id} user={user} />
       <ChangeManagerDialog

@@ -6821,9 +6821,119 @@ tr[data-flagged='true'] {
   line-height: 1.1;
 }
 
-.overall-progress__source {
-  display: inline-flex;
+/* The 15 Nov 2026 request: the project Overview as a dashboard. Headline tiles, then cards side by side; facts as small tiles, not rows. */
+.overview-kpis {
+  margin-block: var(--space-3) var(--space-4);
+}
+
+.overview-kpis__tile:first-child {
+  flex: 2 1 min(100%, 22rem);
+}
+
+.overview-kpis__progress {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.overview-kpis__progress .gauge {
+  inline-size: 7.5rem;
+}
+
+.overview-kpis__legend {
+  display: grid;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+}
+
+.overview-kpis__legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.overview-kpis__key--actual {
+  --chart-color: var(--series-actual);
+}
+
+.overview-kpis__key--planned {
+  --chart-color: var(--series-planned);
+}
+
+.overview-kpis__text {
+  font-size: 1.25rem;
+}
+
+.overview-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+  margin-block-end: var(--space-4);
+}
+
+.overview-card {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+}
+
+.overview-card > h2,
+.overview-card .stage-progress__header h2,
+.overview-card .section__header h2 {
+  margin-block-end: var(--space-3);
+  font-size: 1.125rem;
+}
+
+.overall-progress__source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
+  margin-block: 0 var(--space-3);
   color: var(--color-text-muted);
+}
+
+.details--tiles {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+  gap: var(--space-2);
+}
+
+.details--tiles .details__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.details--tiles dt {
+  font-size: 0.8125rem;
+}
+
+.details--tiles .details__aside {
+  margin-inline-start: 0;
+  font-size: 0.8125rem;
+}
+
+.overview-card .stage-progress {
+  margin: 0;
+}
+
+.overview-kpis__progress .gauge__centre {
+  font-size: 1.125rem;
+}
+
+.details--tiles .button {
+  align-self: flex-start;
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.overview-card h3 {
+  margin-block: var(--space-4) var(--space-2);
 }

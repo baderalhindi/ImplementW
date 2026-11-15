@@ -219,3 +219,19 @@ The client asked for this outside the PDFs. Administration's 19 screens wrapped 
 - **Other menus.** They keep their single row.
 - **Checked in a browser at 1280 px, as local.r01.** The six headings fit on one row, and each heading's screens fit on one row.
 - **Point 15.** This does not cover the admin side menu.
+
+## The project Overview as a dashboard (15 Nov request)
+
+The client asked for the Overview to read as a dashboard, not as rows of records.
+
+- **Headline tiles** (`OverviewKpis`):
+  - The overall progress on a gauge: an outer ring for actual, an inner one for planned to date. Both figures sit beside it.
+  - The gap, with the on-plan label and its tone.
+  - The current stage and the method.
+  - The days to the planned end, with the date.
+- **Two cards side by side:**
+  - "How progress is calculated": the method, the source of the figure and its date, the set-up prompt, the actions, and the stage bars.
+  - "Project details": the registration facts as small tiles in a grid.
+- **Follow-up.** It is a card of tiles too. It no longer repeats the on-plan label, the gap and the days remaining, which the tiles above show.
+- **Project Dashboard.** It stays below them.
+- **The numbers.** None changed: the tiles read the same figures as before (point 02).
