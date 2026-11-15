@@ -7155,7 +7155,7 @@ tr[data-flagged='true'] {
 }
 
 /* The greeting and the pills above the picture; the caption, the dots and the pin are placed on it. */
-.home__hero > :not(.home__hero-media, .home__hero-caption, .home__hero-dots, .banner-picker) {
+.home__hero > :not(.home__hero-media, .home__hero-caption, .banner-picker) {
   position: relative;
 }
 
@@ -7238,33 +7238,6 @@ tr[data-flagged='true'] {
 .home__hero-credit {
   opacity: 0.85;
   font-size: 0.75rem;
-}
-
-.home__hero-dots {
-  position: absolute;
-  inset-block-end: var(--space-3);
-  inset-inline-start: 50%;
-  display: flex;
-  gap: var(--space-2);
-  transform: translateX(-50%);
-}
-
-[dir='rtl'] .home__hero-dots {
-  transform: translateX(50%);
-}
-
-.home__hero-dot {
-  inline-size: 0.625rem;
-  block-size: 0.625rem;
-  padding: 0;
-  border: 1px solid #fff;
-  border-radius: 999px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.home__hero-dot[aria-pressed='true'] {
-  background: #fff;
 }
 
 /* "مظهر الترحيب": a pin in the banner's bottom corner, like the browser's own customise button, and its panel under it. */

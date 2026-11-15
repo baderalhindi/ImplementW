@@ -97,8 +97,7 @@
     "selectAll": "Select all",
     "clearAll": "Clear all",
     "needOne": "Keep at least one image, or choose the default colour.",
-    "notSaved": "Your choice could not be saved. Try again.",
-    "position": "Banner images"
+    "notSaved": "Your choice could not be saved. Try again."
   },
   "quickActions": {
     "customize": "Customize quick actions",

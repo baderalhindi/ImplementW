@@ -41,7 +41,7 @@ function prefersReducedMotion(): boolean {
 
 /**
  * The banner's picture (review round 8, point 07): the chosen images, one at a time, cropped around each one's focal point under an overlay that
- * keeps the greeting readable; the place it shows, small, in a corner; and with more than one image, dots that say which shows and open another.
+ * keeps the greeting readable; and the place it shows, small, in a corner.
  * The green banner underneath shows until an image is read, and whenever none can be.
  */
 export function BannerBackdrop({
@@ -52,9 +52,9 @@ export function BannerBackdrop({
   /** The banner: while the pointer is on it, the turns wait. */
   host: RefObject<HTMLElement | null>;
 }): ReactElement | null {
-  const { t, language } = useI18n();
+  const { language } = useI18n();
   const still = prefersReducedMotion();
-  const { index, choose, next } = useRotation(images.length, still, host);
+  const { index, next } = useRotation(images.length, still, host);
   const current = images[index] ?? null;
   const address = useBannerImage(current?.id ?? null);
 
@@ -100,22 +100,6 @@ export function BannerBackdrop({
         </span>
         {current.credit !== null && <span className="home__hero-credit">{current.credit}</span>}
       </p>
-      {images.length > 1 && (
-        <div className="home__hero-dots" role="group" aria-label={t('home.banner.position')}>
-          {images.map((image, position) => (
-            <button
-              key={image.id}
-              type="button"
-              className="home__hero-dot"
-              aria-label={image.caption[language]}
-              aria-pressed={position === index}
-              onClick={() => {
-                choose(position);
-              }}
-            />
-          ))}
-        </div>
-      )}
     </>
   );
 }

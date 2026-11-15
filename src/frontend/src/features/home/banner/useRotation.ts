@@ -10,14 +10,13 @@ function slotIndex(count: number, now: number): number {
 
 /**
  * Which of `count` images shows. It moves on at each ten-minute mark; while the pointer is on `host` (the banner) it waits, and moves on as soon
- * as the pointer leaves; when `still` (the system asks for reduced motion) one image shows for the visit. Choosing an image shows it until the
- * next mark.
+ * as the pointer leaves; when `still` (the system asks for reduced motion) one image shows for the visit.
  */
 export function useRotation(
   count: number,
   still: boolean,
   host: RefObject<HTMLElement | null>,
-): { index: number; choose: (index: number) => void; next: number } {
+): { index: number; next: number } {
   const [index, setIndex] = useState(() => slotIndex(count, Date.now()));
   const paused = useRef(false);
   const due = useRef(false);
@@ -60,5 +59,5 @@ export function useRotation(
   }, [still, count, index, host]);
 
   const shown = count === 0 ? 0 : Math.min(index, count - 1);
-  return { index: shown, choose: setIndex, next: count === 0 ? 0 : (shown + 1) % count };
+  return { index: shown, next: count === 0 ? 0 : (shown + 1) % count };
 }
