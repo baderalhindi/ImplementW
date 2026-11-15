@@ -7401,13 +7401,16 @@ tr[data-flagged='true'] {
   color: var(--color-warning);
 }
 
-/* Review round 8, point 07: the side menu's fixed picture under the menu's own green, deep enough that its text keeps its contrast. */
+/* Review round 8, point 07: the side menu's fixed picture across its lower half, rising out of the menu's own green — solid above the middle,
+   fading in below it and still tinted enough at the foot for the collapse button to keep its contrast. The rail scrolls, but a scroll container's
+   background stays put, so the picture stays at the bottom. */
 .rail.rail--image {
   background:
     linear-gradient(
-      color-mix(in srgb, var(--color-rail) 88%, transparent),
-      color-mix(in srgb, var(--color-rail) 94%, transparent)
+      var(--color-rail) 0 45%,
+      color-mix(in srgb, var(--color-rail) 80%, transparent) 65%,
+      color-mix(in srgb, var(--color-rail) 62%, transparent) 100%
     ),
-    var(--rail-image) center / cover no-repeat,
+    var(--rail-image) center bottom / auto 55% no-repeat,
     var(--color-rail);
 }

@@ -7,9 +7,9 @@ import { useBannerImage } from './useBannerImage.ts';
 
 /**
  * The side menu's picture (review round 8, point 07): one image, the same for everyone and not among anyone's settings — the banner image with this
- * code. Without it in the database the menu keeps its plain green.
+ * code, the garden at the foot of Jabal Al-Qarah. Without it in the database the menu keeps its plain green.
  */
-export const SIDE_MENU_IMAGE_CODE = 'qarah-caves';
+export const SIDE_MENU_IMAGE_CODE = 'qarah-garden';
 
 /** The side menu picture's local address once read; null otherwise. */
 export function useRailImage(): string | null {
