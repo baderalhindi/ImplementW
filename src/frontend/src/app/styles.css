@@ -6498,8 +6498,13 @@ tr[data-flagged='true'] {
 }
 
 /* Review round 5, items 9 and 10: an entity's update completion, with the all-entity average as a marked line. */
+/* Clear of the cards above, and its heading row clear of the table or empty state below. */
 .completion {
-  margin-block-end: 1.5rem;
+  margin-block: var(--space-8) var(--space-6);
+}
+
+.completion > .section__header {
+  margin-block-end: var(--space-6);
 }
 
 .completion__figure strong {
