@@ -19,6 +19,7 @@ import {
 } from '../presentation.ts';
 
 import { BarChart, ColumnChart, DonutChart, GaugeChart } from './Charts.tsx';
+import { sarExactLabel } from '@/shared/format/money.ts';
 
 // The allowlisted visualisations of FG-01 §10 (TASK-069 `DashboardWidgetType`). Each presents the source's values as
 // the source states them; none computes one. A figure with no value says why — "Restricted" when it is withheld
@@ -45,8 +46,14 @@ export function FigureValue({ figure }: { figure: WidgetFigure }): ReactElement 
   if (formatted === null) {
     return <ValueStateFlag icon="missing" label={t('dashboards.figure.none')} state="MISSING" />;
   }
+  // Review round 8, point 11: an amount is compact ("64.6 مليار ريال", in the page's direction) with its full figure on hover.
+  const amount = figure.unit === 'SAR' && figure.value !== null;
   return (
-    <span className="figure" dir="ltr">
+    <span
+      className="figure"
+      dir={amount ? undefined : 'ltr'}
+      title={amount && figure.value !== null ? sarExactLabel(figure.value, t) : undefined}
+    >
       {formatted}
     </span>
   );

@@ -5,13 +5,13 @@ import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { projectsApi } from '@/features/projects/api/projectsApi.ts';
 import { OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
 import { ProjectStatusBadge } from '@/features/projects/components/ProjectStatusBadge.tsx';
-import { formatSar } from '@/features/projects/presentation.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { LoadingState } from '@/shared/ui/States.tsx';
 
 import { dashboardsApi, type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { Percent } from '../insights/figures.tsx';
+import { SarAmount } from '@/shared/format/SarAmount.tsx';
 
 const SHOWN_PROJECTS = 8;
 
@@ -82,7 +82,9 @@ export function LocationDetails({
           {headline.totalValueSar !== null && (
             <div>
               <dt>{t('dashboards.insights.totalValue')}</dt>
-              <dd>{t('projects.money.sar', { amount: formatSar(headline.totalValueSar) })}</dd>
+              <dd>
+                <SarAmount amount={headline.totalValueSar} />
+              </dd>
             </div>
           )}
           <div>

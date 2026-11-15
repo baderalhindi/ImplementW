@@ -403,3 +403,16 @@ local.r02 already had a saved order (the user's own). The API check reset it, an
 - **Old lines removed.** "كل المشاريع في نطاقك، حسب القطاع والجهة والموقع" is removed. The generic Home line, now used only by someone with no standard role, no longer reads "ابدأ عملًا جديدًا…".
 - **Checked on localhost.** local.r01–r08 each showed their Home and dashboard lines, and neither old line appeared anywhere.
 - **For the client: local.r07.** On localhost local.r07 holds R02 as well as R07, so it lands as the Portfolio Manager and sees R02's lines and "لوحة المحفظة". Someone holding only R07 sees the Executive lines. If the main role should be chosen otherwise (for example R07 before R02), that is a rule to agree.
+
+## Point 11: readable numbers
+
+- **One formatter** (`shared/format/money.ts`) writes every riyal amount, in one of three forms:
+  - `sarCompact`: "64.6 مليار ريال", "188 مليون ريال" (one decimal under a hundred, none from a hundred up; whole riyals below a million). Used on cards and charts: the Portfolio headline, the map summary, the portfolio card page, dashboard widgets, the Home money tiles and the project Overview. `SarAmount` shows the full figure on hover.
+  - `sarWhole`: "64,553,236,526", rounded on the decimal string itself so a large amount loses nothing to floating point. Used in tables and details: the portfolio tables, the card page's projects, reports, change requests, the registration tab and the project card.
+  - `sarExact`: every halala. Used only on the financial screens and in entry forms; `formatSar` now calls it.
+- **Direction.** A compact amount reads in the page's direction, so in Arabic it is "64.6 مليار ريال", not "مليار ريال 64.6".
+- **Coverage notes.** The " · " between notes was drawn by CSS, so copied or read-aloud text ran together ("…167الإنجاز…"). `NoteList` now writes it as text, in the insight notes and the widget footers.
+- **Checked on localhost (local.r02).**
+  - The total-value card read "64.6 مليار ريال", with "64,553,236,526.17 ريال" on hover.
+  - The tables showed whole riyals (37,995,405,870; 187,950,656), and no table cell had halalas.
+  - Every note read "القيمة مدخلة لـ 167 من 167 · الإنجاز مقيس لـ 97 من 167 · متوسط بسيط".

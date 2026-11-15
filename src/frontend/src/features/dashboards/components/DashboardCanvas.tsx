@@ -2,6 +2,7 @@ import { type CSSProperties, type ReactElement, useId } from 'react';
 import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { NoteList } from '@/shared/ui/NoteList.tsx';
 
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { type DashboardView, type DashboardWidgetResult } from '../api/types.ts';
@@ -121,10 +122,10 @@ function WidgetCard({
         )}
       </div>
       <WidgetBody widget={widget} title={title} filters={filters} projectId={projectId} />
-      <div className="widget__footer">
+      <NoteList as="div" className="widget__footer">
         {widget.coverageDetail !== null && <CoverageLine coverage={widget.coverageDetail} />}
         <ProjectionOrigin widget={widget} />
-      </div>
+      </NoteList>
     </section>
   );
 }

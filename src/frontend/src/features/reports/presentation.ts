@@ -1,7 +1,7 @@
 import { type BilingualLabel } from '@/features/identity-access/api/types.ts';
 import { labelOfValue } from '@/features/dashboards/presentation.ts';
 import { formatPercent } from '@/features/progress/presentation.ts';
-import { formatSar, shortId } from '@/features/projects/presentation.ts';
+import { shortId } from '@/features/projects/presentation.ts';
 import {
   DATE_LOCALES,
   type Language,
@@ -22,6 +22,7 @@ import {
   type ReportValueType,
   type SavedViewSummary,
 } from './api/types.ts';
+import { sarWhole } from '@/shared/format/money.ts';
 
 // How FG-02's payloads read on screen. Nothing here computes a business value (FG-02 §4.1): a cell is the source's own
 // string in its unit, a code in its source's words, and a cell with no value is its reason in words — never blank,
@@ -195,7 +196,8 @@ export function cellContent(
     case 'DAYS':
       return figure(t('reports.units.days', { value: DAYS_FORMAT.format(Number(value)) }));
     case 'SAR':
-      return figure(t('reports.units.sar', { amount: formatSar(value) }));
+      // Review round 8, point 11: a report is a table, in whole riyals.
+      return figure(t('reports.units.sar', { amount: sarWhole(value) }));
     case 'BOOLEAN':
       return figure(value === 'true' ? t('common.values.yes') : t('common.values.no'));
     case 'DATE':

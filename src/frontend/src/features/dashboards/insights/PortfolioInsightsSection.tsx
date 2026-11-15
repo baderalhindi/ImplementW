@@ -10,7 +10,9 @@ import { Link, useLocation } from 'react-router';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 import { type FollowUpReason, type OnPlanStatus } from '@/features/projects/api/types.ts';
 import { GapValue, OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
-import { formatSar, languageTag } from '@/features/projects/presentation.ts';
+import { languageTag } from '@/features/projects/presentation.ts';
+import { sarWhole } from '@/shared/format/money.ts';
+import { SarAmount } from '@/shared/format/SarAmount.tsx';
 import { NO_STAGE, NOT_MEASURED } from '@/features/projects/register/projectFilterValues.ts';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -33,6 +35,7 @@ import {
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
+import { NoteList } from '@/shared/ui/NoteList.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { dashboardsApi, type PortfolioFilters } from '../api/dashboardsApi.ts';
@@ -360,9 +363,7 @@ function Headline({
             {headline.valueEntered === 0 ? (
               <Percent value={null} />
             ) : (
-              <span className="home__tile-value" dir="ltr">
-                {t('projects.money.sar', { amount: formatSar(headline.totalValueSar) })}
-              </span>
+              <SarAmount className="home__tile-value" amount={headline.totalValueSar} />
             )}
             <Coverage kind="value" count={headline.valueEntered} of={total} />
           </Card>
@@ -375,10 +376,10 @@ function Headline({
           <span className="home__tile-value">
             <Percent value={headline.averagePlannedPercent} />
           </span>
-          <span className="insights__notes">
+          <NoteList className="insights__notes">
             <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
             {measured}
-          </span>
+          </NoteList>
         </Card>
         <Card
           label={t('dashboards.insights.averageActual')}
@@ -388,10 +389,10 @@ function Headline({
           <span className="home__tile-value">
             <Percent value={headline.averageActualPercent} />
           </span>
-          <span className="insights__notes">
+          <NoteList className="insights__notes">
             <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
             {measured}
-          </span>
+          </NoteList>
         </Card>
         <Card
           label={t('dashboards.insights.gap')}
@@ -449,7 +450,7 @@ function RowFigures({
           {row.valueSar === null || row.valueEntered === 0 ? (
             <Percent value={null} />
           ) : (
-            <span dir="ltr">{formatSar(row.valueSar)}</span>
+            <span dir="ltr">{sarWhole(row.valueSar)}</span>
           )}
         </td>
       )}
@@ -579,11 +580,11 @@ function BreakdownTable({
           </tr>
         </tfoot>
       </TableContainer>
-      <p className="insights__notes">
+      <NoteList as="p" className="insights__notes">
         {showValue && <Coverage kind="value" count={total.valueEntered} of={total.projects} />}
         <Coverage kind="progress" count={total.measured} of={total.projects} />
         <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
-      </p>
+      </NoteList>
     </>
   );
 }
@@ -798,7 +799,7 @@ function CurrentStages({
                   {stage.valueSar === null || stage.valueEntered === 0 ? (
                     <Percent value={null} />
                   ) : (
-                    <span dir="ltr">{formatSar(stage.valueSar)}</span>
+                    <span dir="ltr">{sarWhole(stage.valueSar)}</span>
                   )}
                 </td>
               )}

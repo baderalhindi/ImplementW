@@ -6409,10 +6409,10 @@ tr[data-flagged='true'] {
   display: inline;
 }
 
-.insights__notes > * + *::before,
-.widget__footer > * + *::before,
-.widget__origin > * + *::before {
-  content: ' · ';
+/* Review round 8, point 11: the " · " between notes is text (NoteList), so it survives copying and reading aloud. */
+.note-list__separator {
+  display: inline;
+  color: var(--color-text-muted);
 }
 
 .insights__group th {

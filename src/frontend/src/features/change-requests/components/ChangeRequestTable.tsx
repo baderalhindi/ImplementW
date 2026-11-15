@@ -2,7 +2,7 @@ import { type ReactElement } from 'react';
 import { type RowActionsColumn } from '@/features/identity-access/components/RowActions.tsx';
 import { Link } from 'react-router';
 
-import { formatSar, languageTag } from '@/features/projects/presentation.ts';
+import { languageTag } from '@/features/projects/presentation.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
@@ -13,6 +13,7 @@ import { changeRequestPath } from '../paths.ts';
 import { type ChangeRequestEntry } from '../useChangeRequestData.ts';
 
 import { BandBadge, ChangeRequestStatusBadge } from './ChangeRequestBadges.tsx';
+import { sarWhole } from '@/shared/format/money.ts';
 
 /** The impacts a request states, in a line: "+12 days · SAR 60,000 · scope". */
 function ImpactSummary({ request }: { request: ChangeRequestDetail }): ReactElement {
@@ -23,7 +24,7 @@ function ImpactSummary({ request }: { request: ChangeRequestDetail }): ReactElem
       : [t('changeRequests.impacts.days', { days: request.scheduleImpactDays })]),
     ...(request.costImpactSar === null
       ? []
-      : [t('changeRequests.impacts.sar', { amount: formatSar(request.costImpactSar) })]),
+      : [t('changeRequests.impacts.sar', { amount: sarWhole(request.costImpactSar) })]),
     ...(request.scopeImpact === null ? [] : [t('changeRequests.impacts.scope')]),
     ...(request.isContractualObligation ? [t('changeRequests.impacts.contractual')] : []),
   ];

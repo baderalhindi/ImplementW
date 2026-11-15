@@ -9,7 +9,6 @@ import { usePersonNames } from '@/features/identity-access/assignments/useUserNa
 import { useSaveAction } from '@/features/identity-access/forms.ts';
 import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { Detail } from '@/features/projects/components/Detail.tsx';
-import { formatSar } from '@/features/projects/presentation.ts';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { ConfirmCommandDialog } from '@/features/risks/dialogs/ConfirmCommandDialog.tsx';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
@@ -57,6 +56,7 @@ import {
   useChangeRequestReview,
   useOptionalProject,
 } from './useChangeRequestData.ts';
+import { sarWhole } from '@/shared/format/money.ts';
 
 /** The notices SCR-106 hands over when it lands here. */
 const ARRIVAL_NOTICES: Record<string, TranslationKey> = {
@@ -388,7 +388,7 @@ export function ChangeRequestDetailPage(): ReactElement | null {
               t('changeRequests.impacts.none')
             ) : (
               <span dir="ltr">
-                {t('changeRequests.impacts.sar', { amount: formatSar(request.costImpactSar) })}
+                {t('changeRequests.impacts.sar', { amount: sarWhole(request.costImpactSar) })}
               </span>
             )}
           </Detail>

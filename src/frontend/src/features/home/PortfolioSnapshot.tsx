@@ -18,6 +18,7 @@ import { EmptyState } from '@/shared/ui/States.tsx';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
 import { ReachedProjectLocations } from './ReachedProjectLocations.tsx';
+import { sarExactLabel } from '@/shared/format/money.ts';
 
 /** The Portfolio Dashboard, when the person's roles open it; null otherwise. */
 async function readPortfolio(signal: AbortSignal): Promise<DashboardView | null> {
@@ -46,6 +47,8 @@ interface Tile {
   /** The records it counts (review round 8, point 01); a figure no list filters by has none. */
   to?: string;
   hint?: string;
+  /** A compact amount's full figure, shown on hover (review round 8, point 11). */
+  exact?: string;
 }
 
 function TileRow({
@@ -67,7 +70,12 @@ function TileRow({
           data-tone={tile.tone}
           title={tile.hint}
         >
-          <span className="home__tile-value" dir="ltr">
+          {/* A compact amount reads in the page's direction ("64.6 مليار ريال"); a count stays left to right. */}
+          <span
+            className="home__tile-value"
+            dir={kind === 'money' ? undefined : 'ltr'}
+            title={tile.exact}
+          >
             {tile.value}
           </span>
           {tile.to === undefined ? (
@@ -171,7 +179,12 @@ export function PortfolioSnapshot(): ReactElement | null {
     const figure = figureOf(financials, measure);
     const value = figure === undefined ? null : formatFigure(figure, t);
     if (value !== null) {
-      money.push({ key: measure, label: t(`dashboards.measures.${measure}`), value });
+      money.push({
+        key: measure,
+        label: t(`dashboards.measures.${measure}`),
+        value,
+        ...(figure?.value == null ? {} : { exact: sarExactLabel(figure.value, t) }),
+      });
     }
   }
 

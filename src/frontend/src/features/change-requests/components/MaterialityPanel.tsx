@@ -1,12 +1,13 @@
 import { type ReactElement, useId } from 'react';
 
-import { formatSar, shortId } from '@/features/projects/presentation.ts';
+import { shortId } from '@/features/projects/presentation.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 
 import { type ChangeRequestDetail, type MaterialityAssessment } from '../api/types.ts';
 
 import { BandBadge } from './ChangeRequestBadges.tsx';
+import { sarWhole } from '@/shared/format/money.ts';
 
 /** The approval path each band enters (ADR-016: three bands; band 3 is the elevated route). */
 const PATHS: Record<number, TranslationKey> = {
@@ -97,14 +98,14 @@ export function MaterialityPanel({
                 t('changeRequests.impacts.none')
               ) : (
                 <span dir="ltr">
-                  {t('changeRequests.impacts.sar', { amount: formatSar(impacts.costImpactSar) })}
+                  {t('changeRequests.impacts.sar', { amount: sarWhole(impacts.costImpactSar) })}
                 </span>
               )}
             </td>
             <td>
               <span dir="ltr">
                 {t('changeRequests.impacts.sar', {
-                  amount: formatSar(assessment.cumulativeCostImpactSar),
+                  amount: sarWhole(assessment.cumulativeCostImpactSar),
                 })}
               </span>
             </td>

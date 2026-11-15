@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router';
 import { GapValue, OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
 import { Detail } from '@/features/projects/components/Detail.tsx';
 import { ProjectStatusBadge } from '@/features/projects/components/ProjectStatusBadge.tsx';
-import { formatSar, languageTag } from '@/features/projects/presentation.ts';
+import { languageTag } from '@/features/projects/presentation.ts';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
@@ -19,6 +19,8 @@ import { DASHBOARDS_PATH } from '../paths.ts';
 import { dashboardProblemMessage } from '../problems.ts';
 
 import { Coverage, Percent } from './figures.tsx';
+import { sarWhole } from '@/shared/format/money.ts';
+import { SarAmount } from '@/shared/format/SarAmount.tsx';
 
 const DIMENSIONS: Record<string, PortfolioCardDimension> = {
   portfolio: 'PORTFOLIO',
@@ -101,9 +103,7 @@ function CardView({ card }: { card: PortfolioCard }): ReactElement {
               {summary.valueEntered === 0 ? (
                 notAvailable
               ) : (
-                <span dir="ltr">
-                  {t('projects.money.sar', { amount: formatSar(summary.valueSar ?? '0.00') })}
-                </span>
+                <SarAmount amount={summary.valueSar ?? '0.00'} />
               )}
               <Coverage kind="value" count={summary.valueEntered} of={summary.projects} />
             </Detail>
@@ -178,7 +178,7 @@ function CardView({ card }: { card: PortfolioCard }): ReactElement {
                     {project.valueSar === null ? (
                       notAvailable
                     ) : (
-                      <span dir="ltr">{formatSar(project.valueSar)}</span>
+                      <span dir="ltr">{sarWhole(project.valueSar)}</span>
                     )}
                   </td>
                 )}

@@ -10,7 +10,6 @@ import { type ProjectStatus } from '../api/types.ts';
 import { Detail } from '../components/Detail.tsx';
 import { ChangeManagerDialog } from '../dialogs/ChangeManagerDialog.tsx';
 import { profileMandatoryFields } from '../governance.ts';
-import { formatSar } from '../presentation.ts';
 import {
   FIELD_LABELS,
   missingFields,
@@ -23,6 +22,7 @@ import { OverallProgressPanel } from '../stagePlan/OverallProgressPanel.tsx';
 import { FollowUpPanel } from './FollowUpPanel.tsx';
 import { OverviewKpis } from './OverviewKpis.tsx';
 import { useWorkspace } from './workspaceContext.ts';
+import { SarAmount } from '@/shared/format/SarAmount.tsx';
 
 /**
  * What comes next from each state, and whose move it is (TASK-041 §3). The status badge above names the state, so the line gives only the next
@@ -139,9 +139,7 @@ export function OverviewTab(): ReactElement {
               {project.registrationBudgetSar === null ? (
                 none
               ) : (
-                <span dir="ltr">
-                  {t('projects.money.sar', { amount: formatSar(project.registrationBudgetSar) })}
-                </span>
+                <SarAmount amount={project.registrationBudgetSar} />
               )}
             </Detail>
             <Detail term={t('projects.fields.plannedPeriod')}>

@@ -1,7 +1,7 @@
-import { formatAmount, withoutZeroFraction } from '@/shared/forms/amountInput.ts';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 
 import { type ProjectStatus } from './api/types.ts';
+import { sarExact } from '@/shared/format/money.ts';
 
 // How WF-01 states read on screen. Each state has its own word; the colour only repeats it (WCAG 1.4.1).
 
@@ -49,9 +49,9 @@ export function languageTag(language: string): string {
   return language.toLowerCase();
 }
 
-/** A SAR amount with grouping, Latin digits in both languages (TASK-032 D-5): 1,500,000, and 1,500,000.50 when it has a fraction. */
+/** A SAR amount to the halala, for the financial screens (review round 8, point 11: tables use `sarWhole`, cards `sarCompact`). */
 export function formatSar(amount: string): string {
-  return formatAmount(withoutZeroFraction(amount));
+  return sarExact(amount);
 }
 
 /** A number with at most one decimal, in Latin digits like every figure the platform shows (TASK-032 D-5). */

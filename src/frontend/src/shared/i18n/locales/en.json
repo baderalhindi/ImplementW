@@ -195,5 +195,10 @@
     "filter": "Nothing matches the current filters. Change or clear them to see everything.",
     "notYet": "Nothing has been recorded here yet. It shows here once it is.",
     "role": "Your current role does not offer this page. If you need it, ask the system administrator to review your role assignments."
+  },
+  "money": {
+    "sar": "{amount} SAR",
+    "million": "{amount} million SAR",
+    "billion": "{amount} billion SAR"
   }
 }
