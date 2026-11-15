@@ -96,7 +96,7 @@
     "pickMany": "Choose the images to show. They take turns every 10 minutes.",
     "selectAll": "Select all",
     "clearAll": "Clear all",
-    "needOne": "Keep at least one image, or choose the default colour.",
+    "needOne": "Choose at least one image. Until you do, the banner keeps its current images.",
     "notSaved": "Your choice could not be saved. Try again."
   },
   "quickActions": {

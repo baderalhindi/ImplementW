@@ -80,11 +80,13 @@ export function BannerCustomizer({
 }): ReactElement {
   const { t } = useI18n();
   const { open, setOpen, containerRef, buttonRef, menuId } = usePopover();
-  const [emptied, setEmptied] = useState(false);
-  const chosen = new Set(preference.imageIds);
+  // "Clear all" empties the choice on screen only: the image styles need an image, so nothing is saved, and the banner keeps its images, until one is picked.
+  const [cleared, setCleared] = useState(false);
+  const chosenIds = cleared ? [] : preference.imageIds;
+  const chosen = new Set(chosenIds);
 
   const setStyle = (style: BannerStyle) => {
-    setEmptied(false);
+    setCleared(false);
     if (style === 'DEFAULT') {
       onChoose({ style, imageIds: preference.imageIds });
     } else if (style === 'IMAGE') {
@@ -100,12 +102,11 @@ export function BannerCustomizer({
     }
   };
   const setImages = (ids: string[]) => {
-    // The image styles need at least one image: emptying the choice keeps the last one and says so.
     if (ids.length === 0) {
-      setEmptied(true);
+      setCleared(true);
       return;
     }
-    setEmptied(false);
+    setCleared(false);
     onChoose({ style: preference.style, imageIds: ids });
   };
   const toggle = (id: string) => {
@@ -114,7 +115,7 @@ export function BannerCustomizer({
     } else {
       setImages(
         chosen.has(id)
-          ? preference.imageIds.filter((current) => current !== id)
+          ? chosenIds.filter((current) => current !== id)
           : images
               .map((image) => image.id)
               .filter((current) => current === id || chosen.has(current)),
@@ -133,6 +134,7 @@ export function BannerCustomizer({
         aria-label={t('home.banner.customize')}
         title={t('home.banner.customize')}
         onClick={() => {
+          setCleared(false);
           setOpen((current) => !current);
         }}
       >
@@ -196,6 +198,11 @@ export function BannerCustomizer({
                     </button>
                   </p>
                 )}
+                {cleared && (
+                  <p className="form__note banner-picker__warning" role="status">
+                    {t('home.banner.needOne')}
+                  </p>
+                )}
                 <ul className="banner-picker__images">
                   {images.map((image) => (
                     <Thumbnail
@@ -208,11 +215,6 @@ export function BannerCustomizer({
                     />
                   ))}
                 </ul>
-                {emptied && (
-                  <p className="form__note banner-picker__warning" role="status">
-                    {t('home.banner.needOne')}
-                  </p>
-                )}
               </>
             )}
           </>
