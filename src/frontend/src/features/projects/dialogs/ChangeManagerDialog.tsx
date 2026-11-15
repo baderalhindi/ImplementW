@@ -5,6 +5,7 @@ import { type PickedUser, UserPicker } from '@/features/identity-access/componen
 import { checkText, useSaveAction } from '@/features/identity-access/forms.ts';
 import { fieldMessage } from '@/features/identity-access/problems.ts';
 import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
+import { focusFirstInvalid } from '@/shared/forms/focusFirstInvalid.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { TextAreaField } from '@/shared/ui/FormFields.tsx';
@@ -54,6 +55,7 @@ function ChangeManagerBody({
     event.preventDefault();
     setAttempted(true);
     if (manager === null || reasonCode !== null) {
+      focusFirstInvalid(event.currentTarget);
       return;
     }
     const result = await save.run(() =>

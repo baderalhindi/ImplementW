@@ -6,6 +6,7 @@ import { fieldMessage } from '@/features/identity-access/problems.ts';
 import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
 import { ApiError } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
+import { focusFirstInvalid } from '@/shared/forms/focusFirstInvalid.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { SelectField, TextAreaField } from '@/shared/ui/FormFields.tsx';
@@ -133,6 +134,7 @@ function StagePlanBody({
     event.preventDefault();
     setAttempted(true);
     if (hasStagePlanErrors(codes)) {
+      focusFirstInvalid(event.currentTarget);
       return;
     }
     if (

@@ -7,6 +7,7 @@ import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { LifecycleBanner } from '@/features/suspension-closure/components/LifecycleBanner.tsx';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
+import { useSetPageCrumbs } from '@/shared/navigation/pageCrumbs.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { MoreMenu } from '@/shared/ui/MoreMenu.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
@@ -73,6 +74,11 @@ type OpenDialog = 'delete' | 'submit' | 'status' | null;
  * person's scope reaches (acceptance criterion 3; access.ts). The project is read once here and lent to each tab. A
  * CLOSED project's workspace is read-only (TASK-064): its banner says so on every tab, and no tab offers a write.
  */
+/** The project's name for the breadcrumb, once read. */
+function loadedTitle(detail: { title: { text: string } } | undefined): string | null {
+  return detail?.title.text ?? null;
+}
+
 export function ProjectWorkspace(): ReactElement | null {
   const { t } = useI18n();
   const { session } = useSession();
@@ -93,6 +99,26 @@ export function ProjectWorkspace(): ReactElement | null {
     arrivalKey === undefined ? null : { tone: 'success', message: t(arrivalKey) },
   );
   const [dialog, setDialog] = useState<OpenDialog>(null);
+
+  // Review round 8, point 16: the breadcrumb goes on past "المشاريع" to the project and its open tab, the tab a link when a record under it is open.
+  const openTab = tabOfPath(location.pathname, projectId, WORKSPACE_TABS);
+  const tabPath =
+    openTab === undefined
+      ? null
+      : `/projects/${projectId}${openTab.path === '' ? '' : `/${openTab.path}`}`;
+  const tabLabel = openTab === undefined ? null : t(TAB_LABELS[openTab.key]);
+  const title = loadedTitle(project.data?.data);
+  useSetPageCrumbs(
+    title === null
+      ? []
+      : [
+          { label: title, to: `/projects/${projectId}` },
+          ...(tabLabel === null
+            ? []
+            : [{ label: tabLabel, to: location.pathname === tabPath ? null : tabPath }]),
+        ],
+    `${projectId}|${title ?? ''}|${tabLabel ?? ''}|${location.pathname === tabPath ? '' : (tabPath ?? '')}`,
+  );
 
   // Review round 8, point 04: a project opened at its address returns to the tab this person last used on it, when it is still offered; a tab
   // opened is remembered. A tab chosen on the page (CHOSEN_TAB), the overview among them, is kept as chosen.

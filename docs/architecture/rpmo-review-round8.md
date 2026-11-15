@@ -494,3 +494,24 @@ local.r02 already had a saved order (the user's own). The API check reset it, an
 - **Checked on localhost (local.r01).**
   - Administration in the rail opened Users with the side menu: 5 headings, 19 pages, no tab row.
   - Each of the 19 pages opened from the menu with its own entry marked, so each is two clicks away.
+
+## Point 16: breadcrumbs, required fields and form width
+
+- **Breadcrumbs.**
+  - A project page's breadcrumb now reads "المشاريع › مشروع رقم 4 › التقدم": the project links to its Overview, and the open tab is the current step. Under a record (a risk, an issue), the tab is a link back to its list.
+  - The project page sets these steps through `shared/navigation/pageCrumbs.ts`, which the shell's breadcrumb reads, and clears them when it closes.
+- **Required fields.**
+  - Required fields were already marked "(مطلوب)".
+  - On the registration form Save is no longer disabled while fields are missing. Pressing it marks each missing field and moves to the first one (`shared/forms/focusFirstInvalid.ts`); the note under the button still lists them.
+  - The same move-to-first was added to six dialogs that already marked fields on Save: progress and financial review, add KPI, change manager, progress method and stage plan. The progress update, financial update and KPI value dialogs already did it.
+  - Save stays disabled only when the person cannot read the lists the form needs, since there is nothing they could complete.
+- **Form width.**
+  - The registration form had two columns from 768 px but was capped at 60rem. From 1280 px it now uses up to 80rem.
+  - Short fields are paired so they always share a row: sector with governance profile, portfolio with initiative, priority with funding, department with entity, and the two planned dates.
+- **Checked on localhost (local.r04).**
+  - The breadcrumb read "المشاريع › مشروع رقم 4 › التقدم" and "… › المخاطر".
+  - At 1400 px the form was 1096 px wide, with each pair on one row and 6 required marks.
+  - Save with nothing filled moved to the title, marked invalid; with the title filled, it moved to the sector. Nothing was saved.
+- **Tests.**
+  - `createProject.test.tsx` was rewritten for Save moving to the first missing field (12 tests pass).
+  - `workspace.test.tsx` still has 7 failures from points 04 and 06 (tabs in groups, Edit and Delete in "المزيد"), left for the CI step as agreed.

@@ -18,6 +18,7 @@ import { useSession } from '@/features/identity-access/session/useSession.ts';
 import { RecentNotifications } from '@/features/notifications/bell/RecentNotifications.tsx';
 import { unreadCountStore, useUnreadCount } from '@/features/notifications/unreadCount.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { usePageCrumbs } from '@/shared/navigation/pageCrumbs.ts';
 import { useTheme } from '@/shared/theme/theme.ts';
 
 import { GlobalSearch } from './search/GlobalSearch.tsx';
@@ -297,17 +298,21 @@ function Breadcrumb({
   const { t } = useI18n();
   const { search } = useLocation();
   const item = activeItem(menu, pathname, search);
-  const crumbs = [
+  // Review round 8, point 16: the steps only the page knows, such as a project and its tab, follow the menu's.
+  const pageCrumbs = usePageCrumbs();
+  const crumbs: { to: string | null; label: string }[] = [
     ...(menu === undefined ? [] : [{ to: menu.to, label: t(menu.label) }]),
-    ...(item === undefined ? [] : [{ to: item.to, label: t(item.label) }]),
+    ...(item === undefined || pageCrumbs.length > 0 ? [] : [{ to: item.to, label: t(item.label) }]),
+    ...pageCrumbs,
   ];
 
   return (
     <nav className="breadcrumb" aria-label={t('common.shell.breadcrumb')}>
       <ol>
         {crumbs.map((crumb, index) => (
-          <li key={crumb.label}>
-            {index === crumbs.length - 1 && isCurrent(crumb.to, pathname, search) ? (
+          <li key={`${String(index)}-${crumb.label}`}>
+            {crumb.to === null ||
+            (index === crumbs.length - 1 && isCurrent(crumb.to, pathname, search)) ? (
               <span aria-current="page">{crumb.label}</span>
             ) : (
               <Link to={crumb.to}>{crumb.label}</Link>

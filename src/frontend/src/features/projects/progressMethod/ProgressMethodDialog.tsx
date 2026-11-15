@@ -3,6 +3,7 @@ import { type ReactElement, type SyntheticEvent, useState } from 'react';
 import { checkText, useSaveAction } from '@/features/identity-access/forms.ts';
 import { fieldMessage } from '@/features/identity-access/problems.ts';
 import { narrativeRequest } from '@/features/progress/progressUpdate.ts';
+import { focusFirstInvalid } from '@/shared/forms/focusFirstInvalid.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { RadioGroupField, TextAreaField } from '@/shared/ui/FormFields.tsx';
@@ -55,6 +56,7 @@ function ProgressMethodBody({
     event.preventDefault();
     setAttempted(true);
     if (unchanged || reasonCode !== null) {
+      focusFirstInvalid(event.currentTarget);
       return;
     }
     const result = await save.run(() =>
