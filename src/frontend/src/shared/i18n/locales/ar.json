@@ -151,13 +151,13 @@
     "close": "إغلاق القائمة",
     "help": "المساعدة والمعرفة",
     "adminGroups": {
-      "access": "المستخدمون والصلاحيات",
-      "organization": "الهيكل التنظيمي",
-      "referenceData": "البيانات المرجعية",
+      "usersRoles": "المستخدمون والأدوار",
+      "organization": "التنظيم",
+      "data": "البيانات",
       "integrations": "التكاملات",
-      "connectedSystems": "الأنظمة المرتبطة",
-      "dataAndAudit": "البيانات والتدقيق"
-    }
+      "auditLogs": "التدقيق والسجلات"
+    },
+    "adminMenu": "قائمة الإدارة"
   },
   "shell": {
     "breadcrumb": "مسار التنقل",

@@ -129,12 +129,12 @@ function portfolioNavigation(
 const ADMINISTRATIVE_AUDIT: readonly string[] = ['ADMINISTRATION', 'SECURITY', 'INTEGRATION'];
 
 /**
- * Administration's screens under six headings, so its tabs keep to one row (the 15 Nov 2026 request, after review round 8, point 04). A screen not
- * named here goes under the last heading.
+ * Administration's screens under the five headings of review round 8, point 15, shown as a side menu on every admin page. A screen not named here
+ * goes under the last heading.
  */
 const ADMINISTRATION_GROUPS: { label: TranslationKey; paths: readonly string[] }[] = [
   {
-    label: 'common.menu.adminGroups.access',
+    label: 'common.menu.adminGroups.usersRoles',
     paths: ['/admin/users', '/admin/roles', '/admin/permission-matrix', '/admin/role-assignments'],
   },
   {
@@ -142,8 +142,8 @@ const ADMINISTRATION_GROUPS: { label: TranslationKey; paths: readonly string[] }
     paths: ['/admin/organization/departments', '/admin/organization/entities'],
   },
   {
-    label: 'common.menu.adminGroups.referenceData',
-    paths: ['/admin/master-data', '/admin/project-stages'],
+    label: 'common.menu.adminGroups.data',
+    paths: ['/admin/master-data', '/admin/project-stages', '/admin/data-migration'],
   },
   {
     label: 'common.menu.adminGroups.integrations',
@@ -151,21 +151,16 @@ const ADMINISTRATION_GROUPS: { label: TranslationKey; paths: readonly string[] }
       INTEGRATIONS_OVERVIEW_PATH,
       INTEGRATION_MONITORING_PATH,
       INTEGRATION_LOGS_PATH,
+      SSO_DIRECTORY_PATH,
+      EMAIL_EXCHANGE_PATH,
+      NAFATH_PATH,
+      INTERNAL_SYSTEMS_PATH,
       API_CATALOGUE_PATH,
     ],
   },
   {
-    label: 'common.menu.adminGroups.connectedSystems',
-    paths: [SSO_DIRECTORY_PATH, EMAIL_EXCHANGE_PATH, NAFATH_PATH, INTERNAL_SYSTEMS_PATH],
-  },
-  {
-    label: 'common.menu.adminGroups.dataAndAudit',
-    paths: [
-      '/admin/data-migration',
-      AUDIT_TRAIL_PATH,
-      INTEGRATION_AUDIT_PATH,
-      SYSTEM_EVENT_LOGS_PATH,
-    ],
+    label: 'common.menu.adminGroups.auditLogs',
+    paths: [AUDIT_TRAIL_PATH, INTEGRATION_AUDIT_PATH, SYSTEM_EVENT_LOGS_PATH],
   },
 ];
 

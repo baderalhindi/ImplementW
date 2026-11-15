@@ -23,7 +23,15 @@ import { useTheme } from '@/shared/theme/theme.ts';
 import { GlobalSearch } from './search/GlobalSearch.tsx';
 import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 
-import { activeItem, activeMenu, isCurrent, type Menu, type MenuId, menusFor } from './menus.ts';
+import {
+  activeItem,
+  activeMenu,
+  isCurrent,
+  type Menu,
+  type MenuGroup,
+  type MenuId,
+  menusFor,
+} from './menus.ts';
 import { ShellIcon } from './ShellIcon.tsx';
 
 /** Each language in its own script, so a reader finds theirs whichever is showing. */
@@ -472,39 +480,44 @@ function SectionTabs({ menu }: { menu: Menu | undefined }): ReactElement | null 
       ))}
     </ul>
   );
-  const groups = menu.groups ?? [];
-  if (groups.length < 2) {
-    return (
-      <nav className="tabs section-tabs print-hide" aria-label={t('common.menu.sections')}>
-        {row(menu.items, t(menu.label))}
-      </nav>
-    );
-  }
-  const open = groups.find((group) =>
-    group.items.some((item) => isCurrent(item.to, pathname, search)),
-  );
   return (
-    <div className="section-tabs print-hide">
-      <nav className="tabs tabs--groups" aria-label={t('common.menu.sections')}>
-        <ul aria-label={t(menu.label)}>
-          {groups.map((group) => (
-            <li key={group.label}>
-              <Link
-                to={group.items[0]?.to ?? menu.to}
-                aria-current={group === open ? 'page' : undefined}
-              >
-                {t(group.label)}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      {open !== undefined && open.items.length > 1 && (
-        <nav className="tabs tabs--sub" aria-label={t(open.label)}>
-          {row(open.items, t(open.label))}
-        </nav>
-      )}
-    </div>
+    <nav className="tabs section-tabs print-hide" aria-label={t('common.menu.sections')}>
+      {row(menu.items, t(menu.label))}
+    </nav>
+  );
+}
+
+/** Whether a menu's screens are shown as a grouped side menu rather than a row of tabs: Administration's (review round 8, point 15). */
+function hasSideMenu(menu: Menu | undefined): menu is Menu & { groups: MenuGroup[] } {
+  return menu?.groups !== undefined && menu.groups.length > 1;
+}
+
+/**
+ * Administration's side menu (review round 8, point 15): its screens under their five headings beside the page, the current one marked, so
+ * every admin screen is two clicks away — Administration in the rail, then the screen. It changes how one gets there, not who sees what: a
+ * heading lists only the screens the person may open.
+ */
+function AdminSideMenu({ menu }: { menu: Menu & { groups: MenuGroup[] } }): ReactElement {
+  const { t } = useI18n();
+  return (
+    <nav className="admin-menu print-hide" aria-label={t('common.menu.adminMenu')}>
+      {menu.groups.map((group) => (
+        <div key={group.label} className="admin-menu__group">
+          <p className="admin-menu__heading" id={`admin-menu-${group.label}`}>
+            {t(group.label)}
+          </p>
+          <ul aria-labelledby={`admin-menu-${group.label}`}>
+            {group.items.map((item) => (
+              <li key={item.to}>
+                <NavLink to={item.to} end={item.end ?? false}>
+                  {t(item.label)}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </nav>
   );
 }
 
@@ -681,8 +694,19 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
           </div>
         </header>
         <main id="main" className="app__main" tabIndex={-1}>
-          <SectionTabs menu={current} />
-          <Outlet context={menus} />
+          {hasSideMenu(current) ? (
+            <div className="admin-layout">
+              <AdminSideMenu menu={current} />
+              <div className="admin-layout__content">
+                <Outlet context={menus} />
+              </div>
+            </div>
+          ) : (
+            <>
+              <SectionTabs menu={current} />
+              <Outlet context={menus} />
+            </>
+          )}
         </main>
       </div>
       <StepUpDialog />

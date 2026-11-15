@@ -151,13 +151,13 @@
     "close": "Close menu",
     "help": "Help and Knowledge",
     "adminGroups": {
-      "access": "Users and access",
+      "usersRoles": "Users and roles",
       "organization": "Organization",
-      "referenceData": "Reference data",
+      "data": "Data",
       "integrations": "Integrations",
-      "connectedSystems": "Connected systems",
-      "dataAndAudit": "Data and audit"
-    }
+      "auditLogs": "Audit and logs"
+    },
+    "adminMenu": "Administration menu"
   },
   "shell": {
     "breadcrumb": "Breadcrumb",

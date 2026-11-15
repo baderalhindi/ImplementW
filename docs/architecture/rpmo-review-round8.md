@@ -477,3 +477,20 @@ local.r02 already had a saved order (the user's own). The API check reset it, an
   - the title;
   - that neither "لوحة المحفظة" nor "اللوحات" is in the menu.
 - **Insights tests.** The 25 tests pass; the value card's test now expects "1.5 million SAR" with "1,500,000 SAR" on hover (point 11).
+
+## Point 15: Administration's side menu
+
+- **The side menu.** Admin pages now show a side menu beside the page in place of the row of tabs, under the PDF's five headings:
+  - "المستخدمون والأدوار": users, roles, permission matrix, role assignments;
+  - "التنظيم": departments, entities;
+  - "البيانات": master data, project stages, data migration;
+  - "التكاملات": the integration pages;
+  - "التدقيق والسجلات": audit trail, integration audit, system event logs.
+- **Behaviour.**
+  - The current page is marked.
+  - The menu stays in view while the page scrolls, and sits above the page on a window narrower than 64rem.
+  - A heading lists only the pages the person may open, so it changes navigation, not who sees what.
+- **Supersedes the 15 Nov tabs.** This replaces the six-heading tab rows of 15 Nov for Administration. Other menus keep their tabs.
+- **Checked on localhost (local.r01).**
+  - Administration in the rail opened Users with the side menu: 5 headings, 19 pages, no tab row.
+  - Each of the 19 pages opened from the menu with its own entry marked, so each is two clicks away.

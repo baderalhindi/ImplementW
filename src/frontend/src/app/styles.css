@@ -7479,3 +7479,72 @@ tr[data-flagged='true'] {
   gap: var(--space-1) var(--space-2);
   align-items: baseline;
 }
+
+/* Review round 8, point 15: Administration's grouped side menu beside its pages; above the page on a narrow window. */
+.admin-layout {
+  display: grid;
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.admin-layout__content {
+  min-inline-size: 0;
+}
+
+.admin-menu {
+  position: sticky;
+  inset-block-start: calc(var(--topbar-block-size, 4rem) + var(--space-4));
+  display: grid;
+  gap: var(--space-4);
+  max-block-size: calc(100vh - var(--topbar-block-size, 4rem) - var(--space-8));
+  overflow-y: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.admin-menu__heading {
+  margin: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.admin-menu ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-menu a {
+  display: block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: 0.375rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.admin-menu a:hover {
+  background: var(--color-background);
+}
+
+.admin-menu a[aria-current='page'] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 64rem) {
+  .admin-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-menu {
+    position: static;
+    max-block-size: none;
+  }
+}
