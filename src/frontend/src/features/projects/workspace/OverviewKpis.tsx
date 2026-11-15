@@ -94,9 +94,11 @@ export function OverviewKpis({ project }: { project: ProjectDetail }): ReactElem
         <span className="home__tile-value">
           <GapValue points={indicators.gapPoints} />
         </span>
-        <span>
-          <OnPlanBadge status={onPlan} />
-        </span>
+        {onPlan !== null && (
+          <span>
+            <OnPlanBadge status={onPlan} />
+          </span>
+        )}
       </Tile>
       <Tile label={t('projects.stageProgress.current')}>
         <span className="home__tile-value overview-kpis__text">{stage ?? none}</span>

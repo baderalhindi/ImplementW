@@ -6826,6 +6826,10 @@ tr[data-flagged='true'] {
   margin-block: var(--space-3) var(--space-4);
 }
 
+.overview-kpis__tile {
+  justify-content: flex-start;
+}
+
 .overview-kpis__tile:first-child {
   flex: 2 1 min(100%, 22rem);
 }
@@ -6838,7 +6842,8 @@ tr[data-flagged='true'] {
 }
 
 .overview-kpis__progress .gauge {
-  inline-size: 7.5rem;
+  inline-size: 5.5rem;
+  block-size: 5.5rem;
 }
 
 .overview-kpis__legend {
@@ -6863,6 +6868,10 @@ tr[data-flagged='true'] {
 
 .overview-kpis__text {
   font-size: 1.25rem;
+}
+
+.overview-board.overview-board--stacked {
+  grid-template-columns: 1fr;
 }
 
 .overview-board {
@@ -6898,7 +6907,12 @@ tr[data-flagged='true'] {
 
 .details--tiles {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+  align-items: start;
   gap: var(--space-2);
+}
+
+.overview-card .notice {
+  margin-block-end: var(--space-3);
 }
 
 .details--tiles .details__row {
@@ -6925,7 +6939,7 @@ tr[data-flagged='true'] {
 }
 
 .overview-kpis__progress .gauge__centre {
-  font-size: 1.125rem;
+  font-size: 0.9375rem;
 }
 
 .details--tiles .button {

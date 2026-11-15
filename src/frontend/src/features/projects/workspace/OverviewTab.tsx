@@ -59,6 +59,9 @@ export function OverviewTab(): ReactElement {
         ])
       : [];
   const nextStep = NEXT_STEPS[project.status];
+  const progress = project.indicators?.progress;
+  const hasStageBars =
+    progress?.method === 'STAGES' && progress.stages.length > 0 && !progress.needsSetup;
   const none = t('common.values.none');
   const notAvailable = t('projects.followUp.notAvailable');
 
@@ -80,7 +83,8 @@ export function OverviewTab(): ReactElement {
       )}
       {/* The 15 Nov 2026 request: the Overview reads as a dashboard. Headline tiles first, then cards. */}
       <OverviewKpis project={project} />
-      <div className="overview-board">
+      {/* With stage bars the progress card is tall and sits beside the details; without them it is a line, so each card takes the full width. */}
+      <div className={hasStageBars ? 'overview-board' : 'overview-board overview-board--stacked'}>
         <div className="overview-card">
           <OverallProgressPanel project={project} etag={etag} onChanged={reload} />
         </div>
