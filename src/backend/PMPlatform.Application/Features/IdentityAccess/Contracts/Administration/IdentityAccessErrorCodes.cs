@@ -104,4 +104,7 @@ public static class IdentityAccessErrorCodes
 
     /// <summary>422: a banner image style needs images that exist; one image takes exactly one (review round 8, point 07).</summary>
     public const string BannerImagesInvalid = "IDENTITY_ACCESS_BANNER_IMAGES_INVALID";
+
+    /// <summary>Review round 8, point 08: more than six quick actions, one named twice, or a code that is not an action's.</summary>
+    public const string QuickActionsInvalid = "IDENTITY_ACCESS_QUICK_ACTIONS_INVALID";
 }

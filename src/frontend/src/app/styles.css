@@ -5551,23 +5551,104 @@ path.trend__line--ACTUAL_PERCENT {
   gap: var(--space-2);
 }
 
-.home__actions-bar a {
+.home__actions-bar .home__actions > li > a,
+.home__actions-bar .home__actions > li > button {
   display: inline-flex;
   align-items: center;
   min-block-size: 2.5rem;
   padding: 0 var(--space-4);
   border: 1px solid rgb(255 255 255 / 45%);
   border-radius: 999px;
+  background: transparent;
   color: var(--color-rail-text);
+  font: inherit;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.home__actions-bar a:hover {
+.home__actions-bar .home__actions > li > a:hover,
+.home__actions-bar .home__actions > li > button:hover {
   background: rgb(255 255 255 / 14%);
 }
 
-.home__actions-bar a:focus-visible {
+.home__actions-bar .home__actions > li > a:focus-visible,
+.home__actions-bar .home__actions > li > button:focus-visible {
   outline-color: var(--color-sand);
+}
+
+/* Review round 8, point 08: the pencil that opens "تخصيص الإجراءات السريعة", a round button after the actions. */
+.home__actions-bar .home__actions > li > .home__actions-edit {
+  justify-content: center;
+  inline-size: 2.5rem;
+  padding: 0;
+}
+
+/* The quick-action picker: the chosen actions in order, dragged or moved with the arrows, then the catalogue in its groups. */
+.quick-picker__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.quick-picker__header h3 {
+  margin: 0;
+}
+
+.quick-picker__count {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.quick-picker__order {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quick-picker__order li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  cursor: grab;
+}
+
+.quick-picker__order li.is-dragged {
+  opacity: 0.5;
+}
+
+.quick-picker__grip {
+  color: var(--color-text-muted);
+  letter-spacing: -0.2em;
+}
+
+.quick-picker__name {
+  flex: 1;
+}
+
+.quick-picker__move {
+  min-inline-size: 2rem;
+  padding-inline: var(--space-2);
+}
+
+.quick-picker__group {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.quick-picker__group legend {
+  padding-inline: var(--space-1);
+  font-weight: 600;
 }
 
 /* The Home's map of the platform: a card per menu. Cards share each row's width, so no row ends in an empty column. */

@@ -5285,6 +5285,10 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid[]")
                         .HasColumnName("image_ids");
 
+                    b.PrimitiveCollection<List<string>>("QuickActions")
+                        .HasColumnType("text[]")
+                        .HasColumnName("quick_actions");
+
                     b.Property<string>("Style")
                         .IsRequired()
                         .HasMaxLength(50)

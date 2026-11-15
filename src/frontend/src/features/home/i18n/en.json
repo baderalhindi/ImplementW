@@ -99,5 +99,47 @@
     "needOne": "Keep at least one image, or choose the default colour.",
     "notSaved": "Your choice could not be saved. Try again.",
     "position": "Banner images"
+  },
+  "quickActions": {
+    "customize": "Customize quick actions",
+    "chosen": "Your actions, in order",
+    "count": "{count} of {max}",
+    "noneChosen": "No actions chosen. Pick from the list below.",
+    "full": "You have chosen six actions, the most allowed. Remove one to add another.",
+    "groups": {
+      "open": "Open",
+      "create": "Create",
+      "follow": "Follow up"
+    },
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "remove": "Remove {name}",
+    "restore": "Restore default",
+    "notSaved": "Your choice could not be saved. Try again.",
+    "project": "Project",
+    "chooseProject": "Choose the project",
+    "projectRequired": "Choose the project.",
+    "openProject": "Continue",
+    "noProjects": "There are no active projects you can do this on.",
+    "projectsUnavailable": "The projects could not be shown. Try again.",
+    "actions": {
+      "projectRegister": "Project register",
+      "portfolioDashboard": "Portfolio dashboard",
+      "dashboards": "Dashboards",
+      "reports": "Reports",
+      "notificationPreferences": "Notification preferences",
+      "createProject": "Create project",
+      "importProjects": "Import projects",
+      "raiseChangeRequest": "Change request",
+      "registerRisk": "Register a risk",
+      "raiseIssue": "Raise an issue",
+      "submitProgress": "Submit a progress update",
+      "submitFinancials": "Financial update",
+      "followUpList": "Follow-up list",
+      "approvalsInbox": "Approvals inbox",
+      "entityUpdateRequests": "Update requests to entities",
+      "tasks": "Tasks",
+      "notifications": "Notifications"
+    }
   }
 }

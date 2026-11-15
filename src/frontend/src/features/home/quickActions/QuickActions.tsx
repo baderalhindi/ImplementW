@@ -1,0 +1,105 @@
+import { type ReactElement, useState } from 'react';
+import { Link } from 'react-router';
+
+import { useDashboardCatalogue } from '@/features/dashboards/useDashboardCatalogue.ts';
+import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
+import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
+import { useI18n } from '@/shared/i18n/i18n.ts';
+
+import { ProjectActionDialog } from './ProjectActionDialog.tsx';
+import { type QuickAction, type QuickActionContext, shownQuickActions } from './quickActions.ts';
+import { QuickActionsPicker } from './QuickActionsPicker.tsx';
+import { useQuickActions } from './useQuickActions.ts';
+
+function PencilIcon(): ReactElement {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+      <path
+        d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The welcome banner's quick actions (review round 8, point 08): the person's own choice of up to six, or their role's set until they choose, each
+ * shown only while they may do it. The pencil opens "تخصيص الإجراءات السريعة". An action done inside a project first asks which project.
+ */
+export function QuickActions({ user }: { user: SessionUser }): ReactElement | null {
+  const { t } = useI18n();
+  const { can } = usePermissions();
+  const dashboards = useDashboardCatalogue();
+  const quick = useQuickActions();
+  const [picking, setPicking] = useState(false);
+  const [inProject, setInProject] = useState<QuickAction | null>(null);
+  // The catalogue's checks wait for what they read, so a role's set never shows in place of the person's choice.
+  if (!quick.loaded || dashboards.loading) {
+    return null;
+  }
+  const context: QuickActionContext = {
+    can,
+    external: user.userType === 'EXTERNAL',
+    portfolioDashboard: (dashboards.data ?? []).some((entry) => entry.code === 'PORTFOLIO'),
+  };
+  const shown = shownQuickActions(quick.saved, context);
+
+  return (
+    <nav className="home__actions-bar" aria-label={t('home.actions.title')}>
+      <ul className="home__actions">
+        {shown.map((entry) => (
+          <li key={entry.code}>
+            {'to' in entry.target ? (
+              <Link to={entry.target.to}>{t(entry.label)}</Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setInProject(entry);
+                }}
+              >
+                {t(entry.label)}
+              </button>
+            )}
+          </li>
+        ))}
+        <li>
+          <button
+            type="button"
+            className="home__actions-edit"
+            aria-label={t('home.quickActions.customize')}
+            title={t('home.quickActions.customize')}
+            onClick={() => {
+              setPicking(true);
+            }}
+          >
+            <PencilIcon />
+          </button>
+        </li>
+      </ul>
+      <QuickActionsPicker
+        open={picking}
+        context={context}
+        shown={shown}
+        usingDefault={quick.saved === null}
+        onSave={quick.save}
+        onClose={() => {
+          setPicking(false);
+        }}
+      />
+      {inProject !== null && 'projectTab' in inProject.target && (
+        <ProjectActionDialog
+          action={{ ...inProject, target: inProject.target }}
+          user={user}
+          onClose={() => {
+            setInProject(null);
+          }}
+        />
+      )}
+    </nav>
+  );
+}

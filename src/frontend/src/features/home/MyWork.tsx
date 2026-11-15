@@ -4,8 +4,6 @@ import { Link } from 'react-router';
 import { approvalInstancesApi, approvalTasksApi } from '@/features/approvals/api/approvalsApi.ts';
 import { SubjectSummary } from '@/features/approvals/components/SubjectSummary.tsx';
 import { isOverdue } from '@/features/approvals/presentation.ts';
-import { DASHBOARDS_PATH, PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
-import { useDashboardCatalogue } from '@/features/dashboards/useDashboardCatalogue.ts';
 import { externalRequestsApi } from '@/features/external-participation/api/externalParticipationApi.ts';
 import { MY_EXTERNAL_REQUESTS_PATH } from '@/features/external-participation/paths.ts';
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
@@ -52,48 +50,6 @@ export function MyWork({ user }: { user: SessionUser }): ReactElement {
         <UnreadNotifications />
       </div>
     </section>
-  );
-}
-
-/** The records the person may start and the screens they open most, in the Home's banner so the way in is seen first. */
-export function StartOrOpen({ user }: { user: SessionUser }): ReactElement {
-  const { t } = useI18n();
-  const { can } = usePermissions();
-  // The Portfolio Dashboard's audience (dashboards.md D-2) is offered it as a quick way to the analysis.
-  const dashboards = useDashboardCatalogue().data ?? [];
-  return (
-    <nav className="home__actions-bar" aria-label={t('home.actions.title')}>
-      <ul className="home__actions">
-        {can('PROJECT_REGISTER') && (
-          <li>
-            <Link to="/projects/new">{t('projects.nav.create')}</Link>
-          </li>
-        )}
-        {can('CHANGE_REQUEST_RAISE') && (
-          <li>
-            <Link to="/change-requests/new">{t('common.shell.createChangeRequest')}</Link>
-          </li>
-        )}
-        {can('PROJECT_VIEW') && (
-          <li>
-            <Link to="/projects">{t('projects.nav.register')}</Link>
-          </li>
-        )}
-        {dashboards.some((entry) => entry.code === 'PORTFOLIO') && (
-          <li>
-            <Link to={PORTFOLIO_DASHBOARD_PATH}>{t('common.menu.portfolioDashboard')}</Link>
-          </li>
-        )}
-        {user.userType !== 'EXTERNAL' && can('PROJECT_VIEW') && (
-          <li>
-            <Link to={DASHBOARDS_PATH}>{t('common.menu.dashboards')}</Link>
-          </li>
-        )}
-        <li>
-          <Link to="/notifications/preferences">{t('notifications.nav.preferences')}</Link>
-        </li>
-      </ul>
-    </nav>
   );
 }
 

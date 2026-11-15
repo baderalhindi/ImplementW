@@ -2979,12 +2979,13 @@ Table identity_access.user_banner_preference {
   user_id uuid [unique, not null, ref: > identity_access.user.id]
   style varchar(50) [not null, note: 'DEFAULT | IMAGE | ROTATE']
   image_ids "uuid[]" [not null, note: 'The images chosen, in the order they show']
+  quick_actions "text[]" [null, note: 'The banner quick actions chosen, in order, at most six (point 08); null: the role set']
   created_at timestamptz [not null, note: 'Audit column (D-2)']
   created_by uuid [not null, note: 'Audit column (D-2)']
   updated_at timestamptz [not null, note: 'Audit column (D-2)']
   updated_by uuid [not null, note: 'Audit column (D-2)']
 
-  Note: 'The Home banner choice of one person (review round 8, point 07): the green banner, one image, or images that take turns. No row: the green banner. Delete policy: HARD_OWNER.'
+  Note: 'The Home banner choice of one person (review round 8, points 07 and 08): the green banner, one image, or images that take turns, and the quick actions. No row: the green banner and the role set. Delete policy: HARD_OWNER.'
 }
 
 Table identity_access.sms_code {

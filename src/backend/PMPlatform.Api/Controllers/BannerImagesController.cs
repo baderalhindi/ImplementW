@@ -85,3 +85,32 @@ public sealed class CurrentUserBannerController(IBannerService banners) : Admini
             : Respond(await banners.SetPreferenceAsync(CallerId, style!.Value, request.ImageIds ?? [], cancellationToken));
     }
 }
+
+/// <summary>
+/// The signed-in person's own quick actions in the welcome banner (review round 8, point 08): up to six, in their order, or their role's set until they
+/// choose. Which actions exist, and who may do each, is the browser's catalogue; the server keeps the choice.
+/// </summary>
+[Route("api/v1/users/current/quick-actions")]
+[Tags("IdentityAccess")]
+public sealed class CurrentUserQuickActionsController(IBannerService banners) : AdministrationControllerBase
+{
+    /// <summary>The person's choice; <c>actions</c> null while they keep their role's set.</summary>
+    [HttpGet]
+    [AllowAnyAuthenticatedUser]
+    [ProducesResponseType<QuickActionsDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_GetQuickActions")]
+    public async Task<IActionResult> Get(CancellationToken cancellationToken) => Ok(await banners.GetQuickActionsAsync(CallerId, cancellationToken));
+
+    /// <summary>
+    /// Saves the choice: at most six distinct codes (422 <c>IDENTITY_ACCESS_QUICK_ACTIONS_INVALID</c>), or <c>actions</c> null to restore the role's set.
+    /// </summary>
+    [HttpPut]
+    [AllowAnyAuthenticatedUser]
+    [ProducesResponseType<QuickActionsDetail>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("IdentityAccess_SetQuickActions")]
+    public async Task<IActionResult> Set(QuickActionsRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return Respond(await banners.SetQuickActionsAsync(CallerId, request.Actions, cancellationToken));
+    }
+}

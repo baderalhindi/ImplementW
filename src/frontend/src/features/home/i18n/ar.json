@@ -99,5 +99,47 @@
     "needOne": "أبقِ صورة واحدة على الأقل، أو اختر اللون الافتراضي.",
     "notSaved": "تعذّر حفظ اختيارك. حاول مرة أخرى.",
     "position": "صور الشريط"
+  },
+  "quickActions": {
+    "customize": "تخصيص الإجراءات السريعة",
+    "chosen": "إجراءاتك بالترتيب",
+    "count": "{count} من {max}",
+    "noneChosen": "لم تختر أي إجراء. اختر من القائمة أدناه.",
+    "full": "اخترت ستة إجراءات، وهو الحد الأعلى. أزل إجراءً لتضيف غيره.",
+    "groups": {
+      "open": "فتح",
+      "create": "إنشاء",
+      "follow": "متابعة"
+    },
+    "moveUp": "نقل {name} إلى الأعلى",
+    "moveDown": "نقل {name} إلى الأسفل",
+    "remove": "إزالة {name}",
+    "restore": "استعادة الافتراضي",
+    "notSaved": "تعذّر حفظ اختيارك. حاول مرة أخرى.",
+    "project": "المشروع",
+    "chooseProject": "اختر المشروع",
+    "projectRequired": "اختر المشروع.",
+    "openProject": "متابعة",
+    "noProjects": "لا توجد مشاريع نشطة يمكنك تنفيذ هذا الإجراء عليها.",
+    "projectsUnavailable": "تعذّر عرض المشاريع. حاول مرة أخرى.",
+    "actions": {
+      "projectRegister": "سجل المشاريع",
+      "portfolioDashboard": "لوحة المحفظة",
+      "dashboards": "اللوحات",
+      "reports": "التقارير",
+      "notificationPreferences": "تفضيلات الإشعارات",
+      "createProject": "إنشاء مشروع",
+      "importProjects": "استيراد مشاريع",
+      "raiseChangeRequest": "طلب تغيير",
+      "registerRisk": "تسجيل خطر",
+      "raiseIssue": "طرح مسألة",
+      "submitProgress": "رفع تحديث الإنجاز",
+      "submitFinancials": "تحديث مالي",
+      "followUpList": "قائمة المتابعة",
+      "approvalsInbox": "صندوق الموافقات",
+      "entityUpdateRequests": "طلبات التحديث للجهات",
+      "tasks": "المهام",
+      "notifications": "الإشعارات"
+    }
   }
 }

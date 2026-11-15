@@ -317,6 +317,10 @@ The side menu shows one fixed image under its green: the banner image with code 
 
 The captions and alt texts are our reading of the photos, to be confirmed with the client. There are no credits.
 
+Three more sets followed (16 Nov 2026), so there are 23 images, all under 300 KB. One (`heritage-window`) needed quality 88 to fit. Some captions repeat (`qarah-walkway`/`qarah-stairway`, `qarah-cave-passage`/`qarah-caves`, the two Qaisariya gate photos), and `ruins-among-palms` and `arches-palm-shadows` have generic captions until the client names the sites.
+
+At the user's request (16 Nov 2026), the expanded side menu shows the client's gold divider under the logo (`public/brand/rail-divider.png`). Its teal background was made transparent, so it sits on the rail's colour and its image. The collapsed rail keeps only the emblem.
+
 ### Checked in a browser on localhost
 
 | Person | What happened |
@@ -331,4 +335,38 @@ There were no errors.
 
 - The choice is not yet also in the person's preferences page; the PDF asks for it there too.
 - Administration has no screen for adding images. They are added through the API.
+- The API snapshot and the tests are left for the CI step.
+
+## Point 08: quick actions chosen by each user, up to six
+
+- **The pencil.** A round pencil button after the banner's actions opens "تخصيص الإجراءات السريعة".
+- **The picker** (`features/home/quickActions/`):
+  - It lists, in the groups "فتح", "إنشاء" and "متابعة", only the actions this person may do.
+  - A counter shows "4 من 6". With six chosen, the rest are disabled and a note says to remove one first.
+  - The chosen actions are reordered by dragging, or with the ↑ ↓ buttons from the keyboard; × removes one.
+  - "استعادة الافتراضي" brings back the role's set. Saved like that, the person has no choice of their own, so the set follows their role.
+- **The catalogue.** The 15 actions in the PDF, plus "اللوحات" and "تفضيلات الإشعارات", which were already in the role set. Each is offered on the permission its screen checks today (`quickActions.ts`), until the RACI matrix sets which role has which.
+- **The role set.** The six buttons every role had before, in their order, less those the person may not do. local.r04 has five: it is not in the Portfolio Dashboard's audience.
+- **Actions inside a project.** "رفع تحديث الإنجاز", "تحديث مالي", "تسجيل خطر" and "طرح مسألة" first ask which project. The list is the person's active projects; for someone outside AHDA, the active projects they can see. The tab then opens:
+  - for a risk or an issue, with its new-record form already open (`?create=1`, dropped from the address when the form closes);
+  - for a progress or financial update, on the tab, where the person presses its start button. Starting writes a record, so an address does not start it.
+- **A permission removed later.** The action is left out of the banner and its slot is free. The next save drops it.
+- **Server.**
+  - The choice is kept on the person's `identity_access.user_banner_preference` row, in the new column `quick_actions` (`text[]`, null for the role set; migration `TASK-112_AddUserQuickActions`).
+  - `GET` and `PUT /users/current/quick-actions`, for anyone signed in.
+  - The server refuses more than six, a repeated code, or a code that is not shaped like an action's (422 `IDENTITY_ACCESS_QUICK_ACTIONS_INVALID`). Which actions exist, and who may do each, is the browser's catalogue.
+
+### Checked on localhost (16 Nov 2026)
+
+| Check | Result |
+|---|---|
+| API as local.r02 | Seven, a repeated code and a malformed code each gave 422. A save read back the same. No token gave 401. |
+| local.r05 in a browser | Removed all (0 من 6), chose six (2 of 8 left disabled, with the note), moved the last to the top with the arrows and dragged the second onto the first. After saving, the banner showed the same order, and it was the same after signing in again in a new browser. "استعادة الافتراضي" brought back the role set. |
+| local.r04 in a browser | 15 actions offered. "تسجيل خطر" and "طرح مسألة" each offered its 109 active projects and opened the project's form; closing the form dropped `?create=1`. "رفع تحديث الإنجاز" opened the Progress tab. |
+
+local.r02 already had a saved order (the user's own). The API check reset it, and it was then put back exactly. local.r04's row from the walk was removed, and local.r05 is back on its role set.
+
+### Not done
+
+- Which role may have which action waits for the RACI matrix.
 - The API snapshot and the tests are left for the CI step.

@@ -27,6 +27,9 @@ public sealed record BannerPreferenceRequest(string? Style, IReadOnlyList<Guid>?
     }
 }
 
+/// <summary>A person's quick actions (review round 8, point 08): at most six action codes in order, or null to go back to their role's set.</summary>
+public sealed record QuickActionsRequest(IReadOnlyList<string>? Actions);
+
 /// <summary>
 /// An image upload's form (review round 8, point 07): the WebP in part <c>file</c>, and its words in the fields <c>code</c>, <c>captionAr</c>,
 /// <c>captionEn</c>, <c>altAr</c>, <c>altEn</c>, <c>focalX</c>, <c>focalY</c> (0–100), <c>credit</c> (optional), <c>width</c>, <c>height</c> and

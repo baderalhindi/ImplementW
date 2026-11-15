@@ -16,6 +16,9 @@ public sealed record BannerImageContent(string ContentType, byte[] Content, Date
 /// <summary>One person's banner: the style and the images chosen, in the order they show.</summary>
 public sealed record BannerPreferenceDetail(BannerStyle Style, IReadOnlyList<Guid> ImageIds);
 
+/// <summary>The person's quick actions in the welcome banner, in order (review round 8, point 08); null when they keep their role's set.</summary>
+public sealed record QuickActionsDetail(IReadOnlyList<string>? Actions);
+
 /// <summary>An image to add, or to replace when its code is already used: a WebP of at most 300 KB and its words.</summary>
 public sealed record BannerImageUpload(
     string Code, BilingualLabel Caption, BilingualLabel Alt, short FocalX, short FocalY, string? Credit, int Width, int Height, int SortOrder, string ContentType,
@@ -32,6 +35,12 @@ public interface IBannerService
     /// <summary>The image styles need images that exist; one image takes exactly one.</summary>
     public Task<AdministrationResult<BannerPreferenceDetail>> SetPreferenceAsync(
         Guid callerId, BannerStyle style, IReadOnlyList<Guid> imageIds, CancellationToken cancellationToken);
+
+    public Task<QuickActionsDetail> GetQuickActionsAsync(Guid callerId, CancellationToken cancellationToken);
+
+    /// <summary>Saves at most six distinct action codes in order, or null to go back to the role's set.</summary>
+    public Task<AdministrationResult<QuickActionsDetail>> SetQuickActionsAsync(
+        Guid callerId, IReadOnlyList<string>? actions, CancellationToken cancellationToken);
 
     public Task<AdministrationResult<BannerImageSummary>> SaveImageAsync(Guid callerId, BannerImageUpload upload, CancellationToken cancellationToken);
 }

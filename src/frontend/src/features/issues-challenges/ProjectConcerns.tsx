@@ -1,5 +1,5 @@
 import { useRowActions } from '@/features/identity-access/components/RowActions.tsx';
-import { type ReactElement, useState } from 'react';
+import { type ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 
 import { ImportAction } from '@/features/data-import/ImportAction.tsx';
@@ -7,6 +7,7 @@ import { type SessionUser } from '@/features/identity-access/session/sessionApi.
 import { type ProjectDetail } from '@/features/projects/api/types.ts';
 import { isForbidden } from '@/features/risks/problems.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { useCreateParam } from '@/shared/navigation/useCreateParam.ts';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { canRaiseConcerns } from './access.ts';
@@ -66,7 +67,8 @@ export function ProjectConcerns({
     onDeleted: concerns.reload,
   });
   const lookups = useConcernLookups();
-  const [creating, setCreating] = useState(false);
+  // Review round 8, point 08: the Home's quick action opens the form with ?create=1.
+  const [creating, setCreating] = useCreateParam();
   const text = REGISTER_TEXT[concernType];
 
   if (concerns.data === undefined) {
@@ -126,7 +128,7 @@ export function ProjectConcerns({
           caption={t(text.caption)}
         />
       )}
-      {creating && (
+      {creating && raiser && (
         <ConcernFormDialog
           editing={null}
           concernType={concernType}

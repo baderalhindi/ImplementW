@@ -14,6 +14,12 @@ internal sealed class BannerService(IBannerRepository repository, TimeProvider t
     /// <summary>The PDF's limit: a compressed WebP of at most 300 KB.</summary>
     public const int MaxContentBytes = 300 * 1024;
 
+    /// <summary>Review round 8, point 08: a person chooses up to six quick actions.</summary>
+    public const int MaxQuickActions = 6;
+
+    /// <summary>The longest action code the catalogue may use.</summary>
+    private const int MaxActionCodeLength = 40;
+
     private const string WebP = "image/webp";
 
     public async Task<BannerImageList> ListImagesAsync(CancellationToken cancellationToken) =>
@@ -43,21 +49,63 @@ internal sealed class BannerService(IBannerRepository repository, TimeProvider t
             return AdministrationError.Rule(IdentityAccessErrorCodes.BannerImagesInvalid, new FieldIssue("imageIds", FieldIssue.Required));
         }
 
+        UserBannerPreference preference = await PreferenceOfAsync(callerId, cancellationToken).ConfigureAwait(false);
+        preference.Style = style;
+        preference.ImageIds = chosen;
+        await repository.SaveAsync(cancellationToken).ConfigureAwait(false);
+        return new BannerPreferenceDetail(preference.Style, preference.ImageIds);
+    }
+
+    public async Task<QuickActionsDetail> GetQuickActionsAsync(Guid callerId, CancellationToken cancellationToken) =>
+        new((await repository.FindPreferenceAsync(callerId, cancellationToken).ConfigureAwait(false))?.QuickActions);
+
+    public async Task<AdministrationResult<QuickActionsDetail>> SetQuickActionsAsync(
+        Guid callerId, IReadOnlyList<string>? actions, CancellationToken cancellationToken)
+    {
+        if (actions is not null && QuickActionsIssue(actions) is { } issue)
+        {
+            return AdministrationError.Rule(IdentityAccessErrorCodes.QuickActionsInvalid, new FieldIssue("actions", issue));
+        }
+
+        UserBannerPreference preference = await PreferenceOfAsync(callerId, cancellationToken).ConfigureAwait(false);
+        preference.QuickActions = actions is null ? null : [.. actions];
+        await repository.SaveAsync(cancellationToken).ConfigureAwait(false);
+        return new QuickActionsDetail(preference.QuickActions);
+    }
+
+    /// <summary>The person's row, made on their first choice with the green banner, and stamped as changed now.</summary>
+    private async Task<UserBannerPreference> PreferenceOfAsync(Guid callerId, CancellationToken cancellationToken)
+    {
         DateTimeOffset now = timeProvider.GetUtcNow();
         UserBannerPreference? preference = await repository.FindPreferenceAsync(callerId, cancellationToken).ConfigureAwait(false);
         if (preference is null)
         {
-            preference = new UserBannerPreference { Id = Guid.CreateVersion7(now), UserId = callerId, CreatedAt = now, CreatedBy = callerId };
+            preference = new UserBannerPreference
+            {
+                Id = Guid.CreateVersion7(now),
+                UserId = callerId,
+                Style = BannerStyle.Default,
+                CreatedAt = now,
+                CreatedBy = callerId,
+            };
             repository.Add(preference);
         }
 
-        preference.Style = style;
-        preference.ImageIds = chosen;
         preference.UpdatedAt = now;
         preference.UpdatedBy = callerId;
-        await repository.SaveAsync(cancellationToken).ConfigureAwait(false);
-        return new BannerPreferenceDetail(preference.Style, preference.ImageIds);
+        return preference;
     }
+
+    /// <summary>What is wrong with a list of quick actions: more than six, one named twice, or a code that is not an action's; null when nothing is.</summary>
+    private static string? QuickActionsIssue(IReadOnlyList<string> actions) =>
+        actions.Count > MaxQuickActions ? FieldIssue.OutsideRange
+        : actions.Distinct(StringComparer.Ordinal).Count() != actions.Count ? FieldIssue.Duplicate
+        : !actions.All(IsActionCode) ? FieldIssue.NotFound
+        : null;
+
+    /// <summary>A catalogue code: a lower-case letter, then letters, as <c>createProject</c>.</summary>
+    private static bool IsActionCode(string code) =>
+        code is { Length: > 0 and <= MaxActionCodeLength } && char.IsAsciiLetterLower(code[0]) && code.All(char.IsAsciiLetter);
 
     public async Task<AdministrationResult<BannerImageSummary>> SaveImageAsync(Guid callerId, BannerImageUpload upload, CancellationToken cancellationToken)
     {

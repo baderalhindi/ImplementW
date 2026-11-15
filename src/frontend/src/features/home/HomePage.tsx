@@ -11,7 +11,8 @@ import { BannerBackdrop } from './banner/BannerBackdrop.tsx';
 import { BannerCustomizer } from './banner/BannerCustomizer.tsx';
 import { useBanner } from './banner/useBanner.ts';
 import { EntityProjects, ManagedProjects } from './MyProjects.tsx';
-import { MyWork, StartOrOpen } from './MyWork.tsx';
+import { MyWork } from './MyWork.tsx';
+import { QuickActions } from './quickActions/QuickActions.tsx';
 import { AdministrationActions, PlatformHealth } from './PlatformHealth.tsx';
 import { PortfolioSnapshot } from './PortfolioSnapshot.tsx';
 
@@ -68,7 +69,7 @@ export function HomePage({ menuOverview }: { menuOverview: ReactNode }): ReactEl
         <p className="home__intro">
           {t(administers ? 'home.health.description' : 'home.description')}
         </p>
-        {administers ? <AdministrationActions /> : <StartOrOpen user={session.user} />}
+        {administers ? <AdministrationActions /> : <QuickActions user={session.user} />}
         <BannerCustomizer
           images={banner.images}
           preference={banner.preference}
