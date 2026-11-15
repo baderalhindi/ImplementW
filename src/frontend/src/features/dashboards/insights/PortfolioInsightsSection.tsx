@@ -1064,12 +1064,12 @@ function EntityCompletionLegend({ buckets }: { buckets: ChartBucket[] }): ReactE
     <ul className="grouped-columns__legend completion-donut__legend">
       {buckets.map((bucket) => (
         <li key={bucket.key}>
-          <Link className="drill-link" to={bucket.href ?? ''} title={bucket.hint} dir="auto">
+          <Link className="drill-link" to={bucket.href ?? ''} title={bucket.hint}>
             <span
               className="distribution__key"
               style={{ '--chart-color': bucket.color } as CSSProperties}
             />
-            {bucket.text}
+            <span dir="auto">{bucket.text}</span>
           </Link>
           <span className="completion-donut__rate" dir="ltr">
             {bucket.value}

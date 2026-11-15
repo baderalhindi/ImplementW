@@ -6494,6 +6494,7 @@ tr[data-flagged='true'] {
 
 .distribution--donut > .grouped-columns__legend.completion-donut__legend {
   align-self: start;
+  inline-size: min(100%, 24rem);
   max-block-size: 16rem;
   overflow-y: auto;
   font-size: 0.9375rem;
