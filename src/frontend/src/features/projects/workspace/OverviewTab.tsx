@@ -24,14 +24,16 @@ import { FollowUpPanel } from './FollowUpPanel.tsx';
 import { OverviewKpis } from './OverviewKpis.tsx';
 import { useWorkspace } from './workspaceContext.ts';
 
-/** What comes next from each state, and whose move it is (TASK-041 §3). */
-const NEXT_STEPS: Record<ProjectStatus, TranslationKey> = {
+/**
+ * What comes next from each state, and whose move it is (TASK-041 §3). The status badge above names the state, so the line gives only the next
+ * move; an active project has none to state.
+ */
+const NEXT_STEPS: Partial<Record<ProjectStatus, TranslationKey>> = {
   DRAFT: 'projects.overview.next.DRAFT',
   SUBMITTED: 'projects.overview.next.SUBMITTED',
   UNDER_REVIEW: 'projects.overview.next.UNDER_REVIEW',
   RETURNED: 'projects.overview.next.RETURNED',
   APPROVED_PLANNED: 'projects.overview.next.APPROVED_PLANNED',
-  ACTIVE: 'projects.overview.next.ACTIVE',
   SUSPENDED: 'projects.overview.next.SUSPENDED',
   COMPLETED: 'projects.overview.next.COMPLETED',
   CLOSED: 'projects.overview.next.CLOSED',
@@ -56,12 +58,13 @@ export function OverviewTab(): ReactElement {
           ...profileMandatoryFields(lookups.profiles, project.governanceProfileItemId),
         ])
       : [];
+  const nextStep = NEXT_STEPS[project.status];
   const none = t('common.values.none');
   const notAvailable = t('projects.followUp.notAvailable');
 
   return (
     <>
-      <p className="workspace__next">{t(NEXT_STEPS[project.status])}</p>
+      {nextStep !== undefined && <p className="workspace__next">{t(nextStep)}</p>}
       <p>
         <Link to={`/projects/${project.id}/card`}>{t('projects.card.open')}</Link>
       </p>

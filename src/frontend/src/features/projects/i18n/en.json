@@ -189,15 +189,14 @@
     "missingForSubmission": "Before this project can be submitted for review, fill in:",
     "declaredBaseline": "Entered by legacy intake: its baseline is declared, not approved.",
     "next": {
-      "DRAFT": "Draft. Complete the registration and submit it for AHDA's review.",
-      "SUBMITTED": "Submitted. AHDA has not started its review yet; until it does, the registrant can withdraw it.",
-      "UNDER_REVIEW": "Under AHDA's review. The registration cannot be changed until the review ends.",
-      "RETURNED": "Returned by AHDA's review. Change the registration and submit it again as the next revision.",
-      "APPROVED_PLANNED": "Approved and planned. AHDA activates the project when work starts.",
-      "ACTIVE": "Active.",
-      "SUSPENDED": "Suspended. Work is on hold until an approved resumption takes effect; the Project Manager requests it from the Suspension tab, or closes the project without completion from the Closeout tab.",
-      "COMPLETED": "Completed. Delivery has ended; Stage 2, Closure, follows once every post-project obligation is settled.",
-      "CLOSED": "Closed. The project is terminal and read-only: its records are kept as history and nothing can be changed."
+      "DRAFT": "Complete the registration and submit it for AHDA's review.",
+      "SUBMITTED": "AHDA has not started its review yet; until it does, the registrant can withdraw it.",
+      "UNDER_REVIEW": "The registration cannot be changed until AHDA's review ends.",
+      "RETURNED": "Change the registration and submit it again as the next revision.",
+      "APPROVED_PLANNED": "AHDA activates the project when work starts.",
+      "SUSPENDED": "Work is on hold until an approved resumption takes effect; the Project Manager requests it from the Suspension tab, or closes the project without completion from the Closeout tab.",
+      "COMPLETED": "Delivery has ended; Stage 2, Closure, follows once every post-project obligation is settled.",
+      "CLOSED": "The project is terminal and read-only: its records are kept as history and nothing can be changed."
     },
     "facts": "Project details",
     "kpis": "Project at a glance"
