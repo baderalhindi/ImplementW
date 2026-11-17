@@ -94,6 +94,13 @@ internal static class ContributionSchemas
 
     public static ContributionSchema? Find(string code) => Schemas.GetValueOrDefault(code);
 
+    /// <summary>
+    /// The schema to show a request with. A request whose schema the platform does not define (a row written outside the platform) is shown
+    /// read-only, with no fields and no target, rather than failing the whole list; every command on it still refuses through <see cref="Of"/>.
+    /// </summary>
+    public static ContributionSchema ForDisplay(string code) =>
+        Find(code) ?? new ContributionSchema(code, ContributionApplicationMode.ReferenceOnly, null, null, []);
+
     public static ContributionSchema Of(string code) =>
         Find(code) ?? throw new InvalidOperationException($"A request names the schema {code}, which the platform does not define.");
 }

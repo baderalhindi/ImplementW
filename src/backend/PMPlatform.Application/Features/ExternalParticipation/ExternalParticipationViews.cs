@@ -37,7 +37,7 @@ internal sealed class ExternalParticipationViews(IExternalParticipationRepositor
         List<ExternalUpdateRequestDetail> details = [];
         foreach (ExternalUpdateRequest r in requests)
         {
-            ContributionSchema schema = ContributionSchemas.Of(r.ContributionSchemaCode);
+            ContributionSchema schema = ContributionSchemas.ForDisplay(r.ContributionSchemaCode);
             NarrativeText? label = r.TargetId is { } targetId && targets.Of(schema) is { } target
                 ? (await target.FindAsync(targetId, cancellationToken).ConfigureAwait(false))?.Label
                 : null;
@@ -80,7 +80,7 @@ internal sealed class ExternalParticipationViews(IExternalParticipationRepositor
         ArgumentNullException.ThrowIfNull(a);
         ArgumentNullException.ThrowIfNull(request);
         return new SourceApplicationDetail(
-            a.Id, a.ExternalContributionId, request.Id, a.AttemptNo, a.Status, ContributionSchemas.Of(request.ContributionSchemaCode).Mode, request.TargetModule,
+            a.Id, a.ExternalContributionId, request.Id, a.AttemptNo, a.Status, ContributionSchemas.ForDisplay(request.ContributionSchemaCode).Mode, request.TargetModule,
             request.TargetType, request.TargetId, a.ExpectedTargetRevisionNo, a.ActualTargetRevisionNo, a.FailureCode, a.AttemptedByUserId, a.AttemptedAt,
             a.CompletedAt, a.RevalidatedAt, a.RevalidatedByUserId, a.RevalidatedTargetRevisionNo, a.CorrelationId);
     }
