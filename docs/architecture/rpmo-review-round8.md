@@ -494,6 +494,7 @@ local.r02 already had a saved order (the user's own). The API check reset it, an
 - **Checked on localhost (local.r01).**
   - Administration in the rail opened Users with the side menu: 5 headings, 19 pages, no tab row.
   - Each of the 19 pages opened from the menu with its own entry marked, so each is two clicks away.
+- **One horizontal line (17 Nov 2026).** At the user's request the side menu became one line of the five headings above the page. Each heading opens its pages as a drop-down; the heading of the open page is underlined and the page is marked in the drop-down. The page takes the full width. Checked on localhost at 1514 px in English and Arabic: the five headings on one line, Integrations opened its 8 pages, a choice navigates and closes the drop-down.
 
 ## Point 16: breadcrumbs, required fields and form width
 

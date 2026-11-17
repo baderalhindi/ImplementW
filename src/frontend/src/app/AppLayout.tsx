@@ -492,37 +492,73 @@ function SectionTabs({ menu }: { menu: Menu | undefined }): ReactElement | null 
   );
 }
 
-/** Whether a menu's screens are shown as a grouped side menu rather than a row of tabs: Administration's (review round 8, point 15). */
+/** Whether a menu's screens are shown as a line of headings with drop-downs rather than a row of tabs: Administration's (review round 8, point 15). */
 function hasSideMenu(menu: Menu | undefined): menu is Menu & { groups: MenuGroup[] } {
   return menu?.groups !== undefined && menu.groups.length > 1;
 }
 
 /**
- * Administration's side menu (review round 8, point 15): its screens under their five headings beside the page, the current one marked, so
- * every admin screen is two clicks away — Administration in the rail, then the screen. It changes how one gets there, not who sees what: a
+ * Administration's menu (review round 8, point 15; one horizontal line since 17 Nov 2026): its five headings side by side above the page,
+ * each opening its screens as a drop-down, the heading of the open screen marked. It changes how one gets there, not who sees what: a
  * heading lists only the screens the person may open.
  */
-function AdminSideMenu({ menu }: { menu: Menu & { groups: MenuGroup[] } }): ReactElement {
+function AdminMenuBar({ menu }: { menu: Menu & { groups: MenuGroup[] } }): ReactElement {
   const { t } = useI18n();
+  const { pathname } = useLocation();
   return (
-    <nav className="admin-menu print-hide" aria-label={t('common.menu.adminMenu')}>
-      {menu.groups.map((group) => (
-        <div key={group.label} className="admin-menu__group">
-          <p className="admin-menu__heading" id={`admin-menu-${group.label}`}>
-            {t(group.label)}
-          </p>
-          <ul aria-labelledby={`admin-menu-${group.label}`}>
-            {group.items.map((item) => (
-              <li key={item.to}>
-                <NavLink to={item.to} end={item.end ?? false}>
-                  {t(item.label)}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+    <nav className="admin-bar print-hide" aria-label={t('common.menu.adminMenu')}>
+      <ul className="admin-bar__groups">
+        {menu.groups.map((group) => (
+          <AdminMenuGroup
+            key={group.label}
+            group={group}
+            current={group.items.some(
+              (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
+            )}
+          />
+        ))}
+      </ul>
     </nav>
+  );
+}
+
+function AdminMenuGroup({ group, current }: { group: MenuGroup; current: boolean }): ReactElement {
+  const { t } = useI18n();
+  const { open, setOpen, containerRef, buttonRef, menuId } = usePopover();
+  return (
+    <li>
+      <div className="popover" ref={containerRef}>
+        <button
+          ref={buttonRef}
+          type="button"
+          className={`admin-bar__button${current ? ' admin-bar__button--current' : ''}`}
+          aria-expanded={open}
+          aria-controls={menuId}
+          onClick={() => {
+            setOpen((value) => !value);
+          }}
+        >
+          {t(group.label)}
+          <ShellIcon name="chevronDown" className="admin-bar__chevron" />
+        </button>
+        <ul className="popover__menu admin-bar__menu" id={menuId} hidden={!open}>
+          {group.items.map((item) => (
+            <li key={item.to}>
+              <NavLink
+                className="popover__option"
+                to={item.to}
+                end={item.end ?? false}
+                onClick={() => {
+                  setOpen(false);
+                }}
+              >
+                {t(item.label)}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </li>
   );
 }
 
@@ -700,12 +736,10 @@ function SignedInLayout({ user }: { user: SessionUser }): ReactElement {
         </header>
         <main id="main" className="app__main" tabIndex={-1}>
           {hasSideMenu(current) ? (
-            <div className="admin-layout">
-              <AdminSideMenu menu={current} />
-              <div className="admin-layout__content">
-                <Outlet context={menus} />
-              </div>
-            </div>
+            <>
+              <AdminMenuBar menu={current} />
+              <Outlet context={menus} />
+            </>
           ) : (
             <>
               <SectionTabs menu={current} />
