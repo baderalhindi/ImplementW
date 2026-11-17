@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { translate } from '@/shared/i18n/i18n.ts';
 
@@ -51,4 +52,21 @@ export function openMenuNames(menuKey: string): (string | null)[] {
   return within(openMenu(menuKey))
     .getAllByRole('link')
     .map((link) => link.textContent);
+}
+
+/** Administration's menu: its headings on one line, each opening its screens. Opens every heading and returns the addresses, in order. */
+export async function adminMenuTargets(): Promise<(string | null)[]> {
+  const user = userEvent.setup();
+  const menu = await screen.findByRole('navigation', { name: en('common.menu.adminMenu') });
+  const targets: (string | null)[] = [];
+  for (const heading of within(menu).getAllByRole('button')) {
+    await user.click(heading);
+    targets.push(
+      ...within(menu)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    );
+    await user.click(heading);
+  }
+  return targets;
 }

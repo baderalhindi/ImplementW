@@ -21,15 +21,21 @@ export interface MoreMenuItem {
 export function MoreMenu({
   items,
   label,
+  floating,
+  className = '',
 }: {
   items: MoreMenuItem[];
+  /** Fixed to the window rather than placed in its container, so a box that clips its content (a table, a banner) does not cut it; on by default in a row. */
+  floating?: boolean;
+  /** Extra classes on the button. */
+  className?: string;
   /** In a table row: the record's name. The button is then the ⋯ alone, named "More <label>" for a screen reader. */
   label?: string;
 }): ReactElement | null {
   const { t } = useI18n();
   const { open, setOpen, containerRef, buttonRef, menuId } = usePopover();
   const menuRef = useRef<HTMLUListElement>(null);
-  useFloatingMenu(open && label !== undefined, buttonRef, menuRef, setOpen);
+  useFloatingMenu(open && (floating ?? label !== undefined), buttonRef, menuRef, setOpen);
   if (items.length === 0) {
     return null;
   }
@@ -64,7 +70,7 @@ export function MoreMenu({
       <button
         ref={buttonRef}
         type="button"
-        className={`button more-menu__button${label === undefined ? '' : ' more-menu__button--compact'}`}
+        className={`button more-menu__button${label === undefined ? '' : ' more-menu__button--compact'}${className === '' ? '' : ` ${className}`}`}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}

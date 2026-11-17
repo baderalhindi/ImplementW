@@ -2,6 +2,7 @@ import { type CSSProperties, type ReactElement, useEffect, useRef, useState } fr
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
 import { useRailImage } from '@/features/home/banner/useRailImage.ts';
+import { OneLineTabs } from '@/shared/ui/OneLineTabs.tsx';
 import { usePopover } from '@/shared/ui/usePopover.ts';
 
 import { useInboxCount } from '@/features/approvals/useInboxCount.ts';
@@ -22,7 +23,6 @@ import { usePageCrumbs } from '@/shared/navigation/pageCrumbs.ts';
 import { useTheme } from '@/shared/theme/theme.ts';
 
 import { GlobalSearch } from './search/GlobalSearch.tsx';
-import { type NavigationItem } from '@/features/identity-access/routes.tsx';
 
 import {
   activeItem,
@@ -474,21 +474,18 @@ function SectionTabs({ menu }: { menu: Menu | undefined }): ReactElement | null 
   ) {
     return null;
   }
-  const row = (items: NavigationItem[], label: string, className = '') => (
-    <ul aria-label={label} className={className === '' ? undefined : className}>
-      {items.map((item) => (
-        <li key={item.to}>
-          <NavLink to={item.to} end={item.end ?? false}>
-            {t(item.label)}
-          </NavLink>
-        </li>
-      ))}
-    </ul>
-  );
   return (
-    <nav className="tabs section-tabs print-hide" aria-label={t('common.menu.sections')}>
-      {row(menu.items, t(menu.label))}
-    </nav>
+    <OneLineTabs
+      className="section-tabs print-hide"
+      label={t('common.menu.sections')}
+      listLabel={t(menu.label)}
+      tabs={menu.items.map((item) => ({
+        to: item.to,
+        label: t(item.label),
+        end: item.end,
+        current: isCurrent(item.to, pathname, search),
+      }))}
+    />
   );
 }
 

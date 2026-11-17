@@ -123,12 +123,13 @@ export function OverviewTab(): ReactElement {
               {canChangeManager && (
                 <button
                   type="button"
-                  className="button button--quiet"
+                  className="button button--quiet value--nowrap"
                   onClick={() => {
                     setChangingManager(true);
                   }}
                 >
-                  {t('projects.changeManager.action')}
+                  {t('projects.changeManager.action')}{' '}
+                  <span className="visually-hidden">{t('projects.fields.projectManager')}</span>
                 </button>
               )}
             </Detail>

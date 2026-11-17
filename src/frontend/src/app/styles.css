@@ -7630,3 +7630,129 @@ tr[data-flagged='true'] {
   td:last-child:has(.popover__menu:not([hidden])) {
   z-index: 3;
 }
+
+/* A row of tabs on one line: what does not fit goes into "More" at its end (OneLineTabs). */
+.one-line-tabs {
+  position: relative;
+}
+
+.one-line-tabs > ul:first-child {
+  flex-wrap: nowrap;
+}
+
+.one-line-tabs a,
+.one-line-tabs__more {
+  white-space: nowrap;
+}
+
+.one-line-tabs__measure {
+  /* Fixed, so a row wider than the page does not make the page scroll sideways. */
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.one-line-tabs__current {
+  font-weight: 600;
+}
+
+.one-line-tabs__more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-block-end: 3px solid transparent;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.one-line-tabs__more:hover {
+  background: var(--color-neutral-surface);
+}
+
+.one-line-tabs__more--current {
+  border-block-end-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* The drop-down sits inside the .tabs nav: undo the tab row's flex row and the tabs' underline so it is a plain popover list. */
+.one-line-tabs .one-line-tabs__menu {
+  display: block;
+  padding: var(--space-1);
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  min-inline-size: 14rem;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.one-line-tabs .one-line-tabs__menu[hidden] {
+  display: none;
+}
+
+.one-line-tabs .one-line-tabs__menu .popover__option {
+  display: flex;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius);
+  white-space: normal;
+}
+
+.one-line-tabs .one-line-tabs__menu .popover__option[aria-current='page'] {
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* The banner's quick actions on one line: the ones that do not fit go into a "More" pill (QuickActions). */
+.home__actions-bar {
+  position: relative;
+}
+
+/* A grid item grows to its content by default; the banner keeps the page's width, so the pills that do not fit go into More. */
+.home__hero {
+  min-inline-size: 0;
+}
+
+.home__actions-bar .home__actions {
+  flex-wrap: nowrap;
+}
+
+.home__actions-bar .home__actions > li > a,
+.home__actions-bar .home__actions > li > button,
+.home__actions-bar .home__actions-more {
+  white-space: nowrap;
+}
+
+.home__actions-bar .home__actions.home__actions--measure {
+  /* Fixed, so a row wider than the page does not make the page scroll sideways. */
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.home__actions-bar .home__actions-more {
+  min-block-size: 2.5rem;
+  padding: 0 var(--space-4);
+  border: 1px solid rgb(255 255 255 / 45%);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-rail-text);
+  font-weight: 400;
+}
+
+.home__actions-bar .home__actions-more:hover {
+  background: rgb(255 255 255 / 14%);
+}
+
+/* The measuring rows (OneLineTabs, QuickActions) draw their labels from data-label, so the text is not in the page twice. */
+:is(.one-line-tabs__measure, .home__actions--measure) [data-label]::before {
+  content: attr(data-label);
+}

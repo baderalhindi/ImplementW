@@ -6,7 +6,7 @@ import { translate } from '@/shared/i18n/i18n.ts';
 import { sessionFor, withIdentityAccessData } from '@/test/identityAccessFixtures.ts';
 import { mockApi, problem, SHELL_PERMISSIONS } from '@/test/mockApi.ts';
 import { renderApp } from '@/test/renderApp.tsx';
-import { menuLink, openMenuTargets } from '@/test/shell.ts';
+import { adminMenuTargets, menuLink } from '@/test/shell.ts';
 
 import { identityAccessNavigation } from '../routes.tsx';
 
@@ -58,9 +58,7 @@ describe('the administration guard', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: en('identityAccess.users.list.title') }),
     ).toBeTruthy();
-    expect(openMenuTargets('common.menu.administration')).toEqual(
-      expect.arrayContaining(ADMIN_PATHS),
-    );
+    expect(await adminMenuTargets()).toEqual(expect.arrayContaining(ADMIN_PATHS));
   });
 });
 

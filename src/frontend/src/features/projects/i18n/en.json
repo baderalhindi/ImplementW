@@ -580,7 +580,7 @@
     "versionUsed": "Weighed by stage version {version}"
   },
   "changeManager": {
-    "action": "Assign / change Project Manager",
+    "action": "Assign / change",
     "title": "Assign or change the Project Manager",
     "none": "No Project Manager is named yet.",
     "current": "Current Project Manager: {name}.",

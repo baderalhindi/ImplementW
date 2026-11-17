@@ -12,6 +12,7 @@ import {
 } from '@/test/identityAccessFixtures.ts';
 import { mockApi, page } from '@/test/mockApi.ts';
 import { accessibilityViolations, describeViolations, renderApp } from '@/test/renderApp.tsx';
+import { adminMenuTargets } from '@/test/shell.ts';
 import { translate } from '@/shared/i18n/i18n.ts';
 
 // Acceptance criteria 1 and 3: every ADM-002–013 screen (ADM-011 dropped in the 10 Nov 2026 client review) is reachable for R01 and renders in both English (LTR)
@@ -115,9 +116,7 @@ test('the old Organization structure address opens Departments, which names each
   ).toBeTruthy();
   const childRow = (await screen.findByText('Quality Assurance', { selector: 'td' })).closest('tr');
   expect(childRow?.textContent).toContain('Project Management Office');
-  expect(
-    screen.queryByRole('link', { name: translate('en', 'identityAccess.nav.departments') }),
-  ).toBeTruthy();
+  expect(await adminMenuTargets()).toContain('/admin/organization/departments');
   expect(departments).toHaveLength(2);
   expect(entities).toHaveLength(1);
 });

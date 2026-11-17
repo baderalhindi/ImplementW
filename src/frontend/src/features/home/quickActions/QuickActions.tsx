@@ -1,4 +1,4 @@
-import { type ReactElement, useState } from 'react';
+import { type ReactElement, useRef, useState } from 'react';
 import { Link } from 'react-router';
 
 import { EXECUTIVE_ROLE, landingRole } from '@/features/dashboards/landing.ts';
@@ -6,6 +6,8 @@ import { useDashboardCatalogue } from '@/features/dashboards/useDashboardCatalog
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { MoreMenu } from '@/shared/ui/MoreMenu.tsx';
+import { useOneLineCount } from '@/shared/ui/useOneLineCount.ts';
 
 import { ProjectActionDialog } from './ProjectActionDialog.tsx';
 import {
@@ -43,22 +45,38 @@ export function QuickActions({ user }: { user: SessionUser }): ReactElement | nu
   const quick = useQuickActions();
   const [picking, setPicking] = useState(false);
   const [inProject, setInProject] = useState<QuickAction | null>(null);
+  const barRef = useRef<HTMLElement>(null);
+  const measureRef = useRef<HTMLUListElement>(null);
+  const context: QuickActionContext | null =
+    quick.loaded && !dashboards.loading
+      ? {
+          can,
+          external: user.userType === 'EXTERNAL',
+          portfolioDashboard: (dashboards.data ?? []).some((entry) => entry.code === 'PORTFOLIO'),
+          executive: landingRole(user) === EXECUTIVE_ROLE,
+        }
+      : null;
+  const shown = context === null ? [] : shownQuickActions(quick.saved, context);
+  const labelOf = (entry: QuickAction): string =>
+    context === null ? '' : t(quickActionLabel(entry, context));
+  // The actions stay on one line; those that do not fit go into "More", before the pencil.
+  const fitting = useOneLineCount(
+    barRef,
+    measureRef,
+    shown.length,
+    shown.map(labelOf).join('\u0000'),
+    1,
+  );
   // The catalogue's checks wait for what they read, so a role's set never shows in place of the person's choice.
-  if (!quick.loaded || dashboards.loading) {
+  if (context === null) {
     return null;
   }
-  const context: QuickActionContext = {
-    can,
-    external: user.userType === 'EXTERNAL',
-    portfolioDashboard: (dashboards.data ?? []).some((entry) => entry.code === 'PORTFOLIO'),
-    executive: landingRole(user) === EXECUTIVE_ROLE,
-  };
-  const shown = shownQuickActions(quick.saved, context);
+  const overflow = shown.slice(fitting);
 
   return (
-    <nav className="home__actions-bar" aria-label={t('home.actions.title')}>
+    <nav ref={barRef} className="home__actions-bar" aria-label={t('home.actions.title')}>
       <ul className="home__actions">
-        {shown.map((entry) => (
+        {shown.slice(0, fitting).map((entry) => (
           <li key={entry.code}>
             {'to' in entry.target ? (
               <Link to={entry.target.to}>{t(quickActionLabel(entry, context))}</Link>
@@ -74,6 +92,25 @@ export function QuickActions({ user }: { user: SessionUser }): ReactElement | nu
             )}
           </li>
         ))}
+        {overflow.length > 0 && (
+          <li>
+            <MoreMenu
+              floating
+              className="home__actions-more"
+              items={overflow.map((entry) =>
+                'to' in entry.target
+                  ? { key: entry.code, label: labelOf(entry), to: entry.target.to }
+                  : {
+                      key: entry.code,
+                      label: labelOf(entry),
+                      onSelect: () => {
+                        setInProject(entry);
+                      },
+                    },
+              )}
+            />
+          </li>
+        )}
         <li>
           <button
             type="button"
@@ -86,6 +123,25 @@ export function QuickActions({ user }: { user: SessionUser }): ReactElement | nu
           >
             <PencilIcon />
           </button>
+        </li>
+      </ul>
+      {/* Every action, "More" and the pencil at their natural width, out of sight, to decide how many fit. */}
+      <ul
+        ref={measureRef}
+        className="home__actions home__actions--measure"
+        aria-hidden="true"
+        inert
+      >
+        {shown.map((entry) => (
+          <li key={entry.code}>
+            <a data-label={labelOf(entry)} />
+          </li>
+        ))}
+        <li>
+          <a data-label={`⋯ ${t('common.actions.more')}`} />
+        </li>
+        <li>
+          <a className="home__actions-edit" />
         </li>
       </ul>
       <QuickActionsPicker
