@@ -4772,26 +4772,6 @@ path.trend__line--ACTUAL_PERCENT {
   }
 }
 
-.personalize__list {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding-inline-start: var(--space-6);
-}
-
-.personalize__item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.personalize__moves {
-  display: inline-flex;
-  gap: var(--space-1);
-}
-
 /* --------------------------------------------------------------------------------------------- reports */
 
 /* FG-02's report shell (TASK-072): the parameter panel, the active filter summary, the Coverage/Freshness Banner, the
@@ -7983,27 +7963,38 @@ tr[data-flagged='true'] {
 
 .designer__types {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* The gallery: even tiles, the type's picture over its name, like a visualizations pane. */
 .designer__type {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   inline-size: 100%;
-  min-block-size: 2.75rem;
-  padding: var(--space-2) var(--space-3);
+  block-size: 100%;
+  min-block-size: 5rem;
+  padding: var(--space-3) var(--space-1);
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
-  text-align: start;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  text-align: center;
   cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
 }
 
 .designer__type:hover {
@@ -8011,11 +8002,41 @@ tr[data-flagged='true'] {
   background: var(--color-primary-tint);
 }
 
+.designer__type:active {
+  transform: scale(0.97);
+}
+
+.designer__type:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .designer__type-icon {
   flex: none;
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
   color: var(--color-primary);
+}
+
+.designer__type-name {
+  overflow-wrap: anywhere;
+}
+
+/* The gallery's note on dragging and the keyboard: set apart and small, under the tiles. */
+.designer__gallery .designer__hint:last-child {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--color-border-subtle);
+  font-size: 0.8125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .designer__type {
+    transition: none;
+  }
+
+  .designer__type:active {
+    transform: none;
+  }
 }
 
 .designer__canvas-frame {
@@ -8116,6 +8137,7 @@ tr[data-flagged='true'] {
 }
 
 /* The size handle: a corner at the visual's end edge and bottom, mirrored in Arabic. */
+/* The size handle: two grip lines in the corner at the visual's end edge and bottom, mirrored in Arabic. */
 .designer__handle--resize {
   position: absolute;
   inset-block-end: 0.25rem;
@@ -8123,14 +8145,37 @@ tr[data-flagged='true'] {
   inline-size: 1.25rem;
   block-size: 1.25rem;
   padding: 0;
-  border-color: var(--color-border);
+  border: 0;
+  border-radius: var(--radius);
   cursor: nwse-resize;
-  background: linear-gradient(135deg, transparent 50%, var(--color-border) 50%);
+  background: linear-gradient(
+      135deg,
+      transparent 0 52%,
+      var(--color-text-muted) 52% 60%,
+      transparent 60% 70%,
+      var(--color-text-muted) 70% 78%,
+      transparent 78%
+    )
+    no-repeat;
+  opacity: 0.7;
+}
+
+.designer__handle--resize:hover,
+.designer__handle--resize:focus-visible {
+  opacity: 1;
 }
 
 [dir='rtl'] .designer__handle--resize {
   cursor: nesw-resize;
-  background: linear-gradient(225deg, transparent 50%, var(--color-border) 50%);
+  background: linear-gradient(
+      225deg,
+      transparent 0 52%,
+      var(--color-text-muted) 52% 60%,
+      transparent 60% 70%,
+      var(--color-text-muted) 70% 78%,
+      transparent 78%
+    )
+    no-repeat;
 }
 
 .designer__handle:focus-visible {

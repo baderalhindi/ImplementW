@@ -468,6 +468,7 @@ export function DashboardDesignerPage(): ReactElement {
             <h2 id="designer-gallery" className="designer__heading">
               {t('dashboards.designer.gallery')}
             </h2>
+            <p className="designer__hint">{t('dashboards.designer.galleryHint')}</p>
             <ul className="designer__types">
               {VISUAL_TYPES.map((type) => (
                 <li key={type}>
@@ -479,7 +480,9 @@ export function DashboardDesignerPage(): ReactElement {
                     }}
                   >
                     <VisualIcon type={type} />
-                    <span>{t(`dashboards.designer.type.${type}`)}</span>
+                    <span className="designer__type-name">
+                      {t(`dashboards.designer.type.${type}`)}
+                    </span>
                   </button>
                 </li>
               ))}

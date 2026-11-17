@@ -8,12 +8,11 @@ import {
   unknownWidget,
   widget,
 } from '@/test/dashboardFixtures.ts';
-import { permissionsOf } from '@/features/identity-access/permissions/permissions.ts';
 import { sessionFor } from '@/test/identityAccessFixtures.ts';
 
 import { bucketColors, chartForm } from './charts.ts';
 import { drillPath } from './drill.ts';
-import { landingEntry, landingRole, mayPersonalize, selectedEntry } from './landing.ts';
+import { landingEntry, landingRole, selectedEntry } from './landing.ts';
 import { arrangedWidgets, drawnSpan, filledSpans, visibleWidgets } from './layout.ts';
 import { formatFigure, hasNoData, isStatusScale, labelOfValue } from './presentation.ts';
 
@@ -45,20 +44,6 @@ describe('the landing (Blueprint §20.2, TBC-DSH-003)', () => {
     );
     expect(landingEntry(catalogueFor(['R08'], true))?.code).toBe('PROJECT');
     expect(landingEntry([catalogueEntry('PROJECT')])).toBeNull();
-  });
-
-  test('personalisation is offered on a personalisable dashboard to a holder of LAYOUT_PERSONALIZE, never on PROJECT', () => {
-    const holder = permissionsOf({
-      permissions: [{ code: 'LAYOUT_PERSONALIZE', scopes: ['OWN'] }],
-    });
-    const other = permissionsOf({ permissions: [{ code: 'PROJECT_VIEW', scopes: ['ALL'] }] });
-    const portfolio = catalogueEntry('PORTFOLIO');
-    expect(mayPersonalize(holder, portfolio)).toBe(true);
-    expect(mayPersonalize(other, portfolio)).toBe(false);
-    expect(mayPersonalize(holder, catalogueEntry('GOVERNANCE'))).toBe(false);
-    expect(mayPersonalize(holder, catalogueEntry('PROJECT', { allowsPersonalization: true }))).toBe(
-      false,
-    );
   });
 });
 

@@ -588,9 +588,6 @@ describe('acceptance criterion 3: each role lands on its Blueprint §20.2 dashbo
         })}`,
       ),
     ).toBeTruthy();
-    expect(
-      within(section).queryByRole('button', { name: en('dashboards.personalize.open') }),
-    ).toBeNull();
   });
 
   test('with several roles the person lands as their first role; the Governance Dashboard is not offered beside the Portfolio one', async () => {
@@ -688,98 +685,9 @@ describe('the department filter narrows the population and never widens it', () 
   });
 });
 
-describe('ADR-019: the Portfolio Dashboard alone is personalised, by the roles that hold it', () => {
+describe('ADR-019: personal choices made through the API still shape the governed widgets', () => {
   const optional = (code: string, title: string, overrides: Partial<DashboardWidgetResult> = {}) =>
     widget({ code, title: { en: title, ar: title }, isOptionalVisibility: true, ...overrides });
-
-  const portfolio = () =>
-    dashboardView('PORTFOLIO', {
-      widgets: [
-        widget({
-          code: 'PROJECTS_BY_LIFECYCLE',
-          title: { en: 'Projects by lifecycle state', ar: 'x' },
-        }),
-        optional('CURRENT_HEALTH', 'Current health', { layoutRow: 2, layoutColumn: 1 }),
-        optional('SCHEDULE_HEALTH', 'Schedule health', { layoutRow: 2, layoutColumn: 5 }),
-        optional('KPI_CONDITION', 'KPI condition', {
-          layoutRow: 3,
-          layoutColumn: 1,
-          isHidden: true,
-        }),
-      ],
-    });
-
-  test('R02 hides and reorders optional widgets; the governed ones are never offered', async () => {
-    const api = homeAs(sessionFor(['R02']), { views: { PORTFOLIO: portfolio() } });
-    api.on('POST', /^\/dashboards\/PORTFOLIO\/personalize$/, (request) => ({
-      body: {
-        code: 'PORTFOLIO',
-        dashboardDefinitionId: 'x',
-        widgets: (request.body as { widgets: unknown[] }).widgets,
-      },
-    }));
-
-    expect(await widgetRegion('Current health')).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'KPI condition' })).toBeNull();
-
-    await userEvent.click(screen.getByRole('button', { name: en('dashboards.personalize.open') }));
-    const dialog = await screen.findByRole('dialog', { name: en('dashboards.personalize.title') });
-    const boxes = within(dialog).getAllByRole('checkbox');
-    expect(boxes.map((box) => box.parentElement?.textContent)).toEqual([
-      'Current health',
-      'Schedule health',
-      'KPI condition',
-    ]);
-    expect(within(dialog).queryByText('Projects by lifecycle state')).toBeNull();
-
-    await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Current health' }));
-    await userEvent.click(
-      within(dialog).getByRole('button', {
-        name: `${en('dashboards.personalize.moveUp')} Schedule health`,
-      }),
-    );
-    await userEvent.click(
-      within(dialog).getByRole('button', { name: en('dashboards.personalize.save') }),
-    );
-
-    await waitFor(() => {
-      expect(api.requestsTo('POST', /personalize$/)).toHaveLength(1);
-    });
-    const [saved] = api.requestsTo('POST', /personalize$/);
-    expect(saved?.body).toEqual({
-      widgets: [
-        { widgetCode: 'SCHEDULE_HEALTH', isHidden: false, sortOrder: 1 },
-        { widgetCode: 'CURRENT_HEALTH', isHidden: true, sortOrder: 2 },
-        { widgetCode: 'KPI_CONDITION', isHidden: true, sortOrder: 3 },
-      ],
-    });
-    expect(saved?.headers.get('Idempotency-Key')).not.toBeNull();
-    expect(await screen.findByText(en('dashboards.personalize.saved'))).toBeTruthy();
-  });
-
-  test('restoring the standard layout resets it', async () => {
-    const api = homeAs(sessionFor(['R07']), { views: { PORTFOLIO: portfolio() } });
-    api.on('POST', /^\/dashboards\/PORTFOLIO\/reset-personalization$/, {
-      body: { code: 'PORTFOLIO', dashboardDefinitionId: 'x', widgets: [] },
-    });
-
-    await userEvent.click(
-      await screen.findByRole('button', { name: en('dashboards.personalize.open') }),
-    );
-    const dialog = await screen.findByRole('dialog');
-    await userEvent.click(
-      within(dialog).getByRole('button', { name: en('dashboards.personalize.reset') }),
-    );
-
-    expect(await screen.findByText(en('dashboards.personalize.wasReset'))).toBeTruthy();
-    expect(api.requestsTo('POST', /reset-personalization$/)).toHaveLength(1);
-  });
-
-  test('a Viewer is not offered it', async () => {
-    homeAs(sessionFor(['R06']), { views: { PORTFOLIO: portfolio() } });
-    expect(await widgetRegion('Current health')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: en('dashboards.personalize.open') })).toBeNull();
-  });
 
   test('the personal order and hidden widgets are applied on the dashboard', async () => {
     homeAs(sessionFor(['R02']), {
@@ -846,7 +754,7 @@ describe('a dashboard over no project (the 5 Nov 2026 review §5)', () => {
 });
 
 describe('a created role on the dashboards', () => {
-  test('its landing is named after the dashboard, and Customize layout follows LAYOUT_PERSONALIZE', async () => {
+  test('its landing is named after the dashboard', async () => {
     withDashboards(mockApi(), {
       catalogue: [catalogueEntry('PORTFOLIO', { isDefaultLanding: true })],
     }).on('GET', SHELL_PERMISSIONS, {
@@ -856,9 +764,6 @@ describe('a created role on the dashboards', () => {
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Portfolio Dashboard' }),
-    ).toBeTruthy();
-    expect(
-      await screen.findByRole('button', { name: en('dashboards.personalize.open') }),
     ).toBeTruthy();
   });
 });

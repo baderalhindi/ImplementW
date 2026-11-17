@@ -1,8 +1,7 @@
-import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
 import { type SessionUser } from '@/features/identity-access/session/sessionApi.ts';
 import { type TranslationKey } from '@/shared/i18n/i18n.ts';
 
-import { type DashboardCatalogueEntry, type DashboardCode } from './api/types.ts';
+import { type DashboardCatalogueEntry } from './api/types.ts';
 
 // Which dashboard the role-aware Home shows, and what it is called. The API decides the landing (`isDefaultLanding`,
 // TASK-069 D-2) and every widget's data; this only names the rendering and picks among what the catalogue offered.
@@ -120,17 +119,4 @@ export function selectedEntry(
   requested: string | null,
 ): DashboardCatalogueEntry | null {
   return hostedEntries(entries).find((entry) => entry.code === requested) ?? landingEntry(entries);
-}
-
-/**
- * Whether the Home offers "Customize layout" on a dashboard: only one the API says is personalisable (the Portfolio
- * Dashboard, by its CHECK) and only to a holder of ADR-019's `LAYOUT_PERSONALIZE`. The Project Dashboard never is (ADR-019).
- */
-export function mayPersonalize(
-  permissions: Pick<Permissions, 'can'>,
-  entry: { allowsPersonalization: boolean; code: DashboardCode },
-): boolean {
-  return (
-    entry.allowsPersonalization && entry.code !== 'PROJECT' && permissions.can('LAYOUT_PERSONALIZE')
-  );
 }

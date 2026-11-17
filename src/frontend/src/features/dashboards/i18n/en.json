@@ -201,17 +201,6 @@
   "widget": {
     "open": "Open"
   },
-  "personalize": {
-    "open": "Customize layout",
-    "title": "Customize your dashboard",
-    "intro": "Show, hide or reorder the optional widgets. This changes only how your dashboard looks: it never changes what a widget shows or who may see it.",
-    "moveUp": "Move up",
-    "moveDown": "Move down",
-    "save": "Save layout",
-    "reset": "Restore the standard layout",
-    "saved": "Your layout was saved.",
-    "wasReset": "The standard layout was restored."
-  },
   "problems": {
     "notFound": "This dashboard is not available to you.",
     "filterValueUnauthorized": "That filter value is not one you may filter by. Show all projects instead.",
@@ -354,7 +343,7 @@
     "gallery": "Add a visual",
     "canvasLabel": "Dashboard layout",
     "properties": "Visual settings",
-    "selectHint": "Choose Edit on a visual to change it.",
+    "selectHint": "Choose the pencil on a visual to change it.",
     "keyboardHint": "Drag a visual by its handle to move it and by its corner to size it. With the keyboard, use the arrow keys on either handle; Delete removes the visual.",
     "empty": "Add a visual from the list to start.",
     "moveHandle": "Move {title}",
@@ -417,6 +406,7 @@
     },
     "other": "{count} others",
     "editVisual": "Edit {title}",
-    "measuresOne": "Choose one."
+    "measuresOne": "Choose one.",
+    "galleryHint": "Choose a type to place it on the dashboard."
   }
 }

@@ -74,7 +74,7 @@
       {
         "heading": "Arrange it your way",
         "paragraphs": [
-          "Portfolio Managers, Sector Managers and Executives can choose [[dashboards.personalize.open]] to hide, show and reorder the optional widgets, then [[dashboards.personalize.save]]. [[dashboards.personalize.reset]] puts the standard layout back. The fixed widgets always stay."
+          "The Portfolio Manager designs the Portfolio Dashboard for everyone under [[common.menu.dashboardsReports]] → [[dashboards.designer.nav]]: add a card, chart, table or gauge, drag it into place, size it by its corner, choose its values and grouping, then [[dashboards.designer.save]]. [[dashboards.designer.reset]] puts the standard design back."
         ],
         "note": "Changing the layout never changes the figures, and other people keep their own layout."
       },

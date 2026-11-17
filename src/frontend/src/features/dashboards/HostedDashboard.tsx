@@ -5,7 +5,6 @@ import { usePermissions } from '@/features/identity-access/permissions/permissio
 import { ApiError } from '@/shared/api/httpClient.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
-import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { EmptyState, ErrorState, LoadingState } from '@/shared/ui/States.tsx';
 
 import { dashboardsApi, type PortfolioFilters } from './api/dashboardsApi.ts';
@@ -17,11 +16,9 @@ import {
   PortfolioFilterBar,
 } from './components/PortfolioFilterBar.tsx';
 import { ProjectLocations } from './components/ProjectLocations.tsx';
-import { mayPersonalize } from './landing.ts';
 import { PortfolioInsightsSection } from './insights/PortfolioInsightsSection.tsx';
 import { emptyPortfolioReason, hasNoData } from './presentation.ts';
 import { DASHBOARD_DESIGNER_PATH } from './paths.ts';
-import { PersonalizeDialog } from './PersonalizeDialog.tsx';
 import { dashboardProblemMessage } from './problems.ts';
 
 function optionsOf(view: DashboardView): FilterOptions {
@@ -123,8 +120,6 @@ export function HostedDashboard({
   );
   const view = useApiResource(load, { keepWhileReloading: true });
   const [options, setOptions] = useState<FilterOptions>(NO_OPTIONS);
-  const [personalizing, setPersonalizing] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
 
   // The options do not depend on the filters (the API lists them before narrowing), so the last ones read stay offered
   // while another choice loads: a select never disappears under a keyboard user.
@@ -151,17 +146,6 @@ export function HostedDashboard({
               <button type="button" className="button button--quiet" onClick={view.reload}>
                 {t('dashboards.actions.refresh')}
               </button>
-              {mayPersonalize(permissions, entry) && (
-                <button
-                  type="button"
-                  className="button"
-                  onClick={() => {
-                    setPersonalizing(true);
-                  }}
-                >
-                  {t('dashboards.personalize.open')}
-                </button>
-              )}
               {entry.code === 'PORTFOLIO' && permissions.can('DASHBOARD_DESIGN') && (
                 <Link className="button" to={DASHBOARD_DESIGNER_PATH}>
                   {t('dashboards.designer.open')}
@@ -171,7 +155,6 @@ export function HostedDashboard({
           )
         }
       />
-      <PageNotice notice={notice} />
       {entry.code === 'PORTFOLIO' && (
         <PortfolioInsightsSection
           filters={filters}
@@ -219,23 +202,6 @@ export function HostedDashboard({
             />
           )}
           <DashboardCanvas view={view.data} headingLevel={2} filters={filters} />
-          <PersonalizeDialog
-            open={personalizing}
-            view={view.data}
-            onClose={() => {
-              setPersonalizing(false);
-            }}
-            onSaved={(reset) => {
-              setPersonalizing(false);
-              setNotice({
-                tone: 'success',
-                message: t(
-                  reset ? 'dashboards.personalize.wasReset' : 'dashboards.personalize.saved',
-                ),
-              });
-              view.reload();
-            }}
-          />
         </>
       )}
     </div>

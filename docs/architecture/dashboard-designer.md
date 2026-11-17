@@ -22,6 +22,7 @@ The Portfolio dashboard should be changeable "like Power BI": the business adds 
 | D-6 | **The same figures as the insights.** Every visual is calculated over the projects `PortfolioInsightsService` counts (`PortfolioProjectRows`: scope, past registration, the filter bar), per group with the insights' own arithmetic (`RowOf`). A grouping is read under the insights permission that shows that breakdown today (`PermissionOf`), so the designer shows no one more than before; amounts stay withheld without `FINANCIAL_VIEW_SENSITIVE` | Delivery team |
 | D-7 | **Every figure still opens its records** (round 8, point 01): a card's title, a bar, a column group, a slice and a table row link to the register or the Follow-up list with the dashboard's filters and the group's own filter. In the designer nothing links | Delivery team |
 | D-8 | **Shapes that read.** Cards and gauges are one figure; charts are grouped; a table either. A bar, pie, donut and gauge draw one measure, a card two, columns and tables three. A gauge draws a percentage; a pie or donut only a total that adds up, its five largest groups and the rest as one | Delivery team |
+| D-9 | **No "Customize layout".** The personal show, hide and reorder (ADR-019) is gone from the dashboard, since the Portfolio Manager's design now decides the layout for everyone. Its API (`/dashboards/{code}/personalize`) is kept, so a choice already saved still applies to the governed widgets | The user, 18 Nov 2026 |
 
 ## Interface
 
