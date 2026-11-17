@@ -312,6 +312,9 @@ public sealed class PermissionCatalogue
     /// <summary>Why projects need follow-up and the top 10 (§3).</summary>
     public const string PortfolioFollowUpView = "PORTFOLIO_FOLLOW_UP_VIEW";
 
+    /// <summary>Change the Portfolio dashboard's visuals for everyone, with no approval (the 17 Nov 2026 designer). The Portfolio Manager holds it.</summary>
+    public const string DashboardDesign = "DASHBOARD_DESIGN";
+
     /// <summary>
     /// WF-13 (TASK-066): start the review of a submitted contribution revision and accept, return or reject it, as the request's assigned
     /// reviewer. Internal users only; never an edit of the submitted values (EXT-P-10).
@@ -512,6 +515,7 @@ public sealed class PermissionCatalogue
             new(PortfolioBreakdownView, "PROJECT", AccessMode.Read),
             new(PortfolioStatusView, "PROJECT", AccessMode.Read),
             new(PortfolioFollowUpView, "PROJECT", AccessMode.Read),
+            new(DashboardDesign, "DASHBOARDS", AccessMode.Write),
             new(ExternalContributionReview, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(ExternalContributionApply, "EXTERNAL_PARTICIPATION", AccessMode.Write),
             new(FinancialView, "FINANCIAL", AccessMode.Read),
@@ -609,6 +613,7 @@ public sealed class PermissionCatalogue
         new("R02", ReportCompose, DataScope.Own),
         .. Role("R02", DataScope.All, ManagerPermissions),
         new("R02", ProjectImportApprove, DataScope.All),
+        new("R02", DashboardDesign, DataScope.All),
         new("R02", ProjectDelete, DataScope.All),
         new("R02", ProjectRegistrationEdit, DataScope.All),
 

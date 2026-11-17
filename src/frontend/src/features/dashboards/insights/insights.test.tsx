@@ -12,7 +12,9 @@ import {
   NO_SECTIONS,
   PORTFOLIO_A,
   portfolioCard,
+  standardDesignOf,
 } from '@/test/portfolioInsightFixtures.ts';
+import { type PortfolioInsights } from '@/features/dashboards/api/insightTypes.ts';
 import {
   entitySession,
   PROJECT_ID,
@@ -35,6 +37,10 @@ function dashboardApi(insights: unknown): MockApi {
   withProjectLookups(api);
   withDashboards(api, { views: { PORTFOLIO: dashboardView('PORTFOLIO') } });
   api.on('GET', /^\/portfolio-insights$/, { body: insights });
+  // The headline cards and the portfolio charts are the designed visuals (17 Nov 2026), calculated from the same figures.
+  api.on('GET', /^\/portfolio-insights\/design$/, {
+    body: standardDesignOf(insights as PortfolioInsights),
+  });
   return api;
 }
 
@@ -68,7 +74,7 @@ describe('the sections', () => {
     dashboardApi({ ...NO_SECTIONS, stages: fullInsights().stages, onPlan: fullInsights().onPlan });
     renderApp({ path: DASHBOARD, session: session() });
     await screen.findByRole('heading', { level: 2, name: en('dashboards.insights.byStatus') });
-    expect(section('headline')).toBeNull();
+    expect(section('designed')).toBeNull();
     expect(section('portfolio')).toBeNull();
     expect(section('sector')).toBeNull();
     expect(section('top')).toBeNull();
@@ -137,7 +143,7 @@ describe('the sections', () => {
     });
     renderApp({ path: DASHBOARD, session: session() });
     await screen.findByText(en('dashboards.noData'));
-    expect(section('headline')).toBeNull();
+    expect(section('designed')).toBeNull();
     expect(document.querySelector('.insights')).toBeNull();
   });
 
@@ -157,9 +163,9 @@ describe('the sections', () => {
     });
     renderApp({ path: DASHBOARD, session: session() });
     await waitFor(() => {
-      expect(section('headline')).not.toBeNull();
+      expect(section('designed')).not.toBeNull();
     });
-    const headline = present(section('headline'));
+    const headline = present(section('designed'));
     expect(within(headline).queryByText(en('dashboards.insights.totalValue'))).toBeNull();
     expect(plain(headline.textContent)).toContain('In progress: 120');
     expect(plain(headline.textContent)).toContain('Progress measured for 0 of 167');
@@ -171,9 +177,9 @@ describe('the sections', () => {
     dashboardApi(fullInsights());
     renderApp({ path: DASHBOARD, session: session() });
     await waitFor(() => {
-      expect(section('headline')).not.toBeNull();
+      expect(section('designed')).not.toBeNull();
     });
-    const headline = present(section('headline'));
+    const headline = present(section('designed'));
     // Review round 8, point 11: a card's amount is compact, with the full figure on hover.
     expect(plain(headline.textContent)).toContain('1.5 million SAR');
     expect(plain(headline.querySelector('[title*="SAR"]')?.getAttribute('title'))).toBe(
@@ -242,8 +248,14 @@ describe('the sections', () => {
         .getByRole('link', { name: en('dashboards.insights.fullFollowUp') })
         .getAttribute('href'),
     ).toBe('/projects/follow-up');
-    // Round 7, item 5: the entity completion donut joins the four charts.
-    expect(document.querySelectorAll('.insights__chart')).toHaveLength(5);
+    // Round 7, item 5: the entity completion donut joins the charts; the two by portfolio are designed visuals (17 Nov 2026).
+    await waitFor(() => {
+      expect(document.querySelectorAll('[data-section="designed"] .visual')).toHaveLength(8);
+    });
+    expect(document.querySelectorAll('.insights__chart')).toHaveLength(3);
+    expect(
+      document.querySelectorAll('.visual[data-visual="BAR"], .visual[data-visual="COLUMN"]'),
+    ).toHaveLength(2);
     expect(describeViolations(await accessibilityViolations())).toBe('');
   });
 
@@ -263,6 +275,8 @@ describe('the sections', () => {
       expect(section('reasons')).not.toBeNull();
     });
     const link = (element: Element | null | undefined) => linkOf(element?.getAttribute('href'));
+    // The headline cards are designed visuals, read apart from the insights.
+    await screen.findByRole('link', { name: en('dashboards.insights.registered') });
     expect(link(screen.getByRole('link', { name: en('dashboards.insights.registered') }))).toEqual({
       path: '/projects',
       params: { period: '2026', registered: 'true' },

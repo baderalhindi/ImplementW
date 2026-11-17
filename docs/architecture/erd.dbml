@@ -755,6 +755,28 @@ Table project.project_follow_up_note {
   Note: 'A dated follow-up note on a project, attributed by its creation stamp (2 Nov 2026 review, R3-3). Delete policy: APPEND_ONLY.'
 }
 
+Table project.portfolio_visual {
+  id uuid [pk, not null, note: 'Primary key (D-1)']
+  sort_order smallint [not null, note: 'Reading order from 1; CHECK >= 1']
+  title_ar varchar(100) [not null]
+  title_en varchar(100) [not null]
+  visual_type varchar(50) [not null, note: 'CARD | BAR | COLUMN | PIE | DONUT | TABLE | GAUGE']
+  measures "text[]" [not null, note: '1 to 3 of PROJECTS, IN_PROGRESS, VALUE_SAR, AVERAGE_PLANNED, AVERAGE_ACTUAL, GAP_POINTS, NEEDING_FOLLOW_UP, OVERDUE_ACTIONS (CHECK); codes, never an expression (BR-DSH-030)']
+  group_by varchar(50) [not null, note: 'NONE | PORTFOLIO | INITIATIVE | SECTOR | DEPARTMENT | ENTITY | STATUS | STAGE | ON_PLAN | REGION | CITY | PRIORITY']
+  layout_column smallint [not null, note: '0 to 11 from the reading start; layout_column + layout_width <= 12 (CHECK)']
+  layout_row smallint [not null, note: '>= 0']
+  layout_width smallint [not null, note: '1 to 12']
+  layout_height smallint [not null, note: '1 to 12']
+  created_at timestamptz [not null, note: 'Audit column (D-2)']
+  created_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  updated_at timestamptz [not null, note: 'Audit column (D-2)']
+  updated_by uuid [not null, note: 'User.id by convention, no FK constraint (D-2)']
+  indexes {
+    sort_order [unique]
+  }
+  Note: 'One visual of the Portfolio dashboard as the Portfolio Manager designed it, the same for everyone (17 Nov 2026 dashboard designer, DASHBOARD_DESIGN, no approval). Saved and replaced as a whole; no row means the standard design. Delete policy: HARD (a new design replaces the old).'
+}
+
 Table project.project_stage_plan {
   id uuid [pk, not null, note: 'Primary key (D-1)']
   project_id uuid [not null, ref: > project.project.id, note: 'ON DELETE CASCADE: the plan is part of its project']

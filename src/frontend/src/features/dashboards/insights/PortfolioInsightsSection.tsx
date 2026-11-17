@@ -12,7 +12,6 @@ import { type FollowUpReason } from '@/features/projects/api/types.ts';
 import { GapValue, OnPlanBadge } from '@/features/projects/components/FollowUpBadges.tsx';
 import { languageTag } from '@/features/projects/presentation.ts';
 import { sarWhole } from '@/shared/format/money.ts';
-import { SarAmount } from '@/shared/format/SarAmount.tsx';
 import { NO_STAGE, NOT_MEASURED } from '@/features/projects/register/projectFilterValues.ts';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
 import { useApiResource } from '@/shared/api/useApiResource.ts';
@@ -44,7 +43,6 @@ import {
   type PortfolioBreakdown,
   type PortfolioBreakdownRow,
   type PortfolioFollowUpReasons,
-  type PortfolioHeadline,
   type PortfolioInsights,
   type PortfolioOnPlan,
   type PortfolioCurrentStage,
@@ -56,10 +54,9 @@ import { BarChart, DonutChart, GroupedColumnChart } from '../components/Charts.t
 import { followUpPath, registerPath } from '../drillLinks.ts';
 import { portfolioCardPath } from '../paths.ts';
 import { emptyPortfolioReason } from '../presentation.ts';
-import { Card } from './Card.tsx';
-import { ON_PLAN_TONES } from './onPlanTones.ts';
 import { ExecutiveTop } from './ExecutiveSections.tsx';
 
+import { DesignedVisuals } from '../design/DesignedVisuals.tsx';
 import { Coverage, Percent } from './figures.tsx';
 
 type ItemName = (id: string | null) => string;
@@ -222,11 +219,12 @@ function Sections({
       {executive ? (
         <ExecutiveTop headline={headline} onPlan={onPlan} filters={filters} />
       ) : (
-        headline !== null && <Headline headline={headline} filters={filters} />
+        // The headline cards and the portfolio charts are the Portfolio Manager's design (17 Nov 2026).
+        <DesignedVisuals filters={filters} />
       )}
       <InsightCharts
         filters={filters}
-        byPortfolio={byPortfolio}
+        byPortfolio={executive ? byPortfolio : null}
         stages={stages}
         byCurrentStage={byCurrentStage}
         onPlan={onPlan}
@@ -296,109 +294,6 @@ function InsightSection({
     <section className="insights__section" data-section={id}>
       <h2>{title}</h2>
       {children}
-    </section>
-  );
-}
-
-/** A headline card; with `to`, its whole surface opens the records it counts. */
-function Headline({
-  headline,
-  filters,
-}: {
-  headline: PortfolioHeadline;
-  filters: PortfolioFilters;
-}): ReactElement {
-  const { t } = useI18n();
-  const total = headline.registeredProjects;
-  const projectsHint = (count: number) => t('dashboards.drill.projects', { count });
-  const measuredPath = registerPath(filters, { measured: 'true' });
-  const measured = <Coverage kind="progress" count={headline.measured} of={total} />;
-  return (
-    <section className="insights__section" aria-label={t('dashboards.insights.headlineLabel')}>
-      <ul className="home__tiles insights__headline" data-section="headline">
-        <Card
-          label={t('dashboards.insights.registered')}
-          to={registerPath(filters)}
-          hint={projectsHint(total)}
-        >
-          <span className="home__tile-value" dir="ltr">
-            {total}
-          </span>
-          <Link
-            className="insights__coverage drill-link"
-            to={registerPath(filters, { status: 'ACTIVE' })}
-            title={projectsHint(headline.inProgressProjects)}
-          >
-            {t('dashboards.insights.inProgress', { count: headline.inProgressProjects })}
-          </Link>
-        </Card>
-        {headline.totalValueSar !== null && (
-          <Card
-            label={t('dashboards.insights.totalValue')}
-            to={registerPath(filters, { sort: 'value:desc' })}
-            hint={projectsHint(total)}
-          >
-            {headline.valueEntered === 0 ? (
-              <Percent value={null} />
-            ) : (
-              <SarAmount className="home__tile-value" amount={headline.totalValueSar} />
-            )}
-            <Coverage kind="value" count={headline.valueEntered} of={total} />
-          </Card>
-        )}
-        <Card
-          label={t('dashboards.insights.averagePlanned')}
-          to={measuredPath}
-          hint={projectsHint(headline.measured)}
-        >
-          <span className="home__tile-value">
-            <Percent value={headline.averagePlannedPercent} />
-          </span>
-          <NoteList className="insights__notes">
-            <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
-            {measured}
-          </NoteList>
-        </Card>
-        <Card
-          label={t('dashboards.insights.averageActual')}
-          to={measuredPath}
-          hint={projectsHint(headline.measured)}
-        >
-          <span className="home__tile-value">
-            <Percent value={headline.averageActualPercent} />
-          </span>
-          <NoteList className="insights__notes">
-            <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
-            {measured}
-          </NoteList>
-        </Card>
-        <Card
-          label={t('dashboards.insights.gap')}
-          tone={headline.onPlan === null ? undefined : ON_PLAN_TONES[headline.onPlan]}
-          to={measuredPath}
-          hint={projectsHint(headline.measured)}
-        >
-          <span className="home__tile-value">
-            <GapValue points={headline.gapPoints} />
-          </span>
-          <span>
-            <OnPlanBadge status={headline.onPlan} />
-          </span>
-          {measured}
-        </Card>
-        <Card
-          label={t('dashboards.insights.needingFollowUp')}
-          to={followUpPath(filters)}
-          hint={t('dashboards.drill.followUp', { count: headline.needingFollowUp })}
-        >
-          <span className="home__tile-value" dir="ltr">
-            {headline.needingFollowUp}
-          </span>
-          <span className="insights__coverage">
-            {t('dashboards.insights.overdueActions', { count: headline.overdueActions })}
-          </span>
-        </Card>
-      </ul>
     </section>
   );
 }

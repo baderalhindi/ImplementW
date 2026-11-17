@@ -10,6 +10,7 @@ const PROBLEMS: Record<string, TranslationKey> = {
   DASHBOARD_FILTER_VALUE_UNAUTHORIZED: 'dashboards.problems.filterValueUnauthorized',
   DASHBOARD_CONTEXT_INVALID: 'dashboards.problems.contextInvalid',
   DASHBOARD_PERSONALIZATION_INVALID: 'dashboards.problems.personalizationInvalid',
+  PROJECT_PORTFOLIO_DESIGN_INVALID: 'dashboards.problems.portfolioDesignInvalid',
   PERMISSION_DENIED: 'dashboards.problems.permissionDenied',
 };
 

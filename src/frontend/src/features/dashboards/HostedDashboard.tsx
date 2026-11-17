@@ -1,4 +1,5 @@
 import { type ReactElement, useCallback, useState } from 'react';
+import { Link } from 'react-router';
 
 import { usePermissions } from '@/features/identity-access/permissions/permissions.ts';
 import { ApiError } from '@/shared/api/httpClient.ts';
@@ -19,6 +20,7 @@ import { ProjectLocations } from './components/ProjectLocations.tsx';
 import { mayPersonalize } from './landing.ts';
 import { PortfolioInsightsSection } from './insights/PortfolioInsightsSection.tsx';
 import { emptyPortfolioReason, hasNoData } from './presentation.ts';
+import { DASHBOARD_DESIGNER_PATH } from './paths.ts';
 import { PersonalizeDialog } from './PersonalizeDialog.tsx';
 import { dashboardProblemMessage } from './problems.ts';
 
@@ -159,6 +161,11 @@ export function HostedDashboard({
                 >
                   {t('dashboards.personalize.open')}
                 </button>
+              )}
+              {entry.code === 'PORTFOLIO' && permissions.can('DASHBOARD_DESIGN') && (
+                <Link className="button" to={DASHBOARD_DESIGNER_PATH}>
+                  {t('dashboards.designer.open')}
+                </Link>
               )}
             </p>
           )

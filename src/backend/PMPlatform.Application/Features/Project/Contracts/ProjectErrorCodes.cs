@@ -74,4 +74,10 @@ public static class ProjectErrorCodes
 
     /// <summary>409: the follow-up of a project not yet approved is not kept: RPMO follows up registered projects (R3-3).</summary>
     public const string FollowUpNotOpen = "PROJECT_FOLLOW_UP_NOT_OPEN";
+
+    /// <summary>
+    /// 422: a Portfolio dashboard design with no visual or more than 40, a visual with no title in either language or one past 100 characters, no measure or more
+    /// than three or one twice, a grouping its type does not take, or a place outside the twelve-column grid or on another visual (the 17 Nov 2026 designer).
+    /// </summary>
+    public const string PortfolioDesignInvalid = "PROJECT_PORTFOLIO_DESIGN_INVALID";
 }

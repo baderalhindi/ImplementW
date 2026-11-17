@@ -9434,6 +9434,99 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PMPlatform.Domain.Project.PortfolioVisual", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("GroupBy")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("group_by");
+
+                    b.Property<short>("LayoutColumn")
+                        .HasColumnType("smallint")
+                        .HasColumnName("layout_column");
+
+                    b.Property<short>("LayoutHeight")
+                        .HasColumnType("smallint")
+                        .HasColumnName("layout_height");
+
+                    b.Property<short>("LayoutRow")
+                        .HasColumnType("smallint")
+                        .HasColumnName("layout_row");
+
+                    b.Property<short>("LayoutWidth")
+                        .HasColumnType("smallint")
+                        .HasColumnName("layout_width");
+
+                    b.PrimitiveCollection<List<string>>("Measures")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("measures");
+
+                    b.Property<short>("SortOrder")
+                        .HasColumnType("smallint")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("TitleAr")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("title_ar");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("title_en");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("VisualType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("visual_type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_portfolio_visual");
+
+                    b.HasIndex("SortOrder")
+                        .IsUnique()
+                        .HasDatabaseName("ix_portfolio_visual_sort_order");
+
+                    b.ToTable("portfolio_visual", "project", t =>
+                        {
+                            t.HasCheckConstraint("ck_portfolio_visual_group_by", "\"group_by\" IN ('NONE', 'PORTFOLIO', 'INITIATIVE', 'SECTOR', 'DEPARTMENT', 'ENTITY', 'STATUS', 'STAGE', 'ON_PLAN', 'REGION', 'CITY', 'PRIORITY')");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_layout", "layout_column BETWEEN 0 AND 11 AND layout_width BETWEEN 1 AND 12 AND layout_column + layout_width <= 12 AND layout_row >= 0 AND layout_height BETWEEN 1 AND 12");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_measures", "cardinality(measures) BETWEEN 1 AND 3 AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'AVERAGE_PLANNED', 'AVERAGE_ACTUAL', 'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS']::text[]");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_sort_order", "sort_order >= 1");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_visual_type", "\"visual_type\" IN ('CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'TABLE', 'GAUGE')");
+                        });
+                });
+
             modelBuilder.Entity("PMPlatform.Domain.Project.Project", b =>
                 {
                     b.Property<Guid>("Id")

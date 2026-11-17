@@ -407,7 +407,9 @@ public static class DependencyInjection
         services.AddScoped<IExternalContributionTarget, TaskProgressTarget>();
         services.AddScoped<IExternalContributionTarget, ProjectMonthlyTarget>();
         services.AddScoped<IProjectMonthlyUpdates, ProjectMonthlyUpdates>();
+        services.AddScoped<PortfolioProjectRows>();
         services.AddScoped<IPortfolioInsightsService, PortfolioInsightsService>();
+        services.AddScoped<IPortfolioDesignService, PortfolioDesignService>();
         services.AddScoped<UpdateRequestBatchService>();
         services.AddScoped<IUpdateRequestBatchService>(provider => provider.GetRequiredService<UpdateRequestBatchService>());
         services.AddScoped<IMyUpdateRequests, MyUpdateRequests>();

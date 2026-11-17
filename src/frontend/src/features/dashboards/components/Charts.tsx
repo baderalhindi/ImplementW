@@ -36,7 +36,6 @@ const STROKE = 20;
 const GAP = 3;
 /** The shortest arc drawn, so a very small value stays visible. */
 const MIN_ARC = 1;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 /**
  * A donut with flat-ended segments and a gap between them, from twelve o'clock clockwise in the source's order. Each
@@ -50,6 +49,7 @@ export function DonutChart({
   onActive,
   totalLabel,
   summary,
+  pie = false,
 }: {
   buckets: ChartBucket[];
   active: string | null;
@@ -57,26 +57,31 @@ export function DonutChart({
   totalLabel: string;
   /** What the centre shows while nothing is hovered, in place of the total, such as an overall rate. */
   summary?: { value: string; label: string };
+  /** A full disc: the ring drawn as thick as its radius, with no centre to write in (the 17 Nov 2026 designer). */
+  pie?: boolean;
 }): ReactElement {
   const navigate = useNavigate();
+  const radius = pie ? SIZE / 4 : RADIUS;
+  const stroke = pie ? SIZE / 2 : STROKE;
+  const circumference = 2 * Math.PI * radius;
   const drawn = buckets.filter((bucket) => bucket.count > 0);
   const total = drawn.reduce((sum, bucket) => sum + bucket.count, 0);
   const hovered = buckets.find((bucket) => bucket.key === active);
   const centre = SIZE / 2;
   // Where each segment starts along the ring: the lengths of those before it.
-  const lengths = drawn.map((bucket) => (bucket.count / total) * CIRCUMFERENCE);
+  const lengths = drawn.map((bucket) => (bucket.count / total) * circumference);
   const starts = lengths.map((_, index) =>
     lengths.slice(0, index).reduce((sum, length) => sum + length, 0),
   );
   return (
-    <div className="donut" aria-hidden="true">
+    <div className={pie ? 'donut donut--pie' : 'donut'} aria-hidden="true">
       <svg viewBox={`0 0 ${String(SIZE)} ${String(SIZE)}`} focusable="false">
-        <circle className="donut__track" cx={centre} cy={centre} r={RADIUS} strokeWidth={STROKE} />
+        <circle className="donut__track" cx={centre} cy={centre} r={radius} strokeWidth={stroke} />
         <g transform={`rotate(-90 ${String(centre)} ${String(centre)})`}>
           {drawn.map((bucket, index) => {
             const length = lengths[index] ?? 0;
             // A lone value is the whole ring; otherwise half the gap is taken from each end of its share.
-            const dash = drawn.length === 1 ? CIRCUMFERENCE : Math.max(MIN_ARC, length - GAP);
+            const dash = drawn.length === 1 ? circumference : Math.max(MIN_ARC, length - GAP);
             const offset = drawn.length === 1 ? 0 : -((starts[index] ?? 0) + GAP / 2);
             const state =
               active === null ? '' : active === bucket.key ? ' is-active' : ' is-dimmed';
@@ -86,11 +91,11 @@ export function DonutChart({
                 className={`donut__segment${state}${bucket.href === undefined ? '' : ' is-linked'}`}
                 cx={centre}
                 cy={centre}
-                r={RADIUS}
-                strokeWidth={STROKE}
-                strokeDasharray={`${String(dash)} ${String(CIRCUMFERENCE)}`}
+                r={radius}
+                strokeWidth={stroke}
+                strokeDasharray={`${String(dash)} ${String(circumference)}`}
                 strokeDashoffset={offset}
-                style={{ stroke: bucket.color, '--dash-total': CIRCUMFERENCE } as CSSProperties}
+                style={{ stroke: bucket.color, '--dash-total': circumference } as CSSProperties}
                 onPointerEnter={() => {
                   onActive(bucket.key);
                 }}
@@ -111,20 +116,24 @@ export function DonutChart({
           })}
         </g>
       </svg>
-      <p
-        className={hovered === undefined ? 'donut__centre' : 'donut__centre is-active'}
-        style={
-          hovered === undefined ? undefined : ({ '--chart-color': hovered.color } as CSSProperties)
-        }
-      >
-        <span className="donut__value" dir="ltr">
-          {hovered === undefined ? (summary?.value ?? total) : (hovered.value ?? hovered.count)}
-        </span>
-        <span className="donut__label">
-          {hovered !== undefined && <span className="distribution__key" />}
-          {hovered === undefined ? (summary?.label ?? totalLabel) : hovered.text}
-        </span>
-      </p>
+      {!pie && (
+        <p
+          className={hovered === undefined ? 'donut__centre' : 'donut__centre is-active'}
+          style={
+            hovered === undefined
+              ? undefined
+              : ({ '--chart-color': hovered.color } as CSSProperties)
+          }
+        >
+          <span className="donut__value" dir="ltr">
+            {hovered === undefined ? (summary?.value ?? total) : (hovered.value ?? hovered.count)}
+          </span>
+          <span className="donut__label">
+            {hovered !== undefined && <span className="distribution__key" />}
+            {hovered === undefined ? (summary?.label ?? totalLabel) : hovered.text}
+          </span>
+        </p>
+      )}
     </div>
   );
 }
@@ -203,7 +212,7 @@ export function BarChart({
           <Marks href={bucket.href} hint={bucket.hint} className="bars__link">
             <span className="bars__label">{bucket.text}</span>
             <span className="bars__value" dir="ltr">
-              {bucket.count}
+              {bucket.value ?? bucket.count}
             </span>
             <span className="widget__bar-track">
               <span
@@ -223,11 +232,16 @@ export function BarChart({
   );
 }
 
-/** Two or more percentages side by side for each group, on one 0–100 scale; a value not measured has no bar and says so. */
+/**
+ * Values side by side for each group, on one scale: 0–100 for percentages unless `scale` says otherwise. A value not measured has no bar and says so.
+ * `format` writes a value; percentages by default.
+ */
 export function GroupedColumnChart({
   groups,
   series,
   missing,
+  scale = 100,
+  format = (value) => `${String(Math.round(value * 10) / 10)}%`,
 }: {
   groups: {
     key: string;
@@ -239,6 +253,10 @@ export function GroupedColumnChart({
   }[];
   series: { key: string; text: string; color: string }[];
   missing: string;
+  /** The value a full column stands for. */
+  scale?: number;
+  /** Writes a value of the series at `series`. */
+  format?: (value: number, series: number) => string;
 }): ReactElement {
   const linked = groups.some((group) => group.href !== undefined);
   return (
@@ -264,14 +282,14 @@ export function GroupedColumnChart({
                   return (
                     <div key={entry.key} className="grouped-columns__track">
                       <span className="grouped-columns__value" dir="ltr">
-                        {value === null ? missing : `${String(Math.round(value * 10) / 10)}%`}
+                        {value === null ? missing : format(value, index)}
                       </span>
                       {value !== null && (
                         <span
                           className="grouped-columns__bar"
                           style={
                             {
-                              blockSize: `${String(Math.min(100, Math.max(0, value)))}%`,
+                              blockSize: `${String(Math.min(100, Math.max(0, (value / Math.max(scale, 1)) * 100)))}%`,
                               '--chart-color': entry.color,
                             } as CSSProperties
                           }
