@@ -4877,30 +4877,144 @@ path.trend__line--ACTUAL_PERCENT {
 
 .report-list {
   display: grid;
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+  gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* A report card: the whole card opens the report through its title link's stretched ::after. */
 .report-list__item {
-  padding: var(--space-3);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius);
+  border-radius: 12px;
   background: var(--color-background);
+  box-shadow: var(--shadow-card);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
-.report-list__item p {
-  margin-block: var(--space-1) 0;
+.report-list__item:hover,
+.report-list__item:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgb(16 24 40 / 10%);
+  transform: translateY(-1px);
 }
 
-.report-list__item > a {
+.report-list__icon {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 10px;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+}
+
+.report-list__body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.report-list__link {
+  font-size: 1.1rem;
   font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.report-list__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.report-list__item:hover .report-list__link {
+  color: var(--color-primary);
+}
+
+.report-list__link:focus-visible {
+  outline: none;
+}
+
+.report-list__item:has(.report-list__link:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.report-list__description {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
 }
 
 .report-list__meta {
-  font-size: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 0;
+}
+
+.report-list__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: var(--color-surface);
   color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.report-list__tag--accent {
+  border-color: transparent;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+}
+
+.report-list__chevron {
+  align-self: center;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.report-list__item:hover .report-list__chevron {
+  color: var(--color-primary);
+  transform: translateX(3px);
+}
+
+[dir='rtl'] .report-list__chevron {
+  transform: scaleX(-1);
+}
+
+[dir='rtl'] .report-list__item:hover .report-list__chevron {
+  transform: scaleX(-1) translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .report-list__item,
+  .report-list__chevron {
+    transition: none;
+  }
+
+  .report-list__item:hover,
+  .report-list__item:focus-within {
+    transform: none;
+  }
 }
 
 .report-job p {
