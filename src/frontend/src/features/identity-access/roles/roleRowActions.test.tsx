@@ -35,11 +35,13 @@ describe('role rows', () => {
     expect(within(builtIn).getByRole('link', { name: /^Edit/ }).getAttribute('href')).toBe(
       '/admin/roles/role-R01/edit',
     );
-    expect(within(builtIn).queryByRole('button', { name: /^Delete/ })).toBeNull();
+    // Delete is the menu's only action, so a role that cannot be deleted has no ⋯ menu.
+    expect(within(builtIn).queryByRole('button', { name: /^More/ })).toBeNull();
 
     const own = screen.getByRole('link', { name: 'Temporary role' }).closest('tr') as HTMLElement;
     const user = userEvent.setup();
-    await user.click(within(own).getByRole('button', { name: /^Delete/ }));
+    await user.click(within(own).getByRole('button', { name: 'More Temporary role' }));
+    await user.click(screen.getByRole('menuitem', { name: en('common.rowActions.delete') }));
     api
       .on('POST', /\/roles\/role-TEMP\/delete$|^\/roles\/role-TEMP$/, { status: 204 })
       .on('DELETE', /^\/roles\/role-TEMP$/, { status: 204 });

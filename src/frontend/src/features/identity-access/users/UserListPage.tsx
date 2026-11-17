@@ -6,6 +6,7 @@ import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useListParams } from '@/shared/api/useListParams.ts';
 import { type TranslationKey, useI18n } from '@/shared/i18n/i18n.ts';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
+import { RowActionGroup } from '@/shared/ui/MoreMenu.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
@@ -377,30 +378,33 @@ export function UserListPage(): ReactElement {
                             {t('identityAccess.users.list.serviceAccount')}
                           </span>
                         ) : (
-                          <div className="row-actions">
-                            <Link className="button" to={`/admin/users/${user.id}/edit`}>
-                              {t('common.actions.edit')}{' '}
-                              <span className="visually-hidden">{user.displayName}</span>
-                            </Link>
-                            <button
-                              type="button"
-                              className="button button--danger"
-                              onClick={() => {
-                                setConfirmation({
-                                  title: t('identityAccess.users.delete.title'),
-                                  body: t('identityAccess.users.delete.body', {
-                                    name: user.displayName,
-                                  }),
-                                  confirmLabel: t('identityAccess.users.delete.confirm'),
-                                  destructive: true,
-                                  action: () => usersApi.remove(user.id, null),
-                                });
-                              }}
-                            >
-                              {t('identityAccess.users.delete.short')}{' '}
-                              <span className="visually-hidden">{user.displayName}</span>
-                            </button>
-                          </div>
+                          <RowActionGroup
+                            label={user.displayName}
+                            primary={
+                              <Link className="button" to={`/admin/users/${user.id}/edit`}>
+                                {t('common.actions.edit')}{' '}
+                                <span className="visually-hidden">{user.displayName}</span>
+                              </Link>
+                            }
+                            items={[
+                              {
+                                key: 'delete',
+                                label: t('identityAccess.users.delete.short'),
+                                danger: true,
+                                onSelect: () => {
+                                  setConfirmation({
+                                    title: t('identityAccess.users.delete.title'),
+                                    body: t('identityAccess.users.delete.body', {
+                                      name: user.displayName,
+                                    }),
+                                    confirmLabel: t('identityAccess.users.delete.confirm'),
+                                    destructive: true,
+                                    action: () => usersApi.remove(user.id, null),
+                                  });
+                                },
+                              },
+                            ]}
+                          />
                         )}
                       </td>
                     )}

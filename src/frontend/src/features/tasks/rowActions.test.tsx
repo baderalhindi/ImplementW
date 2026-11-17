@@ -50,10 +50,9 @@ describe('row actions on a register', () => {
     await user.keyboard('{Escape}');
 
     await user.click(
-      within(row).getByRole('button', {
-        name: `${en('common.rowActions.delete')} Site preparation`,
-      }),
+      within(row).getByRole('button', { name: `${en('common.actions.more')} Site preparation` }),
     );
+    await user.click(screen.getByRole('menuitem', { name: en('common.rowActions.delete') }));
     const dialog = await screen.findByRole('dialog', { name: en('common.rowActions.deleteTitle') });
     expect(within(dialog).getByText(/Site preparation/)).toBeTruthy();
     api.on('DELETE', /^\/project-tasks\//, { status: 204 });

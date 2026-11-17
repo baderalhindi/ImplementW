@@ -86,8 +86,11 @@ describe('the user list', () => {
     const user = userEvent.setup();
     await user.click(
       within(row as HTMLElement).getByRole('button', {
-        name: `${en('identityAccess.users.delete.short')} ${internalUser.displayName}`,
+        name: `${en('common.actions.more')} ${internalUser.displayName}`,
       }),
+    );
+    await user.click(
+      screen.getByRole('menuitem', { name: en('identityAccess.users.delete.short') }),
     );
     api.on('POST', /\/delete$/, { status: 204 });
     const dialog = screen.getByRole('dialog', { name: en('identityAccess.users.delete.title') });

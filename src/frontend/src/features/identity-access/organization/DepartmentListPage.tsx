@@ -8,12 +8,12 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { RowActionGroup } from '@/shared/ui/MoreMenu.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 import { useSearchText } from '@/shared/ui/useSearchText.ts';
 import { EmptyState, ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 import { StatusBadge } from '@/shared/ui/StatusBadge.tsx';
-import { ToggleLabel } from '@/shared/ui/ToggleLabel.tsx';
 
 import { departmentsApi } from '../api/identityAccessApi.ts';
 import { type DepartmentSummary } from '../api/types.ts';
@@ -300,53 +300,44 @@ export function DepartmentListPage(): ReactElement {
                       />
                     </td>
                     <td className="cell--actions">
-                      <button
-                        type="button"
-                        className="button"
-                        onClick={() => {
-                          setEditing({ mode: 'edit', departmentId: department.id });
-                        }}
-                      >
-                        {t('common.actions.edit')}{' '}
-                        <span className="visually-hidden">
-                          {labelOf(department.name, language)}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="button"
-                        onClick={() => {
-                          toggle(department);
-                        }}
-                      >
-                        <ToggleLabel
-                          current={t(
-                            department.isActive
-                              ? 'identityAccess.departments.deactivate'
-                              : 'identityAccess.departments.activate',
-                          )}
-                          other={t(
-                            department.isActive
-                              ? 'identityAccess.departments.activate'
-                              : 'identityAccess.departments.deactivate',
-                          )}
-                        />{' '}
-                        <span className="visually-hidden">
-                          {labelOf(department.name, language)}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="button button--danger"
-                        onClick={() => {
-                          confirmDelete([department]);
-                        }}
-                      >
-                        {t('identityAccess.departments.delete')}{' '}
-                        <span className="visually-hidden">
-                          {labelOf(department.name, language)}
-                        </span>
-                      </button>
+                      <RowActionGroup
+                        label={labelOf(department.name, language)}
+                        primary={
+                          <button
+                            type="button"
+                            className="button"
+                            onClick={() => {
+                              setEditing({ mode: 'edit', departmentId: department.id });
+                            }}
+                          >
+                            {t('common.actions.edit')}{' '}
+                            <span className="visually-hidden">
+                              {labelOf(department.name, language)}
+                            </span>
+                          </button>
+                        }
+                        items={[
+                          {
+                            key: 'toggle',
+                            label: t(
+                              department.isActive
+                                ? 'identityAccess.departments.deactivate'
+                                : 'identityAccess.departments.activate',
+                            ),
+                            onSelect: () => {
+                              toggle(department);
+                            },
+                          },
+                          {
+                            key: 'delete',
+                            label: t('identityAccess.departments.delete'),
+                            danger: true,
+                            onSelect: () => {
+                              confirmDelete([department]);
+                            },
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}

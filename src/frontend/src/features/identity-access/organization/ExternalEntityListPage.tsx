@@ -8,6 +8,7 @@ import { Dialog } from '@/shared/ui/Dialog.tsx';
 import { FilterBar } from '@/shared/ui/FilterBar.tsx';
 import { SelectField, TextField } from '@/shared/ui/FormFields.tsx';
 import { PageHeader, Pagination, TableContainer } from '@/shared/ui/Layout.tsx';
+import { RowActionGroup } from '@/shared/ui/MoreMenu.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
@@ -311,41 +312,40 @@ export function ExternalEntityListPage(): ReactElement {
                         />
                       </td>
                       <td className="cell--actions">
-                        {entity.status !== 'RETIRED' && (
-                          <button
-                            type="button"
-                            className="button"
-                            onClick={() => {
-                              setEditing({ mode: 'edit', entityId: entity.id });
-                            }}
-                          >
-                            {t('common.actions.edit')}{' '}
-                            <span className="visually-hidden">{name}</span>
-                          </button>
-                        )}
-                        {TRANSITIONS[entity.status].map((transition) => (
-                          <button
-                            key={transition}
-                            type="button"
-                            className="button"
-                            onClick={() => {
-                              confirm(entity, transition);
-                            }}
-                          >
-                            {t(`identityAccess.entities.transitions.${transition}.action`)}{' '}
-                            <span className="visually-hidden">{name}</span>
-                          </button>
-                        ))}
-                        <button
-                          type="button"
-                          className="button button--danger"
-                          onClick={() => {
-                            remove(entity);
-                          }}
-                        >
-                          {t('identityAccess.entities.delete.action')}{' '}
-                          <span className="visually-hidden">{name}</span>
-                        </button>
+                        <RowActionGroup
+                          label={name}
+                          primary={
+                            entity.status === 'RETIRED' ? undefined : (
+                              <button
+                                type="button"
+                                className="button"
+                                onClick={() => {
+                                  setEditing({ mode: 'edit', entityId: entity.id });
+                                }}
+                              >
+                                {t('common.actions.edit')}{' '}
+                                <span className="visually-hidden">{name}</span>
+                              </button>
+                            )
+                          }
+                          items={[
+                            ...TRANSITIONS[entity.status].map((transition) => ({
+                              key: transition,
+                              label: t(`identityAccess.entities.transitions.${transition}.action`),
+                              onSelect: () => {
+                                confirm(entity, transition);
+                              },
+                            })),
+                            {
+                              key: 'delete',
+                              label: t('identityAccess.entities.delete.action'),
+                              danger: true,
+                              onSelect: () => {
+                                remove(entity);
+                              },
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   );

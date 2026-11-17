@@ -2,6 +2,7 @@ import { type ReactElement, type ReactNode, useState } from 'react';
 import { Link } from 'react-router';
 
 import { useI18n } from '@/shared/i18n/i18n.ts';
+import { RowActionGroup } from '@/shared/ui/MoreMenu.tsx';
 import { type RowSelection } from '@/shared/ui/useRowSelection.ts';
 
 import { type PermissionCode } from '../permissions/permissionCodes.ts';
@@ -123,43 +124,47 @@ export function useRowActions<E>({
     }
     const label = name(entry);
     const to = editTo?.(entry) ?? null;
+    const edit =
+      onEdit !== undefined ? (
+        <button
+          type="button"
+          className="button"
+          onClick={() => {
+            onEdit(entry);
+          }}
+        >
+          {t('common.actions.edit')} <span className="visually-hidden">{label}</span>
+        </button>
+      ) : to !== null ? (
+        <Link className="button" to={to}>
+          {t('common.actions.edit')} <span className="visually-hidden">{label}</span>
+        </Link>
+      ) : undefined;
     return (
-      <span className="row-actions">
-        {onEdit !== undefined ? (
-          <button
-            type="button"
-            className="button"
-            onClick={() => {
-              onEdit(entry);
-            }}
-          >
-            {t('common.actions.edit')} <span className="visually-hidden">{label}</span>
-          </button>
-        ) : (
-          to !== null && (
-            <Link className="button" to={to}>
-              {t('common.actions.edit')} <span className="visually-hidden">{label}</span>
-            </Link>
-          )
-        )}
-        {(deletable === undefined || deletable(entry)) && (
-          <button
-            type="button"
-            className="button button--danger"
-            onClick={() => {
-              setConfirmation({
-                title: t('common.rowActions.deleteTitle'),
-                body: t('common.rowActions.deleteBody', { name: label }),
-                confirmLabel: t('common.rowActions.delete'),
-                destructive: true,
-                action: () => remove(entry),
-              });
-            }}
-          >
-            {t('common.rowActions.delete')} <span className="visually-hidden">{label}</span>
-          </button>
-        )}
-      </span>
+      <RowActionGroup
+        label={label}
+        primary={edit}
+        items={
+          deletable === undefined || deletable(entry)
+            ? [
+                {
+                  key: 'delete',
+                  label: t('common.rowActions.delete'),
+                  danger: true,
+                  onSelect: () => {
+                    setConfirmation({
+                      title: t('common.rowActions.deleteTitle'),
+                      body: t('common.rowActions.deleteBody', { name: label }),
+                      confirmLabel: t('common.rowActions.delete'),
+                      destructive: true,
+                      action: () => remove(entry),
+                    });
+                  },
+                },
+              ]
+            : []
+        }
+      />
     );
   };
   return allowed
