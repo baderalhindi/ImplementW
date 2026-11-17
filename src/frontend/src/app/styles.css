@@ -7602,3 +7602,36 @@ tr[data-flagged='true'] {
   font-size: 1.1rem;
   line-height: 1;
 }
+
+/*
+ * A table wider than its box scrolls inside it; the row actions column stays pinned to the box's end edge, so Edit and ⋯ are always in
+ * view. The pinned cells take the row's background (hover included) so the scrolled columns pass under them.
+ */
+.table:has(td:last-child > .row-action-group) :is(thead th, tbody td):last-child {
+  position: sticky;
+  inset-inline-end: 0;
+  z-index: 1;
+  background: var(--color-background);
+  box-shadow: -1px 0 0 var(--color-border-subtle);
+}
+
+:where(:root[dir='rtl'])
+  .table:has(td:last-child > .row-action-group)
+  :is(thead th, tbody td):last-child {
+  box-shadow: 1px 0 0 var(--color-border-subtle);
+}
+
+.table:has(td:last-child > .row-action-group) thead th:last-child {
+  background: var(--color-surface);
+}
+
+.table:has(td:last-child > .row-action-group) tbody tr:hover > td:last-child {
+  background: var(--color-canvas);
+}
+
+/* An open menu sits above the next rows' pinned cells. */
+.table:has(td:last-child > .row-action-group)
+  tbody
+  td:last-child:has(.popover__menu:not([hidden])) {
+  z-index: 3;
+}
