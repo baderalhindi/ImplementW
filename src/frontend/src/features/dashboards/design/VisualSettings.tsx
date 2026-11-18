@@ -32,6 +32,8 @@ export function VisualSettings({
   const { t } = useI18n();
   const id = useId();
   const max = MAX_MEASURES[visual.visualType];
+  // A section shows the dashboard's own figures: only its titles and size are the designer's.
+  const isSection = visual.visualType === 'SECTION';
   const groupings = groupBysFor(visual.visualType);
   // A change of values or grouping renames the visual while its titles are still the automatic ones.
   const change = (next: Visual) => {
@@ -81,85 +83,94 @@ export function VisualSettings({
           }}
         />
       </div>
-      <div className="field">
-        <label className="field__label" htmlFor={`${id}-type`}>
-          {t('dashboards.designer.typeLabel')}
-        </label>
-        <select
-          id={`${id}-type`}
-          className="field__input"
-          value={visual.visualType}
-          onChange={(event) => {
-            change(withType(visual, event.target.value as VisualType));
-          }}
-        >
-          {VISUAL_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {t(`dashboards.designer.type.${type}`)}
-            </option>
-          ))}
-        </select>
-      </div>
-      <fieldset className="field field--group" aria-describedby={`${id}-measures-hint`}>
-        <legend className="field__label">{t('dashboards.designer.measuresLabel')}</legend>
-        <p id={`${id}-measures-hint`} className="field__hint">
-          {t(max === 1 ? 'dashboards.designer.measuresOne' : 'dashboards.designer.measuresHint', {
-            count: max,
-          })}
-        </p>
-        <div className="field__options">
-          {measuresFor(visual.visualType).map((measure) => {
-            const checked = visual.measures.includes(measure);
-            return (
-              <label key={measure} className="field__option">
-                {max === 1 ? (
-                  <input
-                    type="radio"
-                    name={`${id}-measure`}
-                    checked={checked}
-                    onChange={() => {
-                      change({ ...visual, measures: [measure] });
-                    }}
-                  />
-                ) : (
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={
-                      (!checked && visual.measures.length >= max) ||
-                      (checked && visual.measures.length === 1)
-                    }
-                    onChange={(event) => {
-                      toggle(measure, event.target.checked);
-                    }}
-                  />
-                )}
-                {t(`dashboards.designer.measure.${measure}`)}
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
-      <div className="field">
-        <label className="field__label" htmlFor={`${id}-group`}>
-          {t('dashboards.designer.groupByLabel')}
-        </label>
-        <select
-          id={`${id}-group`}
-          className="field__input"
-          value={visual.groupBy}
-          disabled={groupings.length === 1}
-          onChange={(event) => {
-            change({ ...visual, groupBy: event.target.value as GroupBy });
-          }}
-        >
-          {groupings.map((groupBy) => (
-            <option key={groupBy} value={groupBy}>
-              {t(`dashboards.designer.groupBy.${groupBy}`)}
-            </option>
-          ))}
-        </select>
-      </div>
+      {isSection ? (
+        <p className="designer__hint">{t('dashboards.designer.sectionSettings')}</p>
+      ) : (
+        <>
+          <div className="field">
+            <label className="field__label" htmlFor={`${id}-type`}>
+              {t('dashboards.designer.typeLabel')}
+            </label>
+            <select
+              id={`${id}-type`}
+              className="field__input"
+              value={visual.visualType}
+              onChange={(event) => {
+                change(withType(visual, event.target.value as VisualType));
+              }}
+            >
+              {VISUAL_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {t(`dashboards.designer.type.${type}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <fieldset className="field field--group" aria-describedby={`${id}-measures-hint`}>
+            <legend className="field__label">{t('dashboards.designer.measuresLabel')}</legend>
+            <p id={`${id}-measures-hint`} className="field__hint">
+              {t(
+                max === 1 ? 'dashboards.designer.measuresOne' : 'dashboards.designer.measuresHint',
+                {
+                  count: max,
+                },
+              )}
+            </p>
+            <div className="field__options">
+              {measuresFor(visual.visualType).map((measure) => {
+                const checked = visual.measures.includes(measure);
+                return (
+                  <label key={measure} className="field__option">
+                    {max === 1 ? (
+                      <input
+                        type="radio"
+                        name={`${id}-measure`}
+                        checked={checked}
+                        onChange={() => {
+                          change({ ...visual, measures: [measure] });
+                        }}
+                      />
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={
+                          (!checked && visual.measures.length >= max) ||
+                          (checked && visual.measures.length === 1)
+                        }
+                        onChange={(event) => {
+                          toggle(measure, event.target.checked);
+                        }}
+                      />
+                    )}
+                    {t(`dashboards.designer.measure.${measure}`)}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div className="field">
+            <label className="field__label" htmlFor={`${id}-group`}>
+              {t('dashboards.designer.groupByLabel')}
+            </label>
+            <select
+              id={`${id}-group`}
+              className="field__input"
+              value={visual.groupBy}
+              disabled={groupings.length === 1}
+              onChange={(event) => {
+                change({ ...visual, groupBy: event.target.value as GroupBy });
+              }}
+            >
+              {groupings.map((groupBy) => (
+                <option key={groupBy} value={groupBy}>
+                  {t(`dashboards.designer.groupBy.${groupBy}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
+      )}
       <div className="designer__size">
         <div className="field">
           <label className="field__label" htmlFor={`${id}-width`}>
@@ -201,9 +212,11 @@ export function VisualSettings({
         </div>
       </div>
       <div className="form__actions">
-        <button type="button" className="button" onClick={onDuplicate}>
-          {t('dashboards.designer.duplicate')}
-        </button>
+        {!isSection && (
+          <button type="button" className="button" onClick={onDuplicate}>
+            {t('dashboards.designer.duplicate')}
+          </button>
+        )}
         <button type="button" className="button button--danger" onClick={onRemove}>
           {t('dashboards.designer.remove')}
         </button>

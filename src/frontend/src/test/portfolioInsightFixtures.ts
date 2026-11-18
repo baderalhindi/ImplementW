@@ -181,7 +181,8 @@ function visual(
 
 /**
  * The standard design of the Portfolio dashboard (PortfolioDesignService.StandardDesign) with the figures the API would calculate from these
- * insights: the headline cards from `headline`, the two portfolio charts from `byPortfolio`; none without the summary permission.
+ * insights: the headline cards from `headline`, the portfolio charts from `byPortfolio`, the status, stage and on-plan charts from theirs; a
+ * section carries no figures of its own.
  */
 export function standardDesignOf(insights: PortfolioInsights): DesignView {
   const headline = insights.headline;
@@ -263,6 +264,81 @@ export function standardDesignOf(insights: PortfolioInsights): DesignView {
         byPortfolio,
         portfolioKeys,
       ),
+      visual(
+        'Projects by status',
+        'BAR',
+        ['PROJECTS'],
+        'STATUS',
+        [0, 9, 6, 5],
+        insights.stages?.map((stage) => counted(stage.projects)) ?? null,
+        insights.stages?.map((stage) => stage.status) ?? [],
+      ),
+      visual(
+        'Projects by stage',
+        'BAR',
+        ['PROJECTS'],
+        'STAGE',
+        [6, 9, 6, 5],
+        insights.byCurrentStage
+          ?.filter((stage) => stage.projects > 0)
+          .map((stage) => counted(stage.projects)) ?? null,
+        insights.byCurrentStage
+          ?.filter((stage) => stage.projects > 0)
+          .map((stage) => stage.stageCode) ?? [],
+      ),
+      visual(
+        'On-plan indicator',
+        'DONUT',
+        ['PROJECTS'],
+        'ON_PLAN',
+        [0, 14, 6, 5],
+        insights.onPlan === null
+          ? null
+          : [
+              insights.onPlan.onTrack,
+              insights.onPlan.late,
+              insights.onPlan.stalled,
+              insights.onPlan.notMeasured,
+            ].map(counted),
+        ['ON_TRACK', 'LATE', 'STALLED', null],
+      ),
+      ...(
+        [
+          ['Update completion by entity', 'ENTITY_COMPLETION', [6, 14, 6, 5]],
+          ['By portfolio', 'PORTFOLIO_TABLE', [0, 19, 12, 6]],
+          ['By initiative', 'INITIATIVE_TABLE', [0, 25, 12, 6]],
+          ['By sector', 'SECTOR_TABLE', [0, 31, 12, 8]],
+          ['Projects by status', 'STATUS_TABLE', [0, 39, 6, 5]],
+          ['Projects by stage', 'CURRENT_STAGE_TABLE', [6, 39, 6, 5]],
+          ['On-plan indicator', 'ON_PLAN_COUNTS', [0, 44, 6, 4]],
+          ['Why projects need follow-up', 'FOLLOW_UP_REASONS', [6, 44, 6, 4]],
+          ['Top 10 to follow up', 'TOP_FOLLOW_UP', [0, 48, 12, 7]],
+          ['Projects by location', 'PROJECT_LOCATIONS', [0, 55, 12, 7]],
+          ['Dashboard widgets', 'DASHBOARD_WIDGETS', [0, 62, 12, 17]],
+          ['Update completion by entity (table)', 'ENTITY_COMPLETION_TABLE', [0, 79, 12, 8]],
+        ] as const
+      ).map(([en, section, place]) => ({
+        ...visual(en, 'SECTION', [], 'NONE', [...place], []),
+        section,
+      })),
     ],
+  };
+}
+
+/** A group's figures where the only measure is its count of projects. */
+function counted(projects: number): Figures {
+  return {
+    projects,
+    measured: 0,
+    valueEntered: 0,
+    onPlan: null,
+    PROJECTS: projects,
+    IN_PROGRESS: null,
+    VALUE_SAR: null,
+    AVERAGE_PLANNED: null,
+    AVERAGE_ACTUAL: null,
+    GAP_POINTS: null,
+    NEEDING_FOLLOW_UP: null,
+    OVERDUE_ACTIONS: null,
   };
 }

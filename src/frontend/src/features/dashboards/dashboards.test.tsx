@@ -706,7 +706,9 @@ describe('ADR-019: personal choices made through the API still shape the governe
 
     await widgetRegion('Current health');
     expect(
-      [...document.querySelectorAll('.widget')].map((region) => region.getAttribute('data-widget')),
+      [...document.querySelectorAll('.widget[data-widget]')].map((region) =>
+        region.getAttribute('data-widget'),
+      ),
     ).toEqual(['SCHEDULE_HEALTH', 'CURRENT_HEALTH']);
   });
 });

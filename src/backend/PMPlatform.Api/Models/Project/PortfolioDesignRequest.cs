@@ -50,7 +50,8 @@ public sealed record PortfolioVisualRequest(
     short? LayoutColumn,
     short? LayoutRow,
     short? LayoutWidth,
-    short? LayoutHeight)
+    short? LayoutHeight,
+    PortfolioSection? Section = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -61,14 +62,14 @@ public sealed record PortfolioVisualRequest(
         Require(LayoutRow, $"{at}.layoutRow", errors);
         Require(LayoutWidth, $"{at}.layoutWidth", errors);
         Require(LayoutHeight, $"{at}.layoutHeight", errors);
-        if (Measures is null)
+        if (Measures is null && Section is null)
         {
             errors.Add(new FieldError($"{at}.measures", FieldError.Required));
         }
     }
 
     internal PortfolioVisualInput ToInput() =>
-        new(Title!.ToLabel(), VisualType!.Value, Measures!, GroupBy!.Value, LayoutColumn!.Value, LayoutRow!.Value, LayoutWidth!.Value, LayoutHeight!.Value);
+        new(Title!.ToLabel(), VisualType!.Value, Measures ?? [], GroupBy!.Value, LayoutColumn!.Value, LayoutRow!.Value, LayoutWidth!.Value, LayoutHeight!.Value, Section);
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct

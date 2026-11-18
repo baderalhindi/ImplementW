@@ -16,6 +16,7 @@ import {
   PortfolioFilterBar,
 } from './components/PortfolioFilterBar.tsx';
 import { ProjectLocations } from './components/ProjectLocations.tsx';
+import { DesignedVisuals } from './design/DesignedVisuals.tsx';
 import { PortfolioInsightsSection } from './insights/PortfolioInsightsSection.tsx';
 import { emptyPortfolioReason, hasNoData } from './presentation.ts';
 import { DASHBOARD_DESIGNER_PATH } from './paths.ts';
@@ -127,6 +128,8 @@ export function HostedDashboard({
     setOptions(optionsOf(view.data));
   }
 
+  // Review round 8, point 14 keeps the Executive's own layout; everyone else's Portfolio Dashboard is the design.
+  const designed = entry.code === 'PORTFOLIO' && !executive;
   const filterRefused =
     view.error instanceof ApiError && view.error.code === 'DASHBOARD_FILTER_VALUE_UNAUTHORIZED';
 
@@ -155,12 +158,11 @@ export function HostedDashboard({
           )
         }
       />
-      {entry.code === 'PORTFOLIO' && (
+      {entry.code === 'PORTFOLIO' && executive && (
         <PortfolioInsightsSection
           filters={filters}
           emptySaidElsewhere={view.data !== undefined && hasNoData(view.data)}
           onClearFilters={onClearFilters}
-          executive={executive}
         />
       )}
       {view.data === undefined ? (
@@ -173,6 +175,22 @@ export function HostedDashboard({
             onRetry={filterRefused ? onClearFilters : view.reload}
           />
         )
+      ) : designed ? (
+        // The whole Portfolio Dashboard is the Portfolio Manager's design (17 and 18 Nov 2026): cards, charts, tables, map and widgets.
+        <DesignedVisuals
+          filters={filters}
+          view={view.data}
+          onClearFilters={onClearFilters}
+          map={{
+            selectedRegion: regionItemId,
+            onSelectRegion: (region) => {
+              onFilterChange('regionItemId', region);
+            },
+            onFilterCity: (city) => {
+              onFilterChange('cityItemId', city);
+            },
+          }}
+        />
       ) : hasNoData(view.data) ? (
         <EmptyState
           title={t('dashboards.noData')}

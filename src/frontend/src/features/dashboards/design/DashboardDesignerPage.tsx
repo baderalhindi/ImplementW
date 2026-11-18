@@ -14,6 +14,7 @@ import {
   ConfirmDialog,
   type Confirmation,
 } from '@/features/identity-access/components/ConfirmDialog.tsx';
+import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { PageHeader } from '@/shared/ui/Layout.tsx';
 import { type Notice, PageNotice } from '@/shared/ui/PageNotice.tsx';
@@ -21,11 +22,32 @@ import { ErrorState, FormAlert, LoadingState } from '@/shared/ui/States.tsx';
 
 import { PORTFOLIO_DASHBOARD_PATH } from '../paths.ts';
 import { dashboardProblemMessage } from '../problems.ts';
-import { designApi, type Visual, type VisualResult, type VisualType } from './designApi.ts';
+import { dashboardsApi, type PortfolioFilters } from '../api/dashboardsApi.ts';
+import { usePortfolioInsights, useShowsCompletion } from '../insights/insightSections.ts';
+import {
+  designApi,
+  type Section,
+  type Visual,
+  type VisualResult,
+  type VisualType,
+} from './designApi.ts';
+import { SectionBody } from './SectionBody.tsx';
+import { sectionShown, type SectionSources } from './sections.ts';
 import { VisualBody } from './VisualBody.tsx';
 import { VisualIcon } from './VisualIcon.tsx';
 import { VisualSettings } from './VisualSettings.tsx';
-import { COLUMNS, fits, gridPlace, newVisual, rowsOf, VISUAL_TYPES } from './visuals.ts';
+import {
+  COLUMNS,
+  gridPlace,
+  newSection,
+  newVisual,
+  placeWith,
+  rowsOf,
+  SECTIONS,
+  VISUAL_TYPES,
+} from './visuals.ts';
+
+const NO_FILTERS: PortfolioFilters = {};
 
 /** Rows of empty grid under the lowest visual, so a visual can be dragged below the others. */
 const SPARE_ROWS = 4;
@@ -40,6 +62,8 @@ interface Drag {
   startX: number;
   startY: number;
   start: Visual;
+  /** The whole design when the drag began: each step is placed on it, so visuals pushed aside come back when the pointer moves on. */
+  design: Visual[];
 }
 
 function withoutFigures(visual: VisualResult): Visual {
@@ -52,6 +76,7 @@ function withoutFigures(visual: VisualResult): Visual {
     layoutRow: visual.layoutRow,
     layoutWidth: visual.layoutWidth,
     layoutHeight: visual.layoutHeight,
+    ...(visual.section === undefined || visual.section === null ? {} : { section: visual.section }),
   };
 }
 
@@ -80,6 +105,18 @@ export function DashboardDesignerPage(): ReactElement {
   const [placeProblem, setPlaceProblem] = useState<string | null>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
+  // A section is previewed from what the dashboard reads, unfiltered: the insights and the dashboard's view.
+  const insights = usePortfolioInsights(NO_FILTERS);
+  const view = useApiResource(
+    useCallback((signal: AbortSignal) => dashboardsApi.get('PORTFOLIO', {}, signal), []),
+  );
+  const showsCompletion = useShowsCompletion();
+  const sources: SectionSources = {
+    insights: insights.data,
+    view: view.data,
+    filters: NO_FILTERS,
+    showsCompletion,
+  };
 
   const load = useCallback(() => {
     designApi.get({}).then(
@@ -141,19 +178,32 @@ export function DashboardDesignerPage(): ReactElement {
   const dirty = !sameDesign(visuals, saved);
   const current = selected === null ? undefined : visuals[selected];
 
-  /** Puts `next` at `index` when it fits the grid and no other visual; says why not otherwise. */
-  const place = (index: number, next: Visual): boolean => {
-    if (!fits(next, visuals, index)) {
-      setPlaceProblem(t('dashboards.designer.noRoom'));
-      return false;
-    }
+  /** Puts `next` at `index`: it takes its place, and the visuals it lands on move down out of its way. */
+  const place = (index: number, next: Visual) => {
     setPlaceProblem(null);
-    setVisuals((all) => all.map((visual, at) => (at === index ? next : visual)));
-    return true;
+    setVisuals((all) =>
+      placeWith(
+        all.map((visual, at) => (at === index ? next : visual)),
+        index,
+        next,
+      ),
+    );
   };
 
   const add = (type: VisualType) => {
     const visual = newVisual(type, visuals);
+    if (visual === null) {
+      setPlaceProblem(t('dashboards.designer.noRoom'));
+      return;
+    }
+    setPlaceProblem(null);
+    setNotice(null);
+    setVisuals((all) => [...all, visual]);
+    setSelected(visuals.length);
+  };
+
+  const addSection = (section: Section) => {
+    const visual = newSection(section, visuals);
     if (visual === null) {
       setPlaceProblem(t('dashboards.designer.noRoom'));
       return;
@@ -177,10 +227,6 @@ export function DashboardDesignerPage(): ReactElement {
       return;
     }
     const placed = { ...source, layoutColumn: copy.layoutColumn, layoutRow: copy.layoutRow };
-    if (!fits(placed, visuals, null)) {
-      setPlaceProblem(t('dashboards.designer.noRoom'));
-      return;
-    }
     setVisuals((all) => [...all, placed]);
     setSelected(visuals.length);
   };
@@ -202,17 +248,27 @@ export function DashboardDesignerPage(): ReactElement {
     };
   };
 
-  const startDrag = (event: PointerEvent<HTMLButtonElement>, index: number, gesture: Gesture) => {
+  const startDrag = (event: PointerEvent<HTMLElement>, index: number, gesture: Gesture) => {
     const start = visuals[index];
-    if (start === undefined || event.button !== 0) {
+    // The bar drags the visual, but its edit button stays a button.
+    const onButton = (event.target as Element).closest('button:not(.designer__handle)') !== null;
+    if (start === undefined || event.button !== 0 || onButton) {
       return;
     }
+    event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = { gesture, index, startX: event.clientX, startY: event.clientY, start };
+    drag.current = {
+      gesture,
+      index,
+      startX: event.clientX,
+      startY: event.clientY,
+      start,
+      design: visuals,
+    };
     setSelected(index);
   };
 
-  const moveDrag = (event: PointerEvent<HTMLButtonElement>) => {
+  const moveDrag = (event: PointerEvent<HTMLElement>) => {
     const active = drag.current;
     if (active === null) {
       return;
@@ -231,7 +287,11 @@ export function DashboardDesignerPage(): ReactElement {
           }
         : {
             ...active.start,
-            layoutWidth: active.start.layoutWidth + columns,
+            // Sizing stops at the grid's end edge; it never moves the visual.
+            layoutWidth: Math.min(
+              COLUMNS - active.start.layoutColumn,
+              active.start.layoutWidth + columns,
+            ),
             layoutHeight: active.start.layoutHeight + rows,
           };
     const shown = visuals[active.index];
@@ -240,11 +300,10 @@ export function DashboardDesignerPage(): ReactElement {
       (shown.layoutColumn !== next.layoutColumn ||
         shown.layoutRow !== next.layoutRow ||
         shown.layoutWidth !== next.layoutWidth ||
-        shown.layoutHeight !== next.layoutHeight) &&
-      fits(next, visuals, active.index)
+        shown.layoutHeight !== next.layoutHeight)
     ) {
       setPlaceProblem(null);
-      setVisuals((all) => all.map((visual, at) => (at === active.index ? next : visual)));
+      setVisuals(placeWith(active.design, active.index, next));
     }
   };
 
@@ -287,7 +346,7 @@ export function DashboardDesignerPage(): ReactElement {
           }
         : {
             ...visual,
-            layoutWidth: visual.layoutWidth + across,
+            layoutWidth: Math.min(COLUMNS - visual.layoutColumn, visual.layoutWidth + across),
             layoutHeight: visual.layoutHeight + down,
           },
     );
@@ -403,18 +462,21 @@ export function DashboardDesignerPage(): ReactElement {
                   aria-label={title}
                   aria-current={isSelected ? 'true' : undefined}
                 >
-                  <div className="designer__visual-bar">
+                  {/* The whole bar drags the visual, as its handle does; the keyboard moves it on the handle. */}
+                  <div
+                    className="designer__visual-bar"
+                    onPointerDown={(event) => {
+                      startDrag(event, index, 'move');
+                    }}
+                    onPointerMove={moveDrag}
+                    onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
+                  >
                     <button
                       type="button"
                       className="designer__handle designer__handle--move"
                       aria-label={t('dashboards.designer.moveHandle', { title })}
                       title={t('dashboards.designer.moveHandle', { title })}
-                      onPointerDown={(event) => {
-                        startDrag(event, index, 'move');
-                      }}
-                      onPointerMove={moveDrag}
-                      onPointerUp={endDrag}
-                      onPointerCancel={endDrag}
                       onClick={() => {
                         setSelected(index);
                       }}
@@ -440,8 +502,20 @@ export function DashboardDesignerPage(): ReactElement {
                       </svg>
                     </button>
                   </div>
-                  <div className="visual__body">
-                    <VisualBody visual={figuresOf(index, visual)} />
+                  <div
+                    className={
+                      visual.section === undefined || visual.section === null
+                        ? 'visual__body'
+                        : 'visual__body visual__body--section'
+                    }
+                  >
+                    {visual.section === undefined || visual.section === null ? (
+                      <VisualBody visual={figuresOf(index, visual)} />
+                    ) : sectionShown(visual.section, sources) ? (
+                      <SectionBody section={visual.section} sources={sources} />
+                    ) : (
+                      <p className="state">{t('dashboards.noData')}</p>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -487,6 +561,32 @@ export function DashboardDesignerPage(): ReactElement {
                 </li>
               ))}
             </ul>
+            <h3 className="designer__subheading">{t('dashboards.designer.sections')}</h3>
+            <p className="designer__hint">{t('dashboards.designer.sectionsHint')}</p>
+            <ul className="designer__sections">
+              {SECTIONS.map((section) => {
+                const placed = visuals.some((visual) => visual.section === section);
+                return (
+                  <li key={section}>
+                    <button
+                      type="button"
+                      className="designer__section"
+                      disabled={placed}
+                      onClick={() => {
+                        addSection(section);
+                      }}
+                    >
+                      <span>{t(`dashboards.designer.section.${section}`)}</span>
+                      {placed && (
+                        <span className="designer__section-placed">
+                          {t('dashboards.designer.sectionPlaced')}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
             <p className="designer__hint">{t('dashboards.designer.keyboardHint')}</p>
           </section>
           <section className="designer__settings" aria-labelledby="designer-settings">
@@ -499,7 +599,9 @@ export function DashboardDesignerPage(): ReactElement {
               <VisualSettings
                 key={selected}
                 visual={current}
-                onChange={(next) => place(selected, next)}
+                onChange={(next) => {
+                  place(selected, next);
+                }}
                 onDuplicate={() => {
                   duplicate(selected);
                 }}

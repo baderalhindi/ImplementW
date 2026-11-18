@@ -10,6 +10,7 @@ import { followUpPath, registerPath } from '../drillLinks.ts';
 import {
   type GroupBy,
   type Measure,
+  type Section,
   type Visual,
   type VisualGroup,
   type VisualType,
@@ -67,6 +68,7 @@ export const MAX_MEASURES: Record<VisualType, number> = {
   DONUT: 1,
   TABLE: 3,
   GAUGE: 1,
+  SECTION: 0,
 };
 
 /** The size a new visual of a type takes, in columns of twelve and rows. */
@@ -78,15 +80,16 @@ const DEFAULT_SIZE: Record<VisualType, { width: number; height: number }> = {
   DONUT: { width: 4, height: 5 },
   TABLE: { width: 6, height: 5 },
   GAUGE: { width: 3, height: 4 },
+  SECTION: { width: 12, height: 6 },
 };
 
 export const COLUMNS = 12;
-export const MAX_HEIGHT = 12;
-export const MAX_VISUALS = 40;
+export const MAX_HEIGHT = 24;
+export const MAX_VISUALS = 60;
 
 /** The groupings a type takes. */
 export function groupBysFor(type: VisualType): readonly GroupBy[] {
-  if (type === 'CARD' || type === 'GAUGE') {
+  if (type === 'CARD' || type === 'GAUGE' || type === 'SECTION') {
     return ['NONE'];
   }
   return type === 'TABLE' ? GROUP_BYS : GROUP_BYS.filter((groupBy) => groupBy !== 'NONE');
@@ -103,6 +106,9 @@ const ADDITIVE_MEASURES: readonly Measure[] = [
 
 /** The measures a type may draw: a gauge a percentage, a pie or donut a total that adds up. */
 export function measuresFor(type: VisualType): readonly Measure[] {
+  if (type === 'SECTION') {
+    return [];
+  }
   if (type === 'GAUGE') {
     return PERCENT_MEASURES;
   }
@@ -289,7 +295,17 @@ export function groupText(
 ): string {
   const key = group.key;
   if (key === null) {
-    return groupBy === 'NONE' ? t('dashboards.designer.total') : t('dashboards.designer.notSet');
+    // The projects with no value, named as the dashboard always named them.
+    switch (groupBy) {
+      case 'NONE':
+        return t('dashboards.designer.total');
+      case 'STAGE':
+        return t('dashboards.insights.noCurrentStage');
+      case 'ON_PLAN':
+        return t('dashboards.insights.notMeasured');
+      default:
+        return t('dashboards.designer.notSet');
+    }
   }
   switch (groupBy) {
     case 'STATUS':
@@ -373,4 +389,123 @@ export function drillPath(
     case 'PROJECTS':
       return registerPath(filters, group);
   }
+}
+
+/** The dashboard's own sections, in the order the gallery offers them (18 Nov 2026). */
+export const SECTIONS: readonly Section[] = [
+  'PORTFOLIO_TABLE',
+  'INITIATIVE_TABLE',
+  'SECTOR_TABLE',
+  'STATUS_TABLE',
+  'CURRENT_STAGE_TABLE',
+  'ON_PLAN_COUNTS',
+  'FOLLOW_UP_REASONS',
+  'TOP_FOLLOW_UP',
+  'ENTITY_COMPLETION',
+  'PROJECT_LOCATIONS',
+  'DASHBOARD_WIDGETS',
+  'ENTITY_COMPLETION_TABLE',
+];
+
+/** A section at the first free place, titled as the dashboard names it; null when the grid has no room. */
+export function newSection(section: Section, visuals: Visual[]): Visual | null {
+  const { width, height } = DEFAULT_SIZE.SECTION;
+  const place = freePlace(visuals, width, height);
+  if (place === null) {
+    return null;
+  }
+  const title = (language: Language) =>
+    translate(language, `dashboards.designer.section.${section}`).replace(/[\u2068\u2069]/g, '');
+  return {
+    title: { ar: title('ar'), en: title('en') },
+    visualType: 'SECTION',
+    measures: [],
+    groupBy: 'NONE',
+    section,
+    layoutColumn: place.column,
+    layoutRow: place.row,
+    layoutWidth: width,
+    layoutHeight: height,
+  };
+}
+
+/** A box kept inside the grid: one to twelve columns starting within it, one to twelve rows from the top. */
+function clamped(box: Box): Box {
+  const width = Math.min(COLUMNS, Math.max(1, Math.round(box.layoutWidth)));
+  return {
+    layoutWidth: width,
+    layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, Math.round(box.layoutHeight))),
+    layoutColumn: Math.min(COLUMNS - width, Math.max(0, Math.round(box.layoutColumn))),
+    layoutRow: Math.max(0, Math.round(box.layoutRow)),
+  };
+}
+
+/**
+ * The design with the visual at `index` moved or sized to `box`, as a grid of tiles behaves: it takes its place, every visual it lands on moves
+ * down below it (and any those land on), then the others rise into the room left above them. The moved visual stays where it was put.
+ */
+export function placeWith<T extends Box>(visuals: T[], index: number, box: Box): T[] {
+  const next = visuals.map((visual, at) =>
+    at === index ? { ...visual, ...clamped(box) } : visual,
+  );
+  const order = next
+    .map((_, at) => at)
+    .filter((at) => at !== index)
+    .sort(
+      (a, b) =>
+        (next[a]?.layoutRow ?? 0) - (next[b]?.layoutRow ?? 0) ||
+        (next[a]?.layoutColumn ?? 0) - (next[b]?.layoutColumn ?? 0),
+    );
+  // Down: each in reading order, below whatever already settled that it lands on.
+  const settled = [index];
+  const landsOn = (box: Box) =>
+    settled
+      .map((other) => next[other])
+      .find((other) => other !== undefined && overlaps(box, other));
+  for (const at of order) {
+    let visual = next[at];
+    if (visual === undefined) {
+      continue;
+    }
+    for (let hit = landsOn(visual); hit !== undefined; hit = landsOn(visual)) {
+      visual = { ...visual, layoutRow: hit.layoutRow + hit.layoutHeight };
+    }
+    next[at] = visual;
+    settled.push(at);
+  }
+  // Up: each of the others, in reading order, as high as it goes without landing on another.
+  for (const at of order) {
+    let visual = next[at];
+    while (visual !== undefined && visual.layoutRow > 0) {
+      const higher = { ...visual, layoutRow: visual.layoutRow - 1 };
+      if (!next.every((other, o) => o === at || !overlaps(higher, other))) {
+        break;
+      }
+      visual = higher;
+    }
+    if (visual !== undefined) {
+      next[at] = visual;
+    }
+  }
+  return next;
+}
+
+/** The visuals risen into any room above them, in reading order: what the dashboard draws once it leaves out what the caller may not see. */
+export function compacted<T extends Box>(visuals: T[]): T[] {
+  const order = [...visuals].sort(
+    (a, b) => a.layoutRow - b.layoutRow || a.layoutColumn - b.layoutColumn,
+  );
+  const placed: T[] = [];
+  for (const visual of order) {
+    let risen = visual;
+    while (risen.layoutRow > 0) {
+      const higher = { ...risen, layoutRow: risen.layoutRow - 1 };
+      if (placed.some((other) => overlaps(higher, other))) {
+        break;
+      }
+      risen = higher;
+    }
+    placed.push(risen);
+  }
+  return placed;
 }

@@ -134,6 +134,7 @@ export function DashboardsPage(): ReactElement {
 
   const role = landingRole(session.user);
   const rendering = entry.isDefaultLanding && role !== null ? ROLE_LANDINGS[role] : undefined;
+  const executive = role === EXECUTIVE_ROLE && rendering !== undefined;
   const others = hostedEntries(entries);
   // A link with filters shows those; one without shows the filters this person last used here.
   const rememberedKey = storageKey(session.user.id, entry.code);
@@ -200,10 +201,11 @@ export function DashboardsPage(): ReactElement {
               filters={filters}
               onFilterChange={setFilter}
               onClearFilters={clearFilters}
-              executive={role === EXECUTIVE_ROLE && rendering !== undefined}
+              executive={executive}
             />
             {/* The 13 Nov 2026 review: the dashboard's cards come first; this table joins its tables below them. */}
-            {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && (
+            {/* Everyone else's table is a section of the Portfolio Manager's design (18 Nov 2026); the Executive's layout keeps it here. */}
+            {entry.code === 'PORTFOLIO' && session.user.userType !== 'EXTERNAL' && executive && (
               <EntityCompletionPanel />
             )}
           </CompletionPeriodProvider>

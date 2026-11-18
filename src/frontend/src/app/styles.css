@@ -8188,3 +8188,89 @@ tr[data-flagged='true'] {
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
+
+/*
+ * A dashboard section on the design's grid (18 Nov 2026): its frame carries the design's title, so the section's own heading and card border
+ * are not drawn twice; long tables scroll inside the frame.
+ */
+.visual__body--section > .insights__section > h2:first-child,
+.visual__body--section > .widget > .widget__header > .widget__title,
+.visual__body--section > .widget > .widget__title,
+.visual__body--section > .completion > .section__header > h2 {
+  display: none;
+}
+
+.visual__body--section > .insights__section,
+.visual__body--section > .widget {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The designer drags by a visual's whole bar; inside a visual nothing is clickable, so a click never leaves the designer. */
+.designer__visual-bar {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.designer__visual-bar:active {
+  cursor: grabbing;
+}
+
+.designer__visual .visual__body :is(a, button, input, select, summary, [role='button']) {
+  pointer-events: none;
+}
+
+.designer__subheading {
+  margin: var(--space-2) 0 0;
+  font-size: 0.9375rem;
+}
+
+.designer__sections {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.designer__section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-block-size: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+.designer__section:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-tint);
+}
+
+.designer__section:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.designer__section:disabled {
+  cursor: default;
+  color: var(--color-text-muted);
+}
+
+.designer__section-placed {
+  flex: none;
+  font-size: 0.75rem;
+}

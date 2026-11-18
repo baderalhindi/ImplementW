@@ -6,6 +6,7 @@ import {
 } from '@/features/dashboards/api/types.ts';
 
 import { type MockApi, type MockReply, page } from './mockApi.ts';
+import { NO_SECTIONS, standardDesignOf } from './portfolioInsightFixtures.ts';
 
 // FG-01's API (TASK-069 dashboards.md §5) over fixtures. The catalogue follows the seeded audience of the three
 // dashboards (`seed-master-data.sql` §6) and the API's landing rule, so a role signs in to what it would really get.
@@ -158,24 +159,30 @@ function isView(value: DashboardView | MockReply): value is DashboardView {
 
 /** GET /dashboards and GET /dashboards/{code}, answering every dashboard by default. */
 export function withDashboards(api: MockApi, state: DashboardState = {}): MockApi {
-  return api
-    .on('GET', /^\/entity-completion-rates$/, { body: { ...page([]), averagePercent: null } })
-    .on('GET', /^\/entity-completion-rates\/own$/, {
-      body: { issued: 0, accepted: 0, completionPercent: null, averagePercent: null },
-    })
-    .on('GET', /^\/dashboards$/, { body: page(state.catalogue ?? catalogueFor(['R02'])) })
-    .on('GET', /^\/dashboards\/(PORTFOLIO|PROJECT|GOVERNANCE)$/, (request) => {
-      const code = request.path.split('/').at(-1) as DashboardCode;
-      const reply = state.views?.[code] ?? dashboardView(code);
-      if (!isView(reply)) {
-        return reply;
-      }
-      return {
-        body: {
-          ...reply,
-          projectId: request.query.get('projectId') ?? reply.projectId,
-          departmentId: request.query.get('departmentId') ?? reply.departmentId,
-        },
-      };
-    });
+  return (
+    api
+      // The Portfolio Dashboard is its design (18 Nov 2026): by default no insight section answers and the standard design draws the governed
+      // widgets and the map from the view. A test of the insights mocks them after this.
+      .on('GET', /^\/portfolio-insights$/, { body: NO_SECTIONS })
+      .on('GET', /^\/portfolio-insights\/design$/, { body: standardDesignOf(NO_SECTIONS) })
+      .on('GET', /^\/entity-completion-rates$/, { body: { ...page([]), averagePercent: null } })
+      .on('GET', /^\/entity-completion-rates\/own$/, {
+        body: { issued: 0, accepted: 0, completionPercent: null, averagePercent: null },
+      })
+      .on('GET', /^\/dashboards$/, { body: page(state.catalogue ?? catalogueFor(['R02'])) })
+      .on('GET', /^\/dashboards\/(PORTFOLIO|PROJECT|GOVERNANCE)$/, (request) => {
+        const code = request.path.split('/').at(-1) as DashboardCode;
+        const reply = state.views?.[code] ?? dashboardView(code);
+        if (!isView(reply)) {
+          return reply;
+        }
+        return {
+          body: {
+            ...reply,
+            projectId: request.query.get('projectId') ?? reply.projectId,
+            departmentId: request.query.get('departmentId') ?? reply.departmentId,
+          },
+        };
+      })
+  );
 }

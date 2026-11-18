@@ -90,6 +90,23 @@ public sealed class PortfolioDesignRulesTests
         Assert.Equal(new FieldIssue("visuals[0].title", FieldIssue.OutsideRange), Issue(titled));
     }
 
+    private static PortfolioVisualInput Placed(PortfolioSection section, short row, params PortfolioMeasure[] measures) =>
+        new(new BilingualLabel("حسب المحفظة", "By portfolio"), PortfolioVisualType.Section, measures, PortfolioGroupBy.None, 0, row, 12, 4, section);
+
+    /// <summary>18 Nov 2026: the whole dashboard is designed; each of its own sections is placed at most once and carries no measure.</summary>
+    [Fact]
+    public void ASectionIsPlacedOnceWithNoMeasure()
+    {
+        Assert.Null(Issue(Placed(PortfolioSection.PortfolioTable, 0), Placed(PortfolioSection.TopFollowUp, 4)));
+        Assert.Equal(new FieldIssue("visuals[1].section", FieldIssue.Duplicate), Issue(Placed(PortfolioSection.PortfolioTable, 0), Placed(PortfolioSection.PortfolioTable, 4)));
+        Assert.Equal("visuals[0].section", Issue(Placed(PortfolioSection.PortfolioTable, 0, PortfolioMeasure.Projects))?.Field);
+        Assert.Equal("visuals[0].section", Issue(Visual() with { Section = PortfolioSection.PortfolioTable })?.Field);
+    }
+
+    [Fact]
+    public void TheStandardDesignPlacesEverySection() =>
+        Assert.Equal(Enum.GetValues<PortfolioSection>(), PortfolioDesignService.StandardDesign.Select(v => v.Section).OfType<PortfolioSection>().Order());
+
     /// <summary>A grouping is read under the insights permission that shows that breakdown today, so the designer shows no one more than before.</summary>
     [Theory]
     [InlineData(PortfolioGroupBy.None, PermissionCatalogue.PortfolioSummaryView)]

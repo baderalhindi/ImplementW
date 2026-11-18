@@ -1,10 +1,4 @@
-import {
-  type CSSProperties,
-  type ReactElement,
-  type ReactNode,
-  useCallback,
-  useState,
-} from 'react';
+import { type CSSProperties, type ReactElement, type ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
@@ -14,7 +8,6 @@ import { languageTag } from '@/features/projects/presentation.ts';
 import { sarWhole } from '@/shared/format/money.ts';
 import { NO_STAGE, NOT_MEASURED } from '@/features/projects/register/projectFilterValues.ts';
 import { useProjectLookups } from '@/features/projects/useProjectLookups.ts';
-import { useApiResource } from '@/shared/api/useApiResource.ts';
 import { useI18n } from '@/shared/i18n/i18n.ts';
 import { TableContainer } from '@/shared/ui/Layout.tsx';
 import { SelectAllHeader, SelectRowCell } from '@/shared/ui/rowSelection.tsx';
@@ -38,7 +31,12 @@ import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 import { NoteList } from '@/shared/ui/NoteList.tsx';
 import { useRowSelection } from '@/shared/ui/useRowSelection.ts';
 
-import { dashboardsApi, type PortfolioFilters } from '../api/dashboardsApi.ts';
+import { type PortfolioFilters } from '../api/dashboardsApi.ts';
+import {
+  type InsightSectionCode,
+  projectCountOf,
+  usePortfolioInsights,
+} from './insightSections.ts';
 import {
   type PortfolioBreakdown,
   type PortfolioBreakdownRow,
@@ -56,7 +54,6 @@ import { portfolioCardPath } from '../paths.ts';
 import { emptyPortfolioReason } from '../presentation.ts';
 import { ExecutiveTop } from './ExecutiveSections.tsx';
 
-import { DesignedVisuals } from '../design/DesignedVisuals.tsx';
 import { Coverage, Percent } from './figures.tsx';
 
 type ItemName = (id: string | null) => string;
@@ -89,80 +86,25 @@ function CountLink({
 }
 
 /** How many projects the figures cover, or null when the caller may see no section that counts them. */
-function projectCountOf(insights: PortfolioInsights): number | null {
-  return (
-    insights.headline?.registeredProjects ??
-    insights.byPortfolio?.total.projects ??
-    insights.bySector?.total.projects ??
-    insights.stages?.reduce((sum, stage) => sum + stage.projects, 0) ??
-    null
-  );
-}
 
 /**
- * RPMO's figures on the Portfolio Dashboard (the 5 Nov 2026 review §3), reacting to its filters. The API decides what the caller sees: a
- * section it answers null is not shown. No project means "no data", never a row of zeros; a value not measured reads "not available".
+ * RPMO's figures on the Executive's dashboard (the 5 Nov 2026 review §3; review round 8, point 14: headline figures then top risks and decisions
+ * before any chart or table), reacting to its filters. Everyone else's Portfolio Dashboard is the Portfolio Manager's design (design/,
+ * 18 Nov 2026). The API decides what the caller sees: a section it answers null is not shown. No project means "no data", never a row of zeros.
  */
 export function PortfolioInsightsSection({
   filters,
   emptySaidElsewhere,
   onClearFilters,
-  executive = false,
 }: {
   filters: PortfolioFilters;
-  /** Review round 8, point 14: the Executive's one dashboard, headline figures then top risks and decisions before any chart or table. */
-  executive?: boolean;
   /** Clears the dashboard's filters: offered when they are why nothing shows (review round 8, point 09). */
   onClearFilters: () => void;
   /** The dashboard under this section already says there is no data. */
   emptySaidElsewhere: boolean;
 }): ReactElement | null {
   const { t } = useI18n();
-  const {
-    departmentId,
-    externalEntityId,
-    classificationItemId,
-    regionItemId,
-    cityItemId,
-    status,
-    priorityItemId,
-    strategicPortfolioItemId,
-    strategicInitiativeItemId,
-    period,
-  } = filters;
-  const insights = useApiResource(
-    useCallback(
-      (signal: AbortSignal) =>
-        dashboardsApi.insights(
-          {
-            departmentId,
-            externalEntityId,
-            classificationItemId,
-            regionItemId,
-            cityItemId,
-            status,
-            priorityItemId,
-            strategicPortfolioItemId,
-            strategicInitiativeItemId,
-            period,
-          },
-          signal,
-        ),
-      [
-        departmentId,
-        externalEntityId,
-        classificationItemId,
-        regionItemId,
-        cityItemId,
-        status,
-        priorityItemId,
-        strategicPortfolioItemId,
-        strategicInitiativeItemId,
-        period,
-      ],
-    ),
-    { keepWhileReloading: true },
-  );
+  const insights = usePortfolioInsights(filters);
 
   if (insights.data === undefined) {
     return insights.loading ? null : (
@@ -185,19 +127,15 @@ export function PortfolioInsightsSection({
   }
   const { followUpReasons, topFollowUp } = insights.data;
   const anything = count !== null || followUpReasons !== null || topFollowUp !== null;
-  return anything ? (
-    <Sections insights={insights.data} filters={filters} executive={executive} />
-  ) : null;
+  return anything ? <Sections insights={insights.data} filters={filters} /> : null;
 }
 
 function Sections({
   insights,
   filters,
-  executive,
 }: {
   insights: PortfolioInsights;
   filters: PortfolioFilters;
-  executive: boolean;
 }): ReactElement {
   const { t } = useI18n();
   const lookups = useProjectLookups();
@@ -216,15 +154,10 @@ function Sections({
 
   return (
     <div className="insights">
-      {executive ? (
-        <ExecutiveTop headline={headline} onPlan={onPlan} filters={filters} />
-      ) : (
-        // The headline cards and the portfolio charts are the Portfolio Manager's design (17 Nov 2026).
-        <DesignedVisuals filters={filters} />
-      )}
+      <ExecutiveTop headline={headline} onPlan={onPlan} filters={filters} />
       <InsightCharts
         filters={filters}
-        byPortfolio={executive ? byPortfolio : null}
+        byPortfolio={byPortfolio}
         stages={stages}
         byCurrentStage={byCurrentStage}
         onPlan={onPlan}
@@ -1237,4 +1170,83 @@ function InsightCharts({
       {showsCompletion && <EntityCompletionChart />}
     </section>
   );
+}
+
+/** One of the insights' sections as the design places it, drawn as the dashboard always drew it; check `insightBlockShown` first. */
+export function InsightBlock({
+  section,
+  insights,
+  filters,
+}: {
+  section: InsightSectionCode;
+  insights: PortfolioInsights;
+  filters: PortfolioFilters;
+}): ReactElement | null {
+  const { t } = useI18n();
+  const lookups = useProjectLookups();
+  const itemName: ItemName = (id) => lookups.itemLabel(id) ?? t('dashboards.insights.unclassified');
+  const { byPortfolio, byInitiative, bySector, stages, onPlan, followUpReasons, topFollowUp } =
+    insights;
+  const byCurrentStage = insights.byCurrentStage ?? null;
+  switch (section) {
+    case 'PORTFOLIO_TABLE':
+      return byPortfolio === null ? null : (
+        <InsightSection id="portfolio" title={t('dashboards.insights.byPortfolio')}>
+          <BreakdownTable
+            caption={t('dashboards.insights.byPortfolio')}
+            breakdown={byPortfolio}
+            dimension="portfolio"
+            filters={filters}
+            nameHeader={t('dashboards.insights.portfolio')}
+            itemName={itemName}
+          />
+        </InsightSection>
+      );
+    case 'INITIATIVE_TABLE':
+      return byInitiative === null ? null : (
+        <InsightSection id="initiative" title={t('dashboards.insights.byInitiative')}>
+          <BreakdownTable
+            caption={t('dashboards.insights.byInitiative')}
+            breakdown={byInitiative}
+            dimension="initiative"
+            filters={filters}
+            nameHeader={t('dashboards.insights.initiative')}
+            itemName={itemName}
+            grouped
+          />
+        </InsightSection>
+      );
+    case 'SECTOR_TABLE':
+      return bySector === null ? null : (
+        <InsightSection id="sector" title={t('dashboards.insights.bySector')}>
+          <BreakdownTable
+            caption={t('dashboards.insights.bySector')}
+            breakdown={bySector}
+            dimension="sector"
+            filters={filters}
+            nameHeader={t('dashboards.insights.sector')}
+            itemName={itemName}
+          />
+          <SectorSpend breakdown={bySector} itemName={itemName} filters={filters} />
+        </InsightSection>
+      );
+    case 'STATUS_TABLE':
+      return stages === null ? null : <Stages stages={stages} filters={filters} />;
+    case 'CURRENT_STAGE_TABLE':
+      return byCurrentStage === null ? null : (
+        <CurrentStages stages={byCurrentStage} filters={filters} />
+      );
+    case 'ON_PLAN_COUNTS':
+      return onPlan === null ? null : <OnPlanCounts onPlan={onPlan} filters={filters} />;
+    case 'FOLLOW_UP_REASONS':
+      return followUpReasons === null ? null : (
+        <Reasons reasons={followUpReasons} filters={filters} />
+      );
+    case 'TOP_FOLLOW_UP':
+      return topFollowUp === null ? null : (
+        <TopProjects projects={topFollowUp} itemName={itemName} />
+      );
+    case 'ENTITY_COMPLETION':
+      return <EntityCompletionChart />;
+  }
 }

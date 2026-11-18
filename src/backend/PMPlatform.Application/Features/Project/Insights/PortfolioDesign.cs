@@ -8,15 +8,18 @@ using PMPlatform.Domain.Project;
 
 namespace PMPlatform.Application.Features.Project.Insights;
 
-/// <summary>A visual as the designer sends it: a title in both languages, a type, one to three measures, a grouping and a place on the grid.</summary>
+/// <summary>
+/// A visual as the designer sends it: a title in both languages, a type, one to three measures, a grouping and a place on the grid; or, as a
+/// <see cref="PortfolioVisualType.Section"/>, one of the dashboard's own sections and no measure.
+/// </summary>
 public sealed record PortfolioVisualInput(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
-    short LayoutHeight);
+    short LayoutHeight, PortfolioSection? Section = null);
 
 /// <summary>The whole design, in reading order.</summary>
 public sealed record PortfolioDesignInput(IReadOnlyList<PortfolioVisualInput> Visuals)
 {
-    public const int MaxVisuals = 40;
+    public const int MaxVisuals = 60;
 }
 
 /// <summary>
@@ -29,9 +32,10 @@ public sealed record PortfolioVisualGroup(
     string? Key, BilingualLabel? Label, int Projects, int Measured, int ValueEntered, IReadOnlyList<decimal?> Values, OnPlanStatus? OnPlan);
 
 /// <summary>A visual with its figures; <see cref="Groups"/> is null when the caller holds no permission for its grouping, and the dashboard leaves it out.</summary>
+/// A section carries no groups of its own (an empty list): the dashboard draws it from the insights and the dashboard view, each under its own permission.
 public sealed record PortfolioVisualResult(
     BilingualLabel Title, PortfolioVisualType VisualType, IReadOnlyList<PortfolioMeasure> Measures, PortfolioGroupBy GroupBy, short LayoutColumn, short LayoutRow, short LayoutWidth,
-    short LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups);
+    short LayoutHeight, IReadOnlyList<PortfolioVisualGroup>? Groups, PortfolioSection? Section = null);
 
 /// <summary>The Portfolio dashboard's design with its figures. <see cref="IsStandard"/> is true while nobody has saved a design.</summary>
 public sealed record PortfolioDesignView(bool IsStandard, DateTimeOffset? UpdatedAt, IReadOnlyList<PortfolioVisualResult> Visuals);
@@ -72,7 +76,7 @@ internal sealed class PortfolioDesignService(
 {
     public const int MaxTitleLength = 100;
     private const int Columns = 12;
-    private const int MaxHeight = 12;
+    private const int MaxHeight = 24;
 
     /// <summary>The design before anyone changes it: the six headline cards and the two charts by portfolio, as the dashboard drew them.</summary>
     public static IReadOnlyList<PortfolioVisualInput> StandardDesign { get; } =
@@ -86,6 +90,21 @@ internal sealed class PortfolioDesignService(
         new(new BilingualLabel("المشاريع حسب المحفظة", "Projects by portfolio"), PortfolioVisualType.Bar, [PortfolioMeasure.Projects], PortfolioGroupBy.Portfolio, 0, 4, 6, 5),
         new(new BilingualLabel("المخطط والفعلي حسب المحفظة", "Planned and actual by portfolio"), PortfolioVisualType.Column,
             [PortfolioMeasure.AveragePlanned, PortfolioMeasure.AverageActual], PortfolioGroupBy.Portfolio, 6, 4, 6, 5),
+        new(new BilingualLabel("المشاريع حسب الحالة", "Projects by status"), PortfolioVisualType.Bar, [PortfolioMeasure.Projects], PortfolioGroupBy.Status, 0, 9, 6, 5),
+        new(new BilingualLabel("المشاريع حسب المرحلة", "Projects by stage"), PortfolioVisualType.Bar, [PortfolioMeasure.Projects], PortfolioGroupBy.Stage, 6, 9, 6, 5),
+        new(new BilingualLabel("مؤشر الالتزام بالخطة", "On-plan indicator"), PortfolioVisualType.Donut, [PortfolioMeasure.Projects], PortfolioGroupBy.OnPlan, 0, 14, 6, 5),
+        Section("نسبة إنجاز التحديثات حسب الجهة", "Update completion by entity", PortfolioSection.EntityCompletion, 6, 14, 6, 5),
+        Section("حسب المحفظة", "By portfolio", PortfolioSection.PortfolioTable, 0, 19, 12, 6),
+        Section("حسب المبادرة", "By initiative", PortfolioSection.InitiativeTable, 0, 25, 12, 6),
+        Section("حسب القطاع", "By sector", PortfolioSection.SectorTable, 0, 31, 12, 8),
+        Section("المشاريع حسب الحالة", "Projects by status", PortfolioSection.StatusTable, 0, 39, 6, 5),
+        Section("المشاريع حسب المرحلة", "Projects by stage", PortfolioSection.CurrentStageTable, 6, 39, 6, 5),
+        Section("مؤشر الالتزام بالخطة", "On-plan indicator", PortfolioSection.OnPlanCounts, 0, 44, 6, 4),
+        Section("أسباب حاجة المشاريع إلى المتابعة", "Why projects need follow-up", PortfolioSection.FollowUpReasons, 6, 44, 6, 4),
+        Section("أهم 10 مشاريع للمتابعة", "Top 10 to follow up", PortfolioSection.TopFollowUp, 0, 48, 12, 7),
+        Section("المشاريع حسب الموقع", "Projects by location", PortfolioSection.ProjectLocations, 0, 55, 12, 7),
+        Section("عناصر اللوحة", "Dashboard widgets", PortfolioSection.DashboardWidgets, 0, 62, 12, 17),
+        Section("نسبة إنجاز التحديثات حسب الجهة (جدول)", "Update completion by entity (table)", PortfolioSection.EntityCompletionTable, 0, 79, 12, 8),
     ];
 
     public async Task<PortfolioDesignView> GetAsync(Guid callerId, PortfolioInsightFilters filters, CancellationToken cancellationToken)
@@ -123,6 +142,7 @@ internal sealed class PortfolioDesignService(
                 TitleEn = v.Title.En.Trim(),
                 VisualType = v.VisualType,
                 Measures = [.. v.Measures.Select(Code)],
+                Section = v.Section,
                 GroupBy = v.GroupBy,
                 LayoutColumn = v.LayoutColumn,
                 LayoutRow = v.LayoutRow,
@@ -158,6 +178,7 @@ internal sealed class PortfolioDesignService(
         }
 
         HashSet<(int Column, int Row)> taken = [];
+        HashSet<PortfolioSection> sections = [];
         for (int index = 0; index < visuals.Count; index++)
         {
             PortfolioVisualInput v = visuals[index];
@@ -177,17 +198,23 @@ internal sealed class PortfolioDesignService(
                 return new FieldIssue($"{at}.visualType", FieldIssue.NotAllowed);
             }
 
-            if (v.Measures is not { Count: > 0 and <= 3 } measures || measures.Any(m => !Enum.IsDefined(m)))
+            if (v.VisualType == PortfolioVisualType.Section || v.Section is not null)
+            {
+                if (SectionIssue(v, sections) is { } sectionIssue)
+                {
+                    return new FieldIssue($"{at}.section", sectionIssue);
+                }
+            }
+            else if (v.Measures is not { Count: > 0 and <= 3 } measures || measures.Any(m => !Enum.IsDefined(m)))
             {
                 return new FieldIssue($"{at}.measures", v.Measures is null || v.Measures.Count == 0 ? FieldIssue.Required : FieldIssue.OutsideRange);
             }
 
-            if (measures.Distinct().Count() != measures.Count)
+            else if (v.Measures.Distinct().Count() != v.Measures.Count)
             {
                 return new FieldIssue($"{at}.measures", FieldIssue.Duplicate);
             }
-
-            if (ShapeIssue(v) is { } shape)
+            else if (ShapeIssue(v) is { } shape)
             {
                 return new FieldIssue($"{at}.{shape}", FieldIssue.NotAllowed);
             }
@@ -213,6 +240,15 @@ internal sealed class PortfolioDesignService(
     }
 
     /// <summary>
+    /// What is wrong with a section, or null: it names a section, once in the design, as a <see cref="PortfolioVisualType.Section"/>, with no measure or grouping.
+    /// </summary>
+    private static string? SectionIssue(PortfolioVisualInput v, HashSet<PortfolioSection> sections) =>
+        v.VisualType != PortfolioVisualType.Section || v.Section is not { } section || !Enum.IsDefined(section) ? FieldIssue.NotAllowed
+        : (v.Measures?.Count ?? 0) != 0 || v.GroupBy != PortfolioGroupBy.None ? FieldIssue.NotAllowed
+        : !sections.Add(section) ? FieldIssue.Duplicate
+        : null;
+
+    /// <summary>
     /// The field a visual's type does not allow, or null: a card and a gauge are not grouped, a chart is, a table either; a bar, pie, donut and gauge draw one
     /// measure, a card two (the second under the first), columns and a table three; a gauge draws a percentage, a pie and a donut a total
     /// that adds up (a share of an average means nothing).
@@ -230,6 +266,7 @@ internal sealed class PortfolioDesignService(
             PortfolioVisualType.Bar or PortfolioVisualType.Pie or PortfolioVisualType.Donut or PortfolioVisualType.Gauge => 1,
             PortfolioVisualType.Card => 2,
             PortfolioVisualType.Column or PortfolioVisualType.Table => 3,
+            PortfolioVisualType.Section => 0,
             _ => 0,
         };
         bool percentOnly = v.VisualType == PortfolioVisualType.Gauge;
@@ -253,7 +290,7 @@ internal sealed class PortfolioDesignService(
 
         // Each permission's projects are read once, however many visuals use it.
         Dictionary<string, IReadOnlyList<PortfolioProjectRow>?> rowsByPermission = new(StringComparer.Ordinal);
-        foreach (string permission in visuals.Select(v => PermissionOf(v.GroupBy)).Distinct(StringComparer.Ordinal))
+        foreach (string permission in visuals.Where(v => v.Section is null).Select(v => PermissionOf(v.GroupBy)).Distinct(StringComparer.Ordinal))
         {
             RecordScope scope = await engine.GetRecordScopeAsync(callerId, permission, cancellationToken).ConfigureAwait(false);
             rowsByPermission[permission] = scope.IsEmpty ? null : await projectRows.ListAsync(scope, filters, cancellationToken).ConfigureAwait(false);
@@ -261,6 +298,12 @@ internal sealed class PortfolioDesignService(
 
         return new PortfolioDesignView(isStandard, updatedAt, [.. visuals.Select(v =>
         {
+            if (v.Section is { } section)
+            {
+                return new PortfolioVisualResult(
+                    v.Title, v.VisualType, [], PortfolioGroupBy.None, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, [], section);
+            }
+
             IReadOnlyList<PortfolioProjectRow>? rows = rowsByPermission[PermissionOf(v.GroupBy)];
             return new PortfolioVisualResult(
                 v.Title, v.VisualType, v.Measures, v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight,
@@ -332,7 +375,10 @@ internal sealed class PortfolioDesignService(
     };
 
     private static PortfolioVisualInput InputOf(PortfolioVisual v) =>
-        new(new BilingualLabel(v.TitleAr, v.TitleEn), v.VisualType, [.. v.Measures.Select(ParseMeasure)], v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight);
+        new(new BilingualLabel(v.TitleAr, v.TitleEn), v.VisualType, [.. v.Measures.Select(ParseMeasure)], v.GroupBy, v.LayoutColumn, v.LayoutRow, v.LayoutWidth, v.LayoutHeight, v.Section);
+
+    private static PortfolioVisualInput Section(string ar, string en, PortfolioSection section, short column, short row, short width, short height) =>
+        new(new BilingualLabel(ar, en), PortfolioVisualType.Section, [], PortfolioGroupBy.None, column, row, width, height, section);
 
     private static PortfolioVisualInput Card(string ar, string en, short column, short row, IReadOnlyList<PortfolioMeasure> measures) =>
         new(new BilingualLabel(ar, en), PortfolioVisualType.Card, measures, PortfolioGroupBy.None, column, row, 4, 2);

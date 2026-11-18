@@ -9476,6 +9476,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("measures");
 
+                    b.Property<string>("Section")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("section");
+
                     b.Property<short>("SortOrder")
                         .HasColumnType("smallint")
                         .HasColumnName("sort_order");
@@ -9509,6 +9514,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_portfolio_visual");
 
+                    b.HasIndex("Section")
+                        .IsUnique()
+                        .HasDatabaseName("ix_portfolio_visual_section")
+                        .HasFilter("section IS NOT NULL");
+
                     b.HasIndex("SortOrder")
                         .IsUnique()
                         .HasDatabaseName("ix_portfolio_visual_sort_order");
@@ -9517,13 +9527,15 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_portfolio_visual_group_by", "\"group_by\" IN ('NONE', 'PORTFOLIO', 'INITIATIVE', 'SECTOR', 'DEPARTMENT', 'ENTITY', 'STATUS', 'STAGE', 'ON_PLAN', 'REGION', 'CITY', 'PRIORITY')");
 
-                            t.HasCheckConstraint("ck_portfolio_visual_layout", "layout_column BETWEEN 0 AND 11 AND layout_width BETWEEN 1 AND 12 AND layout_column + layout_width <= 12 AND layout_row >= 0 AND layout_height BETWEEN 1 AND 12");
+                            t.HasCheckConstraint("ck_portfolio_visual_layout", "layout_column BETWEEN 0 AND 11 AND layout_width BETWEEN 1 AND 12 AND layout_column + layout_width <= 12 AND layout_row >= 0 AND layout_height BETWEEN 1 AND 24");
 
-                            t.HasCheckConstraint("ck_portfolio_visual_measures", "cardinality(measures) BETWEEN 1 AND 3 AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'AVERAGE_PLANNED', 'AVERAGE_ACTUAL', 'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS']::text[]");
+                            t.HasCheckConstraint("ck_portfolio_visual_measures", "(visual_type = 'SECTION' AND cardinality(measures) = 0 AND section IS NOT NULL AND group_by = 'NONE') OR (visual_type <> 'SECTION' AND section IS NULL AND cardinality(measures) BETWEEN 1 AND 3 AND measures <@ ARRAY['PROJECTS', 'IN_PROGRESS', 'VALUE_SAR', 'AVERAGE_PLANNED', 'AVERAGE_ACTUAL', 'GAP_POINTS', 'NEEDING_FOLLOW_UP', 'OVERDUE_ACTIONS']::text[])");
+
+                            t.HasCheckConstraint("ck_portfolio_visual_section", "\"section\" IN ('PORTFOLIO_TABLE', 'INITIATIVE_TABLE', 'SECTOR_TABLE', 'STATUS_TABLE', 'CURRENT_STAGE_TABLE', 'ON_PLAN_COUNTS', 'FOLLOW_UP_REASONS', 'TOP_FOLLOW_UP', 'ENTITY_COMPLETION', 'PROJECT_LOCATIONS', 'DASHBOARD_WIDGETS', 'ENTITY_COMPLETION_TABLE')");
 
                             t.HasCheckConstraint("ck_portfolio_visual_sort_order", "sort_order >= 1");
 
-                            t.HasCheckConstraint("ck_portfolio_visual_visual_type", "\"visual_type\" IN ('CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'TABLE', 'GAUGE')");
+                            t.HasCheckConstraint("ck_portfolio_visual_visual_type", "\"visual_type\" IN ('CARD', 'BAR', 'COLUMN', 'PIE', 'DONUT', 'TABLE', 'GAUGE', 'SECTION')");
                         });
                 });
 

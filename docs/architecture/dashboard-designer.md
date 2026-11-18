@@ -23,6 +23,8 @@ The Portfolio dashboard should be changeable "like Power BI": the business adds 
 | D-7 | **Every figure still opens its records** (round 8, point 01): a card's title, a bar, a column group, a slice and a table row link to the register or the Follow-up list with the dashboard's filters and the group's own filter. In the designer nothing links | Delivery team |
 | D-8 | **Shapes that read.** Cards and gauges are one figure; charts are grouped; a table either. A bar, pie, donut and gauge draw one measure, a card two, columns and tables three. A gauge draws a percentage; a pie or donut only a total that adds up, its five largest groups and the rest as one | Delivery team |
 | D-9 | **No "Customize layout".** The personal show, hide and reorder (ADR-019) is gone from the dashboard, since the Portfolio Manager's design now decides the layout for everyone. Its API (`/dashboards/{code}/personalize`) is kept, so a choice already saved still applies to the governed widgets | The user, 18 Nov 2026 |
+| D-10 | **The whole dashboard is designed** (the user, 18 Nov 2026: "why not all the dashboard on the design, including tables"). Besides cards and charts, a design places the dashboard's own sections (`SECTION` + `section`): the tables by portfolio, initiative and sector, projects by status and by stage, the on-plan counts, follow-up reasons, top 10, entity completion (donut and table), the projects map and the governed widgets. Each keeps its own figures, links and permission and is placed at most once; the status, stage and on-plan charts are ordinary bar and donut visuals. The standard design is the whole dashboard in its former order. What the caller may not see is left out and the rest rises into its room. The Executive's dashboard (round 8, point 14) keeps its own layout | The user |
+| D-11 | **Moving and sizing push, never refuse** (the user, 18 Nov 2026: "I can't expand or move"). The standard design fills every column, so the first designer refused almost every move as an overlap. Now a visual dragged by its handle or its whole title bar, or sized by its corner, takes its place; the visuals it lands on move down below it and the others rise into the room left, as a tile grid does. A size stops at the grid's edge; a visual is up to 24 rows tall | The user |
 
 ## Interface
 
@@ -30,7 +32,7 @@ The Portfolio dashboard should be changeable "like Power BI": the business adds 
 - `POST /api/v1/portfolio-insights/design/preview` (`DASHBOARD_DESIGN`): a design being edited, calculated, not saved.
 - `PUT /api/v1/portfolio-insights/design` (`DASHBOARD_DESIGN`, sensitive write): replaces the design as a whole; 422 `PROJECT_PORTFOLIO_DESIGN_INVALID` for a rule above or two visuals on one grid cell.
 - `POST /api/v1/portfolio-insights/design/reset` (`DASHBOARD_DESIGN`, sensitive write): back to the standard design.
-- Table `project.portfolio_visual` (migration `TASK-112_AddPortfolioVisuals`), its rules also as CHECK constraints.
+- Table `project.portfolio_visual` (migrations `TASK-112_AddPortfolioVisuals` and `TASK-112_AddPortfolioVisualSections`), its rules also as CHECK constraints; a section is unique by a filtered index.
 
 ## Open
 

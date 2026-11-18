@@ -36,6 +36,12 @@ const SHAPES: Record<VisualType, ReactElement> = {
       <path d="M12 17l4-5" />
     </>
   ),
+  SECTION: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18M8 13h8M8 16h5" />
+    </>
+  ),
 };
 
 export function VisualIcon({ type }: { type: VisualType }): ReactElement {

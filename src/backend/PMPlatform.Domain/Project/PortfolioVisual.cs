@@ -23,6 +23,43 @@ public enum PortfolioVisualType
 
     /// <summary>One percentage on a half dial.</summary>
     Gauge = 7,
+
+    /// <summary>One of the dashboard's own sections (<see cref="PortfolioSection"/>), drawn as it always was, placed and sized like any visual.</summary>
+    Section = 8,
+}
+
+/// <summary>
+/// The Portfolio dashboard's own sections a design places (18 Nov 2026: the whole dashboard is designed): the tables and lists of the insights, the
+/// projects map and the governed widgets. Each keeps its own figures, links and permission; at most one of each in a design.
+/// </summary>
+public enum PortfolioSection
+{
+    PortfolioTable = 1,
+    InitiativeTable = 2,
+
+    /// <summary>The table by sector with its spend and portfolio split.</summary>
+    SectorTable = 3,
+
+    /// <summary>Projects by lifecycle status, with each one's share.</summary>
+    StatusTable = 4,
+
+    /// <summary>Projects by current stage with their value.</summary>
+    CurrentStageTable = 5,
+
+    OnPlanCounts = 6,
+    FollowUpReasons = 7,
+    TopFollowUp = 8,
+
+    /// <summary>Update completion by delivering entity (AHDA's people holding EXTERNAL_REQUEST_VIEW).</summary>
+    EntityCompletion = 9,
+
+    ProjectLocations = 10,
+
+    /// <summary>The governed widgets of the dashboard's published version (FG-01).</summary>
+    DashboardWidgets = 11,
+
+    /// <summary>The table of update completion by entity, with its period (the 13 Nov 2026 review).</summary>
+    EntityCompletionTable = 12,
 }
 
 /// <summary>What a visual counts or averages over the projects of each group: the figures of the dashboard's headline cards (the 5 Nov 2026 review §3).</summary>
@@ -83,8 +120,11 @@ public sealed class PortfolioVisual : AuditedEntity
 
     public PortfolioVisualType VisualType { get; set; }
 
-    /// <summary>One to three <see cref="PortfolioMeasure"/> codes, in the order they are drawn.</summary>
+    /// <summary>One to three <see cref="PortfolioMeasure"/> codes, in the order they are drawn; none for a <see cref="PortfolioVisualType.Section"/>.</summary>
     public List<string> Measures { get; set; } = [];
+
+    /// <summary>The section a <see cref="PortfolioVisualType.Section"/> places; null for any other type.</summary>
+    public PortfolioSection? Section { get; set; }
 
     public PortfolioGroupBy GroupBy { get; set; }
 
@@ -97,6 +137,6 @@ public sealed class PortfolioVisual : AuditedEntity
     /// <summary>Columns taken, 1 to 12.</summary>
     public short LayoutWidth { get; set; }
 
-    /// <summary>Rows taken, 1 to 12.</summary>
+    /// <summary>Rows taken, 1 to 24.</summary>
     public short LayoutHeight { get; set; }
 }

@@ -378,7 +378,8 @@
       "PIE": "Pie chart",
       "DONUT": "Donut chart",
       "TABLE": "Table",
-      "GAUGE": "Gauge"
+      "GAUGE": "Gauge",
+      "SECTION": "Dashboard section"
     },
     "measure": {
       "PROJECTS": "Projects",
@@ -407,6 +408,24 @@
     "other": "{count} others",
     "editVisual": "Edit {title}",
     "measuresOne": "Choose one.",
-    "galleryHint": "Choose a type to place it on the dashboard."
+    "galleryHint": "Choose a type to place it on the dashboard.",
+    "section": {
+      "PORTFOLIO_TABLE": "By portfolio",
+      "INITIATIVE_TABLE": "By initiative",
+      "SECTOR_TABLE": "By sector",
+      "STATUS_TABLE": "Projects by status",
+      "CURRENT_STAGE_TABLE": "Projects by stage",
+      "ON_PLAN_COUNTS": "On-plan indicator",
+      "FOLLOW_UP_REASONS": "Why projects need follow-up",
+      "TOP_FOLLOW_UP": "Top 10 to follow up",
+      "ENTITY_COMPLETION": "Update completion by entity",
+      "PROJECT_LOCATIONS": "Projects by location",
+      "DASHBOARD_WIDGETS": "Dashboard widgets",
+      "ENTITY_COMPLETION_TABLE": "Update completion by entity (table)"
+    },
+    "sections": "Dashboard sections",
+    "sectionsHint": "The dashboard's tables, lists, map and widgets. Each is placed once.",
+    "sectionPlaced": "On the dashboard",
+    "sectionSettings": "A section shows its own figures; set its titles and size here."
   }
 }

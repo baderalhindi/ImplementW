@@ -46,6 +46,17 @@ function dashboardApi(insights: unknown): MockApi {
 
 const section = (id: string) => document.querySelector<HTMLElement>(`[data-section="${id}"]`);
 
+/** The headline cards of the design (17 Nov 2026), gathered in one element to query. */
+function headlineCards(): HTMLElement {
+  const cards = document.createElement('div');
+  document.querySelectorAll('[data-visual="CARD"]').forEach((card) => {
+    cards.append(card.cloneNode(true));
+  });
+  return cards;
+}
+
+const cardsDrawn = () => document.querySelectorAll('[data-visual="CARD"]').length;
+
 function present(element: HTMLElement | null): HTMLElement {
   if (element === null) {
     throw new Error('The element is not on the page');
@@ -74,7 +85,7 @@ describe('the sections', () => {
     dashboardApi({ ...NO_SECTIONS, stages: fullInsights().stages, onPlan: fullInsights().onPlan });
     renderApp({ path: DASHBOARD, session: session() });
     await screen.findByRole('heading', { level: 2, name: en('dashboards.insights.byStatus') });
-    expect(section('designed')).toBeNull();
+    expect(cardsDrawn()).toBe(0);
     expect(section('portfolio')).toBeNull();
     expect(section('sector')).toBeNull();
     expect(section('top')).toBeNull();
@@ -125,7 +136,19 @@ describe('the sections', () => {
     await waitFor(() => {
       expect(api.requestsTo('GET', /^\/portfolio-insights$/)).toHaveLength(1);
     });
-    expect(document.querySelector('.insights')).toBeNull();
+    // No card, chart or insight section: only what the dashboard's own view draws (its map and widgets) may show.
+    await waitFor(() => {
+      expect(document.querySelector('[data-section="designed"]')).not.toBeNull();
+    });
+    expect(
+      document.querySelectorAll('[data-section="designed"] .visual:not(.visual--section)'),
+    ).toHaveLength(0);
+    expect(
+      [...document.querySelectorAll<HTMLElement>('[data-section-code]')].map(
+        (element) => element.dataset.sectionCode,
+      ),
+      // The entity completion donut and table answer under their own permission, whatever the insights do.
+    ).toEqual(['ENTITY_COMPLETION', 'DASHBOARD_WIDGETS', 'ENTITY_COMPLETION_TABLE']);
   });
 
   test('no project reads "no data", never zeros', async () => {
@@ -143,7 +166,7 @@ describe('the sections', () => {
     });
     renderApp({ path: DASHBOARD, session: session() });
     await screen.findByText(en('dashboards.noData'));
-    expect(section('designed')).toBeNull();
+    expect(cardsDrawn()).toBe(0);
     expect(document.querySelector('.insights')).toBeNull();
   });
 
@@ -163,9 +186,9 @@ describe('the sections', () => {
     });
     renderApp({ path: DASHBOARD, session: session() });
     await waitFor(() => {
-      expect(section('designed')).not.toBeNull();
+      expect(cardsDrawn()).toBe(5);
     });
-    const headline = present(section('designed'));
+    const headline = headlineCards();
     expect(within(headline).queryByText(en('dashboards.insights.totalValue'))).toBeNull();
     expect(plain(headline.textContent)).toContain('In progress: 120');
     expect(plain(headline.textContent)).toContain('Progress measured for 0 of 167');
@@ -177,9 +200,9 @@ describe('the sections', () => {
     dashboardApi(fullInsights());
     renderApp({ path: DASHBOARD, session: session() });
     await waitFor(() => {
-      expect(section('designed')).not.toBeNull();
+      expect(cardsDrawn()).toBe(6);
     });
-    const headline = present(section('designed'));
+    const headline = headlineCards();
     // Review round 8, point 11: a card's amount is compact, with the full figure on hover.
     expect(plain(headline.textContent)).toContain('1.5 million SAR');
     expect(plain(headline.querySelector('[title*="SAR"]')?.getAttribute('title'))).toBe(
@@ -248,14 +271,15 @@ describe('the sections', () => {
         .getByRole('link', { name: en('dashboards.insights.fullFollowUp') })
         .getAttribute('href'),
     ).toBe('/projects/follow-up');
-    // Round 7, item 5: the entity completion donut joins the charts; the two by portfolio are designed visuals (17 Nov 2026).
-    await waitFor(() => {
-      expect(document.querySelectorAll('[data-section="designed"] .visual')).toHaveLength(8);
-    });
-    expect(document.querySelectorAll('.insights__chart')).toHaveLength(3);
+    // The charts are the design's (17 and 18 Nov 2026): by portfolio, status and stage as bars, planned and actual as columns, the on-plan
+    // indicator as a donut, and round 7 item 5's entity completion donut as a section.
+    // By portfolio and by status; these insights report no current stage, so that chart is not drawn.
+    expect(document.querySelectorAll('.visual[data-visual="BAR"]')).toHaveLength(2);
+    expect(document.querySelectorAll('.visual[data-visual="COLUMN"]')).toHaveLength(1);
+    expect(document.querySelectorAll('.visual[data-visual="DONUT"]')).toHaveLength(1);
     expect(
-      document.querySelectorAll('.visual[data-visual="BAR"], .visual[data-visual="COLUMN"]'),
-    ).toHaveLength(2);
+      document.querySelectorAll('[data-section-code="ENTITY_COMPLETION"] .insights__chart'),
+    ).toHaveLength(1);
     expect(describeViolations(await accessibilityViolations())).toBe('');
   });
 
@@ -676,6 +700,8 @@ describe('review round 8, point 14: one dashboard for the Executive', () => {
       views: { PORTFOLIO: dashboardView('PORTFOLIO') },
     });
     api.on('GET', /^\/approval-tasks$/, { body: page([]) });
+    // withDashboards above registers the design's defaults; the insights are this test's.
+    api.on('GET', /^\/portfolio-insights$/, { body: fullInsights() });
     renderApp({ path: DASHBOARD, session: sessionFor(['R07']) });
 
     const headline = present(await waitFor(() => present(section('executive-headline'))));

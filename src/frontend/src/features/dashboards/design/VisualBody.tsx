@@ -13,6 +13,14 @@ import { BarChart, DonutChart, GaugeChart, GroupedColumnChart } from '../compone
 import { Coverage } from '../insights/figures.tsx';
 import { type Measure, type VisualResult } from './designApi.ts';
 import { drillPath, formatValue, groupText, isPercent } from './visuals.ts';
+import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
+import { useCan } from '@/features/identity-access/permissions/permissions.ts';
+
+const ON_PLAN_TONE: Record<string, StatusTone> = {
+  ON_TRACK: 'positive',
+  LATE: 'warning',
+  STALLED: 'negative',
+};
 
 /** The slices a pie or donut draws: past this, the smallest go together as one. */
 const SHARES = 6;
@@ -107,22 +115,40 @@ export function VisualBody({
         </div>
       );
     }
-    case 'BAR':
+    case 'BAR': {
+      const withoutStage =
+        visual.groupBy === 'STAGE'
+          ? (groups.find((group) => group.key === null)?.projects ?? 0)
+          : 0;
       return (
-        <BarChart
-          buckets={groups.map((group, index) => ({
-            key: group.key ?? 'none',
-            count: Math.max(0, group.values[0] ?? 0),
-            value: formatValue(first, group.values[0] ?? null, t),
-            text: text(index),
-            color: 'var(--chart-single)',
-            href: drill(first, group.key),
-            hint: projectsHint(group.projects),
-          }))}
-          active={active}
-          onActive={setActive}
-        />
+        <>
+          <BarChart
+            buckets={groups.map((group, index) => ({
+              key: group.key ?? 'none',
+              count: Math.max(0, group.values[0] ?? 0),
+              value: formatValue(first, group.values[0] ?? null, t),
+              text: text(index),
+              color: 'var(--chart-single)',
+              href: drill(first, group.key),
+              hint: projectsHint(group.projects),
+            }))}
+            active={active}
+            onActive={setActive}
+          />
+          {withoutStage > 0 && filters !== undefined && (
+            // Review round 8, point 09: projects with no stage yet have no plan set up; the chart says where to set it.
+            <StagePlanHint
+              withoutStage={withoutStage}
+              withStage={groups.reduce(
+                (sum, group) => sum + (group.key === null ? 0 : group.projects),
+                0,
+              )}
+              href={drillPath('PROJECTS', 'STAGE', null, filters) ?? ''}
+            />
+          )}
+        </>
       );
+    }
     case 'PIE':
     case 'DONUT': {
       // A share of a whole: the five largest groups, then the rest together as "Other", so six fills tell them apart.
@@ -149,10 +175,17 @@ export function VisualBody({
               },
             ]
           : shares;
-      const colors = bucketColors(
-        shown.map(() => 'neutral'),
-        false,
-      );
+      // The on-plan indicator keeps its own colours (on track, late, stalled, not measured); any other grouping takes categorical fills.
+      const colors =
+        visual.groupBy === 'ON_PLAN'
+          ? bucketColors(
+              shown.map((share) => ON_PLAN_TONE[share.key] ?? 'neutral'),
+              true,
+            )
+          : bucketColors(
+              shown.map(() => 'neutral'),
+              false,
+            );
       const buckets: ChartBucket[] = shown.map((share, index) => ({
         ...share,
         value: formatValue(first, share.count, t),
@@ -220,6 +253,9 @@ export function VisualBody({
         />
       );
     }
+    case 'SECTION':
+      // A section is drawn from the dashboard's own sources (SectionBody), never from a visual's figures.
+      return <p className="state">{t('dashboards.noData')}</p>;
     case 'TABLE':
       return (
         <TableContainer caption={visual.title[language]}>
@@ -267,5 +303,35 @@ function FigureText({ text, href }: { text: string; href: string | undefined }):
     <Link className="insights__coverage drill-link" to={href}>
       {text}
     </Link>
+  );
+}
+
+/** Round 8, point 09: where projects have no stage yet, the stage chart says so and offers the way to set their plans up. */
+function StagePlanHint({
+  withoutStage,
+  withStage,
+  href,
+}: {
+  withoutStage: number;
+  withStage: number;
+  href: string;
+}): ReactElement {
+  const { t } = useI18n();
+  const setsStagePlans = useCan('PROJECT_REGISTER', 'PROGRESS_SUBMIT');
+  return (
+    <div className="insights__empty-hint" role="note">
+      <p>
+        {withStage === 0
+          ? t('dashboards.insights.stagePlanNone')
+          : t('dashboards.insights.stagePlanSome', { count: withoutStage })}
+      </p>
+      <Link className="button" to={href}>
+        {t(
+          setsStagePlans
+            ? 'dashboards.insights.setUpStagePlans'
+            : 'dashboards.insights.viewWithoutStagePlan',
+        )}
+      </Link>
+    </div>
   );
 }
