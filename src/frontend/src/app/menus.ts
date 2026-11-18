@@ -18,7 +18,7 @@ import {
 import { kpiNavigation } from '@/features/financial-kpi/routes.tsx';
 import { type DashboardCatalogueEntry } from '@/features/dashboards/api/types.ts';
 import { EXECUTIVE_ROLE, landingRole } from '@/features/dashboards/landing.ts';
-import { PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
+import { DASHBOARDS_PATH, PORTFOLIO_DASHBOARD_PATH } from '@/features/dashboards/paths.ts';
 import { dashboardNavigation } from '@/features/dashboards/routes.tsx';
 import { dataImportNavigation } from '@/features/data-import/routes.tsx';
 import { type Permissions } from '@/features/identity-access/permissions/permissions.ts';
@@ -205,8 +205,8 @@ export function menusFor(
   dashboards: readonly DashboardCatalogueEntry[],
 ): Menu[] {
   const auditItems = auditNavigation(audit);
-  const executive =
-    landingRole(user) === EXECUTIVE_ROLE && dashboards.some((entry) => entry.code === 'PORTFOLIO');
+  const portfolio = dashboards.some((entry) => entry.code === 'PORTFOLIO');
+  const executive = landingRole(user) === EXECUTIVE_ROLE && portfolio;
   const administrative =
     audit?.categories.some((category) => ADMINISTRATIVE_AUDIT.includes(category)) ?? false;
   const businessAudit = administrative
@@ -268,9 +268,13 @@ export function menusFor(
       'dashboardsReports',
       'common.menu.dashboardsReports',
       ['/dashboards', '/reports'],
-      // Review round 8, point 14: the Executive's dashboard is the Portfolio menu's, not a second one here.
+      // Review round 8, point 14: the Executive's dashboard is the Portfolio menu's, not a second one here. The user, 18 Nov 2026: neither is
+      // anyone else's — whoever has the Portfolio menu opens the Portfolio Dashboard there, so Dashboards is offered here only to those without it
+      // (their dashboard is Governance's); Design dashboard stays.
       [
-        ...(user.userType === 'EXTERNAL' || executive ? [] : dashboardNavigation),
+        ...(user.userType === 'EXTERNAL' || executive
+          ? []
+          : dashboardNavigation.filter((item) => !(portfolio && item.to === DASHBOARDS_PATH))),
         ...reportNavigation(user),
       ],
     ),
