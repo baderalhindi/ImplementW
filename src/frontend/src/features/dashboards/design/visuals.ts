@@ -441,71 +441,75 @@ function clamped(box: Box): Box {
 }
 
 /**
- * The design with the visual at `index` moved or sized to `box`, as a grid of tiles behaves: it takes its place, every visual it lands on moves
- * down below it (and any those land on), then the others rise into the room left above them. The moved visual stays where it was put.
+ * The visuals laid out in their order with no room left between them (the user, 18 Nov 2026: "I don't want white spaces"): each, in turn,
+ * takes the first place from the top, then from the reading start, where it fits beside those before it, so a gap is filled by whatever fits.
+ * Room no visual fits is then taken by its neighbour: a visual widens toward the reading end, then grows down, into empty cells beside or under
+ * it, never past the grid's bottom. `keep` (the visual just sized) keeps the size it was given. Every change of order, size or membership is
+ * laid out again, so the others move at once; the dashboard lays out what the caller sees the same way.
  */
-export function placeWith<T extends Box>(visuals: T[], index: number, box: Box): T[] {
-  const next = visuals.map((visual, at) =>
-    at === index ? { ...visual, ...clamped(box) } : visual,
-  );
-  const order = next
-    .map((_, at) => at)
-    .filter((at) => at !== index)
-    .sort(
-      (a, b) =>
-        (next[a]?.layoutRow ?? 0) - (next[b]?.layoutRow ?? 0) ||
-        (next[a]?.layoutColumn ?? 0) - (next[b]?.layoutColumn ?? 0),
-    );
-  // Down: each in reading order, below whatever already settled that it lands on.
-  const settled = [index];
-  const landsOn = (box: Box) =>
-    settled
-      .map((other) => next[other])
-      .find((other) => other !== undefined && overlaps(box, other));
-  for (const at of order) {
-    let visual = next[at];
-    if (visual === undefined) {
-      continue;
-    }
-    for (let hit = landsOn(visual); hit !== undefined; hit = landsOn(visual)) {
-      visual = { ...visual, layoutRow: hit.layoutRow + hit.layoutHeight };
-    }
-    next[at] = visual;
-    settled.push(at);
-  }
-  // Up: each of the others, in reading order, as high as it goes without landing on another.
-  for (const at of order) {
-    let visual = next[at];
-    while (visual !== undefined && visual.layoutRow > 0) {
-      const higher = { ...visual, layoutRow: visual.layoutRow - 1 };
-      if (!next.every((other, o) => o === at || !overlaps(higher, other))) {
-        break;
+export function packed<T extends Box>(visuals: T[], keep: number | null = null): T[] {
+  const placed: T[] = [];
+  for (const visual of visuals) {
+    const size = clamped(visual);
+    let spot: Box | undefined;
+    for (let row = 0; spot === undefined; row++) {
+      for (let column = 0; column + size.layoutWidth <= COLUMNS && spot === undefined; column++) {
+        const box = { ...size, layoutColumn: column, layoutRow: row };
+        if (placed.every((other) => !overlaps(box, other))) {
+          spot = box;
+        }
       }
-      visual = higher;
     }
-    if (visual !== undefined) {
-      next[at] = visual;
+    placed.push({ ...visual, ...spot });
+  }
+  return filled(placed, keep);
+}
+
+/** The cells no visual covers, closed by the visual beside (toward the reading end) or above them; see `packed`. */
+function filled<T extends Box>(visuals: T[], keep: number | null): T[] {
+  const next = [...visuals];
+  const bottom = rowsOf(next);
+  const free = (box: Box, self: number) =>
+    box.layoutColumn + box.layoutWidth <= COLUMNS &&
+    box.layoutRow + box.layoutHeight <= bottom &&
+    next.every((other, at) => at === self || !overlaps(box, other));
+  next.forEach((visual, at) => {
+    if (at === keep) {
+      return;
     }
+    let grown: T = visual;
+    while (free({ ...grown, layoutWidth: grown.layoutWidth + 1 }, at)) {
+      grown = { ...grown, layoutWidth: grown.layoutWidth + 1 };
+      next[at] = grown;
+    }
+    while (
+      grown.layoutHeight < MAX_HEIGHT &&
+      free({ ...grown, layoutHeight: grown.layoutHeight + 1 }, at)
+    ) {
+      grown = { ...grown, layoutHeight: grown.layoutHeight + 1 };
+      next[at] = grown;
+    }
+  });
+  return next;
+}
+
+/** The order with the visual at `from` moved to `to`, the others keeping theirs. */
+export function moved<T>(items: T[], from: number, to: number): T[] {
+  const next = [...items];
+  const [item] = next.splice(from, 1);
+  if (item !== undefined) {
+    next.splice(Math.max(0, Math.min(to, next.length)), 0, item);
   }
   return next;
 }
 
-/** The visuals risen into any room above them, in reading order: what the dashboard draws once it leaves out what the caller may not see. */
-export function compacted<T extends Box>(visuals: T[]): T[] {
-  const order = [...visuals].sort(
-    (a, b) => a.layoutRow - b.layoutRow || a.layoutColumn - b.layoutColumn,
+/** The visual drawn over a grid cell, or -1. */
+export function visualAt(visuals: Box[], column: number, row: number): number {
+  return visuals.findIndex(
+    (visual) =>
+      column >= visual.layoutColumn &&
+      column < visual.layoutColumn + visual.layoutWidth &&
+      row >= visual.layoutRow &&
+      row < visual.layoutRow + visual.layoutHeight,
   );
-  const placed: T[] = [];
-  for (const visual of order) {
-    let risen = visual;
-    while (risen.layoutRow > 0) {
-      const higher = { ...risen, layoutRow: risen.layoutRow - 1 };
-      if (placed.some((other) => overlaps(higher, other))) {
-        break;
-      }
-      risen = higher;
-    }
-    placed.push(risen);
-  }
-  return placed;
 }

@@ -1,7 +1,17 @@
 import { describe, expect, test } from 'vitest';
 
 import { type Visual } from './designApi.ts';
-import { autoTitle, drillPath, fits, freePlace, newVisual, retitled, withType } from './visuals.ts';
+import {
+  autoTitle,
+  drillPath,
+  fits,
+  freePlace,
+  moved,
+  newVisual,
+  packed,
+  retitled,
+  withType,
+} from './visuals.ts';
 
 // The 17 Nov 2026 dashboard designer: the rules the designer applies before the API checks the same ones.
 
@@ -82,5 +92,35 @@ describe('round 8, point 01: a figure opens its records', () => {
   test('none where no list can filter by it', () => {
     expect(drillPath('PROJECTS', 'PORTFOLIO', null, {})).toBeUndefined();
     expect(drillPath('OVERDUE_ACTIONS', 'NONE', null, {})).toBeUndefined();
+  });
+});
+
+describe('no white space (18 Nov 2026)', () => {
+  const box = (width: number, height: number) => ({
+    ...card,
+    layoutWidth: width,
+    layoutHeight: height,
+  });
+
+  test('the visuals pack in their order, each in the first place it fits, a gap filled by what fits', () => {
+    const laidOut = packed([box(6, 4), box(4, 2), box(4, 2), box(2, 2), box(12, 3)]);
+    expect(laidOut.map((v) => [v.layoutColumn, v.layoutRow])).toEqual([
+      [0, 0],
+      [6, 0],
+      [6, 2],
+      [10, 0],
+      [0, 4],
+    ]);
+  });
+
+  test('moving a visual to another place in the order moves the others along at once', () => {
+    const laidOut = packed(moved([box(4, 2), box(4, 2), box(4, 2)], 0, 2));
+    expect(laidOut.map((v) => v.layoutColumn)).toEqual([0, 4, 8]);
+    expect(moved(['a', 'b', 'c'], 0, 2)).toEqual(['b', 'c', 'a']);
+  });
+
+  test('a visual removed leaves no hole', () => {
+    const three = packed([box(12, 2), box(12, 2), box(12, 2)]);
+    expect(packed(three.filter((_, index) => index !== 1)).map((v) => v.layoutRow)).toEqual([0, 2]);
   });
 });

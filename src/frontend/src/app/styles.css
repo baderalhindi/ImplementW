@@ -8070,6 +8070,13 @@ tr[data-flagged='true'] {
   touch-action: none;
 }
 
+/* The visual being dragged rides above the others while they move out of its way. */
+.designer__visual.is-dragging {
+  z-index: 2;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+  opacity: 0.92;
+}
+
 .designer__visual.is-selected {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;

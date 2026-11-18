@@ -40,11 +40,15 @@ import {
   COLUMNS,
   gridPlace,
   newSection,
+  MAX_HEIGHT,
+  MAX_VISUALS,
+  moved,
   newVisual,
-  placeWith,
+  packed,
   rowsOf,
   SECTIONS,
   VISUAL_TYPES,
+  visualAt,
 } from './visuals.ts';
 
 const NO_FILTERS: PortfolioFilters = {};
@@ -56,14 +60,23 @@ const PREVIEW_DELAY_MS = 350;
 
 type Gesture = 'move' | 'resize';
 
+/** A visual as the designer holds it: with a key of its own, so it keeps its element (and the pointer) while the others reflow around it. */
+type Draft = Visual & { key: string };
+
 interface Drag {
   gesture: Gesture;
-  index: number;
+  key: string;
   startX: number;
   startY: number;
   start: Visual;
-  /** The whole design when the drag began: each step is placed on it, so visuals pushed aside come back when the pointer moves on. */
-  design: Visual[];
+}
+
+let nextKey = 0;
+const keyed = (visual: Visual): Draft => ({ ...visual, key: `visual-${String((nextKey += 1))}` });
+
+/** A design as the API takes it: the keys are the designer's own. */
+function plain(drafts: Draft[]): Visual[] {
+  return drafts.map(({ key: _key, ...visual }) => visual);
 }
 
 function withoutFigures(visual: VisualResult): Visual {
@@ -80,25 +93,37 @@ function withoutFigures(visual: VisualResult): Visual {
   };
 }
 
+/** Each visual's figures by its key: the API answers a design in the order it was sent. */
+function figuresByKey(drafts: Draft[], results: VisualResult[]): ReadonlyMap<string, VisualResult> {
+  return new Map(
+    drafts.flatMap((draft, index) => {
+      const result = results[index];
+      return result === undefined ? [] : [[draft.key, result] as const];
+    }),
+  );
+}
+
 function sameDesign(a: Visual[], b: Visual[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
 /**
- * The Portfolio dashboard's designer (17 Nov 2026), under Dashboards and Reports: the Portfolio Manager adds visuals from the gallery, drags
- * them into place and by their corner to size, and sets each one's values and grouping; the figures are calculated live. Saving changes the
- * dashboard for everyone, with no approval, as the business decided. A keyboard moves a visual with the arrow keys on its move handle and sizes it
- * on its size handle.
+ * The Portfolio dashboard's designer (17 and 18 Nov 2026), under Dashboards and Reports: the Portfolio Manager adds visuals and sections from the
+ * gallery, drags them by their bar to another place in the order and by their corner to size, and sets each one's values and grouping; the figures
+ * are calculated live. The grid is always packed (the user: no white space): every move, size or removal lays the others out again at once.
+ * Saving changes the dashboard for everyone, with no approval. A keyboard moves a visual earlier or later with the arrow keys on its move handle
+ * and sizes it on its size handle.
  */
 export function DashboardDesignerPage(): ReactElement {
   const { t, language } = useI18n();
   const [saved, setSaved] = useState<Visual[] | null>(null);
-  const [visuals, setVisuals] = useState<Visual[]>([]);
+  const [visuals, setVisuals] = useState<Draft[]>([]);
   const [isStandard, setIsStandard] = useState(true);
   const [loadError, setLoadError] = useState<unknown>(null);
-  const [figures, setFigures] = useState<VisualResult[] | null>(null);
+  const [figures, setFigures] = useState<ReadonlyMap<string, VisualResult>>(new Map());
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
@@ -118,22 +143,27 @@ export function DashboardDesignerPage(): ReactElement {
     showsCompletion,
   };
 
+  /** Puts a loaded design in the designer: packed, so a design saved before packing reads without gaps too. */
+  const adopt = useCallback((loaded: VisualResult[]) => {
+    const drafts = packed(loaded.map((visual) => keyed(withoutFigures(visual))));
+    setVisuals(drafts);
+    setSaved(plain(drafts));
+    setFigures(figuresByKey(drafts, loaded));
+  }, []);
+
   const load = useCallback(() => {
     designApi.get({}).then(
       (design) => {
-        const loaded = design.visuals.map(withoutFigures);
-        setSaved(loaded);
-        setVisuals(loaded);
-        setFigures(design.visuals);
+        adopt(design.visuals);
         setIsStandard(design.isStandard);
-        setSelected(null);
+        setSelectedKey(null);
         setLoadError(null);
       },
       (error: unknown) => {
         setLoadError(error);
       },
     );
-  }, []);
+  }, [adopt]);
 
   useEffect(load, [load]);
 
@@ -143,10 +173,11 @@ export function DashboardDesignerPage(): ReactElement {
       return undefined;
     }
     const controller = new AbortController();
+    const sent = visuals;
     const timer = window.setTimeout(() => {
-      designApi.preview(visuals, controller.signal).then(
+      designApi.preview(plain(sent), controller.signal).then(
         (design) => {
-          setFigures(design.visuals);
+          setFigures(figuresByKey(sent, design.visuals));
           setPreviewError(null);
         },
         (error: unknown) => {
@@ -175,143 +206,158 @@ export function DashboardDesignerPage(): ReactElement {
     return <LoadingState />;
   }
 
-  const dirty = !sameDesign(visuals, saved);
-  const current = selected === null ? undefined : visuals[selected];
+  const dirty = !sameDesign(plain(visuals), saved);
+  const selected = selectedKey === null ? null : visuals.findIndex((v) => v.key === selectedKey);
+  const current = selected === null || selected < 0 ? undefined : visuals[selected];
 
-  /** Puts `next` at `index`: it takes its place, and the visuals it lands on move down out of its way. */
-  const place = (index: number, next: Visual) => {
+  /**
+   * Lays the design out again after a change, from the latest design (pointer events come faster than renders): the others close up at once.
+   * `keep` is the visual whose size was just set, so the room it leaves is taken by the others.
+   */
+  const relayout = (change: (all: Draft[]) => Draft[], keep: string | null = null) => {
     setPlaceProblem(null);
-    setVisuals((all) =>
-      placeWith(
-        all.map((visual, at) => (at === index ? next : visual)),
-        index,
-        next,
-      ),
+    setVisuals((all) => {
+      const next = change(all);
+      return packed(next, keep === null ? null : next.findIndex((visual) => visual.key === keep));
+    });
+  };
+
+  /** Changes the visual at `index` (its settings or size), the others reflowing around it. */
+  const place = (index: number, next: Visual) => {
+    const key = visuals[index]?.key ?? null;
+    relayout(
+      (all) => all.map((visual) => (visual.key === key ? { ...visual, ...next } : visual)),
+      key,
     );
   };
 
-  const add = (type: VisualType) => {
-    const visual = newVisual(type, visuals);
+  const append = (visual: Visual | null) => {
     if (visual === null) {
       setPlaceProblem(t('dashboards.designer.noRoom'));
       return;
     }
-    setPlaceProblem(null);
+    const draft = keyed(visual);
     setNotice(null);
-    setVisuals((all) => [...all, visual]);
-    setSelected(visuals.length);
+    relayout((all) => [...all, draft]);
+    setSelectedKey(draft.key);
+  };
+
+  const add = (type: VisualType) => {
+    append(newVisual(type, visuals));
   };
 
   const addSection = (section: Section) => {
-    const visual = newSection(section, visuals);
-    if (visual === null) {
-      setPlaceProblem(t('dashboards.designer.noRoom'));
-      return;
-    }
-    setPlaceProblem(null);
-    setNotice(null);
-    setVisuals((all) => [...all, visual]);
-    setSelected(visuals.length);
+    append(newSection(section, visuals));
   };
 
   const remove = (index: number) => {
-    setVisuals((all) => all.filter((_, at) => at !== index));
-    setSelected(null);
+    const key = visuals[index]?.key;
+    relayout((all) => all.filter((visual) => visual.key !== key));
+    setSelectedKey(null);
   };
 
   const duplicate = (index: number) => {
     const source = visuals[index];
-    const copy = source === undefined ? null : newVisual(source.visualType, visuals);
-    if (source === undefined || copy === null) {
-      setPlaceProblem(t('dashboards.designer.noRoom'));
-      return;
+    if (source !== undefined) {
+      append(visuals.length >= MAX_VISUALS ? null : { ...source, section: null });
     }
-    const placed = { ...source, layoutColumn: copy.layoutColumn, layoutRow: copy.layoutRow };
-    setVisuals((all) => [...all, placed]);
-    setSelected(visuals.length);
   };
 
   /** The size of one grid step, read from the drawn canvas: a column's width and a row's height, each with its gap. */
   const step = () => {
     const element = canvas.current;
     if (element === null) {
-      return { column: 1, row: 1, rtl: false };
+      return { column: 1, row: 1, rtl: false, left: 0, right: 0, top: 0 };
     }
     const style = window.getComputedStyle(element);
     const columnGap = Number.parseFloat(style.columnGap) || 0;
     const rowGap = Number.parseFloat(style.rowGap) || 0;
     const rowHeight = Number.parseFloat(style.gridAutoRows) || 72;
+    const box = element.getBoundingClientRect();
+    const padding = Number.parseFloat(style.paddingInlineStart) || 0;
     return {
-      column: (element.clientWidth + columnGap) / COLUMNS,
+      column: (element.clientWidth - 2 * padding + columnGap) / COLUMNS,
       row: rowHeight + rowGap,
       rtl: style.direction === 'rtl',
+      left: box.left + padding,
+      right: box.right - padding,
+      top: box.top + (Number.parseFloat(style.paddingTop) || 0),
     };
   };
 
+  /**
+   * A drag follows the pointer on the window, not by capturing it: the dragged element moves in the page as the others reflow, and a browser
+   * drops a capture when its element moves.
+   */
   const startDrag = (event: PointerEvent<HTMLElement>, index: number, gesture: Gesture) => {
     const start = visuals[index];
     // The bar drags the visual, but its edit button stays a button.
-    const onButton = (event.target as Element).closest('button:not(.designer__handle)') !== null;
+    const onButton =
+      gesture === 'move' &&
+      (event.target as Element).closest('button:not(.designer__handle--move)') !== null;
     if (start === undefined || event.button !== 0 || onButton) {
       return;
     }
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = {
-      gesture,
-      index,
-      startX: event.clientX,
-      startY: event.clientY,
-      start,
-      design: visuals,
+    drag.current = { gesture, key: start.key, startX: event.clientX, startY: event.clientY, start };
+    setSelectedKey(start.key);
+    setDraggingKey(start.key);
+    const onMove = (move: globalThis.PointerEvent) => {
+      dragTo(move.clientX, move.clientY);
     };
-    setSelected(index);
+    const onEnd = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
+      drag.current = null;
+      setDraggingKey(null);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
   };
 
-  const moveDrag = (event: PointerEvent<HTMLElement>) => {
+  const dragTo = (clientX: number, clientY: number) => {
     const active = drag.current;
     if (active === null) {
       return;
     }
     const size = step();
-    const columns = Math.round(
-      ((event.clientX - active.startX) * (size.rtl ? -1 : 1)) / size.column,
-    );
-    const rows = Math.round((event.clientY - active.startY) / size.row);
-    const next =
-      active.gesture === 'move'
-        ? {
-            ...active.start,
-            layoutColumn: active.start.layoutColumn + columns,
-            layoutRow: active.start.layoutRow + rows,
-          }
-        : {
-            ...active.start,
-            // Sizing stops at the grid's end edge; it never moves the visual.
-            layoutWidth: Math.min(
-              COLUMNS - active.start.layoutColumn,
-              active.start.layoutWidth + columns,
-            ),
-            layoutHeight: active.start.layoutHeight + rows,
-          };
-    const shown = visuals[active.index];
-    if (
-      shown !== undefined &&
-      (shown.layoutColumn !== next.layoutColumn ||
-        shown.layoutRow !== next.layoutRow ||
-        shown.layoutWidth !== next.layoutWidth ||
-        shown.layoutHeight !== next.layoutHeight)
-    ) {
-      setPlaceProblem(null);
-      setVisuals(placeWith(active.design, active.index, next));
+    if (active.gesture === 'resize') {
+      const columns = Math.round(((clientX - active.startX) * (size.rtl ? -1 : 1)) / size.column);
+      const rows = Math.round((clientY - active.startY) / size.row);
+      relayout(
+        (all) =>
+          all.map((visual) =>
+            visual.key === active.key
+              ? {
+                  ...visual,
+                  // Sizing stops at the grid's end edge; it never moves the visual.
+                  layoutWidth: Math.min(
+                    COLUMNS - visual.layoutColumn,
+                    Math.max(1, active.start.layoutWidth + columns),
+                  ),
+                  layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, active.start.layoutHeight + rows)),
+                }
+              : visual,
+          ),
+        active.key,
+      );
+      return;
     }
+    // Moving changes the order: over another visual, the dragged one takes that visual's place and every other moves along at once.
+    const column = Math.floor(
+      (size.rtl ? size.right - clientX : clientX - size.left) / size.column,
+    );
+    const row = Math.floor((clientY - size.top) / size.row);
+    relayout((all) => {
+      const from = all.findIndex((visual) => visual.key === active.key);
+      const over = visualAt(all, column, row);
+      return over >= 0 && over !== from ? moved(all, from, over) : all;
+    });
   };
 
-  const endDrag = () => {
-    drag.current = null;
-  };
-
-  /** Arrow keys on a handle: move by a step on the move handle, size by a step on the size handle; Delete removes the visual. */
+  /** Arrow keys on a handle: earlier or later in the order on the move handle, smaller or larger on the size handle; Delete removes the visual. */
   const keyOnHandle = (
     event: KeyboardEvent<HTMLButtonElement>,
     index: number,
@@ -326,7 +372,7 @@ export function DashboardDesignerPage(): ReactElement {
       remove(index);
       return;
     }
-    // The arrow pointing to the reading end grows the column: right in English, left in Arabic.
+    // The arrow pointing to the reading end is forward: right in English, left in Arabic.
     const forward = step().rtl ? 'ArrowLeft' : 'ArrowRight';
     const backward = step().rtl ? 'ArrowRight' : 'ArrowLeft';
     const across = event.key === forward ? 1 : event.key === backward ? -1 : 0;
@@ -335,31 +381,24 @@ export function DashboardDesignerPage(): ReactElement {
       return;
     }
     event.preventDefault();
-    setSelected(index);
-    place(
-      index,
-      gesture === 'move'
-        ? {
-            ...visual,
-            layoutColumn: visual.layoutColumn + across,
-            layoutRow: visual.layoutRow + down,
-          }
-        : {
-            ...visual,
-            layoutWidth: Math.min(COLUMNS - visual.layoutColumn, visual.layoutWidth + across),
-            layoutHeight: visual.layoutHeight + down,
-          },
-    );
+    setSelectedKey(visual.key);
+    if (gesture === 'move') {
+      relayout((all) => moved(all, index, index + (across !== 0 ? across : down)));
+    } else {
+      place(index, {
+        ...visual,
+        layoutWidth: Math.min(COLUMNS - visual.layoutColumn, visual.layoutWidth + across),
+        layoutHeight: visual.layoutHeight + down,
+      });
+    }
   };
 
   const save = async () => {
     setBusy(true);
     setNotice(null);
     try {
-      const design = await designApi.save(visuals);
-      const kept = design.visuals.map(withoutFigures);
-      setSaved(kept);
-      setVisuals(kept);
+      const design = await designApi.save(plain(visuals));
+      adopt(design.visuals);
       setIsStandard(false);
       setNotice({ tone: 'success', message: t('dashboards.designer.saved') });
     } catch (error) {
@@ -369,9 +408,9 @@ export function DashboardDesignerPage(): ReactElement {
     }
   };
 
-  const figuresOf = (index: number, visual: Visual): VisualResult => {
-    const calculated = figures?.[index];
-    // Until the new figures arrive, a visual whose values changed shows none rather than another visual's.
+  const figuresOf = (visual: Draft): VisualResult => {
+    const calculated = figures.get(visual.key);
+    // Until the new figures arrive, a visual whose values changed shows none rather than figures for other values.
     return calculated?.groups !== undefined &&
       calculated.visualType === visual.visualType &&
       calculated.groupBy === visual.groupBy &&
@@ -412,8 +451,8 @@ export function DashboardDesignerPage(): ReactElement {
               className="button"
               disabled={busy || !dirty}
               onClick={() => {
-                setVisuals(saved);
-                setSelected(null);
+                relayout(() => saved.map(keyed));
+                setSelectedKey(null);
                 setPlaceProblem(null);
               }}
             >
@@ -452,12 +491,14 @@ export function DashboardDesignerPage(): ReactElement {
           >
             {visuals.map((visual, index) => {
               const title = visual.title[language];
-              const isSelected = index === selected;
+              const isSelected = visual.key === selectedKey;
               return (
-                // The index, not the place: a visual keeps its element, and its pointer, while it is dragged.
+                // Its own key: a visual keeps its element, and its pointer, while the others reflow around it.
                 <section
-                  key={index}
-                  className={`widget visual designer__visual${isSelected ? ' is-selected' : ''}`}
+                  key={visual.key}
+                  className={`widget visual designer__visual${isSelected ? ' is-selected' : ''}${
+                    visual.key === draggingKey ? ' is-dragging' : ''
+                  }`}
                   style={gridPlace(visual)}
                   aria-label={title}
                   aria-current={isSelected ? 'true' : undefined}
@@ -468,9 +509,6 @@ export function DashboardDesignerPage(): ReactElement {
                     onPointerDown={(event) => {
                       startDrag(event, index, 'move');
                     }}
-                    onPointerMove={moveDrag}
-                    onPointerUp={endDrag}
-                    onPointerCancel={endDrag}
                   >
                     <button
                       type="button"
@@ -478,7 +516,7 @@ export function DashboardDesignerPage(): ReactElement {
                       aria-label={t('dashboards.designer.moveHandle', { title })}
                       title={t('dashboards.designer.moveHandle', { title })}
                       onClick={() => {
-                        setSelected(index);
+                        setSelectedKey(visual.key);
                       }}
                       onKeyDown={(event) => {
                         keyOnHandle(event, index, 'move');
@@ -494,7 +532,7 @@ export function DashboardDesignerPage(): ReactElement {
                       aria-label={t('dashboards.designer.editVisual', { title })}
                       title={t('dashboards.designer.editVisual', { title })}
                       onClick={() => {
-                        setSelected(isSelected ? null : index);
+                        setSelectedKey(isSelected ? null : visual.key);
                       }}
                     >
                       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -510,7 +548,7 @@ export function DashboardDesignerPage(): ReactElement {
                     }
                   >
                     {visual.section === undefined || visual.section === null ? (
-                      <VisualBody visual={figuresOf(index, visual)} />
+                      <VisualBody visual={figuresOf(visual)} />
                     ) : sectionShown(visual.section, sources) ? (
                       <SectionBody section={visual.section} sources={sources} />
                     ) : (
@@ -525,9 +563,6 @@ export function DashboardDesignerPage(): ReactElement {
                     onPointerDown={(event) => {
                       startDrag(event, index, 'resize');
                     }}
-                    onPointerMove={moveDrag}
-                    onPointerUp={endDrag}
-                    onPointerCancel={endDrag}
                     onKeyDown={(event) => {
                       keyOnHandle(event, index, 'resize');
                     }}
@@ -597,11 +632,11 @@ export function DashboardDesignerPage(): ReactElement {
             <h2 id="designer-settings" className="designer__heading">
               {t('dashboards.designer.properties')}
             </h2>
-            {selected === null || current === undefined ? (
+            {selected === null || selected < 0 || current === undefined ? (
               <p className="designer__hint">{t('dashboards.designer.selectHint')}</p>
             ) : (
               <VisualSettings
-                key={selected}
+                key={current.key}
                 visual={current}
                 onChange={(next) => {
                   place(selected, next);

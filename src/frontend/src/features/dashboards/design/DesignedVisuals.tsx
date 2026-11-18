@@ -16,7 +16,7 @@ import { emptyPortfolioReason, hasNoData } from '../presentation.ts';
 import { designApi, type VisualResult } from './designApi.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
-import { compacted, drillPath, gridPlace, placeKey } from './visuals.ts';
+import { drillPath, gridPlace, packed, placeKey } from './visuals.ts';
 import { VisualBody } from './VisualBody.tsx';
 
 /** One visual on the dashboard: its title over its figures. A card's or gauge's title opens the records its figure counts, as a headline card's did. */
@@ -184,7 +184,8 @@ export function DesignedVisuals({
     );
   }
   const sources: SectionSources = { insights: insights.data, view, filters, showsCompletion, map };
-  const shown = compacted(
+  // Laid out in the design's order with no gaps, as the designer laid it out; what the caller may not see leaves no hole.
+  const shown = packed(
     design.data.visuals.filter((visual) =>
       visual.section === undefined || visual.section === null
         ? visual.groups !== null && !withheld(visual)
