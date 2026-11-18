@@ -7922,7 +7922,7 @@ tr[data-flagged='true'] {
 
 @media (min-width: 64rem) {
   .designer__workspace {
-    grid-template-columns: minmax(0, 1fr) 18rem;
+    grid-template-columns: minmax(0, 1fr) 22rem;
   }
 
   .designer__pane {
@@ -8186,6 +8186,7 @@ tr[data-flagged='true'] {
 .designer__size {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: start;
   gap: var(--space-3);
 }
 
@@ -8273,4 +8274,11 @@ tr[data-flagged='true'] {
 .designer__section-placed {
   flex: none;
   font-size: 0.75rem;
+}
+
+.designer__section-add {
+  flex: none;
+  color: var(--color-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }

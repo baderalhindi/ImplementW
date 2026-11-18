@@ -182,6 +182,7 @@ export function VisualSettings({
             type="number"
             min={1}
             max={COLUMNS}
+            aria-describedby={`${id}-width-hint`}
             value={visual.layoutWidth}
             onChange={(event) => {
               const width = Number(event.target.value);
@@ -190,6 +191,9 @@ export function VisualSettings({
               }
             }}
           />
+          <p id={`${id}-width-hint`} className="field__hint">
+            {t('dashboards.designer.widthHint', { count: COLUMNS })}
+          </p>
         </div>
         <div className="field">
           <label className="field__label" htmlFor={`${id}-height`}>
@@ -201,6 +205,7 @@ export function VisualSettings({
             type="number"
             min={1}
             max={MAX_HEIGHT}
+            aria-describedby={`${id}-height-hint`}
             value={visual.layoutHeight}
             onChange={(event) => {
               const height = Number(event.target.value);
@@ -209,6 +214,9 @@ export function VisualSettings({
               }
             }}
           />
+          <p id={`${id}-height-hint`} className="field__hint">
+            {t('dashboards.designer.heightHint', { count: MAX_HEIGHT })}
+          </p>
         </div>
       </div>
       <div className="form__actions">
@@ -218,7 +226,7 @@ export function VisualSettings({
           </button>
         )}
         <button type="button" className="button button--danger" onClick={onRemove}>
-          {t('dashboards.designer.remove')}
+          {t(isSection ? 'dashboards.designer.removeSection' : 'dashboards.designer.remove')}
         </button>
       </div>
     </div>

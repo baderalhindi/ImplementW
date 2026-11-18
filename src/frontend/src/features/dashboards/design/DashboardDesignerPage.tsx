@@ -577,9 +577,13 @@ export function DashboardDesignerPage(): ReactElement {
                       }}
                     >
                       <span>{t(`dashboards.designer.section.${section}`)}</span>
-                      {placed && (
+                      {placed ? (
                         <span className="designer__section-placed">
                           {t('dashboards.designer.sectionPlaced')}
+                        </span>
+                      ) : (
+                        <span className="designer__section-add" aria-hidden="true">
+                          {t('dashboards.designer.sectionAdd')}
                         </span>
                       )}
                     </button>

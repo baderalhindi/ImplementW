@@ -354,8 +354,8 @@
     "measuresLabel": "Values",
     "measuresHint": "Up to {count}.",
     "groupByLabel": "Group by",
-    "width": "Width (of 12 columns)",
-    "height": "Height (rows)",
+    "width": "Width",
+    "height": "Height",
     "duplicate": "Duplicate",
     "remove": "Remove visual",
     "save": "Save for everyone",
@@ -426,6 +426,10 @@
     "sections": "Dashboard sections",
     "sectionsHint": "The dashboard's tables, lists, map and widgets. Each is placed once.",
     "sectionPlaced": "On the dashboard",
-    "sectionSettings": "A section shows its own figures; set its titles and size here."
+    "sectionSettings": "A section shows its own figures; set its titles and size here.",
+    "widthHint": "Columns, 1 to {count}",
+    "heightHint": "Rows, 1 to {count}",
+    "sectionAdd": "+ Add",
+    "removeSection": "Remove from dashboard"
   }
 }

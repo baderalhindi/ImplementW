@@ -354,8 +354,8 @@
     "measuresLabel": "القيم",
     "measuresHint": "حتى {count}.",
     "groupByLabel": "التجميع حسب",
-    "width": "العرض (من 12 عمودًا)",
-    "height": "الارتفاع (صفوف)",
+    "width": "العرض",
+    "height": "الارتفاع",
     "duplicate": "تكرار",
     "remove": "حذف العنصر",
     "save": "حفظ للجميع",
@@ -426,6 +426,10 @@
     "sections": "أقسام اللوحة",
     "sectionsHint": "جداول اللوحة وقوائمها وخريطتها وعناصرها. يوضع كل منها مرة واحدة.",
     "sectionPlaced": "موجود في اللوحة",
-    "sectionSettings": "يعرض القسم أرقامه الخاصة؛ اضبط عنوانيه وحجمه من هنا."
+    "sectionSettings": "يعرض القسم أرقامه الخاصة؛ اضبط عنوانيه وحجمه من هنا.",
+    "widthHint": "أعمدة، من 1 إلى {count}",
+    "heightHint": "صفوف، من 1 إلى {count}",
+    "sectionAdd": "+ إضافة",
+    "removeSection": "إزالة من اللوحة"
   }
 }
