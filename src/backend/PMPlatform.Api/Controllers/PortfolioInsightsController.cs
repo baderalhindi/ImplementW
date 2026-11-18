@@ -45,6 +45,16 @@ public sealed class PortfolioInsightsController(IPortfolioInsightsService insigh
     public async Task<IActionResult> GetDesign([FromQuery] PortfolioInsightFilters filters, CancellationToken cancellationToken) =>
         Ok(await design.GetAsync(CallerId, filters, cancellationToken));
 
+    /// <summary>
+    /// The data catalogue a visual may draw, group by and filter on (the 18 Nov 2026 data fields): every project-grain field of the projection register of
+    /// a type a visual calculates with, and the aggregations its type allows. A value is still read under its own projection's permission.
+    /// </summary>
+    [HttpGet("design/fields")]
+    [RequirePermission(PermissionCatalogue.DashboardDesign)]
+    [ProducesResponseType<PortfolioDesignFields>(StatusCodes.Status200OK, "application/json")]
+    [EndpointName("Project_GetPortfolioDesignFields")]
+    public IActionResult GetDesignFields() => Ok(design.GetFields());
+
     /// <summary>A design being edited, with the caller's figures, not saved.</summary>
     [HttpPost("design/preview")]
     [RequirePermission(PermissionCatalogue.DashboardDesign)]

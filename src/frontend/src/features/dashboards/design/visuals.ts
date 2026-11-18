@@ -8,6 +8,7 @@ import { type Language, translate, type TranslationKey } from '@/shared/i18n/i18
 import { type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { followUpPath, registerPath } from '../drillLinks.ts';
 import {
+  type FieldDescriptor,
   type GroupBy,
   type Measure,
   type Section,
@@ -15,9 +16,18 @@ import {
   type VisualGroup,
   type VisualType,
 } from './designApi.ts';
+import {
+  codeText,
+  drawsFields,
+  fieldName,
+  fieldValueText,
+  groupsByField,
+  NO_FIELD_DATA,
+  valuesFor,
+} from './fields.ts';
 
 // What a visual may be and how its figures read: the same rules the API checks (PortfolioDesignService), so the designer offers only what
-// saves. A card and a gauge show one figure, the charts a figure per group, a table either.
+// saves. A card and a gauge show one figure, the charts a figure per group, a table either. The governed fields' own rules are in fields.ts.
 
 type Translate = (key: TranslationKey, params?: Record<string, string | number>) => string;
 
@@ -119,37 +129,70 @@ export function isPercent(measure: Measure): boolean {
   return PERCENT_MEASURES.includes(measure);
 }
 
-/** A visual changed to `type`, keeping what still fits: its measures up to the type's count, a grouping the type takes. */
-export function withType(visual: Visual, type: VisualType): Visual {
+/**
+ * A visual changed to `type`, keeping what still fits: its measures (or field values) up to the type's count, with a calculation the type takes,
+ * and a grouping the type takes. Field values none of which fit fall back to the type's first measure.
+ */
+export function withType(
+  visual: Visual,
+  type: VisualType,
+  fields: readonly FieldDescriptor[] = [],
+): Visual {
+  const groupings = groupBysFor(type);
+  if (drawsFields(visual)) {
+    const values = valuesFor(visual.values ?? [], type, fields);
+    if (values.length > 0) {
+      const groupField = groupsByField(type) ? (visual.groupField ?? null) : null;
+      return {
+        ...visual,
+        visualType: type,
+        values,
+        groupField,
+        groupBy:
+          groupField !== null
+            ? 'NONE'
+            : groupings.includes(visual.groupBy)
+              ? visual.groupBy
+              : firstGrouping(type),
+      };
+    }
+  }
   const allowed = measuresFor(type);
   const measures = visual.measures
     .filter((measure) => allowed.includes(measure))
     .slice(0, MAX_MEASURES[type]);
-  const groupings = groupBysFor(type);
   return {
     ...visual,
+    ...NO_FIELD_DATA,
     visualType: type,
     measures: measures.length > 0 ? measures : [allowed[0] ?? 'PROJECTS'],
     groupBy: groupings.includes(visual.groupBy) ? visual.groupBy : firstGrouping(type),
   };
 }
 
-/** "Projects by portfolio": the title a visual takes from its first measure and its grouping until someone writes another. */
+/**
+ * "Projects by portfolio", "Sum of Actual expenditure to date by Overall health": the title a visual takes from its first measure or field value
+ * and its grouping until someone writes another.
+ */
 export function autoTitle(
-  visual: Pick<Visual, 'measures' | 'groupBy'>,
+  visual: Pick<Visual, 'measures' | 'groupBy' | 'values' | 'groupField'>,
   language: Language,
 ): string {
-  const measure = translate(
-    language,
-    `dashboards.designer.measure.${visual.measures[0] ?? 'PROJECTS'}`,
-  );
+  const [value] = visual.values ?? [];
+  const measure =
+    value === undefined
+      ? translate(language, `dashboards.designer.measure.${visual.measures[0] ?? 'PROJECTS'}`)
+      : fieldValueText(value, language);
+  const group =
+    visual.groupField !== undefined && visual.groupField !== null
+      ? fieldName(visual.groupField, language)
+      : visual.groupBy === 'NONE'
+        ? null
+        : translate(language, `dashboards.designer.groupBy.${visual.groupBy}`);
   const title =
-    visual.groupBy === 'NONE'
+    group === null
       ? measure
-      : translate(language, 'dashboards.designer.titleByGroup', {
-          measure,
-          group: translate(language, `dashboards.designer.groupBy.${visual.groupBy}`),
-        });
+      : translate(language, 'dashboards.designer.titleByGroup', { measure, group });
   // translate() isolates each parameter for display; a stored title is plain text.
   return title.replace(/[\u2068\u2069]/g, '');
 }
@@ -167,7 +210,7 @@ export function retitled(before: Visual, after: Visual): Visual {
 }
 
 /** The grouping a visual of `type` starts with: by portfolio where the type is grouped, as the dashboard's charts are. */
-function firstGrouping(type: VisualType): GroupBy {
+export function firstGrouping(type: VisualType): GroupBy {
   return groupBysFor(type).includes('PORTFOLIO') ? 'PORTFOLIO' : 'NONE';
 }
 
@@ -283,6 +326,18 @@ export interface GroupNames {
   itemLabel: (id: string) => string | null;
   departmentName: (id: string) => string | null;
   entityName: (id: string) => string | null;
+}
+
+/** A group's words when the visual groups by a status field: the value's word, or "not set" for the projects whose value is not revealed. */
+export function fieldGroupText(
+  groupField: string,
+  group: VisualGroup,
+  t: Translate,
+  language: Language,
+): string {
+  return group.key === null
+    ? t('dashboards.designer.notSet')
+    : codeText(groupField, group.key, language, t);
 }
 
 /** A group's words: its item, department or entity name, its status, stage or on-plan label, or "not set" for the projects with none. */

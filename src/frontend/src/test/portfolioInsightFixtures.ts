@@ -6,6 +6,9 @@ import {
 
 import {
   type DesignView,
+  type FieldAggregation,
+  type FieldDescriptor,
+  type FieldType,
   type GroupBy,
   type Measure,
   type VisualGroup,
@@ -340,5 +343,76 @@ function counted(projects: number): Figures {
     GAP_POINTS: null,
     NEEDING_FOLLOW_UP: null,
     OVERDUE_ACTIONS: null,
+  };
+}
+
+// The designer's data fields (18 Nov 2026, dashboard-designer-data-fields.md): GET /portfolio-insights/design/fields.
+
+/** The calculations each field type allows, in the contract's order: the first is what a newly chosen field starts with. */
+export const AGGREGATIONS_OF: Record<FieldType, FieldAggregation[]> = {
+  CODE: ['COUNT'],
+  COUNT: ['COUNT', 'SUM', 'AVERAGE', 'MIN', 'MAX'],
+  DAYS: ['COUNT', 'SUM', 'AVERAGE', 'MIN', 'MAX'],
+  SAR: ['COUNT', 'SUM', 'AVERAGE', 'MIN', 'MAX'],
+  PERCENT: ['COUNT', 'AVERAGE', 'MIN', 'MAX'],
+};
+
+/** The status codes of the RAG-like projections (the register's Values for their CODE fields). */
+const RAG = ['GREEN', 'AMBER', 'RED', 'UNKNOWN'];
+
+export const FIELD = {
+  FINANCIAL_CONDITION: 'FINANCIAL_KPI.FINANCIAL_POSITION.FINANCIAL_CONDITION',
+  APPROVED_BUDGET: 'FINANCIAL_KPI.FINANCIAL_POSITION.APPROVED_BUDGET',
+  ACTUAL_EXPENDITURE: 'FINANCIAL_KPI.FINANCIAL_POSITION.ACTUAL_EXPENDITURE_TO_DATE',
+  FORECAST_AT_COMPLETION: 'FINANCIAL_KPI.FINANCIAL_POSITION.FORECAST_AT_COMPLETION',
+  OVERALL_HEALTH: 'PROGRESS.PROJECT_HEALTH_STATUS.OVERALL_HEALTH',
+  ACTUAL_PERCENT: 'PROGRESS.PROJECT_HEALTH_STATUS.ACTUAL_PERCENT',
+  PLANNED_PERCENT: 'PROGRESS.PROJECT_HEALTH_STATUS.PLANNED_PERCENT',
+  OPEN_RISKS: 'RISK.RISK_EXPOSURE.OPEN_RISKS',
+  NOT_ASSESSED: 'RISK.RISK_EXPOSURE.NOT_ASSESSED',
+  REVIEW_OVERDUE: 'RISK.RISK_EXPOSURE.REVIEW_OVERDUE',
+  SCHEDULE_HEALTH: 'SCHEDULE.SCHEDULE_HEALTH_STATUS.SCHEDULE_HEALTH',
+  FINISH_VARIANCE_DAYS: 'SCHEDULE.SCHEDULE_HEALTH_STATUS.FINISH_VARIANCE_DAYS',
+} as const;
+
+function field(
+  key: string,
+  sourceDomain: string,
+  type: FieldType,
+  { isSensitive = false, values = [] }: { isSensitive?: boolean; values?: string[] } = {},
+): FieldDescriptor {
+  const fieldCode = key.split('.').at(-1) ?? key;
+  return {
+    key,
+    projectionCode: key.slice(0, key.length - fieldCode.length - 1),
+    sourceDomain,
+    fieldCode,
+    type,
+    isSensitive,
+    values,
+    aggregations: AGGREGATIONS_OF[type],
+  };
+}
+
+/**
+ * The fields endpoint's body: four project-grain projections of the demo register (their fields, types, sensitivity and values as the preview
+ * API's /dashboard-projections lists them), in the register's order.
+ */
+export function designFieldsFixture(): { fields: FieldDescriptor[] } {
+  return {
+    fields: [
+      field(FIELD.FINANCIAL_CONDITION, 'WF-14', 'CODE', { values: RAG }),
+      field(FIELD.APPROVED_BUDGET, 'WF-14', 'SAR', { isSensitive: true }),
+      field(FIELD.ACTUAL_EXPENDITURE, 'WF-14', 'SAR', { isSensitive: true }),
+      field(FIELD.FORECAST_AT_COMPLETION, 'WF-14', 'SAR', { isSensitive: true }),
+      field(FIELD.OVERALL_HEALTH, 'WF-02', 'CODE', { values: RAG }),
+      field(FIELD.ACTUAL_PERCENT, 'WF-02', 'PERCENT'),
+      field(FIELD.PLANNED_PERCENT, 'WF-02', 'PERCENT'),
+      field(FIELD.OPEN_RISKS, 'WF-06', 'COUNT'),
+      field(FIELD.NOT_ASSESSED, 'WF-06', 'COUNT'),
+      field(FIELD.REVIEW_OVERDUE, 'WF-06', 'COUNT'),
+      field(FIELD.SCHEDULE_HEALTH, 'WF-03', 'CODE', { values: RAG }),
+      field(FIELD.FINISH_VARIANCE_DAYS, 'WF-03', 'DAYS'),
+    ],
   };
 }

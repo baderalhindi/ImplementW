@@ -1,5 +1,6 @@
 using PMPlatform.Api.Errors;
 using PMPlatform.Api.Models.IdentityAccess;
+using PMPlatform.Application.Features.Project.Contracts;
 using PMPlatform.Application.Features.Project.Insights;
 using PMPlatform.Domain.Project;
 
@@ -51,7 +52,10 @@ public sealed record PortfolioVisualRequest(
     short? LayoutRow,
     short? LayoutWidth,
     short? LayoutHeight,
-    PortfolioSection? Section = null)
+    PortfolioSection? Section = null,
+    IReadOnlyList<PortfolioFieldValueRequest?>? Values = null,
+    string? GroupField = null,
+    IReadOnlyList<PortfolioFieldFilterRequest?>? Filters = null)
 {
     internal void Validate(string at, List<FieldError> errors)
     {
@@ -62,14 +66,32 @@ public sealed record PortfolioVisualRequest(
         Require(LayoutRow, $"{at}.layoutRow", errors);
         Require(LayoutWidth, $"{at}.layoutWidth", errors);
         Require(LayoutHeight, $"{at}.layoutHeight", errors);
-        if (Measures is null && Section is null)
+        if (Measures is null && Section is null && Values is null)
         {
             errors.Add(new FieldError($"{at}.measures", FieldError.Required));
+        }
+
+        for (int i = 0; i < (Values?.Count ?? 0); i++)
+        {
+            if (Values![i] is not { Field: not null, Aggregation: not null })
+            {
+                errors.Add(new FieldError($"{at}.values[{i}]", FieldError.Required));
+            }
+        }
+
+        for (int i = 0; i < (Filters?.Count ?? 0); i++)
+        {
+            if (Filters![i] is not { Field: not null, Values: not null } filter || filter.Values.Any(v => v is null))
+            {
+                errors.Add(new FieldError($"{at}.filters[{i}]", FieldError.Required));
+            }
         }
     }
 
     internal PortfolioVisualInput ToInput() =>
-        new(Title!.ToLabel(), VisualType!.Value, Measures ?? [], GroupBy!.Value, LayoutColumn!.Value, LayoutRow!.Value, LayoutWidth!.Value, LayoutHeight!.Value, Section);
+        new(Title!.ToLabel(), VisualType!.Value, Measures ?? [], GroupBy!.Value, LayoutColumn!.Value, LayoutRow!.Value, LayoutWidth!.Value, LayoutHeight!.Value, Section,
+            Values?.Select(v => new PortfolioFieldValue(v!.Field!, v.Aggregation!.Value)).ToList(), GroupField,
+            Filters?.Select(f => new PortfolioFieldFilter(f!.Field!, f.Values!)).ToList());
 
     private static void Require<T>(T? value, string field, List<FieldError> errors)
         where T : struct
@@ -80,3 +102,9 @@ public sealed record PortfolioVisualRequest(
         }
     }
 }
+
+/// <summary>A value a visual draws: a field key of the data catalogue and its aggregation; how they fit the visual is checked by the service.</summary>
+public sealed record PortfolioFieldValueRequest(string? Field, PortfolioFieldAggregation? Aggregation);
+
+/// <summary>A visual's filter: a CODE field key or a dimension key, and the values that pass; their shape is checked by the service.</summary>
+public sealed record PortfolioFieldFilterRequest(string? Field, IReadOnlyList<string>? Values);

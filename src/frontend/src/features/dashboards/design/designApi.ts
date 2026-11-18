@@ -40,6 +40,38 @@ export type GroupBy =
   | 'CITY'
   | 'PRIORITY';
 
+/** A governed field's type (the register's ProjectionValueType); BOOLEAN, DATE and DATE_TIME fields are not offered. */
+export type FieldType = 'CODE' | 'COUNT' | 'PERCENT' | 'DAYS' | 'SAR';
+
+export type FieldAggregation = 'COUNT' | 'SUM' | 'AVERAGE' | 'MIN' | 'MAX';
+
+/** One field the designer offers (GET /portfolio-insights/design/fields): a project-grain field of the governed catalogue. */
+export interface FieldDescriptor {
+  /** `<PROJECTION_CODE>.<FIELD_CODE>`, e.g. FINANCIAL_KPI.FINANCIAL_POSITION.ACTUAL_EXPENDITURE_TO_DATE. */
+  key: string;
+  projectionCode: string;
+  sourceDomain: string;
+  fieldCode: string;
+  type: FieldType;
+  isSensitive: boolean;
+  /** The codes a CODE field takes; empty for any other type. */
+  values: string[];
+  /** The calculations its type allows, in the register's order. */
+  aggregations: FieldAggregation[];
+}
+
+/** A value a visual draws from a field: the field's key and the calculation over each group's projects. */
+export interface FieldValue {
+  field: string;
+  aggregation: FieldAggregation;
+}
+
+/** A visual's own filter: a CODE field's key or a project attribute (`PROJECT.STATUS`), and the values a project must have. */
+export interface FieldFilter {
+  field: string;
+  values: string[];
+}
+
 /** A visual as the designer keeps and sends it. Columns and rows count from 0, from the reading start. */
 export interface Visual {
   title: BilingualLabel;
@@ -52,6 +84,12 @@ export interface Visual {
   layoutHeight: number;
   /** The section a SECTION places, with no measures and no grouping; absent for any other type. */
   section?: Section | null | undefined;
+  /** Field values the visual draws instead of `measures` (which is then empty); absent or null when it draws measures. */
+  values?: FieldValue[] | null | undefined;
+  /** A CODE field the visual groups by, `groupBy` being NONE; absent or null when it groups by a project attribute or not at all. */
+  groupField?: string | null | undefined;
+  /** The visual's own filters, applied after the dashboard's; absent or null when it has none. */
+  filters?: FieldFilter[] | null | undefined;
 }
 
 /** One group's figures, a value per measure in the visual's order; null when it cannot be calculated or may not be seen. */
@@ -67,6 +105,8 @@ export interface VisualGroup {
 
 export interface VisualResult extends Visual {
   groups: VisualGroup[] | null;
+  /** Each field value's type, in the order of `values`: how a value reads, for readers who may not read the designer's catalogue. */
+  valueTypes?: FieldType[] | null | undefined;
 }
 
 export interface DesignView {
@@ -97,6 +137,13 @@ export const designApi = {
         body: { visuals },
       })
     ).data,
+  /** The governed fields a visual may draw, group by and filter on. */
+  fields: async (signal?: AbortSignal) =>
+    (
+      await apiRequest<{ fields: FieldDescriptor[] }>('/portfolio-insights/design/fields', {
+        signal,
+      })
+    ).data.fields,
   /** Back to the standard design. */
   reset: async () => {
     await apiRequest<undefined>('/portfolio-insights/design/reset', { method: 'POST', body: {} });

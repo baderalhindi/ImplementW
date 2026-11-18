@@ -8289,3 +8289,275 @@ tr[data-flagged='true'] {
   font-size: 0.8125rem;
   font-weight: 600;
 }
+
+/*
+ * The Data panel (TASK-112): the chosen values over a searchable field list, grouped by source and opened per group, as Power BI's field list
+ * reads; each chosen field carries its calculation. Filters reuse the rows. The list scrolls inside the pane, so the size fields stay in reach.
+ */
+.designer-data {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.designer-data__chosen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.designer-data__value,
+.designer-data__filter-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2.25rem;
+  padding-block: var(--space-1);
+  padding-inline: var(--space-3) var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-inline-start: 3px solid var(--color-primary);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-size: 0.875rem;
+}
+
+.designer-data__value-name {
+  flex: 1;
+  min-inline-size: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.designer-data__aggregation.field__input {
+  flex: none;
+  inline-size: 7.5rem;
+  min-block-size: 2rem;
+  padding-block: 0;
+  padding-inline: var(--space-2) 1.75rem;
+  background-position: right var(--space-2) center;
+  font-size: 0.8125rem;
+}
+
+[dir='rtl'] .designer-data__aggregation.field__input {
+  padding-inline: var(--space-2) 1.75rem;
+  background-position: left var(--space-2) center;
+}
+
+.designer-data__remove {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.designer-data__remove svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.designer-data__remove:hover:not(:disabled) {
+  background: var(--color-danger-surface);
+  color: var(--color-danger);
+}
+
+.designer-data__remove:focus-visible,
+.designer-data__group-head:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.designer-data__remove:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.designer-data__note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--color-info-surface);
+  color: var(--color-info);
+  font-size: 0.8125rem;
+}
+
+.designer-data__search.field__input {
+  min-block-size: 2.25rem;
+  font-size: 0.875rem;
+}
+
+.designer-data__list {
+  max-block-size: 22rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.designer-data__group + .designer-data__group {
+  border-block-start: 1px solid var(--color-border-subtle);
+}
+
+.designer-data__group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-block-size: 2.25rem;
+  padding: var(--space-1) var(--space-3);
+  border: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.designer-data__group-head:hover {
+  background: var(--color-primary-tint);
+}
+
+/* A chevron that points to the reading end when closed and down when open. */
+.designer-data__chevron {
+  flex: none;
+  inline-size: 0.45rem;
+  block-size: 0.45rem;
+  border-block-end: 2px solid currentColor;
+  border-inline-end: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 120ms ease;
+}
+
+[dir='rtl'] .designer-data__chevron {
+  transform: rotate(45deg);
+}
+
+.designer-data__group-head[aria-expanded='true'] .designer-data__chevron {
+  transform: rotate(45deg);
+}
+
+[dir='rtl'] .designer-data__group-head[aria-expanded='true'] .designer-data__chevron {
+  transform: rotate(-45deg);
+}
+
+.designer-data__group-name {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.designer-data__count {
+  flex: none;
+  min-inline-size: 1.25rem;
+  padding: 0 var(--space-1);
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.designer-data__fields {
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+}
+
+.designer-data__field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 2rem;
+  padding: var(--space-1) var(--space-3);
+  padding-inline-start: var(--space-6);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.designer-data__field:hover {
+  background: var(--color-primary-tint);
+}
+
+.designer-data__field:has(input:disabled) {
+  cursor: default;
+  color: var(--color-text-muted);
+}
+
+.designer-data__field input {
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.designer-data__field-name {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.designer-data__type {
+  flex: none;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+
+.designer-data__filter {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.designer-data__filter .designer-data__filter-head {
+  border: 0;
+  border-block-end: 1px solid var(--color-border-subtle);
+  border-inline-start: 3px solid var(--color-primary);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.designer-data__filter-values {
+  max-block-size: 12rem;
+  overflow-y: auto;
+}
+
+.designer-data__filter-values .designer-data__field {
+  padding-inline-start: var(--space-3);
+}
+
+.designer-data__filter > .designer__hint {
+  padding: var(--space-2) var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .designer-data__chevron {
+    transition: none;
+  }
+}
+
+.designer-data__filter-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.designer-data__add {
+  align-self: flex-start;
+}

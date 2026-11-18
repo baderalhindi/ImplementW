@@ -31,6 +31,7 @@ import {
   type VisualResult,
   type VisualType,
 } from './designApi.ts';
+import { normalized } from './fields.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
 import { VisualBody } from './VisualBody.tsx';
@@ -74,13 +75,13 @@ interface Drag {
 let nextKey = 0;
 const keyed = (visual: Visual): Draft => ({ ...visual, key: `visual-${String((nextKey += 1))}` });
 
-/** A design as the API takes it: the keys are the designer's own. */
+/** A design as the API takes it: the keys are the designer's own, and field data only where a visual has some. */
 function plain(drafts: Draft[]): Visual[] {
-  return drafts.map(({ key: _key, ...visual }) => visual);
+  return drafts.map(({ key: _key, ...visual }) => normalized(visual));
 }
 
 function withoutFigures(visual: VisualResult): Visual {
-  return {
+  return normalized({
     title: visual.title,
     visualType: visual.visualType,
     measures: visual.measures,
@@ -90,7 +91,16 @@ function withoutFigures(visual: VisualResult): Visual {
     layoutWidth: visual.layoutWidth,
     layoutHeight: visual.layoutHeight,
     ...(visual.section === undefined || visual.section === null ? {} : { section: visual.section }),
-  };
+    values: visual.values,
+    groupField: visual.groupField,
+    filters: visual.filters,
+  });
+}
+
+/** What a visual's figures are calculated from: its type, measures or field values, grouping and filters. */
+function figuresBasis(visual: Visual): string {
+  const { visualType, measures, groupBy, values, groupField, filters } = normalized(visual);
+  return JSON.stringify({ visualType, measures, groupBy, values, groupField, filters });
 }
 
 /** Each visual's figures by its key: the API answers a design in the order it was sent. */
@@ -135,6 +145,8 @@ export function DashboardDesignerPage(): ReactElement {
   const view = useApiResource(
     useCallback((signal: AbortSignal) => dashboardsApi.get('PORTFOLIO', {}, signal), []),
   );
+  // The governed fields the Data panel offers; until they load (or when they cannot be read) the Portfolio figures still are.
+  const fields = useApiResource(useCallback((signal: AbortSignal) => designApi.fields(signal), []));
   const showsCompletion = useShowsCompletion();
   const sources: SectionSources = {
     insights: insights.data,
@@ -411,10 +423,7 @@ export function DashboardDesignerPage(): ReactElement {
   const figuresOf = (visual: Draft): VisualResult => {
     const calculated = figures.get(visual.key);
     // Until the new figures arrive, a visual whose values changed shows none rather than figures for other values.
-    return calculated?.groups !== undefined &&
-      calculated.visualType === visual.visualType &&
-      calculated.groupBy === visual.groupBy &&
-      JSON.stringify(calculated.measures) === JSON.stringify(visual.measures)
+    return calculated?.groups !== undefined && figuresBasis(calculated) === figuresBasis(visual)
       ? { ...calculated, ...visual }
       : { ...visual, groups: [] };
   };
@@ -548,7 +557,7 @@ export function DashboardDesignerPage(): ReactElement {
                     }
                   >
                     {visual.section === undefined || visual.section === null ? (
-                      <VisualBody visual={figuresOf(visual)} />
+                      <VisualBody visual={figuresOf(visual)} fields={fields.data} />
                     ) : sectionShown(visual.section, sources) ? (
                       <SectionBody section={visual.section} sources={sources} />
                     ) : (
@@ -638,6 +647,7 @@ export function DashboardDesignerPage(): ReactElement {
               <VisualSettings
                 key={current.key}
                 visual={current}
+                fields={fields}
                 onChange={(next) => {
                   place(selected, next);
                 }}

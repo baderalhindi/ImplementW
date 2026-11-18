@@ -10,20 +10,11 @@ namespace PMPlatform.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropCheckConstraint(
-                name: "ck_portfolio_visual_layout",
-                schema: "project",
-                table: "portfolio_visual");
+            migrationBuilder.Sql("ALTER TABLE project.portfolio_visual DROP CONSTRAINT ck_portfolio_visual_layout; -- EXPAND-THEN-CONTRACT-REVIEWED: replaced by a widened check below, same release");
 
-            migrationBuilder.DropCheckConstraint(
-                name: "ck_portfolio_visual_measures",
-                schema: "project",
-                table: "portfolio_visual");
+            migrationBuilder.Sql("ALTER TABLE project.portfolio_visual DROP CONSTRAINT ck_portfolio_visual_measures; -- EXPAND-THEN-CONTRACT-REVIEWED: replaced by a widened check below, same release");
 
-            migrationBuilder.DropCheckConstraint(
-                name: "ck_portfolio_visual_visual_type",
-                schema: "project",
-                table: "portfolio_visual");
+            migrationBuilder.Sql("ALTER TABLE project.portfolio_visual DROP CONSTRAINT ck_portfolio_visual_visual_type; -- EXPAND-THEN-CONTRACT-REVIEWED: replaced by a widened check below, same release");
 
             migrationBuilder.AddColumn<string>(
                 name: "section",

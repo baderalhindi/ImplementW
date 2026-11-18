@@ -139,4 +139,11 @@ public sealed class PortfolioVisual : AuditedEntity
 
     /// <summary>Rows taken, 1 to 24.</summary>
     public short LayoutHeight { get; set; }
+
+    /// <summary>
+    /// The data catalogue's fields the visual names (the 18 Nov 2026 data fields), as JSON in the API's shape: <c>{"values":[…],"groupField":…,"filters":[…]}</c>.
+    /// Null for a visual that names none (fixed measures, a section). Each field is a registered projection's field, never a table, column or expression
+    /// (BR-DSH-030); the design service checks the content, and this column holds only what it wrote.
+    /// </summary>
+    public string? DataFields { get; set; }
 }

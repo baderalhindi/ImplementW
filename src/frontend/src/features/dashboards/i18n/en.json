@@ -430,6 +430,135 @@
     "widthHint": "Columns, 1 to {count}",
     "heightHint": "Rows, 1 to {count}",
     "sectionAdd": "+ Add",
-    "removeSection": "Remove from dashboard"
+    "removeSection": "Remove from dashboard",
+    "dataLabel": "Data",
+    "searchFields": "Search fields",
+    "noFieldMatch": "No field matches the search.",
+    "portfolioFigures": "Portfolio figures",
+    "fieldsUnavailable": "The data fields could not be loaded. The Portfolio figures are still available.",
+    "replacedFigures": "The Portfolio figures were replaced by the field you chose: a visual shows one kind or the other.",
+    "replacedFields": "The fields were replaced by the Portfolio figure you chose: a visual shows one kind or the other.",
+    "aggregationLabel": "Calculation of {field}",
+    "removeValue": "Remove {field}",
+    "projectAttributes": "Project attributes",
+    "statusFields": "Status fields",
+    "filtersLabel": "Filters",
+    "filtersHint": "Only projects with one of the ticked values are counted. Up to {count} filters.",
+    "filtersFieldsOnly": "Filters, and grouping by a status field, apply to values chosen from the data fields.",
+    "addFilter": "+ Add filter",
+    "removeFilter": "Remove the {field} filter",
+    "filterNoValues": "There are no values to choose from.",
+    "fieldCoverage": "{count} of {total} projects have a value",
+    "aggregation": {
+      "COUNT": "Count",
+      "SUM": "Sum",
+      "AVERAGE": "Average",
+      "MIN": "Minimum",
+      "MAX": "Maximum"
+    },
+    "aggregationOf": {
+      "COUNT": "Count of {field}",
+      "SUM": "Sum of {field}",
+      "AVERAGE": "Average of {field}",
+      "MIN": "Minimum of {field}",
+      "MAX": "Maximum of {field}"
+    },
+    "fieldType": {
+      "CODE": "Status",
+      "COUNT": "Count",
+      "PERCENT": "%",
+      "DAYS": "Days",
+      "SAR": "SAR"
+    },
+    "fieldSource": {
+      "CHANGE_REQUEST_CHANGE_POSITION": "Change requests",
+      "FINANCIAL_KPI_FINANCIAL_POSITION": "Financial position (live)",
+      "FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT": "Published financial snapshot",
+      "FINANCIAL_KPI_KPI_CONDITION": "KPIs",
+      "MANAGEMENT_CONCERN_OPEN_CONCERNS": "Issues and challenges",
+      "MILESTONE_OPEN_ACHIEVEMENT_CLAIMS": "Milestones",
+      "PROGRESS_PROJECT_HEALTH_STATUS": "Progress (live)",
+      "PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT": "Published progress",
+      "PROGRESS_PUBLISHED_SCHEDULE_HEALTH": "Published schedule health",
+      "PROGRESS_REPORTING_COMPLETENESS": "Reporting completeness",
+      "PROJECT_LIFECYCLE_STATE": "Project",
+      "PROJECT_TASK_OPEN_TASKS": "Tasks",
+      "RISK_RISK_EXPOSURE": "Risks",
+      "SCHEDULE_SCHEDULE_HEALTH_STATUS": "Schedule (live)",
+      "SUSPENSION_OPEN_REQUESTS": "Suspensions"
+    },
+    "field": {
+      "CHANGE_REQUEST_CHANGE_POSITION": {
+        "UNDECIDED": "Change requests not yet decided",
+        "APPROVED_NOT_STARTED": "Approved changes not started",
+        "IN_IMPLEMENTATION": "Changes in implementation"
+      },
+      "FINANCIAL_KPI_FINANCIAL_POSITION": {
+        "FINANCIAL_CONDITION": "Financial condition",
+        "APPROVED_BUDGET": "Approved budget",
+        "ACTUAL_EXPENDITURE_TO_DATE": "Actual expenditure to date",
+        "FORECAST_AT_COMPLETION": "Forecast at completion"
+      },
+      "FINANCIAL_KPI_PUBLISHED_FINANCIAL_SNAPSHOT": {
+        "FINANCIAL_CONDITION": "Published financial condition",
+        "APPROVED_BUDGET": "Published approved budget",
+        "ACTUAL_EXPENDITURE_TO_DATE": "Published actual expenditure",
+        "FORECAST_AT_COMPLETION": "Published forecast at completion"
+      },
+      "FINANCIAL_KPI_KPI_CONDITION": {
+        "ACTIVE_ASSIGNMENTS": "Active KPIs",
+        "NOT_PUBLISHED": "KPIs not yet reported",
+        "RAG_GREEN": "KPIs on target",
+        "RAG_AMBER": "KPIs near target",
+        "RAG_RED": "KPIs off target",
+        "RAG_UNKNOWN": "KPIs not rated",
+        "RAG_NOT_APPLICABLE": "KPIs not applicable"
+      },
+      "MANAGEMENT_CONCERN_OPEN_CONCERNS": {
+        "OPEN_CONCERNS": "Open issues and challenges"
+      },
+      "MILESTONE_OPEN_ACHIEVEMENT_CLAIMS": {
+        "OPEN_ACHIEVEMENT_CLAIMS": "Open achievement claims"
+      },
+      "PROGRESS_PROJECT_HEALTH_STATUS": {
+        "OVERALL_HEALTH": "Overall health",
+        "ACTUAL_PERCENT": "Actual progress",
+        "PLANNED_PERCENT": "Planned progress"
+      },
+      "PROGRESS_PUBLISHED_PROGRESS_SNAPSHOT": {
+        "OVERALL_HEALTH": "Published overall health",
+        "ACTUAL_PERCENT": "Published actual progress",
+        "PLANNED_PERCENT": "Published planned progress",
+        "ACTUAL_PERCENT_OVERRIDDEN": "Actual progress overridden"
+      },
+      "PROGRESS_PUBLISHED_SCHEDULE_HEALTH": {
+        "SCHEDULE_HEALTH": "Published schedule health"
+      },
+      "PROGRESS_REPORTING_COMPLETENESS": {
+        "REPORTING_STATUS": "Reporting status",
+        "OVERDUE_PERIODS": "Overdue reporting periods"
+      },
+      "PROJECT_LIFECYCLE_STATE": {
+        "LIFECYCLE_STATE": "Project status"
+      },
+      "PROJECT_TASK_OPEN_TASKS": {
+        "OPEN_TASKS": "Open tasks"
+      },
+      "RISK_RISK_EXPOSURE": {
+        "OPEN_RISKS": "Open risks",
+        "NOT_ASSESSED": "Risks not yet assessed",
+        "REVIEW_OVERDUE": "Risks past their review date"
+      },
+      "SCHEDULE_SCHEDULE_HEALTH_STATUS": {
+        "SCHEDULE_HEALTH": "Schedule health",
+        "FINISH_VARIANCE_DAYS": "Finish variance (days)"
+      },
+      "SUSPENSION_OPEN_REQUESTS": {
+        "OPEN_REQUESTS": "Open suspension requests"
+      }
+    },
+    "filterField": "Filter on",
+    "chooseFilterField": "Choose a field…",
+    "cancelFilter": "Cancel the new filter"
   }
 }

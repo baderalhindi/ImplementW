@@ -14,6 +14,7 @@ import {
 } from '../insights/insightSections.ts';
 import { emptyPortfolioReason, hasNoData } from '../presentation.ts';
 import { designApi, type VisualResult } from './designApi.ts';
+import { drawsFields } from './fields.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
 import { drillPath, gridPlace, packed, placeKey } from './visuals.ts';
@@ -30,8 +31,9 @@ function VisualFrame({
   const { t, language } = useI18n();
   const title = visual.title[language];
   const whole = visual.groupBy === 'NONE' ? visual.groups?.[0] : undefined;
+  // A field's value opens nothing: no list filters by it.
   const href =
-    whole === undefined || visual.visualType === 'TABLE'
+    whole === undefined || visual.visualType === 'TABLE' || drawsFields(visual)
       ? undefined
       : drillPath(visual.measures[0] ?? 'PROJECTS', 'NONE', null, filters);
   return (
@@ -67,6 +69,7 @@ function VisualFrame({
 /** A figure the caller may not see at all, such as the value without the amounts permission: left out, as the value card always was. */
 function withheld(visual: VisualResult): boolean {
   return (
+    visual.measures.length > 0 &&
     visual.measures.every((measure) => measure === 'VALUE_SAR') &&
     (visual.groups ?? []).every((group) => group.values.every((value) => value === null))
   );

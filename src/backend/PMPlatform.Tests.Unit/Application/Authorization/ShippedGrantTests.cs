@@ -1,4 +1,4 @@
-using PMPlatform.Application.Common.Authorization;
+﻿using PMPlatform.Application.Common.Authorization;
 using PMPlatform.Domain.IdentityAccess;
 using static PMPlatform.Tests.Unit.Application.Authorization.AuthorizationScenario;
 
@@ -566,6 +566,9 @@ public sealed class ShippedGrantTests
         [PermissionCatalogue.IntegrationAlertManage] = "R01:ALL",
         [PermissionCatalogue.IntegrationConfigure] = "R01:ALL",
         [PermissionCatalogue.DataImport] = "R01:ALL",
+
+        // The 17 Nov 2026 dashboard designer: the Portfolio Manager designs the Portfolio dashboard for everyone (dashboard-designer.md D-1).
+        [PermissionCatalogue.DashboardDesign] = "R02:ALL",
     };
 
     private static string ScopeCode(DataScope scope) => scope switch

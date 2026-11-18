@@ -11,8 +11,17 @@ import { type PortfolioFilters } from '../api/dashboardsApi.ts';
 import { bucketColors, type ChartBucket } from '../charts.ts';
 import { BarChart, DonutChart, GaugeChart, GroupedColumnChart } from '../components/Charts.tsx';
 import { Coverage } from '../insights/figures.tsx';
-import { type Measure, type VisualResult } from './designApi.ts';
-import { drillPath, formatValue, groupText, isPercent } from './visuals.ts';
+import { isStatusScale, labelOfValue } from '../presentation.ts';
+import { type FieldDescriptor, type VisualResult } from './designApi.ts';
+import {
+  fieldName,
+  fieldParts,
+  fieldValueText,
+  formatFieldValue,
+  isPercentValue,
+  valueTypeOf,
+} from './fields.ts';
+import { drillPath, fieldGroupText, formatValue, groupText, isPercent } from './visuals.ts';
 import { type StatusTone } from '@/shared/ui/StatusBadge.tsx';
 import { useCan } from '@/features/identity-access/permissions/permissions.ts';
 
@@ -25,6 +34,17 @@ const ON_PLAN_TONE: Record<string, StatusTone> = {
 /** The slices a pie or donut draws: past this, the smallest go together as one. */
 const SHARES = 6;
 
+/** One value a visual draws: a Portfolio figure or a field's calculation, with its words, its format and the records it opens. */
+interface Series {
+  key: string;
+  text: string;
+  format: (value: number | null) => string;
+  percent: boolean;
+  /** The figure's exact amount, for a card's tooltip; undefined where the short form is exact. */
+  exact: (value: number) => string | undefined;
+  drill: (key: string | null) => string | undefined;
+}
+
 const SERIES_COLORS = [
   'var(--chart-category-1)',
   'var(--chart-category-2)',
@@ -33,33 +53,79 @@ const SERIES_COLORS = [
 
 /**
  * A visual's figures drawn as its type says. With `filters` (on the dashboard, not in the designer) each figure opens the records it counts, as
- * round 8 point 01 has every count do.
+ * round 8 point 01 has every count do; a field's value opens nothing, as no list filters by it. A field value reads by the type the API
+ * returns with it (`valueTypes`); `fields`, the designer's catalogue, stands in where none came.
  */
 export function VisualBody({
   visual,
   filters,
+  fields = [],
 }: {
   visual: VisualResult;
   filters?: PortfolioFilters | undefined;
+  fields?: readonly FieldDescriptor[] | undefined;
 }): ReactElement {
   const { t, language } = useI18n();
   const lookups = useProjectLookups();
   const [active, setActive] = useState<string | null>(null);
   const groups = visual.groups ?? [];
-  const measureText = (measure: Measure) => t(`dashboards.designer.measure.${measure}`);
 
   if (groups.length === 0 || groups.every((group) => group.projects === 0)) {
     return <p className="state">{t('dashboards.noData')}</p>;
   }
 
-  const first = visual.measures[0] ?? 'PROJECTS';
-  const drill = (measure: Measure, key: string | null) =>
-    filters === undefined ? undefined : drillPath(measure, visual.groupBy, key, filters);
+  const fieldValues = visual.values ?? [];
+  const onFields = fieldValues.length > 0;
+  const groupField = visual.groupField ?? null;
+  const series: Series[] = onFields
+    ? fieldValues.map((value, index) => {
+        const type = valueTypeOf(visual, index, fields);
+        return {
+          key: `${value.field}:${value.aggregation}`,
+          text: fieldValueText(value, language),
+          format: (figure: number | null) => formatFieldValue(value.aggregation, type, figure, t),
+          percent: isPercentValue(value.aggregation, type),
+          exact: (figure: number) =>
+            value.aggregation !== 'COUNT' && type === 'SAR'
+              ? sarExactLabel(String(figure), t)
+              : undefined,
+          drill: () => undefined,
+        };
+      })
+    : visual.measures.map((measure) => ({
+        key: measure,
+        text: t(`dashboards.designer.measure.${measure}`),
+        format: (figure) => formatValue(measure, figure, t),
+        percent: isPercent(measure),
+        exact: (figure) => (measure === 'VALUE_SAR' ? sarExactLabel(String(figure), t) : undefined),
+        drill: (key) =>
+          filters === undefined ? undefined : drillPath(measure, visual.groupBy, key, filters),
+      }));
+  const first = series[0];
+  if (first === undefined) {
+    return <p className="state">{t('dashboards.noData')}</p>;
+  }
+  const measure = onFields ? null : (visual.measures[0] ?? null);
   const projectsHint = (count: number) => t('dashboards.drill.projects', { count });
   const text = (index: number) => {
     const group = groups[index];
-    return group === undefined ? '' : groupText(visual.groupBy, group, lookups, t, language);
+    if (group === undefined) {
+      return '';
+    }
+    return groupField === null
+      ? groupText(visual.groupBy, group, lookups, t, language)
+      : fieldGroupText(groupField, group, t, language);
   };
+  const rowDrill = (key: string | null) =>
+    onFields || filters === undefined
+      ? undefined
+      : drillPath('PROJECTS', visual.groupBy, key, filters);
+  const groupHeading =
+    groupField === null
+      ? visual.groupBy === 'NONE'
+        ? null
+        : t(`dashboards.designer.groupBy.${visual.groupBy}`)
+      : fieldName(groupField, language);
 
   switch (visual.visualType) {
     case 'CARD': {
@@ -67,33 +133,32 @@ export function VisualBody({
       if (whole === undefined) {
         return <p className="state">{t('dashboards.noData')}</p>;
       }
-      const second = visual.measures[1];
+      const second = series[1];
+      const lead = whole.values[0] ?? null;
       return (
         <div className="visual-card">
           <span
             className="home__tile-value"
             dir="auto"
-            title={
-              first === 'VALUE_SAR' && whole.values[0] != null
-                ? sarExactLabel(String(whole.values[0]), t)
-                : undefined
-            }
+            title={lead === null ? undefined : first.exact(lead)}
           >
-            {formatValue(first, whole.values[0] ?? null, t)}
+            {first.format(lead)}
           </span>
-          {first === 'GAP_POINTS' && <OnPlanBadge status={whole.onPlan} />}
+          {measure === 'GAP_POINTS' && <OnPlanBadge status={whole.onPlan} />}
           {second !== undefined && (
             <FigureText
-              text={`${measureText(second)}: ${formatValue(second, whole.values[1] ?? null, t)}`}
-              href={drill(second, null)}
+              text={`${second.text}: ${second.format(whole.values[1] ?? null)}`}
+              href={second.drill(null)}
             />
           )}
-          {isPercent(first) && (
+          {first.percent && (
             <span className="insights__coverage">{t('dashboards.insights.simpleAverage')}</span>
           )}
-          {isPercent(first) || first === 'GAP_POINTS' ? (
+          {onFields ? (
+            <FieldCoverage count={whole.measured} of={whole.projects} />
+          ) : measure !== null && (isPercent(measure) || measure === 'GAP_POINTS') ? (
             <Coverage kind="progress" count={whole.measured} of={whole.projects} />
-          ) : first === 'VALUE_SAR' ? (
+          ) : measure === 'VALUE_SAR' ? (
             <Coverage kind="value" count={whole.valueEntered} of={whole.projects} />
           ) : null}
         </div>
@@ -104,14 +169,18 @@ export function VisualBody({
       return (
         <div className="visual-gauge">
           <GaugeChart
-            rings={[{ key: first, value, color: 'var(--chart-category-1)' }]}
-            lead={formatValue(first, value, t)}
+            rings={[{ key: first.key, value, color: 'var(--chart-category-1)' }]}
+            lead={first.format(value)}
           />
-          <Coverage
-            kind="progress"
-            count={groups[0]?.measured ?? 0}
-            of={groups[0]?.projects ?? 0}
-          />
+          {onFields ? (
+            <FieldCoverage count={groups[0]?.measured ?? 0} of={groups[0]?.projects ?? 0} />
+          ) : (
+            <Coverage
+              kind="progress"
+              count={groups[0]?.measured ?? 0}
+              of={groups[0]?.projects ?? 0}
+            />
+          )}
         </div>
       );
     }
@@ -126,10 +195,10 @@ export function VisualBody({
             buckets={groups.map((group, index) => ({
               key: group.key ?? 'none',
               count: Math.max(0, group.values[0] ?? 0),
-              value: formatValue(first, group.values[0] ?? null, t),
+              value: first.format(group.values[0] ?? null),
               text: text(index),
               color: 'var(--chart-single)',
-              href: drill(first, group.key),
+              href: first.drill(group.key),
               hint: projectsHint(group.projects),
             }))}
             active={active}
@@ -157,7 +226,7 @@ export function VisualBody({
           key: group.key ?? 'none',
           count: Math.max(0, group.values[0] ?? 0),
           text: text(index),
-          href: drill(first, group.key),
+          href: first.drill(group.key),
           hint: projectsHint(group.projects),
         }))
         .filter((share) => share.count > 0)
@@ -175,20 +244,35 @@ export function VisualBody({
               },
             ]
           : shares;
-      // The on-plan indicator keeps its own colours (on track, late, stalled, not measured); any other grouping takes categorical fills.
+      // The on-plan indicator and a status field on a RAG-like scale keep their own colours; any other grouping takes categorical fills.
       const colors =
         visual.groupBy === 'ON_PLAN'
           ? bucketColors(
               shown.map((share) => ON_PLAN_TONE[share.key] ?? 'neutral'),
               true,
             )
-          : bucketColors(
-              shown.map(() => 'neutral'),
-              false,
-            );
+          : groupField !== null && isStatusScale(fieldParts(groupField).projectionCode)
+            ? bucketColors(
+                shown.map((share) =>
+                  share.key === 'none' || share.key === 'other'
+                    ? 'neutral'
+                    : labelOfValue(
+                        fieldParts(groupField).projectionCode,
+                        share.key,
+                        null,
+                        language,
+                        t,
+                      ).tone,
+                ),
+                true,
+              )
+            : bucketColors(
+                shown.map(() => 'neutral'),
+                false,
+              );
       const buckets: ChartBucket[] = shown.map((share, index) => ({
         ...share,
-        value: formatValue(first, share.count, t),
+        value: first.format(share.count),
         color: colors[index] ?? 'var(--chart-single)',
       }));
       return (
@@ -197,7 +281,7 @@ export function VisualBody({
             buckets={buckets}
             active={active}
             onActive={setActive}
-            totalLabel={measureText(first)}
+            totalLabel={first.text}
             pie={visual.visualType === 'PIE'}
           />
           <ul className="grouped-columns__legend">
@@ -228,7 +312,7 @@ export function VisualBody({
       );
     }
     case 'COLUMN': {
-      const percent = visual.measures.every(isPercent);
+      const percent = series.every((one) => one.percent);
       const largest = Math.max(
         1,
         ...groups.flatMap((group) => group.values.map((value) => value ?? 0)),
@@ -239,17 +323,17 @@ export function VisualBody({
             key: group.key ?? 'none',
             text: text(index),
             values: group.values,
-            href: drill(first, group.key),
+            href: first.drill(group.key),
             hint: projectsHint(group.projects),
           }))}
-          series={visual.measures.map((measure, index) => ({
-            key: measure,
-            text: measureText(measure),
+          series={series.map((one, index) => ({
+            key: one.key,
+            text: one.text,
             color: SERIES_COLORS[index] ?? 'var(--chart-single)',
           }))}
           missing={t('dashboards.insights.notAvailable')}
           scale={percent ? 100 : largest}
-          format={(value, series) => formatValue(visual.measures[series] ?? first, value, t)}
+          format={(value, index) => (series[index] ?? first).format(value)}
         />
       );
     }
@@ -259,40 +343,45 @@ export function VisualBody({
     case 'TABLE':
       return (
         <TableContainer caption={visual.title[language]}>
-          <table className="table">
-            <caption className="visually-hidden">{visual.title[language]}</caption>
-            <thead>
-              <tr>
-                {visual.groupBy !== 'NONE' && (
-                  <th scope="col">{t(`dashboards.designer.groupBy.${visual.groupBy}`)}</th>
-                )}
-                {visual.measures.map((measure) => (
-                  <th key={measure} scope="col">
-                    {measureText(measure)}
+          <thead>
+            <tr>
+              {groupHeading !== null && <th scope="col">{groupHeading}</th>}
+              {series.map((one) => (
+                <th key={one.key} scope="col">
+                  {one.text}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((group, index) => (
+              <tr key={group.key ?? 'none'}>
+                {groupHeading !== null && (
+                  <th scope="row">
+                    <FigureText text={text(index)} href={rowDrill(group.key)} />
                   </th>
+                )}
+                {series.map((one, column) => (
+                  <td key={one.key} dir="auto">
+                    {one.format(group.values[column] ?? null)}
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {groups.map((group, index) => (
-                <tr key={group.key ?? 'none'}>
-                  {visual.groupBy !== 'NONE' && (
-                    <th scope="row">
-                      <FigureText text={text(index)} href={drill('PROJECTS', group.key)} />
-                    </th>
-                  )}
-                  {visual.measures.map((measure, column) => (
-                    <td key={measure} dir="auto">
-                      {formatValue(measure, group.values[column] ?? null, t)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
         </TableContainer>
       );
   }
+}
+
+/** How many of a field visual's projects have its first value revealed (the others are unknown, restricted or masked). */
+function FieldCoverage({ count, of }: { count: number; of: number }): ReactElement {
+  const { t } = useI18n();
+  return (
+    <span className="insights__coverage">
+      {t('dashboards.designer.fieldCoverage', { count, total: of })}
+    </span>
+  );
 }
 
 /** A figure's words, as a link to its records when it has one. */
