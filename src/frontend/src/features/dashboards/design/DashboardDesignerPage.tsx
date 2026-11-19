@@ -42,12 +42,12 @@ import {
   gridPlace,
   MAX_HEIGHT,
   MAX_VISUALS,
-  moved,
+  inReadingOrder,
   newVisual,
   packed,
   rowsOf,
+  settled,
   VISUAL_TYPES,
-  visualAt,
 } from './visuals.ts';
 
 const NO_FILTERS: PortfolioFilters = {};
@@ -68,6 +68,11 @@ interface Drag {
   startX: number;
   startY: number;
   start: Visual;
+  /** The design when the drag began: each step is laid out from it, so a visual passed over goes back to its place. */
+  before: Draft[];
+  /** The cell of the visual under the pointer when it was grabbed, so the visual keeps that cell under the pointer. */
+  grabColumn: number;
+  grabRow: number;
 }
 
 let nextKey = 0;
@@ -129,9 +134,10 @@ function sameDesign(a: Visual[], b: Visual[]): boolean {
 
 /**
  * The Portfolio dashboard's designer (17 and 18 Nov 2026), under Dashboards and Reports: the Portfolio Manager adds visuals from the gallery (the
- * dashboard's sections are no longer offered there, 19 Nov 2026: those on the design stay, and come back only with the standard design), drags them by their bar to another place in the order and by their corner to size, and sets each one's values and grouping; the figures
- * are calculated live. The grid is always packed (the user: no white space): every move, size or removal lays the others out again at once.
- * Saving changes the dashboard for everyone, with no approval. A keyboard moves a visual earlier or later with the arrow keys on its move handle
+ * dashboard's sections are no longer offered there, 19 Nov 2026: those on the design stay, and come back only with the standard design), drags them by their bar to any place on the grid and by their corner to size, and sets each one's values and grouping; the figures
+ * are calculated live. Placement is free (the user, 19 Nov 2026): a visual goes where it is dropped, empty room may stay, and a visual it lands
+ * on moves down below it.
+ * Saving changes the dashboard for everyone, with no approval. A keyboard moves a visual one cell with the arrow keys on its move handle
  * and sizes it on its size handle.
  */
 export function DashboardDesignerPage(): ReactElement {
@@ -165,9 +171,9 @@ export function DashboardDesignerPage(): ReactElement {
     showsCompletion,
   };
 
-  /** Puts a loaded design in the designer: packed, so a design saved before packing reads without gaps too. */
+  /** Puts a loaded design in the designer, each visual where it was placed. */
   const adopt = useCallback((loaded: VisualResult[]) => {
-    const drafts = packed(loaded.map((visual) => keyed(withoutFigures(visual))));
+    const drafts = inReadingOrder(loaded.map((visual) => keyed(withoutFigures(visual))));
     setVisuals(drafts);
     setSaved(plain(drafts));
     setFigures(figuresByKey(drafts, loaded));
@@ -240,19 +246,25 @@ export function DashboardDesignerPage(): ReactElement {
   const selected = selectedKey === null ? null : visuals.findIndex((v) => v.key === selectedKey);
   const current = selected === null || selected < 0 ? undefined : visuals[selected];
 
-  /**
-   * Lays the design out again after a change, from the latest design (pointer events come faster than renders): the others close up at once.
-   * Each visual keeps the size it was given.
-   */
+  /** Applies a change to the latest design (pointer events come faster than renders). */
   const relayout = (change: (all: Draft[]) => Draft[]) => {
     setPlaceProblem(null);
-    setVisuals((all) => packed(change(all)));
+    setVisuals((all) => change(all));
   };
 
-  /** Changes the visual at `index` (its settings or size), the others reflowing around it. */
+  /** The design with the visual `key` changed to `next`, and whatever it now covers moved down below it. */
+  const withChanged = (all: Draft[], key: string | null, next: Partial<Visual>): Draft[] => {
+    const changed = all.map((visual) => (visual.key === key ? { ...visual, ...next } : visual));
+    return settled(
+      changed,
+      changed.findIndex((visual) => visual.key === key),
+    );
+  };
+
+  /** Changes the visual at `index` (its settings or size); a visual it now covers moves down below it. */
   const place = (index: number, next: Visual) => {
     const key = visuals[index]?.key ?? null;
-    relayout((all) => all.map((visual) => (visual.key === key ? { ...visual, ...next } : visual)));
+    relayout((all) => withChanged(all, key, next));
   };
 
   const append = (visual: Visual | null) => {
@@ -322,7 +334,20 @@ export function DashboardDesignerPage(): ReactElement {
       return;
     }
     event.preventDefault();
-    drag.current = { gesture, key: start.key, startX: event.clientX, startY: event.clientY, start };
+    const size = step();
+    drag.current = {
+      gesture,
+      key: start.key,
+      startX: event.clientX,
+      startY: event.clientY,
+      start,
+      before: visuals,
+      grabColumn:
+        Math.floor(
+          (size.rtl ? size.right - event.clientX : event.clientX - size.left) / size.column,
+        ) - start.layoutColumn,
+      grabRow: Math.floor((event.clientY - size.top) / size.row) - start.layoutRow,
+    };
     setSelectedKey(start.key);
     setDraggingKey(start.key);
     const onMove = (move: globalThis.PointerEvent) => {
@@ -349,36 +374,34 @@ export function DashboardDesignerPage(): ReactElement {
     if (active.gesture === 'resize') {
       const columns = Math.round(((clientX - active.startX) * (size.rtl ? -1 : 1)) / size.column);
       const rows = Math.round((clientY - active.startY) / size.row);
-      relayout((all) =>
-        all.map((visual) =>
-          visual.key === active.key
-            ? {
-                ...visual,
-                // Sizing stops at the grid's end edge; it never moves the visual.
-                layoutWidth: Math.min(
-                  COLUMNS - visual.layoutColumn,
-                  Math.max(1, active.start.layoutWidth + columns),
-                ),
-                layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, active.start.layoutHeight + rows)),
-              }
-            : visual,
-        ),
+      relayout(() =>
+        withChanged(active.before, active.key, {
+          // Sizing stops at the grid's end edge; it never moves the visual.
+          layoutWidth: Math.min(
+            COLUMNS - active.start.layoutColumn,
+            Math.max(1, active.start.layoutWidth + columns),
+          ),
+          layoutHeight: Math.min(MAX_HEIGHT, Math.max(1, active.start.layoutHeight + rows)),
+        }),
       );
       return;
     }
-    // Moving changes the order: over another visual, the dragged one takes that visual's place and every other moves along at once.
-    const column = Math.floor(
-      (size.rtl ? size.right - clientX : clientX - size.left) / size.column,
+    // Moving is free: the visual goes to the cell under the pointer (the cell it was grabbed by stays under it), within the grid's columns.
+    const column = Math.min(
+      COLUMNS - active.start.layoutWidth,
+      Math.max(
+        0,
+        Math.floor((size.rtl ? size.right - clientX : clientX - size.left) / size.column) -
+          active.grabColumn,
+      ),
     );
-    const row = Math.floor((clientY - size.top) / size.row);
-    relayout((all) => {
-      const from = all.findIndex((visual) => visual.key === active.key);
-      const over = visualAt(all, column, row);
-      return over >= 0 && over !== from ? moved(all, from, over) : all;
-    });
+    const row = Math.max(0, Math.floor((clientY - size.top) / size.row) - active.grabRow);
+    relayout(() =>
+      withChanged(active.before, active.key, { layoutColumn: column, layoutRow: row }),
+    );
   };
 
-  /** Arrow keys on a handle: earlier or later in the order on the move handle, smaller or larger on the size handle; Delete removes the visual. */
+  /** Arrow keys on a handle: one cell on the move handle, smaller or larger on the size handle; Delete removes the visual. */
   const keyOnHandle = (
     event: KeyboardEvent<HTMLButtonElement>,
     index: number,
@@ -404,7 +427,15 @@ export function DashboardDesignerPage(): ReactElement {
     event.preventDefault();
     setSelectedKey(visual.key);
     if (gesture === 'move') {
-      relayout((all) => moved(all, index, index + (across !== 0 ? across : down)));
+      relayout((all) =>
+        withChanged(all, visual.key, {
+          layoutColumn: Math.min(
+            COLUMNS - visual.layoutWidth,
+            Math.max(0, visual.layoutColumn + across),
+          ),
+          layoutRow: Math.max(0, visual.layoutRow + down),
+        }),
+      );
     } else {
       place(index, {
         ...visual,

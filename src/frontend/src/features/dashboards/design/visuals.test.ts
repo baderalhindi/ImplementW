@@ -10,10 +10,11 @@ import {
   drillPath,
   fits,
   freePlace,
-  moved,
   newVisual,
   packed,
   retitled,
+  settled,
+  withoutEmptyRows,
   withType,
 } from './visuals.ts';
 
@@ -115,12 +116,6 @@ describe('no white space (18 Nov 2026)', () => {
       [10, 0],
       [0, 4],
     ]);
-  });
-
-  test('moving a visual to another place in the order moves the others along at once', () => {
-    const laidOut = packed(moved([box(4, 2), box(4, 2), box(4, 2)], 0, 2));
-    expect(laidOut.map((v) => v.layoutColumn)).toEqual([0, 4, 8]);
-    expect(moved(['a', 'b', 'c'], 0, 2)).toEqual(['b', 'c', 'a']);
   });
 
   test('a visual made smaller keeps its size when another is sized (19 Nov 2026)', () => {
@@ -237,5 +232,37 @@ describe('axes (19 Nov 2026, axes contract)', () => {
         axes: { ...DEFAULT_AXES, value: { ...DEFAULT_AXES.value, min: 5, max: 5 } },
       }),
     ).toBeNull();
+  });
+});
+
+describe('free placement (19 Nov 2026)', () => {
+  const at = (column: number, row: number, width = 4, height = 2) => ({
+    ...card,
+    layoutColumn: column,
+    layoutRow: row,
+    layoutWidth: width,
+    layoutHeight: height,
+  });
+
+  test('a visual stays where it is put, and empty room stays', () => {
+    const laidOut = settled([at(0, 0), at(8, 6)], 1);
+    expect(laidOut.map((v) => [v.layoutColumn, v.layoutRow])).toEqual([
+      [0, 0],
+      [8, 6],
+    ]);
+  });
+
+  test('what a dropped visual lands on moves down below it, then what that covers', () => {
+    // The third is dropped on the first; the first moves under it, and the second, under the first, moves down after it.
+    const laidOut = settled([at(0, 0), at(0, 2), at(0, 1)], 2);
+    expect(laidOut.map((v) => v.layoutRow)).toEqual([1, 3, 5]);
+  });
+
+  test('the dashboard takes out the rows nothing covers, not the room beside a visual', () => {
+    const laidOut = withoutEmptyRows([at(0, 0), at(6, 5)]);
+    expect(laidOut.map((v) => [v.layoutColumn, v.layoutRow])).toEqual([
+      [0, 0],
+      [6, 2],
+    ]);
   });
 });

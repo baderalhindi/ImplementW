@@ -17,9 +17,9 @@ import { designApi, type VisualResult } from './designApi.ts';
 import { drawsFields } from './fields.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
-import { drillPath, gridPlace, packed, placeKey } from './visuals.ts';
+import { drillPath, gridPlace, packed, placeKey, withoutEmptyRows } from './visuals.ts';
 import { VisualBody } from './VisualBody.tsx';
-import { splitWidgets } from './widgetVisuals.ts';
+import { hasWidgetsToSplit, splitWidgets } from './widgetVisuals.ts';
 
 /** One visual on the dashboard: its title over its figures. A card's or gauge's title opens the records its figure counts, as a headline card's did. */
 function VisualFrame({
@@ -196,16 +196,18 @@ export function DesignedVisuals({
     );
   }
   const sources: SectionSources = { insights: insights.data, view, filters, showsCompletion, map };
-  // Laid out in the design's order with no gaps, as the designer laid it out; what the caller may not see leaves no hole. A design saved with
-  // all the widgets in one section draws each widget as its own visual, as the designer splits it.
-  const shown = packed(
-    splitWidgets(design.data.visuals, view.widgets, (visual) => ({ ...visual, groups: [] })).filter(
-      (visual) =>
-        visual.section === undefined || visual.section === null
-          ? visual.groups !== null && !withheld(visual)
-          : sectionShown(visual, sources),
-    ),
+  // Each visual where the designer placed it; what the caller may not see is left out, and a row it leaves empty is taken out. A design saved
+  // with all the widgets in one section draws each widget as its own visual, packed as the designer packs that split.
+  const split = hasWidgetsToSplit(design.data.visuals, view.widgets);
+  const visible = splitWidgets(design.data.visuals, view.widgets, (visual) => ({
+    ...visual,
+    groups: [],
+  })).filter((visual) =>
+    visual.section === undefined || visual.section === null
+      ? visual.groups !== null && !withheld(visual)
+      : sectionShown(visual, sources),
   );
+  const shown = split ? packed(visible) : withoutEmptyRows(visible);
   return shown.length === 0 ? null : (
     <section className="insights" aria-labelledby="designed-visuals">
       <h2 id="designed-visuals" className="visually-hidden">

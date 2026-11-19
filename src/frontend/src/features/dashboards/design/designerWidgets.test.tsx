@@ -228,7 +228,7 @@ describe('the dashboard draws each widget as its own visual', () => {
     expect(document.querySelector('[data-section-code="DASHBOARD_WIDGETS"]')).toBeNull();
   });
 
-  test('from a split design; a restricted, hidden or missing widget leaves no hole', async () => {
+  test('from a split design; a restricted, hidden or missing widget leaves no empty row', async () => {
     api({
       isStandard: false,
       updatedAt: '2026-11-19T09:00:00Z',
@@ -247,8 +247,9 @@ describe('the dashboard draws each widget as its own visual', () => {
       { title: 'Health now', widgets: ['CURRENT_HEALTH'], headings: 1 },
       { title: 'Lifecycle', widgets: ['PROJECTS_BY_LIFECYCLE'], headings: 1 },
     ]);
-    // The last widget rises into the restricted one's place, beside the first.
-    expect(lifecycle.style.getPropertyValue('--visual-row')).toBe('1');
-    expect(lifecycle.style.getPropertyValue('--visual-column')).toBe('7');
+    // Placement is free (19 Nov 2026): the widgets stay where they were placed, and the rows left empty by those not shown are taken out,
+    // so the last widget rises to the row under the first, in its own column.
+    expect(lifecycle.style.getPropertyValue('--visual-row')).toBe('6');
+    expect(lifecycle.style.getPropertyValue('--visual-column')).toBe('1');
   });
 });

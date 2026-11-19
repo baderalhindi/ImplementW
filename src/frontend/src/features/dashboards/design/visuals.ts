@@ -577,23 +577,55 @@ export function packed<T extends Box>(visuals: T[]): T[] {
   return placed;
 }
 
-/** The order with the visual at `from` moved to `to`, the others keeping theirs. */
-export function moved<T>(items: T[], from: number, to: number): T[] {
-  const next = [...items];
-  const [item] = next.splice(from, 1);
-  if (item !== undefined) {
-    next.splice(Math.max(0, Math.min(to, next.length)), 0, item);
+/**
+ * Free placement (the user, 19 Nov 2026: "no worries if there is white space, I want free dragging"): the visual at `index` stays where it
+ * was put, and every visual it covers moves straight down to just below it, then whatever those cover in turn; nothing else moves and empty
+ * room stays. The result is in reading order (top to bottom, then from the reading start), the order a screen reader and the API take.
+ */
+export function settled<T extends Box>(visuals: T[], index: number): T[] {
+  const anchor = visuals[index];
+  if (anchor === undefined) {
+    return visuals;
   }
-  return next;
+  const fixed: T[] = [anchor];
+  const others = visuals
+    .filter((_, at) => at !== index)
+    .sort((a, b) => a.layoutRow - b.layoutRow || a.layoutColumn - b.layoutColumn);
+  for (const visual of others) {
+    let box = visual;
+    for (let covered = fixed.filter((other) => overlaps(box, other)); covered.length > 0;) {
+      box = {
+        ...box,
+        layoutRow: Math.max(...covered.map((other) => other.layoutRow + other.layoutHeight)),
+      };
+      covered = fixed.filter((other) => overlaps(box, other));
+    }
+    fixed.push(box);
+  }
+  return inReadingOrder(fixed);
 }
 
-/** The visual drawn over a grid cell, or -1. */
-export function visualAt(visuals: Box[], column: number, row: number): number {
-  return visuals.findIndex(
-    (visual) =>
-      column >= visual.layoutColumn &&
-      column < visual.layoutColumn + visual.layoutWidth &&
-      row >= visual.layoutRow &&
-      row < visual.layoutRow + visual.layoutHeight,
+/** The visuals top to bottom, then from the reading start. */
+export function inReadingOrder<T extends Box>(visuals: T[]): T[] {
+  return [...visuals].sort((a, b) => a.layoutRow - b.layoutRow || a.layoutColumn - b.layoutColumn);
+}
+
+/**
+ * The visuals where they were placed, with the rows no visual covers taken out, so a visual the caller may not see (left out by the
+ * dashboard) leaves no empty band; room beside a visual stays as the designer left it.
+ */
+export function withoutEmptyRows<T extends Box>(visuals: T[]): T[] {
+  const covered = new Set<number>();
+  for (const visual of visuals) {
+    for (let row = visual.layoutRow; row < visual.layoutRow + visual.layoutHeight; row++) {
+      covered.add(row);
+    }
+  }
+  const rows = [...covered].sort((a, b) => a - b);
+  return inReadingOrder(
+    visuals.map((visual) => {
+      const emptyAbove = visual.layoutRow - rows.filter((row) => row < visual.layoutRow).length;
+      return { ...visual, layoutRow: visual.layoutRow - emptyAbove };
+    }),
   );
 }
