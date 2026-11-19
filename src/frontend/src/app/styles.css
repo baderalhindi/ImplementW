@@ -7887,6 +7887,21 @@ tr[data-flagged='true'] {
   overflow: auto;
 }
 
+/*
+ * A chart fills its visual: a visual made taller or wider draws a larger chart, never empty room under it (19 Nov 2026). The body is a column;
+ * the chart takes what is left after its notes and table toggle.
+ */
+.visual__body:not(.visual__body--section) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.visual__body > :is(.axis-chart, .axis-chart__frame--bar, .line-chart, .distribution--donut) {
+  flex: 1;
+  min-block-size: 0;
+}
+
 .visual-card,
 .visual-gauge {
   display: flex;
@@ -7905,6 +7920,22 @@ tr[data-flagged='true'] {
 
 .donut--pie svg {
   max-inline-size: 10rem;
+}
+
+/* A designed pie or donut grows with its visual's height, from its usual size up to 24rem, and stays round. */
+.visual__body > .distribution--donut {
+  grid-template-rows: minmax(0, 1fr);
+  align-items: center;
+}
+
+.visual__body > .distribution--donut > .donut {
+  inline-size: auto;
+  block-size: clamp(10.5rem, 100%, 24rem);
+  aspect-ratio: 1;
+}
+
+.visual__body > .distribution--donut > .donut--pie svg {
+  max-inline-size: none;
 }
 
 /* The designer: the canvas, with one pane beside it holding the gallery over the settings; under 64rem the pane goes below the canvas. */
@@ -8516,6 +8547,20 @@ tr[data-flagged='true'] {
   gap: var(--space-2);
 }
 
+/* The drawing's box takes its size from the visual, and the drawing is laid over it, so measuring the box never measures the drawing. */
+.line-chart__box {
+  position: relative;
+  flex: 1;
+  min-block-size: 12rem;
+}
+
+.line-chart__box > .line-chart__chart {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
 .line-chart__chart {
   max-inline-size: none;
   overflow: visible;
@@ -8607,8 +8652,14 @@ tr[data-flagged='true'] {
  * shown axis's line along the plot's edge. Ticks keep the width of their longest label (--tick-chars) so the plot never moves under them.
  */
 .axis-chart {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
+}
+
+.axis-chart > .axis-chart__frame {
+  flex: 1;
+  min-block-size: 0;
 }
 
 .axis-chart__frame {
@@ -8620,7 +8671,7 @@ tr[data-flagged='true'] {
 
 .axis-chart__frame--column {
   grid-template-columns: auto auto minmax(0, 1fr);
-  grid-template-rows: 10rem auto auto;
+  grid-template-rows: minmax(10rem, 1fr) auto auto;
   /* Room above the plot for a full column's figure and the top tick. */
   padding-block-start: 1.25rem;
 }
@@ -8782,6 +8833,7 @@ tr[data-flagged='true'] {
 /* The bar chart: [category title] [group words] [plot] [figure] per row, then the ticks and the value axis's title under the plot. */
 .axis-chart__frame--bar {
   grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr) auto;
+  grid-template-rows: repeat(var(--bar-rows, 1), minmax(1.5rem, 1fr)) auto auto;
   row-gap: var(--space-2);
   font-size: 0.875rem;
 }
@@ -8823,7 +8875,9 @@ tr[data-flagged='true'] {
 .axis-chart__bar-track {
   position: relative;
   grid-column: 2;
-  block-size: 0.75rem;
+  /* Thicker as its row grows, within reason. */
+  block-size: clamp(0.75rem, 35%, 1.75rem);
+  align-self: center;
 }
 
 .axis-chart__bar.widget__bar {

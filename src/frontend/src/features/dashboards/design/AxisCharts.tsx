@@ -275,6 +275,8 @@ export function AxisBarChart({
   return (
     <div
       className="axis-chart__frame axis-chart__frame--bar"
+      // The rows share the visual's height, so a taller visual spaces and thickens its bars instead of leaving room under them.
+      style={{ '--bar-rows': String(Math.max(buckets.length, 1)) } as CSSProperties}
       aria-hidden={linked ? undefined : true}
     >
       <AxisTitle
