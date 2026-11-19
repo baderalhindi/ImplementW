@@ -48,6 +48,7 @@ import { lineStart, normalized } from './fields.ts';
 import { SectionBody } from './SectionBody.tsx';
 import { sectionShown, type SectionSources } from './sections.ts';
 import { VisualBody } from './VisualBody.tsx';
+import { edgeScroller } from './edgeScroll.ts';
 import { VisualIcon } from './VisualIcon.tsx';
 import { type SizeBounds, VisualSettings } from './VisualSettings.tsx';
 import {
@@ -451,10 +452,14 @@ export function DashboardDesignerPage(): ReactElement {
     };
     setSelectedKey(start.key);
     setDraggingKey(start.key);
+    // Near the window's top or bottom edge the page scrolls, and the visual follows, so it can reach any place on a long dashboard.
+    const scroller = edgeScroller(dragTo);
     const onMove = (move: globalThis.PointerEvent) => {
       dragTo(move.clientX, move.clientY);
+      scroller.update(move.clientX, move.clientY);
     };
     const onEnd = () => {
+      scroller.stop();
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onEnd);
       window.removeEventListener('pointercancel', onEnd);
@@ -524,14 +529,24 @@ export function DashboardDesignerPage(): ReactElement {
         setDraggingKey(draft.key);
         setNotice(null);
       }
-      setGhost({ x: move.clientX, y: move.clientY, label });
-      if (overCanvas(move.clientX, move.clientY)) {
-        dragTo(move.clientX, move.clientY);
+      follow(move.clientX, move.clientY);
+      scroller.update(move.clientX, move.clientY);
+    };
+    /** The new visual at the pointer's place: on the dashboard where it would drop, or not on it while the pointer is elsewhere. */
+    const follow = (clientX: number, clientY: number) => {
+      setGhost({ x: clientX, y: clientY, label });
+      if (overCanvas(clientX, clientY)) {
+        dragTo(clientX, clientY);
       } else {
         setPlaceProblem(null);
         setVisuals(before);
       }
     };
+    const scroller = edgeScroller((clientX, clientY) => {
+      if (draft !== null) {
+        follow(clientX, clientY);
+      }
+    });
     const onEnd = (end: globalThis.PointerEvent) => {
       if (draft !== null) {
         if (overCanvas(end.clientX, end.clientY)) {
@@ -543,6 +558,7 @@ export function DashboardDesignerPage(): ReactElement {
       finish();
     };
     function finish() {
+      scroller.stop();
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onEnd);
       window.removeEventListener('pointercancel', onEnd);
