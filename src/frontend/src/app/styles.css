@@ -9155,3 +9155,10 @@ tr[data-flagged='true'] {
 .designer__widget-tile {
   touch-action: none;
 }
+
+/* The container a dragged visual will drop into (19 Nov 2026). */
+.designer__container.is-drop-target {
+  outline: 3px dashed var(--color-primary);
+  outline-offset: 2px;
+  background: color-mix(in srgb, var(--color-primary-tint) 70%, transparent);
+}

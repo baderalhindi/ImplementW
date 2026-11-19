@@ -98,17 +98,34 @@ describe('dragging a visual into a container', () => {
     expect(placeOf(named(visuals, 'Box'))).toEqual([4, 0, 8, 6]);
   });
 
-  test('a visual wider than the container stays outside, and the designer is told there is no room', () => {
+  test('a visual wider than the container widens it and goes in (19 Nov 2026)', () => {
     const wide = card('Wide', [0, 8, 10, 2]);
-    const design = [box, wide];
     const result = moved(
-      design,
+      [box, wide],
       { index: 1, child: null },
       { column: 5, row: 2 },
       { column: 4, row: 2 },
     );
-    expect(result.noRoom).toBe(true);
-    expect(result.visuals).toEqual(design);
+    expect(result.noRoom).toBe(false);
+    const widened = named(result.visuals, 'Box');
+    expect(widened?.layoutWidth).toBe(10);
+    // Widened toward the reading start where the grid's end edge stops it.
+    expect((widened?.layoutColumn ?? 0) + (widened?.layoutWidth ?? 0)).toBeLessThanOrEqual(12);
+    expect(widened?.children?.map((child) => child.title.en)).toEqual(['Wide']);
+  });
+
+  test('a tall visual dragged down onto a container goes in when it reaches it, instead of pushing it away', () => {
+    const tall = card('Tall', [0, 0, 6, 5]);
+    const target = container('Target', [0, 6, 6, 6]);
+    // The pointer (on the visual's handle) is still above the container, but the visual reaches into it.
+    const { visuals } = moved(
+      [tall, target],
+      { index: 0, child: null },
+      { column: 1, row: 3 },
+      { column: 0, row: 3 },
+    );
+    expect(named(visuals, 'Target')?.layoutRow).toBe(6);
+    expect(named(visuals, 'Target')?.children?.map((child) => child.title.en)).toEqual(['Tall']);
   });
 
   test('a container dropped on another container is placed as a top-level visual, not nested', () => {
@@ -144,7 +161,7 @@ describe('dragging a child out of its container', () => {
     expect(placeOf(named(visuals, 'Box'))).toEqual([4, 0, 8, 6]);
   });
 
-  test('dropped on its own container title bar, the child goes out, on the dashboard', () => {
+  test('dropped on its own container title bar, the child stays in its container (the title bar is part of it)', () => {
     const box = container('Box', [4, 2, 8, 6], [card('Child', [0, 1, 4, 2])]);
     const { visuals } = moved(
       [box],
@@ -152,10 +169,8 @@ describe('dragging a child out of its container', () => {
       { column: 5, row: 2 },
       { column: 4, row: 2 },
     );
-    expect(named(visuals, 'Box')?.children).toEqual([]);
-    // The child lands on the container: the container moves down below it.
-    expect(placeOf(named(visuals, 'Child'))).toEqual([4, 2, 4, 2]);
-    expect(named(visuals, 'Box')?.layoutRow).toBe(4);
+    expect(named(visuals, 'Box')?.children?.map((child) => child.title.en)).toEqual(['Child']);
+    expect(named(visuals, 'Box')?.layoutRow).toBe(2);
   });
 
   test('dropped on another inner cell of the same container, it stays a child, moved there', () => {

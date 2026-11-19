@@ -790,7 +790,12 @@ export function DashboardDesignerPage(): ReactElement {
     return (
       <section
         key={container.key}
-        className={classOf('visual-container designer__container', container)}
+        className={`${classOf('visual-container designer__container', container)}${
+          // The container a dragged visual would drop into is marked, so it is plain where the drop goes.
+          draggingKey !== null && children.some((child) => child.key === draggingKey)
+            ? ' is-drop-target'
+            : ''
+        }`}
         style={gridPlace(container)}
         aria-label={container.title[language]}
         aria-current={container.key === selectedKey ? 'true' : undefined}

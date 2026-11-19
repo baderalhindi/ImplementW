@@ -11,6 +11,7 @@ import {
   inReadingOrder,
   MAX_HEIGHT,
   MAX_VISUALS,
+  overlaps,
   rowsOf,
   settled,
   withoutEmptyRows,
@@ -135,8 +136,9 @@ export function containerResized<T extends Nestable<T>>(
 
 /**
  * The container with `child` placed at the inner cell (`column`, `row`), in place of its child at `replacing` (null: added). The child is
- * clamped to the inner grid's columns (an added one to its rows too); a child it lands on moves down below it (`settled`), and the container grows to hold its children. Null when
- * it cannot fit: the child is a container or wider than the container, the container is full, or it would grow taller than a visual may be.
+ * clamped to the inner grid's columns (an added one to its rows too); a child it lands on moves down below it (`settled`), and the container
+ * grows to hold its children: taller, and, for an added child wider than it, wider (moving toward the reading start when the grid's end edge
+ * stops it). Null when it cannot fit: the child is a container, the container is full, or it would grow taller than a visual may be.
  */
 export function placedInContainer<T extends Nestable<T>>(
   container: T,
@@ -149,10 +151,25 @@ export function placedInContainer<T extends Nestable<T>>(
   if (
     !isContainer(container) ||
     isContainer(child) ||
-    child.layoutWidth > container.layoutWidth ||
+    (replacing !== null && child.layoutWidth > container.layoutWidth) ||
     (replacing === null && others.length >= MAX_CHILDREN)
   ) {
     return null;
+  }
+  // A visual wider than the container widens it (the user, 19 Nov 2026: a drop on a container always goes in).
+  if (child.layoutWidth > container.layoutWidth) {
+    const layoutWidth = Math.min(COLUMNS, child.layoutWidth);
+    return placedInContainer(
+      {
+        ...container,
+        layoutWidth,
+        layoutColumn: Math.min(container.layoutColumn, COLUMNS - layoutWidth),
+      },
+      { ...child, layoutWidth },
+      column,
+      row,
+      replacing,
+    );
   }
   const height = Math.max(1, Math.min(child.layoutHeight, MAX_HEIGHT - TITLE_ROWS));
   const placed: T = {
@@ -224,7 +241,7 @@ export function withoutVisual<T extends Nestable<T>>(visuals: readonly T[], path
   );
 }
 
-/** The index of the container whose inner grid holds `cell`; null when no container's does. */
+/** The index of the container that holds `cell`, its title bar included; null when no container does. */
 export function containerAt<T extends Nestable<T>>(
   visuals: readonly T[],
   cell: Cell,
@@ -234,10 +251,34 @@ export function containerAt<T extends Nestable<T>>(
       isContainer(visual) &&
       cell.column >= visual.layoutColumn &&
       cell.column < visual.layoutColumn + visual.layoutWidth &&
-      cell.row >= visual.layoutRow + TITLE_ROWS &&
+      cell.row >= visual.layoutRow &&
       cell.row < visual.layoutRow + visual.layoutHeight,
   );
   return index < 0 ? null : index;
+}
+
+/**
+ * The container a visual dragged to `box` drops into: the one under the pointer, or else the one the visual reaches into while the pointer is
+ * over its columns (a tall visual dragged down touches a container before the pointer does; it goes in then, instead of pushing the container
+ * away); null for none.
+ */
+export function containerUnder<T extends Nestable<T>>(
+  visuals: readonly T[],
+  box: Box,
+  pointer: Cell,
+): number | null {
+  const under = containerAt(visuals, pointer);
+  if (under !== null) {
+    return under;
+  }
+  const touched = visuals.findIndex(
+    (visual) =>
+      isContainer(visual) &&
+      overlaps(box, visual) &&
+      pointer.column >= visual.layoutColumn &&
+      pointer.column < visual.layoutColumn + visual.layoutWidth,
+  );
+  return touched < 0 ? null : touched;
 }
 
 /**
@@ -258,7 +299,13 @@ export function moved<T extends Nestable<T>>(
     return { visuals: [...visuals], noRoom: false };
   }
   const rest = withoutVisual(visuals, from);
-  const target = isContainer(visual) ? null : containerAt(rest, pointer);
+  const target = isContainer(visual)
+    ? null
+    : containerUnder(
+        rest,
+        { ...visual, layoutColumn: place.column, layoutRow: place.row },
+        pointer,
+      );
   const container = target === null ? undefined : rest[target];
   if (target !== null && container !== undefined) {
     const inside = placedInContainer(
