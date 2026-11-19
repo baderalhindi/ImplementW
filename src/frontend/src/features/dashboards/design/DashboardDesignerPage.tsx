@@ -203,6 +203,10 @@ export function DashboardDesignerPage(): ReactElement {
   const [placeProblem, setPlaceProblem] = useState<string | null>(null);
   /** The container whose removal is being asked about: with its visuals, or keeping them. */
   const [removingKey, setRemovingKey] = useState<string | null>(null);
+  // A tile dragged from the gallery: its name follows the pointer until it is dropped.
+  const [ghost, setGhost] = useState<{ x: number; y: number; label: string } | null>(null);
+  // A click that ends a drag from the gallery adds nothing more.
+  const draggedFromGallery = useRef(false);
   const canvas = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   // A section is previewed from what the dashboard reads, unfiltered: the insights and the dashboard's view.
@@ -462,6 +466,104 @@ export function DashboardDesignerPage(): ReactElement {
     window.addEventListener('pointercancel', onEnd);
   };
 
+  /** Whether the pointer is over the canvas. */
+  const overCanvas = (clientX: number, clientY: number) => {
+    const box = canvas.current?.getBoundingClientRect();
+    return (
+      box !== undefined &&
+      clientX >= box.left &&
+      clientX <= box.right &&
+      clientY >= box.top &&
+      clientY <= box.bottom
+    );
+  };
+
+  /**
+   * Drag and drop from the gallery (19 Nov 2026): pressed and moved a few pixels, a tile drags a new visual; over the dashboard it is placed at
+   * the cell under the pointer, or inside the container under it, as a moved visual is (`moved`); dropped elsewhere nothing is added. A press
+   * that does not move stays a click, which adds the visual at the first free place.
+   */
+  const startGalleryDrag = (
+    event: PointerEvent<HTMLElement>,
+    label: string,
+    make: () => Visual | null,
+  ) => {
+    if (event.button !== 0) {
+      return;
+    }
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const before = visuals;
+    let draft: Draft | null = null;
+    draggedFromGallery.current = false;
+    const onMove = (move: globalThis.PointerEvent) => {
+      if (draft === null) {
+        if (Math.hypot(move.clientX - startX, move.clientY - startY) < 6) {
+          return;
+        }
+        const made = visualCount(before) >= MAX_VISUALS ? null : make();
+        if (made === null) {
+          setPlaceProblem(t('dashboards.designer.noRoom'));
+          finish();
+          return;
+        }
+        draft = keyed(made);
+        draggedFromGallery.current = true;
+        drag.current = {
+          gesture: 'move',
+          key: draft.key,
+          from: { index: before.length, child: null },
+          startX,
+          startY,
+          start: draft,
+          before: [...before, draft],
+          // The new visual's top-start corner follows the pointer.
+          grabColumn: 0,
+          grabRow: 0,
+        };
+        setDraggingKey(draft.key);
+        setNotice(null);
+      }
+      setGhost({ x: move.clientX, y: move.clientY, label });
+      if (overCanvas(move.clientX, move.clientY)) {
+        dragTo(move.clientX, move.clientY);
+      } else {
+        setPlaceProblem(null);
+        setVisuals(before);
+      }
+    };
+    const onEnd = (end: globalThis.PointerEvent) => {
+      if (draft !== null) {
+        if (overCanvas(end.clientX, end.clientY)) {
+          setSelectedKey(draft.key);
+        } else {
+          setVisuals(before);
+        }
+      }
+      finish();
+    };
+    function finish() {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
+      drag.current = null;
+      setDraggingKey(null);
+      setGhost(null);
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
+  };
+
+  /** A gallery tile's click: adds the visual, unless the press was a drag that has placed it already. */
+  const clickedTile = (addIt: () => void) => {
+    if (draggedFromGallery.current) {
+      draggedFromGallery.current = false;
+      return;
+    }
+    addIt();
+  };
+
   const dragTo = (clientX: number, clientY: number) => {
     const active = drag.current;
     if (active === null) {
@@ -706,6 +808,11 @@ export function DashboardDesignerPage(): ReactElement {
 
   return (
     <div className="designer">
+      {ghost !== null && (
+        <div className="designer__ghost" aria-hidden="true" style={{ left: ghost.x, top: ghost.y }}>
+          {ghost.label}
+        </div>
+      )}
       <PageHeader
         title={t('dashboards.designer.title')}
         description={t('dashboards.designer.intro')}
@@ -795,8 +902,15 @@ export function DashboardDesignerPage(): ReactElement {
                     className="designer__type"
                     // A line draws fields only: it waits for the catalogue to give it one.
                     disabled={type === 'LINE' && lineStart(fields.data ?? []) === null}
+                    onPointerDown={(event) => {
+                      startGalleryDrag(event, t(`dashboards.designer.type.${type}`), () =>
+                        newVisual(type, visuals, fields.data ?? []),
+                      );
+                    }}
                     onClick={() => {
-                      add(type);
+                      clickedTile(() => {
+                        add(type);
+                      });
                     }}
                   >
                     <VisualIcon type={type} />
@@ -810,8 +924,15 @@ export function DashboardDesignerPage(): ReactElement {
                 <button
                   type="button"
                   className="designer__type"
+                  onPointerDown={(event) => {
+                    startGalleryDrag(event, t('dashboards.designer.type.CONTAINER'), () =>
+                      newContainer(visuals),
+                    );
+                  }}
                   onClick={() => {
-                    append(newContainer(visuals));
+                    clickedTile(() => {
+                      append(newContainer(visuals));
+                    });
                   }}
                 >
                   <VisualIcon type="CONTAINER" />
@@ -835,8 +956,15 @@ export function DashboardDesignerPage(): ReactElement {
                         aria-label={t('dashboards.designer.addWidget', {
                           title: widget.title[language],
                         })}
+                        onPointerDown={(event) => {
+                          startGalleryDrag(event, widget.title[language], () =>
+                            newWidgetVisual(widget, visuals),
+                          );
+                        }}
                         onClick={() => {
-                          append(newWidgetVisual(widget, visuals));
+                          clickedTile(() => {
+                            append(newWidgetVisual(widget, visuals));
+                          });
                         }}
                       >
                         <span className="designer__widget-name">{widget.title[language]}</span>
